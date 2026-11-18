@@ -50,6 +50,12 @@ const ATTACK_EXECUTE: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>([
 ]);
 /** A non-carrier within this run-travel time of the site is "entering" → fire entry util now. */
 const ENTRY_WINDOW_MS = 3500;
+/** Entry choke each defender anchor watches (pre-aim direction); others fall back to the engine default. */
+const DEFENSE_AIM: Readonly<Record<string, string>> = {
+  "a-site": "a-main",
+  "b-site": "b-main",
+  "mid-courtyard": "mid-top",
+};
 
 export interface TeamRoundTrace {
   readonly contextId: string;
@@ -185,12 +191,15 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (phase !== "carried" && phase !== "dropped") return commands.slice(); // pre-plant only
     return commands.map((c) => {
       // Hold the angle: a move/save off the anchor trades away the pre-aim edge. Peeks (stationary
-      // info) and ability use (smokes/flashes/info) are kept.
+      // info) and ability use are kept. Set `aimZone` to the entry choke the anchor watches so the
+      // simulator faces the defender there and grants the pre-aim first-contact edge (a targetZone
+      // would face them at their own zone and forfeit it).
       if (c.kind !== "move" && c.kind !== "save") return c;
       const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
       if (!tm) return c;
-      const z = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
-      return { playerId: c.playerId, kind: "hold", targetZone: z, executeAtMs: 0, sourceActionId: "defense-hold" };
+      const anchor = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
+      const aimZone = DEFENSE_AIM[anchor] as ZoneId | undefined;
+      return { playerId: c.playerId, kind: "hold", ...(aimZone ? { aimZone } : {}), executeAtMs: 0, sourceActionId: "defense-hold" };
     });
   }
 
