@@ -403,4 +403,38 @@ PV-4 navgraph(구역/경로), 내 ability-effects(유틸 어휘), ascent-comps.j
 - `pytest tools/catalog-builder -q`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 8차: 사전 통합 감사)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research` · **범위:** 읽기 전용(전 브랜치)
+
+## 1. 작업 목표
+최종 머지 전 6브랜치의 라이선스·개인정보·출처를 감사(읽기 전용), 통합 체크리스트 작성.
+
+## 2. 완료한 작업 (실제 수행)
+- **인벤토리:** 6브랜치 × main 대비 변경 파일 목록 + 대용량/바이너리 분류(pv-data 1.5MB ratings·1MB onnx, pv-replay PNG 3개).
+- **라이선스:** extract.mjs=ValorantWebReplayer(MIT) 재구현, pv-mapmesh=recast-navigation(MIT/zlib) npm, ValorantReplayParser=외부도구(미커밋). 루트 LICENSE=MIT © Kim Yi Rang. → `THIRD_PARTY_NOTICES.md` 초안.
+- **개인정보:** 트리+전체 이력(50커밋) 검색 — 비밀정보/.env/자격증명 0, RiotID 0, ProfileName은 합성값/라벨뿐(실명 0). player_ratings는 숫자 ID. 조치: pv-replay squash(계획), screenshot-real.png 육안 확인.
+- **출처:** 실/합성 분리 양호, 파생물 gitignore 양호, 태그 규율 양호. VCT Reference 출처 표기 보강 권고.
+- **산출물:** `docs/THIRD_PARTY_NOTICES.md`, `docs/research/PRE_MERGE_AUDIT.md`(심각도별 체크리스트).
+
+## 3. 변경한 파일 (내 브랜치 문서만)
+- `docs/THIRD_PARTY_NOTICES.md`(신규), `docs/research/PRE_MERGE_AUDIT.md`(신규), handoff. **다른 브랜치 미수정.**
+
+## 4~7. 방법/결과
+읽기 전용 git grep/log/ls-tree. 차단 0건, 통합 시 조치 6건(A~F), 참고 다수. 실제 이름은 마스킹(보고서 미기록).
+
+## 8. 현재 미완료 (머지 담당 몫)
+- extract.mjs MIT 전문 동반, recast 고지, pv-replay squash, screenshot-real.png 육안확인, VCT Reference 출처표기, 루트 공유파일 충돌 조정.
+
+## 10. 설계 결정
+- 다른 브랜치 수정/머지 금지 준수. 실명 문자열 미기록(마스킹). geography 출처와 전략 출처 구분 원칙 유지.
+
+## 12. 다음 권장 작업
+오케스트레이터가 PRE_MERGE_AUDIT §5 체크리스트로 통합 진행. THIRD_PARTY_NOTICES 최종본 확정.
+
+## 13. 작업 재개 지점
+- `docs/research/PRE_MERGE_AUDIT.md` → `docs/THIRD_PARTY_NOTICES.md`.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**
