@@ -1,7 +1,10 @@
-import duckdb
 import pytest
 
 from pv_data_collector import profiles as P
+
+# Pure-logic tests (classify_buy, beta_mom, shrunk_rate) need no duckdb and always run. Tests that
+# build or open a DuckDB fixture skip cleanly (not error) when duckdb is unavailable — guarded in
+# _fixture_db and in the few tests that connect / import duckdb directly.
 
 
 def test_classify_buy_and_beta_mom():
@@ -27,6 +30,7 @@ def _counter(s, n):
 
 
 def _fixture_db(tmp_path, *, utc="2025-01-01 00:00:00", season=2025, name="tp.duckdb"):
+    duckdb = pytest.importorskip("duckdb", reason="duckdb not installed; DuckDB-backed ETL test")
     p = tmp_path / name
     con = duckdb.connect(str(p))
     con.execute("CREATE TABLE matches(match_id VARCHAR, is_international BOOLEAN, utc_timestamp TIMESTAMP, season INTEGER, patch VARCHAR, team0_id INTEGER, team1_id INTEGER)")
@@ -90,6 +94,7 @@ def test_determinism(tmp_path):
 
 def test_write_team_names_mapping(tmp_path):
     import json
+    duckdb = pytest.importorskip("duckdb", reason="duckdb not installed; DuckDB-backed ETL test")
     db = tmp_path / "tn.duckdb"
     con = duckdb.connect(str(db))
     con.execute("CREATE TABLE teams(team_id INTEGER, team_name VARCHAR, country VARCHAR, team_url VARCHAR)")
@@ -106,5 +111,6 @@ def test_write_team_names_mapping(tmp_path):
 
 
 def test_missing_db_raises(tmp_path):
+    pytest.importorskip("duckdb", reason="duckdb not installed; build_team_profiles imports it before the file check")
     with pytest.raises(FileNotFoundError):
         P.build_team_profiles(str(tmp_path / "no.duckdb"))

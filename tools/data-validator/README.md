@@ -49,6 +49,31 @@ PYTHONPATH=tools/data-validator/src python3 -m pv_data_validator.sim_cli \
   --logs tools/data-validator/examples/sim_run_bad.json  --scope ascent   # all fail,  exit 1
 ```
 
+### `sim:validate` runner (Match Runner → report)
+`scripts/sim-validate.mjs` is the integration entry: it takes the Match Runner's exported
+`SimRun` bundle (round-simulator `toValidationRun()` output) and runs the harness, writing
+`reports/sim-validation.{json,md}`. It resolves repo-root paths regardless of cwd, validates the
+`SimRun` shape with friendly errors, and propagates the harness exit code (non-zero on any judged
+failure) so CI can gate on it.
+
+```bash
+# direct:
+node tools/data-validator/scripts/sim-validate.mjs --logs path/to/sim_run.json
+node tools/data-validator/scripts/sim-validate.mjs --example            # runs the shipped good fixture
+pnpm --filter @pv/economy-engine exec node ../../tools/data-validator/scripts/sim-validate.mjs --example
+```
+
+**era default** is `all` — PV-2's recommendation (era-stable baselines, tighter CIs; see
+`docs/VALIDATION_BASELINES.md §7`). Override per run with `--era 'patch>=9'` or env `PV_SIM_ERA`.
+The Match Runner can also pipe the bundle: `… | node …/sim-validate.mjs --logs -`.
+
+**Root wiring (owned by the root-config owner, not PV-2):** add one line to the root `package.json`
+`scripts` so `pnpm sim:validate` works repo-wide —
+```jsonc
+"sim:validate": "node tools/data-validator/scripts/sim-validate.mjs"
+```
+then: `pnpm sim:validate -- --logs reports/last_match.json` (era override: `pnpm sim:validate -- --era 'patch>=9' --logs …`).
+
 ## Tests
 ```bash
 cd tools/data-validator && python3 -m pytest -q

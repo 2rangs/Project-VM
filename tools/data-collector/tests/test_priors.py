@@ -1,10 +1,13 @@
 """Priors ETL tests. Buy classification is pure; the aggregation is checked against a tiny
 hand-built DuckDB fixture so the win-rate math is verified against hand counts."""
 
-import duckdb
 import pytest
 
 from pv_data_collector import priors
+
+# Pure-logic tests (classify_buy, patch_major, era_filter) need no duckdb and always run. Tests that
+# build or open a DuckDB fixture skip cleanly (not error) when duckdb is unavailable — the guard lives
+# in _fixture_db and in the few tests that connect / import duckdb directly.
 
 
 def test_classify_buy():
@@ -18,6 +21,7 @@ def test_classify_buy():
 
 def _fixture_db(tmp_path):
     """Two matches on Ascent, economy present. Hand-countable matchup cells."""
+    duckdb = pytest.importorskip("duckdb", reason="duckdb not installed; DuckDB-backed ETL test")
     p = tmp_path / "fx.duckdb"
     con = duckdb.connect(str(p))
     con.execute("CREATE TABLE matches(match_id VARCHAR, is_international BOOLEAN, patch VARCHAR, season INTEGER)")
@@ -122,5 +126,6 @@ def test_build_all_unknown_era_raises(tmp_path):
 
 
 def test_missing_db_raises(tmp_path):
+    pytest.importorskip("duckdb", reason="duckdb not installed; build_all imports it before the file check")
     with pytest.raises(FileNotFoundError):
         priors.build_all(str(tmp_path / "nope.duckdb"))

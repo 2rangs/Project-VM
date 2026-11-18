@@ -1,7 +1,10 @@
-import duckdb
 import pytest
 
 from pv_data_collector import ratings as R
+
+# Pure-logic tests (role_of, shrink, to_skill) need no duckdb and always run. Tests that build or open
+# a DuckDB fixture skip cleanly (not error) when duckdb is unavailable — guarded in _fixture_db and in
+# the few tests that connect / import duckdb directly.
 
 
 def test_role_of_picks_dominant_known_role():
@@ -28,6 +31,7 @@ def test_to_skill_median_is_0_6():
 
 
 def _fixture_db(tmp_path):
+    duckdb = pytest.importorskip("duckdb", reason="duckdb not installed; DuckDB-backed ETL test")
     p = tmp_path / "r.duckdb"
     con = duckdb.connect(str(p))
     con.execute("CREATE TABLE matches(match_id VARCHAR, is_international BOOLEAN, season INTEGER)")
@@ -94,6 +98,7 @@ def test_determinism_of_attributes(tmp_path):
 
 def test_write_player_names_mapping(tmp_path):
     import json
+    duckdb = pytest.importorskip("duckdb", reason="duckdb not installed; DuckDB-backed ETL test")
     db = tmp_path / "n.duckdb"
     con = duckdb.connect(str(db))
     con.execute("CREATE TABLE players(player_id INTEGER, player_name VARCHAR, country VARCHAR, player_url VARCHAR)")
@@ -111,5 +116,6 @@ def test_write_player_names_mapping(tmp_path):
 
 
 def test_missing_db_raises(tmp_path):
+    pytest.importorskip("duckdb", reason="duckdb not installed; build_ratings imports it before the file check")
     with pytest.raises(FileNotFoundError):
         R.build_ratings(str(tmp_path / "none.duckdb"))

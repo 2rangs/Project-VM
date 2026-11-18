@@ -31,6 +31,43 @@ Dispatch: `evaluateEconomy({ phase: "buy"|"save"|"exitKill", context })`.
 | Ultimate economy | `makeUltState`, `applyUltEvent`, `ultDenialValue` | track charge; value point-denial / readiness |
 | Exit kill | `exitKillOptions(ExitKillContext)` | chase-for-weapon-destruction EV vs hold |
 | Round boundaries | `isPreResetRound`, `isMapPoint`, `weaponPreservationHasFuture` | where "future value" is zero |
+| Match economy | `advanceMatchEconomy`, `advanceTeamEconomy`, `creditAward`, `retainedWeaponValue` | between-rounds state advance a Match Runner calls (credits, loss streak, equipment retention) |
+
+## Match loop (between-rounds API)
+A Match Runner (PV-3) drives a full game by, each round: (1) read each team's `TeamEconomyState`,
+(2) get buy candidates via `buyOptions`, (3) simulate the round, (4) feed the result back to
+`advanceMatchEconomy` to get both teams' next-round credits and loss streaks. Credit numbers reuse
+`rules.ts` (`roundWinReward` 3000, loss ladder `[1900,2400,2900]`, `spikePlantReward` 300,
+`killReward` 200) and `projectNextRoundBank` — `match-economy.ts` adds per-kill rewards, the
+`consecutiveLosses`/`lossBonusTier` update, and equipment retention.
+
+```ts
+import {
+  advanceMatchEconomy, buyOptions, retainedWeaponValue,
+  type TeamEconomyState, type RoundEconomyOutcome,
+} from "@pv/economy-engine";
+
+let eco: [TeamEconomyState, TeamEconomyState] = [
+  { teamId: "t0", side: "attack",  credits: 800, lossBonusTier: 0, consecutiveLosses: 0 },
+  { teamId: "t1", side: "defense", credits: 800, lossBonusTier: 0, consecutiveLosses: 0 },
+];
+
+for (let roundNum = 1; roundNum <= 24; roundNum++) {
+  // 1) each team picks a buy from its current credits
+  const atkBuy = buyOptions({ teamCredits: eco[0].credits, roundNum, matchScore, teamIdx: 0 })[0];
+  // 2) …Match Runner simulates the round and produces the outcome…
+  const outcome: RoundEconomyOutcome = {
+    roundNum, winnerTeamIdx: 0, plantingTeamIdx: 0,
+    kills: [3, 2],
+    leftoverCredits: [eco[0].credits - spentByT0, eco[1].credits - spentByT1],
+  };
+  // 3) advance BOTH teams' economy across the round boundary
+  eco = advanceMatchEconomy(eco, outcome);
+  // 4) survivors keep their weapons (0 at a half/OT reset round) — reduce next buy's effective cost
+  const t0Retained = retainedWeaponValue(["vandal", "operator"], roundNum);
+}
+```
+`advanceTeamEconomy` / `creditAward` are the per-team pieces if the runner advances teams separately.
 
 ## Where the numbers come from
 - **Economy rule constants** (prices, armor, loss-bonus ladder `[1900, 2400, 2900]`, rewards, ult

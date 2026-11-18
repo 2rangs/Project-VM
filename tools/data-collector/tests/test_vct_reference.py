@@ -7,6 +7,10 @@ import pytest
 from conftest import REPO_ROOT
 from pv_data_collector import vct_reference as vr
 
+# Skip the whole module cleanly if duckdb is not installed (the normalizer imports it internally),
+# independent of whether the source DB file happens to be present.
+pytest.importorskip("duckdb", reason="duckdb not installed; VCT Reference normalizer needs it")
+
 DB = REPO_ROOT / "datasets" / "raw" / "vct-reference" / "vct.duckdb"
 pytestmark = pytest.mark.skipif(not DB.exists(), reason="vct.duckdb not present (download it first)")
 
