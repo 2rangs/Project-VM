@@ -136,8 +136,40 @@
 
 ---
 
-## 5. 다음 단계
+## 5. 통합 및 main 머지 (시뮬레이션 초안)
 
-1. 진행 중 작업 완료(통합 리허설, 첫 검증 실행, NavMesh·시야 보정, Desktop UI).
-2. 최종 통합: `claude/pv-core`의 `docs/INTEGRATION_PLAN.md` 순서(core → spatial → data → research → replay → mapmesh)로 머지, 배선, 전체 테스트, E2E 수용 테스트.
-3. 이 문서는 진행 상황에 따라 계속 갱신한다.
+- 10:14–14:22 UTC: 사용량 제한으로 전 세션 중단 → 14:22 재개.
+- 14:31 사용자 지시: "엔진 완성 → 시뮬레이션 가능한 초안 → main 머지, 최대한 빨리".
+- 14:41 `claude/pv-integration` 생성(PV-3). 6개 브랜치 머지, **충돌 0건**. `pv-replay`는 squash(일반인 식별자 이력 제외).
+- 이후 모든 세션이 통합 브랜치 위에서 직접 작업:
+
+| 커밋 | 내용 |
+|---|---|
+| `c2eb430` | 첫 통합 상태(6개 브랜치 머지, `@pv/*` 리네임, pnpm-lock 재생성) |
+| `42d5751` | `@pv/game-data` — 런타임 데이터(67팀 로스터 ≥5, 선수 1,227, 실명) (PV-1) |
+| `e0ba8e8`·`d96eb23` | 매니저 게임형 데스크톱 UI + 실제 round-simulator 연결 (PV-6) |
+| `d275150` | 통합 E2E 수용 테스트 + 머지 전 감사 처리(THIRD_PARTY_NOTICES) (PV-3) |
+| `dea8a4c` | 스킬 커버리지 갭 분석 (PV-1) |
+| `bd80480` | `sim:validate` 러너, 경기 단위 경제 API (PV-2) |
+| `f9f7a09` | Replay 포맷에 팀별 perception/belief 트랙 (PV-6) |
+| `c251b3a` | **`@pv/match-runner`** — 피스톨 → 하프 전환 → 13승 → OT, 경제·궁극기 이월 (PV-3) |
+
+- **15:05 main 머지** (오케스트레이터가 직접 재현 검증 후):
+  - `pnpm -r typecheck` 전 패키지 통과
+  - core 128 pass / 4 todo, 패키지별 테스트 전부 통과(spatial 21, perception 17, combat 15, ability 18, round-simulator 16, economy 31, replay 14, game-data 7, match-runner 8)
+  - 실제 경기 실행: `pnpm --filter @pv/match-runner sim:match --teamA 1001 --teamB 1034 --map ascent --seed 42` → Team Heretics 13–11 NRG, 약 2.4초
+  - 비밀정보·자격증명·원본 `.blend`/`.vrf` 0건
+
+### 초안의 알려진 한계 (main 머지 시점)
+- **시간 초과 라운드 과다**: 예시 경기 24라운드 중 19라운드가 timeExpired(실측 약 3%). 공격 정책의 진입·실행이 약함. 포스트플랜트·세이브 행동 미구현.
+- PV-4의 라운드 엔진 개선(실측 navgraph, 스킬 실사용, 스파이크 줍기, 검증 4/7 통과 — `claude/pv-spatial` `37cfea6`)은 아직 통합 브랜치에 반영 전.
+- PV-2 시나리오 v2(게임 좌표 + zoneId, `ea024f6`) 통합 브랜치 반영 전.
+- 팀 프로필·전술 KB·선수 능력치를 TeamDecisionPolicy가 아직 소비하지 않음(데이터는 포함됨).
+- Desktop 안개 뷰·Belief 히트맵은 포맷만 정의됨(라운드 엔진 출력 대기).
+
+## 6. 다음 단계
+
+1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
+2. 공격 실행·포스트플랜트·세이브 정책 보강 → `sim:validate`로 실측 기준선 대비 개선 확인.
+3. IGL에 팀 프로필·전술 KB·선수 능력치 연결, Desktop 안개 뷰·히트맵 연결.
+4. 개선분이 검증되면 main에 다시 머지하고 이 문서를 갱신.
