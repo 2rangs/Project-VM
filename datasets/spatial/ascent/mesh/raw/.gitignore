@@ -1,0 +1,5 @@
+# PV-5 Map Mesh: raw user-provided Blender source files are NOT committed.
+# Reason: user-provided material, copyright/size unverified (see task rules + README §10.1).
+# Ignore everything in this directory except this .gitignore itself.
+*
+!.gitignore
