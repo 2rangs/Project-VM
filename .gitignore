@@ -19,3 +19,6 @@ coverage/
 # Env
 .env
 .env.local
+
+# Generated simulation reports (sim:batch / sim:validate)
+reports/

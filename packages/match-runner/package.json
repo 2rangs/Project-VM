@@ -16,6 +16,7 @@
     "@pv/shared-types": "workspace:*",
     "@pv/game-rules": "workspace:*",
     "@pv/game-data": "workspace:*",
+    "@pv/economy-engine": "workspace:*",
     "@pv/simulation-core": "workspace:*",
     "@pv/world-state": "workspace:*",
     "@pv/decision-engine": "workspace:*",
