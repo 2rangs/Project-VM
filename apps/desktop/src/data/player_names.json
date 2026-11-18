@@ -1,0 +1,2424 @@
+{
+  "meta": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "retrievedAt": "2026-11-18T10:06:28+00:00",
+    "count": 402,
+    "disclaimer": "Pre-launch INTERNAL development use. Real player/team names are included by user decision (2026-11-18); scope is PUBLIC VCT professional players and teams only (no private individuals). License and name/likeness rights MUST be re-reviewed before any launch. Values remain statistical ESTIMATES from public match stats, not assessments of real ability."
+  },
+  "players": [
+    {
+      "playerId": "10",
+      "handle": "rhyme",
+      "country": "no",
+      "sourceUrl": "/player/10/rhyme"
+    },
+    {
+      "playerId": "1000",
+      "handle": "crow",
+      "country": "jp",
+      "sourceUrl": "/player/1000/crow"
+    },
+    {
+      "playerId": "1001",
+      "handle": "barce",
+      "country": "jp",
+      "sourceUrl": "/player/1001/barce"
+    },
+    {
+      "playerId": "1002",
+      "handle": "takej",
+      "country": "jp",
+      "sourceUrl": "/player/1002/takej"
+    },
+    {
+      "playerId": "1003",
+      "handle": "Reita",
+      "country": "jp",
+      "sourceUrl": "/player/1003/reita"
+    },
+    {
+      "playerId": "101",
+      "handle": "soulcas",
+      "country": "gb",
+      "sourceUrl": "/player/101/soulcas"
+    },
+    {
+      "playerId": "10125",
+      "handle": "qw1",
+      "country": "tr",
+      "sourceUrl": "/player/10125/qw1"
+    },
+    {
+      "playerId": "10160",
+      "handle": "Izzy",
+      "country": "tr",
+      "sourceUrl": "/player/10160/izzy"
+    },
+    {
+      "playerId": "10161",
+      "handle": "QutionerX",
+      "country": "tr",
+      "sourceUrl": "/player/10161/qutionerx"
+    },
+    {
+      "playerId": "1026",
+      "handle": "ade",
+      "country": "jp",
+      "sourceUrl": "/player/1026/ade"
+    },
+    {
+      "playerId": "10307",
+      "handle": "marteen",
+      "country": "cz",
+      "sourceUrl": "/player/10307/marteen"
+    },
+    {
+      "playerId": "1046",
+      "handle": "Fisker",
+      "country": "jp",
+      "sourceUrl": "/player/1046/fisker"
+    },
+    {
+      "playerId": "10486",
+      "handle": "YHchen",
+      "country": "tw",
+      "sourceUrl": "/player/10486/yhchen"
+    },
+    {
+      "playerId": "10557",
+      "handle": "Darker",
+      "country": "co",
+      "sourceUrl": "/player/10557/darker"
+    },
+    {
+      "playerId": "10584",
+      "handle": "Seoldam",
+      "country": "kr",
+      "sourceUrl": "/player/10584/seoldam"
+    },
+    {
+      "playerId": "10698",
+      "handle": "nephh",
+      "country": "sg",
+      "sourceUrl": "/player/10698/nephh"
+    },
+    {
+      "playerId": "10703",
+      "handle": "shiba",
+      "country": "sg",
+      "sourceUrl": "/player/10703/shiba"
+    },
+    {
+      "playerId": "10782",
+      "handle": "Witz",
+      "country": "ph",
+      "sourceUrl": "/player/10782/witz"
+    },
+    {
+      "playerId": "10816",
+      "handle": "xccurate",
+      "country": "id",
+      "sourceUrl": "/player/10816/xccurate"
+    },
+    {
+      "playerId": "10885",
+      "handle": "DaviH",
+      "country": "pt",
+      "sourceUrl": "/player/10885/davih"
+    },
+    {
+      "playerId": "109",
+      "handle": "ANGE1",
+      "country": "ua",
+      "sourceUrl": "/player/109/ange1"
+    },
+    {
+      "playerId": "10971",
+      "handle": "RieNs",
+      "country": "tr",
+      "sourceUrl": "/player/10971/riens"
+    },
+    {
+      "playerId": "11",
+      "handle": "Zyppan",
+      "country": "se",
+      "sourceUrl": "/player/11/zyppan"
+    },
+    {
+      "playerId": "11118",
+      "handle": "skuba",
+      "country": "us",
+      "sourceUrl": "/player/11118/skuba"
+    },
+    {
+      "playerId": "11134",
+      "handle": "Kicks",
+      "country": "ee",
+      "sourceUrl": "/player/11134/kicks"
+    },
+    {
+      "playerId": "11218",
+      "handle": "Yuicaw",
+      "country": "tw",
+      "sourceUrl": "/player/11218/yuicaw"
+    },
+    {
+      "playerId": "11225",
+      "handle": "Ethan",
+      "country": "us",
+      "sourceUrl": "/player/11225/ethan"
+    },
+    {
+      "playerId": "1129",
+      "handle": "Rossy",
+      "country": "us",
+      "sourceUrl": "/player/1129/rossy"
+    },
+    {
+      "playerId": "11332",
+      "handle": "ara",
+      "country": "ro",
+      "sourceUrl": "/player/11332/ara"
+    },
+    {
+      "playerId": "1137",
+      "handle": "Twisten",
+      "country": "cz",
+      "sourceUrl": "/player/1137/twisten"
+    },
+    {
+      "playerId": "1139",
+      "handle": "qRaxs",
+      "country": "tr",
+      "sourceUrl": "/player/1139/qraxs"
+    },
+    {
+      "playerId": "114",
+      "handle": "Enzo",
+      "country": "fr",
+      "sourceUrl": "/player/114/enzo"
+    },
+    {
+      "playerId": "1144",
+      "handle": "Boo",
+      "country": "lt",
+      "sourceUrl": "/player/1144/boo"
+    },
+    {
+      "playerId": "11494",
+      "handle": "keiko",
+      "country": "gb",
+      "sourceUrl": "/player/11494/keiko"
+    },
+    {
+      "playerId": "11524",
+      "handle": "Nicc",
+      "country": "tw",
+      "sourceUrl": "/player/11524/nicc"
+    },
+    {
+      "playerId": "11527",
+      "handle": "NoMan",
+      "country": "hk",
+      "sourceUrl": "/player/11527/noman"
+    },
+    {
+      "playerId": "11600",
+      "handle": "Foxy9",
+      "country": "kr",
+      "sourceUrl": "/player/11600/foxy9"
+    },
+    {
+      "playerId": "1162",
+      "handle": "Russ",
+      "country": "gb",
+      "sourceUrl": "/player/1162/russ"
+    },
+    {
+      "playerId": "1219",
+      "handle": "v1xen",
+      "country": "br",
+      "sourceUrl": "/player/1219/v1xen"
+    },
+    {
+      "playerId": "1221",
+      "handle": "krain",
+      "country": "br",
+      "sourceUrl": "/player/1221/krain"
+    },
+    {
+      "playerId": "12365",
+      "handle": "coconut",
+      "country": "hk",
+      "sourceUrl": "/player/12365/coconut"
+    },
+    {
+      "playerId": "1265",
+      "handle": "johnqt",
+      "country": "ma",
+      "sourceUrl": "/player/1265/johnqt"
+    },
+    {
+      "playerId": "12793",
+      "handle": "xeus",
+      "country": "tr",
+      "sourceUrl": "/player/12793/xeus"
+    },
+    {
+      "playerId": "12795",
+      "handle": "Crewen",
+      "country": "tr",
+      "sourceUrl": "/player/12795/crewen"
+    },
+    {
+      "playerId": "1281",
+      "handle": "MOLSI",
+      "country": "pl",
+      "sourceUrl": "/player/1281/molsi"
+    },
+    {
+      "playerId": "1291",
+      "handle": "bnj",
+      "country": "ar",
+      "sourceUrl": "/player/1291/bnj"
+    },
+    {
+      "playerId": "1294",
+      "handle": "NagZ",
+      "country": "cl",
+      "sourceUrl": "/player/1294/nagz"
+    },
+    {
+      "playerId": "13039",
+      "handle": "Meteor",
+      "country": "kr",
+      "sourceUrl": "/player/13039/meteor"
+    },
+    {
+      "playerId": "13093",
+      "handle": "jzz",
+      "country": "br",
+      "sourceUrl": "/player/13093/jzz"
+    },
+    {
+      "playerId": "1311",
+      "handle": "Melser",
+      "country": "cl",
+      "sourceUrl": "/player/1311/melser"
+    },
+    {
+      "playerId": "1369",
+      "handle": "doma",
+      "country": "hr",
+      "sourceUrl": "/player/1369/doma"
+    },
+    {
+      "playerId": "13744",
+      "handle": "PatMen",
+      "country": "ph",
+      "sourceUrl": "/player/13744/patmen"
+    },
+    {
+      "playerId": "13768",
+      "handle": "S1Mon",
+      "country": "tw",
+      "sourceUrl": "/player/13768/s1mon"
+    },
+    {
+      "playerId": "13784",
+      "handle": "Killua",
+      "country": "th",
+      "sourceUrl": "/player/13784/killua"
+    },
+    {
+      "playerId": "13788",
+      "handle": "JitBoyS",
+      "country": "th",
+      "sourceUrl": "/player/13788/jitboys"
+    },
+    {
+      "playerId": "1380",
+      "handle": "Leo",
+      "country": "se",
+      "sourceUrl": "/player/1380/leo"
+    },
+    {
+      "playerId": "1395",
+      "handle": "TENNN",
+      "country": "jp",
+      "sourceUrl": "/player/1395/tennn"
+    },
+    {
+      "playerId": "1411",
+      "handle": "Will",
+      "country": "ca",
+      "sourceUrl": "/player/1411/will"
+    },
+    {
+      "playerId": "14125",
+      "handle": "Spring",
+      "country": "tw",
+      "sourceUrl": "/player/14125/spring"
+    },
+    {
+      "playerId": "1427",
+      "handle": "Redgar",
+      "country": "ru",
+      "sourceUrl": "/player/1427/redgar"
+    },
+    {
+      "playerId": "1428",
+      "handle": "sheydos",
+      "country": "ru",
+      "sourceUrl": "/player/1428/sheydos"
+    },
+    {
+      "playerId": "1430",
+      "handle": "crazyguy",
+      "country": "vn",
+      "sourceUrl": "/player/1430/crazyguy"
+    },
+    {
+      "playerId": "14431",
+      "handle": "monk",
+      "country": "cn",
+      "sourceUrl": "/player/14431/monk"
+    },
+    {
+      "playerId": "1457",
+      "handle": "Mistic",
+      "country": "gb",
+      "sourceUrl": "/player/1457/mistic"
+    },
+    {
+      "playerId": "14669",
+      "handle": "Nivera",
+      "country": "be",
+      "sourceUrl": "/player/14669/nivera"
+    },
+    {
+      "playerId": "14681",
+      "handle": "kamo",
+      "country": "pl",
+      "sourceUrl": "/player/14681/kamo"
+    },
+    {
+      "playerId": "1475",
+      "handle": "kamyk",
+      "country": "pl",
+      "sourceUrl": "/player/1475/kamyk"
+    },
+    {
+      "playerId": "1481",
+      "handle": "AsLanM4shadoW",
+      "country": "tr",
+      "sourceUrl": "/player/1481/aslanm4shadow"
+    },
+    {
+      "playerId": "1507",
+      "handle": "AvovA",
+      "country": "dk",
+      "sourceUrl": "/player/1507/avova"
+    },
+    {
+      "playerId": "1524",
+      "handle": "H1ber",
+      "country": "fi",
+      "sourceUrl": "/player/1524/h1ber"
+    },
+    {
+      "playerId": "1533",
+      "handle": "Derrek",
+      "country": "us",
+      "sourceUrl": "/player/1533/derrek"
+    },
+    {
+      "playerId": "15500",
+      "handle": "trent",
+      "country": "us",
+      "sourceUrl": "/player/15500/trent"
+    },
+    {
+      "playerId": "15559",
+      "handle": "CHICHOO",
+      "country": "cn",
+      "sourceUrl": "/player/15559/chichoo"
+    },
+    {
+      "playerId": "1565",
+      "handle": "light",
+      "country": "br",
+      "sourceUrl": "/player/1565/light"
+    },
+    {
+      "playerId": "1566",
+      "handle": "prozin",
+      "country": "br",
+      "sourceUrl": "/player/1566/prozin"
+    },
+    {
+      "playerId": "1567",
+      "handle": "bezn1",
+      "country": "br",
+      "sourceUrl": "/player/1567/bezn1"
+    },
+    {
+      "playerId": "15735",
+      "handle": "KROSTALY",
+      "country": "tr",
+      "sourceUrl": "/player/15735/krostaly"
+    },
+    {
+      "playerId": "1575",
+      "handle": "qck",
+      "country": "br",
+      "sourceUrl": "/player/1575/qck"
+    },
+    {
+      "playerId": "1576",
+      "handle": "pleets",
+      "country": "br",
+      "sourceUrl": "/player/1576/pleets"
+    },
+    {
+      "playerId": "1578",
+      "handle": "shion",
+      "country": "br",
+      "sourceUrl": "/player/1578/shion"
+    },
+    {
+      "playerId": "1585",
+      "handle": "gtn",
+      "country": "br",
+      "sourceUrl": "/player/1585/gtn"
+    },
+    {
+      "playerId": "1595",
+      "handle": "Myssen",
+      "country": "br",
+      "sourceUrl": "/player/1595/myssen"
+    },
+    {
+      "playerId": "1607",
+      "handle": "ntk",
+      "country": "br",
+      "sourceUrl": "/player/1607/ntk"
+    },
+    {
+      "playerId": "1615",
+      "handle": "Destrian",
+      "country": "lt",
+      "sourceUrl": "/player/1615/destrian"
+    },
+    {
+      "playerId": "16215",
+      "handle": "dos9",
+      "country": "kz",
+      "sourceUrl": "/player/16215/dos9"
+    },
+    {
+      "playerId": "1684",
+      "handle": "deNaro",
+      "country": "br",
+      "sourceUrl": "/player/1684/denaro"
+    },
+    {
+      "playerId": "16924",
+      "handle": "stew",
+      "country": "kr",
+      "sourceUrl": "/player/16924/stew"
+    },
+    {
+      "playerId": "17086",
+      "handle": "something",
+      "country": "ru",
+      "sourceUrl": "/player/17086/something"
+    },
+    {
+      "playerId": "1711",
+      "handle": "Khalil",
+      "country": "br",
+      "sourceUrl": "/player/1711/khalil"
+    },
+    {
+      "playerId": "1743",
+      "handle": "blaZek1ng",
+      "country": "id",
+      "sourceUrl": "/player/1743/blazek1ng"
+    },
+    {
+      "playerId": "18035",
+      "handle": "garnetS",
+      "country": "th",
+      "sourceUrl": "/player/18035/garnets"
+    },
+    {
+      "playerId": "18162",
+      "handle": "Serial",
+      "country": "lv",
+      "sourceUrl": "/player/18162/serial"
+    },
+    {
+      "playerId": "1818",
+      "handle": "tex",
+      "country": "de",
+      "sourceUrl": "/player/1818/tex"
+    },
+    {
+      "playerId": "18350",
+      "handle": "MiniBoo",
+      "country": "lt",
+      "sourceUrl": "/player/18350/miniboo"
+    },
+    {
+      "playerId": "18400",
+      "handle": "bipo",
+      "country": "it",
+      "sourceUrl": "/player/18400/bipo"
+    },
+    {
+      "playerId": "1885",
+      "handle": "purp0",
+      "country": "ru",
+      "sourceUrl": "/player/1885/purp0"
+    },
+    {
+      "playerId": "19",
+      "handle": "jammyz",
+      "country": "us",
+      "sourceUrl": "/player/19/jammyz"
+    },
+    {
+      "playerId": "1916",
+      "handle": "free1ng",
+      "country": "kr",
+      "sourceUrl": "/player/1916/free1ng"
+    },
+    {
+      "playerId": "1952",
+      "handle": "Esperanza",
+      "country": "kr",
+      "sourceUrl": "/player/1952/esperanza"
+    },
+    {
+      "playerId": "19530",
+      "handle": "AAAAY",
+      "country": "cn",
+      "sourceUrl": "/player/19530/aaaay"
+    },
+    {
+      "playerId": "1960",
+      "handle": "eKo",
+      "country": "kr",
+      "sourceUrl": "/player/1960/eko"
+    },
+    {
+      "playerId": "19691",
+      "handle": "tomaszy",
+      "country": "pt",
+      "sourceUrl": "/player/19691/tomaszy"
+    },
+    {
+      "playerId": "1970",
+      "handle": "neth",
+      "country": "jp",
+      "sourceUrl": "/player/1970/neth"
+    },
+    {
+      "playerId": "20140",
+      "handle": "vora",
+      "country": "ca",
+      "sourceUrl": "/player/20140/vora"
+    },
+    {
+      "playerId": "20144",
+      "handle": "LewN",
+      "country": "tr",
+      "sourceUrl": "/player/20144/lewn"
+    },
+    {
+      "playerId": "2021",
+      "handle": "axeddy",
+      "country": "br",
+      "sourceUrl": "/player/2021/axeddy"
+    },
+    {
+      "playerId": "20240",
+      "handle": "xenom",
+      "country": "br",
+      "sourceUrl": "/player/20240/xenom"
+    },
+    {
+      "playerId": "2107",
+      "handle": "russ",
+      "country": "tr",
+      "sourceUrl": "/player/2107/russ"
+    },
+    {
+      "playerId": "21216",
+      "handle": "f4ngeer",
+      "country": "ru",
+      "sourceUrl": "/player/21216/f4ngeer"
+    },
+    {
+      "playerId": "21251",
+      "handle": "blowz",
+      "country": "br",
+      "sourceUrl": "/player/21251/blowz"
+    },
+    {
+      "playerId": "21328",
+      "handle": "Wo0t",
+      "country": "tr",
+      "sourceUrl": "/player/21328/wo0t"
+    },
+    {
+      "playerId": "2134",
+      "handle": "Derialy",
+      "country": "jp",
+      "sourceUrl": "/player/2134/derialy"
+    },
+    {
+      "playerId": "21610",
+      "handle": "runneR",
+      "country": "mk",
+      "sourceUrl": "/player/21610/runner"
+    },
+    {
+      "playerId": "21659",
+      "handle": "Sato",
+      "country": "br",
+      "sourceUrl": "/player/21659/sato"
+    },
+    {
+      "playerId": "21661",
+      "handle": "spike",
+      "country": "br",
+      "sourceUrl": "/player/21661/spike"
+    },
+    {
+      "playerId": "21668",
+      "handle": "Verno",
+      "country": "us",
+      "sourceUrl": "/player/21668/verno"
+    },
+    {
+      "playerId": "2168",
+      "handle": "trexx",
+      "country": "ru",
+      "sourceUrl": "/player/2168/trexx"
+    },
+    {
+      "playerId": "217",
+      "handle": "SEIDER",
+      "country": "dk",
+      "sourceUrl": "/player/217/seider"
+    },
+    {
+      "playerId": "2170",
+      "handle": "BABYBAY",
+      "country": "us",
+      "sourceUrl": "/player/2170/babybay"
+    },
+    {
+      "playerId": "2172",
+      "handle": "brawk",
+      "country": "us",
+      "sourceUrl": "/player/2172/brawk"
+    },
+    {
+      "playerId": "2173",
+      "handle": "MAGNUM",
+      "country": "cz",
+      "sourceUrl": "/player/2173/magnum"
+    },
+    {
+      "playerId": "22047",
+      "handle": "Rarga",
+      "country": "ru",
+      "sourceUrl": "/player/22047/rarga"
+    },
+    {
+      "playerId": "23062",
+      "handle": "Surf",
+      "country": "th",
+      "sourceUrl": "/player/23062/surf"
+    },
+    {
+      "playerId": "23169",
+      "handle": "Minny",
+      "country": "cz",
+      "sourceUrl": "/player/23169/minny"
+    },
+    {
+      "playerId": "2333",
+      "handle": "BORKUM",
+      "country": "ph",
+      "sourceUrl": "/player/2333/borkum"
+    },
+    {
+      "playerId": "2334",
+      "handle": "JessieVash",
+      "country": "ph",
+      "sourceUrl": "/player/2334/jessievash"
+    },
+    {
+      "playerId": "2335",
+      "handle": "dispenser",
+      "country": "ph",
+      "sourceUrl": "/player/2335/dispenser"
+    },
+    {
+      "playerId": "23365",
+      "handle": "koshmaras",
+      "country": "lt",
+      "sourceUrl": "/player/23365/koshmaras"
+    },
+    {
+      "playerId": "2348",
+      "handle": "Famouz",
+      "country": "id",
+      "sourceUrl": "/player/2348/famouz"
+    },
+    {
+      "playerId": "24007",
+      "handle": "Shyy",
+      "country": "cl",
+      "sourceUrl": "/player/24007/shyy"
+    },
+    {
+      "playerId": "2408",
+      "handle": "tuyz",
+      "country": "br",
+      "sourceUrl": "/player/2408/tuyz"
+    },
+    {
+      "playerId": "24308",
+      "handle": "WsLeo",
+      "country": "tw",
+      "sourceUrl": "/player/24308/wsleo"
+    },
+    {
+      "playerId": "24344",
+      "handle": "Loita",
+      "country": "tr",
+      "sourceUrl": "/player/24344/loita"
+    },
+    {
+      "playerId": "2442",
+      "handle": "nitr0",
+      "country": "us",
+      "sourceUrl": "/player/2442/nitr0"
+    },
+    {
+      "playerId": "2452",
+      "handle": "Patiphan",
+      "country": "th",
+      "sourceUrl": "/player/2452/patiphan"
+    },
+    {
+      "playerId": "2462",
+      "handle": "keznit",
+      "country": "cl",
+      "sourceUrl": "/player/2462/keznit"
+    },
+    {
+      "playerId": "24628",
+      "handle": "wayne",
+      "country": "sg",
+      "sourceUrl": "/player/24628/wayne"
+    },
+    {
+      "playerId": "24679",
+      "handle": "cgrs",
+      "country": "th",
+      "sourceUrl": "/player/24679/cgrs"
+    },
+    {
+      "playerId": "2468",
+      "handle": "delz1k",
+      "country": "cl",
+      "sourceUrl": "/player/2468/delz1k"
+    },
+    {
+      "playerId": "2489",
+      "handle": "Munchkin",
+      "country": "kr",
+      "sourceUrl": "/player/2489/munchkin"
+    },
+    {
+      "playerId": "24895",
+      "handle": "Jemkin",
+      "country": "ru",
+      "sourceUrl": "/player/24895/jemkin"
+    },
+    {
+      "playerId": "25017",
+      "handle": "Ash",
+      "country": "kr",
+      "sourceUrl": "/player/25017/ash"
+    },
+    {
+      "playerId": "252",
+      "handle": "d3ffo",
+      "country": "ru",
+      "sourceUrl": "/player/252/d3ffo"
+    },
+    {
+      "playerId": "25255",
+      "handle": "primmie",
+      "country": "th",
+      "sourceUrl": "/player/25255/primmie"
+    },
+    {
+      "playerId": "25494",
+      "handle": "Shr1mp",
+      "country": "cn",
+      "sourceUrl": "/player/25494/shr1mp"
+    },
+    {
+      "playerId": "2567",
+      "handle": "liazzi",
+      "country": "br",
+      "sourceUrl": "/player/2567/liazzi"
+    },
+    {
+      "playerId": "25949",
+      "handle": "bunt",
+      "country": "cn",
+      "sourceUrl": "/player/25949/bunt"
+    },
+    {
+      "playerId": "261",
+      "handle": "Victor",
+      "country": "us",
+      "sourceUrl": "/player/261/victor"
+    },
+    {
+      "playerId": "2610",
+      "handle": "Klaus",
+      "country": "ar",
+      "sourceUrl": "/player/2610/klaus"
+    },
+    {
+      "playerId": "26171",
+      "handle": "Demon1",
+      "country": "us",
+      "sourceUrl": "/player/26171/demon1"
+    },
+    {
+      "playerId": "2622",
+      "handle": "Newzera",
+      "country": "fr",
+      "sourceUrl": "/player/2622/newzera"
+    },
+    {
+      "playerId": "2625",
+      "handle": "sh1n",
+      "country": "fr",
+      "sourceUrl": "/player/2625/sh1n"
+    },
+    {
+      "playerId": "263",
+      "handle": "Marved",
+      "country": "ca",
+      "sourceUrl": "/player/263/marved"
+    },
+    {
+      "playerId": "2670",
+      "handle": "steel",
+      "country": "ca",
+      "sourceUrl": "/player/2670/steel"
+    },
+    {
+      "playerId": "2679",
+      "handle": "DubsteP",
+      "country": "ph",
+      "sourceUrl": "/player/2679/dubstep"
+    },
+    {
+      "playerId": "2690",
+      "handle": "hoody",
+      "country": "fi",
+      "sourceUrl": "/player/2690/hoody"
+    },
+    {
+      "playerId": "27254",
+      "handle": "Leviathan",
+      "country": "th",
+      "sourceUrl": "/player/27254/leviathan"
+    },
+    {
+      "playerId": "2764",
+      "handle": "DaveeyS",
+      "country": "co",
+      "sourceUrl": "/player/2764/daveeys"
+    },
+    {
+      "playerId": "28400",
+      "handle": "HYUNMIN",
+      "country": "kr",
+      "sourceUrl": "/player/28400/hyunmin"
+    },
+    {
+      "playerId": "2858",
+      "handle": "SUYGETSU",
+      "country": "un",
+      "sourceUrl": "/player/2858/suygetsu"
+    },
+    {
+      "playerId": "28716",
+      "handle": "lukxo",
+      "country": "br",
+      "sourceUrl": "/player/28716/lukxo"
+    },
+    {
+      "playerId": "2894",
+      "handle": "Kiles",
+      "country": "ua",
+      "sourceUrl": "/player/2894/kiles"
+    },
+    {
+      "playerId": "292",
+      "handle": "Fit1nho",
+      "country": "es",
+      "sourceUrl": "/player/292/fit1nho"
+    },
+    {
+      "playerId": "29242",
+      "handle": "erde",
+      "country": "cl",
+      "sourceUrl": "/player/29242/erde"
+    },
+    {
+      "playerId": "29243",
+      "handle": "Neon",
+      "country": "ar",
+      "sourceUrl": "/player/29243/neon"
+    },
+    {
+      "playerId": "29833",
+      "handle": "iZu",
+      "country": "kr",
+      "sourceUrl": "/player/29833/izu"
+    },
+    {
+      "playerId": "29867",
+      "handle": "hiro",
+      "country": "tr",
+      "sourceUrl": "/player/29867/hiro"
+    },
+    {
+      "playerId": "29873",
+      "handle": "benjyfishy",
+      "country": "gb",
+      "sourceUrl": "/player/29873/benjyfishy"
+    },
+    {
+      "playerId": "29893",
+      "handle": "Timotino",
+      "country": "ca",
+      "sourceUrl": "/player/29893/timotino"
+    },
+    {
+      "playerId": "3017",
+      "handle": "nobody",
+      "country": "cn",
+      "sourceUrl": "/player/3017/nobody"
+    },
+    {
+      "playerId": "3021",
+      "handle": "Biank",
+      "country": "cn",
+      "sourceUrl": "/player/3021/biank"
+    },
+    {
+      "playerId": "3024",
+      "handle": "DK",
+      "country": "cn",
+      "sourceUrl": "/player/3024/dk"
+    },
+    {
+      "playerId": "3028",
+      "handle": "Life",
+      "country": "cn",
+      "sourceUrl": "/player/3028/life"
+    },
+    {
+      "playerId": "3045",
+      "handle": "LuoK1ng",
+      "country": "cn",
+      "sourceUrl": "/player/3045/luok1ng"
+    },
+    {
+      "playerId": "3070",
+      "handle": "nukkye",
+      "country": "lt",
+      "sourceUrl": "/player/3070/nukkye"
+    },
+    {
+      "playerId": "309",
+      "handle": "paTiTek",
+      "country": "pl",
+      "sourceUrl": "/player/309/patitek"
+    },
+    {
+      "playerId": "312",
+      "handle": "Sayf",
+      "country": "se",
+      "sourceUrl": "/player/312/sayf"
+    },
+    {
+      "playerId": "31207",
+      "handle": "carpe",
+      "country": "kr",
+      "sourceUrl": "/player/31207/carpe"
+    },
+    {
+      "playerId": "31305",
+      "handle": "Lar0k",
+      "country": "tr",
+      "sourceUrl": "/player/31305/lar0k"
+    },
+    {
+      "playerId": "3157",
+      "handle": "gaabxx",
+      "country": "br",
+      "sourceUrl": "/player/3157/gaabxx"
+    },
+    {
+      "playerId": "31753",
+      "handle": "SpiritZ1",
+      "country": "tw",
+      "sourceUrl": "/player/31753/spiritz1"
+    },
+    {
+      "playerId": "31827",
+      "handle": "Dambi",
+      "country": "kr",
+      "sourceUrl": "/player/31827/dambi"
+    },
+    {
+      "playerId": "31828",
+      "handle": "Francis",
+      "country": "kr",
+      "sourceUrl": "/player/31828/francis"
+    },
+    {
+      "playerId": "31829",
+      "handle": "Ivy",
+      "country": "kr",
+      "sourceUrl": "/player/31829/ivy"
+    },
+    {
+      "playerId": "320",
+      "handle": "dimasick",
+      "country": "kz",
+      "sourceUrl": "/player/320/dimasick"
+    },
+    {
+      "playerId": "3342",
+      "handle": "Sushiboys",
+      "country": "th",
+      "sourceUrl": "/player/3342/sushiboys"
+    },
+    {
+      "playerId": "339",
+      "handle": "koldamenta",
+      "country": "es",
+      "sourceUrl": "/player/339/koldamenta"
+    },
+    {
+      "playerId": "33902",
+      "handle": "Sayonara",
+      "country": "md",
+      "sourceUrl": "/player/33902/sayonara"
+    },
+    {
+      "playerId": "3401",
+      "handle": "PTC",
+      "country": "th",
+      "sourceUrl": "/player/3401/ptc"
+    },
+    {
+      "playerId": "34684",
+      "handle": "westside",
+      "country": "pl",
+      "sourceUrl": "/player/34684/westside"
+    },
+    {
+      "playerId": "34974",
+      "handle": "Karon",
+      "country": "kr",
+      "sourceUrl": "/player/34974/karon"
+    },
+    {
+      "playerId": "35013",
+      "handle": "Flashback",
+      "country": "kr",
+      "sourceUrl": "/player/35013/flashback"
+    },
+    {
+      "playerId": "3519",
+      "handle": "jkuro",
+      "country": "cn",
+      "sourceUrl": "/player/3519/jkuro"
+    },
+    {
+      "playerId": "3520",
+      "handle": "ZmjjKK",
+      "country": "cn",
+      "sourceUrl": "/player/3520/zmjjkk"
+    },
+    {
+      "playerId": "3582",
+      "handle": "keloqz",
+      "country": "fr",
+      "sourceUrl": "/player/3582/keloqz"
+    },
+    {
+      "playerId": "3604",
+      "handle": "MOJJ",
+      "country": "tr",
+      "sourceUrl": "/player/3604/mojj"
+    },
+    {
+      "playerId": "36169",
+      "handle": "mta",
+      "country": "cl",
+      "sourceUrl": "/player/36169/mta"
+    },
+    {
+      "playerId": "36245",
+      "handle": "N4RRATE",
+      "country": "us",
+      "sourceUrl": "/player/36245/n4rrate"
+    },
+    {
+      "playerId": "36415",
+      "handle": "Viva",
+      "country": "cn",
+      "sourceUrl": "/player/36415/viva"
+    },
+    {
+      "playerId": "36685",
+      "handle": "splash",
+      "country": "id",
+      "sourceUrl": "/player/36685/splash"
+    },
+    {
+      "playerId": "3672",
+      "handle": "BONECOLD",
+      "country": "fi",
+      "sourceUrl": "/player/3672/bonecold"
+    },
+    {
+      "playerId": "37017",
+      "handle": "Midi",
+      "country": "cn",
+      "sourceUrl": "/player/37017/midi"
+    },
+    {
+      "playerId": "3722",
+      "handle": "koalanoob",
+      "country": "ca",
+      "sourceUrl": "/player/3722/koalanoob"
+    },
+    {
+      "playerId": "3741",
+      "handle": "vo0kashu",
+      "country": "ru",
+      "sourceUrl": "/player/3741/vo0kashu"
+    },
+    {
+      "playerId": "37489",
+      "handle": "Lysoar",
+      "country": "cn",
+      "sourceUrl": "/player/37489/lysoar"
+    },
+    {
+      "playerId": "37494",
+      "handle": "Kai",
+      "country": "cn",
+      "sourceUrl": "/player/37494/kai"
+    },
+    {
+      "playerId": "37927",
+      "handle": "happywei",
+      "country": "tw",
+      "sourceUrl": "/player/37927/happywei"
+    },
+    {
+      "playerId": "3826",
+      "handle": "adverso",
+      "country": "cl",
+      "sourceUrl": "/player/3826/adverso"
+    },
+    {
+      "playerId": "3828",
+      "handle": "Tacolilla",
+      "country": "cl",
+      "sourceUrl": "/player/3828/tacolilla"
+    },
+    {
+      "playerId": "384",
+      "handle": "Shao",
+      "country": "un",
+      "sourceUrl": "/player/384/shao"
+    },
+    {
+      "playerId": "3880",
+      "handle": "bang",
+      "country": "us",
+      "sourceUrl": "/player/3880/bang"
+    },
+    {
+      "playerId": "3885",
+      "handle": "valyn",
+      "country": "us",
+      "sourceUrl": "/player/3885/valyn"
+    },
+    {
+      "playerId": "39357",
+      "handle": "s0pp",
+      "country": "tr",
+      "sourceUrl": "/player/39357/s0pp"
+    },
+    {
+      "playerId": "39485",
+      "handle": "Scales",
+      "country": "cn",
+      "sourceUrl": "/player/39485/scales"
+    },
+    {
+      "playerId": "39697",
+      "handle": "cb",
+      "country": "cn",
+      "sourceUrl": "/player/39697/cb"
+    },
+    {
+      "playerId": "3977",
+      "handle": "Crws",
+      "country": "th",
+      "sourceUrl": "/player/3977/crws"
+    },
+    {
+      "playerId": "3980",
+      "handle": "Governor",
+      "country": "kr",
+      "sourceUrl": "/player/3980/governor"
+    },
+    {
+      "playerId": "3993",
+      "handle": "jawgemo",
+      "country": "kh",
+      "sourceUrl": "/player/3993/jawgemo"
+    },
+    {
+      "playerId": "4",
+      "handle": "crashies",
+      "country": "us",
+      "sourceUrl": "/player/4/crashies"
+    },
+    {
+      "playerId": "4004",
+      "handle": "zekken",
+      "country": "us",
+      "sourceUrl": "/player/4004/zekken"
+    },
+    {
+      "playerId": "4054",
+      "handle": "Secret",
+      "country": "kr",
+      "sourceUrl": "/player/4054/secret"
+    },
+    {
+      "playerId": "4056",
+      "handle": "Sylvan",
+      "country": "kr",
+      "sourceUrl": "/player/4056/sylvan"
+    },
+    {
+      "playerId": "40845",
+      "handle": "Levius",
+      "country": "cn",
+      "sourceUrl": "/player/40845/levius"
+    },
+    {
+      "playerId": "40935",
+      "handle": "lovers rock",
+      "country": "tr",
+      "sourceUrl": "/player/40935/lovers-rock"
+    },
+    {
+      "playerId": "4095",
+      "handle": "SkRossi",
+      "country": "in",
+      "sourceUrl": "/player/4095/skrossi"
+    },
+    {
+      "playerId": "41224",
+      "handle": "tkzin",
+      "country": "br",
+      "sourceUrl": "/player/41224/tkzin"
+    },
+    {
+      "playerId": "4147",
+      "handle": "Cryocells",
+      "country": "us",
+      "sourceUrl": "/player/4147/cryocells"
+    },
+    {
+      "playerId": "4164",
+      "handle": "s0m",
+      "country": "us",
+      "sourceUrl": "/player/4164/s0m"
+    },
+    {
+      "playerId": "41739",
+      "handle": "slowly",
+      "country": "cn",
+      "sourceUrl": "/player/41739/slowly"
+    },
+    {
+      "playerId": "41774",
+      "handle": "Shion7",
+      "country": "cn",
+      "sourceUrl": "/player/41774/shion7"
+    },
+    {
+      "playerId": "4181",
+      "handle": "Cloud",
+      "country": "ru",
+      "sourceUrl": "/player/4181/cloud"
+    },
+    {
+      "playerId": "424",
+      "handle": "Dep",
+      "country": "jp",
+      "sourceUrl": "/player/424/dep"
+    },
+    {
+      "playerId": "42772",
+      "handle": "Xross",
+      "country": "kr",
+      "sourceUrl": "/player/42772/xross"
+    },
+    {
+      "playerId": "43057",
+      "handle": "DH",
+      "country": "kr",
+      "sourceUrl": "/player/43057/dh"
+    },
+    {
+      "playerId": "4321",
+      "handle": "ceNder",
+      "country": "lt",
+      "sourceUrl": "/player/4321/cender"
+    },
+    {
+      "playerId": "4375",
+      "handle": "SuperBusS",
+      "country": "th",
+      "sourceUrl": "/player/4375/superbuss"
+    },
+    {
+      "playerId": "4376",
+      "handle": "SantaGolf",
+      "country": "th",
+      "sourceUrl": "/player/4376/santagolf"
+    },
+    {
+      "playerId": "4377",
+      "handle": "JohnOlsen",
+      "country": "th",
+      "sourceUrl": "/player/4377/johnolsen"
+    },
+    {
+      "playerId": "4378",
+      "handle": "LAMMYSNAX",
+      "country": "th",
+      "sourceUrl": "/player/4378/lammysnax"
+    },
+    {
+      "playerId": "438",
+      "handle": "Boaster",
+      "country": "gb",
+      "sourceUrl": "/player/438/boaster"
+    },
+    {
+      "playerId": "4382",
+      "handle": "sScary",
+      "country": "th",
+      "sourceUrl": "/player/4382/sscary"
+    },
+    {
+      "playerId": "4428",
+      "handle": "UdoTan",
+      "country": "kr",
+      "sourceUrl": "/player/4428/udotan"
+    },
+    {
+      "playerId": "4462",
+      "handle": "MaKo",
+      "country": "kr",
+      "sourceUrl": "/player/4462/mako"
+    },
+    {
+      "playerId": "448",
+      "handle": "Meddo",
+      "country": "se",
+      "sourceUrl": "/player/448/meddo"
+    },
+    {
+      "playerId": "45",
+      "handle": "SicK",
+      "country": "us",
+      "sourceUrl": "/player/45/sick"
+    },
+    {
+      "playerId": "454",
+      "handle": "dapr",
+      "country": "us",
+      "sourceUrl": "/player/454/dapr"
+    },
+    {
+      "playerId": "4545",
+      "handle": "Sayaplayer",
+      "country": "kr",
+      "sourceUrl": "/player/4545/sayaplayer"
+    },
+    {
+      "playerId": "4558",
+      "handle": "allow",
+      "country": "kr",
+      "sourceUrl": "/player/4558/allow"
+    },
+    {
+      "playerId": "4559",
+      "handle": "Suggest",
+      "country": "kr",
+      "sourceUrl": "/player/4559/suggest"
+    },
+    {
+      "playerId": "4560",
+      "handle": "peri",
+      "country": "kr",
+      "sourceUrl": "/player/4560/peri"
+    },
+    {
+      "playerId": "4562",
+      "handle": "solo",
+      "country": "kr",
+      "sourceUrl": "/player/4562/solo"
+    },
+    {
+      "playerId": "457",
+      "handle": "nAts",
+      "country": "ru",
+      "sourceUrl": "/player/457/nats"
+    },
+    {
+      "playerId": "458",
+      "handle": "Chronicle",
+      "country": "ru",
+      "sourceUrl": "/player/458/chronicle"
+    },
+    {
+      "playerId": "4581",
+      "handle": "JonahP",
+      "country": "ca",
+      "sourceUrl": "/player/4581/jonahp"
+    },
+    {
+      "playerId": "46",
+      "handle": "ShahZaM",
+      "country": "us",
+      "sourceUrl": "/player/46/shahzam"
+    },
+    {
+      "playerId": "4603",
+      "handle": "xms",
+      "country": "fr",
+      "sourceUrl": "/player/4603/xms"
+    },
+    {
+      "playerId": "4663",
+      "handle": "JoXJo",
+      "country": "kr",
+      "sourceUrl": "/player/4663/joxjo"
+    },
+    {
+      "playerId": "46748",
+      "handle": "K1ra",
+      "country": "cn",
+      "sourceUrl": "/player/46748/k1ra"
+    },
+    {
+      "playerId": "4678",
+      "handle": "BeYN",
+      "country": "kr",
+      "sourceUrl": "/player/4678/beyn"
+    },
+    {
+      "playerId": "47",
+      "handle": "zombs",
+      "country": "us",
+      "sourceUrl": "/player/47/zombs"
+    },
+    {
+      "playerId": "4705",
+      "handle": "Flex1n",
+      "country": "cn",
+      "sourceUrl": "/player/4705/flex1n"
+    },
+    {
+      "playerId": "471",
+      "handle": "fiveK",
+      "country": "kr",
+      "sourceUrl": "/player/471/fivek"
+    },
+    {
+      "playerId": "4712",
+      "handle": "heybay",
+      "country": "hk",
+      "sourceUrl": "/player/4712/heybay"
+    },
+    {
+      "playerId": "4720",
+      "handle": "Haodong",
+      "country": "cn",
+      "sourceUrl": "/player/4720/haodong"
+    },
+    {
+      "playerId": "4723",
+      "handle": "YuChEn",
+      "country": "cn",
+      "sourceUrl": "/player/4723/yuchen"
+    },
+    {
+      "playerId": "473",
+      "handle": "zunba",
+      "country": "kr",
+      "sourceUrl": "/player/473/zunba"
+    },
+    {
+      "playerId": "474",
+      "handle": "xeta",
+      "country": "kr",
+      "sourceUrl": "/player/474/xeta"
+    },
+    {
+      "playerId": "4742",
+      "handle": "Smoggy",
+      "country": "cn",
+      "sourceUrl": "/player/4742/smoggy"
+    },
+    {
+      "playerId": "4770",
+      "handle": "FengF",
+      "country": "cn",
+      "sourceUrl": "/player/4770/fengf"
+    },
+    {
+      "playerId": "4774",
+      "handle": "Knight",
+      "country": "cn",
+      "sourceUrl": "/player/4774/knight"
+    },
+    {
+      "playerId": "48025",
+      "handle": "alym",
+      "country": "kg",
+      "sourceUrl": "/player/48025/alym"
+    },
+    {
+      "playerId": "485",
+      "handle": "stax",
+      "country": "kr",
+      "sourceUrl": "/player/485/stax"
+    },
+    {
+      "playerId": "4866",
+      "handle": "Kushy",
+      "country": "id",
+      "sourceUrl": "/player/4866/kushy"
+    },
+    {
+      "playerId": "4871",
+      "handle": "xffero",
+      "country": "id",
+      "sourceUrl": "/player/4871/xffero"
+    },
+    {
+      "playerId": "4874",
+      "handle": "BerserX",
+      "country": "id",
+      "sourceUrl": "/player/4874/berserx"
+    },
+    {
+      "playerId": "488",
+      "handle": "Rb",
+      "country": "kr",
+      "sourceUrl": "/player/488/rb"
+    },
+    {
+      "playerId": "4880",
+      "handle": "nizhaoTZH",
+      "country": "cn",
+      "sourceUrl": "/player/4880/nizhaotzh"
+    },
+    {
+      "playerId": "4885",
+      "handle": "whzy",
+      "country": "cn",
+      "sourceUrl": "/player/4885/whzy"
+    },
+    {
+      "playerId": "48878",
+      "handle": "rushia",
+      "country": "cn",
+      "sourceUrl": "/player/48878/rushia"
+    },
+    {
+      "playerId": "49476",
+      "handle": "zhe",
+      "country": "cn",
+      "sourceUrl": "/player/49476/zhe"
+    },
+    {
+      "playerId": "5022",
+      "handle": "Derke",
+      "country": "fi",
+      "sourceUrl": "/player/5022/derke"
+    },
+    {
+      "playerId": "50813",
+      "handle": "GSR",
+      "country": "rs",
+      "sourceUrl": "/player/50813/gsr"
+    },
+    {
+      "playerId": "51244",
+      "handle": "Jieni7",
+      "country": "cn",
+      "sourceUrl": "/player/51244/jieni7"
+    },
+    {
+      "playerId": "5129",
+      "handle": "ban",
+      "country": "kr",
+      "sourceUrl": "/player/5129/ban"
+    },
+    {
+      "playerId": "5132",
+      "handle": "mada",
+      "country": "ca",
+      "sourceUrl": "/player/5132/mada"
+    },
+    {
+      "playerId": "5244",
+      "handle": "sutecas",
+      "country": "br",
+      "sourceUrl": "/player/5244/sutecas"
+    },
+    {
+      "playerId": "5283",
+      "handle": "Bunny",
+      "country": "kr",
+      "sourceUrl": "/player/5283/bunny"
+    },
+    {
+      "playerId": "52904",
+      "handle": "Akeman",
+      "country": "cn",
+      "sourceUrl": "/player/52904/akeman"
+    },
+    {
+      "playerId": "5351",
+      "handle": "RgLMeister",
+      "country": "br",
+      "sourceUrl": "/player/5351/rglmeister"
+    },
+    {
+      "playerId": "5395",
+      "handle": "cortezia",
+      "country": "br",
+      "sourceUrl": "/player/5395/cortezia"
+    },
+    {
+      "playerId": "55038",
+      "handle": "Au1",
+      "country": "cn",
+      "sourceUrl": "/player/55038/au1"
+    },
+    {
+      "playerId": "55085",
+      "handle": "Erv",
+      "country": "cn",
+      "sourceUrl": "/player/55085/erv"
+    },
+    {
+      "playerId": "5550",
+      "handle": "grubinho",
+      "country": "pl",
+      "sourceUrl": "/player/5550/grubinho"
+    },
+    {
+      "playerId": "5554",
+      "handle": "PROFEK",
+      "country": "pl",
+      "sourceUrl": "/player/5554/profek"
+    },
+    {
+      "playerId": "556",
+      "handle": "SouhcNi",
+      "country": "tr",
+      "sourceUrl": "/player/556/souhcni"
+    },
+    {
+      "playerId": "5565",
+      "handle": "Rosé",
+      "country": "tr",
+      "sourceUrl": "/player/5565/ros"
+    },
+    {
+      "playerId": "5568",
+      "handle": "sociablEE",
+      "country": "tr",
+      "sourceUrl": "/player/5568/sociablee"
+    },
+    {
+      "playerId": "562",
+      "handle": "zeek",
+      "country": "pl",
+      "sourceUrl": "/player/562/zeek"
+    },
+    {
+      "playerId": "565",
+      "handle": "starxo",
+      "country": "pl",
+      "sourceUrl": "/player/565/starxo"
+    },
+    {
+      "playerId": "5654",
+      "handle": "Avez",
+      "country": "eg",
+      "sourceUrl": "/player/5654/avez"
+    },
+    {
+      "playerId": "568",
+      "handle": "Turko",
+      "country": "tr",
+      "sourceUrl": "/player/568/turko"
+    },
+    {
+      "playerId": "569",
+      "handle": "pAura",
+      "country": "tr",
+      "sourceUrl": "/player/569/paura"
+    },
+    {
+      "playerId": "57",
+      "handle": "Hiko",
+      "country": "us",
+      "sourceUrl": "/player/57/hiko"
+    },
+    {
+      "playerId": "573",
+      "handle": "cNed",
+      "country": "tr",
+      "sourceUrl": "/player/573/cned"
+    },
+    {
+      "playerId": "5796",
+      "handle": "Kr1stal",
+      "country": "ru",
+      "sourceUrl": "/player/5796/kr1stal"
+    },
+    {
+      "playerId": "58959",
+      "handle": "iamgrq",
+      "country": "cn",
+      "sourceUrl": "/player/58959/iamgrq"
+    },
+    {
+      "playerId": "5957",
+      "handle": "artzin",
+      "country": "br",
+      "sourceUrl": "/player/5957/artzin"
+    },
+    {
+      "playerId": "601",
+      "handle": "Asuna",
+      "country": "us",
+      "sourceUrl": "/player/601/asuna"
+    },
+    {
+      "playerId": "6022",
+      "handle": "yosemite",
+      "country": "cn",
+      "sourceUrl": "/player/6022/yosemite"
+    },
+    {
+      "playerId": "604",
+      "handle": "Boostio",
+      "country": "us",
+      "sourceUrl": "/player/604/boostio"
+    },
+    {
+      "playerId": "612",
+      "handle": "mitch",
+      "country": "us",
+      "sourceUrl": "/player/612/mitch"
+    },
+    {
+      "playerId": "619",
+      "handle": "C0M",
+      "country": "us",
+      "sourceUrl": "/player/619/c0m"
+    },
+    {
+      "playerId": "6193",
+      "handle": "cauanzin",
+      "country": "br",
+      "sourceUrl": "/player/6193/cauanzin"
+    },
+    {
+      "playerId": "64969",
+      "handle": "crownfisher",
+      "country": "cn",
+      "sourceUrl": "/player/64969/crownfisher"
+    },
+    {
+      "playerId": "65",
+      "handle": "effys",
+      "country": "ca",
+      "sourceUrl": "/player/65/effys"
+    },
+    {
+      "playerId": "651",
+      "handle": "frz",
+      "country": "br",
+      "sourceUrl": "/player/651/frz"
+    },
+    {
+      "playerId": "6510",
+      "handle": "AtaKaptan",
+      "country": "tr",
+      "sourceUrl": "/player/6510/atakaptan"
+    },
+    {
+      "playerId": "6582",
+      "handle": "neT",
+      "country": "us",
+      "sourceUrl": "/player/6582/net"
+    },
+    {
+      "playerId": "659",
+      "handle": "Sacy",
+      "country": "br",
+      "sourceUrl": "/player/659/sacy"
+    },
+    {
+      "playerId": "6668",
+      "handle": "SugarZ3ro",
+      "country": "jp",
+      "sourceUrl": "/player/6668/sugarz3ro"
+    },
+    {
+      "playerId": "6674",
+      "handle": "makiba",
+      "country": "jp",
+      "sourceUrl": "/player/6674/makiba"
+    },
+    {
+      "playerId": "6700",
+      "handle": "Anthem",
+      "country": "jp",
+      "sourceUrl": "/player/6700/anthem"
+    },
+    {
+      "playerId": "6723",
+      "handle": "foxz",
+      "country": "th",
+      "sourceUrl": "/player/6723/foxz"
+    },
+    {
+      "playerId": "681",
+      "handle": "xand",
+      "country": "br",
+      "sourceUrl": "/player/681/xand"
+    },
+    {
+      "playerId": "683",
+      "handle": "pANcada",
+      "country": "br",
+      "sourceUrl": "/player/683/pancada"
+    },
+    {
+      "playerId": "687",
+      "handle": "zepher",
+      "country": "jp",
+      "sourceUrl": "/player/687/zepher"
+    },
+    {
+      "playerId": "6959",
+      "handle": "Flickless",
+      "country": "be",
+      "sourceUrl": "/player/6959/flickless"
+    },
+    {
+      "playerId": "7045",
+      "handle": "fl1pzjder",
+      "country": "id",
+      "sourceUrl": "/player/7045/fl1pzjder"
+    },
+    {
+      "playerId": "7135",
+      "handle": "zjc",
+      "country": "cn",
+      "sourceUrl": "/player/7135/zjc"
+    },
+    {
+      "playerId": "725",
+      "handle": "nzr",
+      "country": "ar",
+      "sourceUrl": "/player/725/nzr"
+    },
+    {
+      "playerId": "727",
+      "handle": "saadhak",
+      "country": "ar",
+      "sourceUrl": "/player/727/saadhak"
+    },
+    {
+      "playerId": "729",
+      "handle": "Zellsis",
+      "country": "us",
+      "sourceUrl": "/player/729/zellsis"
+    },
+    {
+      "playerId": "733",
+      "handle": "stellar",
+      "country": "us",
+      "sourceUrl": "/player/733/stellar"
+    },
+    {
+      "playerId": "7378",
+      "handle": "Jinggg",
+      "country": "sg",
+      "sourceUrl": "/player/7378/jinggg"
+    },
+    {
+      "playerId": "7403",
+      "handle": "EJAY",
+      "country": "ph",
+      "sourceUrl": "/player/7403/ejay"
+    },
+    {
+      "playerId": "7405",
+      "handle": "Jremy",
+      "country": "ph",
+      "sourceUrl": "/player/7405/jremy"
+    },
+    {
+      "playerId": "7426",
+      "handle": "Juicy",
+      "country": "sg",
+      "sourceUrl": "/player/7426/juicy"
+    },
+    {
+      "playerId": "754",
+      "handle": "nerve",
+      "country": "us",
+      "sourceUrl": "/player/754/nerve"
+    },
+    {
+      "playerId": "7603",
+      "handle": "Mazino",
+      "country": "cl",
+      "sourceUrl": "/player/7603/mazino"
+    },
+    {
+      "playerId": "771",
+      "handle": "k1Ng",
+      "country": "kr",
+      "sourceUrl": "/player/771/k1ng"
+    },
+    {
+      "playerId": "7716",
+      "handle": "penny",
+      "country": "ca",
+      "sourceUrl": "/player/7716/penny"
+    },
+    {
+      "playerId": "7718",
+      "handle": "xnfri",
+      "country": "jp",
+      "sourceUrl": "/player/7718/xnfri"
+    },
+    {
+      "playerId": "772",
+      "handle": "Zest",
+      "country": "kr",
+      "sourceUrl": "/player/772/zest"
+    },
+    {
+      "playerId": "773",
+      "handle": "Lakia",
+      "country": "kr",
+      "sourceUrl": "/player/773/lakia"
+    },
+    {
+      "playerId": "7754",
+      "handle": "xavi8k",
+      "country": "ph",
+      "sourceUrl": "/player/7754/xavi8k"
+    },
+    {
+      "playerId": "7764",
+      "handle": "Lmemore",
+      "country": "id",
+      "sourceUrl": "/player/7764/lmemore"
+    },
+    {
+      "playerId": "783",
+      "handle": "murizzz",
+      "country": "br",
+      "sourceUrl": "/player/783/murizzz"
+    },
+    {
+      "playerId": "7841",
+      "handle": "TvirusLuke",
+      "country": "tw",
+      "sourceUrl": "/player/7841/tvirusluke"
+    },
+    {
+      "playerId": "7849",
+      "handle": "SiuFatBB",
+      "country": "hk",
+      "sourceUrl": "/player/7849/siufatbb"
+    },
+    {
+      "playerId": "7857",
+      "handle": "BerLIN",
+      "country": "tw",
+      "sourceUrl": "/player/7857/berlin"
+    },
+    {
+      "playerId": "7870",
+      "handle": "vanity",
+      "country": "us",
+      "sourceUrl": "/player/7870/vanity"
+    },
+    {
+      "playerId": "7871",
+      "handle": "Xeppaa",
+      "country": "us",
+      "sourceUrl": "/player/7871/xeppaa"
+    },
+    {
+      "playerId": "7873",
+      "handle": "leaf",
+      "country": "us",
+      "sourceUrl": "/player/7873/leaf"
+    },
+    {
+      "playerId": "7888",
+      "handle": "BlackWiz",
+      "country": "jp",
+      "sourceUrl": "/player/7888/blackwiz"
+    },
+    {
+      "playerId": "796",
+      "handle": "eeiu",
+      "country": "ca",
+      "sourceUrl": "/player/796/eeiu"
+    },
+    {
+      "playerId": "804",
+      "handle": "BuZz",
+      "country": "kr",
+      "sourceUrl": "/player/804/buzz"
+    },
+    {
+      "playerId": "8041",
+      "handle": "Brave",
+      "country": "tr",
+      "sourceUrl": "/player/8041/brave"
+    },
+    {
+      "playerId": "8044",
+      "handle": "MrFaliN",
+      "country": "tr",
+      "sourceUrl": "/player/8044/mrfalin"
+    },
+    {
+      "playerId": "805",
+      "handle": "Bazzi",
+      "country": "kr",
+      "sourceUrl": "/player/805/bazzi"
+    },
+    {
+      "playerId": "817",
+      "handle": "FiNESSE",
+      "country": "ca",
+      "sourceUrl": "/player/817/finesse"
+    },
+    {
+      "playerId": "824",
+      "handle": "AYRIN",
+      "country": "ca",
+      "sourceUrl": "/player/824/ayrin"
+    },
+    {
+      "playerId": "8286",
+      "handle": "GLYPH",
+      "country": "ph",
+      "sourceUrl": "/player/8286/glyph"
+    },
+    {
+      "playerId": "8369",
+      "handle": "yetujey",
+      "country": "tr",
+      "sourceUrl": "/player/8369/yetujey"
+    },
+    {
+      "playerId": "8402",
+      "handle": "icy",
+      "country": "us",
+      "sourceUrl": "/player/8402/icy"
+    },
+    {
+      "playerId": "8447",
+      "handle": "Less",
+      "country": "br",
+      "sourceUrl": "/player/8447/less"
+    },
+    {
+      "playerId": "8480",
+      "handle": "aspas",
+      "country": "br",
+      "sourceUrl": "/player/8480/aspas"
+    },
+    {
+      "playerId": "8497",
+      "handle": "Monyet",
+      "country": "id",
+      "sourceUrl": "/player/8497/monyet"
+    },
+    {
+      "playerId": "8504",
+      "handle": "invy",
+      "country": "ph",
+      "sourceUrl": "/player/8504/invy"
+    },
+    {
+      "playerId": "8549",
+      "handle": "kiNgg",
+      "country": "cl",
+      "sourceUrl": "/player/8549/kingg"
+    },
+    {
+      "playerId": "864",
+      "handle": "BcJ",
+      "country": "us",
+      "sourceUrl": "/player/864/bcj"
+    },
+    {
+      "playerId": "8673",
+      "handle": "heat",
+      "country": "br",
+      "sourceUrl": "/player/8673/heat"
+    },
+    {
+      "playerId": "872",
+      "handle": "Autumn",
+      "country": "au",
+      "sourceUrl": "/player/872/autumn"
+    },
+    {
+      "playerId": "881",
+      "handle": "yay",
+      "country": "us",
+      "sourceUrl": "/player/881/yay"
+    },
+    {
+      "playerId": "882",
+      "handle": "dephh",
+      "country": "gb",
+      "sourceUrl": "/player/882/dephh"
+    },
+    {
+      "playerId": "8872",
+      "handle": "mazin",
+      "country": "br",
+      "sourceUrl": "/player/8872/mazin"
+    },
+    {
+      "playerId": "8873",
+      "handle": "dgzin",
+      "country": "br",
+      "sourceUrl": "/player/8873/dgzin"
+    },
+    {
+      "playerId": "9",
+      "handle": "TenZ",
+      "country": "ca",
+      "sourceUrl": "/player/9/tenz"
+    },
+    {
+      "playerId": "9196",
+      "handle": "t3xture",
+      "country": "kr",
+      "sourceUrl": "/player/9196/t3xture"
+    },
+    {
+      "playerId": "92",
+      "handle": "ScreaM",
+      "country": "be",
+      "sourceUrl": "/player/92/scream"
+    },
+    {
+      "playerId": "93",
+      "handle": "Mixwell",
+      "country": "es",
+      "sourceUrl": "/player/93/mixwell"
+    },
+    {
+      "playerId": "937",
+      "handle": "JhoW",
+      "country": "br",
+      "sourceUrl": "/player/937/jhow"
+    },
+    {
+      "playerId": "938",
+      "handle": "Jonn",
+      "country": "br",
+      "sourceUrl": "/player/938/jonn"
+    },
+    {
+      "playerId": "939",
+      "handle": "mwzera",
+      "country": "br",
+      "sourceUrl": "/player/939/mwzera"
+    },
+    {
+      "playerId": "950",
+      "handle": "fra",
+      "country": "br",
+      "sourceUrl": "/player/950/fra"
+    },
+    {
+      "playerId": "9554",
+      "handle": "kaajak",
+      "country": "pl",
+      "sourceUrl": "/player/9554/kaajak"
+    },
+    {
+      "playerId": "9558",
+      "handle": "Wolfen",
+      "country": "bg",
+      "sourceUrl": "/player/9558/wolfen"
+    },
+    {
+      "playerId": "97",
+      "handle": "Kryptix",
+      "country": "gb",
+      "sourceUrl": "/player/97/kryptix"
+    },
+    {
+      "playerId": "9735",
+      "handle": "2GE",
+      "country": "ph",
+      "sourceUrl": "/player/9735/2ge"
+    },
+    {
+      "playerId": "9747",
+      "handle": "Emman",
+      "country": "ph",
+      "sourceUrl": "/player/9747/emman"
+    },
+    {
+      "playerId": "9780",
+      "handle": "Jamppi",
+      "country": "fi",
+      "sourceUrl": "/player/9780/jamppi"
+    },
+    {
+      "playerId": "98",
+      "handle": "ardiis",
+      "country": "lv",
+      "sourceUrl": "/player/98/ardiis"
+    },
+    {
+      "playerId": "9800",
+      "handle": "mindfreak",
+      "country": "id",
+      "sourceUrl": "/player/9800/mindfreak"
+    },
+    {
+      "playerId": "9801",
+      "handle": "f0rsakeN",
+      "country": "id",
+      "sourceUrl": "/player/9801/f0rsaken"
+    },
+    {
+      "playerId": "9802",
+      "handle": "Benkai",
+      "country": "sg",
+      "sourceUrl": "/player/9802/benkai"
+    },
+    {
+      "playerId": "9803",
+      "handle": "d4v41",
+      "country": "my",
+      "sourceUrl": "/player/9803/d4v41"
+    },
+    {
+      "playerId": "9810",
+      "handle": "Alfajer",
+      "country": "tr",
+      "sourceUrl": "/player/9810/alfajer"
+    },
+    {
+      "playerId": "983",
+      "handle": "TS",
+      "country": "kr",
+      "sourceUrl": "/player/983/ts"
+    },
+    {
+      "playerId": "985",
+      "handle": "Efina",
+      "country": "kr",
+      "sourceUrl": "/player/985/efina"
+    },
+    {
+      "playerId": "99",
+      "handle": "L1NK",
+      "country": "gb",
+      "sourceUrl": "/player/99/l1nk"
+    },
+    {
+      "playerId": "992",
+      "handle": "rion",
+      "country": "jp",
+      "sourceUrl": "/player/992/rion"
+    },
+    {
+      "playerId": "993",
+      "handle": "Medusa",
+      "country": "kr",
+      "sourceUrl": "/player/993/medusa"
+    },
+    {
+      "playerId": "999",
+      "handle": "Laz",
+      "country": "jp",
+      "sourceUrl": "/player/999/laz"
+    }
+  ]
+}

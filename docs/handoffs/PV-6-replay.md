@@ -239,3 +239,31 @@ cd apps/replay-viewer && npm run build && npm run screenshot
 - 필수: ① 정보전 Match Day(아군 관측만·고스트·Belief 히트맵·콜아웃 피드), ② 경제·궁극기(라운드 타임라인·크레딧 그래프·바이 플래너·궁극기 트래커·세이브 알림), ③ 코치 노트(trace 자연어 카드)+Dev 메뉴 Debugger.
 - 골격: Veto, Agent Select(ascent-comps), Playbook 빌더, Squad/Player Profile(1–20+불확실성+null), Opponent Report.
 - 실명: VCT 프로 핸들·팀 실명(PV-2 ratings/team-profiles). `.vrf` 샘플은 익명 유지. 앱 정보에 "출시 전 내부 빌드" 문구.
+
+---
+
+# PV-6 5차 작업 — Manager-game UI (진행 중, 2026-11-18)
+
+사용자 지시: FM/OOTP 장르 관례만 차용(외형 복제 금지), VALORANT·PROJECT V 특성으로 고도화, **실명 사용**.
+동결 지시는 취소됨 → 실제 시뮬 돌리는 초안이 목표. 통합은 PV-3 `claude/pv-integration`(pv-replay는 squash)에서.
+
+## 완료 (빌드·tsc·E2E 통과)
+- **매니저 셸:** 좌측 내비(MATCH/TEAM/CLUB/DEV 그룹) + 상단 컨텍스트 바(팀·시즌·다음 경기·Continue) + 메인 + 우측 상세 패널.
+- **Match Day:** 공유 `ReplayViewer` 재사용, Run match(stub·별도 프로세스 IPC) → SIMULATED replay, 이벤트 피드(텍스트 중계), 경제/궁극기 패널(stub 표시), **코치 노트**(실제 PV-3 trace의 selected+rationale+제외 수를 자연어 카드로), 라운드 타임라인.
+- **Squad:** 402 VCT 실명 선수 정렬·필터 테이블 + 상세(그룹별 1–20 능력치, 불확실성 whisker, **null→"est. N/A"**). PV-2 ratings.
+- **Opponent Report:** 70 팀 실명, 경제 성향·맵 풀, side/position은 "데이터 없음". PV-2 team-profiles.
+- **Tactics:** Ascent 공/수 전술 + 유틸 요구·route·risks·counter, **provenance 태그(expert-knowledge-unsourced 표시)**. PV-1 tactics.
+- **Agent Select:** 실측 Ascent topComps(WR+CI)·role templates·역할 경고. PV-1 comps.
+- **Dev → Decision Debugger**(기존), **About**(실명 사용 경고 디스클레이머), 나머지(Veto/Inbox/Schedule/Finance/Transfers/Training/Scouting)는 "준비 중" 플레이스홀더.
+- **실명:** VCT 프로/팀 실명(PV-2). `.vrf` 샘플은 익명 유지. About에 "출시 전 내부 빌드" 문구.
+- **검증:** Playwright `_electron` E2E — 셸·Match Day(stub 경기 실행→SIMULATED)·Squad·Debugger 스크린샷 + 제외 사유/SIMULATED 단언. 단위 6, 엔진 11.
+
+## TODO (통합 브랜치에서)
+- **SimulationRunner 스텁 → 실제 Match Runner**(PV-3 `pnpm sim:match`): Match Day를 실제 Replay/EventLog/trace로 구동.
+- **Match Day 고도화:** 안개 뷰(아군 관측만·고스트), **Belief 히트맵**(PV-3 Belief State), 스코어보드, 실제 경제 타임라인, 궁극기 트래커(실데이터).
+- **팀 선택 화면:** 실제 팀 2개 + 시드 → 경기 시작.
+- Veto/Agent Select 실행 연결, Playbook 빌더(TeamDecisionPolicy 입력), 실제 시뮬 1경기 E2E.
+- 데이터 fixture는 `apps/desktop/src/data/`(복사본, 출처 README). 통합 시 원본 경로로 연결 검토.
+
+## 데이터 출처 (fixture)
+PV-2 `datasets/derived/ratings`·`team-profiles`, PV-1 `datasets/derived/tactics`·`comps`. 전부 **합성/추정**, 실명은 공개 VCT 프로/팀 한정·출시 전 재검토 필요(src/data/README.md).
