@@ -1356,27 +1356,39 @@
    "deployTimeMs": null,
    "rangeMeters": null,
    "radiusMeters": null,
-   "durationMs": null,
-   "cooldownMs": null,
+   "durationMs": 14250.0,
+   "cooldownMs": 35000.0,
    "killRecharge": null,
    "revealDurationMs": null,
    "damage": null,
    "destructible": null,
    "destructibleHp": null,
-   "blocksVision": null,
+   "blocksVision": true,
    "affectsAllies": null,
    "makesSound": true,
    "defaultKeybind": "E"
   },
   "fieldSources": {
+   "durationMs": {
+    "raw": "14.25 s (Nebula)",
+    "confirmed": "Astra agent page Stats"
+   },
+   "cooldownMs": {
+    "raw": "35 s (Nebula)",
+    "confirmed": "Astra agent page Stats"
+   },
    "defaultKeybind": {
-    "raw": "slot Ability2->E",
-    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+    "raw": "E (PC)",
+    "confirmed": "Astra agent page + verified slot map"
+   },
+   "blocksVision": {
+    "raw": "definitional (smoke occludes sightlines)",
+    "confirmed": "definition"
    }
   },
-  "sourcePage": null,
-  "verified": false,
-  "notes": "official wiki page not fetched (404/subpage); effectTypes from wiki Functions tags only"
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Astra",
+  "verified": true,
+  "notes": "Sourced from the Astra agent page (dedicated Nebula/Dissipate page is 404). Nebula is a smoke: duration 14.25s, cooldown 35s. radius not stated on the inline table (null)."
  },
  {
   "abilityId": "astra:Grenade",

@@ -160,6 +160,38 @@ def test_ability_facts_have_keybinds():
             assert v.get("defaultKeybind") == KEY[slot], k
 
 
+def test_ascent_tactics_valid_and_grounded():
+    """Tactics validate against the schema and only reference real navgraph zones/edges."""
+    import jsonschema
+    tdir = REPO / "datasets" / "derived" / "tactics"
+    data = json.loads((tdir / "ascent-tactics.json").read_text())
+    schema = json.loads((REPO / "datasets" / "catalog" / "schema" / "tactic.schema.json").read_text())
+    vocab = json.loads((tdir / "ascent-zone-vocabulary.json").read_text())
+    zone_ids = set(vocab["zoneIds"])
+    edge_set = {frozenset(e) for e in vocab["edges"]}
+    effect_vocab = set(data["effectTypeVocabulary"])
+    v = jsonschema.Draft7Validator(schema)
+    tactics = data["attack"] + data["defense"]
+    assert len(tactics) >= 15
+    for t in tactics:
+        errs = [e.message for e in v.iter_errors(t)]
+        assert not errs, (t["id"], errs)
+        # every referenced zone exists in the navgraph
+        refs = list(t.get("zones", []))
+        for u in t.get("utilityRequirements", []):
+            assert u["effectType"] in effect_vocab, (t["id"], u["effectType"])
+            refs += u.get("targetZones", [])
+        for z in refs:
+            assert z in zone_ids, (t["id"], z)
+        # every route edge exists in the navgraph (either direction)
+        for a, b in t.get("route", []):
+            assert frozenset((a, b)) in edge_set, (t["id"], a, b)
+        # provenance honesty: non-sourced items carry the explicit tag
+        prov = t["provenance"]
+        if prov["type"] in ("official", "reputable-analysis"):
+            assert prov.get("source", "").startswith("http")
+
+
 def test_ascent_comps_committed_valid():
     """The committed derived comp stats validate against their schema."""
     comps_dir = REPO / "datasets" / "derived" / "comps"

@@ -309,4 +309,52 @@ VCT Reference: free incl. commercial, 출처표기 권장(집계 derivative 커�
 - `pytest tools/catalog-builder -q`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 6차: Ascent 전술 지식 KB)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research`
+
+## 1. 작업 목표
+PV-3 IGL/Action Generator용 조합형 Ascent 전술 primitives(공격·수비·유틸·조합 매핑)를 PV-4 구역 ID·내 effectTypes·실측 조합으로 구축(README §15–18, §24; Handoff §13–14).
+
+## 2. 완료한 작업 (실제 수행·검증)
+- **전술 KB:** 공격 8 + 수비 9 + 조합 매핑 5. 각 요소에 utilityRequirements(effectType), minPlayers, risks, counterSetup, zones/route. → `datasets/derived/tactics/ascent-tactics.json`(+ `tactic.schema.json`).
+- **구역 접지:** 모든 zones·route를 **PV-4 navgraph(22 zones/32 edges)** 어휘로 검증(미러 파일 `ascent-zone-vocabulary.json`, 출처 표기). 커뮤니티 콜아웃 없는 건 최근접 zone+설명(새 좌표 미생성).
+- **출처 정직성:** 전술 내용은 `expert-knowledge-unsourced` 명시, 빈도 수치 미사용, vlr.gg 미수집. 구역/경로는 navgraph-derived, 유틸은 ability-effect 어휘.
+- **PV-3 정합:** action-schema(ActionCategory/InfeasibilityReason) 매핑표 → `ASCENT_TACTICS.md §4`.
+- **Astra Nebula 보강:** Astra 공식 페이지에서 smoke/duration 14.25s/cooldown 35s 소싱 → **ability-effects 120/120**.
+- **테스트:** `pytest -q` **16 passed**(전술 스키마 + zone/edge/effectType 실재 검증 포함).
+
+## 3. 변경한 파일
+- `datasets/catalog/schema/tactic.schema.json`(신규)
+- `datasets/derived/tactics/`(신규 소유): ascent-tactics.json, ascent-zone-vocabulary.json(PV-4 미러)
+- `tools/catalog-builder/`: build_ascent_tactics.py(신규), data/ability_effects.json(Astra Nebula), tests
+- `docs/research/ASCENT_TACTICS.md`(신규), `docs/research/CATALOG.md`(§1·§5), handoff
+
+## 4. 데이터 출처
+PV-4 navgraph(구역/경로), 내 ability-effects(유틸 어휘), ascent-comps.json(조합), 전술 내용은 expert-unsourced. Astra Nebula: 공식 위키 Astra 페이지.
+
+## 5~7. 실행/검증/결과
+`python tools/catalog-builder/build_ascent_tactics.py`(zone/route 검증) → `pytest -q`(16 passed). 전술 17종 전부 스키마+navgraph 검증 통과.
+
+## 8. 현재 미완료
+- 전술 요소의 공식/분석 URL 출처 보강(현재 expert-unsourced). route별 시간은 PV-4 navgraph 런타임 조회.
+
+## 9. 알려진 문제
+- 전술 지식은 단일 인용 URL이 없어 expert-unsourced로 표기(실데이터 검증 전 가중치 보정 대상).
+
+## 10. 설계 결정
+- 고정 목록이 아닌 primitives+전제조건(§29). 구역/경로는 PV-4 navgraph로 검증(테스트 강제). 콜아웃 공백은 최근접 zone+설명.
+
+## 11. 라이선스
+전술 지식은 일반 지식(출처 없음 표기). 구역은 PV-4 파생(미러, 출처표기). 위키 Astra 페이지는 Riot 소유 사실.
+
+## 12. 다음 권장 작업
+1. 전술 요소에 공식/분석 출처 보강. 2. PV-3가 compMapping·utilityRequirements를 Action Generator precondition으로 연결. 3. route 시간은 PV-4 edge로 계산.
+
+## 13. 작업 재개 지점
+- `docs/research/ASCENT_TACTICS.md` → `datasets/derived/tactics/ascent-tactics.json` / `build_ascent_tactics.py`.
+- `pytest tools/catalog-builder -q`.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**

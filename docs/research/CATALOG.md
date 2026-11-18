@@ -12,8 +12,8 @@ pytest tools/catalog-builder -q                         # 단위 테스트 + 스
 ```
 **실행 결과(2026-11-18, 5차 반영):** pytest **15 passed**. 빌더 산출/검증:
 weapons **21** · agents **30** · abilities **130** · equipment **4** · ability-effects **120** — 전부 JSON Schema 통과.
-ability 수치 소싱 120/130, equipment 4/4, **ability-effects 119/120(전 30요원)**, defaultKeybind 120/120.
-추가: 실제 Ascent 조합 통계(`datasets/derived/comps/ascent-comps.json`, VCT Reference DuckDB), GRID 접근 조사(`docs/research/GRID_ACCESS.md`).
+ability 수치 소싱 120/130, equipment 4/4, **ability-effects 120/120(전 30요원)**, defaultKeybind 120/120.
+추가: 실제 Ascent 조합 통계(`datasets/derived/comps/ascent-comps.json`, VCT Reference DuckDB), GRID 접근 조사(`docs/research/GRID_ACCESS.md`), Ascent 전술 KB(`datasets/derived/tactics/ascent-tactics.json`, navgraph 검증).
 
 ## 2. 규칙
 - 필드명 **camelCase**, 시간 **ms**, 거리 **m**.
@@ -175,7 +175,9 @@ PV-4 vision은 **존-레벨 smokedPairs**(기하 반경 아님)로 연막을 처
 - [x] Ability Effect Spec 전체 30요원 확장(119/120 소싱) — 5차
 - [x] 실제 Ascent 조합 통계(VCT Reference DuckDB) — 5차(§3.10)
 - [x] GRID 접근 조사 — 5차(`docs/research/GRID_ACCESS.md`)
-- [ ] Astra Nebula(서브페이지 404) 효과 재소싱 — Astra 페이지 본문에서 추출 시도
+- [x] Astra Nebula 효과 재소싱(Astra 페이지에서 smoke/14.25s/35s) — 6차, **effects 120/120**
+- [x] Ascent 전술 지식 KB(attack 8/defense 9/comp 5, navgraph 검증) — 6차(`docs/research/ASCENT_TACTICS.md`)
+- [ ] 전술 요소 공식/분석 URL 출처 보강(현재 expert-unsourced)
 - [ ] 일부 스킬 damage/affectsAllies 등 공식 페이지 미명시 값 null
 - [ ] (권고) PV-3가 ultimate.ts 궁극 포인트를 카탈로그로 교체(§3.6 불일치 4건)
 - [ ] 패치 갱신 시 `--patch`로 재빌드, 과거 패치 보존
