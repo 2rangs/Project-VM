@@ -410,3 +410,57 @@ dataset 검증    : 29/29 files valid, 189 records
 1. **(PV-4)** combat_opening_duel을 CombatCalibration 보정 루프의 목표치로 사용.
 2. **(PV-sim/통합)** 실제 라운드 EventLog 묶음을 `pv-validate-sim`에 투입해 회귀 검증 연결.
 3. **(Layer B 확보 시)** 인원우위·트레이드·첫킬 승률 실측 기준선 추가 → 하네스 판정 지표로 승격.
+
+---
+
+# PROJECT V — TASK HANDOFF · 5차 (Pre-round Round Value Model)
+
+**추가 작업일:** 2026-11-18 · **범위:** README §26.3–26.4, DECISION-005(선택적 고도화).
+**추가 소유:** `tools/ml/`, `models/round-value/`, `docs/research/ROUND_VALUE_MODEL.md`.
+
+## 5-1. 목표
+라운드 시작 정보만으로 공격팀 라운드 승률을 추정하는 **보조 모델**. 엔진은 이 모델 없이도 동작(휴리스틱/priors 폴백).
+
+## 5-2. 완료한 작업
+- **피처 파이프라인** `tools/ml/round-value/features.py`: 17개 pre-round 피처(사이드 암시, 맵, 라운드/하프,
+  양팀 점수·차, 시작 loadout/bank·차, 로스 스트릭, 직전 결과, buy tier 코드). **누출 금지 구조**(경기 내
+  상태는 과거 라운드에서만 누적, 결과는 피처 방출 후 반영) + **누출 테스트**(미래 라운드 결과를 바꿔도
+  이전 라운드 피처 불변).
+- **학습/평가** `train.py`: 시간 holdout(최근 20% 경기) + 경기단위 GroupKFold CV. priors 룩업·로지스틱·
+  LightGBM. log loss/Brier/AUC/ECE. ONNX export + 파이썬 파리티.
+- **모델 산출물** `models/round-value/`: `round_value_lgbm.onnx`(opset12), `metrics.json`,
+  `parity_samples.json`, `model_card.md`(빌드일·sha·피처·지표·한계·라이선스).
+- **TS 추론 seam** `packages/economy-engine/src/round-value-model.ts`: `createRoundValueModel({modelPath?})`
+  → `predict(features)`. `onnxruntime-node`(**optional dependency**, 동적 import) 있으면 ONNX, 없거나
+  모델 파일 없으면 **priors 룩업 폴백**. 절대 throw 안 함. Node↔ONNX 파리티 테스트 포함.
+- **평가 리포트** `docs/research/ROUND_VALUE_MODEL.md`.
+
+## 5-3. 핵심 결과 (정직한 음성 결과)
+국제전 23,989 라운드, 시간 holdout(4,777) 기준:
+| 모델 | log loss | Brier | AUC | 정확도 | ECE |
+|---|---|---|---|---|---|
+| priors 룩업 | 0.6317 | 0.2221 | 0.672 | 61.4% | **0.012** |
+| 로지스틱 | **0.6234** | **0.2179** | **0.693** | **62.2%** | 0.020 |
+| LightGBM | 0.6318 | 0.2220 | 0.680 | 61.8% | 0.032 |
+
+→ **LightGBM은 베이스라인을 못 이김.** pre-round 정보는 약한 예측력(정확도 ~62%, AUC ~0.69; 공개
+round-start 모델 ~61%와 일치). **DECISION-005대로 모델 미채택이 권고**: economy-engine의 priors 룩업을
+그대로 사용(성능 사실상 동일, 모델 파일·런타임 불필요). ONNX/TS seam은 통합·재학습용으로만 유지.
+
+## 5-4. 테스트 결과 (실제 실행)
+```
+tools/ml/round-value : 9 passed (누출 테스트·split·metrics 포함)
+economy-engine       : 20 passed (ONNX↔Python 파리티 포함; onnxruntime-node는 --onnxruntime-node-install-cuda=skip로 설치)
+파이썬↔ONNX 파리티    : maxAbsDiff 1.3e-7
+```
+
+## 5-5. 주의 / 미완료
+- pre-round 전용 → 약한 예측력(의도된 한계). 통합 시 priors 폴백을 기본으로 둘 것.
+- 2021–2026 패치 pooled. season/patch 컬럼 보존 → era별 재학습 가능.
+- 위치/컴포지션 피처 없음(VCT Reference 한계). Layer B 확보 후 재평가해야 비선형 모델이 의미 가질 수 있음.
+- `onnxruntime-node`는 optionalDependency(네이티브, CUDA EP 스킵 필요). 미설치 시 폴백 자동.
+
+## 5-6. 다음 권장
+1. **(PV-3/economy)** RoundValueModel을 Future Round Value 입력으로 연결하되 **priors 폴백을 기본**으로.
+2. **(Layer B 확보 후)** 위치·컴포지션 피처 추가해 재평가.
+3. **(선택)** era별 모델.

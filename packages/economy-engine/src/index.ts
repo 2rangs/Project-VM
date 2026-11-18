@@ -26,6 +26,7 @@ export * from "./ultimate-economy.js";
 export * from "./buy-strategy.js";
 export * from "./save-decision.js";
 export * from "./exit-kill.js";
+export * from "./round-value-model.js";
 
 import { buyOptions, type BuyContext } from "./buy-strategy.js";
 import { saveOptions, type SaveContext } from "./save-decision.js";

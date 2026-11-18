@@ -22,6 +22,12 @@ const opts = evaluateEconomy({
 npm install && npm run typecheck && npm test && npm run build
 ```
 
+**Optional round-value model.** `createRoundValueModel({ modelPath? })` → `predict(features)` returns
+the attacker round-win probability. It loads `models/round-value/round_value_lgbm.onnx` via the
+**optional** `onnxruntime-node` dependency when present, else falls back to the economy-matchup priors
+lookup (which, per `docs/research/ROUND_VALUE_MODEL.md`, is as good — the ML model did not beat it).
+Install the optional runtime with `npm install --onnxruntime-node-install-cuda=skip onnxruntime-node`.
+
 **Sources:** economy rule numbers mirror `@pv/game-rules` (provisional); ultimate point
 requirements are the canonical PV-1 catalog; win-prob priors are PV-2's real
 `datasets/derived/priors/`. `src/shared-mirror.ts` mirrors `@pv/shared-types` — swap for real
