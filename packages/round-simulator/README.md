@@ -1,4 +1,4 @@
-# @project-v/round-simulator
+# @pv/round-simulator
 
 PROJECT V round simulator (v0). A **deterministic fixed-tick 5v5 round loop** that wires
 PV-4's spatial, perception, combat and ability engines together (Handoff §17, README §28.1,

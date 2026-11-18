@@ -1,4 +1,4 @@
-# @project-v/spatial-engine
+# @pv/spatial-engine
 
 PROJECT V spatial engine — Ascent v0. Standalone TypeScript package (own
 `package.json` / `tsconfig` / Vitest; does **not** depend on the root monorepo
@@ -27,7 +27,7 @@ measured collision mesh or navmesh yet. See `docs/research/spatial-sources.md` a
 ## Usage
 
 ```ts
-import { createEngine, loadEngineFromFiles } from "@project-v/spatial-engine";
+import { createEngine, loadEngineFromFiles } from "@pv/spatial-engine";
 
 // from pre-loaded JSON (browser/worker safe):
 const engine = createEngine(navgraphJson, coordinateSystemJson.transform);

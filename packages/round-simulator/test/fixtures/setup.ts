@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
-import type { AbilityCatalog } from "@pv/ability-engine";
+import { buildAbilityCatalog, abilitySpecFromCatalog, type AbilityCatalog } from "@pv/ability-engine";
 import { SpatialQueryAdapter } from "../../src/view.js";
 import type { SpatialQuery } from "../../src/policy-contract.js";
 
@@ -32,6 +32,16 @@ export function loadWeapons(): Record<string, WeaponSpec> {
 }
 
 export const NO_ABILITIES: AbilityCatalog = {};
+
+/** Minimal Ascent-meta ability catalog (manual-approx, inline — matches scenario loadout ids). */
+export function loadAbilities(): AbilityCatalog {
+  return buildAbilityCatalog([
+    abilitySpecFromCatalog({ abilityId: "omen:Ability2", slot: "Ability2", name: "Dark Cover", effectTypes: ["smoke"], params: { radiusMeters: 5, durationMs: 15000, blocksVision: true, makesSound: true } }, { cost: 150, charges: 1 }),
+    abilitySpecFromCatalog({ abilityId: "breach:Ability2", slot: "Ability2", name: "Flashpoint", effectTypes: ["flash"], params: { radiusMeters: 6, durationMs: 2000, makesSound: true } }, { cost: 250, charges: 2 }),
+    abilitySpecFromCatalog({ abilityId: "sova:Ability2", slot: "Ability2", name: "Recon Bolt", effectTypes: ["recon"], params: { radiusMeters: 25, durationMs: 3000, revealDurationMs: 3000, makesSound: true } }, { cost: 400, charges: 1 }),
+    abilitySpecFromCatalog({ abilityId: "brimstone:Ability1", slot: "Ability1", name: "Incendiary", effectTypes: ["molly"], params: { radiusMeters: 4, durationMs: 7000, damage: 60, makesSound: true } }, { cost: 250, charges: 1 }),
+  ]);
+}
 
 export function loadPv2Scenario(name = "pv2-scenario-01.json"): unknown {
   return JSON.parse(readFileSync(resolve(here, name), "utf8"));

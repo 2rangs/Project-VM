@@ -1,11 +1,11 @@
-# @project-v/perception-engine
+# @pv/perception-engine
 
 PROJECT V perception layer (v0). Turns the omniscient `WorldState` into per-player and
 per-team **Observations** while enforcing the ground-truth boundary (DECISION-004,
 README §29): an AI never learns the live position of an enemy it cannot see or hear.
 
 Standalone package (own `package.json` / `tsconfig` / Vitest). Depends on
-`@project-v/spatial-engine` via a `file:` link for line-of-sight and sound propagation.
+`@pv/spatial-engine` via a `file:` link for line-of-sight and sound propagation.
 
 ## Layers
 
@@ -47,14 +47,14 @@ and import from `@pv/shared-types` — it is a drop-in swap.
 ## Usage
 
 ```ts
-import { PerceptionEngine } from "@project-v/perception-engine";
+import { PerceptionEngine } from "@pv/perception-engine";
 
 const engine = new PerceptionEngine(spatial);         // deterministic by default
 const result = engine.perceive(world);                // { players, teams } for this tick
 const obs = engine.observe(world, "player-1");         // one player's observation
 
 // probabilistic detection (reproducible under a seed):
-import { mulberry32, DEFAULT_PARAMS } from "@project-v/perception-engine";
+import { mulberry32, DEFAULT_PARAMS } from "@pv/perception-engine";
 new PerceptionEngine(spatial, {
   params: { ...DEFAULT_PARAMS, vision: { ...DEFAULT_PARAMS.vision, detectionMissProbability: 0.2 } },
   rng: mulberry32(42),
