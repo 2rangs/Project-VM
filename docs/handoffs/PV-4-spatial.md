@@ -295,9 +295,16 @@ ult-not-ready / unknown-ability / ok, +cooldownRemainingMs). PV-3가 후보 제�
 
 **실행:** `cd packages/ability-engine && npm install && npm test` (spatial/perception/combat `file:` 링크).
 
-**PV-1에 맞출 필드(미정, handoff 기록):** 런타임 효과의 `radiusUnits`/`durationMs`/`flashDurationMs`/`wallHp`는
-현재 manual-approx. PV-1 `ability-effect.schema.json` published 시 필드명·단위 재정합 필요. `decoy`의 가짜
-소리·시야 주입은 v0에서 효과 객체까지만(perception 소리 주입 경로는 다음 단계).
+**PV-1 효과 명세 정합 — 완료 (6차-A, PV-1 `6759b5c`):** PV-1 `ability-effect.schema.json`이 published되어
+정합 완료. `src/catalog-adapter.ts`의 `abilitySpecFromCatalog(rec, facts)`가 PV-1 카탈로그 레코드
+(effectTypes[] + params{}, **거리 m**)를 런타임 `AbilitySpec`(**world units**)으로 변환 — **m→units ×100 변환은
+이 한 곳에서만**(`UNITS_PER_METER=100`). 필드 매핑: `radiusMeters→radiusUnits`, `rangeMeters→rangeUnits`,
+`destructibleHp→wallHp`, `blocksVision`(perception smokedPairs 구동), `makesSound`(perception abilityCast),
+`revealDurationMs`(recon), effectTypes[]는 우선순위로 primary `effectType` 도출. 커밋 fixture는 PV-1 카탈로그
+shape(m)으로 재구성 후 normalizer 경유 로드. 미소싱 수치는 null 유지(임의 생성 금지). catalog-adapter 테스트 5개 추가.
+
+**남은 정합(미완):** 다중 효과(effectTypes 2개 이상, 예: slow+smoke)는 primary 하나만 런타임 반영(나머지는 메타로 보존).
+`makesSound→perception abilityCast` 소리 주입 경로와 `decoy` 가짜정보 주입은 round-simulator 연동 단계에서.
 
 ---
 

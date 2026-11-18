@@ -9,6 +9,7 @@ export { AbilityEngine } from "./engine.js";
 export type { SnapshotEnemy, UseOptions } from "./engine.js";
 export { buildAbilityCatalog, requireAbility } from "./catalog.js";
 export type { AbilityCatalog } from "./catalog.js";
+export { abilitySpecFromCatalog, primaryEffect, metersToUnits, UNITS_PER_METER } from "./catalog-adapter.js";
 export { checkAvailability } from "./availability.js";
 export {
   visionBlockerIsSmoke,

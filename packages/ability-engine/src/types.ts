@@ -15,7 +15,11 @@ export interface Vec3 {
 
 export type AbilitySlot = "Ability1" | "Ability2" | "Grenade" | "Ultimate" | "Passive";
 
-/** Runtime effect kinds this engine simulates. */
+/**
+ * Runtime effect kinds. Vocabulary matches PV-1's ability-effect.schema.json
+ * `effectTypes` enum (claude/pv-research): smoke | flash | concuss | recon | molly |
+ * wall | slow | heal | trap | decoy | movement | suppress.
+ */
 export type EffectType =
   | "smoke" // blocks line of sight in a zone/volume for a duration
   | "wall" // temporary LoS block with destructible HP
@@ -24,26 +28,84 @@ export type EffectType =
   | "recon" // reveals enemies in range — SNAPSHOT at trigger, not live
   | "molly" // area denial: damage + path cost in a zone
   | "slow" // movement slow zone
+  | "heal" // restores health (ally-affecting)
   | "trap" // tripwire/trap: reveals (snapshot) when triggered
-  | "decoy"; // fake sound/vision info to support fakes (Handoff §14.2)
+  | "decoy" // fake sound/vision info to support fakes (Handoff §14.2)
+  | "movement" // dash/teleport/displacement
+  | "suppress"; // disables enemy abilities (KAY/O)
 
-/** A usable ability definition (gameplay numerics). Mirrors PV-1 catalog `gameplay`. */
+/**
+ * A usable ability definition in RUNTIME units (world units = metres × 100). Produced
+ * from PV-1's catalog records via `abilitySpecFromCatalog` (catalog-adapter.ts), the
+ * single place metres → world-units conversion happens.
+ */
 export interface AbilitySpec {
-  readonly abilityId: string; // "<agent-slug>:<slot>"
+  readonly abilityId: string; // "<agent-slug>:<slot>", joins PV-1 abilities.json
   readonly agentId?: string | null;
   readonly name: string;
   readonly slot: AbilitySlot;
+  /** Primary effect for runtime dispatch (first of effectTypes by priority). */
   readonly effectType: EffectType;
+  /** Full effect set (PV-1 effectTypes[]); an ability may combine effects (e.g. slow+smoke). */
+  readonly effectTypes: readonly EffectType[];
   readonly cost: number | null; // credits
   readonly charges: number | null; // max charges
   readonly cooldownMs: number | null;
   readonly killRecharge: boolean | null;
   readonly ultPoints: number | null; // Ultimate only
   readonly durationMs: number | null;
-  readonly radiusUnits: number | null; // effect radius (world units)
-  readonly wallHp: number | null; // destructible wall HP
+  readonly radiusUnits: number | null; // effect radius (WORLD UNITS)
+  readonly rangeUnits: number | null; // max cast/throw distance (WORLD UNITS)
+  readonly wallHp: number | null; // destructible HP (PV-1 destructibleHp)
   readonly flashDurationMs: number | null; // blind duration applied to combat
+  readonly revealDurationMs: number | null; // recon reveal duration
+  /** Occludes sightlines (PV-1 blocksVision); drives perception smokedPairs. */
+  readonly blocksVision: boolean | null;
+  /** Emits cast audio (PV-1 makesSound); feeds perception abilityCast sound. */
+  readonly makesSound: boolean | null;
   readonly provenance: string;
+}
+
+// ---- PV-1 catalog record shapes (claude/pv-research ability-effect.schema.json) ----
+// These mirror PV-1's on-disk shape (distances in METRES). Convert with
+// `abilitySpecFromCatalog` (catalog-adapter.ts) — the single metres→world-units site.
+
+export interface CatalogEffectParams {
+  readonly windupMs?: number | null;
+  readonly deployTimeMs?: number | null;
+  readonly rangeMeters?: number | null;
+  readonly radiusMeters?: number | null;
+  readonly durationMs?: number | null;
+  readonly cooldownMs?: number | null;
+  readonly killRecharge?: boolean | null;
+  readonly revealDurationMs?: number | null;
+  readonly damage?: number | null;
+  readonly destructible?: boolean | null;
+  readonly destructibleHp?: number | null;
+  readonly blocksVision?: boolean | null;
+  readonly affectsAllies?: boolean | null;
+  readonly makesSound?: boolean | null;
+  readonly defaultKeybind?: string | null;
+}
+
+export interface CatalogEffectRecord {
+  readonly abilityId: string;
+  readonly agentName?: string;
+  readonly slot: AbilitySlot;
+  readonly name: string;
+  readonly effectTypes: readonly EffectType[];
+  readonly params: CatalogEffectParams;
+  readonly verified?: boolean;
+  readonly provenance?: string;
+}
+
+/** Facts (charges/cost/ultPoints) from PV-1 ability_facts.json, joined by abilityId. */
+export interface CatalogFacts {
+  readonly cost?: number | null;
+  readonly charges?: number | null;
+  readonly ultPoints?: number | null;
+  readonly flashDurationMs?: number | null;
+  readonly provenance?: string;
 }
 
 /** A request to deploy an ability instance into the world. */
@@ -83,6 +145,8 @@ export interface ActiveEffect {
   destroyed: boolean;
   /** Blind duration applied to affected players (flash/concuss). */
   readonly flashDurationMs: number;
+  /** Whether this effect occludes sightlines (PV-1 blocksVision). */
+  readonly blocksVision: boolean;
   /** Enemies revealed by this effect (recon/trap), captured at trigger. */
   readonly reveals: readonly RevealSnapshot[];
 }

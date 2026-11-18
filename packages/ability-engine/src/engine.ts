@@ -72,6 +72,7 @@ export class AbilityEngine {
       hp: spec.wallHp ?? null,
       destroyed: false,
       flashDurationMs,
+      blocksVision: spec.blocksVision ?? (spec.effectType === "smoke" || spec.effectType === "wall"),
       reveals,
     };
     this.effects.set(effect.instanceId, effect);

@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createEngine, type SpatialEngine } from "@project-v/spatial-engine";
 import { buildAbilityCatalog, requireAbility, type AbilityCatalog } from "../../src/catalog.js";
-import type { AbilitySpec, Vec3 } from "../../src/types.js";
+import { abilitySpecFromCatalog } from "../../src/catalog-adapter.js";
+import type { AbilitySpec, CatalogEffectRecord, CatalogFacts, Vec3 } from "../../src/types.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..", "..");
@@ -17,7 +18,11 @@ export function loadSpatial(): SpatialEngine {
 
 export function loadAbilities(): AbilityCatalog {
   const raw = JSON.parse(readFileSync(resolve(here, "abilities.manual-approx.json"), "utf8"));
-  return buildAbilityCatalog(raw.abilities as AbilitySpec[]);
+  // Fixture is in PV-1 catalog shape (metres); normalise to runtime specs (world units).
+  const specs: AbilitySpec[] = (raw.abilities as Array<CatalogEffectRecord & { facts?: CatalogFacts }>).map(
+    (rec) => abilitySpecFromCatalog(rec, rec.facts ?? {}),
+  );
+  return buildAbilityCatalog(specs);
 }
 
 export const ABILITIES = loadAbilities();

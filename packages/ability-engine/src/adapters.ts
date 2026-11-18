@@ -7,23 +7,25 @@ import type { RevealSnapshot } from "./types.js";
  * ground truth: reveals are frozen snapshots, and vision blockers are just origins.
  */
 
-/** Predicate to pass to perception's SpatialPerceptionOracle so smokes AND walls block LoS. */
+/** Predicate to pass to perception's SpatialPerceptionOracle so vision-blockers occlude LoS. */
 export const visionBlockerIsSmoke = (a: AbilityState): boolean =>
   a.abilityId === "smoke" || a.abilityId === "wall";
 
 /**
- * Vision-blocking effects (smoke + standing wall) as perception `AbilityState`s. Wire with:
+ * Vision-blocking effects (any effect with blocksVision, i.e. smokes + standing walls) as
+ * perception `AbilityState`s. Wire with:
  *   new SpatialPerceptionOracle(spatial, { isSmoke: visionBlockerIsSmoke })
- * and pass these on `world.activeAbilities`.
+ * and pass these on `world.activeAbilities`. abilityId is set to the occluder kind so the
+ * predicate matches regardless of the ability's other effect types (e.g. slow+smoke).
  */
 export function toPerceptionAbilityStates(engine: AbilityEngine): AbilityState[] {
   const out: AbilityState[] = [];
   for (const e of engine.activeEffects()) {
-    if (e.effectType !== "smoke" && e.effectType !== "wall") continue;
+    if (!e.blocksVision) continue;
     out.push({
       instanceId: e.instanceId,
       ownerId: e.ownerId,
-      abilityId: e.effectType, // "smoke" | "wall" — matches visionBlockerIsSmoke
+      abilityId: e.effectType === "wall" ? "wall" : "smoke", // matches visionBlockerIsSmoke
       origin: e.origin,
       expiresAtMs: e.expiresAtMs,
     });
