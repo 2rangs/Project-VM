@@ -59,7 +59,7 @@ VRP_CHANNELS=channels.jsonl ./ValorantReplayParser <sample>.vrf --verbose --full
 
 | 샘플 | parse 시간 | decode-full.txt | 내용 |
 |---|---|---|---|
-| `5c673443…vrf` (410KB) | 409 ms | 3.5 MB | **combat 캡처** — 2949 movement 라인, 3001 샘플, 23 phase, 470 BombGameState, 1 플레이어(`GiM dot`, team 1) |
+| `5c673443…vrf` (410KB) | 409 ms | 3.5 MB | **combat 캡처** — 2949 movement 라인, 3001 샘플, 23 phase, 470 BombGameState, 1 플레이어(ProfileName 실측 1건·익명화 처리, team 1) |
 | `c96127a8…vrf` (562KB) | 553 ms | — | **ceremony 캡처** — movement 0, Thrifty/TeamAce/Flawless ceremony·SurrenderVote 액터만 |
 
 decode-full.txt 라인 포맷(실측):
@@ -142,9 +142,9 @@ PV-1의 L1 표를 **실제 Linux 실행 결과로 갱신**. `✅`=확인, `◐`=
 - `roundTimeMs` — `matchTimeMs − round.startTimeMs`.
 원본 tick과 변환 시간을 **모두 유지**한다.
 
-### 좌표 경계 (PV-3와의 분담)
+### 좌표 경계 (PV-4와의 분담)
 positions는 **게임 월드 uu(≈cm, Z-up)**. PV-2 `position.schema.json`이 요구하는 미니맵(0..1000)
-x/y 변환은 **Spatial 에이전트(PV-3) 소유**이므로 여기서 날조하지 않고 `worldPos`만 채운다.
+x/y 변환은 **Spatial 에이전트(PV-4) 소유**이므로 여기서 날조하지 않고 `worldPos`만 채운다.
 
 ### 테스트 결과 (실제 실행)
 ```
@@ -175,4 +175,4 @@ Riot 정책을 따른다 → `docs/research/vrf-capture-guide.md` 참조.
 2. **완전한 5v5 `.vrf` 확보**: 동봉 샘플은 짧은 캡처. 사용자 Ascent 커스텀 녹화 권장(캡처 가이드).
 3. **킬/사망 추론 레이어**: BombPlayerState 복제 중단·movement gap 기반(confidence 포함, inferred 표시).
 4. **맵 식별**: 현재 `-Map` 힌트 의존. `.vrf` 헤더에서 맵 추출(vrfkit `inspect`가 branch/맵 노출).
-5. **미니맵 변환**: PV-3가 world→minimap 변환 제공 시 positions에 minimap x/y 추가.
+5. **미니맵 변환**: PV-4가 world→minimap 변환 제공 시 positions에 minimap x/y 추가.
