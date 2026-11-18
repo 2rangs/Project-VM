@@ -38,6 +38,9 @@ ap.add_argument("--exclude-prefix", default="Ascent_Art_Vista",
 ap.add_argument("--floor-only", action="store_true",
                 help="emit only up-facing (walkable-slope) triangles -> cleaner "
                      "walkable surface for Recast (walls dropped)")
+ap.add_argument("--walls-only", action="store_true",
+                help="emit only near-vertical (wall) triangles -> occluder mesh "
+                     "for line-of-sight raycasting")
 ap.add_argument("--zmin", type=float, default=-1e30,
                 help="drop triangles whose centroid world z (m) is below this")
 ap.add_argument("--zmax", type=float, default=1e30,
@@ -119,13 +122,16 @@ for obj in bpy.data.objects:
         wn = (nmat @ lt.normal).normalized()
         nz = wn.z
         is_floor = nz >= cos_walk
+        is_wall = abs(nz) <= cos_wall
         if is_floor:
             floor_ct += 1
-        elif abs(nz) <= cos_wall:
+        elif is_wall:
             wall_ct += 1
         else:
             steep_ct += 1
         if a.floor_only and not is_floor:
+            continue
+        if a.walls_only and not is_wall:
             continue
         if need_centroid_z:
             cz = (verts[(base+i0)*3+2] + verts[(base+i1)*3+2] + verts[(base+i2)*3+2]) / 3.0
