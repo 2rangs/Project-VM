@@ -1,4 +1,5 @@
 import type { RoundResult, TrackFrame } from "./types.js";
+import { toSimGameEvents, type SimGameEvent } from "./export.js";
 
 /**
  * Neutral replay export (PV-6 adapter seam).
@@ -38,9 +39,33 @@ export function toRoundReplay(result: RoundResult, mapId: string, tickMs: number
   };
 }
 
-/** Placeholder for the PV-6 replay-engine format — not yet published. */
-export function toPv6ReplayFormat(_result: RoundResult): never {
-  throw new Error(
-    "PV-6 replay-engine format not available yet (claude/pv-replay has no replay-engine package). Use toRoundReplay() and map it once PV-6 publishes its schema.",
-  );
+/** Metadata for PV-6's fromSimEventLog (mirror of replay-engine ConvertSimMeta). */
+export interface Pv6SimMeta {
+  readonly mapId: string;
+  readonly mapDisplayName?: string | null;
+  readonly patch?: string | null;
+  readonly seed?: number | null;
+  readonly matchId?: string | null;
+  readonly coordinateTransform?: unknown;
+}
+
+export interface Pv6SimEventLog {
+  readonly events: readonly SimGameEvent[];
+  readonly meta: Pv6SimMeta;
+}
+
+/**
+ * Bridge to PV-6's replay-engine (claude/pv-replay `packages/replay-engine`). PV-6's
+ * `fromSimEventLog(events, meta)` ingests pv-core GameEvent[]; this produces exactly that
+ * (including move events from the per-tick tracks), so integration is:
+ *
+ *   import { fromSimEventLog } from "@pv/replay-engine";
+ *   const log = toPv6ReplayFormat(result, { mapId, seed, coordinateTransform });
+ *   const replay = fromSimEventLog(log.events, log.meta);
+ *
+ * We return the bridge input rather than the Replay object to avoid a cross-branch build
+ * dependency on PV-6's package (verified against PV-6's converter in test/replay.test.ts).
+ */
+export function toPv6ReplayFormat(result: RoundResult, meta: Pv6SimMeta): Pv6SimEventLog {
+  return { events: toSimGameEvents(result, { includeMoves: true }), meta };
 }

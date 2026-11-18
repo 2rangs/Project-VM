@@ -8,7 +8,7 @@
 // action-schema DecisionContext: self + observation + public round facts only — NEVER
 // the omniscient world (DECISION-004).
 
-import type { CombatSkills } from "@project-v/combat-engine";
+import type { CombatSkills, CombatCalibration } from "@project-v/combat-engine";
 import type { Vector3 } from "@project-v/perception-engine";
 import type { MoveMode } from "./policy-contract.js";
 
@@ -123,6 +123,8 @@ export interface RoundResult {
   readonly endedAtElapsedMs: number;
   readonly events: readonly SimEvent[];
   readonly survivors: Readonly<Record<Side, PlayerId[]>>;
+  /** Side of each player this round (for validation export roster). */
+  readonly roster: Readonly<Record<PlayerId, Side>>;
   /** Per-tick position frames, present only when config.recordTracks is true. */
   readonly tracks?: readonly TrackFrame[];
 }
@@ -136,6 +138,8 @@ export interface SimConfig {
   readonly spikeTimerMs: number;
   readonly seed: number;
   readonly recordTracks: boolean;
+  /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
+  readonly combatCalibration?: CombatCalibration;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {

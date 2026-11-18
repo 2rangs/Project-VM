@@ -15,5 +15,8 @@ export { buildPolicyView, SpatialQueryAdapter, SeededRandomSource } from "./view
 export { makeSyntheticRound, fromPv2Scenario, SYNTHETIC_DEFENSE_ANCHORS } from "./scenario.js";
 export type { SyntheticRoundOptions } from "./scenario.js";
 export { toRoundReplay, toPv6ReplayFormat, ROUND_REPLAY_VERSION } from "./replay.js";
-export type { RoundReplay } from "./replay.js";
+export type { RoundReplay, Pv6SimEventLog, Pv6SimMeta } from "./replay.js";
+export { toValidationRun, toSimGameEvents } from "./export.js";
+export type { SimRun, SimRunRound, SimGameEvent } from "./export.js";
+export { ASCENT_OPENING_DUEL_CALIBRATION } from "./calibration.js";
 export { mulberry32, deriveSeed } from "./rng.js";

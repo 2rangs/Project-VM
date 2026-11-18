@@ -167,6 +167,7 @@ export class RoundSimulator {
         attack: state.players.filter((p) => p.side === "attack" && p.alive).map((p) => p.id),
         defense: state.players.filter((p) => p.side === "defense" && p.alive).map((p) => p.id),
       },
+      roster: Object.fromEntries(state.players.map((p) => [p.id, p.side])),
       tracks: this.cfg.recordTracks ? tracks : undefined,
     };
   }
@@ -242,7 +243,7 @@ export class RoundSimulator {
         const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB);
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
-        const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed);
+        const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
         if (r.winner && r.loser) {
           const loser = state.players.find((p) => p.id === r.loser)!;
           loser.alive = false;

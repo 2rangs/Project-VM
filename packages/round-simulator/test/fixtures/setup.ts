@@ -21,10 +21,13 @@ export function spatialQuery(engine: SpatialEngine): SpatialQuery {
   return new SpatialQueryAdapter(engine);
 }
 
-/** Reuse combat-engine's committed manual-approx weapons fixture (via the file: link). */
+/**
+ * Local copy of the manual-approx weapons fixture (same values as combat-engine's). Loaded
+ * by a path RELATIVE TO THIS FILE — no hard-coded "@project-v" path fragment — so a later
+ * "@pv/*" scope rename needs no change here (F6).
+ */
 export function loadWeapons(): Record<string, WeaponSpec> {
-  const p = resolve(here, "..", "..", "node_modules", "@project-v", "combat-engine", "test", "fixtures", "weapons.manual-approx.json");
-  const raw = JSON.parse(readFileSync(p, "utf8"));
+  const raw = JSON.parse(readFileSync(resolve(here, "weapons.manual-approx.json"), "utf8"));
   return buildCatalog(raw.weapons as WeaponSpec[]);
 }
 
