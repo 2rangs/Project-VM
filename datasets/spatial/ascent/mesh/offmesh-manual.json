@@ -1,0 +1,4 @@
+{
+  "note": "Manual off-mesh connection corrections for Ascent, applied on top of offmesh-candidates.json (autoCandidates). Add entries here when the auto-detector misses or mis-places a stair/ramp/drop link. Each endpoint is world metres (Blender Z-up); set bidirectional=false for one-way drops. provenance MUST be \"manual\". These are hand-authored approximations — mark confidence honestly.",
+  "connections": []
+}

@@ -151,6 +151,7 @@ def main():
     ap.add_argument("--layer-merge", type=float, default=0.6, help="height merge within a cell (m)")
     ap.add_argument("--step-tol", type=float, default=1.4, help="max walkable height step between cells (m)")
     ap.add_argument("--full-matrix", action="store_true", help="also emit all-pairs zone distances")
+    ap.add_argument("--offmesh", default="", help="apply off-mesh bridge connections from this json")
     a = ap.parse_args()
     UU_PER_M = 100.0
 
@@ -187,6 +188,32 @@ def main():
         nodes_by_cell[(ix, iy)] = lst
 
     adj = build_adjacency(nodes_by_cell, cs, a.step_tol)
+
+    # Optional off-mesh bridge connections: snap each endpoint to the nearest
+    # grid node and add a (bidirectional) edge, reconnecting split components.
+    offmesh_applied = []
+    if a.offmesh and os.path.exists(a.offmesh):
+        om = json.load(open(a.offmesh))
+        def nearest(pt):
+            bn, bd = None, None
+            for n, (ix, iy, h) in node_meta.items():
+                wx, wy = minx+(ix+0.5)*cs, miny+(iy+0.5)*cs
+                d = math.hypot(wx-pt[0], wy-pt[1]) + abs(h-pt[2])
+                if bd is None or d < bd:
+                    bd, bn = d, n
+            return bn
+        for c in (om.get("autoCandidates", []) + om.get("manualConnections", [])):
+            A_, B_ = c.get("endpointA_world"), c.get("endpointB_world")
+            if not A_ or not B_:
+                continue
+            na, nb = nearest(A_), nearest(B_)
+            cost = math.dist(A_, B_)
+            adj.setdefault(na, []).append((nb, cost))
+            if c.get("bidirectional", True):
+                adj.setdefault(nb, []).append((na, cost))
+            offmesh_applied.append({"from": c.get("rescuesZoneNear"), "cost_m": round(cost, 2),
+                                    "provenance": c.get("provenance")})
+
     comps = connected_components(adj, list(node_meta.keys()))
     big = set(comps[0]) if comps else set()
     total_nodes = len(node_meta)
@@ -214,12 +241,14 @@ def main():
             if best is None or d < best[0]:
                 best = (d, n, math.hypot(wx - bx, wy - by))
         zone_node[z["id"]] = best[1]
+        wfx, wfy, wfz = node_world(best[1])
         snaps[z["id"]] = {
             "name": z["name"],
             "game": [g["x"], g["y"], g["z"]],
             "blenderXY": [round(bx, 2), round(by, 2)],
             "node": best[1],
             "snapDist_m": round(best[2], 2),
+            "worldFloor": [round(wfx, 2), round(wfy, 2), round(wfz, 2)],
             "onMainComponent": best[1] in big,
         }
 
@@ -264,6 +293,7 @@ def main():
                 "are grid-geodesic (8-neighbour). PV-4 files unchanged.",
         "unitsConvention": f"{UU_PER_M} uu per metre",
         "params": {"cellSize_m": cs, "layerMerge_m": a.layer_merge, "stepTol_m": a.step_tol},
+        "offMeshConnectionsApplied": offmesh_applied,
         "grid": {
             "cells": len(nodes_by_cell),
             "nodes": total_nodes,

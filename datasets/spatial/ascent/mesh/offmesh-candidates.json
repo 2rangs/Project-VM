@@ -1,0 +1,60 @@
+{
+  "note": "Auto-detected off-mesh connection candidates for Ascent: short bridges that would rejoin disconnected walkable components (stairs/ramps/drops). Endpoints are world metres (Blender Z-up). Use as Detour off-mesh connections or as grid bridge edges. Manual corrections live in offmesh-manual.json (provenance:manual) and override/extend this list. PV-4 files unchanged.",
+  "params": {
+    "cellSize_m": 1.2,
+    "stepTol_m": 3.0,
+    "radius_m": 12.0,
+    "maxGap_m": 6.0
+  },
+  "componentCount": 176,
+  "zoneComponents": {
+    "attacker-spawn": 0,
+    "defender-spawn": 0,
+    "a-lobby": 0,
+    "a-main": 0,
+    "a-window": 0,
+    "a-tree": 0,
+    "a-site": 0,
+    "a-garden": 0,
+    "a-wine": 0,
+    "a-rafters": 0,
+    "b-lobby": 0,
+    "b-main": 0,
+    "b-site": 0,
+    "b-boathouse": 145,
+    "mid-top": 0,
+    "mid-courtyard": 0,
+    "mid-catwalk": 0,
+    "mid-cubby": 0,
+    "mid-bottom": 0,
+    "mid-link": 0,
+    "mid-market": 0,
+    "mid-pizza": 0
+  },
+  "offMainComponents": [
+    145
+  ],
+  "autoCandidates": [
+    {
+      "fromComponent": 145,
+      "toComponent": 0,
+      "rescuesZoneNear": "b-boathouse",
+      "endpointA_world": [
+        -65.7,
+        81.25,
+        5.53
+      ],
+      "endpointB_world": [
+        -62.1,
+        82.45,
+        4.33
+      ],
+      "horizontalGap_m": 3.79,
+      "verticalGap_m": 1.2,
+      "kind": "step",
+      "bidirectional": true,
+      "provenance": "auto-detected"
+    }
+  ],
+  "manualConnections": []
+}

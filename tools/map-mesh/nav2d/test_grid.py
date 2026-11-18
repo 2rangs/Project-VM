@@ -6,6 +6,7 @@ import os, sys, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_grid import (cluster_layers, build_adjacency, dijkstra,
                         connected_components)
+from offmesh_candidates import is_bridge_candidate
 
 def eq(a, b, msg=""):
     assert a == b, f"{msg}: {a!r} != {b!r}"
@@ -74,9 +75,21 @@ def test_components():
     eq(len(comps[0]), 2, "largest first")
     print("  connected_components OK")
 
+def test_bridge_candidate():
+    # close + small gap -> candidate
+    assert is_bridge_candidate(dxy=2.0, dz=1.0, radius=4.0, max_gap=4.5)
+    # too far horizontally -> no
+    assert not is_bridge_candidate(dxy=5.0, dz=1.0, radius=4.0, max_gap=4.5)
+    # too big a vertical gap -> no
+    assert not is_bridge_candidate(dxy=2.0, dz=6.0, radius=4.0, max_gap=4.5)
+    # boundary inclusive
+    assert is_bridge_candidate(dxy=4.0, dz=4.5, radius=4.0, max_gap=4.5)
+    print("  is_bridge_candidate OK")
+
 if __name__ == "__main__":
     test_cluster_layers()
     test_build_adjacency()
     test_dijkstra()
     test_components()
+    test_bridge_candidate()
     print("ALL nav2d tests passed")
