@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   loadReplay, stateAt, trackStateAt, roundAt, eventsInRange,
-  replayBounds, lerpAngleDeg, lerpVec3,
+  replayBounds, lerpAngleDeg, lerpVec3, perceptionAt,
 } from '../src/engine.ts';
 import { projectToMinimap, inMinimap } from '../src/coordinate.ts';
 import type { Replay } from '../src/types.ts';
@@ -84,6 +84,41 @@ test('eventsInRange + replayBounds', () => {
 test('projectToMinimap puts Ascent world coords inside [0,1]', () => {
   const p = projectToMinimap({ x: 1995, y: -9744, z: 100 }, ASCENT);
   assert.ok(inMinimap(p), `expected in-bounds, got ${JSON.stringify(p)}`);
+});
+
+test('perception: optional per-team belief, sorted + stepped by perceptionAt', () => {
+  const withPerception: Replay = {
+    ...mini,
+    perception: [{
+      teamIdx: 0, side: 'attack', intervalTicks: 5,
+      snapshots: [
+        // intentionally out of order to test loadReplay sort
+        { tMs: 4000, observedEnemies: [{ enemyId: 'e1', zone: 'a-site', pos: null, lastSeenMsAgo: 0, currentlyVisible: true }], beliefZones: [{ zone: 'a-site', p: 0.8 }] },
+        { tMs: 1000, observedEnemies: [], beliefZones: [{ zone: 'mid', p: 0.5 }, { zone: 'b-site', p: 0.5 }] },
+      ],
+    }],
+  };
+  const r = loadReplay(withPerception);
+  assert.equal(r.perception![0].snapshots[0].tMs, 1000, 'snapshots sorted ascending');
+  // step: before any snapshot → null
+  assert.equal(perceptionAt(r, 0, 500), null);
+  // at 1500 → the 1000 snapshot (belief over mid/b-site, no visible enemies)
+  const s1 = perceptionAt(r, 0, 1500)!;
+  assert.equal(s1.tMs, 1000);
+  assert.equal(s1.observedEnemies.length, 0);
+  // at 5000 → the 4000 snapshot (enemy visible at a-site)
+  const s2 = perceptionAt(r, 0, 5000)!;
+  assert.equal(s2.tMs, 4000);
+  assert.equal(s2.observedEnemies[0].zone, 'a-site');
+  assert.equal(s2.beliefZones[0].p, 0.8);
+  // team 1 has no track
+  assert.equal(perceptionAt(r, 1, 5000), null);
+});
+
+test('perception is optional — a replay without it still loads', () => {
+  const r = loadReplay(mini);
+  assert.equal(r.perception, undefined);
+  assert.equal(perceptionAt(r, 0, 1000), null);
 });
 
 test('shipped synthetic viewer fixture loads and projects in-bounds', () => {

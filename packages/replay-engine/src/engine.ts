@@ -12,7 +12,7 @@
  */
 import type {
   PlayerSnapshot, PlayerState, Replay, ReplayEvent, ReplaySnapshot,
-  PlayerTrack, TrackKeyframe, Vec3,
+  PlayerTrack, TrackKeyframe, Vec3, PerceptionTrack, PerceptionSnapshot,
 } from './types.ts';
 
 export function lerp(a: number, b: number, t: number): number { return a + (b - a) * t; }
@@ -43,7 +43,30 @@ export function loadReplay(input: unknown): Replay {
   }));
   const events: ReplayEvent[] = [...(r.events ?? [])].sort((a, b) => a.tMs - b.tMs);
   const rounds = [...(r.rounds ?? [])].sort((a, b) => a.startMs - b.startMs);
-  return { ...r, tracks, rounds, events };
+  const perception: PerceptionTrack[] | undefined = r.perception
+    ? r.perception.map((pt) => ({ ...pt, snapshots: [...pt.snapshots].sort((a, b) => a.tMs - b.tMs) }))
+    : undefined;
+  return { ...r, tracks, rounds, events, perception };
+}
+
+/**
+ * The latest perception snapshot at/at-before `tMs` for team `teamIdx` (step —
+ * belief is sampled, not interpolated). Returns null when no perception track
+ * exists for that team or nothing has been recorded yet.
+ */
+export function perceptionAt(replay: Replay, teamIdx: number, tMs: number): PerceptionSnapshot | null {
+  const track = replay.perception?.find((p) => p.teamIdx === teamIdx);
+  if (!track || track.snapshots.length === 0) return null;
+  const snaps = track.snapshots;
+  let ans: PerceptionSnapshot | null = null;
+  // snapshots are sorted ascending by loadReplay; linear is fine for small N,
+  // but binary-search the floor for large series.
+  let lo = 0, hi = snaps.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (snaps[mid].tMs <= tMs) { ans = snaps[mid]; lo = mid + 1; } else hi = mid - 1;
+  }
+  return ans;
 }
 
 /** [startMs, endMs] spanning all keyframes, events and round bounds. */

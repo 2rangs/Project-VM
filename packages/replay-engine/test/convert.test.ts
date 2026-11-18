@@ -62,3 +62,17 @@ test('fromSimEventLog: move→tracks, kill→event, rounds, source simulated', (
   const loaded = loadReplay(r);
   assert.equal(stateAt(loaded, 1500).players.find((p) => p.playerId === 'p1')!.pos.x, 15);
 });
+
+test('fromSimEventLog: optional perception track passes through to Replay', () => {
+  const r = fromSimEventLog(
+    [{ seq: 0, tick: 0, timeMs: 0, kind: 'roundStart', roundNumber: 1 }],
+    {
+      mapId: 'ascent',
+      perception: [{ teamIdx: 0, side: 'attack', snapshots: [{ tMs: 0, observedEnemies: [], beliefZones: [{ zone: 'mid', p: 0.4 }] }] }],
+    },
+  );
+  assert.equal(r.perception?.length, 1);
+  assert.equal(r.perception![0].teamIdx, 0);
+  const loaded = loadReplay(r);
+  assert.equal(loaded.perception![0].snapshots[0].beliefZones[0].zone, 'mid');
+});

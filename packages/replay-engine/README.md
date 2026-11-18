@@ -69,3 +69,40 @@ npm run typecheck
 Requires Node ≥ 22.6 (native TypeScript type stripping). `test/fixtures/` holds
 a copy of PV-4's Ascent coordinate transform (source noted in the file) and the
 tests also load the viewer's shipped synthetic replay to keep one source of truth.
+
+## Perception / Belief (optional, DECISION-004)
+
+A replay may carry an optional `perception` array — **what each team observes and
+believes, sampled over time, kept SEPARATE from the ground-truth `tracks`**. This
+is the data a fog-of-war match view and a Belief heatmap render from. Decoded
+`.vrf` replays have none; the simulator (PV-4 `recordPerception`) populates it.
+
+```ts
+Replay.perception?: PerceptionTrack[]        // one entry per team
+
+interface PerceptionTrack {
+  teamIdx: number;                 // 0 | 1 — whose belief this is
+  side?: 'attack' | 'defense' | null;
+  intervalTicks?: number | null;   // sampling interval (informational)
+  snapshots: PerceptionSnapshot[]; // ascending tMs (loadReplay sorts)
+}
+interface PerceptionSnapshot {
+  tMs: number;
+  roundNum?: number | null;
+  observedEnemies: ObservedEnemy[]; // seen / last-seen (never ground truth)
+  beliefZones: ZoneBelief[];        // enemy-location belief; need NOT sum to 1
+  sounds?: SoundCue[];
+}
+interface ObservedEnemy { enemyId: string | null; zone: string; pos?: Vec3 | null; lastSeenMsAgo: number; currentlyVisible: boolean }
+interface ZoneBelief { zone: string; p: number }         // p in [0,1]
+interface SoundCue  { zone: string; kind?: string | null; tMsAgo?: number }
+```
+
+- **Zones** are PV-4 zone ids (same vocabulary as the navgraph).
+- `beliefZones` is a sparse distribution over zones; the viewer normalizes for
+  colour. It is **belief**, not truth — the real positions stay in `tracks`.
+- Read it with `perceptionAt(replay, teamIdx, tMs)` — the latest snapshot at or
+  before `tMs` (belief is sampled, stepped, not interpolated).
+- PV-4 integration: `fromSimEventLog(events, { ...meta, perception })` lifts it to
+  `Replay.perception`. `toPv6ReplayFormat` on the simulator side should emit a
+  `perception` array matching this shape (per team, per N ticks).

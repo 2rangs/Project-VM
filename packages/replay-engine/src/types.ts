@@ -95,6 +95,58 @@ export interface ReplayEvent {
   readonly data?: Record<string, unknown>;
 }
 
+// ── Perception / Belief (information warfare; DECISION-004) ──────────────────
+// What each TEAM observes and believes, sampled over time and kept SEPARATE from
+// the ground-truth `tracks`. This is the data a fog-of-war match view and a
+// Belief heatmap render from. Optional: decoded `.vrf` replays have no belief;
+// only the simulator (PV-4 `recordPerception`) populates it.
+
+/** An enemy as a team currently sees or last saw them (never ground truth). */
+export interface ObservedEnemy {
+  /** Enemy player id if identified; null when only a contact is known. */
+  readonly enemyId: string | null;
+  /** PV-4 zone id of the (last-known) contact. */
+  readonly zone: string;
+  /** Last-seen world position, if any. */
+  readonly pos?: Vec3 | null;
+  /** Milliseconds since this enemy was last seen (0 = visible now). */
+  readonly lastSeenMsAgo: number;
+  readonly currentlyVisible: boolean;
+}
+
+/** Probability mass this team assigns to an enemy being in a zone (0..1). */
+export interface ZoneBelief {
+  readonly zone: string;
+  readonly p: number;
+}
+
+/** A sound contact localized to a zone (optional). */
+export interface SoundCue {
+  readonly zone: string;
+  readonly kind?: string | null; // e.g. 'footstep', 'ability', 'spike'
+  readonly tMsAgo?: number;
+}
+
+/** One team's belief at an instant (sampled; not every tick). */
+export interface PerceptionSnapshot {
+  readonly tMs: number;
+  readonly roundNum?: number | null;
+  readonly observedEnemies: readonly ObservedEnemy[];
+  /** Enemy-location belief as a zone→probability distribution (need not sum to 1). */
+  readonly beliefZones: readonly ZoneBelief[];
+  readonly sounds?: readonly SoundCue[];
+}
+
+/** A whole team's perception time series. */
+export interface PerceptionTrack {
+  readonly teamIdx: number; // 0 or 1 — whose belief this is
+  readonly side?: 'attack' | 'defense' | null;
+  /** Sampling interval in sim ticks, if fixed (informational). */
+  readonly intervalTicks?: number | null;
+  /** Snapshots in ascending tMs (loadReplay enforces the order). */
+  readonly snapshots: readonly PerceptionSnapshot[];
+}
+
 export interface Replay {
   readonly schemaVersion: '1';
   readonly meta: ReplayMeta;
@@ -102,6 +154,11 @@ export interface Replay {
   readonly rounds: readonly ReplayRound[];
   readonly tracks: readonly PlayerTrack[];
   readonly events: readonly ReplayEvent[];
+  /**
+   * OPTIONAL per-team perception/belief, separate from ground-truth `tracks`
+   * (DECISION-004). Populated by the simulator; absent for decoded `.vrf`.
+   */
+  readonly perception?: readonly PerceptionTrack[];
 }
 
 /** A single-instant snapshot produced by the engine's stateAt(). */

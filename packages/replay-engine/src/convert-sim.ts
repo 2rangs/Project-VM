@@ -10,7 +10,7 @@
  * hooks (abilityUse→abilitySpawn, damage carried in data) and is forward-safe.
  */
 import type {
-  PlayerTrack, Replay, ReplayEvent, ReplayPlayer, TrackKeyframe, Vec3,
+  PlayerTrack, Replay, ReplayEvent, ReplayPlayer, TrackKeyframe, Vec3, PerceptionTrack,
 } from './types.ts';
 
 export interface SimEventBase { seq: number; tick: number; timeMs: number; kind: string }
@@ -30,6 +30,8 @@ export interface ConvertSimMeta {
   matchId?: string | null;
   coordinateTransform?: Replay['meta']['coordinateTransform'];
   players?: ReplayPlayer[]; // optional roster; else derived from events
+  /** OPTIONAL per-team perception/belief time series (PV-4 recordPerception). */
+  perception?: readonly PerceptionTrack[];
 }
 
 const SPIKE_KINDS: Record<string, 'plant' | 'defuse'> = {
@@ -128,5 +130,6 @@ export function fromSimEventLog(events: readonly SimEvent[], meta: ConvertSimMet
     rounds,
     tracks,
     events: outEvents.sort((a, b) => a.tMs - b.tMs),
+    perception: meta.perception,
   };
 }
