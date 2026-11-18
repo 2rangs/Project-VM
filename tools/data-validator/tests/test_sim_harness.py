@@ -59,6 +59,13 @@ def test_markdown_report_renders():
     assert "PASS" in md
 
 
+def test_era_selects_patch_ge9_baselines():
+    rep = sim_harness.evaluate_sim_run(sim_fixtures.good_run(), PRIORS, scope="ascent", era="patch>=9")
+    assert rep["era"] == "patch>=9"
+    # it still produces judged metrics against the patch>=9 baseline set
+    assert rep["summary"]["judged"] > 0
+
+
 def test_economy_matchup_full_vs_full_is_judged():
     rep = sim_harness.evaluate_sim_run(sim_fixtures.good_run(), PRIORS, scope="ascent")
     cell = _by(rep, "economy_matchup", ownBuy="full", oppBuy="full")

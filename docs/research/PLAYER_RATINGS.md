@@ -77,9 +77,19 @@ teamworkDiscipline, lurking, anchoring, weaponPreference, agentMastery` — each
 > Positioning/information advantages are modelled by the combat engine's `EngagePosture`, **not** by a
 > skill rating — consistent with README §29 (ratings cannot override an information deficit).
 
-**PV-3 player policy (tendencies)** — proposed inputs (fields TBD in shared-types): `entryAggression`
-→ entry/peek willingness; `trading` → trade discipline; `clutch`/`consistency` → composure. Carry the
-`uncertainty` so the policy can widen behaviour variance for low-sample players.
+**PV-3 `PlayerProfile`** (now defined: `shared-types/src/decision-policy.ts`, consumed by
+`@pv/team-engine` `TeamDecisionPolicy({ profiles })`; `igl.ts` sorts entries by `profile.aggression`).
+All fields are [0,1], neutral 0.5 — our ratings median is 0.6, so subtract ~0.1 (or map percentile→
+`0.25+0.5·p`) when filling a profile:
+| PlayerProfile field | ratings attribute | note |
+|---|---|---|
+| `aggression` (risky peeks/entries) | `entryAggression` | direct |
+| `discipline` (follows team orders) | `consistency` | proxy (low rating variance ≈ disciplined) |
+| `decisionMaking` (avoids bad fights) | `impact` | proxy (VLR rating) |
+| `teamwork` (timing alignment) | `trading` | proxy (KAST / trade participation) |
+
+Carry `uncertainty` so the policy can widen behaviour variance for low-sample players. (Mechanical
+attributes go to the combat engine's `CombatSkills`, above — `PlayerProfile` is behavioural only.)
 
 ## Ethics / name & likeness  — **user decision recorded (2026-11-18)**
 - **Decision (2026-11-18):** not launching yet, so real player **handles are committed** in

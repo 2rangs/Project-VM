@@ -103,6 +103,24 @@ def test_opening_duel_sides_sum_to_one(tmp_path):
     assert atk["rate"] == 0.5  # fixture: 2 attacker fk out of 4 opening duels
 
 
+def test_patch_major():
+    assert priors.patch_major("Patch 13.05") == 13
+    assert priors.patch_major("Patch 9.02") == 9
+    assert priors.patch_major("weird") is None
+    assert priors.patch_major(None) is None
+
+
+def test_era_filter_keeps_recent_patches():
+    rows = [{"patch": "Patch 13.05"}, {"patch": "Patch 9.00"}, {"patch": "Patch 5.04"}, {"patch": None}]
+    assert len(priors.era_filter(rows, "all")) == 4
+    assert [r["patch"] for r in priors.era_filter(rows, "patch>=9")] == ["Patch 13.05", "Patch 9.00"]
+
+
+def test_build_all_unknown_era_raises(tmp_path):
+    with pytest.raises(ValueError):
+        priors.build_all(_fixture_db(tmp_path), era="patch>=99x")
+
+
 def test_missing_db_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         priors.build_all(str(tmp_path / "nope.duckdb"))

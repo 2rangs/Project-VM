@@ -112,6 +112,36 @@ as "no real baseline (data gap)" rather than pass/fail.
 
 ---
 
+## 7. Meta era: `all` vs `patch>=9`
+PV-1's patch history (`pv-research:datasets/derived/meta/patch-history.json`) finds Ascent is
+**structurally stable** (no site/route rework — map changes do not invalidate older stats); the meta
+driver is **agent balance**. So we publish two baseline sets:
+- **`all`** — every international match (default; `datasets/derived/priors/*.json`).
+- **`patch>=9`** — current-meta cut, major patch ≥ 9 (`datasets/derived/priors/patch-ge9/*.json`,
+  `team-profiles/patch-ge9/`). ~3–4× fewer samples → more `smallSample` cells.
+
+Select at validation time with `--era` (`pv-validate-sim --era patch>=9`).
+
+### What changes between eras (Ascent)
+| Metric | `all` | `patch>=9` | Reading |
+|---|---|---|---|
+| economy full>semi | 0.681 (n=1217) | 0.66 (n=335) | stable, CIs overlap |
+| economy semi>eco | 0.928 (n=263) | 0.882 (n=76, small) | stable |
+| opening-duel attack | 0.437 (n=3106) | 0.455 (n=875) | stable |
+| attack win (overall) | 0.509 | 0.487 | stable |
+| **attack win, first half** | **0.580** | **0.425** | **shifted** |
+| **attack win, second half** | **0.413** | **0.574** | **shifted** |
+
+Most economy/combat baselines are **era-stable** (intervals overlap). The **Ascent half-split flipped**
+in recent patches — a real agent-meta effect, not noise (though on smaller samples).
+
+### Recommendation
+**Default to `all`** for economy, pistol, save, outcome and opening-duel baselines: they are
+era-stable and the larger sample gives tighter intervals (Ascent's structure hasn't changed, per
+PV-1). **Use `patch>=9` specifically for side/half-split checks** (attack timing), where the meta
+shift is real — accepting that many `patch>=9` cells are small-sample and must be read with their
+wider intervals. Do not tune a simulation to a `patch>=9` cell flagged `smallSample`.
+
 ## Caveats
 - **Coverage/era mix.** These pool 2021–2026 international events across many patches; agent pools and
   map/economy rules shifted. The JSON keeps `season`/`patch` filters so an era-matched baseline can be

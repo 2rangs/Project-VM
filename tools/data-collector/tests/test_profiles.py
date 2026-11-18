@@ -29,12 +29,12 @@ def _counter(s, n):
 def _fixture_db(tmp_path, *, utc="2025-01-01 00:00:00", season=2025, name="tp.duckdb"):
     p = tmp_path / name
     con = duckdb.connect(str(p))
-    con.execute("CREATE TABLE matches(match_id VARCHAR, is_international BOOLEAN, utc_timestamp TIMESTAMP, season INTEGER, team0_id INTEGER, team1_id INTEGER)")
+    con.execute("CREATE TABLE matches(match_id VARCHAR, is_international BOOLEAN, utc_timestamp TIMESTAMP, season INTEGER, patch VARCHAR, team0_id INTEGER, team1_id INTEGER)")
     con.execute("CREATE TABLE maps(game_id VARCHAR, map_name VARCHAR)")
     con.execute("""CREATE TABLE rounds(match_id VARCHAR, game_id VARCHAR, round_num TINYINT,
                    winner_team TINYINT, side VARCHAR, loadout_t0 INTEGER, loadout_t1 INTEGER,
                    bank_t0 INTEGER, bank_t1 INTEGER)""")
-    con.execute("INSERT INTO matches VALUES ('M1', TRUE, ?, ?, 10, 20)", [utc, season])
+    con.execute("INSERT INTO matches VALUES ('M1', TRUE, ?, ?, 'Patch 13.05', 10, 20)", [utc, season])
     con.execute("INSERT INTO maps VALUES ('G1','Ascent')")
     rows = []
     # team0 (id 10) attacks every round and WINS every round; full buys vs eco opponent

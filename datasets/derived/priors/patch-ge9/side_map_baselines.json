@@ -1,0 +1,215 @@
+{
+  "priorId": "side_map_baselines",
+  "description": "Attacker/defender win rate overall and on Ascent, by half and overtime. 'won' is from the row team's view; attacker rows give attack win rate.",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "economyAvailable": true,
+      "winnerKnown": true,
+      "era": "patch>=9",
+      "scope": "international; all maps + Ascent"
+    }
+  },
+  "method": {
+    "statistic": "binomial win/success rate",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": []
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-18T10:12:22+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "attack",
+        "phase": "all"
+      },
+      "n": 9788,
+      "successes": 4906,
+      "rate": 0.5012259910093992,
+      "wilsonLow": 0.4913221035818164,
+      "wilsonHigh": 0.5111289164945331,
+      "bootstrapLow": 0.49126193863035966,
+      "bootstrapHigh": 0.5113367507886435,
+      "matches": 186,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "defense",
+        "phase": "all"
+      },
+      "n": 9788,
+      "successes": 4882,
+      "rate": 0.49877400899060076,
+      "wilsonLow": 0.48887108350546704,
+      "wilsonHigh": 0.5086778964181837,
+      "bootstrapLow": 0.48895283115815436,
+      "bootstrapHigh": 0.508596837944664,
+      "matches": 186,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "attack",
+        "phase": "first"
+      },
+      "n": 5652,
+      "successes": 2808,
+      "rate": 0.4968152866242038,
+      "wilsonLow": 0.483786961765066,
+      "wilsonHigh": 0.5098479376107189,
+      "bootstrapLow": 0.45064377682403434,
+      "bootstrapHigh": 0.5404255319148936,
+      "matches": 186,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "attack",
+        "phase": "second"
+      },
+      "n": 4136,
+      "successes": 2098,
+      "rate": 0.5072533849129593,
+      "wilsonLow": 0.49201733193232167,
+      "wilsonHigh": 0.5224759767116988,
+      "bootstrapLow": 0.46061036195883603,
+      "bootstrapHigh": 0.5533382606553339,
+      "matches": 186,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "attack",
+        "phase": "overtime"
+      },
+      "n": 221,
+      "successes": 110,
+      "rate": 0.497737556561086,
+      "wilsonLow": 0.4324217060708976,
+      "wilsonHigh": 0.56313071559882,
+      "bootstrapLow": 0.4930875576036866,
+      "bootstrapHigh": 0.5,
+      "matches": 45,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "attack",
+        "phase": "all"
+      },
+      "n": 816,
+      "successes": 397,
+      "rate": 0.48651960784313725,
+      "wilsonLow": 0.4523693903119069,
+      "wilsonHigh": 0.5207961531437192,
+      "bootstrapLow": 0.4467821782178218,
+      "bootstrapHigh": 0.5208845208845209,
+      "matches": 40,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "defense",
+        "phase": "all"
+      },
+      "n": 816,
+      "successes": 419,
+      "rate": 0.5134803921568627,
+      "wilsonLow": 0.4792038468562808,
+      "wilsonHigh": 0.5476306096880931,
+      "bootstrapLow": 0.47694174757281554,
+      "bootstrapHigh": 0.5496932515337424,
+      "matches": 40,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "attack",
+        "phase": "first"
+      },
+      "n": 480,
+      "successes": 204,
+      "rate": 0.425,
+      "wilsonLow": 0.3815435650267696,
+      "wilsonHigh": 0.46964735983632205,
+      "bootstrapLow": 0.275,
+      "bootstrapHigh": 0.575,
+      "matches": 40,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "attack",
+        "phase": "second"
+      },
+      "n": 336,
+      "successes": 193,
+      "rate": 0.5744047619047619,
+      "wilsonLow": 0.52098948861497,
+      "wilsonHigh": 0.6261379400793048,
+      "bootstrapLow": 0.40498442367601245,
+      "bootstrapHigh": 0.729903536977492,
+      "matches": 40,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "attack",
+        "phase": "overtime"
+      },
+      "n": 14,
+      "successes": 7,
+      "rate": 0.5,
+      "wilsonLow": 0.26799202452413634,
+      "wilsonHigh": 0.7320079754758637,
+      "bootstrapLow": 0.5,
+      "bootstrapHigh": 0.5,
+      "matches": 4,
+      "smallSample": true
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T10:12:22+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

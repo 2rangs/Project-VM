@@ -1,0 +1,85 @@
+{
+  "priorId": "save_eco_future_value",
+  "description": "Next-round win rate conditioned on this round's buy. eco-vs-full gap is the measurable economic snowball behind save decisions (Handoff §15). Per-team baseline is 50%.",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "economyAvailable": true,
+      "winnerKnown": true,
+      "era": "patch>=9",
+      "scope": "international; same-half next round"
+    }
+  },
+  "method": {
+    "statistic": "binomial win/success rate",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": []
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-18T10:12:23+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "condition": "eco_this_round",
+        "measured": "win_next_round"
+      },
+      "n": 985,
+      "successes": 582,
+      "rate": 0.5908629441624366,
+      "wilsonLow": 0.5598627204284701,
+      "wilsonHigh": 0.6211571977831691,
+      "bootstrapLow": 0.5612535612535613,
+      "bootstrapHigh": 0.6208625877632898,
+      "matches": 186,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "condition": "full_this_round",
+        "measured": "win_next_round"
+      },
+      "n": 9778,
+      "successes": 4957,
+      "rate": 0.5069543874002863,
+      "wilsonLow": 0.4970441173336479,
+      "wilsonHigh": 0.5168591953066691,
+      "bootstrapLow": 0.500256173788298,
+      "bootstrapHigh": 0.5135589657347067,
+      "matches": 186,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T10:12:23+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

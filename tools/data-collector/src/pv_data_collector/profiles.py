@@ -76,7 +76,7 @@ def load_rounds(con, as_of: str | None):
         params.append(as_of)
     sql = f"""
         SELECT r.match_id, r.game_id, r.round_num, r.winner_team, r.side,
-               r.loadout_t0, r.loadout_t1, mp.map_name, m.season, m.utc_timestamp,
+               r.loadout_t0, r.loadout_t1, mp.map_name, m.season, m.utc_timestamp, m.patch,
                m.team0_id, m.team1_id
         FROM rounds r JOIN maps mp ON r.game_id = mp.game_id JOIN matches m ON r.match_id = m.match_id
         WHERE {' AND '.join(where)}
@@ -200,16 +200,19 @@ def _shrunk_rate(counter: Counter, league_mean: float, k: float):
     return {"value": round(value, 4), "raw": round(raw, 4), "n": counter.n, "uncertainty": uncertainty}
 
 
-def build_team_profiles(duckdb_path: str, as_of: str | None = None) -> dict[str, Any]:
+def build_team_profiles(duckdb_path: str, as_of: str | None = None, era: str = "all") -> dict[str, Any]:
+    from .priors import ERAS, era_filter
     import duckdb
     if not os.path.exists(duckdb_path):
         raise FileNotFoundError(duckdb_path)
+    if era not in ERAS:
+        raise ValueError(f"unknown era {era!r}")
     sha = _sha256(duckdb_path)
     global _NOW
     _NOW = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     con = duckdb.connect(duckdb_path, read_only=True)
     try:
-        rounds = load_rounds(con, as_of)
+        rounds = era_filter(load_rounds(con, as_of), era)
     finally:
         con.close()
     teams = _team_tallies(rounds)
@@ -286,7 +289,7 @@ def build_team_profiles(duckdb_path: str, as_of: str | None = None) -> dict[str,
     meta = {
         "generatedAt": _NOW,
         "source": {"sourceId": "vct-reference", "sha256": sha, "scope": "international",
-                   "teams": len(records), "asOf": as_of},
+                   "teams": len(records), "asOf": as_of, "era": era},
         "method": {"shrinkage": "Beta-binomial empirical Bayes toward league mean",
                    "buyThresholds": {"ecoMax": BUY_ECO_MAX, "fullMin": BUY_FULL_MIN},
                    "forceBuy": "loadout tier in {semi,full} (not eco) in a non-pistol, non-OT round",
@@ -365,9 +368,10 @@ def _write_team_names(duckdb_path: str, out_dir: str, team_ids: list[str], sha: 
     return path
 
 
-def write_profiles(duckdb_path: str, out_dir: str, as_of: str | None = None) -> dict[str, str]:
+def write_profiles(duckdb_path: str, out_dir: str, as_of: str | None = None,
+                   era: str = "all") -> dict[str, str]:
     import json
-    built = build_team_profiles(duckdb_path, as_of)
+    built = build_team_profiles(duckdb_path, as_of, era)
     built["meta"]["stability"] = season_stability(duckdb_path)
     os.makedirs(out_dir, exist_ok=True)
     written = {}

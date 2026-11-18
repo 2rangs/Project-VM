@@ -243,10 +243,14 @@ def _judge(metric, scope, dims, sim, target, tol) -> MetricResult:
     return res
 
 
+ERA_SUBDIR = {"all": "", "patch>=9": "patch-ge9"}
+
+
 def evaluate_sim_run(sim_run: dict, priors_dir: str, *, scope: str = "ascent",
-                     tolerances: dict | None = None) -> dict[str, Any]:
+                     tolerances: dict | None = None, era: str = "all") -> dict[str, Any]:
     tol = {**DEFAULT_TOLERANCES, **(tolerances or {})}
-    priors = load_priors(priors_dir)
+    sub = ERA_SUBDIR.get(era, "")
+    priors = load_priors(os.path.join(priors_dir, sub) if sub else priors_dir)
     rounds = sim_run.get("rounds", [])
     results: list[MetricResult] = []
 
@@ -297,6 +301,7 @@ def evaluate_sim_run(sim_run: dict, priors_dir: str, *, scope: str = "ascent",
     return {
         "generatedAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
         "scope": scope,
+        "era": era,
         "priorsSource": {k: priors[k]["source"].get("sha256") for k in priors},
         "simMeta": sim_run.get("meta", {}),
         "summary": {"passed": passed, "judged": len(judged), "reportedOnly": len(results) - len(judged),

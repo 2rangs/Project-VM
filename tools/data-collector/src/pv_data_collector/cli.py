@@ -36,6 +36,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--db", required=True, help="Path to vct.duckdb")
     p.add_argument("--out", required=True, help="Output dir (datasets/derived/priors)")
     p.add_argument("--iters", type=int, default=2000, help="Bootstrap iterations (default 2000)")
+    p.add_argument("--era", default="all", choices=["all", "patch>=9"], help="Meta era filter (default all)")
 
     p = sub.add_parser("gen-ratings", help="Estimate player attributes (with uncertainty) from VCT Reference.")
     p.add_argument("--db", required=True, help="Path to vct.duckdb")
@@ -45,6 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--db", required=True, help="Path to vct.duckdb")
     p.add_argument("--out", required=True, help="Output dir (datasets/derived/team-profiles)")
     p.add_argument("--as-of", default=None, help="ISO date; use only matches strictly before it (point-in-time)")
+    p.add_argument("--era", default="all", choices=["all", "patch>=9"], help="Meta era filter (default all)")
 
     args = ap.parse_args(argv)
 
@@ -59,13 +61,13 @@ def main(argv: list[str] | None = None) -> int:
         for name, path in synthetic_ascent.write_map(args.out, args.seed).items():
             print(f"wrote {path}")
     elif args.cmd == "gen-priors":
-        for name, path in priors.write_all(args.db, args.out, args.iters).items():
+        for name, path in priors.write_all(args.db, args.out, args.iters, args.era).items():
             print(f"wrote {path}")
     elif args.cmd == "gen-ratings":
         for name, path in ratings.write_ratings(args.db, args.out).items():
             print(f"wrote {path}")
     elif args.cmd == "gen-team-profiles":
-        for name, path in profiles.write_profiles(args.db, args.out, args.as_of).items():
+        for name, path in profiles.write_profiles(args.db, args.out, args.as_of, args.era).items():
             print(f"wrote {path}")
     else:  # pragma: no cover
         ap.error(f"unknown command {args.cmd}")

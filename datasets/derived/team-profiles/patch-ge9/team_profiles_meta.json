@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-11-18T10:12:24+00:00",
+  "source": {
+    "sourceId": "vct-reference",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "scope": "international",
+    "teams": 37,
+    "asOf": null,
+    "era": "patch>=9"
+  },
+  "method": {
+    "shrinkage": "Beta-binomial empirical Bayes toward league mean",
+    "buyThresholds": {
+      "ecoMax": 5000,
+      "fullMin": 20000
+    },
+    "forceBuy": "loadout tier in {semi,full} (not eco) in a non-pistol, non-OT round",
+    "leagueParams": {
+      "forceBuyAfterLoss": {
+        "mean": 0.8862,
+        "pseudocount": 215.1
+      },
+      "pistolLossForceBuy": {
+        "mean": 0.1039,
+        "pseudocount": 8.1
+      },
+      "bonusBuyRate": {
+        "mean": 1.0,
+        "pseudocount": 50.0
+      },
+      "antiEcoFullBuy": {
+        "mean": 0.1186,
+        "pseudocount": 6.9
+      },
+      "overtimeForceBuy": {
+        "mean": 1.0,
+        "pseudocount": 50.0
+      },
+      "attackWinRate": {
+        "mean": 0.4937,
+        "pseudocount": 88.5
+      },
+      "defenseWinRate": {
+        "mean": 0.4682,
+        "pseudocount": 40.9
+      }
+    }
+  },
+  "disclaimer": "Pre-launch INTERNAL development use. Real team names are included by user decision (2026-11-18); scope is PUBLIC VCT professional teams only. License and name/likeness rights MUST be re-reviewed before any launch. Tendencies remain statistical ESTIMATES from public match economy, not scouting truth. Tactical tendencies needing positions are null. Names are in team_names.json; see docs/research/TEAM_PROFILES.md.",
+  "unestimableTactical": {
+    "sitePreference": "needs per-round plant site / positions (Layer B not available)",
+    "executeTempo": "needs timing of site hits (no per-round timeline in VCT Reference)",
+    "defaultSetup": "needs player positions",
+    "utilityUsage": "needs ability-usage data",
+    "rotationTendency": "needs positional/timing data",
+    "lurkTendency": "needs positional data",
+    "retakeVsSaveTendency": "needs post-plant positions/outcomes per round",
+    "fakeTendency": "needs utility + movement traces"
+  },
+  "stability": {
+    "forceBuyAfterLoss": {
+      "pairs": 73,
+      "correlation": -0.059,
+      "interpretation": "roster/meta dependent (weak season-to-season persistence)"
+    },
+    "attackWinRate": {
+      "pairs": 73,
+      "correlation": 0.167,
+      "interpretation": "roster/meta dependent (weak season-to-season persistence)"
+    }
+  }
+}

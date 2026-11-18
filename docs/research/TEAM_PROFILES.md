@@ -48,17 +48,20 @@ read as "how this roster played in this window", and should be regenerated point
 treated as a durable team identity. (Force-buy is also near-constant across teams, which further
 suppresses its correlation.)
 
-## Mapping to PV-3 (team-engine not yet defined on pv-core → proposed)
-`origin/claude/pv-core` has no `packages/team-engine` / `TeamDecisionPolicy` yet. Proposed inputs:
-| PV-3 concept | profile field |
+## Mapping to PV-3 `@pv/team-engine` (now pushed on pv-core)
+`TeamDecisionPolicy` (`packages/team-engine/src/policy.ts`) takes `TeamPolicyOptions = { profiles?:
+Map<playerId, PlayerProfile>, economy?: EconomyEvaluator }`. Strategy selection (`igl.selectStrategy`)
+keys off **economy** (eco vs full) + spatial + rng; there is **no dedicated team-tendency field** yet.
+So team profiles plug in as follows:
+| profile field(s) | PV-3 / PV-2 consumer |
 |---|---|
-| IGL economy policy — force vs save after loss | `forceBuyAfterLoss` (+ by tier), `pistolLossForceBuy` |
-| anti-eco discipline | `antiEcoFullBuy` |
-| opponent memory — side strength | `attackWinRate`, `defenseWinRate`, `ascentAttackWinRate`, `firstMinusSecondHalfAttack` |
-| map comfort | `mapPool` |
+| `forceBuyAfterLoss` (+ by tier), `pistolLossForceBuy`, `antiEcoFullBuy`, `overtimeForceBuy` | **`EconomyEvaluator`** (PV-2 `@pv/economy-engine` buy policy) — bias the team's buy choice |
+| `attackWinRate`, `defenseWinRate`, `ascentAttackWinRate`, `firstMinusSecondHalfAttack`, `mapPool` | **opponent-memory / strategy-prior** — no field in `team-engine` today; proposed as a future `TeamPolicyOptions.opponent` input |
 | tactical read (site pref, tempo, …) | **null** — requires Layer-B positions |
 
-Carry `uncertainty` so the IGL widens behaviour variance for low-sample opponents. Build the opponent
+So the actionable hook today is the **economy evaluator**: feed a team's economic tendencies into the
+buy policy. The side/map tendencies are ready for an opponent-memory feature when `team-engine` adds
+one. Carry `uncertainty` so the IGL widens variance for low-sample opponents, and build the opponent
 profile **as-of the match date** so the sim never uses future form.
 
 ## Ethics / name & likeness — **user decision recorded (2026-11-18)**

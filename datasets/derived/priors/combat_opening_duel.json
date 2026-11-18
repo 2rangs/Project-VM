@@ -9,6 +9,7 @@
     "filters": {
       "international": true,
       "performanceAvailable": true,
+      "era": "all",
       "note": "aggregate fk/fd; no per-round kill sequence in source"
     }
   },
@@ -33,7 +34,7 @@
     ]
   },
   "groupingUnit": "match_id",
-  "generatedAt": "2026-11-18T09:31:26+00:00",
+  "generatedAt": "2026-11-18T10:12:20+00:00",
   "estimates": [
     {
       "dims": {
@@ -45,8 +46,8 @@
       "rate": 0.4566202521216116,
       "wilsonLow": 0.4503613723748114,
       "wilsonHigh": 0.46289285973753963,
-      "bootstrapLow": 0.4498169107856192,
-      "bootstrapHigh": 0.46337350388680953,
+      "bootstrapLow": 0.4497728010386238,
+      "bootstrapHigh": 0.4635709233137769,
       "matches": 450,
       "smallSample": false
     },
@@ -60,8 +61,8 @@
       "rate": 0.5433797478783884,
       "wilsonLow": 0.5371071402624603,
       "wilsonHigh": 0.5496386276251886,
-      "bootstrapLow": 0.5367174707141957,
-      "bootstrapHigh": 0.5503178403368282,
+      "bootstrapLow": 0.5366905304262936,
+      "bootstrapHigh": 0.5501584818672045,
       "matches": 450,
       "smallSample": false
     },
@@ -75,8 +76,8 @@
       "rate": 0.43689632968448167,
       "wilsonLow": 0.41954149760582415,
       "wilsonHigh": 0.4544070604828403,
-      "bootstrapLow": 0.4187362464633763,
-      "bootstrapHigh": 0.45483767277402765,
+      "bootstrapLow": 0.41780376868096164,
+      "bootstrapHigh": 0.4553836022390517,
       "matches": 145,
       "smallSample": false
     },
@@ -90,8 +91,8 @@
       "rate": 0.5631036703155183,
       "wilsonLow": 0.5455929395171598,
       "wilsonHigh": 0.5804585023941758,
-      "bootstrapLow": 0.5456329735034348,
-      "bootstrapHigh": 0.5811417575368826,
+      "bootstrapLow": 0.5451080050825922,
+      "bootstrapHigh": 0.5815006468305304,
       "matches": 145,
       "smallSample": false
     }
@@ -101,7 +102,7 @@
     "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
     "sourceVersion": "a1a189d0ec7d",
     "gamePatch": null,
-    "retrievedAt": "2026-11-18T09:31:26+00:00",
+    "retrievedAt": "2026-11-18T10:12:20+00:00",
     "evidenceType": "derived",
     "confidence": null,
     "verified": true,

@@ -71,6 +71,34 @@ def _rows(con, sql, params=None):
     return [dict(zip(cols, r)) for r in cur.fetchall()]
 
 
+# --- meta era (patch) filtering --------------------------------------------------------------
+# PV-1 patch-history (pv-research): Ascent is structurally stable, so map changes do NOT invalidate
+# older stats; the meta driver is AGENT balance. Recommended current-meta cut: patch major >= 9.
+ERAS = {"all": None, "patch>=9": 9}
+
+
+def patch_major(patch: str | None) -> int | None:
+    """Major version from a 'Patch 13.05' string, or None if unparseable."""
+    if not patch:
+        return None
+    s = patch.lower().replace("patch", "").strip()
+    head = s.split(".")[0].strip()
+    return int(head) if head.isdigit() else None
+
+
+def era_filter(rows: list[dict], era: str) -> list[dict]:
+    """Keep rows whose patch major >= the era's minimum (era 'all' keeps everything)."""
+    minv = ERAS.get(era)
+    if minv is None:
+        return rows
+    out = []
+    for r in rows:
+        pm = patch_major(r.get("patch"))
+        if pm is not None and pm >= minv:
+            out.append(r)
+    return out
+
+
 # --- data loading ----------------------------------------------------------------------------
 def load_rounds(con, international_only: bool = True) -> list[dict]:
     """One row per round (with winner + both loadouts), joined to map + match metadata."""
@@ -291,7 +319,7 @@ def save_eco_future_value(pt_rows, sha, build, filters, iters=2000):
                  est, sha=sha, build=build, filters=filters)
 
 
-def opening_duel(con, sha, build, filters, iters=2000):
+def opening_duel(con, sha, build, filters, iters=2000, era="all"):
     """Opening-duel (first-kill) win rate by side and map, from player_map fk/fd aggregates.
 
     VCT Reference has NO per-round kill sequence, so this is the aggregate 'which side wins the
@@ -300,15 +328,16 @@ def opening_duel(con, sha, build, filters, iters=2000):
     kills (fk_atk) and first deaths (fd_atk) partition the rounds: fk_atk+fd_atk = rounds.
     """
     rows = _rows(con, """
-        SELECT pm.match_id, pm.game_id, mp.map_name,
+        SELECT pm.match_id, pm.game_id, mp.map_name, m.patch,
                SUM(pm.fk_atk) AS fk_atk, SUM(pm.fd_atk) AS fd_atk,
                SUM(pm.fk_def) AS fk_def, SUM(pm.fd_def) AS fd_def
         FROM player_map pm
         JOIN maps mp ON pm.game_id = mp.game_id
         JOIN matches m ON pm.match_id = m.match_id
         WHERE m.is_international AND mp.performance_available
-        GROUP BY pm.match_id, pm.game_id, mp.map_name
+        GROUP BY pm.match_id, pm.game_id, mp.map_name, m.patch
     """)
+    rows = era_filter(rows, era)
 
     def counts(scope_pred, numerator, denom_a, denom_b):
         acc: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -343,10 +372,12 @@ def opening_duel(con, sha, build, filters, iters=2000):
 
 
 # --- orchestration ---------------------------------------------------------------------------
-def build_all(duckdb_path: str, iters: int = 2000) -> dict[str, dict]:
+def build_all(duckdb_path: str, iters: int = 2000, era: str = "all") -> dict[str, dict]:
     import duckdb
-    if not os.path.exists(duckdb_path):
+    if os.path.exists(duckdb_path) is False:
         raise FileNotFoundError(duckdb_path)
+    if era not in ERAS:
+        raise ValueError(f"unknown era {era!r}; known: {sorted(ERAS)}")
     sha = _sha256(duckdb_path)
     build = None
     src = os.path.join(os.path.dirname(duckdb_path), "SOURCE.json")
@@ -354,10 +385,11 @@ def build_all(duckdb_path: str, iters: int = 2000) -> dict[str, dict]:
         build = json.load(open(src)).get("sourceVersion")
     con = duckdb.connect(duckdb_path, read_only=True)
     try:
-        rounds_intl = load_rounds(con, international_only=True)
+        rounds_intl = era_filter(load_rounds(con, international_only=True), era)
         pt_all = per_team_rows(rounds_intl, require_economy=True)
         pt_ascent = [r for r in pt_all if r["map_name"] == "Ascent"]
-        base_filter = {"international": True, "economyAvailable": True, "winnerKnown": True}
+        base_filter = {"international": True, "economyAvailable": True, "winnerKnown": True, "era": era}
+        bf2 = {"international": True, "winnerKnown": True, "era": era}
         out = {
             "economy_matchup.international": economy_matchup(
                 pt_all, "international", sha, build, {**base_filter, "scope": "all international maps"}, iters),
@@ -366,26 +398,27 @@ def build_all(duckdb_path: str, iters: int = 2000) -> dict[str, dict]:
             "side_map_baselines": side_map_baselines(
                 pt_all, sha, build, {**base_filter, "scope": "international; all maps + Ascent"}, iters),
             "round_outcome_distribution": round_outcome_distribution(
-                rounds_intl, sha, build, {"international": True, "winnerKnown": True,
-                                          "note": "economy not required"}, iters),
+                rounds_intl, sha, build, {**bf2, "note": "economy not required"}, iters),
             "pistol_conversion": pistol_conversion(
-                rounds_intl, sha, build, {"international": True, "winnerKnown": True,
-                                          "note": "economy not required; round results only"}, iters),
+                rounds_intl, sha, build, {**bf2, "note": "economy not required; round results only"}, iters),
             "save_eco_future_value": save_eco_future_value(
                 pt_all, sha, build, {**base_filter, "scope": "international; same-half next round"}, iters),
             "combat_opening_duel": opening_duel(
-                con, sha, build, {"international": True, "performanceAvailable": True,
-                                  "note": "aggregate fk/fd; no per-round kill sequence in source"}, iters),
+                con, sha, build, {"international": True, "performanceAvailable": True, "era": era,
+                                  "note": "aggregate fk/fd; no per-round kill sequence in source"}, iters, era),
         }
+        # tag the era into each priorId so files from different eras never collide.
+        for p in out.values():
+            p["source"]["filters"]["era"] = era
         return out
     finally:
         con.close()
 
 
-def write_all(duckdb_path: str, out_dir: str, iters: int = 2000) -> dict[str, str]:
+def write_all(duckdb_path: str, out_dir: str, iters: int = 2000, era: str = "all") -> dict[str, str]:
     os.makedirs(out_dir, exist_ok=True)
     written = {}
-    for prior_id, payload in build_all(duckdb_path, iters).items():
+    for prior_id, payload in build_all(duckdb_path, iters, era).items():
         path = os.path.join(out_dir, f"{prior_id}.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
