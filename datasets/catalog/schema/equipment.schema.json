@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/equipment.schema.json",
+  "title": "PROJECT V equipment catalog record",
+  "description": "Shields and spike constants. These numerics are NOT in valorant-api and must be sourced from official patch notes/wiki. Values are null + verified=false until sourced (source holds the URL). Round/economy reward numerics are owned by PV-3 packages/game-rules — overlapping items carry needsCrossCheckPV3=true and are NOT authored here as fact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "type", "verified"],
+  "properties": {
+    "id": {"type": "string"},
+    "name": {"type": "string"},
+    "type": {"type": "string", "enum": ["shield", "objective"]},
+    "cost": {"type": ["integer", "null"], "description": "credits (shields)"},
+    "armor": {"type": ["integer", "null"], "description": "armor points (shields)"},
+    "regen": {"type": ["boolean", "null"], "description": "regenerating shield"},
+    "plantTimeMs": {"type": ["number", "null"], "description": "spike plant time"},
+    "defuseTimeMs": {"type": ["number", "null"], "description": "spike full defuse time"},
+    "defuseHalfMs": {"type": ["number", "null"], "description": "spike half-defuse checkpoint"},
+    "detonateTimeMs": {"type": ["number", "null"], "description": "time from plant to detonation"},
+    "verified": {"type": "boolean"},
+    "source": {"type": ["string", "null"], "description": "URL of the official source"},
+    "needsCrossCheckPV3": {"type": "boolean", "description": "overlaps PV-3 packages/game-rules; reconcile there"},
+    "note": {"type": ["string", "null"]}
+  }
+}

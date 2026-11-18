@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/ability.schema.json",
+  "title": "PROJECT V ability catalog record",
+  "description": "One ability. Name/slot/description are API-verified. Gameplay numerics (cost, charges, cooldown, ultPoints, duration, typeTags) are NOT in valorant-api; they are null with gameplayVerified=false until sourced from official patch notes/wiki (gameplaySource holds the URL). Never fill an unsourced estimate as fact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["abilityId", "agentId", "agentName", "slot", "name", "gameplay", "provenance"],
+  "properties": {
+    "abilityId": {"type": "string", "description": "<agentName-slug>:<slot>"},
+    "agentId": {"type": "string"},
+    "agentName": {"type": "string"},
+    "slot": {"type": "string", "enum": ["Ability1", "Ability2", "Grenade", "Ultimate", "Passive"]},
+    "name": {"type": "string"},
+    "description": {"type": ["string", "null"]},
+    "defaultKeybind": {"type": ["string", "null"], "description": "C/Q/E/X — NOT in the API and agent/UI dependent; null + unverified unless sourced"},
+    "gameplay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gameplayVerified"],
+      "properties": {
+        "cost": {"type": ["integer", "null"], "description": "credits (0 for signature/ultimate-point abilities)"},
+        "charges": {"type": ["integer", "null"], "description": "max charges purchasable/available"},
+        "cooldownMs": {"type": ["number", "null"]},
+        "killRecharge": {"type": ["boolean", "null"], "description": "recharges on kills/assists (e.g. recon/signature)"},
+        "ultPoints": {"type": ["integer", "null"], "description": "ultimate points required (Ultimate slot only)"},
+        "durationMs": {"type": ["number", "null"]},
+        "typeTags": {
+          "type": "array",
+          "description": "smoke | flash | recon | molly | wall | heal | trap | movement | stun | detain | decay | damage | teleport | summon ... (empty until sourced)",
+          "items": {"type": "string"}
+        },
+        "gameplayVerified": {"type": "boolean"},
+        "gameplaySource": {"type": ["string", "null"], "description": "URL of the official source for the gameplay numerics"}
+      }
+    },
+    "provenance": {"$ref": "provenance.schema.json"}
+  }
+}

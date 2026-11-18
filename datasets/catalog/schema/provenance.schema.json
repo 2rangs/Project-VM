@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/provenance.schema.json",
+  "title": "PROJECT V catalog provenance",
+  "description": "Per-record provenance aligned with README §13.3 (evidenceType) and §3.4.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "patch", "retrievedAt", "verified"],
+  "properties": {
+    "source": {"type": ["string", "null"], "description": "source URL or identifier"},
+    "patch": {"type": "string", "description": "game build the record is valid for, e.g. release-13.10"},
+    "retrievedAt": {"type": ["string", "null"], "description": "ISO8601 retrieval time"},
+    "evidenceType": {"type": ["string", "null"], "enum": ["observed", "decoded", "derived", "inferred", "simulated", "api", null]},
+    "verified": {"type": "boolean", "description": "true only if the value came from a cited, confirmed source"}
+  }
+}

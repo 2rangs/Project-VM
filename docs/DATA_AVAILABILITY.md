@@ -71,6 +71,18 @@ ML 데이터셋(EsportsBench(200)·D2E·gaming-500-hours·X-EGO-CS[=CS]).
 
 ---
 
+## E-2. 게임 데이터 카탈로그 (PV-1 2차, valorant-api 기반)
+
+| 산출 | 상태 | 수준 | 근거 |
+|---|---|---|---|
+| weapons.json (21) | VERIFIED_API | **L3** | 빌더 실행·스키마 통과. 무기 스탯 전부 API 검증 |
+| agents.json (30) | VERIFIED_API | **L3** | 빌더 실행·스키마 통과. role+슬롯 API 검증 |
+| abilities.json (130) | 부분검증 | **L3(구조)/L0(수치)** | 이름/슬롯/설명 API 검증; cost/charges/cooldown/ultPoints/duration/typeTags는 **null+verified:false**(미소싱) |
+| equipment.json (4) | 미검증 수치 | L0 | 실드·스파이크 상수 전부 null+verified:false. `needsCrossCheckPV3:true` |
+
+빌더/스키마/문서만 커밋, 생성 데이터는 gitignore(valorant-api 라이선스 불명확) → 로컬 재생성.
+검증 실행: `pytest tools/catalog-builder -q` → **9 passed**; `build_catalog.py` → 전 레코드 스키마 통과.
+
 ## F. 특이 사항 (혼동 방지)
 
 1. **C9의 "592,893 샘플" 원시 파일은 저장소에 없다** (`.gitignore` 제외). 있는 것은 파생 모델.

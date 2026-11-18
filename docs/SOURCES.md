@@ -82,6 +82,7 @@
 ### 2.6 valorant-api.com (VERIFIED_API, L2)
 - **실제 GET 성공(2026-11-18):** `/v1/version` → build `release-13.10`, engine 5.3.2, buildDate 2026-11-07. `/v1/agents?isPlayableCharacter=true` → **30**(abilities 슬롯 Ability1/Ability2/Grenade/Ultimate/Passive). `/v1/weapons` → **21**. `/v1/maps` → **27**(미니맵 변환 좌표 포함).
 - **제공 O:** 요원/무기/스킬 카탈로그, 맵 UUID, 월드→미니맵 변환. **제공 X:** 경기 텔레메트리, 충돌/내비 지오메트리, 스킬 수치(반경·지속). 라이선스/ToS 미확인 → 재배포 unknown.
+- **PV-1 2차:** 이 API를 정규화해 게임 데이터 카탈로그 생성 — [`docs/research/CATALOG.md`](research/CATALOG.md), 빌더 [`tools/catalog-builder/`](../tools/catalog-builder/), 스키마 [`datasets/catalog/schema/`](../datasets/catalog/schema/). 산출(무기21·요원30·스킬130) 스키마 통과, pytest 9 passed. 라이선스 불명확으로 **생성 데이터는 커밋 안 함(gitignore)**, 로컬 재생성.
 
 ---
 

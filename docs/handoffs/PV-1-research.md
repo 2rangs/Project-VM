@@ -96,4 +96,68 @@ python3 -c "import json;json.load(open('datasets/registry/sources.json'));print(
 - PV-2는 `assigned_agent="PV-2"` 항목(13개)부터, PV-3는 `"PV-3"` 항목(5개)부터 착수.
 
 ---
-**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한 데이터를 받은 것으로 기록하지 않음.**
+
+# PROJECT V — TASK HANDOFF (PV-1 2차: 게임 데이터 카탈로그)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research`
+
+## 1. 작업 목표
+시뮬레이션 엔진이 바로 소비하는 요원·무기·스킬·궁극기·장비 정규화 카탈로그 구축 (Handoff §10, README §11). 기준 빌드 `release-13.10`, 모든 레코드에 패치 부착.
+
+## 2. 완료한 작업 (실제 수행)
+- **빌더 구현·실행:** `tools/catalog-builder/`(Python stdlib + jsonschema). 라이브 수집→정규화→스키마검증.
+- **산출(실행 확인):** weapons 21 / agents 30 / abilities 130 / equipment 4, 전부 JSON Schema 통과.
+- **무기:** 가격·연사·탄창·장전(ms)·장착(ms)·이동배수·거리구간별 부위 피해(m)·관통·ADS — API에서 **검증**.
+- **요원:** role(Duelist9/Initiator7/Controller7/Sentinel7) + 스킬 슬롯 — API 검증.
+- **스킬:** 이름/슬롯/설명 API 검증. 게임플레이 수치(cost/charges/cooldown/ultPoints/duration/typeTags)는 API에 없어 **null+verified:false**(추정 미기입).
+- **장비:** 실드3+스파이크 구조, 수치 전부 null+verified:false, `needsCrossCheckPV3:true`.
+- **테스트:** `pytest -q` → **9 passed**(정규화 로직 + 스키마 검증).
+
+## 3. 변경한 파일 (PV-1 소유 경로)
+- `tools/catalog-builder/`: fetch.py, normalize.py, ability_facts.py, equipment_facts.py, validate.py, build_catalog.py, README.md, tests/(test_normalize.py + 합성 픽스처).
+- `datasets/catalog/schema/`: weapon/agent/ability/equipment/provenance.schema.json
+- `datasets/catalog/.gitignore`(release-*/ 제외), `datasets/catalog/README.md`
+- `docs/research/CATALOG.md`; `docs/SOURCES.md`·`DATA_AVAILABILITY.md`·`LICENSE_AUDIT.md`·`datasets/registry/sources.json` 갱신.
+- **커밋 안 함:** `datasets/catalog/release-13.10/`(Riot 파생 생성 데이터, gitignore).
+
+## 4. 데이터 출처
+valorant-api.com `/v1/{version,weapons,agents}` (2026-11-18). 스킬/장비 수치 소싱 예정 출처는 `CATALOG.md §4`.
+
+## 5. 실행 방법
+```bash
+python tools/catalog-builder/build_catalog.py            # 라이브
+python tools/catalog-builder/build_catalog.py --offline  # 캐시 raw/
+pytest tools/catalog-builder -q
+```
+
+## 6~7. 검증/결과
+pytest 9 passed. 빌더: 21/30/130/4 레코드 전부 스키마 통과. ability 수치 검증 0/130(설계상 null), equipment 0/4.
+
+## 8. 현재 미완료
+- 스킬 게임플레이 수치(비용·충전·쿨다운·궁극포인트·지속·타입) 공식 소싱 미완 → `ability_facts.py` 비어 있음.
+- 실드 cost/armor, 스파이크 timing 미소싱. defaultKeybind(C/Q/E/X) 매핑 미확정.
+- 생성 데이터는 로컬에만 존재(커밋 안 함).
+
+## 9. 알려진 문제
+- valorant-api는 스킬 수치·장비 상수를 제공하지 않음 → 해당 필드 null이 정상.
+- jsonschema RefResolver Deprecation 경고(동작 무해).
+
+## 10. 설계 결정
+- valorant-api 라이선스 불명확 → **스크립트·스키마·문서만 커밋**, Riot 파생 데이터 gitignore(로컬 재생성).
+- normalize를 순수 함수로 분리(네트워크 격리, 단위테스트 가능). 수치는 출처 테이블(`*_facts.py`)로만 주입 → 추정 유입 차단.
+- 단위: camelCase/ms/m. 1 m=100 Unreal 단위(vrfkit 위치 cm)와 교차참조 명시.
+
+## 11. 라이선스
+weapons/agents/abilities 데이터는 Riot 파생 → 재배포 보수적(생성물 미커밋). 스키마·합성 픽스처는 PV-1 작성물로 커밋. 상세 `LICENSE_AUDIT.md §2.0`.
+
+## 12. 다음 권장 작업
+1. 공식 패치노트/위키에서 스킬 수치·실드·스파이크 소싱 → `ability_facts.py`/`equipment_facts.py`(URL 필수, verified:true).
+2. PV-3 `packages/game-rules`와 장비·경제 수치 대조(`needsCrossCheckPV3`).
+3. typeTags(smoke/flash/recon/molly/wall/heal/trap/movement…) 분류 채우기 → 전술 엔진 belief/행동에 사용.
+
+## 13. 작업 재개 지점
+- 먼저 열 파일: `docs/research/CATALOG.md` → `tools/catalog-builder/normalize.py`/`ability_facts.py`.
+- 첫 명령: `pytest tools/catalog-builder -q` → `python tools/catalog-builder/build_catalog.py`.
+
+---
+**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**

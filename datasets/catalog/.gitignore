@@ -1,0 +1,6 @@
+# Generated game-data catalog (Riot-derived via valorant-api) is NOT committed:
+# valorant-api's licence is unclear, so per the agreed rule only the collection
+# script + schemas + docs are committed and the data is regenerated locally.
+#   python tools/catalog-builder/build_catalog.py           # live
+#   python tools/catalog-builder/build_catalog.py --offline # from cached raw/
+release-*/

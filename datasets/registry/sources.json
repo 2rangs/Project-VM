@@ -1,9 +1,10 @@
 {
-  "registry_version": "1.0.0",
+  "registry_version": "1.1.0",
   "generated_at": "2026-11-18T08:42:53Z",
+  "updated_at": "2026-11-18T09:05:00Z",
   "generated_by": "PV-1-research",
   "game_build_at_survey": "release-13.10",
-  "notes": "Status/level per README §3.2–3.3. Only entries with verification_level>=1 were inspected beyond a reachability check this session. 'HTTP 200 (curl 2026-11-18)' = link existence (level 0) only. PV-2_PENDING is a project extension status for items delegated to the Data agent; replace with a standard enum value on verification.",
+  "notes": "Status/level per README §3.2–3.3. Only entries with verification_level>=1 were inspected beyond a reachability check this session. 'HTTP 200 (curl 2026-11-18)' = link existence (level 0) only. PV-2_PENDING is a project extension status for items delegated to the Data agent; replace with a standard enum value on verification. v1.1.0 (PV-1 2nd pass): valorant-api now feeds the game-data catalog (tools/catalog-builder, datasets/catalog/schema, docs/research/CATALOG.md); generated catalog data is gitignored (licence unclear).",
   "status_enum": ["VERIFIED_DOWNLOADABLE", "VERIFIED_API", "VERIFIED_SOURCE_CODE", "VIEW_ONLY", "AUTH_REQUIRED", "PAID_ACCESS", "LICENSE_RESTRICTED", "UNVERIFIED", "DEPRECATED", "INACCESSIBLE", "PV-2_PENDING"],
   "verification_level_enum": {
     "0": "link exists",
@@ -201,7 +202,7 @@
       "code_availability": "no",
       "status": "VERIFIED_API",
       "verification_level": 2,
-      "quality_notes": "Live-fetched. /v1/version -> build release-13.10, engine 5.3.2, buildDate 2026-11-07 (consistent with vrfkit's top supported build). Agents carry abilities[] with slots Ability1/Ability2/Grenade/Ultimate/Passive. Maps carry minimap coordinate transform fields.",
+      "quality_notes": "Live-fetched. /v1/version -> build release-13.10, engine 5.3.2, buildDate 2026-11-07 (consistent with vrfkit's top supported build). Agents carry abilities[] with slots Ability1/Ability2/Grenade/Ultimate/Passive. Maps carry minimap coordinate transform fields. PV-1 2nd pass: normalized into the game-data catalog (21 weapons, 30 agents, 130 abilities) via tools/catalog-builder, schema-validated. Weapon stats + agent/ability names are verified here; ability gameplay numerics (cost/charges/cooldown/ult points/duration) and shield/spike constants are NOT in this API and remain null+unverified pending official sourcing.",
       "known_limitations": "Static/catalog data only: agent/weapon/ability definitions and map art+transform — NOT match telemetry, NOT collision/nav geometry, NOT ability numeric extents (radius/duration not provided; see ValoReview abilityfacts). Licence/ToS not located; treat redistribution as unknown until confirmed.",
       "project_relevance": "Primary source for §11 agent/weapon/ability catalog, map UUIDs, and world->minimap transform. Immediately usable, no auth.",
       "verification_evidence": "curl GET /v1/version, /v1/agents?isPlayableCharacter=true (30), /v1/weapons (21), /v1/maps (27) 2026-11-18, parsed JSON with python3.",

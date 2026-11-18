@@ -41,6 +41,11 @@
 | **사용자 Blender 맵** | 미확인(Riot 지오메트리 추정) | ❌ | unknown | 게임 맵 IP는 Riot. 내부 개발용 한정 권장 |
 | **참고 게임(FM/OOTP 등)** | 독점 상용 | ❌ | ❌ | 설계 참고만, 내부 비공개 가정 금지 |
 
+### 2.0 게임 데이터 카탈로그 결정 (PV-1 2차)
+valorant-api 라이선스가 **불명확**하므로, 게임 데이터 카탈로그는 **수집 스크립트·스키마·문서만 커밋**하고
+Riot 파생 생성 데이터(`datasets/catalog/release-*/`)는 **gitignore**하여 로컬 재생성한다(§3 권고 2·3 적용).
+스키마(`datasets/catalog/schema/`)와 테스트 픽스처는 PV-1이 작성(합성 가짜 이름)한 것이라 커밋한다.
+
 ### 2.1 VCT Reference / vctstats (PV-2 확정 예정)
 - **VCT Reference:** `/terms` 미열람 → 라이선스 **UNVERIFIED**. PV-2가 약관 원문 확인 후 확정.
 - **vctstats:** 저장소 LICENSE 미열람 → **UNVERIFIED**. PV-2 확인.
