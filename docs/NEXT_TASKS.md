@@ -23,7 +23,8 @@
 | 과제 | 선행 / 막힌 이유 |
 |---|---|
 | NavMesh 완전 연결 | pv-mapmesh 연결성 한계 기록 → 수동 보강/재빌드. PV-4 navgraph와 정합 |
-| 나머지 맵(Ascent 외) Blender 분석 | **🔒 부분 사용자 조치** — 맵 .blend 다운로드(Drive). PV-5 파이프라인 재사용 |
+| 2순위 맵 **Lotus** 확장 | **데이터 계층 준비 완료**(pv-research 10차: comps/패치이력/전술골격, `NEXT_MAP_PREP.md`). 남은 것: PV-4 Lotus navgraph(임시 구역어휘 교체) → PV-5 Lotus 메시(🔒 .blend 다운로드) → 정식 전술 KB → PV-2 priors 맵필터. 엔진은 Ascent 검증 후(DECISION-009) |
+| 나머지 맵(Lotus 외) Blender 분석 | **🔒 부분 사용자 조치** — 맵 .blend 다운로드(Drive). PV-5 파이프라인 재사용 |
 | 시뮬 vs 실측 통계 검증 (README §31) | round-simulator 산출 vs pv-research comps(공수 WR·조합). patch≥9.x 구간 권고 |
 | 풀 5v5 라운드→매치→시즌 | round-simulator(라운드 루프 9테스트) 확장; 결정적 고속 시뮬 |
 

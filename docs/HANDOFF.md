@@ -42,6 +42,7 @@
 | Save/경제·궁극 판단 | 🟡 | pv-core game-rules에 경제/궁극/세이브 규칙값(provisional). 전용 Save 엔진 미확정 |
 | 5v5 라운드 시뮬레이션 | 🟡 | pv-spatial round-simulator: **결정적 고정틱 5v5 라운드 루프**(9 테스트). 풀매치·시즌 미완 |
 | 실제 경기 통계 검증 | 🟡 | pv-research comps baseline(국제전 Ascent) 존재. 시뮬 vs 실측 비교 미실행 |
+| 2순위 맵 데이터 계층(Lotus) | 🟡 | pv-research 10차: Lotus comps/패치이력/전술골격 준비(엔진은 Ascent만 — DECISION-009). 구역어휘 임시(PV-4 navgraph 대기). `docs/research/NEXT_MAP_PREP.md` |
 
 **테스트 합계(명시된 것만):** pv-core 45, pv-spatial 80(21+17+15+18+9), pv-replay 7, pv-data·pv-research 다수(pytest). 수치는 각 handoff 명시값.
 

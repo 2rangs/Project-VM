@@ -1,0 +1,185 @@
+{
+ "map": "Lotus",
+ "mapUuid": "2fe4ed3a-450a-948b-6d6b-e89a78e680a9",
+ "status": "TEMPORARY — valorant-api callout names only. PV-4 navgraph for Lotus does NOT exist yet; these tempIds must be mapped to real navgraph zone IDs once PV-4 builds the Lotus graph.",
+ "source": "https://valorant-api.com/v1/maps (Lotus callouts)",
+ "retrievedAt": "2026-11-18",
+ "sites": [
+  "A",
+  "B",
+  "C"
+ ],
+ "zoneTempIds": [
+  "a-top",
+  "a-drop",
+  "a-site",
+  "a-hut",
+  "a-tree",
+  "a-door",
+  "a-main",
+  "a-rubble",
+  "a-root",
+  "a-lobby",
+  "c-lobby",
+  "b-pillars",
+  "b-main",
+  "c-door",
+  "b-site",
+  "a-link",
+  "b-upper",
+  "c-waterfall",
+  "c-link",
+  "a-stairs",
+  "c-mound",
+  "c-main",
+  "c-bend",
+  "c-site",
+  "c-hall",
+  "c-gravel",
+  "defender-side-spawn",
+  "attacker-side-spawn"
+ ],
+ "zones": [
+  {
+   "tempId": "a-top",
+   "superRegion": "A",
+   "region": "Top"
+  },
+  {
+   "tempId": "a-drop",
+   "superRegion": "A",
+   "region": "Drop"
+  },
+  {
+   "tempId": "a-site",
+   "superRegion": "A",
+   "region": "Site"
+  },
+  {
+   "tempId": "a-hut",
+   "superRegion": "A",
+   "region": "Hut"
+  },
+  {
+   "tempId": "a-tree",
+   "superRegion": "A",
+   "region": "Tree"
+  },
+  {
+   "tempId": "a-door",
+   "superRegion": "A",
+   "region": "Door"
+  },
+  {
+   "tempId": "a-main",
+   "superRegion": "A",
+   "region": "Main"
+  },
+  {
+   "tempId": "a-rubble",
+   "superRegion": "A",
+   "region": "Rubble"
+  },
+  {
+   "tempId": "a-root",
+   "superRegion": "A",
+   "region": "Root"
+  },
+  {
+   "tempId": "a-lobby",
+   "superRegion": "A",
+   "region": "Lobby"
+  },
+  {
+   "tempId": "c-lobby",
+   "superRegion": "C",
+   "region": "Lobby"
+  },
+  {
+   "tempId": "b-pillars",
+   "superRegion": "B",
+   "region": "Pillars"
+  },
+  {
+   "tempId": "b-main",
+   "superRegion": "B",
+   "region": "Main"
+  },
+  {
+   "tempId": "c-door",
+   "superRegion": "C",
+   "region": "Door"
+  },
+  {
+   "tempId": "b-site",
+   "superRegion": "B",
+   "region": "Site"
+  },
+  {
+   "tempId": "a-link",
+   "superRegion": "A",
+   "region": "Link"
+  },
+  {
+   "tempId": "b-upper",
+   "superRegion": "B",
+   "region": "Upper"
+  },
+  {
+   "tempId": "c-waterfall",
+   "superRegion": "C",
+   "region": "Waterfall"
+  },
+  {
+   "tempId": "c-link",
+   "superRegion": "C",
+   "region": "Link"
+  },
+  {
+   "tempId": "a-stairs",
+   "superRegion": "A",
+   "region": "Stairs"
+  },
+  {
+   "tempId": "c-mound",
+   "superRegion": "C",
+   "region": "Mound"
+  },
+  {
+   "tempId": "c-main",
+   "superRegion": "C",
+   "region": "Main"
+  },
+  {
+   "tempId": "c-bend",
+   "superRegion": "C",
+   "region": "Bend"
+  },
+  {
+   "tempId": "c-site",
+   "superRegion": "C",
+   "region": "Site"
+  },
+  {
+   "tempId": "c-hall",
+   "superRegion": "C",
+   "region": "Hall"
+  },
+  {
+   "tempId": "c-gravel",
+   "superRegion": "C",
+   "region": "Gravel"
+  },
+  {
+   "tempId": "defender-side-spawn",
+   "superRegion": "Defender Side",
+   "region": "Spawn"
+  },
+  {
+   "tempId": "attacker-side-spawn",
+   "superRegion": "Attacker Side",
+   "region": "Spawn"
+  }
+ ],
+ "needsPV4Navgraph": true
+}

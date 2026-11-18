@@ -160,6 +160,55 @@ def test_ability_facts_have_keybinds():
             assert v.get("defaultKeybind") == KEY[slot], k
 
 
+def test_lotus_second_map_prep_valid():
+    """Lotus data-layer prep: comps + patch-history validate; tactics skeleton is
+    temporary (callout vocab, needs PV-4 navgraph) and self-consistent."""
+    import re as _re
+    import jsonschema
+    comps = json.loads((REPO / "datasets" / "derived" / "comps" / "lotus-comps.json").read_text())
+    comps_schema = json.loads((REPO / "datasets" / "derived" / "comps" / "ascent-comps.schema.json").read_text())
+    jsonschema.Draft7Validator(comps_schema).validate(comps)
+    assert comps["map"] == "Lotus" and comps["overall"]["teamMaps"] > 0
+
+    ph = json.loads((REPO / "datasets" / "derived" / "meta" / "lotus-patch-history.json").read_text())
+    ph_schema = json.loads((REPO / "datasets" / "derived" / "meta" / "patch-history.schema.json").read_text())
+    jsonschema.Draft7Validator(ph_schema).validate(ph)
+
+    def pk(v):
+        m = _re.match(r"(\d+)\.(\d+)", v)
+        return (int(m.group(1)), int(m.group(2)))
+    mu = [c["patch"] for c in ph["mapUpdateHistory"]]
+    assert mu == sorted(mu, key=pk)
+
+    vocab = json.loads((REPO / "datasets" / "derived" / "tactics" / "lotus-zone-vocabulary.json").read_text())
+    skel = json.loads((REPO / "datasets" / "derived" / "tactics" / "lotus-tactics.skeleton.json").read_text())
+    assert vocab["needsPV4Navgraph"] is True and skel["needsPV4Navgraph"] is True
+    zset = set(vocab["zoneTempIds"])
+    for e in skel["attackElements"] + skel["defenseElements"]:
+        for z in e.get("zonesTemp", []):
+            assert z in zset, (e.get("name"), z)
+
+
+def test_ascent_comps_regression_if_db():
+    """Re-running the map-parameterized builder for Ascent must reproduce the
+    committed Ascent comps (proves Lotus support did not change Ascent). DB is not
+    committed -> skip when absent."""
+    import os
+    import pytest
+    db = os.environ.get("VCT_DUCKDB", "/tmp/pv-vct/vct.duckdb")
+    if not os.path.exists(db):
+        pytest.skip("VCT Reference DuckDB not present (not committed)")
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("bac", TOOL / "build_ascent_comps.py")
+    bac = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bac)
+    fresh = bac.build(db, "Ascent")
+    committed = json.loads((REPO / "datasets" / "derived" / "comps" / "ascent-comps.json").read_text())
+    assert fresh["overall"]["teamMaps"] == committed["overall"]["teamMaps"]
+    assert fresh["overall"]["atkRoundWR"] == committed["overall"]["atkRoundWR"]
+    assert [a["agent"] for a in fresh["pickRate"][:5]] == [a["agent"] for a in committed["pickRate"][:5]]
+
+
 def test_ascent_tactics_valid_and_grounded():
     """Tactics validate against the schema and only reference real navgraph zones/edges."""
     import jsonschema
