@@ -17,6 +17,7 @@ import {
   toPerceptionAbilityStates,
   visionBlockerIsSmoke,
   deniedZoneIds,
+  activeAreaDenials,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
@@ -48,6 +49,18 @@ export interface RoundSimulatorDeps {
 const RUN_UNITS_PER_SEC = 675;
 const WALK_UNITS_PER_SEC = 340;
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
+// Passable-hazard (molly / area-denial) pathfinding cost: how long you'd detour to avoid 1 HP of
+// damage, and how long a crosser is assumed exposed in a hazard zone. A fresh molly thus adds a
+// multi-second detour cost that shrinks to ~0 as it expires, so the planner routes around a fresh
+// molly but walks a dying one.
+const HAZARD_MS_PER_HP = 50;
+const HAZARD_EXPOSURE_MS = 700;
+// Cast occupation: a caster is weapon-unready for the ability's windup (equip/throw) time, not the
+// whole decision tick. DEFAULT applies when the catalog has no windup (manual-approx). If an enemy
+// is met during the windup, the caster reacts this much slower (weapon not out), but no longer —
+// the window is bounded, so there is no infinitely-helpless caster.
+const DEFAULT_CAST_WINDUP_MS = 700;
+const CAST_WINDUP_PENALTY_MS = 500;
 
 /** Command-trace sink; a no-op unless config.traceCommands is on (see runRound). */
 type Tracer = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string) => void;
@@ -121,6 +134,8 @@ export class RoundSimulator {
     const commandTrace: CommandTraceEvent[] = [];
     const engagementTrace: EngagementRecord[] = [];
     const tracedKeys = new Set<string>();
+    // When each player is weapon-ready again after a cast (elapsedMs); mid-cast = a duel penalty.
+    const castBusyUntil = new Map<string, number>();
     const trace = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string): void => {
       if (!this.cfg.traceCommands) return;
       if (dedupeKey !== undefined) {
@@ -172,12 +187,14 @@ export class RoundSimulator {
         }
       }
 
-      // 2. movement (paths route around active molly / area-denial zones)
-      const denied = deniedZoneIds(abilityEngine);
+      // 2. movement. Molly / area-denial is a PASSABLE hazard: it adds pathfinding cost (the
+      // planner detours when cheaper, else crosses and takes the damage below), not a hard block.
+      const denied = deniedZoneIds(abilityEngine); // zones that deal per-tick damage (step 5b)
+      const hazardCosts = this.hazardCostMap(abilityEngine, state.elapsedMs);
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
-        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", denied);
+        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", hazardCosts);
         this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined);
         // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
         // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
@@ -232,6 +249,8 @@ export class RoundSimulator {
         }, { affectedPlayerIds });
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
+        // Cast occupation: weapon-unready for the ability's windup (equip/throw), catalog or default.
+        castBusyUntil.set(p.id, state.elapsedMs + (spec.windupMs ?? DEFAULT_CAST_WINDUP_MS));
         push({ kind: "abilityUsed", tick: state.tick, elapsedMs: state.elapsedMs, actor: p.id, detail: abilityId });
         trace({ playerId: p.id, phase: "ability", abilityId, result: "used" });
         // movement effect (Jett dash, Omen Shrouded Step): instantly displace the caster to the
@@ -257,7 +276,7 @@ export class RoundSimulator {
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null);
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil);
 
       // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
       // overlapping mollies in the same zone do not double-dip the per-tick damage.
@@ -334,18 +353,30 @@ export class RoundSimulator {
 
   // ---- helpers ----
 
-  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", blockedZones: readonly string[] = []): void {
+  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", hazardCosts?: ReadonlyMap<string, number>): void {
     p.moveMode = mode;
-    // keep the cached path unless the goal changed or it now runs through a denied zone
-    const sameGoal = p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length;
-    const crossesDenied = blockedZones.length > 0 && p.path.slice(p.pathIndex).some((z) => blockedZones.includes(z));
-    if (sameGoal && !crossesDenied) return;
-    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { blockedZones });
+    // Keep the cached path while the goal is unchanged; the path is planned with the hazard costs
+    // active when it was computed (a hazard appearing mid-route is not re-routed — the crosser
+    // takes the damage, which is the intended passable-hazard behaviour).
+    if (p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length) return;
+    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { hazardCosts });
     if (r) {
       p.path = r.path;
       p.pathIndex = p.path[0] === p.zoneId ? 1 : 0;
       p.edgeProgressMs = 0;
     }
+  }
+
+  /** Passable-hazard pathfinding costs from active molly/area-denial (shrink as they expire). */
+  private hazardCostMap(abilityEngine: AbilityEngine, nowMs: number): ReadonlyMap<string, number> {
+    const m = new Map<string, number>();
+    for (const h of activeAreaDenials(abilityEngine, nowMs)) {
+      const exposureMs = Math.min(h.remainingMs, HAZARD_EXPOSURE_MS);
+      const ticks = Math.ceil(exposureMs / this.cfg.tickMs);
+      const cost = ticks * this.cfg.mollyDamagePerTick * HAZARD_MS_PER_HP;
+      m.set(h.zoneId, Math.max(m.get(h.zoneId) ?? 0, cost)); // overlapping mollies: one hazard, max cost
+    }
+    return m;
   }
 
   /**
@@ -432,6 +463,7 @@ export class RoundSimulator {
     engaged: Set<string>,
     events: SimEvent[],
     engTrace: EngagementRecord[] | null,
+    castBusyUntil: ReadonlyMap<string, number>,
   ): void {
     const alive = state.players.filter((p) => p.alive);
     // A player can be in at most one duel per tick — you can only shoot one target at a
@@ -452,8 +484,8 @@ export class RoundSimulator {
         busy.add(a.id);
         busy.add(b.id);
         const seed = deriveSeed(this.cfg.seed, `${state.tick}:${key}`);
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA, this.isMoving(b));
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB, this.isMoving(a));
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA, this.isMoving(b), castBusyUntil);
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB, this.isMoving(a), castBusyUntil);
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
@@ -492,14 +524,18 @@ export class RoundSimulator {
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean): Combatant {
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
     const stationary = !this.isMoving(p);
-    const preAim = seesEnemy && !enemySeesSelf && stationary;
+    // Mid-cast: weapon not out (within the ability windup) → no pre-aim and a reaction penalty.
+    const casting = (castBusyUntil.get(p.id) ?? 0) > state.elapsedMs;
+    const preAim = seesEnemy && !enemySeesSelf && stationary && !casting;
     // Peeker's advantage: a stationary holder reacts late to an enemy peeking into it, even on
-    // mutual sight. One who did not see first keeps the full surprise delay.
-    const seesEnemyAtMs = !seesEnemy ? SURPRISE_DELAY_MS : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
+    // mutual sight. One who did not see first keeps the full surprise delay. A caster caught mid-
+    // windup reacts slower still (weapon-unready), bounded by the windup.
+    const base = !seesEnemy ? SURPRISE_DELAY_MS : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
+    const seesEnemyAtMs = base + (casting ? CAST_WINDUP_PENALTY_MS : 0);
     return {
       id: p.id, teamId: p.teamId, health: p.health, armor: p.armor, weapon, skills: p.skills,
       posture: {

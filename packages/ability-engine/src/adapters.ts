@@ -33,9 +33,21 @@ export function toPerceptionAbilityStates(engine: AbilityEngine): AbilityState[]
   return out;
 }
 
-/** Zones denied by active molly/area effects — pass as spatial `PathOptions.blockedZones`. */
+/** Zones with active molly/area-denial — used for per-tick damage to anyone standing in them. */
 export function deniedZoneIds(engine: AbilityEngine): string[] {
   return engine.effectsOfType("molly").map((e) => e.zoneId);
+}
+
+/**
+ * Active molly/area-denial zones with their remaining lifetime (ms). Passable HAZARDS: the
+ * round-simulator turns these into pathfinding costs (detour-worthiness that shrinks as the
+ * effect expires) and exposes the observable ones to policies — they are not full blocks.
+ */
+export function activeAreaDenials(engine: AbilityEngine, nowMs: number): { zoneId: string; remainingMs: number }[] {
+  return engine.effectsOfType("molly").map((e) => ({
+    zoneId: e.zoneId,
+    remainingMs: e.expiresAtMs != null ? Math.max(0, e.expiresAtMs - nowMs) : Number.POSITIVE_INFINITY,
+  }));
 }
 
 /** All currently-active reveal snapshots (recon + triggered traps), frozen at reveal time. */

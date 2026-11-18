@@ -15,6 +15,7 @@ export {
   visionBlockerIsSmoke,
   toPerceptionAbilityStates,
   deniedZoneIds,
+  activeAreaDenials,
   revealedEnemies,
   combatFlashBlindMs,
 } from "./adapters.js";

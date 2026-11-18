@@ -21,11 +21,17 @@ export interface PathOptions {
    */
   allowNonTransitWaypoints?: boolean;
   /**
-   * Zones that are temporarily impassable as intermediate waypoints (e.g. a molly /
-   * area-denial or a standing wall). They may still be the start or goal. Used by the
-   * ability-engine for dynamic area denial.
+   * Zones that are temporarily impassable as intermediate waypoints (e.g. a standing wall).
+   * They may still be the start or goal. Full physical blocks only.
    */
   blockedZones?: readonly string[];
+  /**
+   * Extra traversal cost (ms) for entering a zone — a passable HAZARD such as a molly /
+   * area-denial. A path may still cross it, but pays the cost, so the planner detours when a
+   * detour is cheaper and accepts the damage when it is not. Only increases g-scores, so the
+   * straight-line-time heuristic stays admissible.
+   */
+  hazardCosts?: ReadonlyMap<string, number>;
 }
 
 export class ZoneGraph {
@@ -85,6 +91,7 @@ export class ZoneGraph {
     if (startId === goalId) return { path: [startId], timeMs: 0, distanceUnits: 0 };
     const allowNonTransit = opts.allowNonTransitWaypoints === true;
     const blocked = opts.blockedZones && opts.blockedZones.length > 0 ? new Set(opts.blockedZones) : null;
+    const hazardCosts = opts.hazardCosts && opts.hazardCosts.size > 0 ? opts.hazardCosts : null;
     // A neighbor may be expanded only if it is a transit zone or it is the goal
     // (start is never reached as a neighbor since g-scores only decrease from 0).
     const passable = (id: string): boolean => {
@@ -119,7 +126,10 @@ export class ZoneGraph {
       const d = gDist.get(current)!;
       for (const e of this.adj.get(current)!) {
         if (!passable(e.to)) continue;
-        const tentative = g + this.edgeTimeMs(e, mode);
+        // base travel time + any hazard cost for entering e.to (0 for a non-hazard zone, and
+        // never for the goal — arriving at your destination isn't "passing through" a hazard).
+        const hazard = hazardCosts && e.to !== goalId ? hazardCosts.get(e.to) ?? 0 : 0;
+        const tentative = g + this.edgeTimeMs(e, mode) + hazard;
         if (tentative < (gScore.get(e.to) ?? Infinity)) {
           cameFrom.set(e.to, current);
           gScore.set(e.to, tentative);
