@@ -15,7 +15,7 @@ the match/data screens work first; club ops are reserved "준비 중" placeholde
 
 | Screen | Status | Data |
 |---|---|---|
-| **Match Day** | working (stub match) | SimulationRunner (stub → real), real PV-3 decision trace for the coach note; fog-of-war + Belief heatmap are **TODO** (need PV-3 Belief State) |
+| **Match Day** | working (REAL sim) | PV-4 `@pv/round-simulator` in a separate process (real 5v5 rounds), real team select, coach note from a real PV-3 trace; fog-of-war + Belief heatmap are **TODO** (need PV-3 Belief State) |
 | **Squad / Player Profile** | working | PV-2 `player_ratings` + `player_names` — 402 real VCT players, 1–20 grid, uncertainty, explicit null |
 | **Opponent Report** | working | PV-2 `team_profiles` + `team_names` — 70 real teams, economy + map pool |
 | **Tactics** | working (list) | PV-1 `ascent-tactics` (provenance tags shown) |

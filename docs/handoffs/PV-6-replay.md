@@ -239,3 +239,25 @@ cd apps/replay-viewer && npm run build && npm run screenshot
 - 필수: ① 정보전 Match Day(아군 관측만·고스트·Belief 히트맵·콜아웃 피드), ② 경제·궁극기(라운드 타임라인·크레딧 그래프·바이 플래너·궁극기 트래커·세이브 알림), ③ 코치 노트(trace 자연어 카드)+Dev 메뉴 Debugger.
 - 골격: Veto, Agent Select(ascent-comps), Playbook 빌더, Squad/Player Profile(1–20+불확실성+null), Opponent Report.
 - 실명: VCT 프로 핸들·팀 실명(PV-2 ratings/team-profiles). `.vrf` 샘플은 익명 유지. 앱 정보에 "출시 전 내부 빌드" 문구.
+
+---
+
+# PV-6 6차 작업 — 실제 시뮬레이션 연결 (integration branch, 2026-11-18)
+
+`claude/pv-integration`(`c2eb430`~)에서 작업. 내 매니저 UI 파일을 가져오고(이력 제외), PV-4 `@pv/round-simulator`를 데스크톱에 연결.
+
+## 완료 (빌드·tsc·E2E 통과, push됨)
+- **실제 Match Runner**: `src/shared/real-sim.ts`의 `RealMatchRunner`가 PV-4 `@pv/round-simulator`(spatial/combat/perception/ability 엔진)를 **같은 SimulationRunner 인터페이스**로 구동. Electron `utilityProcess`(별도 프로세스, DECISION-007)에서 실행, 진행률·결과는 IPC.
+  - 엔진은 순수 TS(외부 의존 0) → Vite alias로 worker에 소스 번들. 데이터(nav/cs/weapons)는 `src/data/sim/`에 PV-4에서 복사(출처 README).
+  - N라운드 실행 → 각 결과를 PV-4 `toPv6ReplayFormat` → 내 `fromSimEventLog` → 하나의 매치 타임라인으로 병합.
+  - 브라우저 폴백은 stub 유지(엔진이 node:fs 사용).
+- **Match Day**: **실명 팀 선택**(예: NRG vs Team Heretics, PV-2 team_names) + seed + Bo 입력 → 경기. 라운드별 실제 결과 로그(elimination/spikeDefused/timeExpired 등 다양), SIMULATED replay 재생, 이벤트 피드. 엔진 라벨 정직 표시. 경제/궁극기 패널은 아직 synthetic(stub 표시).
+- **검증**: Playwright `_electron` E2E가 **실제 5라운드 경기**를 돌려 SIMULATED replay 로드까지 확인(제외 사유·Squad·셸 포함). 단위 6 + 엔진 11.
+
+## 남은 TODO
+- **안개 뷰 + Belief 히트맵**: PV-3 Belief State의 프레임별 출력이 필요(현재 Replay 포맷은 belief 미포함). 이게 생기면 Match Day에 관측-only 렌더 + 구역 확률 오버레이 추가.
+- **스코어보드**: 라운드별 승자/점수(현재 로그로만 표시; SimResult에 round summary 추가 필요).
+- 경제/궁극기 패널을 실제 시뮬 상태로 교체, Veto/Agent Select/Playbook 실행 연결.
+
+## 커밋 (integration branch)
+`e0ba8e8`(매니저 UI 이식) → `d96eb23`(실제 round-simulator 연결). 루트 `pnpm-lock.yaml`은 내 소유가 아니라 커밋하지 않음.
