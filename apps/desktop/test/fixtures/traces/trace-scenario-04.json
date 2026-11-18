@@ -1,0 +1,327 @@
+{
+  "contextId": "scenario-04-time-pressure",
+  "scenarioRef": "scenario-04",
+  "mapId": "ascent",
+  "roundNumber": 1,
+  "timeRemainingMs": 8000,
+  "provenance": {
+    "synthetic": true,
+    "notes": [
+      "SYNTHETIC — not a real VCT match; do not present as real pro data.",
+      "8s left at A main: a B-site rotation (distance + 4s plant) cannot complete -> infeasible candidate."
+    ]
+  },
+  "world": {
+    "decidingTeamId": "team-0",
+    "decidingSide": "attack",
+    "attackersAlive": 5,
+    "defendersAlive": 5,
+    "knownEnemyAliveCount": 5,
+    "spikePhase": "carried",
+    "spikeZone": null
+  },
+  "observed": {
+    "visibleEnemies": [],
+    "beliefTopZones": []
+  },
+  "generated": [
+    {
+      "id": "A_EXECUTE",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "PEEK@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "PEEK@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "PEEK@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "DEFAULT",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "LURK",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "B_EXECUTE",
+      "category": "strategic",
+      "feasible": false
+    },
+    {
+      "id": "MID_CONTROL",
+      "category": "strategic",
+      "feasible": false
+    },
+    {
+      "id": "FAKE_A_TO_B",
+      "category": "strategic",
+      "feasible": false
+    },
+    {
+      "id": "FAKE_B_TO_A",
+      "category": "strategic",
+      "feasible": false
+    },
+    {
+      "id": "PLANT@atk1",
+      "category": "individual",
+      "feasible": false
+    }
+  ],
+  "excluded": [
+    {
+      "id": "B_EXECUTE",
+      "reasons": [
+        "insufficientTime"
+      ],
+      "explanation": "need 13500ms (carrier move 9500+plant 4000) but only 8000ms left"
+    },
+    {
+      "id": "MID_CONTROL",
+      "reasons": [
+        "insufficientTime"
+      ],
+      "explanation": "not enough time to contest mid"
+    },
+    {
+      "id": "FAKE_A_TO_B",
+      "reasons": [
+        "insufficientTime"
+      ],
+      "explanation": "fake+rotate+plant needs 16500ms > 8000ms"
+    },
+    {
+      "id": "FAKE_B_TO_A",
+      "reasons": [
+        "insufficientTime"
+      ],
+      "explanation": "fake+rotate+plant needs 9500ms > 8000ms"
+    },
+    {
+      "id": "PLANT@atk1",
+      "reasons": [
+        "blocked"
+      ],
+      "explanation": "a-main is not a plantable zone"
+    }
+  ],
+  "prediction": [
+    {
+      "id": "A_EXECUTE",
+      "category": "strategic",
+      "requiredTimeMs": 6500,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.7562,
+      "rationale": [
+        "base 1.00",
+        "risk 0.00",
+        "time 6500ms/8000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk1",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/8000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk2",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/8000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk3",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/8000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk4",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/8000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk5",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/8000ms"
+      ]
+    },
+    {
+      "id": "PEEK@atk1",
+      "category": "individual",
+      "requiredTimeMs": 800,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.32,
+      "rationale": [
+        "base 0.35",
+        "risk 0.00",
+        "time 800ms/8000ms"
+      ]
+    },
+    {
+      "id": "PEEK@atk2",
+      "category": "individual",
+      "requiredTimeMs": 800,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.32,
+      "rationale": [
+        "base 0.35",
+        "risk 0.00",
+        "time 800ms/8000ms"
+      ]
+    },
+    {
+      "id": "PEEK@atk4",
+      "category": "individual",
+      "requiredTimeMs": 800,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.32,
+      "rationale": [
+        "base 0.35",
+        "risk 0.00",
+        "time 800ms/8000ms"
+      ]
+    },
+    {
+      "id": "MOVE@atk1",
+      "category": "individual",
+      "requiredTimeMs": 2500,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.3063,
+      "rationale": [
+        "base 0.40",
+        "risk 0.00",
+        "time 2500ms/8000ms"
+      ]
+    }
+  ],
+  "selected": {
+    "id": "A_EXECUTE",
+    "rationale": "highest-utility feasible strategic action \"A_EXECUTE\" (utility 0.7562, risk 0.00)"
+  }
+}

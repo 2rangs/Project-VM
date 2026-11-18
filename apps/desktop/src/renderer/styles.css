@@ -1,0 +1,53 @@
+:root { color-scheme: dark; --bg:#0b0e13; --panel:#11161f; --line:#263040; --fg:#e6edf3; --muted:#8b98a9; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+.shell { display:flex; flex-direction:column; height:100vh; }
+.tabs { display:flex; align-items:center; gap:8px; padding:8px 14px; border-bottom:1px solid var(--line); background:#0d1218; }
+.brand { font-weight:700; font-size:14px; letter-spacing:.02em; margin-right:8px; }
+.tabs button { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:6px 12px; cursor:pointer; font-size:13px; }
+.tabs button.on { background:#1f6feb33; border-color:#1f6feb; }
+.rt { margin-left:auto; font-family:monospace; font-size:12px; color:var(--muted); }
+.screen { flex:1; overflow:auto; }
+.pad { padding:16px; }
+.muted { color:var(--muted); } .small { font-size:12px; } .err { color:#ff7b72; }
+.mt { margin-top:10px; }
+
+/* replay screen */
+.replay { max-width:820px; } .replay-foot { margin-top:12px; display:flex; gap:10px; align-items:center; }
+.fileopen { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:6px 10px; cursor:pointer; }
+
+/* simulation screen */
+.sim { max-width:820px; } .sim h2 { font-size:16px; margin:0 0 6px; }
+.simctl { display:flex; gap:12px; align-items:center; margin:12px 0; flex-wrap:wrap; }
+.simctl label { font-size:13px; color:var(--muted); } .simctl input { width:72px; margin-left:6px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:4px 6px; }
+.simctl button { background:#1f6feb33; color:var(--fg); border:1px solid #1f6feb; border-radius:7px; padding:7px 14px; cursor:pointer; }
+.simctl button:disabled { opacity:.5; cursor:default; }
+.bar { height:8px; background:#1b2230; border-radius:999px; overflow:hidden; margin:8px 0; }
+.barfill { height:100%; background:#58a6ff; transition:width .1s; }
+.simlog { background:#0d1218; border:1px solid var(--line); border-radius:8px; padding:10px; font-size:12px; min-height:120px; white-space:pre-wrap; color:#9fb4c9; }
+
+/* debugger */
+.dbg { padding:16px; max-width:980px; display:flex; flex-direction:column; gap:12px; }
+.dbg-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.dbg-head select { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:6px 8px; }
+.dbg-meta { font-family:monospace; font-size:12px; color:var(--muted); }
+.badge.synth { font-size:11px; font-family:monospace; color:#d2a8ff; border:1px solid #8957e566; border-radius:999px; padding:2px 8px; }
+.jump { margin-left:auto; background:var(--panel); color:#58a6ff; border:1px solid #1f6feb66; border-radius:7px; padding:6px 10px; cursor:pointer; }
+.dbg-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
+.card h3 { margin:0 0 8px; font-size:14px; }
+.card.truth { border-color:#8957e544; } .warn { color:#f0b429; font-size:12px; }
+.disclaimer { font-size:12px; color:#f0b429; background:#f0b4291a; border-radius:6px; padding:6px 8px; margin:0 0 8px; }
+.kv { display:flex; justify-content:space-between; font-size:13px; padding:3px 0; border-bottom:1px solid #1b2230; }
+.row { padding:2px 0; } .toggle { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+.tbl { width:100%; border-collapse:collapse; font-size:13px; }
+.tbl th { text-align:left; color:var(--muted); font-weight:600; border-bottom:1px solid var(--line); padding:5px 8px; }
+.tbl td { padding:5px 8px; border-bottom:1px solid #1b2230; }
+.tbl tr.selected { background:#1f6feb1f; } .tbl .ok { color:#7ee787; }
+.excluded { border-color:#ff7b7244; }
+.exrow { display:grid; grid-template-columns:160px 1fr auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid #1b2230; font-size:13px; }
+.exid { font-family:monospace; color:#ff9f9a; } .exwhy { color:#cdd9e5; }
+.tag { font-size:11px; font-family:monospace; color:#ff7b72; border:1px solid #ff7b7244; border-radius:999px; padding:1px 7px; margin-left:4px; }
+.selected-card { border-color:#2ea04366; } .selhead { font-size:15px; color:#7ee787; font-weight:700; }
+.rationale { font-size:13px; color:#cdd9e5; margin:6px 0 0; }
+.openreplay { margin-top:10px; background:#1f6feb33; color:var(--fg); border:1px solid #1f6feb; border-radius:7px; padding:7px 14px; cursor:pointer; }

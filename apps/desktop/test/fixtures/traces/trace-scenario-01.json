@@ -1,0 +1,359 @@
+{
+  "contextId": "scenario-01-basic-attack",
+  "scenarioRef": "scenario-01",
+  "mapId": "ascent",
+  "roundNumber": 1,
+  "timeRemainingMs": 100000,
+  "provenance": {
+    "synthetic": true,
+    "notes": [
+      "SYNTHETIC — not a real VCT match; do not present as real pro data.",
+      "Round start; no enemies observed yet."
+    ]
+  },
+  "world": {
+    "decidingTeamId": "team-0",
+    "decidingSide": "attack",
+    "attackersAlive": 5,
+    "defendersAlive": 5,
+    "knownEnemyAliveCount": 5,
+    "spikePhase": "carried",
+    "spikeZone": null
+  },
+  "observed": {
+    "visibleEnemies": [],
+    "beliefTopZones": []
+  },
+  "generated": [
+    {
+      "id": "A_EXECUTE",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "B_EXECUTE",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "FAKE_A_TO_B",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "FAKE_B_TO_A",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "MID_CONTROL",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "HOLD@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "DEFAULT",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "LURK",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "MOVE@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:jett:c@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:jett:e@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:jett:q@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:kayo:c@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:kayo:e@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:kayo:q@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:killjoy:c@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:killjoy:e@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:killjoy:q@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:omen:c@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:omen:e@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:omen:q@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:sova:c@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:sova:e@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "ABILITY:sova:q@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk1",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk2",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk3",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk4",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE_RETREAT@atk5",
+      "category": "individual",
+      "feasible": true
+    },
+    {
+      "id": "SAVE",
+      "category": "strategic",
+      "feasible": true
+    },
+    {
+      "id": "PLANT@atk1",
+      "category": "individual",
+      "feasible": false
+    }
+  ],
+  "excluded": [
+    {
+      "id": "PLANT@atk1",
+      "reasons": [
+        "blocked"
+      ],
+      "explanation": "attacker-spawn is not a plantable zone"
+    }
+  ],
+  "prediction": [
+    {
+      "id": "A_EXECUTE",
+      "category": "strategic",
+      "requiredTimeMs": 12000,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.964,
+      "rationale": [
+        "base 1.00",
+        "risk 0.00",
+        "time 12000ms/100000ms"
+      ]
+    },
+    {
+      "id": "B_EXECUTE",
+      "category": "strategic",
+      "requiredTimeMs": 12000,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.964,
+      "rationale": [
+        "base 1.00",
+        "risk 0.00",
+        "time 12000ms/100000ms"
+      ]
+    },
+    {
+      "id": "FAKE_A_TO_B",
+      "category": "strategic",
+      "requiredTimeMs": 15000,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.555,
+      "rationale": [
+        "base 0.60",
+        "risk 0.00",
+        "time 15000ms/100000ms"
+      ]
+    },
+    {
+      "id": "FAKE_B_TO_A",
+      "category": "strategic",
+      "requiredTimeMs": 15000,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.555,
+      "rationale": [
+        "base 0.60",
+        "risk 0.00",
+        "time 15000ms/100000ms"
+      ]
+    },
+    {
+      "id": "MID_CONTROL",
+      "category": "strategic",
+      "requiredTimeMs": 5000,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.535,
+      "rationale": [
+        "base 0.55",
+        "risk 0.00",
+        "time 5000ms/100000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk1",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/100000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk2",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/100000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk3",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/100000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk4",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/100000ms"
+      ]
+    },
+    {
+      "id": "HOLD@atk5",
+      "category": "individual",
+      "requiredTimeMs": 0,
+      "estimatedRisk": 0,
+      "expectedUtility": 0.45,
+      "rationale": [
+        "base 0.45",
+        "risk 0.00",
+        "time 0ms/100000ms"
+      ]
+    }
+  ],
+  "selected": {
+    "id": "A_EXECUTE",
+    "rationale": "highest-utility feasible strategic action \"A_EXECUTE\" (utility 0.964, risk 0.00)"
+  }
+}

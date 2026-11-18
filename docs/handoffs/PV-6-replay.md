@@ -214,3 +214,28 @@ cd apps/replay-viewer && npm run build && npm run screenshot
 ## 9. 재개 지점
 - `apps/replay-viewer/README.md`(.vrf→뷰어 한 줄 흐름) → `packages/replay-engine/README.md`(포맷).
 - `cd packages/replay-engine && npm test`; `cd apps/replay-viewer && npm install && npm run dev`.
+
+---
+
+# PV-6 4차 작업 — Desktop Shell + Decision Debugger (foundation, 2026-11-18)
+
+> 진행 중: 오케스트레이터가 이후 **매니저 게임형 UI**(FM/OOTP 장르 관례, PROJECT V 고유 고도화,
+> 실명 사용)로 확장을 지시함. 아래는 그 기반이 된 1차 셸·검증. 매니저 UI 확장은 다음 커밋들에서 진행.
+
+## 1. 완료 (검증한 것만)
+- **`apps/desktop`** (Electron + electron-vite + React + TS, 독립): 3화면(Replay/Decision Debugger/Simulation Runner) 탭 셸.
+  - **보안:** contextIsolation on, nodeIntegration off, preload 화이트리스트(window.pv), CSP 설정.
+  - **시뮬레이션 분리 프로세스:** Electron `utilityProcess`로 sim-worker 포크(DECISION-007). 요청은 fork args로 전달(메시지 레이스 제거), 진행률·결과만 IPC로 렌더러에 전달. `SimulationRunner` 인터페이스 + `StubRunner`(합성 EventLog) → `fromSimEventLog` → Replay.
+  - **Decision Debugger(§21):** 관측/Belief vs 진실(debug-only, AI 입력 아님 명시) 분리, 후보 행동(Feasibility/Time/Risk/Utility), **제외 행동 + 사유**, 선택 행동+근거, replay 라운드 점프. trace fixture는 **PV-3 `@pv/decision-debugger` 파이프라인 실제 출력**(scenario 01·04; /tmp에 pv-core 클론·pnpm install·tsx 실행, pv-core는 미커밋).
+  - **Replay Viewer:** `apps/replay-viewer`를 공유 라이브러리(`src/lib/`)로 리팩터 후 재사용(복붙 아님).
+- **검증:** 단위테스트 6(IPC 계약·trace 파서), replay-engine 11, Playwright `_electron.launch` E2E(xvfb+SwiftShader) 3/3 안정 — 3화면 스크린샷 + 스텁 시뮬 E2E(별도 프로세스→IPC→Replay). tsc 전부 통과.
+
+## 2. 변경/추가 파일
+- `apps/replay-viewer/src/lib/{ReplayViewer.tsx,PixiStage.ts,styles.ts,index.ts}` (뷰어 라이브러리화), `src/App.tsx`·`styles.css` 축소.
+- `apps/desktop/`: `src/main/{index,sim-worker}.ts`, `src/preload/index.ts`, `src/shared/{ipc,sim,trace,ascent-transform}.ts`, `src/renderer/{App,main,platform,styles}` + `screens/{Replay,Debugger,Simulation}Screen.tsx`, `electron.vite.config.ts`, `tsconfig.json`, `package.json`, `.gitignore`, `README.md`, `test/{ipc-contract,trace-parser}.test.ts`·`e2e.electron.test.mjs`, `test/fixtures/traces/{trace-scenario-01,04}.json`+README, `docs/desktop-*.png`.
+
+## 3. 다음 (매니저 UI 확장 — 지시 반영)
+- 셸: 좌측 내비 + 상단 컨텍스트 바 + 상세 패널(매니저 게임 관례, 외형 복제 금지).
+- 필수: ① 정보전 Match Day(아군 관측만·고스트·Belief 히트맵·콜아웃 피드), ② 경제·궁극기(라운드 타임라인·크레딧 그래프·바이 플래너·궁극기 트래커·세이브 알림), ③ 코치 노트(trace 자연어 카드)+Dev 메뉴 Debugger.
+- 골격: Veto, Agent Select(ascent-comps), Playbook 빌더, Squad/Player Profile(1–20+불확실성+null), Opponent Report.
+- 실명: VCT 프로 핸들·팀 실명(PV-2 ratings/team-profiles). `.vrf` 샘플은 익명 유지. 앱 정보에 "출시 전 내부 빌드" 문구.
