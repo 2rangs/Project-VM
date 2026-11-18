@@ -254,11 +254,13 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
       players: makeRoster("attack", buys[attacker], skillsBySlot[attacker], abilitiesOn),
     };
     // Diversified VCT defender setup (PV-2) chosen per round — breaks the vacant-site 5v2.
-    const defSetup = selectDefenseSetup(config.seed, roundNumber);
+    // Applied only with abilities ON: forward holds (a-main/b-main) need utility/crossfire to be
+    // viable; abilities-off they just feed (attack 0.62→0.75), so off keeps the balanced 2-2-1.
+    const defSpawns = abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
     const defenders: MatchRoundTeam = {
       teamId: teamRef(defender).id,
       economy: toEconomyState(economy[defender], "defense"),
-      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn, defSetup.spawns),
+      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn, defSpawns),
     };
     const out = runMatchRound({
       spatial,
