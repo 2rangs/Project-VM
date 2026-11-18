@@ -123,3 +123,36 @@ is never mistaken for real match analysis. Run:
 ```bash
 pnpm --filter @pv/decision-debugger debug <path/to/scenario.json> [--format text]
 ```
+
+## 7. Data wiring (phase 7 — FROZEN / partial, TODO)
+
+Per the "finish fast + integrate" directive, phase 7 is frozen after copying the data and
+recording provenance; the loaders/mappings below are **TODO** (fixtures are in place so the
+work resumes mechanically). Nothing here changes current behaviour (no code path consumes
+the fixtures yet), so the suite stays green.
+
+**Copied fixtures (verbatim, with READMEs recording origin + commit):**
+- Tactical KB — PV-1 `ascent-tactics.json` (8 attack + 9 defense; zones/route/
+  utilityRequirements/minPlayers/provenance) → `packages/action-generator/test/fixtures/tactics/`
+  (`origin/claude/pv-research @ 0f9e488`).
+- Team profiles — PV-2 `team_profiles.json` + `team_names.json` (economy tendencies w/
+  uncertainty; `tacticalNull` position items to skip) → `packages/team-engine/test/fixtures/data/`.
+- Player ratings — PV-2 `player_ratings.json` + `player_names.json` (`attributes.{entryAggression,
+  trading, clutch, consistency, …}` w/ uncertainty) → same dir (`origin/claude/pv-data @ 4f9bf56`).
+
+**Planned wiring (TODO):**
+1. **Tactical KB → Strategic/Tactical:** load tactics; generate strategic candidates as
+   feasibility-filtered KB elements — preconditions = minPlayers ≤ alive, required
+   `utilityRequirements.effectType` available (injected ability-effect provider), target
+   site reachable within time (SpatialQuery). Attach `provenance.type` grade to the trace
+   (coach-note evidence grading); `expert-knowledge-unsourced` carries no frequency claim.
+2. **Team profiles → IGL economy / opponent model:** map `economy.pistolLossForceBuy` /
+   `forceBuyAfterLoss` to post-pistol-loss & post-loss buy tendency and opponent-memory
+   priors. Skip `tacticalNull` (position) items; down-weight weak discriminators
+   (`forceBuyAfterLoss ≈0.89` near-universal).
+3. **Player ratings → PlayerProfile** (PV-2's mapping, PLAYER_RATINGS.md): `aggression ←
+   entryAggression`, `discipline ← consistency`, `teamwork ← trading`; recenter (median 0.6
+   → neutral 0.5); shrink toward league mean by `uncertainty`; null → default + trace flag.
+4. **Tests (TODO):** tactic excluded when a required util type is unavailable; post-pistol-
+   loss choice differs by team profile; different-aggression players → different action
+   distributions (fixed seed); determinism.
