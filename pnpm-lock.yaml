@@ -18,6 +18,22 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.20.5)
 
+  packages/action-generator:
+    dependencies:
+      '@pv/game-rules':
+        specifier: workspace:*
+        version: link:../game-rules
+      '@pv/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+    devDependencies:
+      '@pv/decision-engine':
+        specifier: workspace:*
+        version: link:../decision-engine
+      '@pv/world-state':
+        specifier: workspace:*
+        version: link:../world-state
+
   packages/decision-engine:
     dependencies:
       '@pv/shared-types':
