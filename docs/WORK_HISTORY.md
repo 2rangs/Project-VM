@@ -167,6 +167,12 @@
 - 팀 프로필·전술 KB·선수 능력치를 TeamDecisionPolicy가 아직 소비하지 않음(데이터는 포함됨).
 - Desktop 안개 뷰·Belief 히트맵은 포맷만 정의됨(라운드 엔진 출력 대기).
 
+### 2차 main 머지 (19:35 UTC)
+- 15:19–19:32 UTC: 사용량 제한으로 PV-2/3/4 중단 → 재개.
+- 반영: 실팀 레이팅 연결(`1de265a`), Desktop Match Day ← `@pv/match-runner`(`ac29350`), PV-4 라운드 엔진 개선 통합(`a53dca9`: 실측 간선, 라운드 내 스킬, 스파이크 줍기), `runMatchRound` API(`eec2bf7`), 실제 `buildBelief`(`c6d8c61`), `AbilityInventory` 계약(`11fb43d`), 시나리오 v2 + v1 호환(`431fe87`, `8a0ea8f`).
+- 검증: typecheck clean, core 128 pass / 4 todo, round-simulator 25, match-runner 10, 전 패키지 통과, 비밀 0건.
+- **품질 측정(Team Heretics vs NRG, seed 42/7/99):** 53라운드 중 timeExpired 46(≈87%) — 개선 없음. PV-4 ScriptedPolicy는 검증 4/7을 통과하므로, **TeamDecisionPolicy의 공격 실행(진입·설치) 부재**가 원인으로 추정. 최우선 과제로 지정.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
