@@ -20,6 +20,7 @@ import {
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
+  EngagementRecord,
   PerceptionSnapshot,
   PerceptionTrack,
   RoundEndReason,
@@ -101,6 +102,7 @@ export class RoundSimulator {
     // `dedupeKey`, when given, logs that key only once (so recurring per-tick evaluations — a
     // plant rejected every tick, say — appear once, not hundreds of times).
     const commandTrace: CommandTraceEvent[] = [];
+    const engagementTrace: EngagementRecord[] = [];
     const tracedKeys = new Set<string>();
     const trace = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string): void => {
       if (!this.cfg.traceCommands) return;
@@ -215,7 +217,7 @@ export class RoundSimulator {
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events);
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null);
 
       // 5b. molly / area-denial damage to anyone standing in a denied zone
       for (const z of denied) {
@@ -285,6 +287,7 @@ export class RoundSimulator {
           ] satisfies PerceptionTrack[])
         : undefined,
       commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
+      engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
     };
   }
 
@@ -355,6 +358,7 @@ export class RoundSimulator {
     abilityEngine: AbilityEngine,
     engaged: Set<string>,
     events: SimEvent[],
+    engTrace: EngagementRecord[] | null,
   ): void {
     const alive = state.players.filter((p) => p.alive);
     // A player can be in at most one duel per tick — you can only shoot one target at a
@@ -390,6 +394,26 @@ export class RoundSimulator {
             state.spike.position = { ...loser.position };
           }
           events.push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: r.winner, target: r.loser, zoneId: loser.zoneId });
+        }
+        if (engTrace) {
+          const atkP = a.side === "attack" ? a : b;
+          const defP = a.side === "attack" ? b : a;
+          const atkSees = atkP === a ? aSeesB : bSeesA;
+          const defSees = defP === a ? aSeesB : bSeesA;
+          const winnerSide = r.winner ? (state.players.find((p) => p.id === r.winner)?.side ?? null) : null;
+          engTrace.push({
+            tick: state.tick, elapsedMs: state.elapsedMs,
+            attackerId: atkP.id, defenderId: defP.id, attackerZone: atkP.zoneId, defenderZone: defP.zoneId,
+            distanceMeters: dm,
+            attackerSawDefender: atkSees, defenderSawAttacker: defSees,
+            firstSight: atkSees && !defSees ? "attacker" : defSees && !atkSees ? "defender" : "mutual",
+            attackerPreAim: atkSees && !defSees && !this.isMoving(atkP),
+            defenderPreAim: defSees && !atkSees && !this.isMoving(defP),
+            attackerMoving: this.isMoving(atkP), defenderMoving: this.isMoving(defP),
+            attackerFlashedMs: abilityEngine.blindRemainingMs(atkP.id, state.elapsedMs),
+            defenderFlashedMs: abilityEngine.blindRemainingMs(defP.id, state.elapsedMs),
+            winnerSide,
+          });
         }
       }
     }

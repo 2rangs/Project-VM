@@ -202,6 +202,34 @@ export interface CommandTraceEvent {
   readonly result?: string;
 }
 
+/**
+ * One duel's first-contact state — the posture inputs that decide an opening duel. Captured
+ * for every engagement when config.traceCommands is on, so a policy's opening-duel win rate can
+ * be explained (who saw first, pre-aim/holding vs moving, flashed, distance, zones).
+ */
+export interface EngagementRecord {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly attackerId: PlayerId;
+  readonly defenderId: PlayerId;
+  readonly attackerZone: string;
+  readonly defenderZone: string;
+  readonly distanceMeters: number;
+  readonly attackerSawDefender: boolean;
+  readonly defenderSawAttacker: boolean;
+  /** Who had first sight (the reaction-time edge): "attacker" | "defender" | "mutual". */
+  readonly firstSight: "attacker" | "defender" | "mutual";
+  /** preAim = sees the enemy, is not seen back, and is not moving (a held angle). */
+  readonly attackerPreAim: boolean;
+  readonly defenderPreAim: boolean;
+  readonly attackerMoving: boolean;
+  readonly defenderMoving: boolean;
+  readonly attackerFlashedMs: number;
+  readonly defenderFlashedMs: number;
+  /** Winning side of this duel, or null if no one died this duel. */
+  readonly winnerSide: Side | null;
+}
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -217,6 +245,8 @@ export interface RoundResult {
   readonly perception?: readonly PerceptionTrack[];
   /** Command→execution trace, present only when config.traceCommands is true. */
   readonly commandTrace?: readonly CommandTraceEvent[];
+  /** First-contact posture of every duel, present only when config.traceCommands is true. */
+  readonly engagementTrace?: readonly EngagementRecord[];
 }
 
 export interface SimConfig {

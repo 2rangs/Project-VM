@@ -14,15 +14,14 @@ interface Cfg { teamA: { id: string; name: string }; teamB: { id: string; name: 
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 
 // recordPerception drives PV-4's fog-of-war / belief track (off by default in the
-// match-runner). We request it on; the flag is ignored by match-runner versions
-// that predate the option, so this is forward-compatible (cast past its config type).
+// match-runner; MatchConfig.recordPerception since PV-3 7a7a847). We request it on.
 const res = runMatch({
   teamA: cfg.teamA ?? { id: 'A', name: 'Team A' },
   teamB: cfg.teamB ?? { id: 'B', name: 'Team B' },
   map: cfg.map ?? 'ascent',
   seed: cfg.seed ?? 1,
   recordPerception: cfg.recordPerception ?? true,
-} as Parameters<typeof runMatch>[0]);
+});
 
 process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);
 
