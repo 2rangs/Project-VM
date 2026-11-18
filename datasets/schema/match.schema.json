@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "match.schema.json",
+  "title": "Match",
+  "description": "A professional series (best-of-N) between two teams. Confirmed fields map to VCT Reference `matches`. A match contains one or more maps (map.schema.json).",
+  "type": "object",
+  "required": ["matchId", "teamIds", "maps", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "matchId": { "type": "string", "description": "PV canonical match id. VCT Reference matches.match_id (equals the vlr.gg match number)." },
+    "sourceUrl": { "type": ["string", "null"], "description": "vlr.gg match page URL. VCT Reference matches.url." },
+    "event": { "type": ["string", "null"], "description": "Event/tournament name. matches.event." },
+    "eventId": { "type": ["integer", "null"], "description": "matches.event_id." },
+    "season": { "type": ["integer", "null"], "description": "Season year. matches.season." },
+    "seriesStage": { "type": ["string", "null"], "description": "e.g. 'Playoffs'. matches.series_stage." },
+    "seriesRound": { "type": ["string", "null"], "description": "e.g. 'Grand Final'. matches.series_round." },
+    "utcTimestamp": { "type": ["string", "null"], "format": "date-time", "description": "Match start in UTC. matches.utc_timestamp." },
+    "patch": { "type": ["string", "null"], "description": "Game patch, e.g. 'Patch 13.05'. matches.patch. Used to interpret era-specific rules (README SS10)." },
+    "format": { "type": ["string", "null"], "description": "Series format, e.g. 'Bo5'. matches.format." },
+    "region": { "type": ["string", "null"], "description": "matches.region." },
+    "isInternational": { "type": ["boolean", "null"], "description": "matches.is_international." },
+    "teamIds": {
+      "type": "array",
+      "description": "The two team ids, index 0 = team0 (home/left on vlr), index 1 = team1. Round/stat team references use this 0/1 index as `teamIdx`.",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "string" }
+    },
+    "score": {
+      "type": ["array", "null"],
+      "description": "Maps won [team0, team1]. matches.score0/score1.",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "veto": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Map veto sequence as recorded. matches.veto."
+    },
+    "maps": {
+      "type": "array",
+      "description": "Map game ids played in this match, in order.",
+      "items": { "type": "string" }
+    },
+    "coverage": {
+      "type": "object",
+      "description": "What optional data is available for this match (README SS5.1 caveat).",
+      "additionalProperties": false,
+      "properties": {
+        "fetchedOverview": { "type": ["boolean", "null"] },
+        "fetchedPerformance": { "type": ["boolean", "null"] },
+        "fetchedEconomy": { "type": ["boolean", "null"] }
+      }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

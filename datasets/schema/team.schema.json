@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team.schema.json",
+  "title": "Team",
+  "description": "A professional team identity. Confirmed fields map 1:1 to VCT Reference `teams`.",
+  "type": "object",
+  "required": ["teamId", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "teamId": {
+      "type": "string",
+      "description": "PV canonical team id. For VCT Reference rows this is the stringified teams.team_id (a stable integer id)."
+    },
+    "name": { "type": "string", "description": "Team display name. VCT Reference teams.team_name." },
+    "country": { "type": ["string", "null"], "description": "Region/country code, e.g. 'eu', 'br'. VCT Reference teams.country." },
+    "sourceUrl": { "type": ["string", "null"], "description": "VCT Reference teams.team_url." },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

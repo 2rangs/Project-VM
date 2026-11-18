@@ -1,0 +1,35 @@
+{
+  "gameId": "synthetic-ascent-g1",
+  "matchId": "synthetic-ascent-m1",
+  "mapName": "Ascent",
+  "pickedByTeamIdx": 0,
+  "durationText": null,
+  "score": [
+    2,
+    1
+  ],
+  "performanceAvailable": false,
+  "economyAvailable": true,
+  "rounds": [
+    "synthetic-ascent-g1:1",
+    "synthetic-ascent-g1:2",
+    "synthetic-ascent-g1:3"
+  ],
+  "playerMapStats": [],
+  "provenance": {
+    "sourceId": "pv-synthetic-ascent",
+    "sourceUrl": null,
+    "sourceVersion": "0.1.0",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T08:52:57+00:00",
+    "evidenceType": "simulated",
+    "confidence": null,
+    "verified": false,
+    "verificationLevel": 0,
+    "synthetic": true,
+    "sha256": null,
+    "notes": [
+      "SYNTHETIC — not a real VCT match; do not present as real pro data."
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "common.schema.json",
+  "title": "PROJECT V — Common definitions",
+  "description": "Shared value types used across PROJECT V normalized data schemas. All field names are camelCase. Units are stated explicitly in each description so that the Simulation agent (PV-3) TypeScript types can mirror them without ambiguity.",
+  "$defs": {
+    "vector2": {
+      "type": "object",
+      "description": "2D point. Default frame is the VLR 2D-replay minimap frame (origin top-left, x right, y down), the same frame real `locs` positions use. Units: minimapUnits (floating point, typically 0..1000). The authoritative minimap<->game-world transform is owned by the Spatial agent (datasets/spatial/, not written here).",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "description": "X in minimapUnits." },
+        "y": { "type": "number", "description": "Y in minimapUnits." }
+      }
+    },
+    "vector3": {
+      "type": "object",
+      "description": "3D point in game-world units. VALORANT's native engine unit is the Unreal unit (1 uu approx 1 cm). Populated only when a true 3D source (replay decode) is available; null/absent for minimap-only sources.",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "description": "X in game units (uu)." },
+        "y": { "type": "number", "description": "Y in game units (uu)." },
+        "z": { "type": "number", "description": "Z (elevation) in game units (uu)." }
+      }
+    },
+    "side": {
+      "type": "string",
+      "enum": ["attack", "defense"],
+      "description": "Team side for a round. Matches VCT Reference rounds.side."
+    },
+    "mapName": {
+      "type": "string",
+      "enum": ["Abyss", "Ascent", "Bind", "Breeze", "Corrode", "Fracture", "Haven", "Icebox", "Lotus", "Pearl", "Split", "Summit", "Sunset"],
+      "description": "VALORANT map display name. Enum reflects the 13 distinct map_name values actually present in the VCT Reference dataset (2026-11-12 build)."
+    },
+    "roundOutcome": {
+      "type": "string",
+      "enum": ["elimination", "bomb_detonated", "defuse", "time_expired"],
+      "description": "How a round ended. Enum reflects the 4 non-null rounds.outcome values present in VCT Reference."
+    },
+    "armorKind": {
+      "type": "string",
+      "enum": ["none", "light", "heavy", "regen"],
+      "description": "Armor tier. Enum mirrors vctstats ReplayPageParser.armorName() normalization."
+    },
+    "evidenceType": {
+      "type": "string",
+      "enum": ["observed", "decoded", "derived", "inferred", "simulated"],
+      "description": "Provenance evidence tier (README SS13.3). observed=directly published/seen; decoded=from a replay binary; derived=computed from other recorded fields; inferred=estimated with uncertainty; simulated=synthetic, not from any real match."
+    }
+  }
+}

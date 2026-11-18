@@ -1,0 +1,1566 @@
+[
+  {
+    "gameId": "283265",
+    "matchId": "754730",
+    "mapName": "Abyss",
+    "pickedByTeamIdx": 1,
+    "durationText": "54:46",
+    "score": [
+      5,
+      13
+    ],
+    "performanceAvailable": true,
+    "economyAvailable": true,
+    "rounds": [
+      "283265:1",
+      "283265:2",
+      "283265:3",
+      "283265:4",
+      "283265:5",
+      "283265:6",
+      "283265:7",
+      "283265:8",
+      "283265:9",
+      "283265:10",
+      "283265:11",
+      "283265:12",
+      "283265:13",
+      "283265:14",
+      "283265:15",
+      "283265:16",
+      "283265:17",
+      "283265:18"
+    ],
+    "playerMapStats": [
+      {
+        "playerId": "601",
+        "teamIdx": 0,
+        "agents": [
+          "phoenix"
+        ],
+        "rating": {
+          "all": 0.82,
+          "atk": 0.86,
+          "def": 0.75
+        },
+        "acs": {
+          "all": 189,
+          "atk": 216,
+          "def": 138
+        },
+        "adr": {
+          "all": 118,
+          "atk": 138,
+          "def": 78
+        },
+        "kills": {
+          "all": 11,
+          "atk": 8,
+          "def": 3
+        },
+        "deaths": {
+          "all": 16,
+          "atk": 11,
+          "def": 5
+        },
+        "assists": {
+          "all": 7,
+          "atk": 3,
+          "def": 4
+        },
+        "firstKills": {
+          "all": 4,
+          "atk": 3,
+          "def": 1
+        },
+        "firstDeaths": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 56,
+          "atk": 50,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 13,
+          "atk": 14,
+          "def": 9
+        },
+        "multikills": {
+          "twoK": 4,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 45,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "3880",
+        "teamIdx": 0,
+        "agents": [
+          "harbor"
+        ],
+        "rating": {
+          "all": 0.38,
+          "atk": 0.23,
+          "def": 0.67
+        },
+        "acs": {
+          "all": 82,
+          "atk": 52,
+          "def": 142
+        },
+        "adr": {
+          "all": 48,
+          "atk": 35,
+          "def": 75
+        },
+        "kills": {
+          "all": 6,
+          "atk": 2,
+          "def": 4
+        },
+        "deaths": {
+          "all": 15,
+          "atk": 10,
+          "def": 5
+        },
+        "assists": {
+          "all": 7,
+          "atk": 6,
+          "def": 1
+        },
+        "firstKills": {
+          "all": 1,
+          "atk": 0,
+          "def": 1
+        },
+        "firstDeaths": {
+          "all": 1,
+          "atk": 0,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 67,
+          "atk": 67,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 45,
+          "atk": 33,
+          "def": 60
+        },
+        "multikills": {
+          "twoK": null,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 19,
+        "plants": 3,
+        "defuses": 0
+      },
+      {
+        "playerId": "4147",
+        "teamIdx": 0,
+        "agents": [
+          "cypher"
+        ],
+        "rating": {
+          "all": 0.91,
+          "atk": 0.81,
+          "def": 1.13
+        },
+        "acs": {
+          "all": 193,
+          "atk": 156,
+          "def": 270
+        },
+        "adr": {
+          "all": 142,
+          "atk": 117,
+          "def": 193
+        },
+        "kills": {
+          "all": 12,
+          "atk": 7,
+          "def": 5
+        },
+        "deaths": {
+          "all": 13,
+          "atk": 9,
+          "def": 4
+        },
+        "assists": {
+          "all": 3,
+          "atk": 0,
+          "def": 3
+        },
+        "firstKills": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 61,
+          "atk": 58,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 28,
+          "atk": 33,
+          "def": 23
+        },
+        "multikills": {
+          "twoK": 1,
+          "threeK": null,
+          "fourK": 1,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 62,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "20140",
+        "teamIdx": 0,
+        "agents": [
+          "sova"
+        ],
+        "rating": {
+          "all": 1.24,
+          "atk": 1.14,
+          "def": 1.44
+        },
+        "acs": {
+          "all": 219,
+          "atk": 194,
+          "def": 271
+        },
+        "adr": {
+          "all": 139,
+          "atk": 123,
+          "def": 170
+        },
+        "kills": {
+          "all": 14,
+          "atk": 8,
+          "def": 6
+        },
+        "deaths": {
+          "all": 14,
+          "atk": 9,
+          "def": 5
+        },
+        "assists": {
+          "all": 6,
+          "atk": 2,
+          "def": 4
+        },
+        "firstKills": {
+          "all": 1,
+          "atk": 1,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 89,
+          "atk": 83,
+          "def": 100
+        },
+        "headshotPct": {
+          "all": 30,
+          "atk": 33,
+          "def": 26
+        },
+        "multikills": {
+          "twoK": 4,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 55,
+        "plants": 5,
+        "defuses": 0
+      },
+      {
+        "playerId": "29893",
+        "teamIdx": 0,
+        "agents": [
+          "jett"
+        ],
+        "rating": {
+          "all": 0.78,
+          "atk": 0.85,
+          "def": 0.64
+        },
+        "acs": {
+          "all": 197,
+          "atk": 205,
+          "def": 182
+        },
+        "adr": {
+          "all": 112,
+          "atk": 123,
+          "def": 90
+        },
+        "kills": {
+          "all": 12,
+          "atk": 8,
+          "def": 4
+        },
+        "deaths": {
+          "all": 16,
+          "atk": 10,
+          "def": 6
+        },
+        "assists": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "firstKills": {
+          "all": 4,
+          "atk": 3,
+          "def": 1
+        },
+        "firstDeaths": {
+          "all": 5,
+          "atk": 4,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 67,
+          "atk": 67,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 36,
+          "atk": 57,
+          "def": 14
+        },
+        "multikills": {
+          "twoK": 3,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 45,
+        "plants": 1,
+        "defuses": 0
+      },
+      {
+        "playerId": "2170",
+        "teamIdx": 1,
+        "agents": [
+          "waylay"
+        ],
+        "rating": {
+          "all": 1.05,
+          "atk": 1.41,
+          "def": 0.87
+        },
+        "acs": {
+          "all": 191,
+          "atk": 319,
+          "def": 128
+        },
+        "adr": {
+          "all": 121,
+          "atk": 193,
+          "def": 85
+        },
+        "kills": {
+          "all": 12,
+          "atk": 7,
+          "def": 5
+        },
+        "deaths": {
+          "all": 10,
+          "atk": 4,
+          "def": 6
+        },
+        "assists": {
+          "all": 5,
+          "atk": 2,
+          "def": 3
+        },
+        "firstKills": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 2,
+          "atk": 0,
+          "def": 2
+        },
+        "kastPct": {
+          "all": 78,
+          "atk": 83,
+          "def": 75
+        },
+        "headshotPct": {
+          "all": 41,
+          "atk": 35,
+          "def": 50
+        },
+        "multikills": {
+          "twoK": 2,
+          "threeK": 2,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": 2,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 55,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "3885",
+        "teamIdx": 1,
+        "agents": [
+          "harbor"
+        ],
+        "rating": {
+          "all": 0.51,
+          "atk": 0.04,
+          "def": 0.76
+        },
+        "acs": {
+          "all": 125,
+          "atk": 82,
+          "def": 147
+        },
+        "adr": {
+          "all": 68,
+          "atk": 43,
+          "def": 81
+        },
+        "kills": {
+          "all": 10,
+          "atk": 2,
+          "def": 8
+        },
+        "deaths": {
+          "all": 12,
+          "atk": 5,
+          "def": 7
+        },
+        "assists": {
+          "all": 2,
+          "atk": 0,
+          "def": 2
+        },
+        "firstKills": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 5,
+          "atk": 2,
+          "def": 3
+        },
+        "kastPct": {
+          "all": 61,
+          "atk": 50,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 22,
+          "atk": 20,
+          "def": 23
+        },
+        "multikills": {
+          "twoK": 1,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 29,
+        "plants": 1,
+        "defuses": 2
+      },
+      {
+        "playerId": "3993",
+        "teamIdx": 1,
+        "agents": [
+          "neon"
+        ],
+        "rating": {
+          "all": 1.09,
+          "atk": 0.8,
+          "def": 1.24
+        },
+        "acs": {
+          "all": 252,
+          "atk": 203,
+          "def": 277
+        },
+        "adr": {
+          "all": 157,
+          "atk": 126,
+          "def": 173
+        },
+        "kills": {
+          "all": 15,
+          "atk": 4,
+          "def": 11
+        },
+        "deaths": {
+          "all": 13,
+          "atk": 5,
+          "def": 8
+        },
+        "assists": {
+          "all": 4,
+          "atk": 2,
+          "def": 2
+        },
+        "firstKills": {
+          "all": 4,
+          "atk": 2,
+          "def": 2
+        },
+        "firstDeaths": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 78,
+          "atk": 67,
+          "def": 83
+        },
+        "headshotPct": {
+          "all": 21,
+          "atk": 36,
+          "def": 16
+        },
+        "multikills": {
+          "twoK": 3,
+          "threeK": 1,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 67,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "7873",
+        "teamIdx": 1,
+        "agents": [
+          "astra"
+        ],
+        "rating": {
+          "all": 1.46,
+          "atk": 1.3,
+          "def": 1.54
+        },
+        "acs": {
+          "all": 297,
+          "atk": 322,
+          "def": 285
+        },
+        "adr": {
+          "all": 181,
+          "atk": 207,
+          "def": 168
+        },
+        "kills": {
+          "all": 19,
+          "atk": 7,
+          "def": 12
+        },
+        "deaths": {
+          "all": 11,
+          "atk": 5,
+          "def": 6
+        },
+        "assists": {
+          "all": 6,
+          "atk": 1,
+          "def": 5
+        },
+        "firstKills": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "firstDeaths": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 83,
+          "atk": 83,
+          "def": 83
+        },
+        "headshotPct": {
+          "all": 30,
+          "atk": 26,
+          "def": 31
+        },
+        "multikills": {
+          "twoK": 5,
+          "threeK": 1,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 66,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "15500",
+        "teamIdx": 1,
+        "agents": [
+          "sova"
+        ],
+        "rating": {
+          "all": 1.33,
+          "atk": 1.0,
+          "def": 1.5
+        },
+        "acs": {
+          "all": 254,
+          "atk": 200,
+          "def": 282
+        },
+        "adr": {
+          "all": 174,
+          "atk": 126,
+          "def": 198
+        },
+        "kills": {
+          "all": 18,
+          "atk": 5,
+          "def": 13
+        },
+        "deaths": {
+          "all": 9,
+          "atk": 3,
+          "def": 6
+        },
+        "assists": {
+          "all": 2,
+          "atk": 0,
+          "def": 2
+        },
+        "firstKills": {
+          "all": 2,
+          "atk": 0,
+          "def": 2
+        },
+        "firstDeaths": {
+          "all": 1,
+          "atk": 0,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 72,
+          "atk": 50,
+          "def": 83
+        },
+        "headshotPct": {
+          "all": 44,
+          "atk": 60,
+          "def": 41
+        },
+        "multikills": {
+          "twoK": 4,
+          "threeK": 2,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": 1,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 71,
+        "plants": 4,
+        "defuses": 3
+      }
+    ],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "gameId": "283266",
+    "matchId": "754730",
+    "mapName": "Ascent",
+    "pickedByTeamIdx": 0,
+    "durationText": "56:39",
+    "score": [
+      11,
+      13
+    ],
+    "performanceAvailable": true,
+    "economyAvailable": true,
+    "rounds": [
+      "283266:1",
+      "283266:2",
+      "283266:3",
+      "283266:4",
+      "283266:5",
+      "283266:6",
+      "283266:7",
+      "283266:8",
+      "283266:9",
+      "283266:10",
+      "283266:11",
+      "283266:12",
+      "283266:13",
+      "283266:14",
+      "283266:15",
+      "283266:16",
+      "283266:17",
+      "283266:18",
+      "283266:19",
+      "283266:20",
+      "283266:21",
+      "283266:22",
+      "283266:23",
+      "283266:24"
+    ],
+    "playerMapStats": [
+      {
+        "playerId": "601",
+        "teamIdx": 0,
+        "agents": [
+          "phoenix"
+        ],
+        "rating": {
+          "all": 1.46,
+          "atk": 1.89,
+          "def": 1.04
+        },
+        "acs": {
+          "all": 310,
+          "atk": 406,
+          "def": 216
+        },
+        "adr": {
+          "all": 203,
+          "atk": 278,
+          "def": 128
+        },
+        "kills": {
+          "all": 25,
+          "atk": 17,
+          "def": 8
+        },
+        "deaths": {
+          "all": 16,
+          "atk": 7,
+          "def": 9
+        },
+        "assists": {
+          "all": 8,
+          "atk": 3,
+          "def": 5
+        },
+        "firstKills": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "firstDeaths": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 71,
+          "atk": 67,
+          "def": 75
+        },
+        "headshotPct": {
+          "all": 28,
+          "atk": 28,
+          "def": 27
+        },
+        "multikills": {
+          "twoK": 3,
+          "threeK": 4,
+          "fourK": 1,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": 1,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 82,
+        "plants": 3,
+        "defuses": 0
+      },
+      {
+        "playerId": "3880",
+        "teamIdx": 0,
+        "agents": [
+          "omen"
+        ],
+        "rating": {
+          "all": 0.98,
+          "atk": 0.89,
+          "def": 1.08
+        },
+        "acs": {
+          "all": 211,
+          "atk": 153,
+          "def": 271
+        },
+        "adr": {
+          "all": 140,
+          "atk": 110,
+          "def": 170
+        },
+        "kills": {
+          "all": 18,
+          "atk": 7,
+          "def": 11
+        },
+        "deaths": {
+          "all": 17,
+          "atk": 7,
+          "def": 10
+        },
+        "assists": {
+          "all": 8,
+          "atk": 5,
+          "def": 3
+        },
+        "firstKills": {
+          "all": 3,
+          "atk": 1,
+          "def": 2
+        },
+        "firstDeaths": {
+          "all": 3,
+          "atk": 3,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 83,
+          "atk": 83,
+          "def": 83
+        },
+        "headshotPct": {
+          "all": 39,
+          "atk": 30,
+          "def": 46
+        },
+        "multikills": {
+          "twoK": 3,
+          "threeK": 1,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 60,
+        "plants": 2,
+        "defuses": 0
+      },
+      {
+        "playerId": "4147",
+        "teamIdx": 0,
+        "agents": [
+          "cypher"
+        ],
+        "rating": {
+          "all": 0.71,
+          "atk": 1.15,
+          "def": 0.26
+        },
+        "acs": {
+          "all": 132,
+          "atk": 199,
+          "def": 66
+        },
+        "adr": {
+          "all": 93,
+          "atk": 123,
+          "def": 62
+        },
+        "kills": {
+          "all": 12,
+          "atk": 10,
+          "def": 2
+        },
+        "deaths": {
+          "all": 15,
+          "atk": 6,
+          "def": 9
+        },
+        "assists": {
+          "all": 4,
+          "atk": 1,
+          "def": 3
+        },
+        "firstKills": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 75,
+          "atk": 83,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 19,
+          "atk": 19,
+          "def": 19
+        },
+        "multikills": {
+          "twoK": 2,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 41,
+        "plants": 1,
+        "defuses": 0
+      },
+      {
+        "playerId": "20140",
+        "teamIdx": 0,
+        "agents": [
+          "sova"
+        ],
+        "rating": {
+          "all": 0.66,
+          "atk": 0.57,
+          "def": 0.74
+        },
+        "acs": {
+          "all": 140,
+          "atk": 107,
+          "def": 175
+        },
+        "adr": {
+          "all": 95,
+          "atk": 73,
+          "def": 116
+        },
+        "kills": {
+          "all": 11,
+          "atk": 4,
+          "def": 7
+        },
+        "deaths": {
+          "all": 16,
+          "atk": 7,
+          "def": 9
+        },
+        "assists": {
+          "all": 3,
+          "atk": 2,
+          "def": 1
+        },
+        "firstKills": {
+          "all": 2,
+          "atk": 0,
+          "def": 2
+        },
+        "firstDeaths": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 67,
+          "atk": 75,
+          "def": 58
+        },
+        "headshotPct": {
+          "all": 18,
+          "atk": 25,
+          "def": 14
+        },
+        "multikills": {
+          "twoK": 3,
+          "threeK": null,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": 1,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 43,
+        "plants": 3,
+        "defuses": 1
+      },
+      {
+        "playerId": "29893",
+        "teamIdx": 0,
+        "agents": [
+          "jett"
+        ],
+        "rating": {
+          "all": 1.17,
+          "atk": 0.93,
+          "def": 1.41
+        },
+        "acs": {
+          "all": 273,
+          "atk": 236,
+          "def": 311
+        },
+        "adr": {
+          "all": 170,
+          "atk": 140,
+          "def": 199
+        },
+        "kills": {
+          "all": 24,
+          "atk": 10,
+          "def": 14
+        },
+        "deaths": {
+          "all": 19,
+          "atk": 10,
+          "def": 9
+        },
+        "assists": {
+          "all": 3,
+          "atk": 2,
+          "def": 1
+        },
+        "firstKills": {
+          "all": 5,
+          "atk": 3,
+          "def": 2
+        },
+        "firstDeaths": {
+          "all": 5,
+          "atk": 2,
+          "def": 3
+        },
+        "kastPct": {
+          "all": 71,
+          "atk": 75,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 26,
+          "atk": 27,
+          "def": 26
+        },
+        "multikills": {
+          "twoK": 4,
+          "threeK": 2,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 57,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "2170",
+        "teamIdx": 1,
+        "agents": [
+          "chamber"
+        ],
+        "rating": {
+          "all": 1.19,
+          "atk": 1.03,
+          "def": 1.36
+        },
+        "acs": {
+          "all": 227,
+          "atk": 209,
+          "def": 245
+        },
+        "adr": {
+          "all": 164,
+          "atk": 151,
+          "def": 178
+        },
+        "kills": {
+          "all": 18,
+          "atk": 7,
+          "def": 11
+        },
+        "deaths": {
+          "all": 18,
+          "atk": 8,
+          "def": 10
+        },
+        "assists": {
+          "all": 8,
+          "atk": 7,
+          "def": 1
+        },
+        "firstKills": {
+          "all": 4,
+          "atk": 1,
+          "def": 3
+        },
+        "firstDeaths": {
+          "all": 4,
+          "atk": 3,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 79,
+          "atk": 83,
+          "def": 75
+        },
+        "headshotPct": {
+          "all": 25,
+          "atk": 21,
+          "def": 30
+        },
+        "multikills": {
+          "twoK": 2,
+          "threeK": 2,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": 1,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 73,
+        "plants": 0,
+        "defuses": 1
+      },
+      {
+        "playerId": "3885",
+        "teamIdx": 1,
+        "agents": [
+          "omen"
+        ],
+        "rating": {
+          "all": 1.06,
+          "atk": 1.39,
+          "def": 0.73
+        },
+        "acs": {
+          "all": 209,
+          "atk": 258,
+          "def": 160
+        },
+        "adr": {
+          "all": 135,
+          "atk": 150,
+          "def": 120
+        },
+        "kills": {
+          "all": 16,
+          "atk": 11,
+          "def": 5
+        },
+        "deaths": {
+          "all": 17,
+          "atk": 8,
+          "def": 9
+        },
+        "assists": {
+          "all": 11,
+          "atk": 7,
+          "def": 4
+        },
+        "firstKills": {
+          "all": 1,
+          "atk": 1,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 1,
+          "atk": 0,
+          "def": 1
+        },
+        "kastPct": {
+          "all": 67,
+          "atk": 67,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 11,
+          "atk": 9,
+          "def": 14
+        },
+        "multikills": {
+          "twoK": 4,
+          "threeK": 2,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 55,
+        "plants": 4,
+        "defuses": 0
+      },
+      {
+        "playerId": "3993",
+        "teamIdx": 1,
+        "agents": [
+          "neon"
+        ],
+        "rating": {
+          "all": 0.55,
+          "atk": 0.72,
+          "def": 0.39
+        },
+        "acs": {
+          "all": 174,
+          "atk": 176,
+          "def": 172
+        },
+        "adr": {
+          "all": 114,
+          "atk": 114,
+          "def": 114
+        },
+        "kills": {
+          "all": 13,
+          "atk": 7,
+          "def": 6
+        },
+        "deaths": {
+          "all": 23,
+          "atk": 11,
+          "def": 12
+        },
+        "assists": {
+          "all": 6,
+          "atk": 4,
+          "def": 2
+        },
+        "firstKills": {
+          "all": 4,
+          "atk": 1,
+          "def": 3
+        },
+        "firstDeaths": {
+          "all": 4,
+          "atk": 1,
+          "def": 3
+        },
+        "kastPct": {
+          "all": 54,
+          "atk": 67,
+          "def": 42
+        },
+        "headshotPct": {
+          "all": 30,
+          "atk": 32,
+          "def": 28
+        },
+        "multikills": {
+          "twoK": 1,
+          "threeK": null,
+          "fourK": 1,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": null,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 44,
+        "plants": 0,
+        "defuses": 0
+      },
+      {
+        "playerId": "7873",
+        "teamIdx": 1,
+        "agents": [
+          "vyse"
+        ],
+        "rating": {
+          "all": 0.93,
+          "atk": 1.13,
+          "def": 0.73
+        },
+        "acs": {
+          "all": 193,
+          "atk": 224,
+          "def": 162
+        },
+        "adr": {
+          "all": 120,
+          "atk": 130,
+          "def": 109
+        },
+        "kills": {
+          "all": 16,
+          "atk": 10,
+          "def": 6
+        },
+        "deaths": {
+          "all": 17,
+          "atk": 7,
+          "def": 10
+        },
+        "assists": {
+          "all": 5,
+          "atk": 2,
+          "def": 3
+        },
+        "firstKills": {
+          "all": 2,
+          "atk": 1,
+          "def": 1
+        },
+        "firstDeaths": {
+          "all": 3,
+          "atk": 3,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 54,
+          "atk": 67,
+          "def": 42
+        },
+        "headshotPct": {
+          "all": 14,
+          "atk": 16,
+          "def": 13
+        },
+        "multikills": {
+          "twoK": 5,
+          "threeK": 1,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": 1,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 41,
+        "plants": 2,
+        "defuses": 1
+      },
+      {
+        "playerId": "15500",
+        "teamIdx": 1,
+        "agents": [
+          "sova"
+        ],
+        "rating": {
+          "all": 1.24,
+          "atk": 1.14,
+          "def": 1.33
+        },
+        "acs": {
+          "all": 196,
+          "atk": 209,
+          "def": 184
+        },
+        "adr": {
+          "all": 124,
+          "atk": 121,
+          "def": 127
+        },
+        "kills": {
+          "all": 20,
+          "atk": 11,
+          "def": 9
+        },
+        "deaths": {
+          "all": 15,
+          "atk": 8,
+          "def": 7
+        },
+        "assists": {
+          "all": 5,
+          "atk": 3,
+          "def": 2
+        },
+        "firstKills": {
+          "all": 1,
+          "atk": 1,
+          "def": 0
+        },
+        "firstDeaths": {
+          "all": 0,
+          "atk": 0,
+          "def": 0
+        },
+        "kastPct": {
+          "all": 75,
+          "atk": 83,
+          "def": 67
+        },
+        "headshotPct": {
+          "all": 30,
+          "atk": 25,
+          "def": 35
+        },
+        "multikills": {
+          "twoK": 1,
+          "threeK": 2,
+          "fourK": null,
+          "fiveK": null
+        },
+        "clutches": {
+          "v1": 2,
+          "v2": null,
+          "v3": null,
+          "v4": null,
+          "v5": null
+        },
+        "econRating": 44,
+        "plants": 1,
+        "defuses": 1
+      }
+    ],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  }
+]

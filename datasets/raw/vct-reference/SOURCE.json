@@ -1,0 +1,31 @@
+{
+  "sourceId": "vct-reference",
+  "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+  "landingPage": "https://vct-reference.com/dataset",
+  "terms": "https://vct-reference.com/terms",
+  "retrievedAt": "2026-11-18",
+  "sourceType": "duckdb",
+  "contentType": "application/octet-stream",
+  "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+  "bytes": 13381632,
+  "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+  "license": "Free to use, including commercially; no warranty. Data derived from public pro match pages. Independent hobby project, not affiliated with Riot Games.",
+  "commercialUse": true,
+  "redistribution": "no explicit prohibition in terms; dataset page grants 'free to use, including commercially' with an attribution link appreciated",
+  "redistributionJudgment": "Raw .duckdb is NOT committed (size + daily rebuild). Normalized derivatives (small transformed stats under datasets/normalized/) are committed under the 'free to use' grant with provenance attribution. Revisit if an explicit no-redistribution clause is found.",
+  "verificationLevel": 2,
+  "tables": ["matches", "maps", "rounds", "player_map", "kill_matrix", "notables", "players", "teams", "stat_source", "feed_fill_meta"],
+  "rowCounts": {
+    "matches": 2930, "maps": 7398, "rounds": 156769, "player_map": 73976,
+    "kill_matrix": 164840, "notables": 260614, "players": 1227, "teams": 225,
+    "stat_source": 10040, "feed_fill_meta": 23
+  },
+  "coverageCaveats": [
+    "Only ~57.9% of China maps carry the multikill/clutch and kill-matrix blocks; ~7.9% carry economy.",
+    "Round economy (loadout/bank) present on 128867/156769 rounds (~82%); gate on maps.economy_available / performance_available.",
+    "No positional / per-tick / per-event data: this is Layer A (stats). Layer B (positions) requires the vlr 2D-replay logs path (see docs/handoffs/PV-2-data.md)."
+  ],
+  "notes": [
+    "The .duckdb binary is not committed (see .gitignore); run ./download.sh to fetch the current build."
+  ]
+}

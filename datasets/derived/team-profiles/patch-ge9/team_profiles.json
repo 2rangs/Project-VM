@@ -1,0 +1,5238 @@
+[
+  {
+    "teamId": "624",
+    "maps": 87,
+    "seasons": [
+      2024,
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 16,
+      "Split": 14,
+      "Ascent": 10,
+      "Sunset": 8,
+      "Pearl": 6,
+      "Corrode": 6,
+      "Haven": 6,
+      "Breeze": 6,
+      "Icebox": 5,
+      "Bind": 5,
+      "Fracture": 3,
+      "Abyss": 1,
+      "Summit": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8934,
+        "raw": 0.8954,
+        "n": 784,
+        "uncertainty": 0.1076
+      },
+      "pistolLossForceBuy": {
+        "value": 0.048,
+        "raw": 0.0417,
+        "n": 72,
+        "uncertainty": 0.0508
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 102,
+        "uncertainty": 0.1645
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1177,
+        "raw": 0.1176,
+        "n": 102,
+        "uncertainty": 0.0316
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 38,
+        "uncertainty": 0.2841
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8013,
+          "raw": 0.8036,
+          "n": 336,
+          "uncertainty": 0.0587
+        },
+        "2": {
+          "value": 0.9519,
+          "raw": 0.9519,
+          "n": 208,
+          "uncertainty": 0.0705
+        },
+        "3plus": {
+          "value": 0.9729,
+          "raw": 0.975,
+          "n": 240,
+          "uncertainty": 0.0587
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5184,
+        "raw": 0.5208,
+        "n": 939,
+        "uncertainty": 0.0431
+      },
+      "defenseWinRate": {
+        "value": 0.5363,
+        "raw": 0.5393,
+        "n": 929,
+        "uncertainty": 0.0211
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4997,
+        "raw": 0.5043,
+        "n": 117,
+        "uncertainty": 0.2153
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1788,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "11058",
+    "maps": 81,
+    "seasons": [
+      2024,
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 19,
+      "Abyss": 12,
+      "Haven": 11,
+      "Split": 11,
+      "Corrode": 6,
+      "Icebox": 5,
+      "Bind": 5,
+      "Ascent": 5,
+      "Breeze": 3,
+      "Pearl": 2,
+      "Fracture": 1,
+      "Sunset": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8902,
+        "raw": 0.8913,
+        "n": 736,
+        "uncertainty": 0.1131
+      },
+      "pistolLossForceBuy": {
+        "value": 0.2168,
+        "raw": 0.2273,
+        "n": 88,
+        "uncertainty": 0.0423
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 74,
+        "uncertainty": 0.2016
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0654,
+        "raw": 0.061,
+        "n": 82,
+        "uncertainty": 0.0387
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 46,
+        "uncertainty": 0.2604
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.788,
+          "raw": 0.7885,
+          "n": 331,
+          "uncertainty": 0.0595
+        },
+        "2": {
+          "value": 0.9586,
+          "raw": 0.9598,
+          "n": 199,
+          "uncertainty": 0.0733
+        },
+        "3plus": {
+          "value": 0.9858,
+          "raw": 0.9903,
+          "n": 206,
+          "uncertainty": 0.0671
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.535,
+        "raw": 0.5391,
+        "n": 909,
+        "uncertainty": 0.0444
+      },
+      "defenseWinRate": {
+        "value": 0.5053,
+        "raw": 0.5071,
+        "n": 848,
+        "uncertainty": 0.023
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4921,
+        "raw": 0.4889,
+        "n": 45,
+        "uncertainty": 0.3315
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.0509,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "1120",
+    "maps": 60,
+    "seasons": [
+      2024,
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Bind": 9,
+      "Lotus": 8,
+      "Haven": 8,
+      "Split": 7,
+      "Sunset": 6,
+      "Pearl": 6,
+      "Abyss": 4,
+      "Fracture": 4,
+      "Icebox": 3,
+      "Breeze": 2,
+      "Summit": 2,
+      "Corrode": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8953,
+        "raw": 0.8986,
+        "n": 582,
+        "uncertainty": 0.1349
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0292,
+        "raw": 0.0182,
+        "n": 55,
+        "uncertainty": 0.0645
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 65,
+        "uncertainty": 0.2174
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0571,
+        "raw": 0.05,
+        "n": 60,
+        "uncertainty": 0.0514
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 48,
+        "uncertainty": 0.2551
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7947,
+          "raw": 0.7967,
+          "n": 241,
+          "uncertainty": 0.0782
+        },
+        "2": {
+          "value": 0.9704,
+          "raw": 0.9745,
+          "n": 157,
+          "uncertainty": 0.0893
+        },
+        "3plus": {
+          "value": 0.9659,
+          "raw": 0.9674,
+          "n": 184,
+          "uncertainty": 0.074
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5026,
+        "raw": 0.5038,
+        "n": 661,
+        "uncertainty": 0.059
+      },
+      "defenseWinRate": {
+        "value": 0.4752,
+        "raw": 0.4757,
+        "n": 637,
+        "uncertainty": 0.0302
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.4106,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "2593",
+    "maps": 55,
+    "seasons": [
+      2024,
+      2025
+    ],
+    "mapPool": {
+      "Lotus": 12,
+      "Haven": 8,
+      "Sunset": 7,
+      "Ascent": 7,
+      "Bind": 6,
+      "Abyss": 6,
+      "Split": 3,
+      "Icebox": 3,
+      "Corrode": 2,
+      "Pearl": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8974,
+        "raw": 0.9022,
+        "n": 501,
+        "uncertainty": 0.1502
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0347,
+        "raw": 0.0222,
+        "n": 45,
+        "uncertainty": 0.0766
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 65,
+        "uncertainty": 0.2174
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1354,
+        "raw": 0.137,
+        "n": 73,
+        "uncertainty": 0.043
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 20,
+        "uncertainty": 0.4071
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8011,
+          "raw": 0.8048,
+          "n": 210,
+          "uncertainty": 0.0878
+        },
+        "2": {
+          "value": 0.946,
+          "raw": 0.9444,
+          "n": 126,
+          "uncertainty": 0.1066
+        },
+        "3plus": {
+          "value": 0.9879,
+          "raw": 0.9939,
+          "n": 165,
+          "uncertainty": 0.0811
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5348,
+        "raw": 0.5414,
+        "n": 556,
+        "uncertainty": 0.0687
+      },
+      "defenseWinRate": {
+        "value": 0.5003,
+        "raw": 0.5025,
+        "n": 609,
+        "uncertainty": 0.0315
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5254,
+        "raw": 0.5672,
+        "n": 67,
+        "uncertainty": 0.2846
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1609,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "1034",
+    "maps": 55,
+    "seasons": [
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Haven": 9,
+      "Abyss": 8,
+      "Lotus": 8,
+      "Pearl": 6,
+      "Corrode": 5,
+      "Ascent": 4,
+      "Split": 4,
+      "Sunset": 3,
+      "Summit": 3,
+      "Breeze": 2,
+      "Bind": 2,
+      "Fracture": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.843,
+        "raw": 0.8249,
+        "n": 514,
+        "uncertainty": 0.1475
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0858,
+        "raw": 0.0833,
+        "n": 60,
+        "uncertainty": 0.0597
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 50,
+        "uncertainty": 0.25
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0988,
+        "raw": 0.0962,
+        "n": 52,
+        "uncertainty": 0.0584
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 40,
+        "uncertainty": 0.2778
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7323,
+          "raw": 0.722,
+          "n": 223,
+          "uncertainty": 0.0835
+        },
+        "2": {
+          "value": 0.8764,
+          "raw": 0.8582,
+          "n": 141,
+          "uncertainty": 0.0975
+        },
+        "3plus": {
+          "value": 0.9485,
+          "raw": 0.9467,
+          "n": 150,
+          "uncertainty": 0.0878
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5125,
+        "raw": 0.5154,
+        "n": 586,
+        "uncertainty": 0.0656
+      },
+      "defenseWinRate": {
+        "value": 0.5245,
+        "raw": 0.5283,
+        "n": 619,
+        "uncertainty": 0.031
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4632,
+        "raw": 0.4082,
+        "n": 49,
+        "uncertainty": 0.3218
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1986,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "14",
+    "maps": 48,
+    "seasons": [
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 10,
+      "Haven": 7,
+      "Split": 5,
+      "Bind": 4,
+      "Ascent": 4,
+      "Fracture": 3,
+      "Pearl": 3,
+      "Abyss": 3,
+      "Sunset": 3,
+      "Summit": 3,
+      "Breeze": 2,
+      "Corrode": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.887,
+        "raw": 0.8874,
+        "n": 453,
+        "uncertainty": 0.161
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0507,
+        "raw": 0.0417,
+        "n": 48,
+        "uncertainty": 0.0725
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 48,
+        "uncertainty": 0.2551
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1198,
+        "raw": 0.12,
+        "n": 50,
+        "uncertainty": 0.0604
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 35,
+        "uncertainty": 0.2941
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7871,
+          "raw": 0.7879,
+          "n": 198,
+          "uncertainty": 0.0921
+        },
+        "2": {
+          "value": 0.9557,
+          "raw": 0.9569,
+          "n": 116,
+          "uncertainty": 0.1137
+        },
+        "3plus": {
+          "value": 0.9686,
+          "raw": 0.9712,
+          "n": 139,
+          "uncertainty": 0.0934
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.513,
+        "raw": 0.5163,
+        "n": 521,
+        "uncertainty": 0.0726
+      },
+      "defenseWinRate": {
+        "value": 0.5029,
+        "raw": 0.5056,
+        "n": 536,
+        "uncertainty": 0.0354
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4732,
+        "raw": 0.4318,
+        "n": 44,
+        "uncertainty": 0.334
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.0514,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "1001",
+    "maps": 46,
+    "seasons": [
+      2024,
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 13,
+      "Abyss": 7,
+      "Bind": 5,
+      "Icebox": 5,
+      "Sunset": 5,
+      "Ascent": 3,
+      "Haven": 2,
+      "Pearl": 2,
+      "Corrode": 2,
+      "Breeze": 1,
+      "Split": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8874,
+        "raw": 0.8879,
+        "n": 455,
+        "uncertainty": 0.1605
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0767,
+        "raw": 0.0727,
+        "n": 55,
+        "uncertainty": 0.0645
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 37,
+        "uncertainty": 0.2874
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1424,
+        "raw": 0.1463,
+        "n": 41,
+        "uncertainty": 0.0718
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 18,
+        "uncertainty": 0.4176
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8003,
+          "raw": 0.8039,
+          "n": 204,
+          "uncertainty": 0.0899
+        },
+        "2": {
+          "value": 0.9694,
+          "raw": 0.9746,
+          "n": 118,
+          "uncertainty": 0.1122
+        },
+        "3plus": {
+          "value": 0.9432,
+          "raw": 0.9398,
+          "n": 133,
+          "uncertainty": 0.0968
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.464,
+        "raw": 0.4585,
+        "n": 482,
+        "uncertainty": 0.0776
+      },
+      "defenseWinRate": {
+        "value": 0.5077,
+        "raw": 0.5109,
+        "n": 505,
+        "uncertainty": 0.0374
+      },
+      "ascentAttackWinRate": {
+        "value": 0.469,
+        "raw": 0.3846,
+        "n": 26,
+        "uncertainty": 0.4365
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1302,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "8185",
+    "maps": 41,
+    "seasons": [
+      2024,
+      2025
+    ],
+    "mapPool": {
+      "Abyss": 8,
+      "Lotus": 7,
+      "Haven": 6,
+      "Bind": 6,
+      "Sunset": 4,
+      "Corrode": 3,
+      "Ascent": 3,
+      "Icebox": 1,
+      "Split": 1,
+      "Fracture": 1,
+      "Pearl": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8938,
+        "raw": 0.8981,
+        "n": 373,
+        "uncertainty": 0.1829
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1123,
+        "raw": 0.1143,
+        "n": 35,
+        "uncertainty": 0.0943
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 47,
+        "uncertainty": 0.2577
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1041,
+        "raw": 0.102,
+        "n": 49,
+        "uncertainty": 0.0615
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 12,
+        "uncertainty": 0.4532
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8105,
+          "raw": 0.8182,
+          "n": 154,
+          "uncertainty": 0.1125
+        },
+        "2": {
+          "value": 0.9508,
+          "raw": 0.9505,
+          "n": 101,
+          "uncertainty": 0.1264
+        },
+        "3plus": {
+          "value": 0.9575,
+          "raw": 0.9576,
+          "n": 118,
+          "uncertainty": 0.1065
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5167,
+        "raw": 0.5216,
+        "n": 416,
+        "uncertainty": 0.0877
+      },
+      "defenseWinRate": {
+        "value": 0.5117,
+        "raw": 0.5156,
+        "n": 448,
+        "uncertainty": 0.0418
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5214,
+        "raw": 0.6154,
+        "n": 26,
+        "uncertainty": 0.4365
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.0071,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "2359",
+    "maps": 41,
+    "seasons": [
+      2024,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 9,
+      "Ascent": 6,
+      "Icebox": 5,
+      "Split": 5,
+      "Sunset": 3,
+      "Abyss": 3,
+      "Pearl": 3,
+      "Bind": 2,
+      "Fracture": 2,
+      "Haven": 2,
+      "Breeze": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.893,
+        "raw": 0.8971,
+        "n": 350,
+        "uncertainty": 0.1903
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0871,
+        "raw": 0.0833,
+        "n": 36,
+        "uncertainty": 0.0922
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 46,
+        "uncertainty": 0.2604
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0553,
+        "raw": 0.0455,
+        "n": 44,
+        "uncertainty": 0.0676
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 22,
+        "uncertainty": 0.3972
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8249,
+          "raw": 0.8365,
+          "n": 159,
+          "uncertainty": 0.1097
+        },
+        "2": {
+          "value": 0.9548,
+          "raw": 0.956,
+          "n": 91,
+          "uncertainty": 0.1365
+        },
+        "3plus": {
+          "value": 0.9441,
+          "raw": 0.94,
+          "n": 100,
+          "uncertainty": 0.1211
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4999,
+        "raw": 0.5011,
+        "n": 437,
+        "uncertainty": 0.0842
+      },
+      "defenseWinRate": {
+        "value": 0.5567,
+        "raw": 0.5653,
+        "n": 421,
+        "uncertainty": 0.0443
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4693,
+        "raw": 0.4333,
+        "n": 60,
+        "uncertainty": 0.298
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.2734,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "2059",
+    "maps": 41,
+    "seasons": [
+      2024,
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 7,
+      "Split": 6,
+      "Ascent": 4,
+      "Bind": 4,
+      "Abyss": 4,
+      "Sunset": 3,
+      "Fracture": 3,
+      "Haven": 3,
+      "Breeze": 3,
+      "Summit": 2,
+      "Icebox": 1,
+      "Pearl": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8968,
+        "raw": 0.903,
+        "n": 371,
+        "uncertainty": 0.1835
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1484,
+        "raw": 0.1579,
+        "n": 38,
+        "uncertainty": 0.0882
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 44,
+        "uncertainty": 0.266
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1314,
+        "raw": 0.1333,
+        "n": 45,
+        "uncertainty": 0.0663
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 26,
+        "uncertainty": 0.3789
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8363,
+          "raw": 0.8503,
+          "n": 167,
+          "uncertainty": 0.1056
+        },
+        "2": {
+          "value": 0.933,
+          "raw": 0.9263,
+          "n": 95,
+          "uncertainty": 0.1322
+        },
+        "3plus": {
+          "value": 0.9619,
+          "raw": 0.9633,
+          "n": 109,
+          "uncertainty": 0.1133
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4783,
+        "raw": 0.4751,
+        "n": 421,
+        "uncertainty": 0.0868
+      },
+      "defenseWinRate": {
+        "value": 0.5436,
+        "raw": 0.5506,
+        "n": 445,
+        "uncertainty": 0.0421
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5111,
+        "raw": 0.5476,
+        "n": 42,
+        "uncertainty": 0.3391
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.2318,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "2",
+    "maps": 40,
+    "seasons": [
+      2024,
+      2025
+    ],
+    "mapPool": {
+      "Lotus": 10,
+      "Sunset": 8,
+      "Haven": 7,
+      "Icebox": 4,
+      "Bind": 3,
+      "Abyss": 3,
+      "Ascent": 2,
+      "Split": 2,
+      "Corrode": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8844,
+        "raw": 0.8833,
+        "n": 377,
+        "uncertainty": 0.1816
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0738,
+        "raw": 0.0682,
+        "n": 44,
+        "uncertainty": 0.078
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 36,
+        "uncertainty": 0.2907
+      },
+      "antiEcoFullBuy": {
+        "value": 0.087,
+        "raw": 0.0811,
+        "n": 37,
+        "uncertainty": 0.0784
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 10,
+        "uncertainty": 0.4667
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7837,
+          "raw": 0.7836,
+          "n": 171,
+          "uncertainty": 0.1036
+        },
+        "2": {
+          "value": 0.9582,
+          "raw": 0.9604,
+          "n": 101,
+          "uncertainty": 0.1264
+        },
+        "3plus": {
+          "value": 0.9681,
+          "raw": 0.9714,
+          "n": 105,
+          "uncertainty": 0.1166
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4882,
+        "raw": 0.4871,
+        "n": 425,
+        "uncertainty": 0.0862
+      },
+      "defenseWinRate": {
+        "value": 0.5015,
+        "raw": 0.5048,
+        "n": 414,
+        "uncertainty": 0.0449
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4672,
+        "raw": 0.35,
+        "n": 20,
+        "uncertainty": 0.4578
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1511,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "474",
+    "maps": 36,
+    "seasons": [
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Abyss": 6,
+      "Split": 5,
+      "Lotus": 5,
+      "Bind": 4,
+      "Sunset": 4,
+      "Haven": 3,
+      "Pearl": 2,
+      "Icebox": 2,
+      "Breeze": 2,
+      "Corrode": 1,
+      "Ascent": 1,
+      "Summit": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8988,
+        "raw": 0.9065,
+        "n": 353,
+        "uncertainty": 0.1893
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1517,
+        "raw": 0.1622,
+        "n": 37,
+        "uncertainty": 0.0902
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 35,
+        "uncertainty": 0.2941
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0672,
+        "raw": 0.0571,
+        "n": 35,
+        "uncertainty": 0.0821
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 36,
+        "uncertainty": 0.2907
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8525,
+          "raw": 0.875,
+          "n": 136,
+          "uncertainty": 0.1237
+        },
+        "2": {
+          "value": 0.9183,
+          "raw": 0.9048,
+          "n": 84,
+          "uncertainty": 0.1445
+        },
+        "3plus": {
+          "value": 0.9432,
+          "raw": 0.9398,
+          "n": 133,
+          "uncertainty": 0.0968
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4782,
+        "raw": 0.4745,
+        "n": 373,
+        "uncertainty": 0.0959
+      },
+      "defenseWinRate": {
+        "value": 0.4568,
+        "raw": 0.4557,
+        "n": 406,
+        "uncertainty": 0.0457
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4528,
+        "raw": 0.0,
+        "n": 8,
+        "uncertainty": 0.5
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.0104,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "13581",
+    "maps": 35,
+    "seasons": [
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 7,
+      "Haven": 7,
+      "Sunset": 4,
+      "Abyss": 4,
+      "Split": 3,
+      "Bind": 2,
+      "Ascent": 2,
+      "Breeze": 2,
+      "Icebox": 1,
+      "Pearl": 1,
+      "Fracture": 1,
+      "Summit": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8921,
+        "raw": 0.8954,
+        "n": 373,
+        "uncertainty": 0.1829
+      },
+      "pistolLossForceBuy": {
+        "value": 0.105,
+        "raw": 0.1053,
+        "n": 38,
+        "uncertainty": 0.0882
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 32,
+        "uncertainty": 0.3049
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1123,
+        "raw": 0.1111,
+        "n": 36,
+        "uncertainty": 0.0802
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7993,
+          "raw": 0.8043,
+          "n": 138,
+          "uncertainty": 0.1224
+        },
+        "2": {
+          "value": 0.946,
+          "raw": 0.9438,
+          "n": 89,
+          "uncertainty": 0.1387
+        },
+        "3plus": {
+          "value": 0.9529,
+          "raw": 0.9521,
+          "n": 146,
+          "uncertainty": 0.0898
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.429,
+        "raw": 0.4126,
+        "n": 349,
+        "uncertainty": 0.1011
+      },
+      "defenseWinRate": {
+        "value": 0.4266,
+        "raw": 0.422,
+        "n": 372,
+        "uncertainty": 0.0495
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5264,
+        "raw": 0.6522,
+        "n": 23,
+        "uncertainty": 0.4469
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.0097,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "1184",
+    "maps": 25,
+    "seasons": [
+      2024,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 5,
+      "Fracture": 4,
+      "Haven": 4,
+      "Ascent": 4,
+      "Bind": 2,
+      "Sunset": 2,
+      "Pearl": 2,
+      "Summit": 1,
+      "Split": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8842,
+        "raw": 0.8824,
+        "n": 238,
+        "uncertainty": 0.2374
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0593,
+        "raw": 0.0435,
+        "n": 23,
+        "uncertainty": 0.1807
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 27,
+        "uncertainty": 0.3747
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1621,
+        "raw": 0.1724,
+        "n": 29,
+        "uncertainty": 0.1458
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 8,
+        "uncertainty": 0.481
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7861,
+          "raw": 0.787,
+          "n": 108,
+          "uncertainty": 0.1464
+        },
+        "2": {
+          "value": 0.9732,
+          "raw": 0.9846,
+          "n": 65,
+          "uncertainty": 0.1722
+        },
+        "3plus": {
+          "value": 0.9446,
+          "raw": 0.9385,
+          "n": 65,
+          "uncertainty": 0.1648
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5012,
+        "raw": 0.5037,
+        "n": 268,
+        "uncertainty": 0.1241
+      },
+      "defenseWinRate": {
+        "value": 0.4841,
+        "raw": 0.4866,
+        "n": 261,
+        "uncertainty": 0.0677
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4996,
+        "raw": 0.5116,
+        "n": 43,
+        "uncertainty": 0.3365
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.4438,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "11060",
+    "maps": 23,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Split": 4,
+      "Abyss": 4,
+      "Haven": 3,
+      "Corrode": 3,
+      "Summit": 3,
+      "Sunset": 3,
+      "Bind": 1,
+      "Lotus": 1,
+      "Ascent": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8836,
+        "raw": 0.881,
+        "n": 210,
+        "uncertainty": 0.253
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1379,
+        "raw": 0.1481,
+        "n": 27,
+        "uncertainty": 0.1658
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 19,
+        "uncertainty": 0.4123
+      },
+      "antiEcoFullBuy": {
+        "value": 0.2616,
+        "raw": 0.3043,
+        "n": 23,
+        "uncertainty": 0.1651
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 4,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7881,
+          "raw": 0.79,
+          "n": 100,
+          "uncertainty": 0.1545
+        },
+        "2": {
+          "value": 0.9489,
+          "raw": 0.9474,
+          "n": 57,
+          "uncertainty": 0.1874
+        },
+        "3plus": {
+          "value": 0.9721,
+          "raw": 0.9811,
+          "n": 53,
+          "uncertainty": 0.1881
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4954,
+        "raw": 0.4959,
+        "n": 246,
+        "uncertainty": 0.1323
+      },
+      "defenseWinRate": {
+        "value": 0.5442,
+        "raw": 0.5574,
+        "n": 235,
+        "uncertainty": 0.0741
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4391,
+        "raw": 0.0,
+        "n": 11,
+        "uncertainty": 0.4947
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.0983,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "17",
+    "maps": 19,
+    "seasons": [
+      2024,
+      2025
+    ],
+    "mapPool": {
+      "Haven": 4,
+      "Lotus": 3,
+      "Icebox": 3,
+      "Sunset": 3,
+      "Ascent": 2,
+      "Split": 2,
+      "Abyss": 1,
+      "Bind": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.9081,
+        "raw": 0.9357,
+        "n": 171,
+        "uncertainty": 0.2786
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1737,
+        "raw": 0.2143,
+        "n": 14,
+        "uncertainty": 0.2338
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 24,
+        "uncertainty": 0.3878
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1612,
+        "raw": 0.1739,
+        "n": 23,
+        "uncertainty": 0.1651
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8436,
+          "raw": 0.8765,
+          "n": 81,
+          "uncertainty": 0.1778
+        },
+        "2": {
+          "value": 0.978,
+          "raw": 1.0,
+          "n": 41,
+          "uncertainty": 0.2272
+        },
+        "3plus": {
+          "value": 0.9707,
+          "raw": 0.9796,
+          "n": 49,
+          "uncertainty": 0.1973
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5203,
+        "raw": 0.5317,
+        "n": 205,
+        "uncertainty": 0.1508
+      },
+      "defenseWinRate": {
+        "value": 0.5172,
+        "raw": 0.5271,
+        "n": 203,
+        "uncertainty": 0.0838
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5225,
+        "raw": 0.65,
+        "n": 20,
+        "uncertainty": 0.4578
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.1813,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "7386",
+    "maps": 19,
+    "seasons": [
+      2025
+    ],
+    "mapPool": {
+      "Sunset": 4,
+      "Haven": 4,
+      "Corrode": 4,
+      "Abyss": 3,
+      "Bind": 2,
+      "Icebox": 1,
+      "Ascent": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8961,
+        "raw": 0.9091,
+        "n": 165,
+        "uncertainty": 0.2829
+      },
+      "pistolLossForceBuy": {
+        "value": 0.2236,
+        "raw": 0.2778,
+        "n": 18,
+        "uncertainty": 0.2057
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 20,
+        "uncertainty": 0.4071
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1668,
+        "raw": 0.1818,
+        "n": 22,
+        "uncertainty": 0.1691
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 18,
+        "uncertainty": 0.4176
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8344,
+          "raw": 0.8649,
+          "n": 74,
+          "uncertainty": 0.1883
+        },
+        "2": {
+          "value": 0.9397,
+          "raw": 0.9302,
+          "n": 43,
+          "uncertainty": 0.2214
+        },
+        "3plus": {
+          "value": 0.9578,
+          "raw": 0.9583,
+          "n": 48,
+          "uncertainty": 0.1998
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4912,
+        "raw": 0.4901,
+        "n": 202,
+        "uncertainty": 0.1523
+      },
+      "defenseWinRate": {
+        "value": 0.5217,
+        "raw": 0.5327,
+        "n": 199,
+        "uncertainty": 0.0852
+      },
+      "ascentAttackWinRate": {
+        "value": 0.49,
+        "raw": 0.4706,
+        "n": 17,
+        "uncertainty": 0.4694
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.0086,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "12010",
+    "maps": 17,
+    "seasons": [
+      2024,
+      2025
+    ],
+    "mapPool": {
+      "Lotus": 4,
+      "Icebox": 3,
+      "Sunset": 3,
+      "Haven": 2,
+      "Bind": 1,
+      "Split": 1,
+      "Ascent": 1,
+      "Corrode": 1,
+      "Abyss": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8902,
+        "raw": 0.895,
+        "n": 181,
+        "uncertainty": 0.2715
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0656,
+        "raw": 0.05,
+        "n": 20,
+        "uncertainty": 0.1946
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 14,
+        "uncertainty": 0.4406
+      },
+      "antiEcoFullBuy": {
+        "value": 0.2248,
+        "raw": 0.2632,
+        "n": 19,
+        "uncertainty": 0.1829
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 6,
+        "uncertainty": 0.4964
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7971,
+          "raw": 0.806,
+          "n": 67,
+          "uncertainty": 0.2001
+        },
+        "2": {
+          "value": 0.9303,
+          "raw": 0.9149,
+          "n": 47,
+          "uncertainty": 0.2104
+        },
+        "3plus": {
+          "value": 0.9659,
+          "raw": 0.9701,
+          "n": 67,
+          "uncertainty": 0.1614
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4457,
+        "raw": 0.4242,
+        "n": 198,
+        "uncertainty": 0.1544
+      },
+      "defenseWinRate": {
+        "value": 0.4061,
+        "raw": 0.3896,
+        "n": 154,
+        "uncertainty": 0.1049
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4894,
+        "raw": 0.4545,
+        "n": 11,
+        "uncertainty": 0.4947
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.2474,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "13790",
+    "maps": 16,
+    "seasons": [
+      2025
+    ],
+    "mapPool": {
+      "Split": 4,
+      "Lotus": 4,
+      "Ascent": 4,
+      "Icebox": 2,
+      "Pearl": 1,
+      "Sunset": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8674,
+        "raw": 0.8418,
+        "n": 158,
+        "uncertainty": 0.2883
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0798,
+        "raw": 0.0667,
+        "n": 15,
+        "uncertainty": 0.2259
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 17,
+        "uncertainty": 0.4231
+      },
+      "antiEcoFullBuy": {
+        "value": 0.076,
+        "raw": 0.0588,
+        "n": 17,
+        "uncertainty": 0.194
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7655,
+          "raw": 0.7536,
+          "n": 69,
+          "uncertainty": 0.1966
+        },
+        "2": {
+          "value": 0.9227,
+          "raw": 0.8974,
+          "n": 39,
+          "uncertainty": 0.2335
+        },
+        "3plus": {
+          "value": 0.9344,
+          "raw": 0.92,
+          "n": 50,
+          "uncertainty": 0.1949
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5057,
+        "raw": 0.512,
+        "n": 166,
+        "uncertainty": 0.1739
+      },
+      "defenseWinRate": {
+        "value": 0.483,
+        "raw": 0.4863,
+        "n": 183,
+        "uncertainty": 0.0913
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5075,
+        "raw": 0.5405,
+        "n": 37,
+        "uncertainty": 0.3526
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.4519,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "918",
+    "maps": 16,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Split": 3,
+      "Pearl": 2,
+      "Breeze": 2,
+      "Summit": 2,
+      "Sunset": 2,
+      "Fracture": 1,
+      "Haven": 1,
+      "Lotus": 1,
+      "Abyss": 1,
+      "Ascent": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8965,
+        "raw": 0.9116,
+        "n": 147,
+        "uncertainty": 0.297
+      },
+      "pistolLossForceBuy": {
+        "value": 0.042,
+        "raw": 0.0,
+        "n": 12,
+        "uncertainty": 0.2521
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 20,
+        "uncertainty": 0.4071
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0702,
+        "raw": 0.0526,
+        "n": 19,
+        "uncertainty": 0.1829
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8064,
+          "raw": 0.8226,
+          "n": 62,
+          "uncertainty": 0.2095
+        },
+        "2": {
+          "value": 0.95,
+          "raw": 0.9487,
+          "n": 39,
+          "uncertainty": 0.2335
+        },
+        "3plus": {
+          "value": 0.9824,
+          "raw": 1.0,
+          "n": 46,
+          "uncertainty": 0.2049
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5074,
+        "raw": 0.5145,
+        "n": 173,
+        "uncertainty": 0.1692
+      },
+      "defenseWinRate": {
+        "value": 0.5057,
+        "raw": 0.5146,
+        "n": 171,
+        "uncertainty": 0.0965
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5095,
+        "raw": 0.6364,
+        "n": 11,
+        "uncertainty": 0.4947
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.0928,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "12685",
+    "maps": 14,
+    "seasons": [
+      2024,
+      2025
+    ],
+    "mapPool": {
+      "Sunset": 3,
+      "Bind": 3,
+      "Lotus": 3,
+      "Ascent": 2,
+      "Abyss": 2,
+      "Haven": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8786,
+        "raw": 0.8671,
+        "n": 143,
+        "uncertainty": 0.3003
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0336,
+        "raw": 0.0,
+        "n": 17,
+        "uncertainty": 0.2119
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 11,
+        "uncertainty": 0.4598
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0483,
+        "raw": 0.0,
+        "n": 10,
+        "uncertainty": 0.2537
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 4,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7794,
+          "raw": 0.7759,
+          "n": 58,
+          "uncertainty": 0.2177
+        },
+        "2": {
+          "value": 0.9448,
+          "raw": 0.9375,
+          "n": 32,
+          "uncertainty": 0.2582
+        },
+        "3plus": {
+          "value": 0.9367,
+          "raw": 0.9245,
+          "n": 53,
+          "uncertainty": 0.1881
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4294,
+        "raw": 0.3885,
+        "n": 139,
+        "uncertainty": 0.1945
+      },
+      "defenseWinRate": {
+        "value": 0.4467,
+        "raw": 0.4406,
+        "n": 143,
+        "uncertainty": 0.1112
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5301,
+        "raw": 0.6538,
+        "n": 26,
+        "uncertainty": 0.4365
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.3591,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "14419",
+    "maps": 13,
+    "seasons": [
+      2025
+    ],
+    "mapPool": {
+      "Ascent": 3,
+      "Lotus": 3,
+      "Sunset": 2,
+      "Haven": 2,
+      "Bind": 2,
+      "Corrode": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8928,
+        "raw": 0.904,
+        "n": 125,
+        "uncertainty": 0.3162
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1346,
+        "raw": 0.1538,
+        "n": 13,
+        "uncertainty": 0.2425
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 13,
+        "uncertainty": 0.4468
+      },
+      "antiEcoFullBuy": {
+        "value": 0.087,
+        "raw": 0.0714,
+        "n": 14,
+        "uncertainty": 0.2147
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.803,
+          "raw": 0.82,
+          "n": 50,
+          "uncertainty": 0.236
+        },
+        "2": {
+          "value": 0.9275,
+          "raw": 0.9,
+          "n": 30,
+          "uncertainty": 0.2662
+        },
+        "3plus": {
+          "value": 0.9821,
+          "raw": 1.0,
+          "n": 45,
+          "uncertainty": 0.2076
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4697,
+        "raw": 0.4531,
+        "n": 128,
+        "uncertainty": 0.2044
+      },
+      "defenseWinRate": {
+        "value": 0.4724,
+        "raw": 0.4737,
+        "n": 133,
+        "uncertainty": 0.1176
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4744,
+        "raw": 0.4194,
+        "n": 31,
+        "uncertainty": 0.3703
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1602,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "878",
+    "maps": 12,
+    "seasons": [
+      2025
+    ],
+    "mapPool": {
+      "Ascent": 3,
+      "Abyss": 3,
+      "Lotus": 2,
+      "Icebox": 1,
+      "Haven": 1,
+      "Sunset": 1,
+      "Corrode": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8732,
+        "raw": 0.85,
+        "n": 120,
+        "uncertainty": 0.3209
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0336,
+        "raw": 0.0,
+        "n": 17,
+        "uncertainty": 0.2119
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 7,
+        "uncertainty": 0.4886
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1774,
+        "raw": 0.2222,
+        "n": 9,
+        "uncertainty": 0.2665
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7502,
+          "raw": 0.7174,
+          "n": 46,
+          "uncertainty": 0.2464
+        },
+        "2": {
+          "value": 0.9263,
+          "raw": 0.8966,
+          "n": 29,
+          "uncertainty": 0.3204
+        },
+        "3plus": {
+          "value": 0.9562,
+          "raw": 0.9556,
+          "n": 45,
+          "uncertainty": 0.2076
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4734,
+        "raw": 0.4604,
+        "n": 139,
+        "uncertainty": 0.1945
+      },
+      "defenseWinRate": {
+        "value": 0.4114,
+        "raw": 0.3878,
+        "n": 98,
+        "uncertainty": 0.1472
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4561,
+        "raw": 0.3684,
+        "n": 38,
+        "uncertainty": 0.3498
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.211,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "6961",
+    "maps": 11,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Summit": 3,
+      "Sunset": 3,
+      "Split": 2,
+      "Lotus": 1,
+      "Ascent": 1,
+      "Haven": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8852,
+        "raw": 0.883,
+        "n": 94,
+        "uncertainty": 0.3479
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0442,
+        "raw": 0.0,
+        "n": 11,
+        "uncertainty": 0.2626
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 11,
+        "uncertainty": 0.4598
+      },
+      "antiEcoFullBuy": {
+        "value": 0.2307,
+        "raw": 0.2857,
+        "n": 14,
+        "uncertainty": 0.2147
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 16,
+        "uncertainty": 0.4288
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7856,
+          "raw": 0.7872,
+          "n": 47,
+          "uncertainty": 0.2438
+        },
+        "2": {
+          "value": 0.9573,
+          "raw": 0.9643,
+          "n": 28,
+          "uncertainty": 0.3248
+        },
+        "3plus": {
+          "value": 0.973,
+          "raw": 1.0,
+          "n": 19,
+          "uncertainty": 0.3635
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5223,
+        "raw": 0.5414,
+        "n": 133,
+        "uncertainty": 0.1998
+      },
+      "defenseWinRate": {
+        "value": 0.5555,
+        "raw": 0.5862,
+        "n": 116,
+        "uncertainty": 0.1303
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4892,
+        "raw": 0.4444,
+        "n": 9,
+        "uncertainty": 0.5
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1045,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "120",
+    "maps": 11,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Ascent": 3,
+      "Summit": 2,
+      "Sunset": 2,
+      "Split": 1,
+      "Lotus": 1,
+      "Abyss": 1,
+      "Haven": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8914,
+        "raw": 0.9048,
+        "n": 84,
+        "uncertainty": 0.3596
+      },
+      "pistolLossForceBuy": {
+        "value": 0.212,
+        "raw": 0.3,
+        "n": 10,
+        "uncertainty": 0.2743
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 12,
+        "uncertainty": 0.4532
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0456,
+        "raw": 0.0,
+        "n": 11,
+        "uncertainty": 0.2423
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.8143,
+          "raw": 0.8444,
+          "n": 45,
+          "uncertainty": 0.2492
+        },
+        "2": {
+          "value": 0.97,
+          "raw": 1.0,
+          "n": 21,
+          "uncertainty": 0.3596
+        },
+        "3plus": {
+          "value": 0.9525,
+          "raw": 0.9444,
+          "n": 18,
+          "uncertainty": 0.3698
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5636,
+        "raw": 0.6174,
+        "n": 115,
+        "uncertainty": 0.2174
+      },
+      "defenseWinRate": {
+        "value": 0.5248,
+        "raw": 0.5463,
+        "n": 108,
+        "uncertainty": 0.1373
+      },
+      "ascentAttackWinRate": {
+        "value": 0.5082,
+        "raw": 0.5556,
+        "n": 27,
+        "uncertainty": 0.4331
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.665,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "11981",
+    "maps": 9,
+    "seasons": [
+      2025,
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 3,
+      "Sunset": 1,
+      "Abyss": 1,
+      "Breeze": 1,
+      "Haven": 1,
+      "Fracture": 1,
+      "Split": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8917,
+        "raw": 0.9043,
+        "n": 94,
+        "uncertainty": 0.3479
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1569,
+        "raw": 0.2,
+        "n": 10,
+        "uncertainty": 0.2743
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 8,
+        "uncertainty": 0.481
+      },
+      "antiEcoFullBuy": {
+        "value": 0.122,
+        "raw": 0.125,
+        "n": 8,
+        "uncertainty": 0.2811
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 11,
+        "uncertainty": 0.4598
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7936,
+          "raw": 0.8056,
+          "n": 36,
+          "uncertainty": 0.277
+        },
+        "2": {
+          "value": 0.9566,
+          "raw": 0.963,
+          "n": 27,
+          "uncertainty": 0.3293
+        },
+        "3plus": {
+          "value": 0.9623,
+          "raw": 0.9677,
+          "n": 31,
+          "uncertainty": 0.2538
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4493,
+        "raw": 0.41,
+        "n": 100,
+        "uncertainty": 0.2347
+      },
+      "defenseWinRate": {
+        "value": 0.4394,
+        "raw": 0.4271,
+        "n": 96,
+        "uncertainty": 0.1493
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.1036,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "12694",
+    "maps": 9,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Pearl": 3,
+      "Haven": 2,
+      "Bind": 2,
+      "Corrode": 1,
+      "Split": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8802,
+        "raw": 0.8642,
+        "n": 81,
+        "uncertainty": 0.3632
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0964,
+        "raw": 0.0909,
+        "n": 11,
+        "uncertainty": 0.2626
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 7,
+        "uncertainty": 0.4886
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0588,
+        "raw": 0.0,
+        "n": 7,
+        "uncertainty": 0.2978
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7659,
+          "raw": 0.7429,
+          "n": 35,
+          "uncertainty": 0.2805
+        },
+        "2": {
+          "value": 0.967,
+          "raw": 1.0,
+          "n": 16,
+          "uncertainty": 0.3905
+        },
+        "3plus": {
+          "value": 0.9455,
+          "raw": 0.9333,
+          "n": 30,
+          "uncertainty": 0.2579
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5419,
+        "raw": 0.5842,
+        "n": 101,
+        "uncertainty": 0.2335
+      },
+      "defenseWinRate": {
+        "value": 0.4539,
+        "raw": 0.4471,
+        "n": 85,
+        "uncertainty": 0.1624
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.3251,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "2355",
+    "maps": 8,
+    "seasons": [
+      2024
+    ],
+    "mapPool": {
+      "Haven": 2,
+      "Lotus": 2,
+      "Abyss": 1,
+      "Bind": 1,
+      "Icebox": 1,
+      "Sunset": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.883,
+        "raw": 0.8732,
+        "n": 71,
+        "uncertainty": 0.3759
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0493,
+        "raw": 0.0,
+        "n": 9,
+        "uncertainty": 0.2874
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 7,
+        "uncertainty": 0.4886
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1308,
+        "raw": 0.1429,
+        "n": 7,
+        "uncertainty": 0.2978
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7958,
+          "raw": 0.8125,
+          "n": 32,
+          "uncertainty": 0.2914
+        },
+        "2": {
+          "value": 0.9689,
+          "raw": 1.0,
+          "n": 19,
+          "uncertainty": 0.3713
+        },
+        "3plus": {
+          "value": 0.9158,
+          "raw": 0.85,
+          "n": 20,
+          "uncertainty": 0.3575
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4966,
+        "raw": 0.5,
+        "n": 76,
+        "uncertainty": 0.269
+      },
+      "defenseWinRate": {
+        "value": 0.4892,
+        "raw": 0.5,
+        "n": 80,
+        "uncertainty": 0.1691
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.4167,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "397",
+    "maps": 8,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Abyss": 2,
+      "Haven": 2,
+      "Breeze": 2,
+      "Pearl": 1,
+      "Split": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8828,
+        "raw": 0.8734,
+        "n": 79,
+        "uncertainty": 0.3657
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1143,
+        "raw": 0.125,
+        "n": 8,
+        "uncertainty": 0.3022
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 8,
+        "uncertainty": 0.481
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1144,
+        "raw": 0.1111,
+        "n": 9,
+        "uncertainty": 0.2665
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 8,
+        "uncertainty": 0.481
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7537,
+          "raw": 0.7037,
+          "n": 27,
+          "uncertainty": 0.3617
+        },
+        "2": {
+          "value": 0.9527,
+          "raw": 0.9545,
+          "n": 22,
+          "uncertainty": 0.3541
+        },
+        "3plus": {
+          "value": 0.9617,
+          "raw": 0.9667,
+          "n": 30,
+          "uncertainty": 0.2579
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4997,
+        "raw": 0.5052,
+        "n": 97,
+        "uncertainty": 0.2385
+      },
+      "defenseWinRate": {
+        "value": 0.4433,
+        "raw": 0.4304,
+        "n": 79,
+        "uncertainty": 0.1705
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.2668,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "1119",
+    "maps": 8,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Split": 3,
+      "Pearl": 2,
+      "Abyss": 1,
+      "Bind": 1,
+      "Corrode": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8862,
+        "raw": 0.8861,
+        "n": 79,
+        "uncertainty": 0.3657
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0493,
+        "raw": 0.0,
+        "n": 9,
+        "uncertainty": 0.2874
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 7,
+        "uncertainty": 0.4886
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0588,
+        "raw": 0.0,
+        "n": 7,
+        "uncertainty": 0.2978
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.761,
+          "raw": 0.72,
+          "n": 25,
+          "uncertainty": 0.3707
+        },
+        "2": {
+          "value": 0.951,
+          "raw": 0.95,
+          "n": 20,
+          "uncertainty": 0.3654
+        },
+        "3plus": {
+          "value": 0.964,
+          "raw": 0.9706,
+          "n": 34,
+          "uncertainty": 0.2422
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5062,
+        "raw": 0.5231,
+        "n": 65,
+        "uncertainty": 0.2883
+      },
+      "defenseWinRate": {
+        "value": 0.3921,
+        "raw": 0.3563,
+        "n": 87,
+        "uncertainty": 0.1598
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.4872,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "8877",
+    "maps": 8,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Sunset": 2,
+      "Summit": 2,
+      "Haven": 2,
+      "Abyss": 1,
+      "Ascent": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8818,
+        "raw": 0.8676,
+        "n": 68,
+        "uncertainty": 0.3799
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0524,
+        "raw": 0.0,
+        "n": 8,
+        "uncertainty": 0.3022
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 8,
+        "uncertainty": 0.481
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1774,
+        "raw": 0.2222,
+        "n": 9,
+        "uncertainty": 0.2665
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7984,
+          "raw": 0.8214,
+          "n": 28,
+          "uncertainty": 0.3575
+        },
+        "2": {
+          "value": 0.9491,
+          "raw": 0.9444,
+          "n": 18,
+          "uncertainty": 0.3775
+        },
+        "3plus": {
+          "value": 0.9189,
+          "raw": 0.8636,
+          "n": 22,
+          "uncertainty": 0.3461
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5142,
+        "raw": 0.5357,
+        "n": 84,
+        "uncertainty": 0.2565
+      },
+      "defenseWinRate": {
+        "value": 0.4889,
+        "raw": 0.5,
+        "n": 76,
+        "uncertainty": 0.1749
+      },
+      "ascentAttackWinRate": {
+        "value": 0.52,
+        "raw": 0.7778,
+        "n": 9,
+        "uncertainty": 0.5
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -0.0132,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "2406",
+    "maps": 6,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Haven": 2,
+      "Breeze": 2,
+      "Split": 1,
+      "Abyss": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8796,
+        "raw": 0.8571,
+        "n": 63,
+        "uncertainty": 0.3867
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1017,
+        "raw": 0.1,
+        "n": 10,
+        "uncertainty": 0.2743
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "antiEcoFullBuy": {
+        "value": 0.3213,
+        "raw": 0.6,
+        "n": 5,
+        "uncertainty": 0.3395
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7687,
+          "raw": 0.7391,
+          "n": 23,
+          "uncertainty": 0.3802
+        },
+        "2": {
+          "value": 0.9649,
+          "raw": 1.0,
+          "n": 13,
+          "uncertainty": 0.4122
+        },
+        "3plus": {
+          "value": 0.9258,
+          "raw": 0.8889,
+          "n": 27,
+          "uncertainty": 0.321
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4895,
+        "raw": 0.4833,
+        "n": 60,
+        "uncertainty": 0.298
+      },
+      "defenseWinRate": {
+        "value": 0.4223,
+        "raw": 0.3939,
+        "n": 66,
+        "uncertainty": 0.1912
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.1987,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "11328",
+    "maps": 5,
+    "seasons": [
+      2024
+    ],
+    "mapPool": {
+      "Bind": 2,
+      "Lotus": 2,
+      "Abyss": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8868,
+        "raw": 0.8889,
+        "n": 54,
+        "uncertainty": 0.3997
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0643,
+        "raw": 0.0,
+        "n": 5,
+        "uncertainty": 0.3597
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 5,
+        "uncertainty": 0.5
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0687,
+        "raw": 0.0,
+        "n": 5,
+        "uncertainty": 0.3395
+      },
+      "overtimeForceBuy": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 6,
+        "uncertainty": 0.4964
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7617,
+          "raw": 0.7143,
+          "n": 21,
+          "uncertainty": 0.3902
+        },
+        "2": {
+          "value": 0.9656,
+          "raw": 1.0,
+          "n": 14,
+          "uncertainty": 0.4046
+        },
+        "3plus": {
+          "value": 0.973,
+          "raw": 1.0,
+          "n": 19,
+          "uncertainty": 0.3635
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4675,
+        "raw": 0.4328,
+        "n": 67,
+        "uncertainty": 0.2846
+      },
+      "defenseWinRate": {
+        "value": 0.4629,
+        "raw": 0.4583,
+        "n": 48,
+        "uncertainty": 0.23
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.3952,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "4050",
+    "maps": 5,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Fracture": 1,
+      "Haven": 1,
+      "Split": 1,
+      "Breeze": 1,
+      "Pearl": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8868,
+        "raw": 0.8889,
+        "n": 54,
+        "uncertainty": 0.3997
+      },
+      "pistolLossForceBuy": {
+        "value": 0.2383,
+        "raw": 0.375,
+        "n": 8,
+        "uncertainty": 0.3022
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0826,
+        "raw": 0.0,
+        "n": 3,
+        "uncertainty": 0.3981
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7699,
+          "raw": 0.7368,
+          "n": 19,
+          "uncertainty": 0.4009
+        },
+        "2": {
+          "value": 0.9634,
+          "raw": 1.0,
+          "n": 11,
+          "uncertainty": 0.4282
+        },
+        "3plus": {
+          "value": 0.9576,
+          "raw": 0.9583,
+          "n": 24,
+          "uncertainty": 0.3355
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4917,
+        "raw": 0.4872,
+        "n": 39,
+        "uncertainty": 0.3471
+      },
+      "defenseWinRate": {
+        "value": 0.3842,
+        "raw": 0.3279,
+        "n": 61,
+        "uncertainty": 0.2006
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 1.0,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "731",
+    "maps": 5,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Lotus": 2,
+      "Sunset": 1,
+      "Split": 1,
+      "Summit": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8822,
+        "raw": 0.8654,
+        "n": 52,
+        "uncertainty": 0.4027
+      },
+      "pistolLossForceBuy": {
+        "value": 0.0558,
+        "raw": 0.0,
+        "n": 7,
+        "uncertainty": 0.3188
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 3,
+        "uncertainty": 0.5
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0919,
+        "raw": 0.0,
+        "n": 2,
+        "uncertainty": 0.4373
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7286,
+          "raw": 0.5385,
+          "n": 13,
+          "uncertainty": 0.4374
+        },
+        "2": {
+          "value": 0.9437,
+          "raw": 0.9231,
+          "n": 13,
+          "uncertainty": 0.4122
+        },
+        "3plus": {
+          "value": 0.9763,
+          "raw": 1.0,
+          "n": 26,
+          "uncertainty": 0.3257
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4996,
+        "raw": 0.5128,
+        "n": 39,
+        "uncertainty": 0.3471
+      },
+      "defenseWinRate": {
+        "value": 0.3353,
+        "raw": 0.2308,
+        "n": 52,
+        "uncertainty": 0.2201
+      },
+      "ascentAttackWinRate": {
+        "value": null,
+        "reason": "no Ascent maps"
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 1.0,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "13576",
+    "maps": 5,
+    "seasons": [
+      2026
+    ],
+    "mapPool": {
+      "Ascent": 1,
+      "Summit": 1,
+      "Lotus": 1,
+      "Abyss": 1,
+      "Haven": 1
+    },
+    "lowSample": false,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8914,
+        "raw": 0.9149,
+        "n": 47,
+        "uncertainty": 0.4103
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1657,
+        "raw": 0.3333,
+        "n": 3,
+        "uncertainty": 0.4153
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 7,
+        "uncertainty": 0.4886
+      },
+      "antiEcoFullBuy": {
+        "value": 0.1308,
+        "raw": 0.1429,
+        "n": 7,
+        "uncertainty": 0.2978
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7914,
+          "raw": 0.8125,
+          "n": 16,
+          "uncertainty": 0.4182
+        },
+        "2": {
+          "value": 0.9385,
+          "raw": 0.8889,
+          "n": 9,
+          "uncertainty": 0.4457
+        },
+        "3plus": {
+          "value": 0.9745,
+          "raw": 1.0,
+          "n": 22,
+          "uncertainty": 0.3461
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.5144,
+        "raw": 0.5532,
+        "n": 47,
+        "uncertainty": 0.3266
+      },
+      "defenseWinRate": {
+        "value": 0.3729,
+        "raw": 0.2917,
+        "n": 48,
+        "uncertainty": 0.23
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4882,
+        "raw": 0.0,
+        "n": 1,
+        "uncertainty": 0.5
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": 0.5278,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  },
+  {
+    "teamId": "8304",
+    "maps": 4,
+    "seasons": [
+      2024
+    ],
+    "mapPool": {
+      "Bind": 1,
+      "Ascent": 1,
+      "Lotus": 1,
+      "Sunset": 1
+    },
+    "lowSample": true,
+    "economy": {
+      "forceBuyAfterLoss": {
+        "value": 0.8833,
+        "raw": 0.8696,
+        "n": 46,
+        "uncertainty": 0.4119
+      },
+      "pistolLossForceBuy": {
+        "value": 0.1305,
+        "raw": 0.1667,
+        "n": 6,
+        "uncertainty": 0.3378
+      },
+      "bonusBuyRate": {
+        "value": 1.0,
+        "raw": 1.0,
+        "n": 2,
+        "uncertainty": 0.5
+      },
+      "antiEcoFullBuy": {
+        "value": 0.0919,
+        "raw": 0.0,
+        "n": 2,
+        "uncertainty": 0.4373
+      },
+      "overtimeForceBuy": {
+        "value": null,
+        "reason": "no qualifying rounds"
+      },
+      "forceBuyAfterLossByTier": {
+        "1": {
+          "value": 0.7699,
+          "raw": 0.7368,
+          "n": 19,
+          "uncertainty": 0.4009
+        },
+        "2": {
+          "value": 0.9649,
+          "raw": 1.0,
+          "n": 13,
+          "uncertainty": 0.4122
+        },
+        "3plus": {
+          "value": 0.9483,
+          "raw": 0.9286,
+          "n": 14,
+          "uncertainty": 0.3977
+        }
+      }
+    },
+    "side": {
+      "attackWinRate": {
+        "value": 0.4406,
+        "raw": 0.3404,
+        "n": 47,
+        "uncertainty": 0.3266
+      },
+      "defenseWinRate": {
+        "value": 0.4582,
+        "raw": 0.4474,
+        "n": 38,
+        "uncertainty": 0.2591
+      },
+      "ascentAttackWinRate": {
+        "value": 0.4746,
+        "raw": 0.3333,
+        "n": 12,
+        "uncertainty": 0.4903
+      },
+      "firstMinusSecondHalfAttack": {
+        "value": -1.0,
+        "reason": null
+      }
+    },
+    "tacticalNull": {
+      "sitePreference": {
+        "value": null,
+        "reason": "needs per-round plant site / positions (Layer B not available)"
+      },
+      "executeTempo": {
+        "value": null,
+        "reason": "needs timing of site hits (no per-round timeline in VCT Reference)"
+      },
+      "defaultSetup": {
+        "value": null,
+        "reason": "needs player positions"
+      },
+      "utilityUsage": {
+        "value": null,
+        "reason": "needs ability-usage data"
+      },
+      "rotationTendency": {
+        "value": null,
+        "reason": "needs positional/timing data"
+      },
+      "lurkTendency": {
+        "value": null,
+        "reason": "needs positional data"
+      },
+      "retakeVsSaveTendency": {
+        "value": null,
+        "reason": "needs post-plant positions/outcomes per round"
+      },
+      "fakeTendency": {
+        "value": null,
+        "reason": "needs utility + movement traces"
+      }
+    },
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "retrievedAt": "2026-11-18T10:12:24+00:00",
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "synthetic": false,
+      "evidenceType": "derived",
+      "verified": false,
+      "confidence": null,
+      "notes": [
+        "Team tendency estimate from public match economy; NOT a scouting truth.",
+        "Real-name mapping in team_names.json (user decision 2026-11-18, public VCT teams; re-review license/likeness before launch)."
+      ]
+    }
+  }
+]

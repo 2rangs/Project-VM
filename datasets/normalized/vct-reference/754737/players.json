@@ -1,0 +1,202 @@
+[
+  {
+    "playerId": "458",
+    "handle": "Chronicle",
+    "country": "ru",
+    "sourceUrl": "/player/458/chronicle",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "5022",
+    "handle": "Derke",
+    "country": "fi",
+    "sourceUrl": "/player/5022/derke",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "5554",
+    "handle": "PROFEK",
+    "country": "pl",
+    "sourceUrl": "/player/5554/profek",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "9780",
+    "handle": "Jamppi",
+    "country": "fi",
+    "sourceUrl": "/player/9780/jamppi",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "10557",
+    "handle": "Darker",
+    "country": "co",
+    "sourceUrl": "/player/10557/darker",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "10885",
+    "handle": "DaviH",
+    "country": "pt",
+    "sourceUrl": "/player/10885/davih",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "28716",
+    "handle": "lukxo",
+    "country": "br",
+    "sourceUrl": "/player/28716/lukxo",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "29242",
+    "handle": "erde",
+    "country": "cl",
+    "sourceUrl": "/player/29242/erde",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "33902",
+    "handle": "Sayonara",
+    "country": "md",
+    "sourceUrl": "/player/33902/sayonara",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "playerId": "41224",
+    "handle": "tkzin",
+    "country": "br",
+    "sourceUrl": "/player/41224/tkzin",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  }
+]

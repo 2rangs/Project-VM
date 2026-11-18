@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "player.schema.json",
+  "title": "Player",
+  "description": "A professional player identity. Confirmed fields map 1:1 to VCT Reference `players`. Per-map performance lives in map.schema.json#/playerMapStats, not here.",
+  "type": "object",
+  "required": ["playerId", "handle"],
+  "additionalProperties": false,
+  "properties": {
+    "playerId": {
+      "type": "string",
+      "description": "PV canonical player id. For VCT Reference rows this is the stringified players.player_id (stable integer id). Do NOT merge players by handle alone (README SS13.2)."
+    },
+    "handle": { "type": "string", "description": "In-game handle. VCT Reference players.player_name." },
+    "country": { "type": ["string", "null"], "description": "Country code. VCT Reference players.country." },
+    "sourceUrl": { "type": ["string", "null"], "description": "VCT Reference players.player_url." },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

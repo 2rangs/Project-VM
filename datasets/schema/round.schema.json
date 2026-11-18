@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "round.schema.json",
+  "title": "Round",
+  "description": "One round within a map. CONFIRMED fields map to VCT Reference `rounds` (outcome + a start-of-round economy snapshot). Per-event timeline and per-player positions within the round are FUTURE (obtainable from vlr.gg 2D-replay logs via the method in vctstats ReplayPageParser; see event.schema.json / position.schema.json).",
+  "type": "object",
+  "required": ["roundId", "gameId", "roundNum", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "roundId": { "type": "string", "description": "PV canonical round id, formatted '<gameId>:<roundNum>'." },
+    "gameId": { "type": "string", "description": "Parent map (game) id. rounds.game_id." },
+    "matchId": { "type": ["string", "null"], "description": "Parent match id. rounds.match_id." },
+    "roundNum": { "type": "integer", "minimum": 1, "description": "1-based round number. rounds.round_num." },
+    "winnerTeamIdx": { "type": ["integer", "null"], "enum": [0, 1, null], "description": "Winning team (0/1). rounds.winner_team." },
+    "attackingTeamIdx": { "type": ["integer", "null"], "enum": [0, 1, null], "description": "Which team was attacking this round. DERIVED: rounds.side describes team0's side, so attackingTeamIdx = 0 if side=='attack' else 1." },
+    "team0Side": { "$ref": "common.schema.json#/$defs/side", "description": "The side team0 played this round. rounds.side." },
+    "outcome": { "$ref": "common.schema.json#/$defs/roundOutcome" },
+    "startEconomy": {
+      "type": ["object", "null"],
+      "description": "Start-of-round economy snapshot. CONFIRMED from VCT Reference rounds (present on ~82% of rounds; null where economy_available is false). Values are credits.",
+      "additionalProperties": false,
+      "properties": {
+        "loadoutValue": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": { "type": ["integer", "null"] },
+          "description": "[team0, team1] total loadout value in credits. rounds.loadout_t0/t1."
+        },
+        "bank": {
+          "type": "array", "minItems": 2, "maxItems": 2,
+          "items": { "type": ["integer", "null"] },
+          "description": "[team0, team1] remaining team bank in credits. rounds.bank_t0/t1."
+        }
+      }
+    },
+    "plantSite": { "type": ["string", "null"], "enum": ["A", "B", "C", null], "description": "Spike plant site if planted. FUTURE: from replay logs; not in VCT Reference rounds table." },
+    "events": {
+      "type": "array",
+      "description": "Ordered in-round events (event.schema.json). FUTURE for real data (requires 2D-replay logs); POPULATED for synthetic rounds.",
+      "items": { "type": "string", "description": "eventId reference; full objects in events.json." }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "teamId": "120",
+    "name": "100 Thieves",
+    "country": "us",
+    "sourceUrl": "/team/120/100-thieves",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "teamId": "11058",
+    "name": "G2 Esports",
+    "country": "us",
+    "sourceUrl": "/team/11058/g2-esports",
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  }
+]

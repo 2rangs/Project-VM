@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "map.schema.json",
+  "title": "Map (one game within a match)",
+  "description": "One map played within a match. VALORANT calls this a 'game'; VCT Reference keys it by `game_id`. Holds the round list, per-player map stats, and availability flags.",
+  "type": "object",
+  "required": ["gameId", "matchId", "mapName", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "gameId": { "type": "string", "description": "PV canonical map (game) id. VCT Reference maps.game_id." },
+    "matchId": { "type": "string", "description": "Parent match id. maps.match_id." },
+    "mapName": { "$ref": "common.schema.json#/$defs/mapName" },
+    "pickedByTeamIdx": { "type": ["integer", "null"], "enum": [0, 1, null], "description": "Which team (0/1) picked this map. maps.picked_by_team." },
+    "durationText": { "type": ["string", "null"], "description": "Elapsed time string 'MM:SS'. maps.duration. (CONFIRMED but coarse; per-tick timing is FUTURE.)" },
+    "score": {
+      "type": ["array", "null"],
+      "description": "Rounds won [team0, team1]. maps.score0/score1.",
+      "minItems": 2, "maxItems": 2,
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "performanceAvailable": { "type": ["boolean", "null"], "description": "Whether per-player performance stats exist for this map. maps.performance_available. Gate stats on this (README SS5.1)." },
+    "economyAvailable": { "type": ["boolean", "null"], "description": "Whether per-round economy exists for this map. maps.economy_available." },
+    "rounds": {
+      "type": "array",
+      "description": "Rounds on this map, in order (round.schema.json).",
+      "items": { "type": "string", "description": "roundId (gameId:roundNum) reference; full round objects live in rounds.json." }
+    },
+    "playerMapStats": {
+      "type": "array",
+      "description": "Per-player aggregate stats for this map (map-level, not per-round). CONFIRMED from VCT Reference `player_map`.",
+      "items": { "$ref": "#/$defs/playerMapStat" }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  },
+  "$defs": {
+    "splitStat": {
+      "type": "object",
+      "description": "A stat split into overall / attack-side / defense-side, as VCT Reference stores it (suffix _all/_atk/_def).",
+      "additionalProperties": false,
+      "properties": {
+        "all": { "type": ["number", "null"] },
+        "atk": { "type": ["number", "null"] },
+        "def": { "type": ["number", "null"] }
+      }
+    },
+    "playerMapStat": {
+      "type": "object",
+      "description": "One player's aggregate performance on one map. CONFIRMED fields from VCT Reference player_map.",
+      "required": ["playerId", "teamIdx"],
+      "additionalProperties": false,
+      "properties": {
+        "playerId": { "type": "string" },
+        "teamIdx": { "type": "integer", "enum": [0, 1], "description": "0=team0, 1=team1. player_map.team_idx." },
+        "agents": { "type": "array", "items": { "type": "string" }, "description": "Agent(s) played on this map (lowercase). player_map.agents." },
+        "rating": { "$ref": "#/$defs/splitStat", "description": "VLR Rating 2.0. rating_all/atk/def." },
+        "acs": { "$ref": "#/$defs/splitStat", "description": "Average Combat Score. acs_*." },
+        "adr": { "$ref": "#/$defs/splitStat", "description": "Average Damage per Round. adr_*." },
+        "kills": { "$ref": "#/$defs/splitStat" },
+        "deaths": { "$ref": "#/$defs/splitStat" },
+        "assists": { "$ref": "#/$defs/splitStat" },
+        "firstKills": { "$ref": "#/$defs/splitStat", "description": "Opening kills. fk_*." },
+        "firstDeaths": { "$ref": "#/$defs/splitStat", "description": "Opening deaths. fd_*." },
+        "kastPct": { "$ref": "#/$defs/splitStat", "description": "KAST %. kast_*." },
+        "headshotPct": { "$ref": "#/$defs/splitStat", "description": "Headshot %. hs_pct_*." },
+        "multikills": {
+          "type": "object", "additionalProperties": false,
+          "description": "player_map.two_k..five_k.",
+          "properties": {
+            "twoK": { "type": ["integer", "null"] }, "threeK": { "type": ["integer", "null"] },
+            "fourK": { "type": ["integer", "null"] }, "fiveK": { "type": ["integer", "null"] }
+          }
+        },
+        "clutches": {
+          "type": "object", "additionalProperties": false,
+          "description": "player_map.clutch_1v1..1v5 (clutches won).",
+          "properties": {
+            "v1": { "type": ["integer", "null"] }, "v2": { "type": ["integer", "null"] },
+            "v3": { "type": ["integer", "null"] }, "v4": { "type": ["integer", "null"] },
+            "v5": { "type": ["integer", "null"] }
+          }
+        },
+        "econRating": { "type": ["integer", "null"], "description": "Economy rating. player_map.econ." },
+        "plants": { "type": ["integer", "null"], "description": "Spike plants. player_map.plants." },
+        "defuses": { "type": ["integer", "null"], "description": "Spike defuses. player_map.defuses." }
+      }
+    }
+  }
+}

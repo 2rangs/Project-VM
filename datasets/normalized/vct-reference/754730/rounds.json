@@ -1,0 +1,1514 @@
+[
+  {
+    "roundId": "283265:1",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 1,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        4000,
+        3750
+      ],
+      "bank": [
+        100,
+        300
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:2",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 2,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        11300,
+        17450
+      ],
+      "bank": [
+        400,
+        800
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:3",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 3,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        8100,
+        15750
+      ],
+      "bank": [
+        6900,
+        4700
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:4",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 4,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        22250,
+        6200
+      ],
+      "bank": [
+        5200,
+        8600
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:5",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 5,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        7050,
+        22900
+      ],
+      "bank": [
+        11400,
+        15300
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:6",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 6,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        19300,
+        25650
+      ],
+      "bank": [
+        5000,
+        21900
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:7",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 7,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "bomb_detonated",
+    "startEconomy": {
+      "loadoutValue": [
+        21000,
+        23750
+      ],
+      "bank": [
+        11400,
+        9200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:8",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 8,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        23800,
+        22850
+      ],
+      "bank": [
+        19000,
+        6700
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:9",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 9,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        22600,
+        24200
+      ],
+      "bank": [
+        8600,
+        8600
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:10",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 10,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        25200,
+        13050
+      ],
+      "bank": [
+        11600,
+        6700
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:11",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 11,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        20200,
+        24850
+      ],
+      "bank": [
+        4200,
+        9000
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:12",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 12,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        17250,
+        23600
+      ],
+      "bank": [
+        800,
+        13200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:13",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 13,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        3950,
+        4000
+      ],
+      "bank": [
+        0,
+        200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:14",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 14,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        16600,
+        10250
+      ],
+      "bank": [
+        400,
+        200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:15",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 15,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        2900,
+        15400
+      ],
+      "bank": [
+        8000,
+        2100
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:16",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 16,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "bomb_detonated",
+    "startEconomy": {
+      "loadoutValue": [
+        18850,
+        18550
+      ],
+      "bank": [
+        1800,
+        1400
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:17",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 17,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "bomb_detonated",
+    "startEconomy": {
+      "loadoutValue": [
+        18100,
+        21000
+      ],
+      "bank": [
+        2400,
+        11200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283265:18",
+    "gameId": "283265",
+    "matchId": "754730",
+    "roundNum": 18,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        17650,
+        21300
+      ],
+      "bank": [
+        2100,
+        7700
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:1",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 1,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        4200,
+        3400
+      ],
+      "bank": [
+        0,
+        200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:2",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 2,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        10100,
+        16550
+      ],
+      "bank": [
+        500,
+        900
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:3",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 3,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        5200,
+        17350
+      ],
+      "bank": [
+        9000,
+        5100
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:4",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 4,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        22850,
+        19850
+      ],
+      "bank": [
+        3600,
+        11400
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:5",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 5,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "bomb_detonated",
+    "startEconomy": {
+      "loadoutValue": [
+        22750,
+        18700
+      ],
+      "bank": [
+        10500,
+        3200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:6",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 6,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "time_expired",
+    "startEconomy": {
+      "loadoutValue": [
+        24350,
+        10550
+      ],
+      "bank": [
+        18000,
+        8100
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:7",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 7,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        20950,
+        23800
+      ],
+      "bank": [
+        11000,
+        3900
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:8",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 8,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        22650,
+        5200
+      ],
+      "bank": [
+        19400,
+        9100
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:9",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 9,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        25850,
+        19200
+      ],
+      "bank": [
+        25600,
+        2300
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:10",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 10,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        26050,
+        11100
+      ],
+      "bank": [
+        32200,
+        6300
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:11",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 11,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        25850,
+        20050
+      ],
+      "bank": [
+        28600,
+        1100
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:12",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 12,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        24250,
+        18500
+      ],
+      "bank": [
+        15500,
+        1800
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:13",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 13,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        3950,
+        3850
+      ],
+      "bank": [
+        200,
+        100
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:14",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 14,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        1550,
+        15450
+      ],
+      "bank": [
+        9100,
+        3500
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:15",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 15,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        21000,
+        11950
+      ],
+      "bank": [
+        6400,
+        2500
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:16",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 16,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        7100,
+        19100
+      ],
+      "bank": [
+        10400,
+        1600
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:17",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 17,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        21550,
+        20700
+      ],
+      "bank": [
+        2200,
+        5200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:18",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 18,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        19700,
+        14300
+      ],
+      "bank": [
+        3200,
+        4500
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:19",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 19,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "time_expired",
+    "startEconomy": {
+      "loadoutValue": [
+        21900,
+        14950
+      ],
+      "bank": [
+        8100,
+        2800
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:20",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 20,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        22650,
+        19300
+      ],
+      "bank": [
+        19400,
+        2400
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:21",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 21,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        21200,
+        19750
+      ],
+      "bank": [
+        8100,
+        11300
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:22",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 22,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 1,
+    "team0Side": "defense",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        18300,
+        23650
+      ],
+      "bank": [
+        2600,
+        13500
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:23",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 23,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        22650,
+        19250
+      ],
+      "bank": [
+        8300,
+        5200
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  },
+  {
+    "roundId": "283266:24",
+    "gameId": "283266",
+    "matchId": "754730",
+    "roundNum": 24,
+    "winnerTeamIdx": 1,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "elimination",
+    "startEconomy": {
+      "loadoutValue": [
+        19600,
+        23050
+      ],
+      "bank": [
+        300,
+        6600
+      ]
+    },
+    "plantSite": null,
+    "events": [],
+    "provenance": {
+      "sourceId": "vct-reference",
+      "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+      "sourceVersion": "a1a189d0ec7d",
+      "gamePatch": "Patch 13.05",
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "observed",
+      "confidence": null,
+      "verified": true,
+      "verificationLevel": 2,
+      "synthetic": false,
+      "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+      "notes": []
+    }
+  }
+]

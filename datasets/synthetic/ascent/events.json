@@ -1,0 +1,983 @@
+[
+  {
+    "eventId": "synthetic-ascent-g1:1:0",
+    "roundId": "synthetic-ascent-g1:1",
+    "eventNum": 0,
+    "type": "kill",
+    "timeMs": 12000,
+    "actorPlayerId": "atk1",
+    "victimPlayerId": "def4",
+    "actorTeamIdx": 0,
+    "victimTeamIdx": 1,
+    "weapon": "vandal",
+    "site": null,
+    "afterDetonation": false,
+    "pos": {
+      "x": 720,
+      "y": 615
+    },
+    "fromPos": {
+      "x": 720,
+      "y": 330
+    },
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 703.6,
+        "y": 607.7,
+        "facingDeg": 2.3,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 718.8,
+        "y": 775.9,
+        "facingDeg": 138.2,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 514.2,
+        "y": 493.4,
+        "facingDeg": 184.5,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 703.3,
+        "y": 607.0,
+        "facingDeg": 49.7,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 291.5,
+        "y": 771.6,
+        "facingDeg": 295.4,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 770.0,
+        "y": 354.7,
+        "facingDeg": 194.0,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 238.8,
+        "y": 365.3,
+        "facingDeg": 242.7,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 484.2,
+        "y": 332.0,
+        "facingDeg": 231.7,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 715.5,
+        "y": 347.1,
+        "facingDeg": 309.4,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 494.3,
+        "y": 114.0,
+        "facingDeg": 336.0,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:1:1",
+    "roundId": "synthetic-ascent-g1:1",
+    "eventNum": 1,
+    "type": "plant",
+    "timeMs": 28000,
+    "actorPlayerId": "atk1",
+    "victimPlayerId": null,
+    "actorTeamIdx": 0,
+    "victimTeamIdx": null,
+    "weapon": null,
+    "site": "A",
+    "afterDetonation": false,
+    "pos": {
+      "x": 780,
+      "y": 360
+    },
+    "fromPos": null,
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 728.1,
+        "y": 613.4,
+        "facingDeg": 19.8,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 720.9,
+        "y": 767.5,
+        "facingDeg": 274.2,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 511.1,
+        "y": 502.5,
+        "facingDeg": 296.2,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 722.9,
+        "y": 632.5,
+        "facingDeg": 260.6,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 299.8,
+        "y": 770.8,
+        "facingDeg": 316.8,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 795.8,
+        "y": 366.7,
+        "facingDeg": 46.7,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 219.3,
+        "y": 346.8,
+        "facingDeg": 31.2,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 507.3,
+        "y": 321.1,
+        "facingDeg": 268.1,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 734.7,
+        "y": 330.5,
+        "facingDeg": 29.7,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 496.5,
+        "y": 104.6,
+        "facingDeg": 312.6,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:1:2",
+    "roundId": "synthetic-ascent-g1:1",
+    "eventNum": 2,
+    "type": "kill",
+    "timeMs": 40000,
+    "actorPlayerId": "atk3",
+    "victimPlayerId": "def1",
+    "actorTeamIdx": 0,
+    "victimTeamIdx": 1,
+    "weapon": "phantom",
+    "site": null,
+    "afterDetonation": false,
+    "pos": {
+      "x": 780,
+      "y": 360
+    },
+    "fromPos": {
+      "x": 500,
+      "y": 505
+    },
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 716.0,
+        "y": 609.2,
+        "facingDeg": 182.8,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 690.9,
+        "y": 759.0,
+        "facingDeg": 56.5,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 500.3,
+        "y": 517.3,
+        "facingDeg": 263.2,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 719.4,
+        "y": 623.5,
+        "facingDeg": 70.8,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 285.7,
+        "y": 759.6,
+        "facingDeg": 111.1,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 765.9,
+        "y": 353.0,
+        "facingDeg": 19.6,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 239.1,
+        "y": 362.6,
+        "facingDeg": 306.1,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 512.7,
+        "y": 332.1,
+        "facingDeg": 77.7,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 725.4,
+        "y": 325.6,
+        "facingDeg": 30.0,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 502.5,
+        "y": 127.8,
+        "facingDeg": 295.3,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:2:0",
+    "roundId": "synthetic-ascent-g1:2",
+    "eventNum": 0,
+    "type": "kill",
+    "timeMs": 12000,
+    "actorPlayerId": "atk1",
+    "victimPlayerId": "def4",
+    "actorTeamIdx": 0,
+    "victimTeamIdx": 1,
+    "weapon": "vandal",
+    "site": null,
+    "afterDetonation": false,
+    "pos": {
+      "x": 720,
+      "y": 615
+    },
+    "fromPos": {
+      "x": 720,
+      "y": 330
+    },
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 729.4,
+        "y": 607.8,
+        "facingDeg": 185.2,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 715.9,
+        "y": 768.6,
+        "facingDeg": 8.1,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 510.8,
+        "y": 499.2,
+        "facingDeg": 146.5,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 716.2,
+        "y": 632.1,
+        "facingDeg": 273.9,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 283.2,
+        "y": 756.7,
+        "facingDeg": 137.0,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 791.8,
+        "y": 373.5,
+        "facingDeg": 4.9,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 222.4,
+        "y": 343.5,
+        "facingDeg": 316.8,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 517.7,
+        "y": 318.1,
+        "facingDeg": 206.2,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 715.7,
+        "y": 338.2,
+        "facingDeg": 46.7,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 483.9,
+        "y": 111.7,
+        "facingDeg": 290.8,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:2:1",
+    "roundId": "synthetic-ascent-g1:2",
+    "eventNum": 1,
+    "type": "plant",
+    "timeMs": 28000,
+    "actorPlayerId": "atk1",
+    "victimPlayerId": null,
+    "actorTeamIdx": 0,
+    "victimTeamIdx": null,
+    "weapon": null,
+    "site": "A",
+    "afterDetonation": false,
+    "pos": {
+      "x": 780,
+      "y": 360
+    },
+    "fromPos": null,
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 702.9,
+        "y": 599.4,
+        "facingDeg": 191.5,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 699.9,
+        "y": 753.2,
+        "facingDeg": 266.7,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 482.2,
+        "y": 521.4,
+        "facingDeg": 71.6,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 735.6,
+        "y": 623.3,
+        "facingDeg": 241.7,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 311.0,
+        "y": 743.4,
+        "facingDeg": 233.4,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 775.8,
+        "y": 348.3,
+        "facingDeg": 84.8,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 224.3,
+        "y": 370.5,
+        "facingDeg": 294.0,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 512.7,
+        "y": 310.6,
+        "facingDeg": 108.4,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 722.0,
+        "y": 329.6,
+        "facingDeg": 43.5,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 506.5,
+        "y": 129.9,
+        "facingDeg": 195.4,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:2:2",
+    "roundId": "synthetic-ascent-g1:2",
+    "eventNum": 2,
+    "type": "kill",
+    "timeMs": 40000,
+    "actorPlayerId": "atk3",
+    "victimPlayerId": "def1",
+    "actorTeamIdx": 0,
+    "victimTeamIdx": 1,
+    "weapon": "phantom",
+    "site": null,
+    "afterDetonation": false,
+    "pos": {
+      "x": 780,
+      "y": 360
+    },
+    "fromPos": {
+      "x": 500,
+      "y": 505
+    },
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 714.4,
+        "y": 632.5,
+        "facingDeg": 214.3,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 694.3,
+        "y": 745.9,
+        "facingDeg": 211.7,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 509.5,
+        "y": 490.8,
+        "facingDeg": 244.6,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 718.1,
+        "y": 628.5,
+        "facingDeg": 313.9,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 282.5,
+        "y": 771.9,
+        "facingDeg": 150.1,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 793.1,
+        "y": 371.4,
+        "facingDeg": 307.3,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 215.2,
+        "y": 373.4,
+        "facingDeg": 177.2,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 517.5,
+        "y": 339.2,
+        "facingDeg": 128.6,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 724.9,
+        "y": 345.6,
+        "facingDeg": 52.2,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 485.5,
+        "y": 128.3,
+        "facingDeg": 158.6,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:3:0",
+    "roundId": "synthetic-ascent-g1:3",
+    "eventNum": 0,
+    "type": "kill",
+    "timeMs": 12000,
+    "actorPlayerId": "atk1",
+    "victimPlayerId": "def4",
+    "actorTeamIdx": 0,
+    "victimTeamIdx": 1,
+    "weapon": "vandal",
+    "site": null,
+    "afterDetonation": false,
+    "pos": {
+      "x": 720,
+      "y": 615
+    },
+    "fromPos": {
+      "x": 720,
+      "y": 330
+    },
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 709.6,
+        "y": 609.0,
+        "facingDeg": 193.3,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 709.3,
+        "y": 775.5,
+        "facingDeg": 131.7,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 505.1,
+        "y": 508.9,
+        "facingDeg": 91.1,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 715.4,
+        "y": 626.2,
+        "facingDeg": 94.9,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 308.8,
+        "y": 742.9,
+        "facingDeg": 140.6,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 784.7,
+        "y": 349.4,
+        "facingDeg": 330.3,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 247.9,
+        "y": 354.7,
+        "facingDeg": 178.2,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 516.2,
+        "y": 321.0,
+        "facingDeg": 208.6,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 722.6,
+        "y": 329.5,
+        "facingDeg": 88.7,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 483.2,
+        "y": 128.8,
+        "facingDeg": 132.7,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:3:1",
+    "roundId": "synthetic-ascent-g1:3",
+    "eventNum": 1,
+    "type": "plant",
+    "timeMs": 28000,
+    "actorPlayerId": "atk1",
+    "victimPlayerId": null,
+    "actorTeamIdx": 0,
+    "victimTeamIdx": null,
+    "weapon": null,
+    "site": "A",
+    "afterDetonation": false,
+    "pos": {
+      "x": 780,
+      "y": 360
+    },
+    "fromPos": null,
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 707.7,
+        "y": 607.9,
+        "facingDeg": 135.3,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 716.8,
+        "y": 756.5,
+        "facingDeg": 199.6,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 492.3,
+        "y": 516.4,
+        "facingDeg": 279.5,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 708.7,
+        "y": 606.5,
+        "facingDeg": 75.8,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 306.3,
+        "y": 744.1,
+        "facingDeg": 326.2,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 768.3,
+        "y": 345.3,
+        "facingDeg": 148.0,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 238.9,
+        "y": 363.7,
+        "facingDeg": 119.9,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 506.9,
+        "y": 340.6,
+        "facingDeg": 279.9,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 736.7,
+        "y": 335.6,
+        "facingDeg": 136.6,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 500.0,
+        "y": 103.6,
+        "facingDeg": 318.4,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "eventId": "synthetic-ascent-g1:3:2",
+    "roundId": "synthetic-ascent-g1:3",
+    "eventNum": 2,
+    "type": "kill",
+    "timeMs": 40000,
+    "actorPlayerId": "atk3",
+    "victimPlayerId": "def1",
+    "actorTeamIdx": 0,
+    "victimTeamIdx": 1,
+    "weapon": "phantom",
+    "site": null,
+    "afterDetonation": false,
+    "pos": {
+      "x": 780,
+      "y": 360
+    },
+    "fromPos": {
+      "x": 500,
+      "y": 505
+    },
+    "positions": [
+      {
+        "playerId": "atk1",
+        "x": 737.5,
+        "y": 632.0,
+        "facingDeg": 66.4,
+        "alive": true
+      },
+      {
+        "playerId": "atk2",
+        "x": 712.8,
+        "y": 772.7,
+        "facingDeg": 239.9,
+        "alive": true
+      },
+      {
+        "playerId": "atk3",
+        "x": 500.8,
+        "y": 488.2,
+        "facingDeg": 115.0,
+        "alive": true
+      },
+      {
+        "playerId": "atk4",
+        "x": 713.7,
+        "y": 616.4,
+        "facingDeg": 147.7,
+        "alive": true
+      },
+      {
+        "playerId": "atk5",
+        "x": 290.8,
+        "y": 762.0,
+        "facingDeg": 300.5,
+        "alive": true
+      },
+      {
+        "playerId": "def1",
+        "x": 768.4,
+        "y": 348.3,
+        "facingDeg": 39.9,
+        "alive": true
+      },
+      {
+        "playerId": "def2",
+        "x": 237.6,
+        "y": 353.0,
+        "facingDeg": 127.2,
+        "alive": true
+      },
+      {
+        "playerId": "def3",
+        "x": 493.5,
+        "y": 326.6,
+        "facingDeg": 350.5,
+        "alive": true
+      },
+      {
+        "playerId": "def4",
+        "x": 727.4,
+        "y": 328.8,
+        "facingDeg": 249.5,
+        "alive": true
+      },
+      {
+        "playerId": "def5",
+        "x": 497.1,
+        "y": 106.6,
+        "facingDeg": 300.9,
+        "alive": true
+      }
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  }
+]
