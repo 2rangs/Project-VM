@@ -1,0 +1,918 @@
+{
+  "note": "NavMesh path length vs PV-4 straight-line lower bound, per Ascent callout edge. Each PV-4 zone is placed via the region-level affine transform (~6-9 m RMS) and represented by the nearest point on the navmesh MAIN connected component (repDist = how far that is). Paths are routed between representatives; the detour RATIO (path / rep-straight-line) is the robust signal, absolute lengths carry placement + representation uncertainty. Edges whose endpoints are off the main component (repDist > 18 m) or on different components are reported unreachable — a NavMesh-connectivity limitation, not a map fact. PV-4 files were not modified; see \"replacementProposal\".",
+  "unitsConvention": "100 uu per metre",
+  "navmesh": {
+    "file": "ascent.navmesh.bin"
+  },
+  "mainComponentFractionOfArea": 0.27,
+  "zonesOnMesh": "15/22",
+  "edgeSummary": {
+    "total": 32,
+    "reachable": 2,
+    "unreachable": 30,
+    "detourRatio": {
+      "count": 2,
+      "min": 0.76,
+      "median": 1.01,
+      "mean": 0.89,
+      "max": 1.01
+    }
+  },
+  "zonesSnap": {
+    "attacker-spawn": {
+      "name": "Attacker Spawn",
+      "game": [
+        60,
+        50,
+        190
+      ],
+      "queryRecast": [
+        14.285896606126254,
+        1.9,
+        9.186644081286463
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        0.7724881768226624,
+        13.28313159942627,
+        66.44992065429688
+      ],
+      "repDist_m": 58.84
+    },
+    "defender-spawn": {
+      "name": "Defender Spawn",
+      "game": [
+        1995.2,
+        -9744.9,
+        100
+      ],
+      "queryRecast": [
+        3.6638657669803294,
+        1,
+        96.36255367019737
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        -3.918994903564453,
+        11.54141902923584,
+        68.62240600585938
+      ],
+      "repDist_m": 28.76
+    },
+    "a-lobby": {
+      "name": "A Lobby",
+      "game": [
+        4489,
+        -3014.1,
+        400
+      ],
+      "queryRecast": [
+        58.11620035882305,
+        4,
+        36.31298918737408
+      ],
+      "recast": [
+        66.00457000732422,
+        3.136706829071045,
+        38.648826599121094
+      ],
+      "onMesh": true,
+      "snapDist_m": 8.27,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 64.75
+    },
+    "a-main": {
+      "name": "A Main",
+      "game": [
+        5321.6,
+        -4710.1,
+        400
+      ],
+      "queryRecast": [
+        62.41240456788118,
+        4,
+        51.388805624473605
+      ],
+      "recast": [
+        63.60456848144531,
+        10.636706352233887,
+        51.3888053894043
+      ],
+      "onMesh": true,
+      "snapDist_m": 6.74,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 63.4
+    },
+    "a-window": {
+      "name": "A Window",
+      "game": [
+        4023,
+        -8180.7,
+        803
+      ],
+      "queryRecast": [
+        34.17826826258387,
+        8.03,
+        82.35262209494533
+      ],
+      "recast": [
+        23.404565811157227,
+        13.93670654296875,
+        82.35262298583984
+      ],
+      "onMesh": true,
+      "snapDist_m": 12.29,
+      "rep": [
+        0.649690568447113,
+        13.05382251739502,
+        67.3548812866211
+      ],
+      "repDist_m": 36.73
+    },
+    "a-tree": {
+      "name": "A Tree",
+      "game": [
+        3980.9,
+        -5938.8,
+        400
+      ],
+      "queryRecast": [
+        41.55263868537145,
+        4,
+        62.384261041679075
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 40.91
+    },
+    "a-site": {
+      "name": "A Site",
+      "game": [
+        6153.6,
+        -6626.2,
+        500
+      ],
+      "queryRecast": [
+        65.92625502269188,
+        5,
+        68.42520791668986
+      ],
+      "recast": [
+        65.92625427246094,
+        5.536706924438477,
+        66.24882507324219
+      ],
+      "onMesh": true,
+      "snapDist_m": 2.24,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 65.1
+    },
+    "a-garden": {
+      "name": "A Garden",
+      "game": [
+        3773.7,
+        -7551.4,
+        400
+      ],
+      "queryRecast": [
+        33.31959726513114,
+        4,
+        76.75649299180937
+      ],
+      "recast": [
+        23.404565811157227,
+        13.93670654296875,
+        81.84883117675781
+      ],
+      "onMesh": true,
+      "snapDist_m": 14.93,
+      "rep": [
+        0.649690568447113,
+        13.05382251739502,
+        67.3548812866211
+      ],
+      "repDist_m": 34
+    },
+    "a-wine": {
+      "name": "A Wine",
+      "game": [
+        7358.7,
+        -4689.3,
+        400
+      ],
+      "queryRecast": [
+        87.60730729618132,
+        4,
+        51.12651519428009
+      ],
+      "recast": [
+        82.8045654296875,
+        1.9367069005966187,
+        43.448829650878906
+      ],
+      "onMesh": true,
+      "snapDist_m": 9.29,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 88.11
+    },
+    "a-rafters": {
+      "name": "A Rafters",
+      "game": [
+        6129.9,
+        -8210,
+        500
+      ],
+      "queryRecast": [
+        60.05755164784083,
+        5,
+        82.53396373828849
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        0.649690568447113,
+        13.05382251739502,
+        67.3548812866211
+      ],
+      "repDist_m": 61.32
+    },
+    "b-lobby": {
+      "name": "B Lobby",
+      "game": [
+        -1490.6,
+        -1390,
+        200
+      ],
+      "queryRecast": [
+        -9.906341985659903,
+        2,
+        22.072211017504817
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        -6.858728408813477,
+        12.009509086608887,
+        65.59200286865234
+      ],
+      "repDist_m": 43.63
+    },
+    "b-main": {
+      "name": "B Main",
+      "game": [
+        -1983.7,
+        -5840.8,
+        100
+      ],
+      "queryRecast": [
+        -31.658198688196656,
+        1,
+        61.73680701668127
+      ],
+      "recast": [
+        -7.1954345703125,
+        11.83670711517334,
+        67.4488296508789
+      ],
+      "onMesh": true,
+      "snapDist_m": 27.36,
+      "rep": [
+        -7.023843765258789,
+        11.852258682250977,
+        66.24144744873047
+      ],
+      "repDist_m": 25.04
+    },
+    "b-site": {
+      "name": "B Site",
+      "game": [
+        -2344.1,
+        -7548.5,
+        100
+      ],
+      "queryRecast": [
+        -42.115353318311136,
+        1,
+        76.96194361178823
+      ],
+      "recast": [
+        -54.89543914794922,
+        1.9367069005966187,
+        80.34883117675781
+      ],
+      "onMesh": true,
+      "snapDist_m": 13.25,
+      "rep": [
+        -7.122406005859375,
+        11.81236457824707,
+        68.19046020507812
+      ],
+      "repDist_m": 36.08
+    },
+    "b-boathouse": {
+      "name": "B Boat House",
+      "game": [
+        -4484.8,
+        -7763.4,
+        100
+      ],
+      "queryRecast": [
+        -69.27126948279883,
+        1,
+        78.95711615055114
+      ],
+      "recast": [
+        -63.29543685913086,
+        4.33670711517334,
+        80.048828125
+      ],
+      "onMesh": true,
+      "snapDist_m": 6.93,
+      "rep": [
+        -7.122406005859375,
+        11.81236457824707,
+        68.19046020507812
+      ],
+      "repDist_m": 63.07
+    },
+    "mid-top": {
+      "name": "Mid Top",
+      "game": [
+        2753.9,
+        -2129.6,
+        400
+      ],
+      "queryRecast": [
+        39.83307287576297,
+        4,
+        28.499810569863683
+      ],
+      "recast": [
+        49.8045654296875,
+        10.33670711517334,
+        29.048828125
+      ],
+      "onMesh": true,
+      "snapDist_m": 11.83,
+      "rep": [
+        0.7724881768226624,
+        13.28313159942627,
+        66.44992065429688
+      ],
+      "repDist_m": 54.46
+    },
+    "mid-courtyard": {
+      "name": "Mid Courtyard",
+      "game": [
+        1222.7,
+        -4586.6,
+        300
+      ],
+      "queryRecast": [
+        12.299300793248836,
+        3,
+        50.44367519608717
+      ],
+      "recast": [
+        18.3045654296875,
+        13.93670654296875,
+        62.34883117675781
+      ],
+      "onMesh": true,
+      "snapDist_m": 17.25,
+      "rep": [
+        0.7724881768226624,
+        13.28313159942627,
+        66.44992065429688
+      ],
+      "repDist_m": 19.72
+    },
+    "mid-catwalk": {
+      "name": "Mid Catwalk",
+      "game": [
+        2315.8,
+        -4127.3,
+        300
+      ],
+      "queryRecast": [
+        27.396649285728156,
+        3,
+        46.31108914686919
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 33.37
+    },
+    "mid-cubby": {
+      "name": "Mid Cubby",
+      "game": [
+        3387.3,
+        -5129.8,
+        300
+      ],
+      "queryRecast": [
+        37.08074400834134,
+        3,
+        55.200452100536836
+      ],
+      "recast": [
+        24.3045654296875,
+        13.93670654296875,
+        62.34883117675781
+      ],
+      "onMesh": true,
+      "snapDist_m": 18.27,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 37.96
+    },
+    "mid-bottom": {
+      "name": "Mid Bottom",
+      "game": [
+        1122.2,
+        -5951.7,
+        200
+      ],
+      "queryRecast": [
+        6.2535193704115954,
+        2,
+        62.60724190253028
+      ],
+      "recast": [
+        -1.7954349517822266,
+        4.036706924438477,
+        67.4488296508789
+      ],
+      "onMesh": true,
+      "snapDist_m": 9.61,
+      "rep": [
+        0.8511135578155518,
+        13.262516021728516,
+        66.54024505615234
+      ],
+      "repDist_m": 6.68
+    },
+    "mid-link": {
+      "name": "Mid Link",
+      "game": [
+        -632.1,
+        -4280.3,
+        200
+      ],
+      "queryRecast": [
+        -9.4957719179229,
+        2,
+        47.785397224958814
+      ],
+      "recast": null,
+      "onMesh": false,
+      "snapDist_m": null,
+      "rep": [
+        -6.858728408813477,
+        12.009509086608887,
+        65.59200286865234
+      ],
+      "repDist_m": 18
+    },
+    "mid-market": {
+      "name": "Mid Market",
+      "game": [
+        1089.1,
+        -7363.2,
+        100
+      ],
+      "queryRecast": [
+        0.8755490316509587,
+        1,
+        75.18157328728137
+      ],
+      "recast": [
+        -1.7954349517822266,
+        4.036706924438477,
+        68.34883117675781
+      ],
+      "onMesh": true,
+      "snapDist_m": 7.94,
+      "rep": [
+        0.649690568447113,
+        13.05382251739502,
+        67.3548812866211
+      ],
+      "repDist_m": 7.83
+    },
+    "mid-pizza": {
+      "name": "Mid Pizza",
+      "game": [
+        1801.6,
+        -7262.2,
+        100
+      ],
+      "queryRecast": [
+        10.017764560794522,
+        1,
+        74.25496952456426
+      ],
+      "recast": [
+        -1.7954349517822266,
+        4.036706924438477,
+        68.34883117675781
+      ],
+      "onMesh": true,
+      "snapDist_m": 13.55,
+      "rep": [
+        0.649690568447113,
+        13.05382251739502,
+        67.3548812866211
+      ],
+      "repDist_m": 11.63
+    }
+  },
+  "edges": [
+    {
+      "from": "attacker-spawn",
+      "to": "a-lobby",
+      "pv4StraightLine_m": 53.9,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 58.84,
+      "repDist_to_m": 64.75,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 58.84/64.75 m > 18)"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "b-lobby",
+      "pv4StraightLine_m": 21.16,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 58.84,
+      "repDist_to_m": 43.63,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 58.84/43.63 m > 18)"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "mid-top",
+      "pv4StraightLine_m": 34.72,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 58.84,
+      "repDist_to_m": 54.46,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 58.84/54.46 m > 18)"
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-main",
+      "pv4StraightLine_m": 18.89,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 64.75,
+      "repDist_to_m": 63.4,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 64.75/63.4 m > 18)"
+    },
+    {
+      "from": "a-main",
+      "to": "a-tree",
+      "pv4StraightLine_m": 18.19,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 63.4,
+      "repDist_to_m": 40.91,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 63.4/40.91 m > 18)"
+    },
+    {
+      "from": "a-main",
+      "to": "a-window",
+      "pv4StraightLine_m": 37.27,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 63.4,
+      "repDist_to_m": 36.73,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 63.4/36.73 m > 18)"
+    },
+    {
+      "from": "a-main",
+      "to": "a-site",
+      "pv4StraightLine_m": 20.91,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 63.4,
+      "repDist_to_m": 65.1,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 63.4/65.1 m > 18)"
+    },
+    {
+      "from": "a-tree",
+      "to": "a-site",
+      "pv4StraightLine_m": 22.81,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 40.91,
+      "repDist_to_m": 65.1,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 40.91/65.1 m > 18)"
+    },
+    {
+      "from": "a-window",
+      "to": "a-site",
+      "pv4StraightLine_m": 26.55,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 36.73,
+      "repDist_to_m": 65.1,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 36.73/65.1 m > 18)"
+    },
+    {
+      "from": "a-site",
+      "to": "a-wine",
+      "pv4StraightLine_m": 22.83,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 65.1,
+      "repDist_to_m": 88.11,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 65.1/88.11 m > 18)"
+    },
+    {
+      "from": "a-site",
+      "to": "a-rafters",
+      "pv4StraightLine_m": 15.84,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 65.1,
+      "repDist_to_m": 61.32,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 65.1/61.32 m > 18)"
+    },
+    {
+      "from": "a-site",
+      "to": "a-garden",
+      "pv4StraightLine_m": 25.55,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 65.1,
+      "repDist_to_m": 34,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 65.1/34 m > 18)"
+    },
+    {
+      "from": "a-garden",
+      "to": "mid-cubby",
+      "pv4StraightLine_m": 24.54,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 34,
+      "repDist_to_m": 37.96,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 34/37.96 m > 18)"
+    },
+    {
+      "from": "a-wine",
+      "to": "defender-spawn",
+      "pv4StraightLine_m": 73.77,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 88.11,
+      "repDist_to_m": 28.76,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 88.11/28.76 m > 18)"
+    },
+    {
+      "from": "a-rafters",
+      "to": "defender-spawn",
+      "pv4StraightLine_m": 44.29,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 61.32,
+      "repDist_to_m": 28.76,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 61.32/28.76 m > 18)"
+    },
+    {
+      "from": "mid-top",
+      "to": "mid-courtyard",
+      "pv4StraightLine_m": 28.97,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 54.46,
+      "repDist_to_m": 19.72,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 54.46/19.72 m > 18)"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-catwalk",
+      "pv4StraightLine_m": 11.86,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 19.72,
+      "repDist_to_m": 33.37,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 19.72/33.37 m > 18)"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-cubby",
+      "pv4StraightLine_m": 22.32,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 19.72,
+      "repDist_to_m": 37.96,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 19.72/37.96 m > 18)"
+    },
+    {
+      "from": "mid-catwalk",
+      "to": "mid-bottom",
+      "pv4StraightLine_m": 21.82,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 33.37,
+      "repDist_to_m": 6.68,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 33.37/6.68 m > 18)"
+    },
+    {
+      "from": "mid-cubby",
+      "to": "mid-bottom",
+      "pv4StraightLine_m": 24.12,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 37.96,
+      "repDist_to_m": 6.68,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 37.96/6.68 m > 18)"
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-market",
+      "pv4StraightLine_m": 14.15,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 6.68,
+      "repDist_to_m": 7.83,
+      "repStraightLine_m": 0.86,
+      "reachable": true,
+      "navmeshPath_m": 0.86,
+      "navmeshPath_uu": 86,
+      "pathPoints": 2,
+      "endGap_m": 0,
+      "detourRatio": 1.01
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-link",
+      "pv4StraightLine_m": 24.23,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 6.68,
+      "repDist_to_m": 18,
+      "repStraightLine_m": 7.87,
+      "reachable": true,
+      "navmeshPath_m": 5.95,
+      "navmeshPath_uu": 595,
+      "pathPoints": 2,
+      "endGap_m": 2.3,
+      "detourRatio": 0.76
+    },
+    {
+      "from": "mid-link",
+      "to": "b-site",
+      "pv4StraightLine_m": 36.91,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 18,
+      "repDist_to_m": 36.08,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 18/36.08 m > 18)"
+    },
+    {
+      "from": "mid-link",
+      "to": "defender-spawn",
+      "pv4StraightLine_m": 60.64,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 18,
+      "repDist_to_m": 28.76,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 18/28.76 m > 18)"
+    },
+    {
+      "from": "mid-market",
+      "to": "mid-pizza",
+      "pv4StraightLine_m": 7.2,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 7.83,
+      "repDist_to_m": 11.63,
+      "repStraightLine_m": 0,
+      "reachable": false,
+      "reason": "no path returned (endpoints on different components)"
+    },
+    {
+      "from": "mid-market",
+      "to": "b-site",
+      "pv4StraightLine_m": 34.38,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 7.83,
+      "repDist_to_m": 36.08,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 7.83/36.08 m > 18)"
+    },
+    {
+      "from": "mid-pizza",
+      "to": "b-main",
+      "pv4StraightLine_m": 40.43,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 11.63,
+      "repDist_to_m": 25.04,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 11.63/25.04 m > 18)"
+    },
+    {
+      "from": "b-lobby",
+      "to": "b-main",
+      "pv4StraightLine_m": 44.79,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 43.63,
+      "repDist_to_m": 25.04,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 43.63/25.04 m > 18)"
+    },
+    {
+      "from": "b-main",
+      "to": "b-site",
+      "pv4StraightLine_m": 17.45,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 25.04,
+      "repDist_to_m": 36.08,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 25.04/36.08 m > 18)"
+    },
+    {
+      "from": "b-site",
+      "to": "b-boathouse",
+      "pv4StraightLine_m": 21.51,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 36.08,
+      "repDist_to_m": 63.07,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 36.08/63.07 m > 18)"
+    },
+    {
+      "from": "b-boathouse",
+      "to": "b-main",
+      "pv4StraightLine_m": 31.55,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 63.07,
+      "repDist_to_m": 25.04,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 63.07/25.04 m > 18)"
+    },
+    {
+      "from": "b-site",
+      "to": "defender-spawn",
+      "pv4StraightLine_m": 48.64,
+      "pv4Provenance": "manual-approx",
+      "repDist_from_m": 36.08,
+      "repDist_to_m": 28.76,
+      "reachable": false,
+      "reason": "endpoint off main component (repDist 36.08/28.76 m > 18)"
+    }
+  ],
+  "replacementProposal": [
+    {
+      "from": "mid-bottom",
+      "to": "mid-market",
+      "current_pv4_distanceMeters": 14.15,
+      "proposed_navmeshPath_m": 0.86,
+      "detourRatio": 1.01,
+      "note": "near straight-line; PV-4 value is a reasonable lower bound"
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-link",
+      "current_pv4_distanceMeters": 24.23,
+      "proposed_navmeshPath_m": 5.95,
+      "detourRatio": 0.76,
+      "note": "near straight-line; PV-4 value is a reasonable lower bound"
+    }
+  ]
+}

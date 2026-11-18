@@ -1,0 +1,11 @@
+{
+  "name": "pv-ascent-navmesh",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PV-5: build + query Ascent NavMesh with recast-navigation-js",
+  "type": "commonjs",
+  "license": "MIT",
+  "dependencies": {
+    "recast-navigation": "^0.44.0"
+  }
+}

@@ -222,3 +222,115 @@ centroid) and `landmark-centroids.py` (named site geometry). Fit by
 - Consequence for downstream use: when placing PV-4 callouts on the navmesh,
   snap each mapped point to the nearest navmesh polygon (search radius ≥ 10 m) to
   absorb this placement uncertainty (see §8).
+
+---
+
+## 6. License judgement (before committing any derivative)
+
+The `.blend` is **user-provided** (README §10.1 Google Drive) and clearly contains
+Riot/VALORANT map art. Its redistribution/commercial licence is **UNVERIFIED**
+(same open question PV-4 flagged for valorant-api). Therefore, per the task rule
+*"파생물을 커밋하기 전에 원본 라이선스 판단을 기록하고, 불명확하면 생성 스크립트만 커밋한다"*:
+
+- **NOT committed** (gitignored under `datasets/spatial/ascent/mesh/raw|derived/`):
+  the raw `.blend`, the extracted geometry (`ascent_playable.bin`,
+  `ascent_ground.bin`), and the exported Detour navmesh (`ascent.navmesh.bin`) —
+  all reproduce Riot map geometry.
+- **Committed** (numeric measurements / derived facts, not geometry): extraction
+  stats, the Blender↔game transform, navmesh stats (tile/poly counts, bounds,
+  config), and the path-calibration report, plus **all generation scripts**.
+
+Anyone with the source `.blend` reproduces every artifact with the committed
+scripts; nothing proprietary is redistributed in git.
+
+---
+
+## 7. NavMesh generation ✅ (built; partially connected — see §8)
+
+**Tool:** `tools/map-mesh/navmesh/build-navmesh.cjs` using
+**recast-navigation-js 0.44.0** (Recast/Detour, WASM). Input is the ground-band
+walkable surface; Blender Z-up is swapped to Recast Y-up.
+
+```bash
+node tools/map-mesh/navmesh/build-navmesh.cjs \
+  --mesh datasets/spatial/ascent/mesh/derived/ascent_ground.bin \
+  --out  datasets/spatial/ascent/mesh/derived/ascent.navmesh.bin \
+  --stats datasets/spatial/ascent/mesh/ascent-navmesh-stats.json \
+  --cs 0.3 --ch 0.3 --climb 2.0 --radius 0.3 --mergeRegion 60 --minRegion 5 --tileSize 128
+```
+
+Committed navmesh (`ascent-navmesh-stats.json`): **7 tiles, 66 polys, 147 verts**,
+bounds (Blender m) min (−67.5, −9.35, −1.36) · max (86.1, 105.85, 15.53). Config:
+cs 0.3, ch 0.3, walkableSlopeAngle 45°, walkableHeight 2 m, walkableClimb 2 m,
+walkableRadius 0.3 m, tileSize 128.
+
+**Input surface choice (measured, not guessed).** Three inputs were built and
+their intrinsic connectivity measured by random-point reachability (largest
+connected component as a fraction of sampled area):
+
+| Input to Recast | polys | largest connected component |
+|---|---|---|
+| Full playable mesh (walls + floor, 2.36 M tris) | 722 | **~7 %** (hundreds of fragments: wall-tops, prop-tops, ledges) |
+| Floor-only (up-facing tris) | ~50 | ~35 % |
+| Floor-only, ground band z∈[−6,14] m, foliage/clutter dropped (279 k tris) | 66 | **~27–39 %** (best) |
+
+The ground-band floor surface is the committed input. Dropping walls and
+clutter and clamping the ground band removes the geometry that shatters
+walkability (wall/prop tops, tree canopies, catwalks/rooftops), but even the
+best result is a **partially connected** navmesh.
+
+---
+
+## 8. Calibration: NavMesh path vs PV-4 straight-line ⚠️ partial (connectivity-limited)
+
+**Tool:** `tools/map-mesh/navmesh/calibrate-paths.cjs`. Each PV-4 zone is mapped
+game→Blender via the inverse affine (§5), represented by the nearest point on the
+navmesh **main connected component** (`repDist` = that distance), and paths are
+routed between representatives; lengths convert at 100 uu/m. **PV-4 files are read
+only.** Report: `datasets/spatial/ascent/mesh/ascent-path-calibration.json`.
+
+```bash
+node tools/map-mesh/navmesh/calibrate-paths.cjs \
+  --navmesh datasets/spatial/ascent/mesh/derived/ascent.navmesh.bin \
+  --navgraph <PV-4 ascent.navgraph.json> \
+  --transform datasets/spatial/ascent/mesh/ascent-blender-to-game-transform.json \
+  --out datasets/spatial/ascent/mesh/ascent-path-calibration.json
+```
+
+**Result (honest).** The navmesh main component covers **~27 %** of the map, so
+only the **3 Mid-region zones** (`mid-bottom`, `mid-market`, `mid-pizza`) fall
+within 18 m of it. Of PV-4's 32 edges, **2 are measurable**:
+
+| Edge | NavMesh path | rep straight-line | detour ratio | note |
+|---|---|---|---|---|
+| mid-bottom → mid-market | 0.9 m | 0.9 m | 1.01 | both endpoints solidly on main component |
+| mid-bottom → mid-link | 6.0 m | 7.9 m | 0.76 | `mid-link` rep is 18 m off → ratio unreliable (shown as a caveat, not a map fact) |
+
+The remaining 30 edges are **unreachable on this navmesh** because their endpoints
+sit on disconnected fragments or off the main component — a **NavMesh
+connectivity limitation**, *not* a statement that those routes don't exist in
+VALORANT.
+
+**Why full calibration is not yet possible.** The user-provided `.blend` is the
+**art** mesh with **no collision/blockout layer** (§3.3). Auto-voxelising art
+geometry (multi-level buildings, stairs modelled as discrete steps, doorways
+narrower than the voxel/erosion scale, decorative clutter) yields a shattered
+walkable surface. Recast parameter tuning (cell size, climb, radius, region
+merge, floor-only, ground-banding, clutter removal) was swept extensively; the
+best single connected component reached ~27–39 % of the map. A fully connected
+Ascent NavMesh needs one of:
+
+1. a **clean collision/blockout mesh** (ideally VALORANT's own blocking volumes,
+   not shipped in this export) as the Recast input;
+2. **manual stair/ramp bridging** via Detour **off-mesh connections** at the
+   ~dozen level transitions, plus doorway-preserving simplification; or
+3. a **watertight ground-plane reconstruction** per region before voxelisation.
+
+**Replacement proposal for PV-4 (no PV-4 files changed).** For the one solidly
+measured edge, the NavMesh path (0.9 m) matches PV-4's straight-line
+`distanceMeters`, i.e. Mid-bottom↔Mid-market is effectively open with no detour —
+PV-4's manual-approx value is a sound lower bound there. No edge yet shows a
+large measured detour because the sites/lanes (where real wall-detours live)
+are not on the connected component. Once a connected navmesh exists (options
+above), re-run `calibrate-paths.cjs`; the report's `replacementProposal` array is
+the drop-in table of `distanceMeters` → `navmeshPath_m` suggestions for PV-4.

@@ -24,7 +24,7 @@ Run:
     --blend "<ascent.blend>" --mesh-out /tmp/ascent_playable.bin \
     --stats-out datasets/spatial/ascent/mesh/ascent-extract-stats.json
 """
-import bpy, bmesh, sys, json, math, struct, argparse
+import bpy, bmesh, sys, json, math, struct, argparse, re
 from mathutils import Vector
 
 argv = sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
@@ -35,6 +35,16 @@ ap.add_argument("--stats-out", required=True)
 ap.add_argument("--walkable-slope-deg", type=float, default=45.0)
 ap.add_argument("--exclude-prefix", default="Ascent_Art_Vista",
                 help="collections whose name starts with this are excluded")
+ap.add_argument("--floor-only", action="store_true",
+                help="emit only up-facing (walkable-slope) triangles -> cleaner "
+                     "walkable surface for Recast (walls dropped)")
+ap.add_argument("--zmin", type=float, default=-1e30,
+                help="drop triangles whose centroid world z (m) is below this")
+ap.add_argument("--zmax", type=float, default=1e30,
+                help="drop triangles whose centroid world z (m) is above this "
+                     "(isolates the ground band from catwalks/rooftops)")
+ap.add_argument("--drop-name-regex", default="",
+                help="skip objects whose name matches this regex (e.g. foliage)")
 a = ap.parse_args(argv)
 
 bpy.ops.wm.open_mainfile(filepath=a.blend)
@@ -67,9 +77,14 @@ coll_acc = defaultdict(lambda: [0.0,0.0,0.0,0, 1e30,1e30,1e30, -1e30,-1e30,-1e30
 pmin = [1e30,1e30,1e30]
 pmax = [-1e30,-1e30,-1e30]
 
+drop_rx = re.compile(a.drop_name_regex, re.I) if a.drop_name_regex else None
+need_centroid_z = (a.zmin > -1e29) or (a.zmax < 1e29)
+
 n_obj = 0
 for obj in bpy.data.objects:
     if obj.type != "MESH" or excluded(obj):
+        continue
+    if drop_rx and drop_rx.search(obj.name):
         continue
     n_obj += 1
     cname = primary_coll(obj)
@@ -101,15 +116,22 @@ for obj in bpy.data.objects:
     nmat = mw.to_3x3().inverted_safe().transposed()
     for lt in me.loop_triangles:
         i0,i1,i2 = lt.vertices
-        tris.extend((base+i0, base+i1, base+i2))
         wn = (nmat @ lt.normal).normalized()
         nz = wn.z
-        if nz >= cos_walk:
+        is_floor = nz >= cos_walk
+        if is_floor:
             floor_ct += 1
         elif abs(nz) <= cos_wall:
             wall_ct += 1
         else:
             steep_ct += 1
+        if a.floor_only and not is_floor:
+            continue
+        if need_centroid_z:
+            cz = (verts[(base+i0)*3+2] + verts[(base+i1)*3+2] + verts[(base+i2)*3+2]) / 3.0
+            if cz < a.zmin or cz > a.zmax:
+                continue
+        tris.extend((base+i0, base+i1, base+i2))
     eval_obj.to_mesh_clear()
 
 nVerts = len(verts)//3
