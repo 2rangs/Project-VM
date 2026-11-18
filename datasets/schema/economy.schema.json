@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "economy.schema.json",
+  "title": "Economy",
+  "description": "Economy state used by the simulation's economy/save/ultimate engines (README SS19-22). The round-level loadout/bank snapshot in round.schema.json is the only part CONFIRMED by a real source (VCT Reference). Per-player loadout detail and ultimate points below are FUTURE for real data (extractable from 2D-replay buy panels per vctstats ReplayPageParser) and are POPULATED for synthetic world states.",
+  "type": "object",
+  "$defs": {
+    "teamEconomy": {
+      "type": "object",
+      "description": "One team's economy at a point in time. Credits are VALORANT credits (integer).",
+      "required": ["teamIdx"],
+      "additionalProperties": false,
+      "properties": {
+        "teamIdx": { "type": "integer", "enum": [0, 1] },
+        "bank": { "type": ["integer", "null"], "description": "Team's spare credits (sum across players) in credits." },
+        "loadoutValue": { "type": ["integer", "null"], "description": "Total value of weapons+armor currently held, in credits." },
+        "lossBonusTier": { "type": ["integer", "null"], "minimum": 0, "maximum": 4, "description": "Consecutive-loss bonus tier (0..4). FUTURE/derived; affects next-round income (README SS19)." },
+        "buyType": {
+          "type": ["string", "null"],
+          "enum": ["full_buy", "half_buy", "force_buy", "eco", "bonus", "save", null],
+          "description": "Classified team buy decision (README SS19.3). DERIVED/INFERRED."
+        }
+      }
+    },
+    "playerLoadout": {
+      "type": "object",
+      "description": "One player's purchasable state. FUTURE for real data (buy panel) / POPULATED for synthetic.",
+      "required": ["playerId"],
+      "additionalProperties": false,
+      "properties": {
+        "playerId": { "type": "string" },
+        "credits": { "type": ["integer", "null"], "description": "Spare credits held, in credits." },
+        "weaponId": { "type": ["string", "null"], "description": "Primary weapon id (valorant-api weapon uuid or lowercase name)." },
+        "armor": { "$ref": "common.schema.json#/$defs/armorKind" },
+        "abilityCharges": {
+          "type": ["object", "null"],
+          "description": "Remaining ability charges keyed by ability slot (c/q/e/x). Units: charge count (integer).",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "ultimatePoints": { "type": ["integer", "null"], "minimum": 0, "description": "Ultimate points accrued. Units: ult points (integer)." },
+        "ultimateCost": { "type": ["integer", "null"], "minimum": 0, "description": "Ultimate points required for this agent's ult on the match's patch." }
+      }
+    }
+  }
+}

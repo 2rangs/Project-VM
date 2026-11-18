@@ -1,0 +1,128 @@
+[
+  {
+    "roundId": "synthetic-ascent-g1:1",
+    "gameId": "synthetic-ascent-g1",
+    "matchId": "synthetic-ascent-m1",
+    "roundNum": 1,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "bomb_detonated",
+    "startEconomy": {
+      "loadoutValue": [
+        19000,
+        18000
+      ],
+      "bank": [
+        2000,
+        2500
+      ]
+    },
+    "plantSite": "A",
+    "events": [
+      "synthetic-ascent-g1:1:0",
+      "synthetic-ascent-g1:1:1",
+      "synthetic-ascent-g1:1:2"
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "roundId": "synthetic-ascent-g1:2",
+    "gameId": "synthetic-ascent-g1",
+    "matchId": "synthetic-ascent-m1",
+    "roundNum": 2,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "defuse",
+    "startEconomy": {
+      "loadoutValue": [
+        19000,
+        18000
+      ],
+      "bank": [
+        2000,
+        2500
+      ]
+    },
+    "plantSite": "A",
+    "events": [
+      "synthetic-ascent-g1:2:0",
+      "synthetic-ascent-g1:2:1",
+      "synthetic-ascent-g1:2:2"
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  },
+  {
+    "roundId": "synthetic-ascent-g1:3",
+    "gameId": "synthetic-ascent-g1",
+    "matchId": "synthetic-ascent-m1",
+    "roundNum": 3,
+    "winnerTeamIdx": 0,
+    "attackingTeamIdx": 0,
+    "team0Side": "attack",
+    "outcome": "bomb_detonated",
+    "startEconomy": {
+      "loadoutValue": [
+        19000,
+        18000
+      ],
+      "bank": [
+        2000,
+        2500
+      ]
+    },
+    "plantSite": "A",
+    "events": [
+      "synthetic-ascent-g1:3:0",
+      "synthetic-ascent-g1:3:1",
+      "synthetic-ascent-g1:3:2"
+    ],
+    "provenance": {
+      "sourceId": "pv-synthetic-ascent",
+      "sourceUrl": null,
+      "sourceVersion": "0.1.0",
+      "gamePatch": null,
+      "retrievedAt": "2026-11-18T08:52:57+00:00",
+      "evidenceType": "simulated",
+      "confidence": null,
+      "verified": false,
+      "verificationLevel": 0,
+      "synthetic": true,
+      "sha256": null,
+      "notes": [
+        "SYNTHETIC — not a real VCT match; do not present as real pro data."
+      ]
+    }
+  }
+]

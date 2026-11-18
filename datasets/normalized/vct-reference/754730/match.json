@@ -1,0 +1,54 @@
+{
+  "matchId": "754730",
+  "sourceUrl": "https://www.vlr.gg/754730/100-thieves-vs-g2-esports-valorant-champions-2026-ubqf",
+  "event": "Valorant Champions 2026",
+  "eventId": 2766,
+  "season": 2026,
+  "seriesStage": "Playoffs",
+  "seriesRound": "Upper Quarterfinals",
+  "utcTimestamp": "2026-10-08T09:00:00",
+  "patch": "Patch 13.05",
+  "format": "Bo3",
+  "region": null,
+  "isInternational": true,
+  "teamIds": [
+    "120",
+    "11058"
+  ],
+  "score": [
+    0,
+    2
+  ],
+  "veto": [
+    "G2 ban Split",
+    "100T ban Lotus",
+    "G2 pick Abyss",
+    "100T pick Ascent",
+    "G2 ban Sunset",
+    "100T ban Haven",
+    "Summit remains"
+  ],
+  "maps": [
+    "283265",
+    "283266"
+  ],
+  "coverage": {
+    "fetchedOverview": true,
+    "fetchedPerformance": true,
+    "fetchedEconomy": true
+  },
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": "Patch 13.05",
+    "retrievedAt": "2026-11-18T08:52:57+00:00",
+    "evidenceType": "observed",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": []
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "provenance.schema.json",
+  "title": "Provenance",
+  "description": "Where a record came from and how much to trust it (README SS03.4, SS13.3). Attached to every normalized and synthetic record. The `synthetic` flag is the hard separator between real VCT data and generated data: any record with synthetic=true MUST live under datasets/synthetic/ and MUST NOT be presented as a real pro match.",
+  "type": "object",
+  "required": ["sourceId", "retrievedAt", "evidenceType", "synthetic"],
+  "additionalProperties": false,
+  "properties": {
+    "sourceId": {
+      "type": "string",
+      "description": "Stable short id of the source, e.g. 'vct-reference' or 'pv-synthetic-ascent'."
+    },
+    "sourceUrl": {
+      "type": ["string", "null"],
+      "description": "Canonical URL the data was retrieved from. Null for synthetic."
+    },
+    "sourceVersion": {
+      "type": ["string", "null"],
+      "description": "Build/version of the source, e.g. the dataset 'Last updated' date or a git commit."
+    },
+    "gamePatch": {
+      "type": ["string", "null"],
+      "description": "VALORANT patch the underlying match was played on, e.g. 'Patch 13.05'. Null if unknown."
+    },
+    "retrievedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when the record was retrieved or generated."
+    },
+    "evidenceType": { "$ref": "common.schema.json#/$defs/evidenceType" },
+    "confidence": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Subjective confidence 0..1 for inferred/derived values; null when not applicable."
+    },
+    "verified": {
+      "type": "boolean",
+      "description": "True once the value was cross-checked against the primary source."
+    },
+    "verificationLevel": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "README SS3.3 level. 0=link seen, 1=structure seen, 2=data actually read, 3=pipeline reproduced."
+    },
+    "synthetic": {
+      "type": "boolean",
+      "description": "TRUE for generated data that is not from a real match. Enforced by tooling to keep real and synthetic data separate."
+    },
+    "sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the raw source artifact the record was derived from, when applicable."
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Free-form caveats (coverage gaps, imputation, etc.)."
+    }
+  }
+}

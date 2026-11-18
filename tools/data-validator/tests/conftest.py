@@ -1,0 +1,9 @@
+import pathlib
+import sys
+
+SRC = pathlib.Path(__file__).resolve().parents[1] / "src"
+sys.path.insert(0, str(SRC))
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+SCHEMA_DIR = REPO_ROOT / "datasets" / "schema"
+DATASETS_DIR = REPO_ROOT / "datasets"
