@@ -425,8 +425,16 @@ world units로 동작(zone-id 질의는 프레임 무관) — PV-2 포함 좌표
 - **스파이크 포스트플랜트 운영**: 스크립트 수비 정책 리테이크를 "clear일 때만 해체"로 개선(설치 지점에서 적이 보이면
   홀드 후 교전, 자살 해체 금지). `fromPv2Scenario` v2(worldPos→nearestZone)는 이 브랜치에 이미 반영돼 있었음.
 - **의존성 추가**: round-simulator deps에 `@pv/decision-engine`, `@pv/shared-types`, `@pv/game-rules`.
-- **테스트**: round-simulator 20개(match-round 4 신규) green, 전 워크스페이스 `pnpm -r test` green, perf ~24ms/round.
-- 커밋: belief `c6d8c61`, Match Runner API `eec2bf7`, R2-B `11fb43d`, 스파이크 운영 `94421a3`.
+- **의존성 추가**: round-simulator deps에 `@pv/decision-engine`, `@pv/shared-types`, `@pv/game-rules`.
+- 커밋(1차): belief `c6d8c61`, Match Runner API `eec2bf7`, R2-B `11fb43d`, 스파이크 운영 `94421a3`.
+
+### §G.1 pv-spatial 머지 + PV-6/진단/어빌리티 (2026-11-18 후반)
+- **머지**: `git merge origin/claude/pv-spatial` → PV-5 실측 간선(82a7013)·어빌리티 실작동(733733a)·스파이크 줍기(8d8ee4f) 반영. 충돌 4파일 해결(@pv 스코프·buildBelief·runMatchRound·AbilityInventory 유지 + 어빌리티/스파이크 로직). 조상 확인 완료.
+- **recordPerception**(PV-6 안개뷰/히트맵): `config.recordPerception` → `RoundResult.perception`에 팀별 `PerceptionTrack`(PV-6 `@pv/replay-engine` f9f7a09 형식 1:1). `toPv6ReplayFormat`가 `meta.perception`에 폴드. 관측+belief만(DECISION-004).
+- **traceCommands**(정책 디버깅): `config.traceCommands` → `RoundResult.commandTrace`(선수별 issued 명령·move/arrived·plant/ability/defuse 평가+거절 사유, 사유별 dedupe). PV-3 TDP 디버깅용.
+- **어빌리티 갭(ABILITY_COVERAGE 상위)**: suppress(어빌리티 봉인: KAY/O·Killjoy) — ability-engine에 suppression 맵+`suppressRemainingMs`+`suppressApplied` 이벤트, catalog-adapter가 `suppressDurationMs` 유도, 시뮬레이터가 봉인된 선수의 캐스트 거절. movement/dash(Jett·Omen) — 사거리 내 대상 존으로 캐스터 즉시 변위(경로 취소). 둘 다 effectTypes 기반, 로드아웃 없으면 미발동.
+- **테스트**: round-simulator 35 + ability-engine 21 green, 전 워크스페이스 `pnpm -r test` green.
+- 커밋(2차): 머지 `a53dca9`, recordPerception `565b6f6`, traceCommands `177ae9c`, suppress+dash (이 커밋).
 
 ---
 

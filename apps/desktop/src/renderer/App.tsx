@@ -69,7 +69,7 @@ export default function App() {
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}
-          {route === 'dev-debugger' && <DevScreen />}
+          {route === 'dev-debugger' && <DevScreen ctx={ctx} />}
           {route === 'about' && <AboutScreen />}
           {NAV.flatMap((g) => g.items).find((i) => i.id === route)?.soon && (
             <Placeholder title={NAV.flatMap((g) => g.items).find((i) => i.id === route)!.label} />

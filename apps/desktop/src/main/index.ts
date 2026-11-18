@@ -73,10 +73,11 @@ function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebC
       if (code !== 0) return reject(new Error(`match-runner exited ${code}: ${errBuf.slice(-200)}`));
       try {
         const raw = JSON.parse(out) as RawMatch;
-        const { events, summary } = mergeMatch(raw);
+        const { events, summary, perception } = mergeMatch(raw);
         const replay = fromSimEventLog(events, {
           mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
           matchId: `${summary.teams.A.name} vs ${summary.teams.B.name}`,
+          perception, // match-level fog-of-war / belief track (undefined if not recorded)
         });
         sender.send(IPC.simProgress, { runId, phase: 'done', pct: 1 } satisfies SimProgress);
         resolve({ runId, source: 'match-runner', replay, match: summary });

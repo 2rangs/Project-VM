@@ -10,15 +10,19 @@
 // Usage: tsx run-match.mts '<json config>'
 import { runMatch } from '../../../packages/match-runner/src/index.ts';
 
-interface Cfg { teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number }
+interface Cfg { teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean }
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 
+// recordPerception drives PV-4's fog-of-war / belief track (off by default in the
+// match-runner). We request it on; the flag is ignored by match-runner versions
+// that predate the option, so this is forward-compatible (cast past its config type).
 const res = runMatch({
   teamA: cfg.teamA ?? { id: 'A', name: 'Team A' },
   teamB: cfg.teamB ?? { id: 'B', name: 'Team B' },
   map: cfg.map ?? 'ascent',
   seed: cfg.seed ?? 1,
-});
+  recordPerception: cfg.recordPerception ?? true,
+} as Parameters<typeof runMatch>[0]);
 
 process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);
 
@@ -50,6 +54,11 @@ const out = {
       B: { tier: r.buys.B.tier, weapon: r.buys.B.weapon },
     },
     replayEvents: r.replay.events,
+    // Per-team PerceptionTrack[] for this round (side-keyed, round-relative tMs);
+    // the parent remaps side→real-team and offsets tMs onto the match timeline.
+    // Absent on match-runner versions without recordPerception.
+    perception: r.replay.meta.perception ?? null,
   })),
 };
+process.stderr.write(`perception: ${out.rounds.filter((r) => r.perception).length}/${out.rounds.length} rounds\n`);
 process.stdout.write(JSON.stringify(out));

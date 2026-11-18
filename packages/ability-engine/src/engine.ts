@@ -32,6 +32,7 @@ export interface UseOptions {
 export class AbilityEngine {
   private readonly effects = new Map<string, ActiveEffect>();
   private readonly blinds = new Map<string, number>(); // playerId -> blind expiry (ms)
+  private readonly suppressions = new Map<string, number>(); // playerId -> ability-silence expiry (ms)
   private readonly log: AbilityEvent[] = [];
 
   constructor(private readonly spatial: SpatialEngine) {}
@@ -49,6 +50,7 @@ export class AbilityEngine {
     const zoneId = this.spatial.nearestZone(usage.origin).id;
     const expiresAtMs = spec.durationMs != null ? usage.startedAtMs + spec.durationMs : null;
     const flashDurationMs = spec.flashDurationMs ?? 0;
+    const suppressDurationMs = spec.suppressDurationMs ?? 0;
 
     const reveals: RevealSnapshot[] = (opts.snapshotEnemies ?? []).map((e) => ({
       enemyId: e.enemyId,
@@ -83,6 +85,10 @@ export class AbilityEngine {
         this.blinds.set(pid, Math.max(this.blinds.get(pid) ?? 0, usage.startedAtMs + flashDurationMs));
         this.emit({ kind: "flashApplied", timeMs: usage.startedAtMs, instanceId: effect.instanceId, abilityId: spec.abilityId, effectType: spec.effectType, targetId: pid });
       }
+      if (suppressDurationMs > 0) {
+        this.suppressions.set(pid, Math.max(this.suppressions.get(pid) ?? 0, usage.startedAtMs + suppressDurationMs));
+        this.emit({ kind: "suppressApplied", timeMs: usage.startedAtMs, instanceId: effect.instanceId, abilityId: spec.abilityId, effectType: spec.effectType, targetId: pid });
+      }
     }
     for (const r of reveals) {
       this.emit({ kind: "reveal", timeMs: usage.startedAtMs, instanceId: effect.instanceId, abilityId: spec.abilityId, effectType: spec.effectType, targetId: r.enemyId });
@@ -101,6 +107,9 @@ export class AbilityEngine {
     }
     for (const [pid, exp] of this.blinds) {
       if (nowMs >= exp) this.blinds.delete(pid);
+    }
+    for (const [pid, exp] of this.suppressions) {
+      if (nowMs >= exp) this.suppressions.delete(pid);
     }
   }
 
@@ -154,6 +163,16 @@ export class AbilityEngine {
   /** Remaining blind duration (ms) for a player — feeds combat posture.flashBlindMs. */
   blindRemainingMs(playerId: string, nowMs: number): number {
     const exp = this.blinds.get(playerId);
+    return exp != null && exp > nowMs ? exp - nowMs : 0;
+  }
+
+  /**
+   * Remaining ability-silence (ms) for a player: while > 0 the player cannot cast abilities
+   * (suppress — KAY/O knife, Killjoy ult). Combat is unaffected. The round-simulator checks
+   * this before honouring a useAbility command.
+   */
+  suppressRemainingMs(playerId: string, nowMs: number): number {
+    const exp = this.suppressions.get(playerId);
     return exp != null && exp > nowMs ? exp - nowMs : 0;
   }
 }
