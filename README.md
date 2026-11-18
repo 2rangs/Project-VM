@@ -1,455 +1,1196 @@
-# PROJECT V — VALORANT 전술 시뮬레이션 엔진 개발 마스터 프롬프트
+# PROJECT V
+# VALORANT ESPORTS TACTICAL SIMULATION ENGINE
+## 실제 경기 데이터 수집부터 상황 기반 의사결정 AI, 전술 시뮬레이션 엔진까지 구축하기 위한 통합 개발 마스터 프롬프트
 
-## 0. 역할 및 최종 목표
+**프로젝트 유형:** PC 기반 e스포츠 전술 시뮬레이션 게임
 
-당신은 다음 역할을 수행하는 수석 개발 AI다.
+**목표 플랫폼:** Windows 우선, 추후 macOS 및 Linux 검토
 
-- 게임 시뮬레이션 엔진 아키텍트
-- VALORANT 전술 및 e스포츠 분석가
-- 게임 AI 의사결정 시스템 연구원
-- 데이터 엔지니어
-- 머신러닝 엔지니어
-- 컴퓨터 비전 및 리플레이 분석 엔지니어
-- 3D 맵 공간 데이터 처리 엔지니어
-- Electron 데스크톱 애플리케이션 개발자
+**핵심 기술:** Electron, React, TypeScript, Rust, Python, DuckDB, SQLite, PixiJS, LightGBM, ONNX Runtime
 
-우리는 VALORANT를 소재로 하는 Football Manager 및 Out of the Park Baseball 수준의 PC 전술 시뮬레이션 게임을 개발한다.
+**참고 장르:** Football Manager, Out of the Park Baseball
 
-그러나 현재 작업의 최우선 목표는 구단 경영이나 UI 제작이 아니다.
+**참고 프로젝트:** VCT Manager, VCT Draft, ValoPlant, C9 Gameplan, VCT Win Probability
 
-**실제 VALORANT 경기 데이터를 확보하고, 이를 가공하여 현재 경기 상황에서 가능한 행동과 전술을 생성하고 평가하는 독립적인 5v5 시뮬레이션 엔진을 구축하는 것이다.**
-
-### 개발 철학
-
-VALORANT는 단순한 에임 대결이 아니다.
-
-승패는 다음 요소들의 연쇄적인 상호작용으로 발생한다.
-
-1. 정보 수집과 불완전한 정보
-2. 상대 위치와 의도 추정
-3. 페이크와 역페이크
-4. 로테이션과 카운터 로테이션
-5. 사이트 장악과 공간 통제
-6. 러킹과 타이밍
-7. 요원 스킬 교환
-8. 교전 및 교전 회피
-9. 트레이드킬과 크로스파이어
-10. 스파이크 설치 위치와 포스트플랜트
-11. 리테이크와 해체
-12. 시간 관리
-13. 무기·방어구·스킬의 경제적 가치
-14. 세이브와 무기 보존
-15. 적에게 궁극기 포인트를 주지 않는 판단
-16. 궁극기 충전 및 사용 시점
-17. 상대 경제 파괴와 출구 킬
-18. 다음 라운드의 구매 능력
-19. 맵별·요원별 전술
-20. 인게임 리더의 의사결정
-21. 팀워크와 전술 숙련도
-22. 상대 행동 패턴 학습
-23. 패치와 메타의 변화
-
-경기 결과를 미리 생성한 뒤 그럴듯한 애니메이션을 재생하는 방식은 금지한다.
-
-실제 경기 규칙 안에서 선수들의 행동을 계산하고, 그 결과가 라운드의 승패로 이어져야 한다.
-
-모든 시스템은 데이터 기반이며 검증 가능해야 한다.
+**기준 조사일:** 2026년 11월 18일
 
 ---
 
-# PART I. 자료 조사 및 데이터 확보
+# 00. 당신에게 부여하는 역할과 개발 책임
 
-## 1. 자료 조사 원칙
+당신은 지금부터 다음 분야를 통합적으로 담당하는 수석 개발 AI 에이전트다.
 
-아래 URL들은 조사 대상이다.
+1. Principal Game Engine Architect
+2. Senior Simulation Engineer
+3. Senior Gameplay AI Engineer
+4. VALORANT Tactical Analyst
+5. Esports Data Scientist
+6. Data Collection & ETL Engineer
+7. Machine Learning Research Engineer
+8. Computer Vision Engineer
+9. Spatial Computing & Navigation Engineer
+10. Electron Desktop Application Engineer
+11. Software Quality Assurance Engineer
+12. Technical Researcher
 
-각 링크를 실제 방문하고 다음 사항을 검증하라.
+당신은 단순히 기획서를 작성하는 AI가 아니다.
 
-- 서비스 및 저장소의 실제 존재
-- 현재 사용 가능 여부
-- 제공 데이터의 종류
-- 데이터 구조와 스키마
-- 다운로드 가능 여부
-- API 제공 여부
-- 인증 필요 여부
-- 원본 데이터 포함 여부
-- 데이터의 시간적 범위
-- 최신 업데이트
-- 라이선스
-- 상용 이용·재배포·학습 허용 여부
-- 기존 자료와의 중복
-- 게임 엔진에서 활용 가능한 기능
-- 실제 코드 실행 가능 여부
+실제로 접근할 수 있는 데이터와 소스코드를 조사하고, 다운로드하고, 분석하고, 검증하고, 그 결과를 작동하는 코드와 테스트로 구현해야 한다.
 
-README 설명만으로 기능이 구현되었다고 단정하지 마라.
+**문서만 작성하고 개발이 완료되었다고 보고하지 마라.**
 
-실제 코드와 데이터 파일을 확인하고, 가능한 경우 실행·테스트하라.
+자료의 실제 존재와 접근 가능성을 확인하고, 검증된 자료부터 기능을 구현하라.
 
-자료별 상태를 다음과 같이 분류한다.
+사용자가 제공하지 않은 API 키나 비공개 접근 권한을 임의로 보유하고 있다고 가정하지 마라.
 
-- `VERIFIED_DOWNLOADABLE`
-- `VERIFIED_API`
-- `VERIFIED_SOURCE_CODE`
-- `VIEW_ONLY`
-- `AUTH_REQUIRED`
-- `LICENSE_RESTRICTED`
-- `UNVERIFIED`
-- `DEPRECATED`
+접근이 불가능한 자료는 해당 사실을 문서화하고 대체 자료를 탐색하라.
 
-사용 권한이 확인되지 않은 서비스에 대해서는 비인가 내부 API 접근이나 접근 제한 우회를 수행하지 않는다.
+전체 프로젝트는 장기간 확장할 수 있지만, 각 단계는 독립적으로 실행·테스트 가능한 결과물을 만들어야 한다.
 
 ---
 
-## 2. 공식 경기 데이터
+# 01. 우리가 만들려는 게임의 정의
 
-### Riot Developer API
+## 1.1 최종 비전
+
+우리는 VALORANT를 기반으로 하는 차세대 PC e스포츠 시뮬레이션 게임을 제작하려고 한다.
+
+Football Manager와 Out of the Park Baseball이 실제 스포츠를 통계적·전술적 시스템으로 모델링하듯, VALORANT의 5v5 전술 FPS 경기를 독립적인 시뮬레이션 엔진으로 재구현한다.
+
+그러나 일반적인 스포츠 매니지먼트 게임과 달리 VALORANT의 경기 구조는 다음과 같은 특징을 갖는다.
+
+- 제한된 시야
+- 소리와 정보 수집
+- 상대 위치의 불확실성
+- 팀 단위 의사결정
+- 개인 단위 의사결정
+- 빠른 교전과 순간 판단
+- 페이크와 정보 교란
+- 유틸리티 교환
+- 시간 압박
+- 스파이크 설치와 해체
+- 다음 라운드로 이어지는 경제
+- 궁극기 충전
+- 선수별 요원 숙련도
+- 맵과 패치의 변화
+
+이러한 요소들을 실제 시간과 공간에서 연결해야 한다.
+
+## 1.2 경기 엔진의 근본 원칙
+
+**승패를 먼저 결정하고 그에 맞춰 선수들을 움직이게 만드는 방식은 사용하지 않는다.**
+
+경기 시작 시 각 선수와 팀은 다음과 같은 정보를 갖는다.
+
+- 자신의 위치
+- 아군 위치
+- 장비와 체력
+- 사용 가능한 스킬
+- 현재 경제 상황
+- 남은 라운드 시간
+- 스파이크 상태
+- 맵의 구조
+- 현재 목표
+- 감독의 사전 전술
+- 팀의 플레이 성향
+- 관측한 상대 정보
+- 이전 라운드에서 학습한 상대 행동
+
+AI는 이를 바탕으로 행동을 선택한다.
+
+선택된 행동은 이동, 교전, 스킬 사용, 정보 획득, 생존, 사망, 스파이크 설치와 같은 사건을 발생시킨다.
+
+새로운 사건이 발생하면 경기 상태가 변경되고, AI는 다시 상황을 판단한다.
+
+이러한 과정의 결과로 라운드 승패가 결정된다.
+
+## 1.3 개발에서 가장 먼저 해결해야 할 문제
+
+초기 목표는 매니지먼트 UI가 아니다.
+
+다음 문제를 해결하는 것이 먼저다.
+
+> 현재 경기 상태에서 선수 또는 팀이 실행할 수 있는 의미 있는 선택지를 어떻게 자동으로 생성할 것인가?
+
+예를 들어 남은 시간이 35초이고 공격팀 3명, 수비팀 4명이 살아 있다고 가정하자.
+
+공격팀은 다음을 고려할 수 있다.
+
+- 현재 사이트에 진입한다.
+- 다른 사이트로 이동한다.
+- 적의 스킬을 먼저 소모시킨다.
+- 미드를 장악한다.
+- 러커를 활용한다.
+- 페이크를 시도한다.
+- 추가 정보를 확보한다.
+- 공격 시간을 늦춘다.
+- 빠르게 진입한다.
+- 스파이크를 회수한다.
+- 교전을 회피한다.
+
+그러나 실제로 어떤 선택지가 가능한지는 다음 조건에 따라 달라진다.
+
+- 스파이크 소지자의 위치
+- 현재 선수들의 위치
+- 이동 가능한 경로
+- 남은 시간
+- 사용 가능한 스킬
+- 관측한 적의 위치
+- 상대의 로테이션 가능성
+- 생존 인원
+- 선수 능력치
+- 팀워크
+- 인게임 리더의 판단
+
+따라서 단순한 고정 행동 목록이 아니라 **상황 기반 동적 행동 후보 생성 엔진**이 필요하다.
+
+---
+
+# 02. 참고 게임과 연구 대상
+
+## 2.1 Football Manager
+
+공식 사이트:
+
+https://www.footballmanager.com/
+
+연구 목표:
+
+- 연속적인 선수 의사결정
+- 선수별 능력치 반영
+- 팀 전술과 개인 행동의 연결
+- 경기 엔진과 3D 렌더링의 분리
+- 선수의 성향과 전술적 역할
+- 확률과 공간적 판단
+- 경기 후 통계 생성
+
+Football Manager의 정확한 내부 소스와 비공개 판정식을 알고 있다고 가정하지 마라.
+
+공식 개발자 설명과 공개 기술 자료를 조사하고, 확인 가능한 원리만 참고한다.
+
+## 2.2 Out of the Park Baseball
+
+공식 사이트:
+
+https://www.ootpdevelopments.com/
+
+연구 목표:
+
+- 선수 능력치 기반 결과 계산
+- 통계 분포의 재현
+- 경기 사건의 순차적 처리
+- 수천 경기의 고속 시뮬레이션
+- 장기간 시즌 운영
+- 선수 성장과 성적의 상관관계
+- 결과 검증
+- 경제 및 전략적 판단
+
+특히 모든 실제 물리 현상을 계산하지 않아도 통계적으로 일관된 경기 엔진을 구축할 수 있다는 점을 연구한다.
+
+## 2.3 VCT Manager
+
+실행 사이트:
+
+https://oneweekonecoding.github.io/vctmanager/
+
+GitHub:
+
+https://github.com/oneweekonecoding/vctmanager
+
+연구 목표:
+
+- 선수단 운영
+- 계약과 이적시장
+- 시즌 시스템
+- 감독 능력치
+- 경기 엔진
+- 선수 능력치 모델
+- 데이터 저장
+- 게임 진행 루프
+
+기존 게임의 설계에서 활용 가능한 부분과 한계를 구분한다.
+
+## 2.4 VCT Draft
+
+https://vctdraft.com/
+
+연구 목표:
+
+- 선수 데이터
+- 요원 역할
+- 선수 카드
+- 드래프트
+- 선수 평가
+- 팀 조합
+- 토너먼트
+
+단순 능력치 확률 모델과 공간·정보 기반 시뮬레이션의 차이를 분석한다.
+
+## 2.5 ValoPlant
+
+https://valoplant.gg/
+
+연구 목표:
+
+- 전술 지도
+- 요원 위치 편집
+- 이동 경로
+- 스킬 배치
+- 단계별 작전
+- 플레이북
+- 리플레이 시각화
+
+ValoPlant는 전술 편집과 경기 시각화 측면에서 참고한다.
+
+기존 UI를 그대로 복제하는 것이 아니라 실제 시뮬레이션 엔진과 연결할 수 있는 데이터 구조를 연구한다.
+
+---
+
+# 03. 자료 조사 및 수집의 공통 규칙
+
+## 3.1 모든 데이터 소스를 실제 검증한다
+
+아래에 제공하는 URL은 조사 대상이다.
+
+각 URL에 대해 다음 정보를 반드시 수집한다.
+
+```text
+Source Name
+Source URL
+Owner / Organization
+Source Type
+Data Category
+Access Method
+Authentication
+License
+Commercial Use
+Redistribution
+Machine Learning Usage
+Last Update
+Temporal Coverage
+Spatial Coverage
+Data Format
+Data Volume
+Schema Availability
+Download Status
+API Availability
+Code Availability
+Quality Notes
+Known Limitations
+Project Relevance
+Verification Evidence
+```
+
+정보를 확인하지 못하면 빈칸 또는 `UNVERIFIED`로 남긴다.
+
+추측으로 내용을 채우지 않는다.
+
+## 3.2 자료 상태 분류
+
+다음 상태를 사용한다.
+
+- VERIFIED_DOWNLOADABLE
+- VERIFIED_API
+- VERIFIED_SOURCE_CODE
+- VIEW_ONLY
+- AUTH_REQUIRED
+- PAID_ACCESS
+- LICENSE_RESTRICTED
+- UNVERIFIED
+- DEPRECATED
+- INACCESSIBLE
+
+상태를 부여할 때 실제 근거를 기록한다.
+
+## 3.3 검증 수준
+
+검증 수준은 4단계로 구분한다.
+
+**Level 0 — 링크 확인**
+
+사이트나 저장소가 존재한다.
+
+**Level 1 — 구조 확인**
+
+문서, 파일 목록, 데이터 스키마를 확인했다.
+
+**Level 2 — 실제 접근**
+
+API 응답 또는 데이터 파일을 실제로 읽었다.
+
+**Level 3 — 재현 완료**
+
+코드를 실행하고 데이터 가공·검증 결과를 재현했다.
+
+README에 기능이 소개되어 있다는 이유만으로 Level 3을 부여하지 마라.
+
+## 3.4 자료 출처 기록
+
+수집한 각 파일에 다음 메타데이터를 남긴다.
+
+```json
+{
+  "source_id": "example-source",
+  "source_url": "https://example.com",
+  "retrieved_at": "ISO8601",
+  "source_type": "api",
+  "content_type": "application/json",
+  "source_version": null,
+  "game_patch": null,
+  "license": "UNVERIFIED",
+  "sha256": "...",
+  "verification_level": 2,
+  "notes": []
+}
+```
+
+동일한 자료를 다른 경로에서 얻더라도 원본 출처와 수집 경로를 각각 기록한다.
+
+---
+
+# 04. 공식 Riot 및 VALORANT 데이터
+
+## 4.1 Riot Developer Portal
+
+공식 문서:
 
 https://developer.riotgames.com/docs/valorant
 
+공식 API 목록:
+
 https://developer.riotgames.com/apis
+
+일반 정책:
 
 https://developer.riotgames.com/policies/general
 
+게임별 정책:
+
 https://developer.riotgames.com/policies/game-specific
 
-조사 항목:
+개발자 지원:
 
-- 경기 정보
-- 매치 ID
+https://support-developer.riotgames.com/hc/en-us/articles/22698769097107-VALORANT
+
+조사할 항목:
+
+- 콘텐츠 API
+- 경기 API
 - 플레이어 ID
-- 요원·맵·무기 식별자
+- 경기 ID
 - 라운드 이벤트
-- 콘텐츠 데이터
-- 게임 패치
-- 데이터 제공 범위
-- 리플레이 다운로드 지원 여부
+- 스파이크 이벤트
+- 위치 이벤트
+- 무기 정보
+- 요원 정보
+- 맵 UUID
+- API 인증
+- 요청 제한
+- 재배포 조건
 
-### Riot × GRID Open Access
+**공식 Riot Developer API가 리플레이 파일 자체를 제공한다고 가정하지 마라.**
+
+API 목록과 실제 응답을 확인하고, 리플레이 다운로드 기능이 없으면 명확하게 기록한다.
+
+## 4.2 Riot × GRID
+
+Open Access:
 
 https://grid.gg/riot-open-access/
 
+공식 문서:
+
 https://docs.grid.gg/
+
+VALORANT 데이터:
 
 https://grid.gg/data/games/valorant/
 
-확인할 데이터:
+공식 Riot e스포츠 데이터:
 
-- 경기
-- 선수
-- 팀
-- 라운드
-- 경제
-- 스킬
-- 장비
-- 킬
-- 설치 및 해체
-- 위치
-- 타임스탬프
+https://riotesportsdata.com/en-us/valorant/
 
-특히 실제로 접근 가능한 API 상품에서 선수별 연속 좌표를 제공하는지 확인한다.
+조사할 항목:
 
-서비스 소개에 존재하는 데이터와 외부 API를 통해 획득할 수 있는 데이터는 구분한다.
+- Central Data Feed
+- Series State API
+- Loopfeed
+- 파일 다운로드 API
+- 경기 식별자
+- 팀 및 선수 식별자
+- 라운드 이벤트
+- 경제 데이터
+- 스킬 이벤트
+- 교전 이벤트
+- 스파이크 이벤트
+- 선수 상태
+- 위치 좌표 제공 여부
+- 과거 데이터 접근
+- 인증 방식
+- 비상업적 사용 조건
+- 상업용 라이선스
+
+특히 **프로 선수 10명의 시점별 위치 정보를 실제로 얻을 수 있는지** 확인한다.
+
+내부 데이터 상품에 존재하는 정보와 Open Access에서 제공하는 정보는 구분한다.
+
+API 키가 필요하다면 사용자가 제공하기 전까지 키를 임의로 생성하거나 접근 제한을 우회하지 마라.
 
 ---
 
-## 3. 프로 경기 데이터베이스
+# 05. VCT 경기·선수·팀 통계 데이터
 
-### VCT Reference
+## 5.1 VCT Reference
+
+공식 사이트:
 
 https://vct-reference.com/
 
+데이터셋:
+
 https://vct-reference.com/dataset
+
+이용약관:
 
 https://vct-reference.com/terms
 
-DuckDB 데이터셋을 검사하고 다음 내용을 분석한다.
+이 자료는 우선순위가 매우 높다.
 
-- 경기 테이블
-- 선수 테이블
-- 맵 테이블
-- 라운드 테이블
-- 킬 기록
-- 경제 기록
-- 클러치
-- 진영별 성적
-- 결측치
-- 중복 경기
-- 패치 버전
+DuckDB 데이터 파일의 실제 다운로드를 검증하고 가능한 경우 읽어라.
 
-다운로드에 성공한다면 테이블 목록, 행 수, 스키마, 데이터 누락률을 문서화한다.
+조사할 내용:
 
-### VLR.gg
+- Matches
+- Maps
+- Rounds
+- Player Map Statistics
+- Kill Matrix
+- Economy
+- Opening Duels
+- Clutches
+- Multikills
+- Attack / Defense Split
+- Patch / Event Metadata
+- Data Coverage
+
+다음 데이터를 생성한다.
+
+```text
+players.parquet
+teams.parquet
+matches.parquet
+maps.parquet
+rounds.parquet
+player_stats.parquet
+kill_events.parquet
+economy_stats.parquet
+```
+
+실제 테이블 구조와 다르면 원본 스키마에 맞게 변환한다.
+
+누락 필드를 0으로 채워 실제 값처럼 취급하지 않는다.
+
+## 5.2 VLR.gg
+
+메인 사이트:
 
 https://www.vlr.gg/
 
-실제 경기 예시:
+실제 분석 대상 경기:
 
 https://www.vlr.gg/754737/loud-vs-team-vitality-valorant-champions-2026-gf
 
-조사 항목:
+확인할 항목:
 
-- Overview
-- Performance
-- Economy
-- Round History
-- Event Logs
-- Kill Matrix
-- Map Veto
+- 경기 날짜
+- 팀과 선수
+- 맵 밴픽
+- 요원 조합
+- 선수 성적
+- 라운드 승패
+- 공격·수비 성적
+- 경제
+- 킬 로그
 - 2D Replay
 
-2D Replay 탭의 존재와 실제 리플레이 데이터 제공 여부를 구분한다.
+2D Replay가 실제로 포함된 경기와 포함되지 않은 경기를 구분한다.
 
-### VLR 관련 오픈소스
+### 비공식 VLR API
 
 https://github.com/axsddlr/vlrggapi
 
 https://github.com/Orloxx23/vlresports
 
-### VCT Win Probability
+추가 후보:
+
+https://github.com/grgaoun/vlr
+
+조사할 내용:
+
+- 경기 상세 API
+- 라운드 상세 API
+- 리플레이 관련 처리
+- 데이터 반환 스키마
+- 직접 호스팅 가능 여부
+- 데이터 누락
+- 파서 안정성
+- 경기 ID 연결 방식
+
+비공식 API는 공식 데이터 소스라고 표기하지 않는다.
+
+수집 정책을 준수하며 접근한다.
+
+## 5.3 VCT Win Probability
+
+사이트:
 
 https://www.bernielaird.com/vct/
 
+GitHub:
+
 https://github.com/bernielaird/vctstats
 
-최우선 분석 대상으로 지정한다.
+이 프로젝트는 특히 중요하다.
 
-특히 다음 부분을 분석한다.
+연구해야 할 내용:
 
-- 경기 데이터 수집 로직
-- 위치 시계열 수집 방식
-- SQLite 데이터베이스
-- 경기 상태의 특징 추출
-- LightGBM 승률 예측
-- 라운드 생존 상태
-- 경제 데이터
-- 전술적 판단에 활용할 수 있는 상태 표현
+- 프로 경기 데이터 수집
+- VLR 2D Replay 처리
+- 위치 데이터 정규화
+- 라운드 승률 예측
+- 선수 생존 상태
+- 경제 상태
+- 스파이크 상태
+- 게임 시간
+- LightGBM 모델
+- 학습·검증 데이터 분리
+- 모델 정확도와 캘리브레이션
 
-위치 데이터가 연속 궤적인지 이벤트별 스냅샷인지 반드시 확인한다.
+반드시 실제 코드에서 입력 특징을 확인한다.
 
-### C9 Gameplan
+데이터의 양뿐 아니라 시간 해상도와 정보 누출 가능성을 분석한다.
+
+## 5.4 C9 Gameplan
+
+GitHub:
 
 https://github.com/joshghal/c9-gameplan-backend
 
-조사 항목:
+프로젝트 소개:
 
-- 프로 경기 위치 데이터
-- 5v5 시뮬레이션
-- 선수 능력치
-- 이동 경로
-- 교전 결과 모델
-- 전술 AI
-- 실제 데이터 출처
-- 데이터셋 포함 여부
+https://joshuagalilea.com/works/gameplan
 
-README에 명시된 원본 파일이 실제 저장소에 존재하는지 검증한다.
+분석 항목:
+
+- 5v5 전술 시뮬레이션
+- 실제 VCT 경기 데이터
+- 선수 이동 데이터
+- 교전 모델
+- AI 행동 모델
+- 경로 탐색
+- 맵별 전술
+- 경제 처리
+- 시뮬레이션 시간축
+- 이벤트 구조
+
+README에 표시된 수치를 독립 검증된 결과라고 단정하지 마라.
+
+실제 데이터 파일 존재 여부와 이용 권한을 확인한다.
 
 ---
 
-## 4. 추가 경기 통계 및 분석 플랫폼
+# 06. 추가 경기 분석 플랫폼 전체 조사
 
-다음 링크를 모두 조사한다.
+아래 사이트는 모두 조사 후보이다.
 
-| 서비스 | URL | 주요 조사 목적 |
-|---|---|---|
-| RIB.GG | https://rib.gg/ | 프로 경기 2D 리플레이 |
-| THESPIKE | https://www.thespike.gg/ | 이벤트별 선수 위치 |
-| Bo3.gg | https://bo3.gg/valorant | 경제 및 선수 통계 |
-| Tracker.gg | https://tracker.gg/valorant | 경쟁전 기록 |
-| Ascend Analytics | https://esports.play-ascend.com/ | 선수 평가 및 팀 레이팅 |
-| statsIQ | https://statsiq.net/ | 전술 타임라인 분석 |
-| SABR / Morat | https://morat.ai/ | 상황별 유사 경기 검색 |
-| Qiton | https://qiton.app/features | 선수 평가 |
-| Praccly | https://praccly.com/ | 스크림 분석 |
-| Offangle | https://offangle.pro/ | 시야 및 교전 분석 |
-| ValoPins | https://valopins.com/en/replays | 리플레이 기반 전술 |
-| Valorant Scout | https://valorantscout.com/valorant-replays | 리플레이와 작전 |
-| OP.GG Replay | https://op.gg/ko/valorant/replay?view=2d | 정밀 리플레이 |
-| ValoPeek | https://valopeek.app/ | 구역별 위치 분석 |
-| kogni | https://kogni.pro/ | 프로팀 전술 분석 |
-| Tricks.gg | https://tricks.gg/ | 요원 스킬 라인업 |
-| VODs.space | https://vods.space/replays | 프로 경기 영상 |
+사이트의 실제 기능, API, 다운로드 지원 여부를 각각 검증하라.
 
-추가 저장소:
+### RIB.GG
+
+https://rib.gg/
+
+연구 대상:
+
+프로 경기 리플레이, 선수 위치, 라운드 타임라인, VOD 동기화.
+
+### THESPIKE
+
+https://www.thespike.gg/
+
+2D Replay 예시:
+
+https://www.thespike.gg/match/luminosity-gaming-pho-real/52488?map=59888&tab=2dreplay
+
+연구 대상:
+
+이벤트별 선수 위치, 킬, 설치, 해체 및 라운드 기록.
+
+### Bo3.gg
+
+https://bo3.gg/valorant
+
+경제 데이터 예시:
+
+https://bo3.gg/valorant/matches/nrg-1-vs-loud-28-08-2026/economy
+
+연구 대상:
+
+라운드별 경제, 장비 구매, 팀 성적.
+
+### Tracker.gg
+
+https://tracker.gg/valorant
+
+연구 대상:
+
+경쟁전 통계, 선수별 전적, 무기 성과.
+
+### Ascend Analytics
+
+https://esports.play-ascend.com/
+
+https://www.play-ascend.com/developers/knowledge
+
+연구 대상:
+
+팀 레이팅, 선수 평가, 패치 및 스킬 데이터.
+
+### statsIQ
+
+https://statsiq.net/
+
+연구 대상:
+
+전술 타임라인, 경기 비교, 위치 패턴 분석.
+
+### SABR / Morat
+
+https://morat.ai/
+
+연구 대상:
+
+상황별 유사 라운드 검색, 전술 데이터 인덱싱.
+
+### Qiton
+
+https://qiton.app/features
+
+연구 대상:
+
+선수 평가 지표 및 리플레이 분석.
+
+### Praccly
+
+https://praccly.com/
+
+연구 대상:
+
+스크림, 훈련, 사이트 진입 성과.
+
+### Offangle
+
+https://offangle.pro/
+
+연구 대상:
+
+교전 시야, 리플레이 분석, 포지셔닝.
+
+### ValoPins
+
+https://valopins.com/en/replays
+
+연구 대상:
+
+리플레이 상태를 전술 편집 데이터로 변환하는 방법.
+
+### Valorant Scout
+
+https://valorantscout.com/
+
+리플레이:
+
+https://valorantscout.com/valorant-replays
+
+연구 대상:
+
+2D 리플레이, 맵 기반 스킬 라인업.
+
+### OP.GG
+
+https://op.gg/ko/valorant/replay?view=2d
+
+연구 대상:
+
+선수 위치, 시야, 이동 히트맵, 스킬, 교전.
+
+### ValoPeek
+
+https://valopeek.app/
+
+연구 대상:
+
+맵 구역별 교전 및 경기 상태.
+
+### kogni
+
+https://kogni.pro/
+
+연구 대상:
+
+상대 분석, 선수 및 팀 성향.
+
+### Tricks.gg
+
+https://tricks.gg/
+
+연구 대상:
+
+요원 스킬 라인업과 전술.
+
+### VODs.space
+
+https://vods.space/replays
+
+연구 대상:
+
+실제 경기 영상과 라운드 타임라인.
+
+### valab
+
+https://www.valab.gg/
+
+VRF 검사기:
+
+https://www.valab.gg/tools/vrf-inspector
+
+연구 대상:
+
+리플레이 파일 메타데이터 및 분석 방법.
+
+위 사이트들은 서로 다른 성격의 서비스를 제공할 수 있다.
+
+실제 데이터 다운로드가 확인되지 않았다면 게임 데이터 공급원이 아니라 분석 방식 참고 자료로 분류한다.
+
+---
+
+# 07. 데이터 엔지니어링 참고 저장소
+
+다음 저장소를 조사하라.
+
+### VLML
 
 https://github.com/kennethadriann/vlml
 
+연구:
+
+- GRID 데이터 정규화
+- DuckDB
+- 데이터 모델
+- 분석 지표
+- 통계 처리
+- AI 질의 구조
+
+### Economy Analysis
+
 https://github.com/yusriso/valorant-economy-analysis-vct
+
+연구:
+
+- 경제 상태
+- 라운드 승률
+- 무기 구매
+- 장비 우위
+- 스노우볼
+
+### VCT Tournament Ecosystem
+
+https://github.com/abhay-k07/Valorant-Esports-Tournament-Ecosystem
+
+연구:
+
+- 선수
+- 팀
+- 로스터
+- 대회
+- 관계형 데이터 모델
+
+### Match Predictor
 
 https://github.com/znimer-dev/Valorant-Match-Predictor
 
+### Velo.gg
+
 https://github.com/maharshinath/Velo.gg
+
+### valPRED
 
 https://github.com/andrewhdurnford/valPRED
 
+### Player Intelligence
+
 https://github.com/valid22/valo-player-intel
 
-사이트별로 실제 API나 데이터 다운로드를 제공하는지 확인한다.
+위 프로젝트의 예측 정확도는 그대로 신뢰하지 마라.
 
-원본 데이터가 공개되지 않은 서비스는 UX 및 분석 방식 참고 대상으로 분류한다.
+데이터 누출, 테스트 분할, 평가 기간, 최근 패치 반영 여부를 확인하라.
 
 ---
 
-# PART II. 리플레이와 영상 분석
+# 08. 실제 리플레이 파싱
 
-## 5. VRF 파서 조사
+## 8.1 분석할 저장소
 
-### ValorantReplayParser
+C# 파서:
 
 https://github.com/michel-giehl/ValorantReplayParser
 
-### vrfkit
+Rust 파서:
 
 https://github.com/yakisoba0728/vrfkit
 
+사용법:
+
 https://github.com/yakisoba0728/vrfkit/blob/main/docs/USAGE.md
 
-### ValoReview
+ValoReview:
 
 https://github.com/dhinakar-v/ValoReview
 
-### ValorantWebReplayer
+ValorantWebReplayer:
 
 https://github.com/talhakoek/ValorantWebReplayer
 
-### ValoP
+ValoP:
 
 https://github.com/KNN-07/ValoP
 
-분석 목표:
+ValorantReplayViewer:
 
-1. 실제 VRF 파싱 가능 여부
-2. 선수 10명의 위치
-3. 시선 방향
-4. 체력과 방어구
-5. 무기 상태
-6. 스킬 사용 이벤트
-7. 스파이크 상태
-8. 킬 이벤트
-9. 타임라인
-10. 경기 패치
-11. 데이터 추출 속도
-12. 누락률
-13. Parquet 변환 가능 여부
+https://github.com/JulianW03/ValorantReplayViewer
 
-C#과 Rust의 파싱 정확도를 비교한다.
+## 8.2 파서 평가 항목
 
-리플레이 파일을 제공받지 못했다면 실제 디코딩에 성공한 것처럼 보고하지 않는다.
+각 파서에 대해 다음을 확인한다.
+
+1. 지원 VRF 버전
+2. 지원 게임 패치
+3. 디코딩 가능한 이벤트
+4. 선수 위치 데이터
+5. 위치 샘플링 간격
+6. 시선 방향
+7. 체력
+8. 방어구
+9. 무기
+10. 탄약
+11. 스킬 사용
+12. 스킬 오브젝트
+13. 스파이크 상태
+14. 킬·데스
+15. 라운드 시간
+16. 요원 식별
+17. 플레이어 식별
+18. 맵 식별
+19. 데이터 출력 형식
+20. 처리 속도
+21. 실제 실행 성공 여부
+
+## 8.3 실제 리플레이 데이터 모델
+
+```ts
+interface ReplayFrame {
+  matchId: string;
+  roundId: string;
+
+  timestampMs: number;
+  gamePatch: string;
+
+  players: {
+    playerId: string;
+    agentId: string;
+    teamId: string;
+
+    position: Vector3;
+    facing: Vector2;
+
+    health: number;
+    armor: number;
+
+    alive: boolean;
+
+    weaponId?: string;
+    ammunition?: number;
+
+    movementState?: string;
+  }[];
+
+  spike: SpikeState;
+
+  events: ReplayEvent[];
+}
+```
+
+실제 파서가 제공하지 않는 필드는 nullable 또는 optional로 유지한다.
+
+가공 데이터에서 복원한 값은 해당 사실을 provenance에 표시한다.
+
+## 8.4 시간축 정규화
+
+다음 문제를 해결해야 한다.
+
+- 경기 전체 시간
+- 라운드 상대 시간
+- 준비 시간
+- 실제 라운드 진행 시간
+- 스파이크 설치 이후 시간
+- 리플레이 틱
+- 이벤트 타임스탬프
+- 영상 프레임 타임스탬프
+
+모든 데이터가 같은 기준 시간을 사용하는지 검증하라.
+
+필요하다면 다음과 같이 저장한다.
+
+```text
+match_time_ms
+map_time_ms
+round_time_ms
+phase_time_ms
+source_tick
+source_timestamp
+```
+
+리플레이 원본의 시간과 분석용으로 변환한 시간을 모두 유지한다.
 
 ---
 
-## 6. 프로 경기 방송 분석
+# 09. 방송 영상 기반 데이터 추출
 
-### Valoscribe
+## 9.1 참고 저장소
+
+Valoscribe:
+
+https://github.com/SphinxNumberNine/valoscribe
+
+추가 구현:
 
 https://github.com/inde5media/valoscribe-VOD-ANALYSIS
 
-### Project X
+Project X:
 
 https://github.com/keith-ng/vct
 
-### Valorant Strategy Mapping Tool
+Strategy Mapping Tool:
 
 https://github.com/WesleyJWu/Valorant-Strategy-Mapping-Tool
 
-### VOD Analyzer
+VOD Analyzer:
 
 https://github.com/Awilkes21/valorant-vod-analyzer
 
-조사 목표:
+## 9.2 컴퓨터 비전 처리 파이프라인
 
-- HUD 인식
-- 미니맵 아이콘 탐지
-- 위치 추출
-- 선수 식별
-- 스킬 이벤트
-- 경제 상태
-- 킬 피드
-- 라운드 시간
-- 스파이크 상태
-- 타임라인 동기화
+```text
+VCT Video
+    ↓
+Frame Extraction
+    ↓
+HUD Detection
+    ↓
+Minimap Detection
+    ↓
+Agent Icon Detection
+    ↓
+Event Recognition
+    ↓
+Temporal Tracking
+    ↓
+Coordinate Normalization
+    ↓
+Confidence Estimation
+    ↓
+Structured Match Data
+```
 
-컴퓨터 비전으로 관측되지 않은 위치를 사실처럼 생성해서는 안 된다.
+GPU 기반 비전 모델은 개발 중 데이터 추출에 사용해도 된다.
 
-영상에서 직접 확인한 정보와 모델이 추정한 정보를 구분한다.
+그러나 게임 실행 단계에서 GPU 비전 모델을 계속 실행할 필요는 없다.
+
+## 9.3 영상 추출 시 제한 사항
+
+방송 화면에 표시되지 않은 정보를 관측 사실로 기록하지 마라.
+
+예를 들어:
+
+- 미니맵에 표시되지 않은 적
+- 관전자 화면에 노출되지 않은 스킬 사용
+- 확인되지 않은 체력
+- 실제 팀 보이스
+- 선수의 전술적 의도
+
+이러한 항목은 추정이 필요하다.
+
+추정 결과에는 반드시 confidence와 근거를 기록한다.
 
 ---
 
-# PART III. 맵 공간 데이터 구축
+# 10. 맵 데이터 전체 구축
 
-## 7. 사용자 제공 Blender 맵
+## 10.1 사용자 제공 Blender 맵
 
 원본 폴더:
 
 https://drive.google.com/drive/u/0/folders/1henHDT5PX5HW3PRAJ018UBMTgL0F3-2a
 
-각 파일은 Blender 4.2 형식으로 안내되어 있다.
+개별 자료:
 
-| 맵 | 파일 URL |
-|---|---|
-| Abyss | https://drive.google.com/open?id=1BW2cxkBUz70ed3AYA2nGITvQlvuaEX8t |
-| Ascent | https://drive.google.com/open?id=1n9Z3-kMqzaqETP1lxGvQpfQSBrX5zChB |
-| Bind | https://drive.google.com/open?id=1kAY2m05wdDnU9_3aOgrL_4b-p66AuLnK |
-| Breeze | https://drive.google.com/open?id=1QpiCKTIJgzU735HzNH84Io5eYeoPhDdd |
-| Fracture | https://drive.google.com/open?id=1WCTrmYIH9VNpXYGUN4w9U8S_nq_7Cx3I |
-| Haven | https://drive.google.com/open?id=1e1wFXD2iBrYMPFNBwUgDnE9GpPTwt9rJ |
-| Icebox | https://drive.google.com/open?id=1TzjOGVTZ0Du9E9-k3d9Vi7BN7qvX6hV1 |
-| Lotus | https://drive.google.com/open?id=1J_FcYU3iRcvZIGRvxvdM8s7sRm5OAPTN |
-| Pearl | https://drive.google.com/open?id=1L9BPmfJnlOOcduu-rlftTkgUP0r0ENh0 |
-| Split | https://drive.google.com/open?id=1yTkqrAbinK1PyAFNZoyUfjvd5vA0ZMMd |
-| Sunset | https://drive.google.com/open?id=1O-iEnHY1MfGcDdm32YK3f0kiA0UEybhG |
+**Abyss**
 
-추가 맵 배포 폴더 후보:
+https://drive.google.com/open?id=1BW2cxkBUz70ed3AYA2nGITvQlvuaEX8t
+
+**Ascent**
+
+https://drive.google.com/open?id=1n9Z3-kMqzaqETP1lxGvQpfQSBrX5zChB
+
+**Bind**
+
+https://drive.google.com/open?id=1kAY2m05wdDnU9_3aOgrL_4b-p66AuLnK
+
+**Breeze**
+
+https://drive.google.com/open?id=1QpiCKTIJgzU735HzNH84Io5eYeoPhDdd
+
+**Fracture**
+
+https://drive.google.com/open?id=1WCTrmYIH9VNpXYGUN4w9U8S_nq_7Cx3I
+
+**Haven**
+
+https://drive.google.com/open?id=1e1wFXD2iBrYMPFNBwUgDnE9GpPTwt9rJ
+
+**Icebox**
+
+https://drive.google.com/open?id=1TzjOGVTZ0Du9E9-k3d9Vi7BN7qvX6hV1
+
+**Lotus**
+
+https://drive.google.com/open?id=1J_FcYU3iRcvZIGRvxvdM8s7sRm5OAPTN
+
+**Pearl**
+
+https://drive.google.com/open?id=1L9BPmfJnlOOcduu-rlftTkgUP0r0ENh0
+
+**Split**
+
+https://drive.google.com/open?id=1yTkqrAbinK1PyAFNZoyUfjvd5vA0ZMMd
+
+**Sunset**
+
+https://drive.google.com/open?id=1O-iEnHY1MfGcDdm32YK3f0kiA0UEybhG
+
+추가 맵 배포 후보:
 
 https://drive.google.com/drive/folders/1tKJAQv0GI8ZMD34XGbx30SrsfBjHTYVW
 
-Corrode 및 Summit 파일 포함 여부를 검증한다.
+추가 폴더에서 Corrode, Summit 등 누락된 맵을 확인한다.
 
-### 관련 공간 데이터 오픈소스
+## 10.2 추가 맵 프로젝트
+
+ValorantBrowser:
 
 https://github.com/Shreshth1x/ValorantBrowser
 
+Valorant Zone Stats:
+
 https://github.com/LouisAsanaka/Valorant-Zone-Stats
+
+Piana:
 
 https://github.com/f0rmatme/Piana
 
+Valorant-API Maps:
+
 https://valorant-api.com/v1/maps
 
-### 지형 전처리 목표
+## 10.3 맵 데이터 분석
 
-각 맵에 다음 데이터 구조를 생성한다.
+각 Blender 파일을 실제로 열 수 있다면 다음을 추출한다.
 
-```text
-MapData
-├── Geometry
-├── Collision Mesh
-├── Navigation Mesh
-├── Elevation
-├── Visibility
-├── Tactical Zones
-├── Sound Zones
-├── Spike Plant Zones
-├── Spawn Areas
-├── Interactable Objects
-├── Destructible Objects
-├── Ability Interactions
-└── Coordinate Transforms
+- Collection 목록
+- Object 목록
+- Mesh 목록
+- Vertex 수
+- Polygon 수
+- Object Transform
+- World Scale
+- Bounding Box
+- 재질과 텍스처
+- 지형
+- 벽
+- 바닥
+- 계단
+- 장애물
+- 장식용 메시
+- 충돌 가능 메시
+- 파괴 가능한 오브젝트 후보
+
+원본에 충돌 메시가 없다면 직접 생성해야 한다.
+
+## 10.4 공간 엔진 요구 사항
+
+```ts
+interface TacticalMap {
+  mapId: string;
+  patchVersion: string;
+
+  geometry: GeometryData;
+  collision: CollisionData;
+  navigation: NavigationGraph;
+
+  elevation: ElevationData;
+  visibility: VisibilityGraph;
+
+  zones: TacticalZone[];
+  plantZones: PlantZone[];
+
+  spawnZones: SpawnZone[];
+
+  soundModel: SoundPropagationModel;
+
+  interactables: MapInteractable[];
+
+  worldToMinimap: CoordinateTransform;
+}
 ```
 
-맵 모델에 해당 데이터가 없는 경우 자동 생성 가능성을 검토한다.
+최소한 다음 기능을 구현한다.
 
-모델의 렌더링 메시와 실제 게임 충돌 지형이 동일하다고 가정하지 마라.
+1. 벽 충돌
+2. 이동 가능한 바닥
+3. A* 경로 탐색
+4. 플레이어 반경 반영
+5. 고저차 처리
+6. 계단
+7. 점프 가능 영역
+8. 엄폐물
+9. Ray Casting
+10. 시야 차단
+11. 연막 시야 차단
+12. 발소리 전파
+13. 설치 가능 영역
+14. 문 개폐
+15. 동적 장애물
+16. 텔레포터
+17. 맵별 기믹
 
-NavMesh의 연결성과 시야 차단을 테스트한다.
-
-첫 번째 구현 맵은 Ascent로 지정한다.
+첫 번째 검증 맵은 Ascent로 지정한다.
 
 ---
 
-# PART IV. 게임 콘텐츠 데이터
+# 11. 요원·무기·스킬 데이터
 
-## 8. 요원, 스킬, 무기, 패치
+## 11.1 참고 자료
 
-정적 API:
+VALORANT API:
 
 https://valorant-api.com/
 
@@ -465,56 +1206,90 @@ https://valorant-api.com/v1/weapons
 
 https://valorant-api.com/v1/maps
 
-공식 패치 노트:
+Riot 패치 노트:
 
 https://playvalorant.com/en-us/news/game-updates/
 
-스킬 관련 데이터:
+Ascend Knowledge:
 
 https://www.play-ascend.com/developers/knowledge
 
-에셋 참고:
+Kingdom Archives:
 
 https://kingdomarchives.com/
 
+3D 모델:
+
 https://kingdomarchives.com/models
+
+요원 자료:
 
 https://kingdomarchives.com/agents
 
-라인업 데이터:
+스킬 라인업:
 
 https://github.com/matthew-paul/valorant-lineups
 
 https://github.com/Twosugar666/valorant-lineups
 
-조사할 것:
+## 11.2 능력 데이터
 
-- 요원 역할
-- 스킬 효과
-- 사거리
-- 범위
-- 지속시간
-- 충전량
-- 궁극기 포인트
-- 무기 가격
-- 거리별 피해
-- 연사 속도
-- 관통
-- 이동 정확도
-- 경제 보상
-- 패치별 변경
+각 요원 스킬을 실제 엔진에서 실행 가능한 데이터로 변환한다.
 
-반드시 패치 버전별 게임 규칙 데이터를 유지한다.
+```ts
+interface AbilityDefinition {
+  id: string;
+  agentId: string;
 
-현재 버전의 능력치만으로 과거 VCT 경기를 평가해서는 안 된다.
+  patchVersion: string;
+
+  activationType: string;
+  targetingType: string;
+
+  charges: number;
+  cost: number;
+
+  durationMs?: number;
+  cooldownMs?: number;
+
+  range?: number;
+  radius?: number;
+
+  effects: AbilityEffect[];
+}
+```
+
+필요한 효과:
+
+- 연막
+- 실명
+- 기절
+- 둔화
+- 피해
+- 회복
+- 이동
+- 순간이동
+- 감시
+- 적 탐지
+- 위치 노출
+- 설치형 장치
+- 벽 생성
+- 방어
+- 궁극기
+
+각 스킬이 게임 세계에 어떤 상태 변화를 발생시키는지 정의한다.
+
+예를 들어 연막은 단순히 적의 명중률을 낮추는 기능이 아니다.
+
+연막은 특정 공간의 시야 관계를 변경하며, 정보 수집과 이동 경로, 피킹 판단, 교전 가능성을 변화시킨다.
 
 ---
 
-# PART V. 머신러닝 참고 데이터
+# 12. Hugging Face 및 머신러닝 데이터
 
-## 9. Hugging Face 데이터셋
+## 12.1 참고 데이터셋
 
-VALORANT 게임플레이:
+VALORANT 영상 및 행동 기록:
 
 https://huggingface.co/datasets/open-world-agents/D2E-Original/tree/main/VALORANT
 
@@ -522,7 +1297,7 @@ Gaming 500 Hours:
 
 https://huggingface.co/datasets/markov-ai/gaming-500-hours
 
-Counter-Strike 다중 시점 연구:
+X-EGO-CS:
 
 https://huggingface.co/datasets/wangyz1999/X-EGO-CS
 
@@ -530,594 +1305,943 @@ EsportsBench:
 
 https://huggingface.co/datasets/EsportsBench/EsportsBench
 
-X-EGO-CS는 VALORANT 데이터가 아니라는 사실을 명시한다.
+X-EGO-CS는 Counter-Strike 데이터임을 명시한다.
 
-해당 데이터의 역할은 10명 시점 동기화와 부분 관측 학습 구조를 참고하는 것이다.
+실제 VALORANT 전술 데이터로 취급해서는 안 된다.
 
-Hugging Face에서 GPU 성능을 많이 사용하는 대형 언어 모델을 무조건 도입하지 마라.
+연구할 것은 다음과 같은 일반적인 구조이다.
 
-실시간 게임 AI의 기본 구성은 규칙 기반 시스템과 경량 통계 모델로 유지한다.
-
-권장 후보:
-
-- LightGBM
-- XGBoost
-- 소형 MLP
-- 소형 시계열 모델
-- ONNX Runtime CPU
-
-학습과 추론을 분리한다.
-
-게임 실행 시 GPU 기반 머신러닝 추론을 필수로 요구하지 않는다.
+- 다중 시점
+- 시계열 행동 데이터
+- 부분 관측
+- 상태와 행동의 정렬
+- 행동 분류
+- 팀 단위 상태
+- 데이터 라벨링
 
 ---
 
-# PART VI. 상황 기반 선택지 생성 엔진
+# 13. 데이터 통합 및 정규화
 
-## 10. 핵심 알고리즘
+## 13.1 Data Lake 설계
 
-우리는 AI가 선택지를 정해진 목록에서 무작위로 고르는 게임을 만들지 않는다.
+```text
+datasets/
+├── raw/
+│   ├── riot/
+│   ├── grid/
+│   ├── vct-reference/
+│   ├── vlr/
+│   ├── replay/
+│   └── vod/
+│
+├── normalized/
+│   ├── matches/
+│   ├── maps/
+│   ├── rounds/
+│   ├── players/
+│   ├── events/
+│   ├── positions/
+│   └── economy/
+│
+├── spatial/
+│   ├── geometry/
+│   ├── navigation/
+│   ├── visibility/
+│   └── tactical-zones/
+│
+├── derived/
+│   ├── perception/
+│   ├── threat/
+│   ├── tactical-segments/
+│   └── player-features/
+│
+├── labels/
+│   ├── actions/
+│   ├── intentions/
+│   └── validation/
+│
+└── training/
+    ├── behavior/
+    ├── outcome/
+    └── tactical-policy/
+```
 
-**현재 상황을 분석하고 실행 가능한 선택지를 생성하는 구조**가 필요하다.
+## 13.2 데이터 식별자 통합
 
-전체 파이프라인:
+서로 다른 데이터 소스가 같은 선수를 다른 ID로 표현할 수 있다.
+
+따라서 다음 데이터를 통합해야 한다.
+
+- Player Identity
+- Team Identity
+- Match Identity
+- Tournament Identity
+- Map Identity
+- Agent Identity
+- Patch Identity
+
+이름 문자열만으로 병합하지 마라.
+
+선수 이름 변경, 팀 이적, 동일 이름 선수, 임시 닉네임 문제를 고려한다.
+
+## 13.3 Provenance
+
+```ts
+type EvidenceType =
+  | "observed"
+  | "decoded"
+  | "derived"
+  | "inferred"
+  | "simulated";
+
+interface Provenance {
+  sourceId: string;
+  sourceUrl: string;
+
+  gamePatch: string | null;
+  retrievedAt: string;
+
+  evidenceType: EvidenceType;
+
+  confidence: number | null;
+  verified: boolean;
+}
+```
+
+데이터를 어디에서 얻었는지 추적할 수 있어야 한다.
+
+---
+
+# 14. 경기 상태 복원
+
+## 14.1 World State
+
+경기 엔진의 실제 상태를 정의한다.
+
+```ts
+interface WorldState {
+  matchId: string;
+  roundId: string;
+
+  tick: number;
+  timestampMs: number;
+
+  map: MapState;
+
+  attackers: TeamState;
+  defenders: TeamState;
+
+  spike: SpikeState;
+
+  activeEffects: AbilityEffectState[];
+
+  eventLog: GameEvent[];
+}
+```
+
+각 선수의 상태:
+
+```ts
+interface PlayerState {
+  id: string;
+  teamId: string;
+
+  agentId: string;
+
+  position: Vector3;
+  velocity: Vector3;
+  facing: Vector2;
+
+  health: number;
+  armor: number;
+
+  alive: boolean;
+
+  weapon: WeaponState;
+  inventory: InventoryState;
+
+  credits: number;
+
+  ultimatePoints: number;
+  ultimateCost: number;
+
+  behaviorState: string;
+
+  currentOrder?: TacticalOrder;
+}
+```
+
+## 14.2 Belief State
+
+실제 상태와 AI가 알고 있는 상태를 분리한다.
+
+```ts
+interface BeliefState {
+  visibleEnemies: EnemyObservation[];
+
+  lastKnownEnemies: EnemyMemory[];
+
+  heardSounds: SoundEvent[];
+
+  teammateReports: TeamInformation[];
+
+  inferredThreats: ThreatDistribution[];
+
+  tacticalHypotheses: TacticalHypothesis[];
+}
+```
+
+시야에 들어오지 않은 적의 정확한 위치를 제공하지 마라.
+
+AI가 가지고 있는 정보는 관측과 추정으로 만들어져야 한다.
+
+---
+
+# 15. 상황 기반 선택지 생성 엔진
+
+## 15.1 핵심 흐름
 
 ```text
 World State
     ↓
-Player Observations
+Observation Generator
     ↓
 Belief State
     ↓
-Strategic Goal Generation
+Strategic Goal Generator
     ↓
-Action Candidate Generation
+Action Schema Matcher
     ↓
-Constraint Validation
+Parameter Generator
     ↓
-Outcome Prediction
+Constraint Solver
     ↓
-Expected Utility Evaluation
+Candidate Action Set
     ↓
-Decision Selection
+Outcome Predictor
     ↓
-Action Execution
+Utility Evaluation
     ↓
-State Update
+Action Selection
     ↓
-Repeat
+Execution
 ```
 
-### World State
+## 15.2 Action Schema
 
-실제 경기의 모든 정보를 보유한다.
+행동마다 다음을 정의한다.
 
-- 10명 위치
-- 체력
-- 스킬
-- 무기
-- 탄약
-- 경제
-- 시간
-- 스파이크
-- 지형
-- 시야 차단물
-
-### Belief State
-
-각 팀과 선수가 알고 있는 정보만 보유한다.
-
-- 마지막 적 목격
-- 소리
-- 스킬 흔적
-- 아군 정보
-- 상대 과거 전술
-- 적 위치 추정
-- 정보 신뢰도
-
-실제 적의 위치를 직접 참조하는 치팅 AI를 금지한다.
-
-### Action Generator
-
-현재 상황에서 실행 가능한 행동을 생성한다.
-
-### Constraint Validator
-
-다음 조건을 검사한다.
-
-- 충분한 시간
-- 이동 가능한 경로
-- 스킬 보유 여부
-- 스파이크 상태
-- 인원 구성
-- 생존 상태
-- 현재 포지션
-- 위험 지역
-- 작전 수행 가능성
-
-### Outcome Predictor
-
-선택지를 실행했을 때의 예상 결과를 추정한다.
-
-미래 상대 행동도 반드시 고려한다.
-
-### Decision Policy
-
-선수 능력치, 전술 성향, 기대 승률, 미래 경제적 가치를 바탕으로 행동을 선택한다.
-
----
-
-# PART VII. 핵심 추가 시스템 — 무기 세이브와 궁극기 경제
-
-## 11. Save / Survival / Ultimate Economy Decision System
-
-이 시스템은 반드시 독립적인 주요 모듈로 구현한다.
-
-단순한 `if (winProbability < threshold) save()` 형태의 구현은 금지한다.
-
-VALORANT에서 세이브는 단순히 죽지 않는 행동이 아니다.
-
-다음 라운드의 전력을 보존하고, 상대의 궁극기 충전을 차단하며, 동시에 현재 라운드의 승리 가능성을 포기하거나 낮추는 전략적 선택이다.
-
-### 11.1 실제 규칙 참고 자료
-
-Riot 공식 경제 패치:
-
-https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-11/
-
-Riot 공식 궁극기 관련 패치:
-
-https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-0/
-
-VALORANT 경제 규칙:
-
-https://wiki.playvalorant.com/en-us/Credits
-
-VALORANT 궁극기 시스템:
-
-https://wiki.playvalorant.com/en-us/Abilities
-
-전술적 경제·궁극기 운영:
-
-https://mobalytics.gg/blog/valorant/ultimate-economy-guide/
-
-다음 조건을 패치별 규칙 데이터로 관리하고, 현재 기준의 정확성을 검증한다.
-
-- 생존 시 무기 보존
-- 사망 시 무기 상실
-- 공격팀의 미설치 생존 패배 보상
-- 수비팀의 폭발 후 생존 패배 보상
-- 기본 패배 보상
-- 연패 보상
-- 처치 보상
-- 설치 보상
-- 궁극기 포인트 획득
-- 비적대적 사망의 궁극기 처리
-- 진영 변경 시 경제 초기화
-- 연장전 경제 규칙
-
-규칙을 코드에 하드코딩하지 말고 패치 버전별 설정으로 관리한다.
-
----
-
-## 11.2 Save Decision의 입력 상태
+- 행동 ID
+- 행동 범주
+- 필요한 주체
+- 필요한 조건
+- 행동 파라미터
+- 실행 시간
+- 자원 비용
+- 예상 효과
+- 실패 조건
+- 중단 조건
+- 후속 행동
 
 ```ts
-interface SaveDecisionContext {
-  round: {
-    timeRemaining: number;
-    spikeState: string;
-    spikeTimeRemaining?: number;
+interface ActionSchema {
+  id: string;
 
-    alliedAlive: number;
-    enemyAlive: number;
+  category:
+    | "strategic"
+    | "tactical"
+    | "individual";
 
-    roundWinProbability: number;
-    roundsRemainingInHalf: number;
+  preconditions: Condition[];
 
-    matchPoint: boolean;
-    overtime: boolean;
-  };
+  parameters: ParameterDefinition[];
 
-  player: {
-    health: number;
-    armor: number;
-
-    weaponId: string;
-    weaponValue: number;
-
-    credits: number;
-
-    ultimatePoints: number;
-    ultimateCost: number;
-
-    position: Vector3;
-  };
-
-  team: {
-    credits: number[];
-    weapons: string[];
-    nextRoundBuyPotential: number;
-    roundEconomyPlan: string;
-  };
-
-  enemies: {
-    estimatedCredits: number[];
-    knownWeapons: string[];
-    estimatedUltimatePoints: number[];
-    ultimateThreatLevels: number[];
-  };
-
-  spatial: {
-    safeRoutes: Route[];
-    escapeProbability: number;
-    enemyContactProbability: number;
-    exitPositions: Vector3[];
-  };
+  generate(
+    context: DecisionContext
+  ): CandidateAction[];
 }
 ```
 
-적의 궁극기 포인트나 경제를 정확하게 알 수 없는 경우에는 관측된 정보와 추정치를 구분한다.
+## 15.3 Constraint Validation
 
-현재 버전의 스코어보드에서 공개되는 정보와 실제 게임 내부 상태를 구분해야 한다.
+다음 조건을 검사한다.
 
----
+- 이동 가능 여부
+- 시간
+- 스킬 보유
+- 생존 상태
+- 스파이크 상태
+- 실행 인원
+- 이동 거리
+- 이동 위험
+- 지형
+- 경로 차단
+- 전술 수행 가능성
 
-## 11.3 생성해야 할 행동 후보
+불가능한 행동은 점수만 낮추는 것이 아니라 명확하게 제외한다.
 
-### SAVE_WEAPON
-
-현재 무기를 보존하기 위해 교전을 회피하고 안전 지역으로 이동한다.
-
-### RETAKE_ATTEMPT
-
-불리한 상황이더라도 라운드 승리를 위해 재진입한다.
-
-### PLAY_FOR_EXIT_KILLS
-
-라운드 승리보다 상대 생존자의 무기 제거를 목표로 출구를 통제한다.
-
-### DENY_ENEMY_ULT_POINT
-
-상대에게 처치당하지 않도록 불필요한 교전을 피한다.
-
-### PROTECT_HIGH_VALUE_WEAPON
-
-Operator 등 고가 무기를 특별히 보호한다.
-
-### RECOVER_BETTER_WEAPON
-
-안전하게 회수할 수 있는 더 가치 있는 무기로 교체를 시도한다.
-
-### FORCE_ENEMY_REBUY
-
-상대의 무기 손실을 유도해 다음 라운드의 구매력을 낮춘다.
-
-### DENY_ENEMY_ULT_TIMING
-
-적의 핵심 요원이 다음 라운드에 궁극기를 사용할 수 있게 만드는 행동을 회피한다.
-
-### SEEK_OWN_ULT_POINT
-
-안전한 조건에서 궁극기 오브, 설치, 해체 또는 교전을 통해 자신의 궁극기 충전을 시도한다.
-
-### ACCEPT_LOSS_AND_REPOSITION
-
-라운드 패배를 받아들이고 무기 보존에 유리한 위치로 이동한다.
-
-### NON_ENEMY_DEATH_EVALUATION
-
-수비팀 스파이크 폭발 등 게임 규칙상 가능한 사망 결과와 세이브의 경제적 차이를 분석한다.
-
-이 행동은 실제 게임 규칙, 시간, 도달 가능 위치, 사망 원인 등을 검증해야 한다.
-
-단순히 경제적 보상이 높다는 이유만으로 임의의 자해 또는 규칙에 맞지 않는 사망을 실행해서는 안 된다.
+단, 성공 확률이 낮은 행동과 물리적으로 불가능한 행동은 구분한다.
 
 ---
 
-## 11.4 선택지의 기대 가치 계산
+# 16. 전술적 선택지 분류
 
-세이브 판단은 현재 라운드만 평가해서는 안 된다.
+## 16.1 공격팀
 
-최소한 다음 2~3라운드의 경제적 영향을 평가할 수 있도록 설계한다.
+- Default
+- Fast Execute
+- Slow Execute
+- Split Execute
+- Fake Execute
+- Double Fake
+- Contact
+- Lurk
+- Map Control
+- Mid Control
+- Utility Bait
+- Rotation
+- Late Rotation
+- Re-Execute
+- Spike Plant
+- Post-Plant
+- Exit Kill
+- Save
 
-개념적 평가식:
+## 16.2 수비팀
+
+- Default Hold
+- Aggressive Push
+- Information Push
+- Anchor
+- Site Stack
+- Rotate
+- Counter-Rotate
+- Retake
+- Crossfire
+- Reposition
+- Defuse
+- Fake Defuse
+- Hunt
+- Save
+
+## 16.3 개인 행동
+
+- Move
+- Walk
+- Run
+- Hold Angle
+- Clear Angle
+- Peek
+- Swing
+- Trade
+- Retreat
+- Reposition
+- Reload
+- Use Ability
+- Wait
+- Plant
+- Defuse
+- Save Weapon
+
+이 목록은 고정된 최종 목록이 아니다.
+
+실제 경기 데이터와 전술 분석 과정에서 확장 가능한 구조로 구현한다.
+
+---
+
+# 17. 정보전 및 페이크
+
+## 17.1 페이크의 정의
+
+페이크는 단순히 A 사이트에서 스킬을 사용한 뒤 B로 이동하는 것이 아니다.
+
+상대의 판단을 변경할 목적으로 정보를 노출하거나 특정 행동을 유도하는 전술이다.
+
+그러나 실제 경기 기록만으로 선수의 의도를 확정하기 어렵다.
+
+따라서 다음을 구분한다.
+
+- 관측된 행동
+- AI가 추론한 의도
+- 상대의 실제 반응
+- 후속 결과
+
+## 17.2 페이크 처리 절차
 
 ```text
-Action Value =
-    Current Round Win Value
-  + Preserved Equipment Value
-  + Next Round Buy Advantage
-  + Enemy Equipment Damage
-  + Own Ultimate Value
-  + Enemy Ultimate Denial Value
-  + Future Round Win Expectation
-  - Death Risk
-  - Time Cost
-  - Resource Cost
-  - Opportunity Cost
+Attackers Apply A Pressure
+    ↓
+Defenders Observe Signals
+    ↓
+Defender Belief Updated
+    ↓
+Defender Decision Generated
+    ↓
+Hold / Rotate / Push / Gather Info
+    ↓
+Attackers Observe Response
+    ↓
+Attack Plan Re-evaluated
 ```
 
-각 항목은 실제 통계 또는 명시적으로 정의한 모델을 통해 추정한다.
+상대가 반드시 페이크에 속아서는 안 된다.
 
-게임 밸런스가 검증되지 않은 임의 가중치로 확정되어서는 안 된다.
+상대의 전술 이해도, 이전 라운드 경험, 관측 정보에 따라 다른 판단이 발생해야 한다.
 
-### 중요한 원칙
+## 17.3 정보의 시간적 가치
 
-무기 가격만으로 보존 가치를 계산하지 않는다.
+10초 전 목격한 적이 현재도 같은 위치에 있다고 가정하지 않는다.
 
-같은 Vandal을 보유하더라도:
+상대의 이동 가능한 영역을 기준으로 위치 분포를 갱신한다.
 
-- 다음 라운드에 구매 가능한 자금이 충분한 선수
-- 팀의 유일한 라이플을 가진 선수
-- Operator 구매를 준비하는 선수
-- 다음 라운드가 마지막인 선수
-
-의 세이브 가치는 다르다.
+위치 추정은 확률적이어야 한다.
 
 ---
 
-## 11.5 궁극기 포인트 차단
+# 18. 스파이크 설치와 포스트플랜트
 
-상대가 궁극기 사용 직전인 경우, 해당 상대에게 처치당하는 행위는 다음 라운드의 전술적 위험을 높일 수 있다.
+## 18.1 설치 위치
 
-예를 들어 상대의 주요 궁극기가 1포인트만 남았다고 가정한다.
+스파이크 설치를 단순히 `planted = true`로 처리하지 마라.
 
-현재 라운드가 이미 사실상 패배한 상황이라면, 불필요하게 해당 선수에게 킬을 헌납하는 행동보다 생존을 선택하는 것이 더 가치 있을 수 있다.
+설치 위치가 이후 가능한 행동을 변경해야 한다.
 
-하지만 항상 세이브가 정답은 아니다.
+고려할 요소:
 
-현재 라운드에 승리할 가능성이 있고, 해당 교전에서 상대의 무기를 제거할 가능성이 충분하다면 교전을 시도할 수 있다.
+- 설치 지점의 노출 위험
+- 설치 당시 적 위치
+- 엄폐물
+- 아군의 방어 위치
+- 스파이크를 바라볼 수 있는 각도
+- 스킬 사용 가능 범위
+- 수비팀의 리테이크 경로
+- 해체 시야
+- 설치 완료에 필요한 시간
 
-AI는 다음을 평가해야 한다.
+## 18.2 설치 후보 생성
 
-1. 상대 궁극기의 현재 충전 상태
-2. 궁극기를 보유한 요원
-3. 궁극기의 다음 라운드 예상 영향
-4. 해당 상대와 교전할 확률
-5. 누가 킬을 가져갈 가능성이 높은지
-6. 자신의 사망으로 발생하는 궁극기 변화
-7. 자신이 처치에 성공했을 때의 궁극기 변화
-8. 자신의 사망으로 인한 무기 손실
-9. 자신의 사망으로 얻을 수 있는 궁극기 포인트
-10. 아군의 궁극기 준비 상태
+```text
+Candidate Plant Locations
+    ↓
+Accessibility
+    ↓
+Plant Exposure Risk
+    ↓
+Post-Plant Visibility
+    ↓
+Friendly Control
+    ↓
+Enemy Retake Risk
+    ↓
+Expected Plant Value
+```
 
-스파이크 폭발, 낙사와 같은 비적대적 사망이 궁극기 포인트에 미치는 영향도 정확하게 구현한다.
+## 18.3 포스트플랜트
 
-특히 `상대에게 궁극기를 주지 않는 것`과 `자신이 궁극기 포인트를 얻는 것`은 별개의 상태 변화다.
+설치 이후 각 선수는 다음 행동을 평가한다.
 
----
+- 사이트 유지
+- 다른 각도 확보
+- 스파이크와 거리 확보
+- 유틸리티 보존
+- 시간 소모
+- 해체 소리 확인
+- 재교전
+- 페이크 해체 대응
 
-## 11.6 추격과 출구 킬
-
-세이브하는 팀만 판단하는 것은 부족하다.
-
-라운드에서 승리한 팀 역시 다음과 같은 판단을 수행해야 한다.
-
-- 상대를 추격할 것인가?
-- 현재 무기를 지킬 것인가?
-- 상대가 보존하려는 무기를 제거할 것인가?
-- 핵심 궁극기 충전을 위해 교전을 시도할 것인가?
-- 추가 킬의 경제적 가치가 있는가?
-- 추격하다 사망할 위험이 큰가?
-- 상대가 역으로 출구를 지키고 있을 가능성이 있는가?
-
-예를 들어 상대가 Operator를 보존하려 한다면 이를 제거할 전략적 가치가 있다.
-
-그러나 추격 과정에서 아군의 라이플 2정을 잃는다면 오히려 손해가 될 수 있다.
-
-따라서 `HUNT_SAVER` 역시 행동 후보로 생성하고 미래 경제적 가치를 계산한다.
-
----
-
-## 11.7 세이브 중 계획 변경
-
-세이브를 결정했다고 해서 라운드가 끝날 때까지 무조건 도망가서는 안 된다.
-
-다음 상황에서는 행동을 다시 평가해야 한다.
-
-- 적이 예상 밖의 위치에서 나타남
-- 안전 경로가 차단됨
-- 상대가 무리하게 추격함
-- 고가 무기를 회수할 기회 발생
-- 적이 사망하면서 수적 열세가 완화됨
-- 스파이크 해체 가능성이 새로 발생함
-- 남은 시간이 크게 줄어듦
-- 아군이 추가 정보를 확보함
-
-세이브 역시 상황에 따라 취소되거나 다른 행동으로 전환될 수 있어야 한다.
+포스트플랜트는 실제 설치 위치에 종속되어야 한다.
 
 ---
 
-## 11.8 선수 성향과 세이브 판단
+# 19. 경제 시스템
 
-선수 능력치가 실제 행동에 영향을 주도록 한다.
+## 19.1 실제 규칙 참고
 
-| 능력치 | 영향 |
-|---|---|
-| 판단력 | 세이브와 클러치 기대 가치 평가 |
-| 침착함 | 무리한 재교전 억제 |
-| 공격성 | 출구 킬 및 교전 시도 |
-| 팀워크 | 아군과 함께 무기 보존 |
-| 전술 이해도 | IGL의 세이브 지시 수행 |
-| 경제 이해도 | 다음 라운드 구매 상태 평가 |
-| 위험 감수 | 불리한 클러치 시도 |
-| 상황 인식 | 안전 경로와 추격 위험 추정 |
+VALORANT Credits:
 
-판단력이 높은 선수가 반드시 세이브하는 것은 아니다.
+https://wiki.playvalorant.com/en-us/Credits
 
-좋은 선수는 세이브해야 할 상황과 도전해야 할 상황을 더 정확하게 구분해야 한다.
+Riot 패치 노트 1.11:
+
+https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-11/
+
+경제 가이드:
+
+https://mobalytics.gg/blog/valorant/ultimate-economy-guide/
+
+추가 참고:
+
+https://senseos.gg/guides/valorant/valorant-economy/
+
+모든 수치는 현재 패치와 대회 규칙을 기준으로 검증한다.
+
+## 19.2 경제 시스템 입력
+
+- 선수별 크레딧
+- 팀의 구매 계획
+- 무기
+- 방어구
+- 스킬
+- 패배 연속 횟수
+- 다음 라운드 예상 수입
+- 현재 라운드의 중요도
+- 다음 라운드 상대의 예상 구매
+- 진영 변경
+- 연장전
+
+## 19.3 구매 행동
+
+- Full Buy
+- Half Buy
+- Force Buy
+- Eco
+- Bonus
+- Save
+- Drop Weapon
+- Buy Teammate
+- Preserve Weapon
+- Upgrade Weapon
+
+경제 판단은 팀 단위와 개인 단위로 분리한다.
 
 ---
 
-## 11.9 세이브 및 궁극기 경제의 학습 데이터
+# 20. 세이브 의사결정 엔진
 
-실제 경기 데이터에서 다음 행동을 추출할 수 있도록 한다.
+이 모듈은 가장 중요한 전략 시스템 중 하나다.
+
+단순히 라운드 승률이 낮으면 세이브하는 방식은 사용하지 않는다.
+
+## 20.1 세이브 판단의 의미
+
+세이브는 현재 라운드의 승리 기회를 일부 포기하고 미래 라운드의 기대 가치를 보존하는 전략이다.
+
+다음 요소를 고려한다.
+
+1. 현재 라운드 승리 가능성
+2. 현재 무기의 가치
+3. 방어구 가치
+4. 남은 스킬
+5. 다음 라운드 구매 가능성
+6. 현재 라운드의 중요도
+7. 상대의 경제
+8. 자신의 궁극기
+9. 상대의 궁극기
+10. 생존 가능성
+11. 적에게 처치당할 위험
+12. 탈출 경로
+13. 상대의 추격 가능성
+14. 진영 변경 여부
+15. 매치포인트 여부
+16. 연장전 여부
+
+## 20.2 세이브 선택지
+
+다음 행동을 생성할 수 있어야 한다.
 
 ```text
 SAVE_WEAPON
 SAVE_WITH_OPERATOR
 SAVE_WITH_RIFLE
 AVOID_CONTACT
-HUNT_SAVING_PLAYER
-EXIT_KILL
+RETREAT_TO_SAFE_ZONE
+REPOSITION_FOR_SURVIVAL
 RECOVER_WEAPON
-DENY_ULTIMATE_POINT
-ULTIMATE_ORB_CONTROL
-ULTIMATE_CHARGE_ATTEMPT
-POST_PLANT_SAVE
-FAILED_RETAKE
-SAVE_CANCELLED
+HOLD_FOR_EXIT_KILL
+HUNT_ENEMY_SAVER
+DENY_ENEMY_ULT_POINT
+PROTECT_HIGH_VALUE_WEAPON
+ACCEPT_ROUND_LOSS
+RETAKE_ANYWAY
 ```
 
-이 중 `DENY_ULTIMATE_POINT`와 같은 전술적 의도는 관측된 위치만으로 확정할 수 없다.
+## 20.3 핵심 사례 — Operator 보존
 
-따라서 직접 관측한 행동과 추정한 의도를 구분한다.
+1v4 상황에서 Operator를 보유한 선수를 가정한다.
 
-실제 경기 데이터에서 다음 정보를 확보할 수 있는지 조사한다.
+현재 라운드 승리 가능성이 낮고 다음 라운드가 남아 있다면 Operator를 보존하는 행동이 높은 가치를 가질 수 있다.
 
-- 세이브 당시 생존 인원
-- 남은 시간
-- 보유 무기
-- 선수별 크레딧
-- 라운드별 경제
-- 적의 궁극기 충전 상태
-- 자신의 궁극기 충전 상태
-- 안전한 이동 경로
-- 적과의 거리
-- 실제 교전 여부
-- 다음 라운드 구매 상태
-- 최종 라운드 결과
+그러나 다음 라운드가 마지막이거나 상대에게 매치포인트가 있다면 세이브 가치가 달라진다.
 
-궁극기 충전량이 데이터에 없다면 확인 가능한 이벤트를 기준으로 복원 가능성을 검토하되, 불확실성을 반드시 유지한다.
+AI는 현재와 미래의 기대 승리 가치를 비교해야 한다.
 
----
+## 20.4 핵심 사례 — 가치가 낮은 무기
 
-## 11.10 필수 테스트
+Classic만 보유한 1v4 선수는 반드시 세이브해야 하는 것은 아니다.
 
-다음 시나리오를 자동 테스트로 구현한다.
+교전을 통해 얻는 보상, 궁극기, 상대 경제 피해, 현재 라운드 승리 가능성을 함께 평가해야 한다.
 
-**Scenario A — 1v4, Operator 보유**
+## 20.5 세이브의 미래 가치
 
-현재 라운드 승률이 낮고 다음 라운드에도 경기가 계속된다면 세이브 선택지를 생성해야 한다.
+개념적인 평가 구조:
 
-**Scenario B — 1v4, Classic 보유**
+```text
+Save Value
+    =
+  Equipment Preservation
+  + Next Round Buy Advantage
+  + Future Win Probability
+  + Ultimate Point Denial
+  - Current Round Opportunity Cost
+  - Escape Risk
+```
 
-보존할 장비의 가치가 낮다면 경제 보상과 궁극기, 상대 경제 손실을 함께 비교해야 한다.
+가중치는 고정된 임의 숫자로 확정하지 않는다.
 
-**Scenario C — 적 핵심 궁극기 1포인트 부족**
-
-불필요한 킬 헌납을 회피하는 선택지를 평가해야 한다.
-
-**Scenario D — 상대 2명 세이브 중**
-
-승리팀은 추격, 위치 유지, 무기 보호를 비교해야 한다.
-
-**Scenario E — 후반 마지막 라운드**
-
-진영 변경으로 무기 보존 가치가 사라지는 상황에서는 일반적인 세이브 평가를 적용하지 않는다.
-
-**Scenario F — 상대 매치포인트**
-
-라운드를 포기하면 경기가 끝나는 경우 다음 라운드 장비 보존을 높은 가치로 계산해서는 안 된다.
-
-**Scenario G — 세이브 중 고가 무기 발견**
-
-위험을 고려해 무기 회수 선택지를 생성한다.
-
-**Scenario H — 스파이크 폭발 직전**
-
-거리, 안전 경로, 폭발 범위, 생존 보상, 비적대적 사망을 정확하게 계산한다.
-
-**Scenario I — 자신의 궁극기 1포인트 부족**
-
-현재 라운드의 남은 기회와 다음 라운드 전술 가치를 비교한다.
-
-**Scenario J — 세이브 중 적의 무리한 추격**
-
-새롭게 유리해진 교전을 수행할지, 기존 세이브 계획을 유지할지 재평가한다.
-
-모든 시나리오에서 다음을 기록한다.
-
-- 생성된 행동 후보
-- 실행 가능 여부
-- 예상 보상
-- 예상 위험
-- 미래 경제 상태
-- 궁극기 포인트 변화
-- 최종 선택
-- 선택 이유
+실제 경기 데이터와 반복 시뮬레이션을 통해 보정한다.
 
 ---
 
-# PART VIII. 기타 전술 판단
+# 21. 궁극기 경제 시스템
 
-## 12. 공격 전술
+## 21.1 궁극기 관련 자료
 
-구현 대상:
+Riot 공식 패치 1.0:
 
-- Default
-- Fast Execute
-- Slow Execute
-- Split
-- Fake Execute
-- Double Fake
-- Contact
-- Lurk
-- Mid Control
-- Utility Bait
-- Late Rotation
-- Re-Execute
-- Post-Plant
-- Exit Kill
+https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-0/
 
-## 13. 수비 전술
+VALORANT Abilities:
 
-구현 대상:
+https://wiki.playvalorant.com/en-us/Abilities
 
-- Default Hold
-- Site Stack
-- Aggressive Information
-- Anchor
-- Fast Rotation
-- Delayed Rotation
-- Counter Rotation
-- Retake
-- Crossfire
-- Save
-- Hunt
-- Defuse
-- Fake Defuse
+Ultimate Economy Guide:
 
-## 14. 시간 관리
+https://mobalytics.gg/blog/valorant/ultimate-economy-guide/
 
-AI는 단순히 남은 시간만 평가하지 않는다.
+궁극기 포인트 획득 규칙을 실제 패치별로 확인하고 데이터화한다.
 
-행동 완료에 필요한 시간을 추정한다.
+## 21.2 궁극기의 경제적 가치
 
-- 이동 시간
-- 스킬 시전 시간
-- 대기 시간
-- 교전 예상 시간
-- 스파이크 설치 시간
-- 스파이크 해체 시간
-- 로테이션 시간
-- 안전한 철수 시간
+궁극기는 단순히 충전되면 사용하는 스킬이 아니다.
 
-남은 시간이 부족해 실행할 수 없는 계획은 생성하지 않거나 실행 불가능 상태로 기록한다.
+다음 라운드의 전략적 우위를 만드는 자원이다.
+
+따라서 다음 항목을 계산한다.
+
+- 자신의 궁극기 포인트
+- 필요한 포인트
+- 상대의 예상 궁극기 포인트
+- 현재 궁극기 보유 여부
+- 다음 라운드 궁극기 사용 가능성
+- 현재 라운드 궁극기 사용 가치
+- 다음 라운드까지 보존할 가치
+- 궁극기 사용에 적합한 요원 조합
+- 상대 궁극기의 위험도
+
+## 21.3 궁극기 포인트 차단
+
+AI는 불필요하게 상대에게 처치당하면 상대 궁극기 충전에 기여할 수 있다는 점을 고려해야 한다.
+
+예를 들어 상대 핵심 요원이 궁극기 1포인트 부족한 상태에서 현재 라운드 승리가 사실상 어려운 경우가 있다.
+
+이때 생존을 선택하면 무기 보존과 동시에 상대 궁극기 충전을 늦출 수 있다.
+
+그러나 교전으로 현재 라운드를 뒤집을 가능성이 충분하다면 교전을 시도할 수 있다.
+
+궁극기 차단만을 위해 모든 교전을 회피하는 AI를 만들어서는 안 된다.
+
+## 21.4 비적대적 사망
+
+스파이크 폭발, 낙사 등으로 인한 사망은 일반적인 적 처치와 궁극기 포인트 처리 방식이 다를 수 있다.
+
+이러한 경우의 규칙을 패치별로 확인하고 정확하게 처리하라.
+
+게임 규칙에 없는 임의의 자해 행동을 생성하지 마라.
+
+## 21.5 궁극기 관련 행동
+
+```text
+SEEK_ULTIMATE_ORB
+SAVE_ULTIMATE
+USE_ULTIMATE
+DENY_ENEMY_ULT_CHARGE
+TRADE_FOR_ULT_VALUE
+PLAY_AROUND_ENEMY_ULT
+FORCE_ENEMY_ULT_USAGE
+BAIT_ENEMY_ULT
+```
+
+상대의 궁극기를 사용하도록 유도하는 행동 역시 전술적 가치가 있다.
 
 ---
 
-# PART IX. 기술 아키텍처
+# 22. 상대 무기 파괴와 출구 킬
 
-## 15. 권장 기술 스택
+라운드 승리가 확정적으로 유리한 팀도 행동을 멈춰서는 안 된다.
 
-### Desktop
+상대가 무기를 보존하려는 상황이라면 다음 행동을 평가한다.
+
+- 안전하게 승리를 확보한다.
+- 상대를 추격한다.
+- 고가 무기를 제거한다.
+- 출구를 통제한다.
+- 상대가 도주할 경로를 차단한다.
+- 무리한 추격을 포기한다.
+
+## 22.1 추격의 기대 가치
+
+상대 Operator를 제거할 수 있다면 다음 라운드에 큰 영향을 줄 수 있다.
+
+그러나 추격하다가 아군 라이플 2정을 잃는다면 오히려 손해가 될 수 있다.
+
+따라서 추격 역시 확률적 결과를 평가해야 한다.
+
+## 22.2 추격 중 역공격
+
+세이브하는 선수도 무조건 도망가지는 않는다.
+
+적이 예상보다 과감하게 추격하면 유리한 각도를 잡아 역으로 교전할 수 있다.
+
+이때 현재 세이브 계획을 수정할 수 있어야 한다.
+
+---
+
+# 23. 선수 개인 AI
+
+## 23.1 선수 능력치
+
+다음 능력치를 권장한다.
+
+### Mechanical
+
+- Aim
+- Reaction
+- Tracking
+- First Bullet Accuracy
+- Crosshair Placement
+- Movement
+- Weapon Control
+
+### Tactical
+
+- Positioning
+- Angle Clearing
+- Utility Usage
+- Entry Timing
+- Trading
+- Map Awareness
+- Rotations
+
+### Mental
+
+- Decision Making
+- Composure
+- Consistency
+- Risk Evaluation
+- Concentration
+- Adaptability
+
+### Team
+
+- Communication
+- Teamwork
+- Tactical Discipline
+- IGL Compatibility
+- Role Understanding
+
+### Specialization
+
+- Map Familiarity
+- Agent Mastery
+- Weapon Preference
+- Clutch Skill
+- Lurking
+- Entry
+- Anchoring
+
+## 23.2 능력치 반영 방식
+
+에임이 높다고 항상 교전해야 하는 것은 아니다.
+
+판단력이 높은 선수는 불리한 교전을 피할 수 있다.
+
+공격성이 높은 선수는 더 위험한 선택지를 평가할 수 있다.
+
+팀워크가 높은 선수는 아군의 행동 타이밍에 맞춰 움직여야 한다.
+
+선수 능력치가 행동 후보와 결과 확률에 미치는 영향을 분리해서 모델링한다.
+
+---
+
+# 24. 팀 전술 AI
+
+팀 단위 AI는 개인 AI와 분리한다.
+
+전술 판단을 담당하는 계층:
+
+```text
+Coach Strategy
+    ↓
+IGL Tactical Decision
+    ↓
+Squad Coordination
+    ↓
+Individual Player Decisions
+    ↓
+Physical Execution
+```
+
+## 24.1 IGL 판단
+
+IGL은 다음을 수행한다.
+
+- 사이트 선택
+- 로테이션
+- 페이크
+- 시간 관리
+- 상대 정보 해석
+- 작전 변경
+- 세이브 콜
+- 리테이크 콜
+- 유틸리티 사용 조정
+
+## 24.2 팀워크
+
+선수들이 같은 판단을 내린다고 해서 같은 시각에 완벽하게 행동하는 것은 아니다.
+
+전술 이해도와 팀워크에 따라 실행 시간과 정확도가 달라질 수 있다.
+
+예를 들어 듀얼리스트가 진입했는데 척후대의 플래시 타이밍이 늦어지는 상황을 표현할 수 있어야 한다.
+
+---
+
+# 25. 행동의 미래 예측
+
+## 25.1 반사실적 시뮬레이션
+
+실제 경기에는 선택한 행동의 결과만 존재한다.
+
+선택하지 않은 행동의 결과는 관측할 수 없다.
+
+따라서 이를 학습하기 위해서는 자체 시뮬레이션이 필요하다.
+
+예시:
+
+```text
+Current: 4v4 / 42s
+
+├── A Execute
+│   ├── Success
+│   ├── Failed Entry
+│   └── Retake
+│
+├── B Rotation
+│   ├── Site Empty
+│   ├── Defender Rotated
+│   └── Time Expired
+│
+├── Fake A → B
+│   ├── Defender Fooled
+│   ├── Defender Holds
+│   └── Enemy Push
+│
+└── Save
+    ├── Survive
+    ├── Hunted
+    └── Recover Weapon
+```
+
+각 미래 분기는 확률적으로 평가한다.
+
+상대도 자신의 정보와 목표에 따라 행동해야 한다.
+
+## 25.2 연산량 제한
+
+가능한 모든 미래를 탐색하지 않는다.
+
+권장 방식:
+
+- 평상시 Utility AI
+- 전술적 사건 발생 시 재평가
+- 중요 선택지에 제한적 전방 탐색
+- 탐색 깊이 제한
+- 후보 수 제한
+- 시뮬레이션 시간 예산 관리
+
+---
+
+# 26. 머신러닝 고도화
+
+## 26.1 행동 모방 학습
+
+입력:
+
+- 맵
+- 위치
+- 시간
+- 경제
+- 스킬
+- 관측 적
+- 팀 배치
+- 최근 라운드 이력
+
+출력:
+
+- 실제 프로 선수가 선택한 행동 종류
+
+## 26.2 교전 모델
+
+입력:
+
+- 무기
+- 거리
+- 엄폐
+- 시야
+- 체력
+- 스킬 효과
+- 선수 능력치
+
+출력:
+
+- 교전 승리 확률
+- 예상 피해
+- 예상 생존
+
+## 26.3 라운드 가치 모델
+
+입력:
+
+- 현재 경기 상태
+- 경제
+- 시간
+- 인원
+- 스파이크
+- 궁극기
+
+출력:
+
+- 라운드 승리 확률
+- 기대 경제 변화
+
+## 26.4 모델 평가
+
+다음 지표를 사용한다.
+
+- Accuracy
+- Precision / Recall
+- Log Loss
+- Brier Score
+- Calibration
+- Inference Latency
+- Memory Usage
+
+학습 데이터와 검증 데이터는 경기 단위로 분리한다.
+
+같은 경기의 시간적으로 가까운 샘플이 학습과 검증에 동시에 포함되어서는 안 된다.
+
+미래 라운드 정보가 과거 의사결정 예측에 들어가지 않도록 한다.
+
+---
+
+# 27. 기술 스택 및 런타임
+
+## 27.1 Desktop
 
 - Electron
 - electron-vite
 
-### UI
+## 27.2 Frontend
 
 - React
 - TypeScript
@@ -1125,25 +2249,24 @@ AI는 단순히 남은 시간만 평가하지 않는다.
 - Zustand
 - PixiJS
 
-### Core Engine
+## 27.3 Simulation
 
 - TypeScript 프로토타입
-- Rust 성능 최적화
+- Rust 코어
 - Rayon 병렬 처리
-- Deterministic Simulation
 - Seeded PRNG
+- Deterministic Simulation
 
-### Game AI
+## 27.4 Game AI
 
 - Utility AI
+- HFSM
+- Behavior Tree
 - HTN
 - GOAP
-- Behavior Tree
-- Belief State
 - 제한적 미래 탐색
-- Monte Carlo Simulation
 
-### Data Engineering
+## 27.5 Data
 
 - Python
 - Polars
@@ -1153,40 +2276,356 @@ AI는 단순히 남은 시간만 평가하지 않는다.
 - NumPy
 - Shapely
 
-### Machine Learning
+## 27.6 Machine Learning
 
 - LightGBM
 - XGBoost
 - PyTorch
 - ONNX Runtime CPU
 
-대형 언어 모델은 실시간 경기 판단의 필수 요소로 사용하지 않는다.
+기술을 도입할 때마다 실제 필요성을 검증한다.
 
-모델의 성능 향상 근거가 확인된 경우에만 도입한다.
+고성능 GPU를 요구하는 대형 모델은 필수 요소가 아니다.
 
 ---
 
-## 16. 엔진 모듈 설계
+# 28. 시뮬레이션 엔진 구조
 
 ```text
-ProjectV/
+SimulationEngine
+│
+├── WorldState
+│
+├── RoundRules
+│
+├── EconomyEngine
+│   ├── BuyDecision
+│   ├── SaveDecision
+│   ├── EquipmentPreservation
+│   └── UltimateEconomy
+│
+├── SpatialEngine
+│   ├── Navigation
+│   ├── Collision
+│   ├── Visibility
+│   └── Sound
+│
+├── PerceptionEngine
+│   ├── Vision
+│   ├── Hearing
+│   ├── TeamCommunication
+│   └── BeliefUpdate
+│
+├── TacticalEngine
+│   ├── GoalGeneration
+│   ├── ActionGenerator
+│   ├── ConstraintValidation
+│   ├── OutcomePrediction
+│   └── DecisionPolicy
+│
+├── PlayerEngine
+│   ├── Movement
+│   ├── Combat
+│   ├── Abilities
+│   └── IndividualDecision
+│
+├── EventSystem
+│
+└── ReplayRecorder
+```
+
+## 28.1 게임 루프
+
+```ts
+function simulateTick(
+  state: WorldState,
+  dt: number
+) {
+  updateEnvironment(state);
+
+  updateObservations(state);
+
+  updateBeliefs(state);
+
+  updateTeamDecisions(state);
+
+  updateIndividualDecisions(state);
+
+  resolveMovement(state, dt);
+
+  resolveAbilities(state, dt);
+
+  resolveCombat(state, dt);
+
+  resolveSpike(state, dt);
+
+  updateEconomyEvents(state);
+
+  checkRoundEnd(state);
+
+  recordEvents(state);
+}
+```
+
+이는 개념적 처리 흐름이다.
+
+실제 구현에서는 의존 관계와 시뮬레이션 시간축을 고려해 이벤트 처리 순서를 결정해야 한다.
+
+---
+
+# 29. Decision Debugger
+
+모든 AI 판단을 추적할 수 있도록 한다.
+
+필수 기록:
+
+- 당시 실제 상태
+- AI 관측 상태
+- 생성된 후보
+- 제외된 후보
+- 제외 이유
+- 각 후보의 예상 결과
+- 미래 가치
+- 선택된 행동
+- 선택 이유
+- 실제 결과
+
+예시:
+
+```text
+Round 18
+Time Remaining: 28s
+
+Situation:
+  1v3
+  Operator Equipped
+  Spike Planted
+  Ultimate: 6/7
+
+Candidate Actions:
+  Retake
+  Save Operator
+  Exit Kill
+  Recover Weapon
+  Hold Position
+
+Evaluation:
+  Retake:
+    Low win probability
+    High weapon loss risk
+
+  Save:
+    High preservation value
+    Better next round economy
+
+  Exit Kill:
+    Possible enemy weapon damage
+    Significant death risk
+
+Selected:
+  Save Operator
+```
+
+위 텍스트는 예시다.
+
+실제 엔진은 계산 근거와 확률을 기록해야 한다.
+
+---
+
+# 30. 자동 테스트
+
+다음 시나리오를 반드시 구현한다.
+
+### A. 기본 라운드
+
+5v5 라운드가 정상적으로 시작하고 종료된다.
+
+### B. 정보 비대칭
+
+시야 밖의 상대 위치를 AI가 알 수 없다.
+
+### C. 페이크
+
+가짜 사이트 압박으로 수비팀의 믿음이 변한다.
+
+### D. 역페이크
+
+수비팀이 페이크 가능성을 고려한다.
+
+### E. 시간 부족
+
+남은 시간에 실행 불가능한 로테이션은 제외된다.
+
+### F. 스파이크 설치
+
+실제 설치 가능 구역에서만 설치한다.
+
+### G. 설치 위치
+
+설치 위치에 따라 포스트플랜트 판단이 달라진다.
+
+### H. 리테이크
+
+수비팀이 재탈환과 세이브를 비교한다.
+
+### I. Operator Save
+
+고가 무기 보존의 미래 가치를 평가한다.
+
+### J. 궁극기 차단
+
+불필요한 사망으로 상대 궁극기를 충전시키는 위험을 반영한다.
+
+### K. 출구 킬
+
+승리팀이 상대 세이브를 추격할지 평가한다.
+
+### L. 추격 역공격
+
+세이브하던 선수가 유리한 교전 상황에 반응한다.
+
+### M. 후반 마지막 라운드
+
+진영 변경 전 무기 보존의 가치가 적절히 처리된다.
+
+### N. 매치포인트
+
+미래 라운드가 존재하지 않는 상황에서 세이브 평가가 달라진다.
+
+### O. 동일 시드
+
+동일한 입력과 난수 시드에서 결과가 재현된다.
+
+### P. 고속 시뮬레이션
+
+1배속과 즉시 결과 계산이 같은 판정을 생성한다.
+
+---
+
+# 31. 실제 경기 통계와 검증
+
+다음 지표를 비교한다.
+
+- 공격팀 승률
+- 수비팀 승률
+- 맵별 승률
+- 라운드 길이
+- 첫 킬 승률
+- 교전 승률
+- 스파이크 설치율
+- 리테이크 성공률
+- 클러치 빈도
+- 트레이드킬 비율
+- 경제 우위 승률
+- 세이브 빈도
+- 무기 보존율
+- 출구 킬 빈도
+- 궁극기 사용 시점
+- 궁극기 포인트 변화
+- 로테이션 빈도
+- 러킹 빈도
+- 페이크 성공 가능성
+
+실제 통계가 없는 항목은 기준값을 만들어낸 뒤 실제 평균이라고 주장하지 마라.
+
+검증 가능하지 않은 가설은 실험 대상으로 분리한다.
+
+---
+
+# 32. 실제 구현 순서
+
+## Phase 0 — 환경 및 기존 저장소 분석
+
+현재 프로젝트 파일을 확인한다.
+
+기존 코드가 있다면 먼저 분석한다.
+
+아무것도 없는 경우에만 신규 프로젝트를 생성한다.
+
+## Phase 1 — Data Source Registry
+
+모든 URL과 접근 상태를 수집한다.
+
+산출물:
+
+```text
+docs/SOURCES.md
+docs/DATA_AVAILABILITY.md
+docs/LICENSE_AUDIT.md
+docs/RESEARCH_FINDINGS.md
+```
+
+## Phase 2 — 데이터 수집기
+
+확인된 데이터 소스에 대한 수집기와 어댑터를 구현한다.
+
+## Phase 3 — 데이터 정규화
+
+경기, 선수, 라운드, 위치, 이벤트를 공통 스키마로 통합한다.
+
+## Phase 4 — 맵 분석
+
+Ascent의 공간 데이터와 좌표 변환을 검증한다.
+
+## Phase 5 — 경기 상태 복원
+
+실제 경기의 특정 시점을 World State로 복원한다.
+
+## Phase 6 — Belief State
+
+선수와 팀의 관측 상태를 계산한다.
+
+## Phase 7 — Action Generator
+
+현재 상황에서 실행 가능한 행동 후보를 생성한다.
+
+## Phase 8 — Outcome Predictor
+
+행동 후보의 예상 결과를 평가한다.
+
+## Phase 9 — Economy & Ultimate Engine
+
+구매, 세이브, 궁극기 충전, 상대 궁극기 차단을 구현한다.
+
+## Phase 10 — 5v5 Simulation
+
+AI 선수 10명이 한 라운드를 완주한다.
+
+## Phase 11 — Replay Viewer
+
+PixiJS로 실제 위치와 사건을 보여준다.
+
+## Phase 12 — Validation
+
+실제 경기 자료와 시뮬레이션 결과를 비교한다.
+
+---
+
+# 33. 최종 산출물
+
+작업 결과에는 최소한 다음이 포함되어야 한다.
+
+```text
+project-v/
 ├── apps/
 │   └── desktop/
 │
 ├── packages/
 │   ├── simulation-core/
+│   ├── world-state/
+│   ├── perception/
+│   ├── tactical-ai/
 │   ├── action-generator/
-│   ├── decision-engine/
+│   ├── outcome-predictor/
 │   ├── combat-engine/
 │   ├── economy-engine/
 │   ├── ultimate-economy/
 │   ├── spatial-engine/
 │   ├── replay-engine/
-│   ├── game-data/
-│   └── shared-types/
+│   └── shared/
 │
 ├── tools/
-│   ├── data-collector/
+│   ├── collectors/
 │   ├── replay-parser/
 │   ├── vod-analyzer/
 │   ├── map-processor/
@@ -1195,273 +2634,207 @@ ProjectV/
 ├── datasets/
 │   ├── raw/
 │   ├── normalized/
-│   ├── features/
-│   ├── labels/
+│   ├── derived/
 │   └── training/
 │
 ├── models/
 │
 ├── tests/
-│   ├── simulation/
-│   ├── decision/
-│   ├── economy/
-│   └── data-validation/
 │
 └── docs/
+    ├── SOURCES.md
+    ├── DATA_AVAILABILITY.md
+    ├── LICENSE_AUDIT.md
+    ├── DATA_SCHEMA.md
+    ├── GAME_RULES.md
+    ├── TACTICAL_MODEL.md
+    ├── SIMULATION_ENGINE.md
+    ├── DECISION_MODEL.md
+    ├── VALIDATION_REPORT.md
+    └── DEVELOPMENT_LOG.md
 ```
 
-위 구조는 권장안이다.
+---
 
-기존 저장소가 존재하면 먼저 분석하고, 실제 구현에 필요한 구조만 적용한다.
+# 34. 반드시 피해야 할 구현
+
+다음과 같은 단순화는 핵심 시스템에 사용하지 않는다.
+
+### 잘못된 예시 1
+
+```ts
+if (player.aim > enemy.aim) {
+  winFight();
+}
+```
+
+선수 능력치 외의 교전 조건이 무시된다.
+
+### 잘못된 예시 2
+
+```ts
+if (roundWinProbability < 0.2) {
+  saveWeapon();
+}
+```
+
+무기 보존 가치, 미래 경제, 궁극기, 매치 상황이 무시된다.
+
+### 잘못된 예시 3
+
+```ts
+if (enemySeenAtA) {
+  rotateToA();
+}
+```
+
+페이크와 정보 신뢰도가 무시된다.
+
+### 잘못된 예시 4
+
+```ts
+if (spikePlanted) {
+  moveToNearestCover();
+}
+```
+
+설치 위치와 포스트플랜트 전술이 무시된다.
+
+### 잘못된 예시 5
+
+```ts
+if (timeRemaining < 30) {
+  rush();
+}
+```
+
+현재 위치, 경로, 상대 배치, 스킬, 설치 가능 시간이 무시된다.
+
+위 예시들은 단순 단위 테스트용 모형에서는 사용 가능하지만, 완성된 전술 판단 엔진의 핵심 규칙으로 사용해서는 안 된다.
 
 ---
 
-# PART X. 엔진 검증
+# 35. 작업 보고 규칙
 
-## 17. 데이터와 시뮬레이션 검증
-
-다음 지표를 확인한다.
-
-### 경기 결과
-
-- 맵별 공격·수비 승률
-- 라운드 시간 분포
-- 피스톨 라운드 승률
-- 경제 우위에 따른 승률
-- 첫 킬 이후 승률
-- 사이트 진입 성공률
-- 설치·해체 성공률
-
-### 선수 행동
-
-- 이동 경로
-- 교전 거리
-- 교전 빈도
-- 트레이드킬
-- 러킹
-- 로테이션
-- 스킬 사용
-- 엄폐
-- 교전 회피
-
-### 경제 판단
-
-- 세이브 빈도
-- 세이브 당시 보유 무기
-- 출구 킬
-- 보존 장비 가치
-- 다음 라운드 구매 가능성
-- 궁극기 충전량 변화
-- 궁극기 포인트 차단
-- 세이브 이후 라운드 승률
-
-실제 프로 경기 데이터의 분포와 시뮬레이션 결과를 비교한다.
-
-임의의 성공률을 실제 게임 통계인 것처럼 사용하지 않는다.
-
-모델의 정확도뿐 아니라 확률 보정과 경기 전반의 통계적 일관성을 검증한다.
-
----
-
-## 18. Decision Debugger
-
-AI가 선택한 행동에 대해 항상 판단 기록을 남긴다.
-
-예시:
+각 단계가 끝나면 다음을 보고하라.
 
 ```text
-MATCH 001
-ROUND 18
-TIME 00:24
+1. 이번 단계의 목표
 
-STATE
-  Alive: 1v3
-  Weapon: Operator
-  Credits: 1100
-  Spike: Planted
-  Remaining: 24s
+2. 실제 확인한 자료
+   - URL
+   - 파일
+   - API
+   - 검증 수준
 
-BELIEF
-  Two enemies near site
-  One enemy unknown
+3. 실제 구현한 코드
 
-CANDIDATES
-  Retake
-  Save Operator
-  Exit Kill
-  Recover Rifle
-  Hold Position
+4. 테스트 방법
 
-EVALUATION
-  Retake:
-    Low probability of round win
+5. 테스트 결과
 
-  Save Operator:
-    High equipment preservation value
-    Low enemy ultimate gain risk
+6. 발견한 문제
 
-  Exit Kill:
-    Moderate enemy equipment damage
-    High death risk
+7. 확인되지 않은 사항
 
-SELECTED
-  Save Operator
+8. 라이선스 및 접근 제약
 
-REASON
-  Current round win probability is low
-  Preserving weapon improves next buy
-  Avoiding contact limits enemy ult charge
+9. 다음 작업 우선순위
 ```
 
-위 수치는 예시일 뿐이며, 실제 엔진에서는 계산된 값과 근거를 기록한다.
+실행하지 않은 테스트를 통과했다고 보고하지 마라.
 
-로그에는 최종 행동뿐 아니라 제외된 선택지와 제외 이유도 포함한다.
+실제 다운로드하지 않은 데이터 파일을 확보했다고 보고하지 마라.
 
----
+README의 성능 수치를 직접 재현했다고 주장하지 마라.
 
-# PART XI. 실제 작업 순서
-
-## Phase 1 — 데이터 소스 검증
-
-모든 참고 URL을 확인한다.
-
-산출물:
-
-- `docs/SOURCES.md`
-- `docs/DATA_AVAILABILITY.md`
-- `docs/LICENSE_AUDIT.md`
-
-각 자료별 접근 가능 여부를 명시한다.
-
-## Phase 2 — 데이터 수집기
-
-실제로 접근할 수 있는 자료를 대상으로 수집기 및 파서를 구현한다.
-
-산출물:
-
-- 데이터 어댑터
-- 원본 파일
-- 수집 로그
-- 재수집 방법
-- 오류 처리
-
-## Phase 3 — 데이터 통합
-
-경기, 팀, 선수, 라운드, 이벤트, 위치를 정규화한다.
-
-산출물:
-
-- DuckDB 또는 SQLite DB
-- Parquet 데이터셋
-- 스키마 문서
-- 결측치 보고서
-
-## Phase 4 — 맵 공간 데이터
-
-Ascent를 기준으로 충돌·이동·시야·설치 구역을 구축한다.
-
-산출물:
-
-- 공간 데이터
-- NavMesh
-- 충돌 테스트
-- 좌표 변환 검증
-
-## Phase 5 — 행동 후보 생성
-
-실제 경기 상태를 입력해 실행 가능한 선택지를 생성한다.
-
-산출물:
-
-- Action Schema
-- Action Generator
-- Constraint Validator
-- Decision Context
-
-## Phase 6 — 전술 판단 엔진
-
-정보전, 페이크, 로테이션, 교전 회피, 세이브, 궁극기 경제를 연결한다.
-
-산출물:
-
-- Belief State
-- Tactical Decision Engine
-- Save Decision Engine
-- Ultimate Economy Engine
-- Outcome Predictor
-
-## Phase 7 — 실제 5v5 라운드
-
-AI 선수 10명이 독립적으로 행동하는 라운드를 완성한다.
-
-산출물:
-
-- 라운드 시뮬레이터
-- 이벤트 타임라인
-- 경기 기록
-- 2D 관전 화면
-
-## Phase 8 — 반복 검증
-
-동일 시드 재현성, 실제 경기 통계와의 비교, 대규모 경기 성능을 검증한다.
-
-산출물:
-
-- 자동 테스트
-- Monte Carlo 결과
-- 벤치마크
-- 판단 로그
-- 검증 보고서
+데이터에 없는 필드를 임의 생성했다면 추정값임을 명시한다.
 
 ---
 
-# PART XII. 최종 완료 기준
+# 36. 최종 프로젝트 완료 조건
 
-다음 조건을 만족해야 한다.
+다음 사항을 만족하는 것이 목표다.
 
-1. 실제 경기 데이터를 수집하고 가공할 수 있다.
-2. 자료의 원본 URL과 이용 권한을 추적할 수 있다.
-3. 경기 상태를 시간순으로 복원할 수 있다.
-4. 실제 상태와 선수의 인지 상태를 분리한다.
-5. 상황에 맞는 전술 선택지를 생성한다.
-6. 실행할 수 없는 선택지를 제거한다.
-7. 선택지의 미래 결과를 평가한다.
-8. 선수별 능력치와 성향이 행동에 반영된다.
-9. 페이크와 로테이션이 실제 정보전으로 작동한다.
-10. 스파이크 설치 위치가 포스트플랜트에 영향을 준다.
-11. 무기 세이브가 다음 라운드 경제에 반영된다.
-12. 불필요한 사망을 피하는 궁극기 포인트 차단 판단이 가능하다.
-13. 상대의 세이브를 추격하는 행동도 생성된다.
-14. 진영 변경·마지막 라운드·매치포인트에서 판단이 달라진다.
-15. 경기 결과는 선수들의 실제 행동에서 발생한다.
-16. 경기 로그를 이용해 의사결정 이유를 추적할 수 있다.
-17. GPU 기반 대형 모델 없이도 경기가 진행된다.
-18. 실제 경기 데이터와 생성된 경기의 통계를 비교할 수 있다.
-19. 동일 조건과 난수 시드에서 경기 결과를 재현할 수 있다.
-20. 기본 엔진만으로 완전한 5v5 라운드를 수행할 수 있다.
+1. 실제 VALORANT 경기 데이터를 수집할 수 있다.
+2. 경기 데이터를 공통 스키마로 변환할 수 있다.
+3. 선수별 위치와 이벤트를 시간순으로 복원할 수 있다.
+4. 실제 상태와 관측 상태를 분리할 수 있다.
+5. 시야 밖의 적 위치를 AI가 알 수 없다.
+6. 현재 상황에 맞는 선택지를 생성한다.
+7. 물리적으로 불가능한 선택지를 제외한다.
+8. 행동별 미래 결과를 평가한다.
+9. 상대 역시 독립적으로 판단한다.
+10. 페이크가 실제 정보전에 영향을 준다.
+11. 로테이션이 공간과 시간에 따라 발생한다.
+12. 선수 능력치가 행동 선택과 결과에 반영된다.
+13. 스파이크 설치 위치가 경기 결과에 영향을 준다.
+14. 세이브와 무기 보존 판단이 가능하다.
+15. 궁극기 포인트 차단을 고려한다.
+16. 상대의 세이브를 추격할 수 있다.
+17. 경제적 스노우볼이 다음 라운드에 연결된다.
+18. 5v5 라운드가 정상적으로 종료된다.
+19. 경기 로그로 판단 과정을 추적할 수 있다.
+20. 실제 경기 통계와 시뮬레이션을 비교할 수 있다.
+21. 동일한 초기 상태와 난수 시드로 결과를 재현할 수 있다.
+22. 고성능 GPU 없이도 게임 AI가 작동한다.
+23. 기존 Electron UI와 시뮬레이션 엔진을 독립적으로 실행할 수 있다.
+24. 자료별 출처와 사용 권한을 추적할 수 있다.
 
 ---
 
-# 최종 개발 지시
+# 37. 최종 실행 지시
 
-우선 거대한 UI와 구단 경영 시스템부터 구현하지 마라.
+이 프롬프트를 단순한 조사 요청으로 취급하지 마라.
 
-첫 번째 목표는 **Ascent에서 실제 경기 상태를 하나 입력하면, 현재 실행 가능한 전술 선택지를 자동 생성하고 각 선택지의 예상 결과와 미래 경제적 가치를 계산하는 엔진**이다.
+**실제 개발에 사용할 수 있는 자료를 검증하고, 데이터 수집 파이프라인을 작성하며, 상황 기반 행동 후보 생성 엔진을 구현하기 위한 기술 작업 명세로 취급하라.**
 
-첫 번째 개발 단계에서 특히 다음 세 가지를 우선한다.
+가장 먼저 수행할 일은 다음과 같다.
 
-1. 실제 경기 상태와 부분 관측 정보 복원
-2. 상황 기반 동적 행동 후보 생성
-3. 행동 결과의 현재·미래 가치 평가
+### 작업 1
 
-세이브, 궁극기 포인트 차단, 상대 무기 파괴, 경제적 스노우볼 등은 부가적인 판단이 아니라 핵심 의사결정 요소로 취급한다.
+제공된 URL을 모두 조사하고 데이터 소스 레지스트리를 작성한다.
 
-궁극적으로 선수들이 단순히 움직이는 것이 아니라, **현재 라운드를 이길 것인지, 정보를 더 얻을 것인지, 교전을 회피할 것인지, 무기를 보존할 것인지, 상대에게 궁극기를 주지 않을 것인지, 다음 라운드를 위해 현재 라운드에서 어떤 손실을 감수할 것인지** 판단할 수 있어야 한다.
+### 작업 2
 
-작업하면서 실제로 검증한 사실, 추정한 내용, 구현한 기능, 미완료 항목을 명확하게 구분하라.
+VCT Reference, vctstats, C9 Gameplan, vrfkit, ValoReview를 우선 분석한다.
 
-확인되지 않은 성능이나 데이터 접근 가능성을 성공했다고 보고하지 않는다.
+### 작업 3
 
-사용 가능한 자료를 최대한 활용하되, 접근 권한이나 라이선스 문제가 있는 자료에 의존하지 않고 동작할 수 있는 대체 경로를 설계하라.
+실제로 접근 가능한 경기 데이터 하나를 선택한다.
 
-**최종 목표는 단순한 발로란트 매치 시뮬레이터가 아니라, 발로란트의 전술적 판단과 그 인과관계를 계산하는 독립적인 시뮬레이션 엔진이다.**
+### 작업 4
+
+해당 경기에서 하나의 라운드와 하나의 의사결정 시점을 추출한다.
+
+### 작업 5
+
+그 시점의 실제 상태와 관측 상태를 분리해 표현한다.
+
+### 작업 6
+
+현재 실행 가능한 전술 선택지를 생성한다.
+
+### 작업 7
+
+각 선택지의 유효성과 예상 결과를 분석한다.
+
+### 작업 8
+
+선택 이유와 제외 이유를 Decision Debugger로 출력한다.
+
+### 작업 9
+
+경제, 무기 보존, 궁극기 포인트를 고려한 판단을 추가한다.
+
+### 작업 10
+
+이 과정을 확장하여 하나의 5v5 라운드를 실제로 시뮬레이션한다.
+
+사용 가능한 자료가 부족하더라도 검증 가능한 합성 데이터를 이용해 독립적인 프로토타입을 구축할 수 있어야 한다.
+
+합성 데이터는 실제 VCT 기록과 명확하게 구분한다.
+
+**최종적으로 우리가 원하는 것은 '경기 결과를 예측하는 AI'가 아니라, 실제 발로란트의 시간·공간·정보·경제·심리전 안에서 선수들이 스스로 선택하고 행동하며 새로운 경기를 만들어내는 시뮬레이션 엔진이다.**
+
+구단 매니지먼트 기능은 이 엔진이 안정적으로 동작한 이후 연결한다.
