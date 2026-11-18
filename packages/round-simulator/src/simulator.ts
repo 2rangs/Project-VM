@@ -17,6 +17,7 @@ import {
   toPerceptionAbilityStates,
   visionBlockerIsSmoke,
   deniedZoneIds,
+  activeAreaDenials,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
@@ -48,6 +49,12 @@ export interface RoundSimulatorDeps {
 const RUN_UNITS_PER_SEC = 675;
 const WALK_UNITS_PER_SEC = 340;
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
+// Passable-hazard (molly / area-denial) pathfinding cost: how long you'd detour to avoid 1 HP of
+// damage, and how long a crosser is assumed exposed in a hazard zone. A fresh molly thus adds a
+// multi-second detour cost that shrinks to ~0 as it expires, so the planner routes around a fresh
+// molly but walks a dying one.
+const HAZARD_MS_PER_HP = 50;
+const HAZARD_EXPOSURE_MS = 700;
 
 /** Command-trace sink; a no-op unless config.traceCommands is on (see runRound). */
 type Tracer = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string) => void;
@@ -172,12 +179,14 @@ export class RoundSimulator {
         }
       }
 
-      // 2. movement (paths route around active molly / area-denial zones)
-      const denied = deniedZoneIds(abilityEngine);
+      // 2. movement. Molly / area-denial is a PASSABLE hazard: it adds pathfinding cost (the
+      // planner detours when cheaper, else crosses and takes the damage below), not a hard block.
+      const denied = deniedZoneIds(abilityEngine); // zones that deal per-tick damage (step 5b)
+      const hazardCosts = this.hazardCostMap(abilityEngine, state.elapsedMs);
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
-        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", denied);
+        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", hazardCosts);
         this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined);
         // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
         // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
@@ -334,18 +343,30 @@ export class RoundSimulator {
 
   // ---- helpers ----
 
-  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", blockedZones: readonly string[] = []): void {
+  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", hazardCosts?: ReadonlyMap<string, number>): void {
     p.moveMode = mode;
-    // keep the cached path unless the goal changed or it now runs through a denied zone
-    const sameGoal = p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length;
-    const crossesDenied = blockedZones.length > 0 && p.path.slice(p.pathIndex).some((z) => blockedZones.includes(z));
-    if (sameGoal && !crossesDenied) return;
-    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { blockedZones });
+    // Keep the cached path while the goal is unchanged; the path is planned with the hazard costs
+    // active when it was computed (a hazard appearing mid-route is not re-routed — the crosser
+    // takes the damage, which is the intended passable-hazard behaviour).
+    if (p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length) return;
+    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { hazardCosts });
     if (r) {
       p.path = r.path;
       p.pathIndex = p.path[0] === p.zoneId ? 1 : 0;
       p.edgeProgressMs = 0;
     }
+  }
+
+  /** Passable-hazard pathfinding costs from active molly/area-denial (shrink as they expire). */
+  private hazardCostMap(abilityEngine: AbilityEngine, nowMs: number): ReadonlyMap<string, number> {
+    const m = new Map<string, number>();
+    for (const h of activeAreaDenials(abilityEngine, nowMs)) {
+      const exposureMs = Math.min(h.remainingMs, HAZARD_EXPOSURE_MS);
+      const ticks = Math.ceil(exposureMs / this.cfg.tickMs);
+      const cost = ticks * this.cfg.mollyDamagePerTick * HAZARD_MS_PER_HP;
+      m.set(h.zoneId, Math.max(m.get(h.zoneId) ?? 0, cost)); // overlapping mollies: one hazard, max cost
+    }
+    return m;
   }
 
   /**

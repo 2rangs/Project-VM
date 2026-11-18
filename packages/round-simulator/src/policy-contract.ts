@@ -176,6 +176,12 @@ export interface PolicyTeammate {
   readonly ultimateCost: number;
 }
 
+/** An observed passable hazard (molly / area-denial): its zone and remaining lifetime (ms). */
+export interface HazardInfo {
+  readonly zoneId: ZoneId;
+  readonly remainingMs: number;
+}
+
 export interface PolicyView {
   readonly contextId: string;
   readonly scenarioRef: string | null;
@@ -197,6 +203,12 @@ export interface PolicyView {
   readonly economy: TeamEconomyState;
   readonly knownEnemyAliveCount: number | null;
   readonly matchScore: readonly [number, number] | null;
+  /**
+   * Passable hazards (molly / area-denial) the team can currently OBSERVE (in a teammate's zone
+   * or LoS) — zone + remaining lifetime. A path may cross one (taking damage) or wait it out;
+   * this lets the policy choose. Observation-limited (DECISION-004): unseen hazards are absent.
+   */
+  readonly visibleHazards?: readonly HazardInfo[];
 }
 
 export interface DecisionPolicy {

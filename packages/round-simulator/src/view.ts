@@ -1,7 +1,7 @@
 import type { SpatialEngine } from "@pv/spatial-engine";
 import type { AbilityState, ObservationState, ObservedEnemy, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
 import type { PerceptionEngine } from "@pv/perception-engine";
-import { revealedEnemies, type AbilityEngine } from "@pv/ability-engine";
+import { revealedEnemies, activeAreaDenials, type AbilityEngine } from "@pv/ability-engine";
 import { buildBelief } from "@pv/decision-engine";
 import { asAbilityId } from "@pv/shared-types";
 import type {
@@ -222,7 +222,21 @@ export function buildPolicyView(
     economy: economyStub(teamId, side),
     knownEnemyAliveCount: state.players.filter((p) => p.side !== side && p.alive).length,
     matchScore: null,
+    visibleHazards: visibleHazardsFor(side, state, spatial, opts.abilityEngine),
   };
+}
+
+/**
+ * Observable passable hazards (molly / area-denial): active hazards whose zone an alive teammate
+ * occupies or can see. Observation-limited (DECISION-004) — unseen hazards are not reported.
+ */
+function visibleHazardsFor(side: Side, state: SimState, spatial: SpatialQuery, abilityEngine?: AbilityEngine) {
+  if (!abilityEngine) return [];
+  const mine = state.players.filter((p) => p.side === side && p.alive);
+  const seen = (zoneId: string): boolean => mine.some((p) => p.zoneId === zoneId || spatial.visibleZonesFrom(p.zoneId).includes(zoneId));
+  return activeAreaDenials(abilityEngine, state.elapsedMs)
+    .filter((h) => seen(h.zoneId))
+    .map((h) => ({ zoneId: h.zoneId, remainingMs: h.remainingMs }));
 }
 
 function economyStub(teamId: string, side: Side): TeamEconomyState {
