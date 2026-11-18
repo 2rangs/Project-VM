@@ -412,12 +412,11 @@ export function loadDecisionContext(raw: unknown, options: LoadOptions = {}): Te
     players.find((p) => p.teamId === decidingTeamId)?.id ??
     asPlayerId(`${decidingTeamId}:observer`);
 
-  const { observation, belief } = buildPerception(
-    isObj(ctx["belief"]) ? (ctx["belief"] as Json) : undefined,
-    decidingTeamId,
-    observerId,
-    nowMs,
-  );
+  const beliefRaw = isObj(ctx["belief"]) ? (ctx["belief"] as Json) : undefined;
+  const { observation, belief } = buildPerception(beliefRaw, decidingTeamId, observerId, nowMs);
+  const knownEnemyAliveCount = isNum(beliefRaw?.["knownEnemyAliveCount"])
+    ? (beliefRaw!["knownEnemyAliveCount"] as number)
+    : null;
 
   return {
     contextId: ctx["contextId"] as string,
@@ -427,6 +426,7 @@ export function loadDecisionContext(raw: unknown, options: LoadOptions = {}): Te
     decidingSide,
     observation,
     belief,
+    knownEnemyAliveCount,
     coordinateSpace: "minimapUnits",
     provenance: provenanceOf(ctx["provenance"] as Json),
   };

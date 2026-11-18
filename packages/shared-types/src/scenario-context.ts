@@ -49,6 +49,9 @@ export interface TeamDecisionContext {
   readonly observation: ObservationState;
   readonly belief: BeliefState;
 
+  /** Enemies the team believes are alive (kill-feed certainty), if known. */
+  readonly knownEnemyAliveCount: number | null;
+
   readonly coordinateSpace: CoordinateSpace;
   readonly provenance: ScenarioProvenance;
 }
