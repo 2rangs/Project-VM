@@ -42,6 +42,13 @@ export interface ActionCommand {
   readonly executeAtMs?: number;
   /** The CandidateAction id this command was chosen from (trace link). */
   readonly sourceActionId?: string;
+  /**
+   * The zone a holding/stationary player watches (a choke/entry). The round-simulator sets the
+   * player's facing from it while not moving, which drives perception FOV and combat pre-aim.
+   * When absent on a hold/peek the simulator falls back to `targetZone`, then to the enemy
+   * entry choke. Optional; a policy that omits it keeps the default-choke behaviour.
+   */
+  readonly aimZone?: ZoneId;
 }
 
 /**

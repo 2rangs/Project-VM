@@ -126,6 +126,24 @@ attackerFlashedMs, defenderFlashedMs, winnerSide }`. Take the earliest entry per
 opening duel; tally `firstSight`, `*Moving`, `*PreAim` and `winnerSide` to explain a policy's
 opening-duel win rate (a defender caught `moving` shoots far worse than one holding still).
 
+## Hold facing (`aimZone`) and opening-duel calibration
+
+A stationary player now aims at the zone it is watching, and that facing drives perception's FOV
+cone and combat pre-aim — a holder sees the entry it watches instead of staring at a stale
+direction. `ActionCommand.aimZone` (added, optional, also in `@pv/shared-types`) sets it
+explicitly; on a `hold`/`peek` without it the simulator falls back to `targetZone`; with neither
+it defaults to the **enemy entry choke** (the neighbour on the shortest path from the enemy's
+starting zone). **Policies should set `aimZone` to the real expected threat** — the default
+choke only matches a head-on push, so a defender covering a flank/mid should name that zone.
+
+Because holders now get mutual sight at first contact (not attacker-surprise), the opening-duel
+calibration was re-derived: `SimConfig.peekerAdvantageMs` (default 210) models the entry
+attacker's initiative (a holder reacts late to a moving peeker even on mutual sight), and
+`ASCENT_OPENING_DUEL_CALIBRATION.hitChanceScale` is now 0.50. Together they put the ScriptedPolicy
+attacker opening-duel win at ~0.45 (real 0.437, CI [0.420, 0.454]). The SAME calibration applies
+to every policy — pass `combatCalibration: ASCENT_OPENING_DUEL_CALIBRATION`; `peekerAdvantageMs`
+is a default, overridable per run.
+
 ## Minimal example
 
 ```ts
