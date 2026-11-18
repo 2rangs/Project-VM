@@ -61,6 +61,76 @@ works for any of them by file ID.
 
 ---
 
-## 3. Blender headless processing
+## 3. Blender headless processing ✅
 
-_(filled in below as the work proceeds)_
+**Tool:** Blender **4.2.23 LTS** (official tarball, `/opt/blender-4.2`), run
+`--background --factory-startup`. apt has no `blender` package in this image; the
+`.blend` is Blender 4.2 so the matching 4.2 LTS runtime was used.
+
+Reproduce:
+```bash
+/opt/blender-4.2/blender --background --factory-startup \
+  --python tools/map-mesh/blender/inspect-scene.py -- \
+  --blend "datasets/spatial/ascent/mesh/raw/Ascent (blender 4.2).blend" \
+  --out /tmp/ascent-scene.json
+```
+
+### 3.1 Scene structure (measured)
+
+| Property | Value |
+|---|---|
+| Blender version | 4.2.23 LTS |
+| Unit system | METRIC, `scale_length = 1.0`, length unit METERS |
+| Objects (total) | 9,931 |
+| — MESH | 8,312 |
+| — EMPTY | 1,619 (Unreal instanced-static-mesh parent transforms) |
+| Collections | 16 |
+| Materials | 481 |
+| Vertices (total) | 4,410,155 |
+| Polygons (total) | 3,320,370 |
+| World bbox min | (−8845.8, −8565.1, −393.6) |
+| World bbox max | (8471.7, 8573.3, 433.5) |
+| World bbox size | (17317.5, 17138.3, 827.1) |
+
+**Units caveat (important).** The scene is *labelled* METRIC/METERS at
+`scale_length=1.0`, but the geometry spans ±8.5k units — a VALORANT map is ~140 m,
+not 17 km. So **1 Blender unit = 1 Unreal unit (uu)**, not 1 metre. This matches
+PV-4's convention (`unitsPerMeter = 100`, positions in uu). Treat Blender BU as uu
+throughout; divide by 100 for metres.
+
+**Object transforms.** Meshes are children of EMPTY parents (Unreal
+`InstancedStaticMesh` export, 1,614 such groups), so `object.location` is *local*.
+World position must be read from `matrix_world.translation`. All geometry
+extraction below uses world space.
+
+### 3.2 Collections (region partition)
+
+The 15 populated collections name the map regions directly:
+
+| Collection | Direct objs | Meaning | Playable? |
+|---|---|---|---|
+| Ascent_Art_Atk | 1657 | Attacker side / spawn | yes |
+| Ascent_Art_AtkPathA | 1028 | A main lane | yes |
+| Ascent_Art_AtkPathB | 1021 | B main lane | yes |
+| Ascent_Art_DefPathA | 1072 | A defender lane | yes |
+| Ascent_Art_DefPathB | 566 | B defender lane | yes |
+| Ascent_Art_Mid | 919 | Mid | yes |
+| Ascent_Art_A | 504 | A site | yes |
+| Ascent_Art_B | 672 | B site | yes |
+| Ascent_Art_APathMid | 364 | A–Mid link | yes |
+| Ascent_Art_Def | 248 | Defender side / spawn | yes |
+| Ascent_Art_VistaAtk | 909 | Distant skybox (islands, hospital, bell tower) | **no — exclude** |
+| Ascent_Art_VistaDef | 517 | Distant skybox | **no — exclude** |
+| Ascent_Art_VistaA / VistaB / Vista | 171 / 173 / 110 | Distant skybox | **no — exclude** |
+
+Named semantic markers confirm the region labels: `ABombsite_*`, `ASite_*`,
+`AStairs_*`, `ARamp_*`, `AtkBridge_*`, `AtkTower_*`, `AtkStairs_*`, etc. The
+`Vista*` collections hold out-of-bounds decoration (hospital/islands/bell tower)
+and dominate the raw world bbox; they are excluded from collision/navmesh.
+
+### 3.3 Collision mesh
+
+There is **no dedicated collision/blockout collection** — the file ships the ART
+mesh only (VALORANT's real blocking volumes are not in this export). Per
+README §10.3 ("원본에 충돌 메시가 없다면 직접 생성해야 한다") the collision/walkable
+surface is **generated from the playable art geometry** (see §4).
