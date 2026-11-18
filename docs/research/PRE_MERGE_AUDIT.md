@@ -8,8 +8,9 @@
 ## 0. 요약 (심각도별)
 - **차단(BLOCKING): 0건** — 머지를 막는 위반은 발견되지 않음.
 - **통합 시 조치(FIX-AT-MERGE): 6건** — §A~§F.
-- **참고(INFO): 다수** — §G.
-비밀정보 0, `.env`/자격증명 0, 실제 RiotID 문자열 0(트리·이력 전체).
+- **참고(INFO): 다수**.
+- 비밀정보 0, `.env`/자격증명 0, 비프로 일반인 식별자 0(트리·이력 전체).
+- **프로 선수 핸들·팀 실명 = 허용**(사용자 결정 2026-11-18; **출시 전 초상권·상표 재검토** 필요, 체크리스트 포함).
 
 ## 1. 파일 인벤토리 (main 대비)
 | 브랜치 | 변경 파일 | 주요 확장자 | 대용량/바이너리 |
@@ -35,7 +36,18 @@
 - `pv-replay`가 바이너리를 drop-in으로 사용, **소스/바이너리 미커밋**(확인). MIT 고지만 권장.
 
 ## 3. 개인정보·비밀정보 감사
-검색: 6브랜치 현재 트리 + 전체 이력(50 커밋), `*.json/jsonl/txt/csv/ts/py`.
+
+> **분류 기준 갱신 — 사용자 결정(2026-11-18):** 우선 출시가 아니므로 **VCT 공개 경기의 프로 선수
+> 핸들·실제 팀 이름 커밋은 위반이 아니라 "허용"**(출시 전 초상권·상표 재검토 필요; `LICENSE_AUDIT.md` §0).
+> **계속 위반:** ① 비(非)프로 일반인 식별자(`.vrf` ProfileName, 일반 RiotID `name#tag`), ② API 키·비밀정보,
+> ③ 재배포 불명확한 원본 데이터.
+
+**[허용] 프로 식별자 (사용자 결정 2026-11-18, 출시 전 재검토):**
+- `pv-data:datasets/normalized/vct-reference/{754737,754730}/*` — 실제 팀명(`Team Vitality` 등)·선수 `handle`·`match.json`(Valorant Champions 2026 GF). 공개 VCT 기록 → **허용**.
+- `pv-data:datasets/derived/ratings/player_ratings.json` — 숫자 `playerId`만(실명 없음).
+- → 위반 아님. 단 상업 출시 전 **초상권(NIL)·팀/대회 상표** 법무 검토 필요.
+
+**[계속 위반 기준 검색 결과]** 검색: 6브랜치 현재 트리 + 전체 이력(50 커밋), `*.json/jsonl/txt/csv/ts/py`.
 - **비밀정보/자격증명:** `RGAPI-`·토큰·`.env`·credentials·`.pem/.key` → **전부 0건**(트리·이력).
 - **RiotID `name#tag`:** 데이터 파일 전체 이력에서 **0건**.
 - **ProfileName:** 발견값은 전부 (a) 합성 픽스처 값(`SynthPlayer*`, `*.synthetic.*`)과 (b) 서술 라벨("ProfileNames removed; players are anonymous player_N")뿐. **실제 이름 0건.**
@@ -68,6 +80,7 @@
 - [ ] gitignore 파생물(vct.duckdb, navmesh .bin, catalog release-*/)이 머지에 섞이지 않게 확인
 - [ ] 루트 공유 파일(README/Handoff/LICENSE/.gitignore/tsconfig) 브랜치 간 충돌 조정 — 내용 상이, 머지 시 reconcile
 - [ ] `docs/THIRD_PARTY_NOTICES.md` 초안 → 최종본 확정, 루트 비제휴 고지 포함
+- [ ] **(출시 전, 머지와 별개)** 프로 선수 핸들·팀/대회 실명의 **초상권(NIL)·상표** 법무 검토 — 사용자 결정(2026-11-18)으로 현재는 허용, 상업 출시 전 가명화/라이선스 결정
 
 ## 6. 검증
 읽기 전용 `git grep`/`git log`/`git ls-tree`로 수행. 실제 이름 문자열은 본 보고서에 기록하지 않음(마스킹).
