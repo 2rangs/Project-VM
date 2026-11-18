@@ -1,0 +1,18 @@
+{
+  "name": "@pv/game-rules",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Patch-versioned VALORANT rule data for PROJECT V: rounds, spike, economy, ultimate. Every value is sourced and carries a verified flag.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@pv/shared-types": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

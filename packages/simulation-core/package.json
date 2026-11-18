@@ -1,0 +1,18 @@
+{
+  "name": "@pv/simulation-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic simulation primitives for PROJECT V: seeded stream-RNG, fixed-tick clock, event log.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@pv/shared-types": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
