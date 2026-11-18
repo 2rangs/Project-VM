@@ -19,6 +19,7 @@ import {
   deniedZoneIds,
 } from "@pv/ability-engine";
 import type {
+  CommandTraceEvent,
   PerceptionSnapshot,
   PerceptionTrack,
   RoundEndReason,
@@ -46,6 +47,9 @@ export interface RoundSimulatorDeps {
 const RUN_UNITS_PER_SEC = 675;
 const WALK_UNITS_PER_SEC = 340;
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
+
+/** Command-trace sink; a no-op unless config.traceCommands is on (see runRound). */
+type Tracer = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string) => void;
 
 function dist3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }): number {
   const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
@@ -93,6 +97,19 @@ export class RoundSimulator {
     const tracks: TrackFrame[] = [];
     const perceptionSnaps: Record<Side, PerceptionSnapshot[]> = { attack: [], defense: [] };
     const perceptionInterval = this.cfg.perceptionIntervalTicks ?? this.cfg.decisionIntervalTicks;
+    // Command→execution trace (policy debugging). `trace` is a no-op unless traceCommands is on;
+    // `dedupeKey`, when given, logs that key only once (so recurring per-tick evaluations — a
+    // plant rejected every tick, say — appear once, not hundreds of times).
+    const commandTrace: CommandTraceEvent[] = [];
+    const tracedKeys = new Set<string>();
+    const trace = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string): void => {
+      if (!this.cfg.traceCommands) return;
+      if (dedupeKey !== undefined) {
+        if (tracedKeys.has(dedupeKey)) return;
+        tracedKeys.add(dedupeKey);
+      }
+      commandTrace.push({ tick: state.tick, elapsedMs: state.elapsedMs, ...e });
+    };
     const commands = new Map<string, ActionCommand>();
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
@@ -122,7 +139,17 @@ export class RoundSimulator {
             perceptionSnaps[side].push(toPerceptionSnapshot(view, spatialQuery, state.elapsedMs));
           }
           const decision = this.policies[side].decide(view, rngOf[side]);
-          for (const c of decision.commands) commands.set(c.playerId, c);
+          for (const c of decision.commands) {
+            commands.set(c.playerId, c);
+            trace(
+              {
+                playerId: c.playerId, phase: "issued", command: c.kind,
+                targetZone: c.targetZone, abilityId: c.abilityId,
+                result: c.executeAtMs != null && state.elapsedMs < c.executeAtMs ? "deferred" : "active",
+              },
+              `issued:${c.playerId}:${c.kind}:${c.targetZone ?? c.abilityId ?? ""}:${c.executeAtMs ?? 0}`,
+            );
+          }
         }
       }
 
@@ -132,7 +159,7 @@ export class RoundSimulator {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", denied);
-        this.stepMovement(p, dt);
+        this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined);
       }
 
       // 3. abilities
@@ -142,11 +169,11 @@ export class RoundSimulator {
         if (cmd?.kind !== "useAbility" || !cmd.abilityId) continue;
         const abilityId = cmd.abilityId;
         const slot = p.abilities.find((a) => a.abilityId === abilityId);
-        if (!slot) continue;
+        if (!slot) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSlot" }, `ability:${p.id}:${abilityId}:noSlot`); continue; }
         const avail = checkAvailability(this.abilitiesCatalog, slot, state.elapsedMs, { points: p.ultimatePoints, required: p.ultimateCost });
-        if (!avail.usable) continue;
+        if (!avail.usable) { trace({ playerId: p.id, phase: "ability", abilityId, result: "unavailable" }, `ability:${p.id}:${abilityId}:unavailable`); continue; }
         const spec = this.abilitiesCatalog[abilityId];
-        if (!spec) continue;
+        if (!spec) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSpec" }, `ability:${p.id}:${abilityId}:noSpec`); continue; }
         // flash/concuss: resolve which enemies are blinded (in range + line of sight).
         const isFlash = spec.effectTypes.includes("flash") || spec.effectTypes.includes("concuss");
         const affectedPlayerIds = isFlash ? this.flashTargets(state, p, spec.radiusUnits ?? 1500) : undefined;
@@ -158,6 +185,7 @@ export class RoundSimulator {
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
         push({ kind: "abilityUsed", tick: state.tick, elapsedMs: state.elapsedMs, actor: p.id, detail: abilityId });
+        trace({ playerId: p.id, phase: "ability", abilityId, result: "used" });
       }
       abilityEngine.advance(state.elapsedMs);
 
@@ -192,7 +220,7 @@ export class RoundSimulator {
       }
 
       // 6. spike progression
-      this.stepSpike(state, commands, dt, events);
+      this.stepSpike(state, commands, dt, events, trace);
 
       // 7. record track frame (opt-in)
       if (this.cfg.recordTracks) {
@@ -234,6 +262,7 @@ export class RoundSimulator {
             { teamIdx: 1, side: "defense", intervalTicks: perceptionInterval, snapshots: perceptionSnaps.defense },
           ] satisfies PerceptionTrack[])
         : undefined,
+      commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
     };
   }
 
@@ -272,7 +301,7 @@ export class RoundSimulator {
    * perception and engagement only use genuine zone sightlines. facing points at the next
    * zone while travelling.
    */
-  private stepMovement(p: SimPlayer, dtMs: number): void {
+  private stepMovement(p: SimPlayer, dtMs: number, trace?: Tracer, targetZone?: string): void {
     if (p.pathIndex >= p.path.length) return;
     const fromZone = this.spatial.getZone(p.zoneId);
     const nextZone = this.spatial.getZone(p.path[p.pathIndex]);
@@ -282,10 +311,15 @@ export class RoundSimulator {
     const edgeMs = (dist3(fromZone.position, nextZone.position) / speed) * 1000;
     p.edgeProgressMs += dtMs;
     if (p.edgeProgressMs >= edgeMs) {
+      const fromId = p.zoneId;
       p.zoneId = nextZone.id;
       p.position = { ...nextZone.position };
       p.pathIndex += 1;
       p.edgeProgressMs = 0;
+      trace?.({ playerId: p.id, phase: "move", fromZone: fromId, toZone: nextZone.id, targetZone });
+      if (p.pathIndex >= p.path.length) {
+        trace?.({ playerId: p.id, phase: "arrived", toZone: p.zoneId, targetZone });
+      }
     }
   }
 
@@ -356,8 +390,26 @@ export class RoundSimulator {
     };
   }
 
-  private stepSpike(state: SimState, commands: Map<string, ActionCommand>, dtMs: number, events: SimEvent[]): void {
+  private stepSpike(state: SimState, commands: Map<string, ActionCommand>, dtMs: number, events: SimEvent[], trace: Tracer): void {
     const s = state.spike;
+    // Trace plant/defuse command evaluation with the reason it did/didn't take (deduped per
+    // distinct reason) — this is the signal PV-3 needs to see why plants aren't happening.
+    for (const p of state.players) {
+      const c = readyCommand(commands.get(p.id), state.elapsedMs);
+      if (c?.kind === "plant") {
+        const result = !p.alive ? "dead"
+          : s.carrierId !== p.id ? "notCarrier"
+          : !this.spatial.isPlantableZone(p.zoneId) ? "notPlantableZone"
+          : s.phase === "planting" ? "planting" : "started";
+        trace({ playerId: p.id, phase: "plant", fromZone: p.zoneId, result }, `plant:${p.id}:${result}:${p.zoneId}`);
+      } else if (c?.kind === "defuse") {
+        const result = !p.alive ? "dead"
+          : !(s.phase === "planted" || s.phase === "defusing") ? "notPlanted"
+          : p.zoneId !== s.zoneId ? "notOnSpikeZone"
+          : s.phase === "defusing" ? "defusing" : "started";
+        trace({ playerId: p.id, phase: "defuse", fromZone: p.zoneId, result }, `defuse:${p.id}:${result}:${p.zoneId}`);
+      }
+    }
     if (s.phase === "detonated" || s.phase === "defused") return;
 
     // plant
