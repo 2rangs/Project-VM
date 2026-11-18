@@ -42,6 +42,21 @@ describe("traceCommands (policy-debugging aid)", () => {
     expect(syntheticRun(true).commandTrace).toEqual(t);
   });
 
+  it("records engagementTrace with first-contact posture for every duel", () => {
+    const r = syntheticRun(true);
+    expect(r.engagementTrace).toBeDefined();
+    expect(r.engagementTrace!.length).toBeGreaterThan(0);
+    const e = r.engagementTrace![0];
+    expect(typeof e.attackerId).toBe("string");
+    expect(typeof e.defenderId).toBe("string");
+    expect(["attacker", "defender", "mutual"]).toContain(e.firstSight);
+    expect(typeof e.attackerPreAim).toBe("boolean");
+    expect(typeof e.defenderMoving).toBe("boolean");
+    expect(e.distanceMeters).toBeGreaterThan(0);
+    // off by default
+    expect(syntheticRun(false).engagementTrace).toBeUndefined();
+  });
+
   it("captures a plant attempt with its result/rejection reason", () => {
     const aSite = spatial.getZone("a-site")!;
     const bSite = spatial.getZone("b-site")!;

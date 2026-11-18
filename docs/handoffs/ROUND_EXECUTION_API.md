@@ -118,6 +118,14 @@ Typical use: filter `commandTrace` by a player id to see its issued commands vs 
 arrivals; filter `phase === "plant"` to see, per tick, whether a plant was attempted and why it
 was rejected. Deterministic with the seed. Works through `runMatchRound` via `config`.
 
+`traceCommands` also fills `RoundResult.engagementTrace: EngagementRecord[]` — the first-contact
+state of every duel, which decides opening duels: `{ attackerId, defenderId, attackerZone,
+defenderZone, distanceMeters, attackerSawDefender, defenderSawAttacker, firstSight
+("attacker"|"defender"|"mutual"), attackerPreAim, defenderPreAim, attackerMoving, defenderMoving,
+attackerFlashedMs, defenderFlashedMs, winnerSide }`. Take the earliest entry per round for the
+opening duel; tally `firstSight`, `*Moving`, `*PreAim` and `winnerSide` to explain a policy's
+opening-duel win rate (a defender caught `moving` shoots far worse than one holding still).
+
 ## Minimal example
 
 ```ts
