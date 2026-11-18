@@ -1,9 +1,15 @@
 # PROJECT V — TASK HANDOFF
 
 **Agent:** PV-4 Spatial → Agent Simulation
-**Version:** v4 (2026-11-18) — adds ability-engine; supersedes v0–v3
+**Version:** v5 (2026-11-18) — adds round-simulator + PV-1 effect alignment; supersedes v0–v4
 **Branch:** `claude/pv-spatial`
 **Map:** Ascent (per DECISION-009 — first and only implemented map)
+
+> **v5 changelog (this update, 6차):** (A) aligned ability-engine to PV-1's published
+> `ability-effect.schema.json` (see §C). (B) added `packages/round-simulator` — a
+> deterministic fixed-tick 5v5 round loop wiring spatial+perception+combat+ability behind a
+> `DecisionPolicy` interface (observation-only; no WorldState). 9 tests passing; `tsc` clean.
+> Details in **§D. Round Simulator**. All 5 packages green: 21+17+15+18+9 = **80 tests**.
 
 > **v4 changelog (this update):** added `packages/ability-engine` (5차 작업) — abilities as
 > live effect objects (smoke/wall/flash/concuss/recon/molly/slow/trap/decoy) bridged into
@@ -305,6 +311,46 @@ shape(m)으로 재구성 후 normalizer 경유 로드. 미소싱 수치는 null 
 
 **남은 정합(미완):** 다중 효과(effectTypes 2개 이상, 예: slow+smoke)는 primary 하나만 런타임 반영(나머지는 메타로 보존).
 `makesSound→perception abilityCast` 소리 주입 경로와 `decoy` 가짜정보 주입은 round-simulator 연동 단계에서.
+
+---
+
+## §D. Round Simulator (6차-B, `packages/round-simulator`)
+
+**목표 (Handoff §17 게임 루프, README §28.1, Phase 10):** spatial·perception·combat·ability를 하나의
+**결정론적 고정 tick 라운드 루프**로 엮고, 의사결정은 인터페이스 뒤로 빼 PV-3 Decision Engine을 끼울 수 있게 함.
+
+**tick 루프 순서:** 의사결정(N tick마다) → 이동(구역 그래프 A* 경로를 edge 시간만큼 이산 hop) → 스킬 →
+지각 갱신 → 교전 감지(상호/일방 시야 → combat `resolveDuel`, tick당 선수 1교전으로 트레이드 성립) →
+스파이크(설치·해체 진행/중단/폭발) → 종료(전멸/폭발/해체/시간초과) → tick 진행.
+
+**`DecisionPolicy` (DECISION-004 경계):** `decide(ctx: DecisionContext): ActionCommand`.
+`DecisionContext`는 pv-core action-schema의 DecisionContext를 미러 — **self + 공개 라운드 정보 + Observation만**,
+WorldState·적 실제 상태 없음. 타입으로 막고 `test/leak.test.ts`로 런타임 검증(정책에 넘어온 ctx에 players/spike/world 키 없음).
+`ScriptedPolicy`는 **임시 스크립트 정책(최종 AI 아님)**: 공격은 사이트 진입 후 설치, 수비는 앵커 홀드·로테이트·해체.
+
+**PV-3/PV-2/PV-6 정합 (fetch, 읽기만):**
+- pv-core `action-schema.ts`의 DecisionContext/ActionSchema 구조에 맞춰 입력 경계 설계.
+- pv-data `datasets/synthetic/scenarios/scenario_01.json`을 `test/fixtures/`에 복사(출처 보존). **단, PV-2 좌표계가
+  PV-4 zone과 달라** `fromPv2Scenario`는 구조 필드만 가져오고 위치는 스폰에 배치(좌표 합의 필요 — handoff 기록).
+  실제 시뮬은 zone 기반 `makeSyntheticRound` 합성 초기상태 사용.
+- PV-6 `claude/pv-replay`에 **아직 replay-engine 패키지 없음**(kinematics 스키마만) → `toRoundReplay`로 중립
+  `ROUND_REPLAY_V0`(frames+events) 내보내고 `toPv6ReplayFormat`은 스텁. PV-2 `tools/data-validator`용 내보내기 형식 문서화.
+
+**결정론 (DECISION-010):** 동일 초기상태+시드 → 바이트 동일 로그. 교전별 시드 분리(`deriveSeed(seed, tick+pair)`).
+
+**테스트 (실제 실행, 9개 통과 / `tsc` 통과):**
+- 5v5 라운드가 종료 사유까지 완주 / 교전·킬 발생.
+- 동일 시드 → 바이트 동일 로그, 전체 결과 deep-equal.
+- 다른 시드 → 다른 로그(승자·킬 수 상이).
+- 설치 후 해체 중 defuser 사망 → `defuseInterrupted`, 해체 미완료.
+- 아무도 설치/교전 안 하면 `timeExpired` 수비 승.
+- 정책이 WorldState 접근 불가(ctx 키 = self/round/observation/abilities만).
+- **고속 실행:** 1,000 라운드 측정·기록 — **~19.5 ms/round(합계 ~19.5s), 공격 승률 0.309**(로그 출력).
+
+**실행:** `cd packages/round-simulator && npm install && npm test`.
+
+**미완료/주의 (v0):** 교전은 즉시 1v1 판정(지속 추적 없음); 캐리어 사망 시 스파이크 드롭되나 **줍기(pickup) 없음**;
+스크립트 정책만(유틸 활용 없음). 엔진은 임의 `DecisionPolicy` 수용. 이동은 zone 중심 이산 hop(트랙 보간 아님).
 
 ---
 
