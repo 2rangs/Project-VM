@@ -18,6 +18,34 @@ export interface SimRunRequest {
   mapId: string;
   seed: number;
   rounds: number;
+  /** Full-match team refs (match-runner). Optional; stub/round-sim ignore them. */
+  teamA?: { id: string; name: string };
+  teamB?: { id: string; name: string };
+}
+
+/** Per-round summary from @pv/match-runner (real economy / ultimate / score). */
+export interface MatchRoundSummary {
+  roundNumber: number;
+  phase: 'pistol' | 'regulation' | 'overtime';
+  attacker: 'A' | 'B';
+  winner: 'A' | 'B';
+  winnerSide: string;
+  reason: string;
+  planted: boolean;
+  score: { A: number; B: number };
+  kills: { A: number; B: number };
+  economy: { A: { credits: number; ultPoints: number }; B: { credits: number; ultPoints: number } };
+  buys: { A: { tier: string; weapon: string }; B: { tier: string; weapon: string } };
+}
+
+export interface MatchSummary {
+  teams: { A: { id: string; name: string }; B: { id: string; name: string } };
+  map: string;
+  seed: number;
+  winner: 'A' | 'B';
+  score: { A: number; B: number };
+  wentToOvertime: boolean;
+  rounds: MatchRoundSummary[];
 }
 
 export interface SimProgress {
@@ -30,8 +58,10 @@ export interface SimProgress {
 
 export interface SimResult {
   runId: string;
-  source: 'stub' | 'round-simulator';
+  source: 'stub' | 'round-simulator' | 'match-runner';
   replay: Replay;
+  /** Present when the real match-runner produced the result. */
+  match?: MatchSummary;
 }
 
 /** The preload-exposed, contextIsolated API surface (window.pv). */

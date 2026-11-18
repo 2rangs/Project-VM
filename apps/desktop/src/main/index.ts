@@ -4,11 +4,13 @@
 // utilityProcess (DECISION-007), never on the UI thread.
 import { app, BrowserWindow, ipcMain, utilityProcess, type UtilityProcess } from 'electron';
 import { readFile, readdir } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { fromSimEventLog, type SimEvent } from '@pv/replay-engine';
 import { ASCENT_TRANSFORM } from '../shared/ascent-transform.ts';
+import { mergeMatch, type RawMatch } from '../shared/match-merge.ts';
 import { IPC, type SimProgress, type SimRunRequest, type SimResult } from '../shared/ipc.ts';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,14 +42,65 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
-// --- simulation: fork a utilityProcess, stream progress, resolve with a Replay ---
+// The match-runner (@pv/match-runner) reads data files and pulls in many engines,
+// so it runs as a SEPARATE tsx subprocess in the workspace (not bundled). repoRoot
+// resolves from the app path; override with PV_REPO_ROOT / PV_MATCH_SCRIPT for E2E.
+function repoRoot(): string { return process.env.PV_REPO_ROOT ?? path.resolve(app.getAppPath(), '..', '..'); }
+function matchScript(): string { return process.env.PV_MATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'run-match.mts'); }
+
+function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
+  return new Promise<SimResult>((resolve, reject) => {
+    const cfg = {
+      teamA: req.teamA ?? { id: 'A', name: 'Team A' },
+      teamB: req.teamB ?? { id: 'B', name: 'Team B' },
+      map: req.mapId, seed: req.seed,
+    };
+    sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: 'match-runner (pistol → halves → 13 → OT)' } satisfies SimProgress);
+    const child = spawn('npx', ['tsx', matchScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
+    let out = ''; let errBuf = '';
+    const timeout = setTimeout(() => { try { child.kill(); } catch { /* */ } reject(new Error('match-runner timed out')); }, 90000);
+    child.stdout.on('data', (d) => { out += String(d); });
+    child.stderr.on('data', (d) => {
+      errBuf += String(d);
+      // run-match.mts logs round progress to stderr; drop npx/npm bootstrap noise.
+      const msg = String(d).split('\n').map((l) => l.trim())
+        .filter((l) => l && !/^npm (warn|notice)/i.test(l)).join(' ').slice(0, 120);
+      if (msg) sender.send(IPC.simProgress, { runId, phase: 'round', pct: 0.5, message: msg } satisfies SimProgress);
+    });
+    child.on('error', (e) => { clearTimeout(timeout); reject(e); });
+    child.on('close', (code) => {
+      clearTimeout(timeout);
+      if (code !== 0) return reject(new Error(`match-runner exited ${code}: ${errBuf.slice(-200)}`));
+      try {
+        const raw = JSON.parse(out) as RawMatch;
+        const { events, summary } = mergeMatch(raw);
+        const replay = fromSimEventLog(events, {
+          mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
+          matchId: `${summary.teams.A.name} vs ${summary.teams.B.name}`,
+        });
+        sender.send(IPC.simProgress, { runId, phase: 'done', pct: 1 } satisfies SimProgress);
+        resolve({ runId, source: 'match-runner', replay, match: summary });
+      } catch (e) { reject(new Error(`match-runner output parse failed: ${(e as Error).message}`)); }
+    });
+  });
+}
+
+// --- simulation: try the real match-runner subprocess; fall back to the bundled
+//     round-simulator utilityProcess so Match Day always produces a replay. ---
 ipcMain.handle(IPC.simRun, async (event, req: SimRunRequest): Promise<SimResult> => {
   const runId = randomUUID();
-  // The request travels as fork ARGS (available at spawn) — no main→worker
-  // message, so nothing to race on. The worker only posts progress/result back.
-  const child: UtilityProcess = utilityProcess.fork(WORKER, [runId, JSON.stringify(req)], { stdio: 'ignore' });
   const sender = event.sender;
-  return await new Promise<SimResult>((resolve, reject) => {
+  try {
+    return await runMatchRunner(req, runId, sender);
+  } catch (err) {
+    sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: `match-runner unavailable (${(err as Error).message.slice(0, 80)}); round-sim fallback` } satisfies SimProgress);
+    return await runRoundSimFallback(req, runId, sender);
+  }
+});
+
+function runRoundSimFallback(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
+  const child: UtilityProcess = utilityProcess.fork(WORKER, [runId, JSON.stringify(req)], { stdio: 'ignore' });
+  return new Promise<SimResult>((resolve, reject) => {
     const timeout = setTimeout(() => { try { child.kill(); } catch { /* */ } reject(new Error('sim worker timed out')); }, 30000);
     const onMsg = (m: { type: string; progress?: SimProgress; events?: SimEvent[]; message?: string }) => {
       if (m.type === 'progress' && m.progress) sender.send(IPC.simProgress, m.progress);
@@ -64,7 +117,7 @@ ipcMain.handle(IPC.simRun, async (event, req: SimRunRequest): Promise<SimResult>
     child.on('exit', (code) => { if (code && code !== 0) reject(new Error(`sim worker exited ${code}`)); });
     // the job is posted once the worker signals { type: 'ready' } (see onMsg)
   });
-});
+}
 
 ipcMain.handle(IPC.traceList, async (): Promise<string[]> => {
   try {

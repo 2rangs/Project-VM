@@ -124,3 +124,11 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .md-teamsel .vs { color:var(--muted); font-size:12px; }
 .md-seed { font-size:12px; color:var(--muted); } .md-seed input { width:64px; margin-left:4px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:4px 6px; }
 .md-roundlog { margin:8px 0; font-family:monospace; }
+.scoreboard { display:flex; align-items:center; gap:12px; justify-content:center; padding:10px; background:var(--panel); border:1px solid var(--line); border-radius:10px; margin:10px 0; }
+.sb-team { font-weight:700; font-size:15px; } .sb-team.win { color:#7ee787; }
+.sb-score { font-size:24px; font-variant-numeric:tabular-nums; font-weight:800; }
+.sb-dash { color:var(--muted); } .sb-ot { font-size:11px; color:#f0b429; border:1px solid #f0b42944; border-radius:999px; padding:2px 8px; }
+.roundstrip { display:flex; flex-wrap:wrap; gap:3px; margin:8px 0; }
+.rs-dot { font-size:10px; min-width:20px; height:20px; display:flex; align-items:center; justify-content:center; border-radius:4px; color:#0b0e13; font-weight:700; }
+.rs-a { background:#58a6ff; } .rs-b { background:#ff9f40; } .rs-dot.pistol { outline:2px solid #ffffff88; }
+.buy-pistol { color:#8b98a9; }
