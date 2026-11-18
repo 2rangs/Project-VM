@@ -105,6 +105,33 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
+   * DEFENSE pre-plant hold (opening-duel fix): the combat engine grants a stationary defender a
+   * pre-aim first-contact edge (preAim = seesEnemy && !enemySeesSelf && !moving). The stochastic
+   * draw had defenders move/save off their anchors ~28% of decisions, trading away that edge and
+   * walking into attackers — so attackers won 0.75 of opening duels (ScriptedPolicy, which holds
+   * anchors, wins only ~0.45). Defenders START on their anchors in the round, so on the
+   * no-info hold (`defaultHold`) a move/save is abandoning a held angle: convert those to a hold
+   * at the defender's current zone. Peeks (stationary info) and abilities are kept; a deliberate
+   * push happens under the aggroPush strategy, which is left to the draw (not a holding strategy).
+   */
+  private commitDefenseHold(view: PolicyView, strategy: TeamStrategy, commands: readonly ActionCommand[]): ActionCommand[] {
+    // Holding strategies only; aggroPush is an intentional push and is left to the draw.
+    const holdStrategies = strategy === "defaultHold" || strategy === "stackA" || strategy === "stackB";
+    if (view.side !== "defense" || !holdStrategies) return commands.slice();
+    const phase = view.spike.phase;
+    if (phase !== "carried" && phase !== "dropped") return commands.slice(); // pre-plant only
+    return commands.map((c) => {
+      // Hold the angle: a move/save off the anchor trades away the pre-aim edge. Peeks (stationary
+      // info) and ability use (smokes/flashes/info) are kept.
+      if (c.kind !== "move" && c.kind !== "save") return c;
+      const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
+      if (!tm) return c;
+      const z = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
+      return { playerId: c.playerId, kind: "hold", targetZone: z, executeAtMs: 0, sourceActionId: "defense-hold" };
+    });
+  }
+
+  /**
    * Symmetric to commitSpikeCarrier for the DEFENSE post-plant: without this, a defuse (7000ms
    * of continuous `defuse`) is interrupted every 500ms by the stochastic re-draw and never
    * completes, so defenders never retake and every plant detonates — making matches degenerate
@@ -193,6 +220,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     }
 
     let commands = this.commitSpikeCarrier(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
+    commands = this.commitDefenseHold(view, strategy, commands);
     commands = this.commitDefuser(view, commands);
 
     const decision: PolicyDecision = { strategy, roles, commands };

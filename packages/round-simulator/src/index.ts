@@ -23,7 +23,7 @@ export type {
 } from "./match-round.js";
 export { ScriptedPolicy } from "./policy.js";
 export type { ScriptedPolicyOptions } from "./policy.js";
-export { buildPolicyView, SpatialQueryAdapter, SeededRandomSource } from "./view.js";
+export { buildPolicyView, SpatialQueryAdapter, SeededRandomSource, toPerceptionSnapshot } from "./view.js";
 export { makeSyntheticRound, fromPv2Scenario, SYNTHETIC_DEFENSE_ANCHORS } from "./scenario.js";
 export type { SyntheticRoundOptions } from "./scenario.js";
 export { toRoundReplay, toPv6ReplayFormat, ROUND_REPLAY_VERSION } from "./replay.js";

@@ -132,3 +132,14 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .rs-dot { font-size:10px; min-width:20px; height:20px; display:flex; align-items:center; justify-content:center; border-radius:4px; color:#0b0e13; font-weight:700; }
 .rs-a { background:#58a6ff; } .rs-b { background:#ff9f40; } .rs-dot.pistol { outline:2px solid #ffffff88; }
 .buy-pistol { color:#8b98a9; }
+
+/* ── Fog-of-war controls (Match Day) ─────────────────────────────── */
+.fog-tag { font-size: 12px; color: #cdd6e0; background: #1b2430; border: 1px solid #2b3440;
+  border-radius: 6px; padding: 2px 8px; }
+.fog-ctl { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #9aa7b4; }
+.fog-ctl select { background: #0e141b; color: #e6edf3; border: 1px solid #2b3440; border-radius: 6px; padding: 2px 6px; }
+.fog-ctl input[type="checkbox"] { accent-color: #ff5470; }
+.fog-demo { font-size: 12px; background: #1b2430; color: #e6edf3; border: 1px solid #39506a;
+  border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.fog-demo:hover { border-color: #4f7bb0; }
+.dev-truth { padding: 8px 12px; }

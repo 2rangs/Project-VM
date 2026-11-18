@@ -46,6 +46,43 @@ test('mergeMatch offsets rounds onto one timeline and renumbers roundStart', () 
   assert.ok(!('replayEvents' in summary.rounds[0]));
 });
 
+test('perception: side-based round tracks remap to real teams and offset onto the match timeline', () => {
+  // Round 1: A attacks. Round 2: B attacks (side swap). Each round has an attack
+  // track (teamIdx 0) and a defense track (teamIdx 1), round-relative tMs.
+  const withPerc: RawMatch = {
+    ...raw,
+    rounds: [
+      {
+        ...raw.rounds[0], attacker: 'A',
+        perception: [
+          { teamIdx: 0, side: 'attack', snapshots: [{ tMs: 1000, observedEnemies: [], beliefZones: [{ zone: 'a-site', p: 0.5 }] }] },
+          { teamIdx: 1, side: 'defense', snapshots: [{ tMs: 1000, observedEnemies: [], beliefZones: [{ zone: 'a-main', p: 0.3 }] }] },
+        ],
+      },
+      {
+        ...raw.rounds[1], attacker: 'B',
+        perception: [
+          { teamIdx: 0, side: 'attack', snapshots: [{ tMs: 2000, observedEnemies: [], beliefZones: [{ zone: 'b-site', p: 0.8 }] }] },
+          { teamIdx: 1, side: 'defense', snapshots: [{ tMs: 2000, observedEnemies: [], beliefZones: [{ zone: 'b-main', p: 0.4 }] }] },
+        ],
+      },
+    ],
+  };
+  const { perception } = mergeMatch(withPerc);
+  assert.ok(perception);
+  assert.equal(perception!.length, 2);
+  const teamA = perception!.find((t) => t.teamIdx === 0)!;
+  const teamB = perception!.find((t) => t.teamIdx === 1)!;
+  // Team A: attacked R1 (a-site belief), defended R2 (b-main belief). Both land under team A.
+  const aZones = teamA.snapshots.map((s) => s.beliefZones[0]?.zone);
+  assert.deepEqual(aZones, ['a-site', 'b-main']);
+  // Team B: defended R1 (a-main), attacked R2 (b-site).
+  const bZones = teamB.snapshots.map((s) => s.beliefZones[0]?.zone);
+  assert.deepEqual(bZones, ['a-main', 'b-site']);
+  // R2 snapshots are offset past R1 (round-relative 2000 → match-level > round 1's max).
+  assert.ok(teamA.snapshots[1].tMs > teamA.snapshots[0].tMs + 2000);
+});
+
 test('merged events build a loadable multi-round Replay', () => {
   const { events } = mergeMatch(raw);
   const replay = fromSimEventLog(events as SimEvent[], { mapId: 'ascent', mapDisplayName: 'Ascent', seed: 42 });

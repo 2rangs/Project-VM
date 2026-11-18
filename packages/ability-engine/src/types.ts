@@ -58,6 +58,7 @@ export interface AbilitySpec {
   readonly rangeUnits: number | null; // max cast/throw distance (WORLD UNITS)
   readonly wallHp: number | null; // destructible HP (PV-1 destructibleHp)
   readonly flashDurationMs: number | null; // blind duration applied to combat
+  readonly suppressDurationMs: number | null; // ability-silence duration (suppress: KAY/O, Killjoy ult)
   readonly revealDurationMs: number | null; // recon reveal duration
   /** Occludes sightlines (PV-1 blocksVision); drives perception smokedPairs. */
   readonly blocksVision: boolean | null;
@@ -156,6 +157,7 @@ export type AbilityEventKind =
   | "effectExpire"
   | "effectDestroyed"
   | "flashApplied"
+  | "suppressApplied"
   | "reveal"
   | "trapTriggered";
 

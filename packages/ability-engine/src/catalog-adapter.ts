@@ -45,6 +45,7 @@ export function abilitySpecFromCatalog(rec: CatalogEffectRecord, facts: CatalogF
   const effectType = primaryEffect(effectTypes);
   const isOccluder = effectType === "smoke" || effectType === "wall";
   const isFlash = effectTypes.includes("flash") || effectTypes.includes("concuss");
+  const isSuppress = effectTypes.includes("suppress");
 
   return {
     abilityId: rec.abilityId,
@@ -64,6 +65,7 @@ export function abilitySpecFromCatalog(rec: CatalogEffectRecord, facts: CatalogF
     wallHp: p.destructibleHp ?? null,
     // flash blind duration: explicit facts override, else the effect's own duration.
     flashDurationMs: facts.flashDurationMs ?? (isFlash ? p.durationMs ?? null : null),
+    suppressDurationMs: isSuppress ? p.durationMs ?? null : null,
     revealDurationMs: p.revealDurationMs ?? null,
     blocksVision: p.blocksVision ?? (isOccluder ? true : null),
     makesSound: p.makesSound ?? null,

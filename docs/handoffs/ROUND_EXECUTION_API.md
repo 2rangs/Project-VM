@@ -74,6 +74,50 @@ ultimate-point changes.**
   the deterministic tick loop (`RoundSimulator.runRound`), then reads final player state + the
   event log back out. No global state; safe to call in a loop across a match.
 
+## Perception recording (PV-6 fog-of-war + belief heatmap)
+
+Set `config.recordPerception: true` (off by default — it costs per-decision work) to get a
+per-team observation/belief time series in `RoundResult.perception` / `MatchRoundOutput`. It is
+**observation and belief only, never ground truth** (DECISION-004), kept separate from the
+ground-truth `tracks`.
+
+- Shape matches PV-6's `@pv/replay-engine` `PerceptionTrack[]` field-for-field (one track per
+  team): `{ teamIdx, side, intervalTicks, snapshots: [{ tMs, roundNum, observedEnemies,
+  beliefZones, sounds }] }`. `observedEnemies` are last-seen contacts (`zone`, `pos`,
+  `lastSeenMsAgo`, `currentlyVisible`); `beliefZones` are the real `buildBelief` hypotheses
+  folded to `{ zone, p∈[0,1] }`; `sounds` are audible cues localized to a zone.
+- `teamIdx` is **side-based for a single round** (0 = attack, 1 = defense) with `side` set; the
+  match merger remaps to the real team index using `side` + that round's attacker. `tMs` is
+  round-relative — the match merger offsets it onto the match timeline (as with event `timeMs`).
+- Sampling interval is `config.perceptionIntervalTicks` (defaults to `decisionIntervalTicks`).
+- `toPv6ReplayFormat(result, meta)` folds the track into `meta.perception`, so PV-6 wires it as
+  `fromSimEventLog(log.events, log.meta)` and renders the fog view + heatmap. Pass an explicit
+  `meta.perception` to override (e.g. a match-level merge of all rounds).
+
+## Command trace (policy debugging — `traceCommands`)
+
+Set `config.traceCommands: true` (off by default) to get `RoundResult.commandTrace` /
+`MatchRoundOutput.round.commandTrace`: a flat, time-ordered `CommandTraceEvent[]` showing what
+each player was told to do and what actually happened. Built for debugging why a policy's intent
+doesn't turn into round events (e.g. plants that never fire). Each event has `{ tick, elapsedMs,
+playerId, phase, command?, targetZone?, fromZone?, toZone?, abilityId?, result? }`:
+
+- `phase: "issued"` — a command was received. `command` is its kind; `result` is `"active"` or
+  `"deferred"` (held by `executeAtMs`). Deduped per distinct command, so re-issuing the same
+  command every decision logs once.
+- `phase: "move"` — a zone-hop executed (`fromZone`→`toZone`, `targetZone` = the move goal).
+- `phase: "arrived"` — the player reached the end of its path (`toZone`).
+- `phase: "plant"` — a plant command was evaluated. `result`: `"started"` | `"planting"` |
+  `"notPlantableZone"` | `"notCarrier"` | `"dead"` (deduped per distinct reason).
+- `phase: "ability"` — a useAbility command: `result` `"used"` | `"noSlot"` | `"unavailable"` |
+  `"noSpec"`.
+- `phase: "defuse"` — a defuse command: `result` `"started"` | `"defusing"` | `"notOnSpikeZone"`
+  | `"notPlanted"` | `"dead"`.
+
+Typical use: filter `commandTrace` by a player id to see its issued commands vs its moves and
+arrivals; filter `phase === "plant"` to see, per tick, whether a plant was attempted and why it
+was rejected. Deterministic with the seed. Works through `runMatchRound` via `config`.
+
 ## Minimal example
 
 ```ts
