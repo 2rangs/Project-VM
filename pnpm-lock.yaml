@@ -146,6 +146,46 @@ importers:
         specifier: workspace:*
         version: link:../world-state
 
+  packages/match-runner:
+    dependencies:
+      '@pv/ability-engine':
+        specifier: workspace:*
+        version: link:../ability-engine
+      '@pv/combat-engine':
+        specifier: workspace:*
+        version: link:../combat-engine
+      '@pv/decision-engine':
+        specifier: workspace:*
+        version: link:../decision-engine
+      '@pv/game-rules':
+        specifier: workspace:*
+        version: link:../game-rules
+      '@pv/integration-adapters':
+        specifier: workspace:*
+        version: link:../integration-adapters
+      '@pv/round-simulator':
+        specifier: workspace:*
+        version: link:../round-simulator
+      '@pv/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@pv/simulation-core':
+        specifier: workspace:*
+        version: link:../simulation-core
+      '@pv/spatial-engine':
+        specifier: workspace:*
+        version: link:../spatial-engine
+      '@pv/team-engine':
+        specifier: workspace:*
+        version: link:../team-engine
+      '@pv/world-state':
+        specifier: workspace:*
+        version: link:../world-state
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.15
+
   packages/outcome-predictor:
     dependencies:
       '@pv/action-generator':
