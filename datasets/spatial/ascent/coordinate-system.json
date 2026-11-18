@@ -1,0 +1,38 @@
+{
+  "mapId": "ascent",
+  "mapUuid": "7eaecc1b-4337-bbf6-6ab9-04b8f06b3319",
+  "patchVersion": "UNVERIFIED",
+  "description": "Game-world <-> minimap coordinate transform for Ascent. Values taken directly from valorant-api.com/v1/maps (read 2026-11-18, HTTP 200). The transform maps Unreal game-world (x,y) into normalized minimap space in the range [0,1] with an axis swap. Verified: all 22 Ascent callout locations map into [0,1] under this orientation (see tools/map-processor/verify-transform.mjs).",
+  "units": {
+    "gameUnit": "Unreal unit (uu)",
+    "unitsPerMeter": 100,
+    "note": "unitsPerMeter=100 (1 uu = 1 cm) is the standard Unreal/VALORANT convention. Treat distances derived from this as manual-approx until confirmed against an in-game measurement."
+  },
+  "transform": {
+    "xMultiplier": 0.00007,
+    "yMultiplier": -0.00007,
+    "xScalarToAdd": 0.813895,
+    "yScalarToAdd": 0.573242,
+    "forward": {
+      "minimapX": "gameY * xMultiplier + xScalarToAdd",
+      "minimapY": "gameX * yMultiplier + yScalarToAdd"
+    },
+    "inverse": {
+      "gameY": "(minimapX - xScalarToAdd) / xMultiplier",
+      "gameX": "(minimapY - yScalarToAdd) / yMultiplier"
+    }
+  },
+  "provenance": {
+    "sourceId": "valorant-api-maps",
+    "sourceUrl": "https://valorant-api.com/v1/maps",
+    "retrievedAt": "2026-11-18",
+    "evidenceType": "decoded",
+    "confidence": 0.95,
+    "verified": true,
+    "notes": [
+      "xMultiplier/yMultiplier/xScalarToAdd/yScalarToAdd are returned verbatim by valorant-api.",
+      "The axis-swapped orientation (minimapX uses gameY) was determined empirically by checking that all callouts land in [0,1]; it matches the widely used valorant-api minimap convention.",
+      "patchVersion unknown: valorant-api does not stamp the map geometry with a game patch."
+    ]
+  }
+}
