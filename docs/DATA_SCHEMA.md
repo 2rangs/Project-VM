@@ -18,9 +18,14 @@ Two rules run through everything:
 
 ## Conventions
 - **Field names: `camelCase`.** **Units are explicit** in every schema description.
-- **Positions:** `minimapUnits` — the VLR 2D-replay minimap frame (origin top-left, x→right, y→down),
-  floats ≈ 0..1000. Same frame the real `locs` data uses, so real and synthetic positions are
-  comparable. The authoritative minimap↔game-world transform is the **Spatial agent's** (`datasets/spatial/`).
+- **Positions (v2, canonical):** game-world **Unreal units (uu)** — the `gameWorldPosition` def
+  (`{x, y, z, frame: "game-world-uu"}`), the frame the Spatial agent (`datasets/spatial/`) and the
+  PV-4 navgraph use. Synthetic Ascent states also carry a `zoneId` (Ascent navgraph zone) and set
+  `formatVersion: 2`. The validator checks every synthetic `zoneId` against
+  `datasets/synthetic/ascent/ascent_zones_ref.json` and that its position sits within 800 uu of the
+  zone's representative point.
+  - **`minimapUnits` is DEPRECATED** (the legacy `vector2` def, VLR minimap frame ≈ 0..1000). It was
+    the v1 frame and caused a coordinate-mismatch bug in PV-3; new data must use `gameWorldPosition`.
 - **Time:** round combat clock counts **down** from `100000 ms` (buy phase excluded, matching
   vctstats `ROUND_SECONDS=100`); after the plant the spike timer governs (`SPIKE_SECONDS=45000 ms`).
 - **Team index:** a match fixes `teamIds[0]=team0`, `teamIds[1]=team1`; rounds/stats reference teams
@@ -122,7 +127,7 @@ Shape mirrors the real vlr 2D-replay log event observed in vctstats (`t/type/by/
 | `timeMs` | ms since barriers dropped | real log is "M:SS" → ×1000 |
 | `actorPlayerId`, `victimPlayerId`, `actorTeamIdx`, `victimTeamIdx` | — | — |
 | `weapon`, `site`, `afterDetonation` | — | from kill feed / `boom` index |
-| `pos`, `fromPos` | minimapUnits | event + shooter location |
+| `pos`, `fromPos` | gameWorldPosition (uu) | event + shooter location |
 | `positions[]` | Position[] | **all-player snapshot at the event** (the `locs` array) |
 
 > **Availability:** VCT Reference gives no events/positions. The vlr.gg 2D-replay logs hold this data

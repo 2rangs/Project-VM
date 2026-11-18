@@ -1,5 +1,6 @@
 {
   "contextId": "scenario-05-plant",
+  "formatVersion": 2,
   "scenarioRef": "scenario-05",
   "worldState": {
     "matchId": "synthetic-ascent-s05",
@@ -17,9 +18,12 @@
         "teamIdx": 0,
         "agentId": "jett",
         "position": {
-          "x": 780,
-          "y": 360
+          "x": 6153.6,
+          "y": -6626.2,
+          "z": 500,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-site",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -39,9 +43,12 @@
         "teamIdx": 0,
         "agentId": "sova",
         "position": {
-          "x": 780,
-          "y": 360
+          "x": 6153.6,
+          "y": -6626.2,
+          "z": 500,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-site",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -61,9 +68,12 @@
         "teamIdx": 0,
         "agentId": "omen",
         "position": {
-          "x": 760,
-          "y": 450
+          "x": 3980.9,
+          "y": -5938.8,
+          "z": 400,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-tree",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -83,9 +93,12 @@
         "teamIdx": 0,
         "agentId": "kayo",
         "position": {
-          "x": 720,
-          "y": 330
+          "x": 7358.7,
+          "y": -4689.3,
+          "z": 400,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-wine",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -105,9 +118,12 @@
         "teamIdx": 0,
         "agentId": "killjoy",
         "position": {
-          "x": 720,
-          "y": 615
+          "x": 5321.6,
+          "y": -4710.1,
+          "z": 400,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-main",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -127,9 +143,12 @@
         "teamIdx": 1,
         "agentId": "chamber",
         "position": {
-          "x": 780,
-          "y": 360
+          "x": 6153.6,
+          "y": -6626.2,
+          "z": 500,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-site",
         "facingDeg": 180.0,
         "health": 0,
         "armor": 50,
@@ -149,9 +168,12 @@
         "teamIdx": 1,
         "agentId": "cypher",
         "position": {
-          "x": 230,
-          "y": 360
+          "x": -2344.1,
+          "y": -7548.5,
+          "z": 100,
+          "frame": "game-world-uu"
         },
+        "zoneId": "b-site",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -171,9 +193,12 @@
         "teamIdx": 1,
         "agentId": "viper",
         "position": {
-          "x": 500,
-          "y": 120
+          "x": 1995.2,
+          "y": -9744.9,
+          "z": 100,
+          "frame": "game-world-uu"
         },
+        "zoneId": "defender-spawn",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -193,9 +218,12 @@
         "teamIdx": 1,
         "agentId": "neon",
         "position": {
-          "x": 825,
-          "y": 300
+          "x": 6129.9,
+          "y": -8210,
+          "z": 500,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-rafters",
         "facingDeg": 180.0,
         "health": 0,
         "armor": 50,
@@ -215,9 +243,12 @@
         "teamIdx": 1,
         "agentId": "fade",
         "position": {
-          "x": 500,
-          "y": 325
+          "x": 2753.9,
+          "y": -2129.6,
+          "z": 400,
+          "frame": "game-world-uu"
         },
+        "zoneId": "mid-top",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -238,6 +269,7 @@
       "carrierPlayerId": "atk1",
       "site": null,
       "pos": null,
+      "zoneId": null,
       "timeUntilDetonationMs": null
     },
     "teamEconomy": [
@@ -262,12 +294,16 @@
     ],
     "plantZones": {
       "A": {
-        "x": 780,
-        "y": 360
+        "x": 6153.6,
+        "y": -6626.2,
+        "z": 500,
+        "frame": "game-world-uu"
       },
       "B": {
-        "x": 230,
-        "y": 360
+        "x": -2344.1,
+        "y": -7548.5,
+        "z": 100,
+        "frame": "game-world-uu"
       }
     }
   },
@@ -288,7 +324,7 @@
     "sourceUrl": null,
     "sourceVersion": "0.1.0",
     "gamePatch": null,
-    "retrievedAt": "2026-11-18T08:55:15+00:00",
+    "retrievedAt": "2026-11-18T14:36:09+00:00",
     "evidenceType": "simulated",
     "confidence": null,
     "verified": false,
@@ -297,7 +333,7 @@
     "sha256": null,
     "notes": [
       "SYNTHETIC — not a real VCT match; do not present as real pro data.",
-      "Carrier on A site: PLANT is feasible here; a plant outside PLANT_ZONES['A'] must be rejected."
+      "Carrier on A site (zone a-site, plantable): PLANT is feasible; a plant outside a plant zone must be rejected."
     ]
   }
 }

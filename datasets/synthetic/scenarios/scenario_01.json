@@ -1,5 +1,6 @@
 {
   "contextId": "scenario-01-basic-attack",
+  "formatVersion": 2,
   "scenarioRef": "scenario-01",
   "worldState": {
     "matchId": "synthetic-ascent-s01",
@@ -17,9 +18,12 @@
         "teamIdx": 0,
         "agentId": "jett",
         "position": {
-          "x": 500,
-          "y": 905
+          "x": 60,
+          "y": 50,
+          "z": 190,
+          "frame": "game-world-uu"
         },
+        "zoneId": "attacker-spawn",
         "facingDeg": 0.0,
         "health": 100,
         "armor": 50,
@@ -43,9 +47,12 @@
         "teamIdx": 0,
         "agentId": "sova",
         "position": {
-          "x": 500,
-          "y": 905
+          "x": 60,
+          "y": 50,
+          "z": 190,
+          "frame": "game-world-uu"
         },
+        "zoneId": "attacker-spawn",
         "facingDeg": 0.0,
         "health": 100,
         "armor": 50,
@@ -69,9 +76,12 @@
         "teamIdx": 0,
         "agentId": "omen",
         "position": {
-          "x": 500,
-          "y": 905
+          "x": 60,
+          "y": 50,
+          "z": 190,
+          "frame": "game-world-uu"
         },
+        "zoneId": "attacker-spawn",
         "facingDeg": 0.0,
         "health": 100,
         "armor": 50,
@@ -95,9 +105,12 @@
         "teamIdx": 0,
         "agentId": "kayo",
         "position": {
-          "x": 500,
-          "y": 905
+          "x": 60,
+          "y": 50,
+          "z": 190,
+          "frame": "game-world-uu"
         },
+        "zoneId": "attacker-spawn",
         "facingDeg": 0.0,
         "health": 100,
         "armor": 50,
@@ -121,9 +134,12 @@
         "teamIdx": 0,
         "agentId": "killjoy",
         "position": {
-          "x": 500,
-          "y": 905
+          "x": 60,
+          "y": 50,
+          "z": 190,
+          "frame": "game-world-uu"
         },
+        "zoneId": "attacker-spawn",
         "facingDeg": 0.0,
         "health": 100,
         "armor": 50,
@@ -147,9 +163,12 @@
         "teamIdx": 1,
         "agentId": "chamber",
         "position": {
-          "x": 780,
-          "y": 360
+          "x": 6153.6,
+          "y": -6626.2,
+          "z": 500,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-site",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -169,9 +188,12 @@
         "teamIdx": 1,
         "agentId": "cypher",
         "position": {
-          "x": 230,
-          "y": 360
+          "x": -2344.1,
+          "y": -7548.5,
+          "z": 100,
+          "frame": "game-world-uu"
         },
+        "zoneId": "b-site",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -191,9 +213,12 @@
         "teamIdx": 1,
         "agentId": "viper",
         "position": {
-          "x": 500,
-          "y": 505
+          "x": 1222.7,
+          "y": -4586.6,
+          "z": 300,
+          "frame": "game-world-uu"
         },
+        "zoneId": "mid-courtyard",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -213,9 +238,12 @@
         "teamIdx": 1,
         "agentId": "neon",
         "position": {
-          "x": 720,
-          "y": 615
+          "x": 5321.6,
+          "y": -4710.1,
+          "z": 400,
+          "frame": "game-world-uu"
         },
+        "zoneId": "a-main",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -235,9 +263,12 @@
         "teamIdx": 1,
         "agentId": "fade",
         "position": {
-          "x": 500,
-          "y": 120
+          "x": 1995.2,
+          "y": -9744.9,
+          "z": 100,
+          "frame": "game-world-uu"
         },
+        "zoneId": "defender-spawn",
         "facingDeg": 180.0,
         "health": 100,
         "armor": 50,
@@ -258,6 +289,7 @@
       "carrierPlayerId": "atk1",
       "site": null,
       "pos": null,
+      "zoneId": null,
       "timeUntilDetonationMs": null
     },
     "teamEconomy": [
@@ -298,7 +330,7 @@
     "sourceUrl": null,
     "sourceVersion": "0.1.0",
     "gamePatch": null,
-    "retrievedAt": "2026-11-18T08:55:15+00:00",
+    "retrievedAt": "2026-11-18T14:36:09+00:00",
     "evidenceType": "simulated",
     "confidence": null,
     "verified": false,

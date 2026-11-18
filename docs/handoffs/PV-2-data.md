@@ -580,3 +580,31 @@ dataset 검증    : 31/31 files valid, 661 records (team_profiles 70 포함)
 - `datasets/derived/ratings/player_names.json`(playerId→핸들, 402명), `datasets/derived/team-profiles/team_names.json`(teamId→팀명, 70팀) **커밋**. 각 파일에 출처(빌드일·sha256)·고지 포함. 레코드는 계속 ID 기반(이름은 사이드카 매핑).
 - 고지 변경: "**출시 전 내부 개발용. 실명 사용은 사용자 결정(2026-11-18). 출시 전 라이선스·초상권 재검토 필요.**" + "공개 통계 기반 추정치이며 실제 실력 평가 아님" 유지. 범위: **공개 VCT 프로 선수·팀만**(비공개 개인 데이터 제외).
 - 스키마·README·research 문서 고지 동기화. 테스트 추가(매핑 생성 검증). gen-ratings/gen-team-profiles가 매핑도 자동 생성.
+
+## 8-D. 시나리오 v2 — 좌표계를 game-world uu로 통일 (PV-3/PV-4 통합 블로커 해소)
+**문제:** v1 합성 시나리오는 `minimapUnits`(VLR 미니맵 프레임 ≈0..1000)를 썼는데, 이것이 PV-4 navgraph·
+`datasets/spatial/`의 game-world Unreal units(uu)와 달라 PV-3에서 좌표 불일치 버그(F1)를 유발.
+
+**반영(v2, formatVersion=2):**
+- 스키마: `common.schema.json`에 `gameWorldPosition`({x,y,z,frame:const "game-world-uu"}) 추가, `vector2`는
+  **deprecated**로 표기. `world-state`/`position`/`event` 스키마의 모든 위치 필드를 `gameWorldPosition`으로 전환,
+  `zoneId`(playerState·spike)·`lastKnownZoneId`(observedEnemy)·`formatVersion` 추가.
+- 생성기: `synthetic_ascent.py`가 22개 Ascent 존을 game-world uu로 매핑(`ZONE_POS`/`CALLOUT_ZONE`), 모든
+  선수·스파이크·사운드 위치에 `zoneId`+game-world 좌표 출력. 10개 시나리오 의도는 존 매핑으로 보존.
+- 참조 데이터: `datasets/synthetic/ascent/ascent_zones_ref.json` = PV-4 navgraph 존 스냅샷(출처 커밋 f9f274f68c32,
+  coordinate-system.json). 검증기 전용.
+- 검증기: 합성 데이터의 모든 `zoneId`를 navgraph 존 목록과 대조하고, 위치가 존 대표점에서 **800uu 이내**인지 검사
+  (`_ZONE_TOLERANCE_UU`). 알 수 없는 존·먼 위치 모두 실패. 전용 테스트 3종 추가(on-zone 통과, unknown zone 실패,
+  far position 실패).
+
+**테스트/검증 결과(2026-11-18):**
+```
+data-collector : 46 passed
+data-validator : 14 passed (zone-check 3종 포함)
+economy-engine : 20 passed (vitest)
+dataset 검증    : 39/39 files valid, 705 records
+```
+
+**다음(통합 브랜치 `claude/pv-integration` 위에서, 소유 경로만, push 전 git pull --rebase):**
+1. 경기 단위 시뮬 출력을 `pv-validate-sim`으로 검증하는 자동 리포트(`pnpm sim:validate`).
+2. era 기본값 적용. 3. economy-engine 경기 단위 연동 지원.
