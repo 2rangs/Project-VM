@@ -176,6 +176,34 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * This only overrides the carrier's own command; everyone else's choice is untouched, and no
    * combat parameter is changed — it just stops the carrier abandoning the plant.
    */
+  /**
+   * ATTACK post-plant contest: after the plant, surviving attackers near the spike hold it
+   * (aimZone = plant zone) to watch the defuser, instead of wandering off — without this the
+   * committed defuser retakes uncontested and every plant is defused (0 detonations). Alive
+   * attackers within ~3s of the plant zone hold it pre-aimed; the combat engine then resolves the
+   * retake fight (a realistic defuse/detonation mix).
+   */
+  private commitPostPlantContest(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+    const out = commands.slice();
+    // Abilities-on only: with util, the plant is held by util-equalised fights; abilities-off is a
+    // merged, balance-tuned state (attack already slightly high) that this hold would inflate.
+    if (!this.options.abilityEffect || view.side !== "attack") return out;
+    const phase = view.spike.phase;
+    if (phase !== "planted" && phase !== "defusing") return out;
+    const pos = view.spike.position;
+    if (!pos) return out;
+    const plantZone = this.spatial.nearestZone({ x: pos.x, y: pos.y });
+    return out.map((c) => {
+      if (c.kind === "useAbility" || c.kind === "defuse") return c; // keep util / (n/a on attack)
+      const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
+      if (!tm) return c;
+      const pz = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
+      const near = pz === plantZone || (this.spatial.shortestTravelTimeMs(pz, plantZone, "run") ?? Infinity) <= 3000;
+      if (!near) return c; // far — let them rotate in / lurk
+      return { playerId: c.playerId, kind: "hold", aimZone: plantZone, executeAtMs: 0, sourceActionId: "attack-postplant-hold" };
+    });
+  }
+
   private commitSpikeCarrier(
     view: PolicyView,
     strategy: TeamStrategy,
@@ -325,6 +353,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
 
     let commands = this.commitAttackUtil(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
     commands = this.commitSpikeCarrier(view, strategy, commands);
+    commands = this.commitPostPlantContest(view, commands);
     commands = this.commitDefenseHold(view, strategy, commands);
     commands = this.commitDefuser(view, commands);
 

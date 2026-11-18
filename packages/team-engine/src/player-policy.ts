@@ -42,6 +42,10 @@ function selectionWeight(
   if (kind === "individual.peek" || kind === "individual.move") w *= 0.6 + profile.aggression;
   if (kind === "individual.hold") w *= Math.max(0.1, 1.4 - profile.aggression);
   if (kind === "individual.save") w *= strategy === "save" ? 2.2 : Math.max(0.2, 1.1 - profile.aggression);
+  // Casting occupies the weapon (windup) — over-casting loses duels. Keep stochastic ability use
+  // RARE so it reads as opportunistic; coordinated execute/retake utility goes through the policy's
+  // commitAttackUtil/defender paths, not this draw.
+  if (kind === "individual.useAbility") w *= 0.25;
 
   if (role === "entry" && (kind === "individual.move" || kind === "individual.peek")) w *= 1.6;
   if (role === "anchor" && kind === "individual.hold") w *= 1.6;

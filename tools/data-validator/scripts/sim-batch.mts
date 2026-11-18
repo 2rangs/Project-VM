@@ -82,6 +82,7 @@ async function main(): Promise<void> {
   const era = String(args["era"] ?? "all");
   const comparePath = args["compare"] !== undefined ? resolvePath(String(args["compare"])) : undefined;
   const doValidate = args["no-validate"] !== true;
+  const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
   if (outPath === `${reportPrefix}.json`) {
@@ -100,7 +101,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     for (const r of m.rounds) {
