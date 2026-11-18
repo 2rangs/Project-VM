@@ -448,3 +448,65 @@ running `monteCarloDuel(duel, trials)` → `wins[attacker]/trials`.
 Read `docs/DECISION_MODEL.md`, `docs/TEST_PLAN.md`, then this section. Entry points:
 `packages/team-engine/src/policy.ts`, `packages/outcome-predictor/src/predict.ts`,
 `packages/shared-types/src/decision-policy.ts`. Run `pnpm test && pnpm typecheck`.
+
+---
+
+# PROJECT V — TASK HANDOFF (PV-3 phase 4)
+
+**Agent:** PV-3 · **Date:** 2026-11-18 · **Branch:** `claude/pv-core`
+**Scope:** Integration preparation — adapters binding PV-3's seams to the other branches'
+engines (structural mirrors, no merge) + the integration plan.
+
+## 1–2. 목표 / 완료 (tested)
+Make final integration mechanical: `packages/integration-adapters` wraps PV-4/PV-2 engines
+as PROJECT V's seams via **structural mirrors** that compile now; swap imports at merge.
+- `spatialQueryFromEngine` ← spatial-engine (+ `MinimapUnitsConverter` for the minimapUnits↔
+  game-world transform from PV-4 coordinate-system.json).
+- `combatEstimatorFromEngine` ← combat-engine `monteCarloDuel` (wins/trials), optional
+  opening-duel prior blend (PV-2 combat_opening_duel.json).
+- `economyEvaluatorFromEngine` ← economy-engine `evaluateEconomy` (EconomyOption 1:1).
+- `availabilityToFeasibility`/`abilityFeasibility` ← ability-engine `checkAvailability`
+  (Constraint Validation).
+- `observationProviderForPlayer` ← perception-engine `perceive`.
+- `normalization.ts`: agent-slug/team-id/coordinate/time tables + per-branch notation survey
+  + KNOWN_MISMATCHES.
+- `docs/INTEGRATION_PLAN.md`: investigated branch inventory, merge order, **collision
+  analysis (no path collisions — additive merges)**, post-merge wiring (scope rename
+  @project-v→@pv, shared-mirror replacement, lockfile consolidation, import-swap checklist),
+  test commands, and the end-to-end Ascent acceptance test.
+
+## 3. 변경한 파일
+`packages/integration-adapters/**` (new: spatial/combat/economy/ability/observation adapters,
+normalization + tests), `docs/INTEGRATION_PLAN.md`, this handoff section.
+
+## 4. 데이터 출처 (read-only, not merged)
+spatial/combat/perception/ability: `origin/claude/pv-spatial @ e3ad1c54`. economy:
+`origin/claude/pv-data @ fe354096`. priors/coordinate-system: same branches. replay:
+`origin/claude/pv-replay @ 06b46d66`. Mirror headers record branch+commit.
+
+## 5–7. 실행 / 검증 / 결과
+`pnpm install && pnpm test && pnpm typecheck` → typecheck clean; **121 passed, 4 todo**
+(13 files). Adapter tests use fakes satisfying each mirror.
+
+## 8–9. 미완료 / 한계
+`round-simulator` (PV-4) and `apps/desktop` (PV-6) not yet pushed → the live e2e harness and
+the DecisionTrace→UI adapter are specified but not runnable. The minimapUnits↔normalized
+coordinate scale/orientation assumption needs verification with real data.
+
+## 10. 설계 결정
+Structural mirrors (no build dependency on sibling branches) keep pv-core green and make
+integration a mechanical import swap — the same pattern PV-6 used. Scope mismatch
+(@project-v vs @pv) and coordinate-frame mismatch are surfaced explicitly rather than hidden.
+
+## 11. 라이선스/권한
+No sibling code merged; mirrors are PROJECT V's own structural types. Datasets referenced
+read-only.
+
+## 12. 다음 권장 작업
+Execute INTEGRATION_PLAN §2 at merge time (orchestrator). Then wire economy-engine to
+promote scenarios 07–10 `todo`s, verify the coordinate transform, and add the e2e Ascent
+acceptance test once round-simulator lands.
+
+## 13. 작업 재개 지점
+`docs/INTEGRATION_PLAN.md`, then `packages/integration-adapters/src/index.ts` and each
+`*-adapter.ts` header. `pnpm test && pnpm typecheck`.
