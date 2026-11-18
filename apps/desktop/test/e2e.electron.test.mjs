@@ -54,6 +54,21 @@ async function main() {
   await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(OUT, 'desktop-matchday.png') });
 
+  // Fog-of-war: load the bundled perception demo (real PV-4 recordPerception data)
+  // and render one team's view — observed enemies, ghosts, sound zones, belief heatmap.
+  await page.getByTestId('load-perception-demo').click();
+  await page.waitForSelector('[data-testid="fog-on"]', { timeout: 10000 });
+  // seek to a moment with live contacts (first observation ~11s into round 1)
+  await page.locator('.rv-scrub').fill('15000');
+  await page.waitForTimeout(1200);
+  assert.ok(await page.getByTestId('fog-belief').isChecked(), 'belief heatmap on by default in demo');
+  await page.screenshot({ path: path.join(OUT, 'desktop-fog.png') });
+  // toggle belief off → fog without heatmap, and switch POV to the other team
+  await page.getByTestId('fog-belief').uncheck();
+  await page.selectOption('[data-testid="fog-pov"]', '1');
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: path.join(OUT, 'desktop-fog-pov.png') });
+
   // Squad (sortable table of real VCT names)
   await page.getByTestId('nav-squad').click();
   await page.waitForSelector('[data-testid="dt-row"]', { timeout: 10000 });

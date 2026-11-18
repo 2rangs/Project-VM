@@ -4,7 +4,7 @@
 // LOAD a Replay (file/drag/fetch/IPC). Pure presentation of engine state;
 // playback speed never changes computed state (DECISION-010).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { loadReplay, replayBounds, stateAt, type Replay } from '@pv/replay-engine';
+import { loadReplay, perceptionAt, replayBounds, stateAt, type Replay, type Vec3 } from '@pv/replay-engine';
 import { ReplayStage } from './PixiStage.ts';
 
 const SPEEDS = [0.5, 1, 2, 4];
@@ -31,10 +31,21 @@ export interface ReplayViewerProps {
   onSeek?: (ms: number) => void;
   /** External seek requests (e.g. "jump to this decision time"). */
   seekTo?: number | null;
+  /**
+   * Fog-of-war point of view. null/undefined = ground truth (every player shown,
+   * Dev only). A team index (0/1) renders only that team's perception: observed
+   * enemies, ghosts and sound cues, hiding real positions. Requires replay.perception.
+   */
+  perceptionPovTeamIdx?: number | null;
+  /** Overlay the POV team's belief heatmap (only meaningful with a POV set). */
+  showBelief?: boolean;
+  /** Zone id → world centroid, for placing belief/sound overlays (PV-4 navgraph). */
+  zonePositions?: Record<string, Vec3>;
 }
 
 export function ReplayViewer({
   replay, initialSeekMs, minimapResolver = valorantApiMinimap, size = 760, onSeek, seekTo,
+  perceptionPovTeamIdx = null, showBelief = false, zonePositions,
 }: ReplayViewerProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<ReplayStage | null>(null);
@@ -97,10 +108,16 @@ export function ReplayViewer({
     return () => cancelAnimationFrame(raf);
   }, [playing, speed, safeReplay, bounds.endMs]);
 
-  // render current instant
+  // render current instant — ground truth, or one team's fog-of-war view
   useEffect(() => {
-    if (ready && safeReplay && stageRef.current) stageRef.current.render(stateAt(safeReplay, tMs), safeReplay);
-  }, [ready, safeReplay, tMs]);
+    if (!(ready && safeReplay && stageRef.current)) return;
+    const snap = stateAt(safeReplay, tMs);
+    const pov = perceptionPovTeamIdx;
+    const perc = pov != null && safeReplay.perception ? perceptionAt(safeReplay, pov, tMs) : null;
+    stageRef.current.renderPerception(snap, safeReplay, perc, {
+      povTeamIdx: pov ?? null, showBelief, zonePositions: zonePositions ?? {},
+    });
+  }, [ready, safeReplay, tMs, perceptionPovTeamIdx, showBelief, zonePositions]);
 
   const fmt = (ms: number) => {
     const s = Math.max(0, Math.floor(ms / 1000));
