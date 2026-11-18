@@ -16,6 +16,9 @@ npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20 --out reports/si
 - **Engine commit:** integration `482a304` (match-runner; numbers are bit-identical to the first
   measurement at `8a0ea8f` — the game-data/team change between them does not affect round mechanics).
   This is **pre** PV-3's timeExpired fix and **pre** PV-4's round-engine merge.
+- **Machine-readable baseline:** `SIM_BASELINE_2026-11-18.json` (the report JSON for this run). Diff a
+  later run against it: `npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20 --compare
+  docs/research/SIM_BASELINE_2026-11-18.json` → adds Base / Δ / Move (↑ better / ↓ worse) columns.
 - **Config:** 20 matches, seeds 1–20, map Ascent, `@pv/match-runner` `runMatch` (pistol → halves →
   first-to-13 w/ OT). 461 rounds total, 4 matches to OT, ~30 s.
 - **Baselines:** VCT Reference priors `a1a189d0ec7d9a71…` (build 2026-11-12), era `all`,

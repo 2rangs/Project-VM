@@ -13,13 +13,8 @@
  * A richer per-player buy and weapon-preservation model is the economy-engine's job (follow-up).
  * All values are provisional (game-rules values are verified:false).
  */
-import {
-  ECONOMY_RULES,
-  ROUND_RULES,
-  lossBonusFor,
-  clampCredits,
-  weaponPrice,
-} from "@pv/game-rules";
+import { ECONOMY_RULES, ROUND_RULES, weaponPrice } from "@pv/game-rules";
+import { advanceTeamEconomy, lossBonusTierFor } from "@pv/economy-engine";
 
 export interface TeamEconomy {
   credits: number;
@@ -38,9 +33,6 @@ export interface BuyDecision {
 }
 
 const START = ECONOMY_RULES.startingCredits.value; // 800
-const WIN = ECONOMY_RULES.roundWinReward.value; // 3000
-const KILL = ECONOMY_RULES.killReward.value; // 200
-const PLANT = ECONOMY_RULES.spikePlantReward.value; // 300
 const OT_CREDITS = ROUND_RULES.overtimeCredits.value; // provisional 5000
 
 const priceOf = (key: string) => weaponPrice(key)?.price.value ?? 0;
@@ -67,20 +59,21 @@ export function decideBuy(credits: number, isPistol: boolean): BuyDecision {
 }
 
 /**
- * Apply a round's outcome to one team economy (mirror of economy-engine's `advanceTeamEconomy`):
- * credits = clamp(leftover + win|lossBonus + plant + kills), loss streak updated, ult points
- * carried. `leftoverCredits` is what remains AFTER this round's buy (defaults to current credits).
+ * Apply a round's outcome to one team economy via @pv/economy-engine's canonical
+ * `advanceTeamEconomy` (credits = clamp(leftover + win|lossBonus + plant + kills), loss streak
+ * updated), and carry ultimate points on top (the engine state does not track ult points).
+ * `leftoverCredits` is what remains AFTER this round's buy (defaults to the current credits).
  */
 export function applyRoundOutcome(
   eco: TeamEconomy,
   opts: { won: boolean; kills: number; planted: boolean; leftoverCredits?: number },
 ): TeamEconomy {
-  const leftover = opts.leftoverCredits ?? eco.credits;
-  const consecutiveLosses = opts.won ? 0 : eco.consecutiveLosses + 1;
-  // Loss bonus uses the streak INCLUDING this loss (1st loss → ladder[0]); winners reset.
-  const award = (opts.won ? WIN : lossBonusFor(consecutiveLosses)) + Math.max(0, opts.kills) * KILL + (opts.planted ? PLANT : 0);
+  const next = advanceTeamEconomy(
+    { teamId: "", side: "attack", credits: eco.credits, consecutiveLosses: eco.consecutiveLosses, lossBonusTier: lossBonusTierFor(eco.consecutiveLosses) },
+    { won: opts.won, planted: opts.planted, kills: Math.max(0, opts.kills), leftoverCredits: opts.leftoverCredits ?? eco.credits },
+  );
   const ultPoints = eco.ultPoints + Math.max(0, opts.kills) + (opts.planted ? 1 : 0);
-  return { credits: clampCredits(leftover + award), consecutiveLosses, ultPoints };
+  return { credits: next.credits, consecutiveLosses: next.consecutiveLosses, ultPoints };
 }
 
 /** Reset economy at a half (both teams go back to the pistol buy); ult points persist. */
