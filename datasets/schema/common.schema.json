@@ -27,6 +27,13 @@
         "y": { "type": "number", "description": "Y in minimapUnits." }
       }
     },
+    "anyPosition": {
+      "description": "A position in EITHER the canonical game-world uu frame (v2, gameWorldPosition, which carries frame='game-world-uu') OR the deprecated minimapUnits frame (v1, vector2, {x,y} only). Accepts both so a loader can validate v1 and v2 DecisionContext/event documents during the v1→v2 transition (formatVersion distinguishes them). The two branches are mutually exclusive: gameWorldPosition requires `frame`, vector2 forbids extra properties.",
+      "anyOf": [
+        { "$ref": "#/$defs/gameWorldPosition" },
+        { "$ref": "#/$defs/vector2" }
+      ]
+    },
     "vector3": {
       "type": "object",
       "description": "3D point in game-world units. VALORANT's native engine unit is the Unreal unit (1 uu approx 1 cm). Populated only when a true 3D source (replay decode) is available; null/absent for minimap-only sources.",

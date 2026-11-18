@@ -75,6 +75,41 @@ def _scenario(zone_id, x, y):
     }
 
 
+def _scenario_v1(x, y):
+    """A legacy v1 DecisionContext: minimapUnits {x,y} positions, no frame/zoneId/formatVersion."""
+    return {
+        "contextId": "v1",
+        "worldState": {
+            "matchId": "syn", "roundId": "syn:1", "mapName": "Ascent",
+            "timeRemainingMs": 100000, "roundPhase": "round",
+            "players": [{
+                "playerId": "p0", "teamIdx": 0, "alive": True,
+                "position": {"x": x, "y": y},  # minimapUnits vector2, no frame
+            }],
+            "spike": {"status": "carried", "carrierPlayerId": "p0"},
+        },
+        "decidingTeamIdx": 0,
+        "provenance": {"sourceId": "syn", "retrievedAt": "2026-01-01T00:00:00+00:00",
+                       "evidenceType": "simulated", "synthetic": True},
+    }
+
+
+def test_schema_accepts_v1_minimap_and_v2_gameworld(tmp_path):
+    """Backward compatibility: both the legacy minimapUnits (v1) and game-world (v2) position
+    shapes validate against the schema, so a loader can read either during the v1->v2 transition."""
+    reg = load_registry(str(SCHEMA_DIR))
+    d = tmp_path / "datasets" / "synthetic" / "scenarios"
+    d.mkdir(parents=True, exist_ok=True)
+    v1 = d / "scenario_v1.json"
+    v1.write_text(json.dumps(_scenario_v1(500.0, 420.0)))
+    # no zone ref present -> zone-check skipped; v1 has no zoneId anyway
+    assert validate_file(str(v1), reg).ok, validate_file(str(v1), reg).errors
+    # and a v2 game-world scenario still validates (no zone ref -> coordinate check skipped)
+    v2 = d / "scenario_v2.json"
+    v2.write_text(json.dumps(_scenario("a-site", 6153.6, -6626.2)))
+    assert validate_file(str(v2), reg).ok, validate_file(str(v2), reg).errors
+
+
 def test_zone_check_accepts_position_on_zone(tmp_path):
     reg = load_registry(str(SCHEMA_DIR))
     _write_zone_ref(tmp_path)

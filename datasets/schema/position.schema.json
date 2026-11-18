@@ -7,8 +7,7 @@
   "required": [
     "playerId",
     "x",
-    "y",
-    "frame"
+    "y"
   ],
   "additionalProperties": false,
   "properties": {
@@ -29,8 +28,8 @@
       "description": "Z (elevation) in game units (uu)."
     },
     "frame": {
-      "const": "game-world-uu",
-      "description": "Coordinate frame tag; always 'game-world-uu'."
+      "enum": ["game-world-uu", "minimapUnits"],
+      "description": "Coordinate frame tag. v2 uses 'game-world-uu' (canonical); 'minimapUnits' is the deprecated v1 frame, accepted for backward compatibility. Absent is treated as legacy minimapUnits."
     },
     "zoneId": {
       "type": [

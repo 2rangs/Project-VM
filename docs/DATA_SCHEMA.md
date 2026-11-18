@@ -26,6 +26,10 @@ Two rules run through everything:
   zone's representative point.
   - **`minimapUnits` is DEPRECATED** (the legacy `vector2` def, VLR minimap frame ≈ 0..1000). It was
     the v1 frame and caused a coordinate-mismatch bug in PV-3; new data must use `gameWorldPosition`.
+  - **Backward compatibility:** position fields reference `common.schema.json#/$defs/anyPosition`
+    (`anyOf` of `gameWorldPosition` and `vector2`), and `position.schema.json`'s `frame` is an optional
+    enum of both values. So a loader can validate **both** v1 (minimapUnits) and v2 (game-world uu)
+    DecisionContext/event documents during the transition; `formatVersion` (2 = v2) distinguishes them.
 - **Time:** round combat clock counts **down** from `100000 ms` (buy phase excluded, matching
   vctstats `ROUND_SECONDS=100`); after the plant the spike timer governs (`SPIKE_SECONDS=45000 ms`).
 - **Team index:** a match fixes `teamIds[0]=team0`, `teamIds[1]=team1`; rounds/stats reference teams
