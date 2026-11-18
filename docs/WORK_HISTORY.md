@@ -207,6 +207,11 @@
 
 - judged 통과 0/9 → **3/8**.
 
+### 5차 main 머지 (20:47 UTC) — 엔진 현실화
+- `runMatchRound` 이전(선수별 skills·로드아웃·요원/스킬/궁극기, 스킬은 `enableAbilities` 기본 off), 수비 hold-facing + `aimZone`, 피커 이점(210ms) + 교전 재보정(hitChanceScale 0.50, Scripted 오프닝 0.450), 타깃 존 스킬, 몰리 = 통과 가능 + 피해 + 경로 비용(`visibleHazards`), engagement/command trace, 경기 후 리뷰 화면.
+- 오케스트레이터 재현(20경기·409R): judged **3/8**(time_expired 0.044, 오프닝 듀얼 0.474, pistol 0.475 통과). 공격 승률 0.619, elimination 0.853, 폭발 0.
+- **판명된 사실:** 공격 0.62는 정책이 아니라 **sim 시나리오 구조**(유틸 없는 5v2) 때문 — Scripted vs Scripted도 0.633. 스킬 on에서 "시전하는 쪽이 진다"(시전이 행동 전체를 점유) → 엔진 시전 모델 현실화(windup만 점유) 진행 중.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
