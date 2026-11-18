@@ -347,3 +347,104 @@ flagged). No external services called.
 | `teamEconomy.bank/lossBonusTier` | `TeamEconomyState.credits/lossBonusTier` | `consecutiveLosses≈tier` |
 | `belief.*` | `ObservationState` + `BeliefState` | observed/inferred only (DECISION-004) |
 | `provenance.*` | `ScenarioProvenance` | synthetic flag preserved |
+
+---
+
+# PROJECT V — TASK HANDOFF (PV-3 phase 3)
+
+**Agent:** PV-3 (Simulation Core) · **Date:** 2026-11-18 · **Branch:** `claude/pv-core`
+**Scope:** Team Engine / IGL + Player Policy, Outcome Predictor v0, and reconciliation with
+PV-1 (ultimate costs) and PV-2 (economy-engine). No cross-branch merge.
+
+## 1. 작업 목표
+Add the team-decision layer (IGL strategy/roles, player policy, teamwork) behind a
+`DecisionPolicy` the round-simulator can drive, plus a budget-bounded Outcome Predictor,
+while folding in PV-1's verified ultimate costs and PV-2's finished economy-engine contract.
+
+## 2. 완료한 작업 (tested)
+- **3(0) Ultimate costs:** all 30 agents, `verified:true`, patch `release-13.10`, sourced
+  from PV-1 (`origin/claude/pv-research` ability_facts.json). jett 8 / brimstone 8 / sage 7
+  / killjoy 9 corrected. `confirmed()` builder added.
+- **3(0) Economy:** `EconomyEvaluator` realigned to PV-2's `EconomyOption` contract
+  (saveOptions/exitKillOptions). SAVE/EXIT_KILL utility now derives from the chosen option.
+- **3(A) Team Engine** (`@pv/team-engine`): IGL (eco≠full strategy, enemy-read → rotate),
+  roles, player policy (profile/role/strategy-biased seeded selection), teamwork, and
+  `TeamDecisionPolicy` implementing `DecisionPolicy` + a round report.
+- **3(B) Outcome Predictor** (`@pv/outcome-predictor`): top-K depth-1 lookahead with a
+  compute budget + heuristic fallback (§25.2); `CombatEstimator` seam + heuristic default.
+- **Seams** added to `@pv/shared-types`: `DecisionPolicy`/`PolicyView`/`ActionCommand`,
+  `CombatEstimator`, and the realigned `EconomyEvaluator`/`EconomyOption`.
+
+## 3. 변경한 파일 (new/changed)
+```
+packages/shared-types/src/{decision-policy,combat-estimator}.ts; economy-evaluator.ts (rewrite); world-state.ts (matchScore)
+packages/game-rules/src/{ultimate.ts (30 verified), rule-value.ts (confirmed())}
+packages/world-state/src/{create.ts, scenario.ts} (matchScore mapping)
+packages/action-generator/src/generate.ts (EconomyOption usage; retreat low-risk)
+packages/team-engine/**            (new: view, igl, player-policy, teamwork, policy, report + tests)
+packages/outcome-predictor/**      (new: predict, heuristic-combat + tests)
+docs/handoffs/PV-3-core.md (this section)
+```
+
+## 4. 데이터 출처
+- PV-1 ultimate costs: `origin/claude/pv-research @ 6759b5c` (fetched, read-only).
+- PV-2 economy contract: `origin/claude/pv-data @ 09894ea` `packages/economy-engine`,
+  `docs/ECONOMY_MODEL.md` (read-only; not merged).
+- PV-4 combat API shape: `origin/claude/pv-spatial` `packages/combat-engine` (read-only).
+
+## 5–7. 실행 / 검증 / 결과
+`pnpm install && pnpm test && pnpm typecheck` → typecheck clean; **109 passed, 4 todo**
+(12 files). New tests: IGL eco≠full; enemy-read → rotate; policy input has no WorldState
+(type+runtime); same seed → same decisions; teamwork util-before-entry; outcome-predictor
+budget fallback / top-K / determinism; scenarios 03/04 at the team layer.
+
+## 8. 현재 미완료 사항
+Real adapters to PV-4 (spatial/perception/combat) and PV-2 (economy-engine); opponent
+pattern memory across rounds (IGL currently uses current-round info only); richer teamwork;
+multi-tick policy loop (the round-simulator owns the loop); deeper lookahead.
+
+## 9. 알려진 한계
+`DecisionPolicy` is PV-3's proposed contract (round-simulator not yet pushed) — see §12.
+Combat/economy/spatial are stubbed behind interfaces. Generator weights + predictor weights
+remain provisional heuristics.
+
+## 10. 설계 결정
+A fourth seam set (`DecisionPolicy`, `CombatEstimator`) continues the dependency-inversion
+pattern. The policy input (`PolicyView`) deliberately has NO WorldState and only own-team
+players, so omniscient play is unrepresentable (DECISION-004, tested). Team-engine rebuilds
+a team-only synthetic context to reuse the Action Generator without leaking enemy truth.
+
+## 11. 라이선스/권한
+No third-party data bundled; sibling branches read-only, not merged.
+
+## 12. 다음 권장 작업 / INTEGRATION CONTRACTS
+
+### 12a. DecisionPolicy (for PV-4 round-simulator) — PV-3 proposes, please reconcile
+- Input: `PolicyView` (shared-types) — team-observable only, NO `WorldState`, teammates =
+  own team; map via `SpatialQuery` is a construction dep, not per-call input.
+- Output: `PolicyDecision { strategy, roles, commands: ActionCommand[] }`; `ActionCommand`
+  kinds = move(walk|run)/hold/peek/useAbility/plant/defuse/save, each with `targetZone`,
+  `abilityId`, `executeAtMs` (coordination). RNG: `RandomSource` (RngStream satisfies it).
+- Entry: `new TeamDecisionPolicy(spatial, {profiles?, economy?}).decide(view, rng)`.
+
+### 12b. Economy adapter (PV-3 `EconomyContext` → economy-engine `evaluateEconomy`)
+At integration, implement `EconomyEvaluator` over `@pv/economy-engine`:
+```
+saveOptions(ctx) = evaluateEconomy({ phase:"save", context: {
+  survivorWeaponKey: <acting player weapon slug>, roundWinProb: <from outcome-predictor>,
+  aliveOwn: ctx.aliveSelf, aliveEnemy: ctx.aliveEnemy, roundNum: ctx.roundNumber,
+  matchScore: ctx.matchScore ?? [0,0], teamIdx: <0|1 from teamId>, consecutiveLosses: <economy>,
+  enemyNearUlt?: <ult belief>, escapeRisk?: <derived> }})
+exitKillOptions(ctx) = evaluateEconomy({ phase:"exitKill", context: {
+  enemyWeaponKey, ownWeaponKey, killProb: <combat estimate>, ownDeathProb, enemyNearUlt? }})
+```
+Both return `EconomyOption[]` already matching PV-3's `EconomyOption` shape (1:1).
+
+### 12c. CombatEstimator (for PV-4 combat-engine)
+Implement `estimateDuelWinProb(input)` by building a `Duel` from `CombatEstimateInput` and
+running `monteCarloDuel(duel, trials)` → `wins[attacker]/trials`.
+
+## 13. 작업 재개 지점
+Read `docs/DECISION_MODEL.md`, `docs/TEST_PLAN.md`, then this section. Entry points:
+`packages/team-engine/src/policy.ts`, `packages/outcome-predictor/src/predict.ts`,
+`packages/shared-types/src/decision-policy.ts`. Run `pnpm test && pnpm typecheck`.
