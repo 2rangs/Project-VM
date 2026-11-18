@@ -44,6 +44,26 @@ export function provisional<T>(
   };
 }
 
+/**
+ * Build a VERIFIED rule value — a number cross-checked against a primary source. Use only
+ * when the value was actually confirmed (e.g. by another agent against the official wiki /
+ * live build), and record who/what in `note`.
+ */
+export function confirmed<T>(
+  value: T,
+  source: string,
+  opts: { unit?: string; patch: string; note?: string },
+): RuleValue<T> {
+  return {
+    value,
+    source,
+    patch: opts.patch,
+    verified: true,
+    ...(opts.unit !== undefined ? { unit: opts.unit } : {}),
+    ...(opts.note !== undefined ? { note: opts.note } : {}),
+  };
+}
+
 /** Assert that a rule value has been verified; useful in rule-consuming guards/tests. */
 export function requireVerified<T>(rv: RuleValue<T>, context: string): T {
   if (!rv.verified) {

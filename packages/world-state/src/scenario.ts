@@ -403,6 +403,10 @@ export function loadDecisionContext(raw: unknown, options: LoadOptions = {}): Te
     tick: isNum(w["tick"]) ? (w["tick"] as number) : 0,
     spike,
     economy: buildEconomy(w["teamEconomy"], attackingTeamIdx),
+    matchScore:
+      Array.isArray(w["matchScore"]) && w["matchScore"].length === 2 && w["matchScore"].every(isNum)
+        ? [w["matchScore"][0] as number, w["matchScore"][1] as number]
+        : null,
   });
 
   const decidingTeamId = teamIdFor(decidingTeamIdx);

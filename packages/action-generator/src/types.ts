@@ -7,6 +7,7 @@
  */
 import type {
   CandidateAction,
+  EconomyEvaluator,
   InfeasibilityReason,
   PlayerId,
   SpatialQuery,
@@ -62,6 +63,11 @@ export interface GeneratorInput {
   readonly spatial: SpatialQuery;
   /** Believed enemy pressure per zone (from @pv/decision-engine). Defaults to 0 everywhere. */
   readonly enemyPressure?: EnemyPressureFn;
+  /**
+   * Economy value model (PV-2's economy-engine). When provided, SAVE/EXIT_KILL are valued
+   * by it; when omitted, a provisional heuristic is used and the rationale says so.
+   */
+  readonly economy?: EconomyEvaluator;
   /** Reserved for future stochastic rollouts; evaluation is currently deterministic. */
   readonly seed?: number | string;
 }

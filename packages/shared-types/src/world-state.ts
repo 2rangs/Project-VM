@@ -108,6 +108,9 @@ export interface WorldState {
 
   readonly economy: readonly TeamEconomyState[];
 
+  /** Rounds won so far [team0, team1]; needed for save/match-point reasoning (Handoff §20.9). */
+  readonly matchScore?: readonly [number, number] | null;
+
   /** Ordered, append-only event log for this round (canonical replay record). */
   readonly events: readonly GameEvent[];
 }

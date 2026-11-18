@@ -101,6 +101,7 @@ export interface CreateWorldInput {
   readonly tick?: number;
   readonly spike?: SpikeState;
   readonly economy?: readonly TeamEconomyState[];
+  readonly matchScore?: readonly [number, number] | null;
 }
 
 const DEFAULT_SPIKE: SpikeState = {
@@ -124,6 +125,7 @@ export function createWorldState(input: CreateWorldInput): WorldState {
     activeAbilities: [],
     environment: { openDoors: [], activeInteractables: [] },
     economy: input.economy ?? [],
+    matchScore: input.matchScore ?? null,
     events: [],
   };
   return deepFreeze(world);

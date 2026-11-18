@@ -64,20 +64,20 @@ describe("Handoff §20 scenarios 01–10 (end-to-end pipeline)", () => {
     expect(feasibleIds(a)).toContain("SAVE");
     expect(a.result.feasible.find((x) => x.id === "SAVE")!.evaluation.rationale.join(" ")).toMatch(/economy/i);
   });
-  it.todo("07 operator save: preservation VALUE of the Operator vs. future rounds — needs economy/save engine (P3)");
+  it.todo("07 operator save: preservation VALUE of the Operator vs. future rounds — verified by economy-engine (PV-2)");
 
   it("08 ult denial: 1v4 — SAVE generated; avoids feeding a kill (valuation is todo)", () => {
     const a = analyze("08");
     expect(feasibleIds(a)).toContain("SAVE");
   });
-  it.todo("08 ult denial: weigh enemy ult charge (neon 6/7) — needs ultimate engine (P3)");
+  it.todo("08 ult denial: weigh enemy ult charge (neon 6/7) — verified by economy-engine/ultimate (PV-2)");
 
   it("09 match point: 1v4 at match point — SAVE still generated (no-future-round value is todo)", () => {
     const a = analyze("09");
     expect(a.team.world.players.length).toBeGreaterThan(0);
     expect(feasibleIds(a)).toContain("SAVE");
   });
-  it.todo("09 match point: remove future-round save value when a loss ends the map — needs save/match-value engine (P3)");
+  it.todo("09 match point: remove future-round save value when a loss ends the map — verified by economy-engine (PV-2)");
 
   it("10 exit kill: post-plant with an observed enemy — exit-kill candidate is generated", () => {
     const a = analyze("10");
@@ -85,7 +85,7 @@ describe("Handoff §20 scenarios 01–10 (end-to-end pipeline)", () => {
     expect(a.trace.observed.visibleEnemies.length).toBeGreaterThan(0);
     expect(feasibleIds(a).some((id) => id.startsWith("EXIT_KILL_"))).toBe(true);
   });
-  it.todo("10 exit kill: chase-the-Operator VALUE vs. keeping 3 rifles — needs economy engine (P3)");
+  it.todo("10 exit kill: chase-the-Operator VALUE vs. keeping 3 rifles — verified by economy-engine (PV-2)");
 
   it("is deterministic end-to-end for the same scenario", () => {
     expect(analyze("01").result).toEqual(analyze("01").result);

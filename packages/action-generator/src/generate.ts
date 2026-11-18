@@ -24,6 +24,7 @@ import type {
   TeamDecisionContext,
   ZoneId,
 } from "@pv/shared-types";
+import type { EconomyContext } from "@pv/shared-types";
 import {
   type ActionEvaluation,
   type EnemyPressureFn,
@@ -83,6 +84,16 @@ export function generateActions(input: GeneratorInput): GenerationResult {
   const aliveSelf = alive.length;
   const aliveEnemy =
     team.knownEnemyAliveCount ?? team.observation.visibleEnemies.length;
+  const economy = input.economy ?? null;
+  const econCtx: EconomyContext = {
+    roundNumber: world.roundNumber,
+    side: team.decidingSide,
+    aliveSelf,
+    aliveEnemy,
+    timeRemainingMs: world.timeRemainingMs,
+    matchScore: world.matchScore ?? null,
+    selfLoadoutValue: null,
+  };
 
   const zoneOf = (p: PlayerState): ZoneId => spatial.nearestZone({ x: p.position.x, y: p.position.y });
   const sites = spatial.zonesByType("site");
@@ -230,9 +241,9 @@ export function generateActions(input: GeneratorInput): GenerationResult {
       add({
         candidate: mkCandidate(`EXIT_KILL_${e.playerId}`, "strategic.exitKill", "strategic", [chaser],
           { targetEnemy: e.playerId, targetZone: ez }, (t ?? 0) + 1000, 0, feas),
-        baseValue: BASE.exitKill, riskZone: ez, strategic: true,
+        baseValue: economy ? economy.exitKillValue(econCtx) : BASE.exitKill, riskZone: ez, strategic: true,
         explanation: t === null ? "cannot reach the saver" : "",
-        extraRationale: ["exit-kill value vs. keeping rifles needs the economy engine (P3) — provisional"],
+        extraRationale: [economy ? "exit-kill value from economy-engine (PV-2)" : "exit-kill value vs. keeping rifles delegated to economy-engine (PV-2) — provisional"],
       });
     }
   }
@@ -291,14 +302,18 @@ export function generateActions(input: GeneratorInput): GenerationResult {
     }
   }
 
-  // SAVE is always a strategic option (valuation needs the economy/save engine — P3).
+  // SAVE is always a strategic option. Its VALUE is the economy engine's job (PV-2); if no
+  // EconomyEvaluator is supplied we use a provisional heuristic and say so.
   {
     const disadvantaged = aliveEnemy > aliveSelf;
     const saveBonus = disadvantaged ? WEIGHTS.disadvantageRisk * (aliveEnemy - aliveSelf) : 0;
+    const baseValue = economy ? economy.saveValue(econCtx) : BASE.save + saveBonus;
+    const rationale = economy
+      ? ["save value from economy-engine (PV-2)", ...(economy.hasFutureRounds(econCtx) ? [] : ["no future round — match point"])]
+      : ["save value (equipment/next-round/ult denial) delegated to economy-engine (PV-2) — provisional heuristic"];
     add({
       candidate: mkCandidate("SAVE", "strategic.save", "strategic", alive, { reason: "preserve equipment" }, 2000, 0, feasible),
-      baseValue: BASE.save + saveBonus, riskZone: null, strategic: true, explanation: "",
-      extraRationale: ["save value (equipment/next-round/ult denial) needs the economy & ultimate engines (P3) — provisional"],
+      baseValue, riskZone: null, strategic: true, explanation: "", extraRationale: rationale,
     });
   }
 

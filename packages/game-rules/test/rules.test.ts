@@ -10,6 +10,7 @@ import {
   canDefuseWithin,
   isUltimateReady,
   ultimatePointsRequired,
+  ULTIMATE_COSTS,
   ROUND_RULES,
   isRegulationWin,
   requireVerified,
@@ -57,12 +58,23 @@ describe("spike feasibility (README §15.3 / Scenario 04)", () => {
 });
 
 describe("ultimate rules", () => {
-  it("reports points required and readiness", () => {
+  it("reports points required and readiness (PV-1 verified, build 13.10)", () => {
     const req = ultimatePointsRequired("jett");
-    expect(req).toBe(7);
-    expect(isUltimateReady("jett", 7)).toBe(true);
-    expect(isUltimateReady("jett", 6)).toBe(false);
+    expect(req).toBe(8); // corrected 7->8 per PV-1 wiki/build-13.10 cross-check
+    expect(isUltimateReady("jett", 8)).toBe(true);
+    expect(isUltimateReady("jett", 7)).toBe(false);
     expect(isUltimateReady("unknown-agent", 99)).toBe(false);
+    // Spot-check the other corrected agents.
+    expect(ultimatePointsRequired("brimstone")).toBe(8);
+    expect(ultimatePointsRequired("sage")).toBe(7);
+    expect(ultimatePointsRequired("killjoy")).toBe(9);
+  });
+
+  it("ultimate costs are verified against a primary source", () => {
+    const jett = ULTIMATE_COSTS.find((u) => u.agentKey === "jett")!;
+    expect(jett.pointsRequired.verified).toBe(true);
+    expect(jett.pointsRequired.patch).toBe("release-13.10");
+    expect(ULTIMATE_COSTS.length).toBeGreaterThanOrEqual(30);
   });
 });
 

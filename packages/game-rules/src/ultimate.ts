@@ -10,7 +10,7 @@
  * ultimate points differently from a normal kill — those rules are explicitly marked
  * UNVERIFIED here and must be confirmed per patch.
  */
-import { provisional, type RuleValue } from "./rule-value.js";
+import { confirmed, provisional, type RuleValue } from "./rule-value.js";
 
 const PATCH_1_0 =
   "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-0/";
@@ -45,19 +45,38 @@ export const ULTIMATE_POINT_RULES: UltimatePointRules = {
   }),
 };
 
-/** Per-agent ultimate point requirement. Provisional sample; expand from valorant-api. */
+/** Per-agent ultimate point requirement. */
 export interface UltimateCost {
   readonly agentKey: string; // lowercase slug; map to valorant-api UUIDs in datasets/schema
   readonly pointsRequired: RuleValue<number>;
 }
 
+/**
+ * All 30 agents' ultimate point costs, VERIFIED by PV-1 against the official VALORANT wiki
+ * (Abilities tables) and the live game build release-13.10 (valorant-api /v1/version),
+ * fetched 2026-11-18. Source data: origin/claude/pv-research @ 6759b5c
+ * `tools/catalog-builder/data/ability_facts.json` (field `ultPoints`). Slugs are the
+ * research slugs; note `kay-o` here (valorant-api/scenarios use `kayo` — reconcile at
+ * integration). The Action Generator reads a player's own `ultimateCost` from the loaded
+ * loadout, so this table is reference data, not the per-decision source.
+ */
+const ULT_SOURCE = "https://wiki.playvalorant.com/en-us/Abilities";
+const ULT_NOTE =
+  "Cross-checked by PV-1 vs official wiki + live build release-13.10 (origin/claude/pv-research ability_facts.json).";
+const ult = (agentKey: string, pts: number): UltimateCost => ({
+  agentKey,
+  pointsRequired: confirmed(pts, ULT_SOURCE, { unit: "points", patch: "release-13.10", note: ULT_NOTE }),
+});
+
 export const ULTIMATE_COSTS: readonly UltimateCost[] = [
-  { agentKey: "jett", pointsRequired: provisional(7, WIKI_ABILITIES, { unit: "points", patch: "UNVERIFIED" }) },
-  { agentKey: "sova", pointsRequired: provisional(8, WIKI_ABILITIES, { unit: "points", patch: "UNVERIFIED" }) },
-  { agentKey: "sage", pointsRequired: provisional(8, WIKI_ABILITIES, { unit: "points", patch: "UNVERIFIED" }) },
-  { agentKey: "omen", pointsRequired: provisional(7, WIKI_ABILITIES, { unit: "points", patch: "UNVERIFIED" }) },
-  { agentKey: "killjoy", pointsRequired: provisional(8, WIKI_ABILITIES, { unit: "points", patch: "UNVERIFIED" }) },
-  { agentKey: "brimstone", pointsRequired: provisional(7, WIKI_ABILITIES, { unit: "points", patch: "UNVERIFIED" }) },
+  ult("astra", 7), ult("breach", 8), ult("brimstone", 8), ult("chamber", 8), ult("clove", 8),
+  ult("cypher", 7), ult("deadlock", 7), ult("fade", 8), ult("gekko", 8), ult("harbor", 7),
+  ult("hush", 8), ult("iso", 7), ult("jett", 8), ult("kay-o", 8), ult("killjoy", 9),
+  ult("miks", 8), ult("neon", 8), ult("omen", 7), ult("phoenix", 7), ult("raze", 8),
+  ult("reyna", 7), ult("sage", 7), ult("skye", 8), ult("sova", 8), ult("tejo", 9),
+  ult("veto", 7), ult("viper", 9), ult("vyse", 8), ult("waylay", 8), ult("yoru", 8),
+  // alias: scenarios/valorant-api use "kayo" for KAY/O.
+  ult("kayo", 8),
 ];
 
 const COST_BY_AGENT = new Map(ULTIMATE_COSTS.map((u) => [u.agentKey, u]));

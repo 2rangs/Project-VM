@@ -79,6 +79,29 @@ describe("Action Generator (TASK 007)", () => {
     expect(ids(r, "feasible").some((id) => id.startsWith("SAVE_RETREAT@"))).toBe(true);
   });
 
+  it("delegates SAVE/EXIT_KILL valuation to an EconomyEvaluator when supplied", () => {
+    const team = load("07"); // 1v4 operator save
+    const spatial = new AscentSpatialStub();
+    const belief = buildTeamBelief(team.observation, spatial, { knownEnemyAliveCount: team.knownEnemyAliveCount });
+    const economy = {
+      saveValue: () => 0.95,
+      exitKillValue: () => 0.1,
+      hasFutureRounds: () => true,
+    };
+    const r = generateActions({ team, spatial, enemyPressure: (z) => enemyPressureOnZone(belief, z), economy });
+    const save = r.feasible.find((a) => a.id === "SAVE")!;
+    expect(save).toBeDefined();
+    // Base value now comes from the evaluator (0.95), so utility is high and rationale cites it.
+    expect(save.evaluation.rationale.join(" ")).toContain("economy-engine");
+    expect(save.evaluation.expectedUtility).toBeGreaterThan(0.5);
+  });
+
+  it("without an EconomyEvaluator, SAVE rationale marks the valuation as delegated/provisional", () => {
+    const r = run("07");
+    const save = r.feasible.find((a) => a.id === "SAVE")!;
+    expect(save.evaluation.rationale.join(" ")).toMatch(/delegated to economy-engine/i);
+  });
+
   it("is deterministic: identical input yields identical result", () => {
     expect(run("01")).toEqual(run("01"));
   });

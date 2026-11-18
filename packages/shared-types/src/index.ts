@@ -15,4 +15,5 @@ export * from "./belief.js";
 export * from "./action-schema.js";
 export * from "./spatial-query.js";
 export * from "./observation-provider.js";
+export * from "./economy-evaluator.js";
 export * from "./scenario-context.js";

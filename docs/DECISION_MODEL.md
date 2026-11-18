@@ -41,6 +41,12 @@ decision packages depend only on two interfaces in `@pv/shared-types`:
   ObservationState). In phase 2 the scenario's `belief` block provides the observation
   directly; the interface is the seam for when perception-engine is integrated.
 
+A third seam, **`EconomyEvaluator`** (also in `@pv/shared-types`), inverts the dependency
+onto PV-2's `economy-engine` (buy strategy, save value, ultimate economy, future-round
+value). The Action Generator does NOT compute economic value itself: when an evaluator is
+supplied it values SAVE/EXIT_KILL; otherwise it uses a provisional heuristic and labels the
+rationale as delegated. Reconcile this interface with PV-2's economy-engine at integration.
+
 Coordinate frame throughout the decision layer is **minimapUnits** (PV-2's scenario
 frame); see `TeamDecisionContext.coordinateSpace`.
 
@@ -100,10 +106,11 @@ deferred, not faked:
 - **Ultimate-point denial / enemy ult valuation** — README §21.
 - **Exit-kill trade value** (chase the Operator vs. keep rifles) — Handoff §22.
 
-These actions ARE generated and feasibility-checked; their utility carries a rationale
-noting the valuation is provisional and needs the economy/ultimate engines (P3). The
-corresponding scenario assertions (07, 08, 09, and the valuation half of 10) are `it.todo`
-in the tests.
+These actions ARE generated and feasibility-checked; their valuation is delegated to the
+`EconomyEvaluator` seam (PV-2's economy-engine). Without an evaluator the generator uses a
+provisional heuristic and says so in the rationale. The corresponding scenario assertions
+(07, 08, 09, and the valuation half of 10) are `it.todo` — to be verified by the
+economy-engine (PV-2) at integration.
 
 ## 6. Decision Debugger (`@pv/decision-debugger`, Handoff §21)
 
