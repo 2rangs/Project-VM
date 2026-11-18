@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "defense-setup.schema.json",
+  "title": "Defensive setup pack",
+  "description": "A pack of synthetic defensive setups for a map, consumed by the validation harness (sim-batch) / Match Runner to place defenders on real navgraph zones. SYNTHETIC (provenance.synthetic=true).",
+  "type": "object",
+  "required": ["map", "setups", "provenance"],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": { "type": "string" },
+    "map": { "$ref": "common.schema.json#/$defs/mapName" },
+    "formatVersion": { "type": "integer" },
+    "description": { "type": "string" },
+    "selection": { "type": "object" },
+    "abilityCatalog": { "type": "object" },
+    "provenance": { "$ref": "provenance.schema.json" },
+    "setups": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "defenders"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "description": "Stable setup id." },
+          "name": { "type": "string" },
+          "weight": { "type": "number", "minimum": 0, "description": "Relative selection weight (default 1)." },
+          "rationale": { "type": "string" },
+          "sourceTactics": { "type": "array", "items": { "type": "string" }, "description": "PV-1 tactic ids this setup draws on." },
+          "defenders": {
+            "type": "object",
+            "description": "Exactly the five defender ids (def1..def5) → placement.",
+            "required": ["def1", "def2", "def3", "def4", "def5"],
+            "additionalProperties": false,
+            "properties": {
+              "def1": { "$ref": "#/$defs/placement" },
+              "def2": { "$ref": "#/$defs/placement" },
+              "def3": { "$ref": "#/$defs/placement" },
+              "def4": { "$ref": "#/$defs/placement" },
+              "def5": { "$ref": "#/$defs/placement" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "placement": {
+      "type": "object",
+      "required": ["zoneId"],
+      "additionalProperties": false,
+      "properties": {
+        "zoneId": {
+          "type": "string",
+          "enum": ["attacker-spawn", "defender-spawn", "a-lobby", "a-main", "a-window", "a-tree",
+                   "a-site", "a-garden", "a-wine", "a-rafters", "b-lobby", "b-main", "b-site",
+                   "b-boathouse", "mid-top", "mid-courtyard", "mid-catwalk", "mid-cubby",
+                   "mid-bottom", "mid-link", "mid-market", "mid-pizza"],
+          "description": "PV-4 Ascent navgraph zone id (datasets/spatial/ascent/ascent.navgraph.json)."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["anchor", "forward", "crossfire", "mid-control", "mid-aggro", "rotator", "lurk-watch"],
+          "description": "Tactical role (documentation; the sim uses zoneId)."
+        },
+        "abilityId": {
+          "type": ["string", "null"],
+          "description": "Optional utility this defender holds, from the sim ability catalog (e.g. omen:Ability2)."
+        }
+      }
+    }
+  }
+}
