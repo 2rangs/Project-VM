@@ -50,6 +50,12 @@ PV-3 `shared-types/action-schema.ts`의 `ActionCategory = "strategic"|"tactical"
 - PV-4: zone/route 검증·경로 시간 제공. 스킬 반경→존 변환은 PV-4가 수행(§CATALOG 3.9).
 - 확장: 공식/분석 출처 확보 시 각 요소 provenance를 `official`/`reputable-analysis`로 승격, targetZones 세분화.
 
-## 6. 미완료
-- 전술 요소의 공식/분석 URL 출처 보강(현재 대부분 expert-unsourced).
-- route별 정확한 소요 시간은 PV-4 navgraph 조회로 런타임 계산(여기 수치 미기입).
+## 6. 출처 보강 (7차)
+각 전술에 `sources[]`(url·date·strength·mentions) 추가:
+- 전 17종에 **공식 Ascent 위키 페이지**를 geography 출처로(사이트·미드·A Link/Market 문; 전략 자체는 아님 — mentions에 명시).
+- Sentinel Setup A/B는 사용 스킬의 **공식 요원/스킬 페이지**(Lockdown·Trapwire·Trademark·Nanoswarm, 전부 resolve 확인)를 추가하고 provenance.type를 `official`로 승격(메커니즘이 공식 문서화됨).
+- 나머지 전략 결정(execute/fake/lurk/split 등)은 단일 인용 URL이 없어 `expert-knowledge-unsourced` 유지(geography 출처만 부착). 억지 출처 미부착.
+
+## 7. 미완료
+- 전략 결정 자체의 분석가/코칭 출처(작성자·날짜 명확) 확보 시 strength `analyst`/`community`로 보강.
+- route별 소요 시간은 PV-4 navgraph edge로 런타임 계산(여기 수치 미기입).

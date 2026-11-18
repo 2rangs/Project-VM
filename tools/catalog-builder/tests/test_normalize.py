@@ -190,6 +190,35 @@ def test_ascent_tactics_valid_and_grounded():
         prov = t["provenance"]
         if prov["type"] in ("official", "reputable-analysis"):
             assert prov.get("source", "").startswith("http")
+        # every source is https with a strength label and a stated scope
+        for s in t.get("sources", []):
+            assert s["url"].startswith("https://") and s["strength"] in ("official", "analyst", "community") and s["mentions"]
+
+
+def test_patch_history_valid_and_monotonic():
+    import re as _re
+    import jsonschema
+    mdir = REPO / "datasets" / "derived" / "meta"
+    data = json.loads((mdir / "patch-history.json").read_text())
+    schema = json.loads((mdir / "patch-history.schema.json").read_text())
+    jsonschema.Draft7Validator(schema).validate(data)
+
+    def pk(v):
+        m = _re.match(r"(\d+)\.(\d+)", v)
+        return (int(m.group(1)), int(m.group(2)))
+
+    # patch versions are monotonically non-decreasing within each list
+    for a in data["agents"].values():
+        ps = [c["patch"] for c in a["notableChanges"]]
+        assert ps == sorted(ps, key=pk), ps
+        assert a["wikiSource"].startswith("https://")
+    mu = [c["patch"] for c in data["mapUpdateHistory"]]
+    assert mu == sorted(mu, key=pk)
+    # every patch-note URL is the official domain
+    for a in data["agents"].values():
+        for c in a["notableChanges"]:
+            assert c["patchNoteUrl"].startswith("https://playvalorant.com/")
+    assert data["dataWindowRecommendation"]["forCurrentMetaComparability"]
 
 
 def test_ascent_comps_committed_valid():

@@ -42,6 +42,21 @@
     "risks": {"type": "array", "items": {"type": "string"}},
     "counterSetup": {"type": "array", "items": {"type": "string"}, "description": "defensive/offensive answers that blunt this tactic"},
     "notes": {"type": ["string", "null"]},
+    "sources": {
+      "type": "array",
+      "description": "public references. Each states exactly what it supports (mentions); strength is official|analyst|community. Geography-only sources do not by themselves upgrade a strategic claim.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "strength", "mentions"],
+        "properties": {
+          "url": {"type": "string", "pattern": "^https://"},
+          "date": {"type": ["string", "null"]},
+          "strength": {"type": "string", "enum": ["official", "analyst", "community"]},
+          "mentions": {"type": "string"}
+        }
+      }
+    },
     "provenance": {
       "type": "object",
       "additionalProperties": false,

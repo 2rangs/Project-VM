@@ -357,4 +357,50 @@ PV-4 navgraph(구역/경로), 내 ability-effects(유틸 어휘), ascent-comps.j
 - `pytest tools/catalog-builder -q`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 7차: 전술 출처 보강 + 패치/메타 이력)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research`
+
+## 1. 작업 목표
+(A) 전술 17종에 공개 출처 부착, (B) Ascent·상위 요원 패치/메타 이력 + 데이터 구간 권고.
+
+## 2. 완료한 작업 (실제 수행·검증)
+- **(A) 전술 출처:** 전 17종에 공식 Ascent 위키(geography) 출처 부착. Sentinel Setup A/B는 사용 스킬의 공식 페이지(Lockdown/Trapwire/Trademark/Nanoswarm, resolve 확인)로 provenance=official 승격. 나머지 전략은 `expert-knowledge-unsourced` 유지(억지 출처 미부착). vlr.gg 미수집, 각 페이지 개별 fetch.
+- **(B) 패치/메타 이력:** 공식 위키 Update History에서 Ascent 맵 변경 13건 + 상위 8요원 밸런스 변경 추출. 공식 패치노트 URL **24/27 resolve 확인**(미해결 핫픽스는 위키가 출처). → `datasets/derived/meta/patch-history.json`(+스키마).
+- **데이터 구간 권고:** Ascent 맵은 **구조 안정**(변동 요인=요원 밸런스). 국제전 153맵 중 ≥9.x=42, ≥11.x=31, ≥13.x=13 → **현재 메타 비교는 패치 ≥9.x 권고**(42맵), 전체는 구조 baseline용. PV-2 priors 필터 방법 명시(파일 미수정).
+- **테스트:** `pytest -q` **17 passed**(전술 sources + 패치 스키마·단조성·URL 형식 검증).
+
+## 3. 변경한 파일
+- `datasets/derived/meta/`(신규 소유): patch-history.json/.schema.json
+- `datasets/catalog/schema/tactic.schema.json`(sources 필드), `tools/catalog-builder/build_ascent_tactics.py`(출처 부착), data 재생성
+- `docs/research/PATCH_HISTORY.md`(신규), `ASCENT_TACTICS.md`(§6 출처), tests, handoff
+
+## 4. 데이터 출처
+공식 위키 Update History(맵·요원), 공식 패치노트(resolve 검증), 공식 스킬 페이지(Sentinel 메커니즘), VCT Reference(표본 수).
+
+## 5~7. 실행/검증/결과
+`python tools/catalog-builder/build_ascent_tactics.py` → `pytest -q`(17 passed). 패치 URL 24/27 resolve, 단조 증가 검증.
+
+## 8. 현재 미완료
+- 전략 결정 자체의 분석가/코칭 출처(작성자·날짜 명확) — 확보 시 analyst/community로 보강.
+- 요원별 과거 랜드마크 리워크 일부는 산문 언급(필요 시 notableChanges 확장).
+
+## 9. 알려진 문제
+- 일부 핫픽스 패치(9.01·9.06·13.09)는 공식 노트 페이지 부재 → patchNoteResolves=false, 위키가 출처.
+
+## 10. 설계 결정
+- geography 출처(Ascent 위키)는 전략을 입증하지 않으므로 provenance.type 미승격(메커니즘 공식 문서화된 Sentinel만 official). 데이터 구간 권고는 표본 수 트레이드오프로 근거화.
+
+## 11. 라이선스
+공식 위키/패치노트는 Riot 소유 사실, 출처 URL만 기록. PV-2 priors 미수정(권고만).
+
+## 12. 다음 권장 작업
+1. PV-2: priors에 patch≥9.0 현재-메타 필터 + 전체 구조 baseline 분리. 2. 전술 전략 출처(분석가) 보강. 3. 패치별 요원 수치는 ability_facts/effects를 패치 스냅샷으로 확장.
+
+## 13. 작업 재개 지점
+- `docs/research/PATCH_HISTORY.md` → `datasets/derived/meta/patch-history.json`; `docs/research/ASCENT_TACTICS.md` → tactics.
+- `pytest tools/catalog-builder -q`.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**

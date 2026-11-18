@@ -113,7 +113,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-a-split",
@@ -173,7 +181,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-mid-control",
@@ -234,7 +250,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-b-market-hit",
@@ -298,7 +322,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-b-main-execute",
@@ -360,7 +392,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-fake-a-to-b",
@@ -428,7 +468,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-default-spread",
@@ -482,7 +530,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "atk-mid-lurk",
@@ -529,7 +585,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   }
  ],
  "defense": [
@@ -588,7 +652,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "def-b-default-hold",
@@ -637,7 +709,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "def-mid-hold",
@@ -686,7 +766,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "def-sentinel-setup-a",
@@ -732,9 +820,36 @@
    ],
    "notes": "Killjoy: turret+alarmbot+nanoswarm lockdown A Main/Garden. Cypher: trapwire Main/Garden + cam. Chamber: trademark Garden + Wine/CT rendezvous for aggressive peeks.",
    "provenance": {
-    "type": "expert-knowledge-unsourced",
-    "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+    "type": "official",
+    "source": "https://wiki.playvalorant.com/en-us/Ascent",
+    "note": "Utility mechanic is officially documented (agent ability pages); the setup placement is expert knowledge."
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    },
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Lockdown",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Killjoy Lockdown detains on-site (official ability)"
+    },
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Trapwire",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Cypher Trapwire tethers/reveals (official ability)"
+    },
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Trademark",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Chamber Trademark slows on trigger (official ability)"
+    }
+   ]
   },
   {
    "id": "def-sentinel-setup-b",
@@ -771,9 +886,30 @@
     "hit from the uncovered entry"
    ],
    "provenance": {
-    "type": "expert-knowledge-unsourced",
-    "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+    "type": "official",
+    "source": "https://wiki.playvalorant.com/en-us/Ascent",
+    "note": "Utility mechanic is officially documented (agent ability pages); the setup placement is expert knowledge."
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    },
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Nanoswarm",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Killjoy Nanoswarm molly denies plant/entry (official ability)"
+    },
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Trapwire",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Cypher Trapwire covers splits (official ability)"
+    }
+   ]
   },
   {
    "id": "def-retake-a",
@@ -847,7 +983,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "def-retake-b",
@@ -905,7 +1049,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "def-mid-info-push",
@@ -952,7 +1104,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   },
   {
    "id": "def-rotate-a-b",
@@ -999,7 +1159,15 @@
    "provenance": {
     "type": "expert-knowledge-unsourced",
     "note": "Standard VALORANT pro/community tactical knowledge; structure/zones grounded in PV-4 navgraph. No single citable URL; no match-frequency claim."
-   }
+   },
+   "sources": [
+    {
+     "url": "https://wiki.playvalorant.com/en-us/Ascent",
+     "date": "2026-11-18",
+     "strength": "official",
+     "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."
+    }
+   ]
   }
  ],
  "compMapping": [

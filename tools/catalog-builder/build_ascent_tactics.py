@@ -217,6 +217,38 @@ def build() -> dict:
     edge_set = {frozenset(e) for e in vocab["edges"]}
 
     tactics = ATTACK + DEFENSE
+
+    # Attach honest public sources. The official Ascent wiki page documents the
+    # map geography (sites, Mid, the A Link / Market mechanical doors) that every
+    # tactic is built on -> attached as a GEOGRAPHY source (does not by itself
+    # source the strategic choice). Sentinel-setup tactics additionally cite the
+    # official agent pages whose abilities they use (that mechanic IS official).
+    ASCENT_GEO = {"url": "https://wiki.playvalorant.com/en-us/Ascent", "date": "2026-11-18",
+                  "strength": "official",
+                  "mentions": "Ascent map layout: A/B sites, Mid lane, A Link & Market mechanical doors. Geography only; the strategic choice is expert knowledge."}
+    SENTINEL_PAGES = {
+        "def-sentinel-setup-a": [
+            ("https://wiki.playvalorant.com/en-us/Lockdown", "Killjoy Lockdown detains on-site (official ability)"),
+            ("https://wiki.playvalorant.com/en-us/Trapwire", "Cypher Trapwire tethers/reveals (official ability)"),
+            ("https://wiki.playvalorant.com/en-us/Trademark", "Chamber Trademark slows on trigger (official ability)")],
+        "def-sentinel-setup-b": [
+            ("https://wiki.playvalorant.com/en-us/Nanoswarm", "Killjoy Nanoswarm molly denies plant/entry (official ability)"),
+            ("https://wiki.playvalorant.com/en-us/Trapwire", "Cypher Trapwire covers splits (official ability)")],
+    }
+    for t in tactics:
+        srcs = [dict(ASCENT_GEO)]
+        for url, mentions in SENTINEL_PAGES.get(t["id"], []):
+            srcs.append({"url": url, "date": "2026-11-18", "strength": "official", "mentions": mentions})
+        t["sources"] = srcs
+        # Upgrade provenance.type to official only where an official source backs
+        # the tactic's MECHANIC (sentinel setups cite the ability itself).
+        if t["id"] in SENTINEL_PAGES:
+            t["provenance"] = {"type": "official",
+                               "source": "https://wiki.playvalorant.com/en-us/Ascent",
+                               "note": "Utility mechanic is officially documented (agent ability pages); the setup placement is expert knowledge."}
+        # All others keep provenance.type = expert-knowledge-unsourced (strategy is
+        # not documented by a single citable source); the Ascent page is geography only.
+
     # validate referenced zones/edges
     errors = []
     for t in tactics:
