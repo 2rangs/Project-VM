@@ -25,11 +25,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--scope", default="ascent", choices=["ascent", "all_maps"])
     ap.add_argument("--era", default="all", choices=["all", "patch>=9"],
                     help="Baseline era: 'all' (default, more samples) or 'patch>=9' (current meta)")
+    ap.add_argument("--compare", help="A prior report JSON to diff against (adds Δ vs baseline columns)")
     ap.add_argument("--out", help="Output path prefix (writes <out>.json and <out>.md)")
     args = ap.parse_args(argv)
 
     sim_run = json.load(open(args.logs, encoding="utf-8"))
-    report = evaluate_sim_run(sim_run, args.priors, scope=args.scope, era=args.era)
+    report = evaluate_sim_run(sim_run, args.priors, scope=args.scope, era=args.era,
+                              compare_path=args.compare)
     if args.out:
         paths = write_reports(report, args.out)
         for k, p in paths.items():

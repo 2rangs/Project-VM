@@ -94,6 +94,30 @@ ground-truth `tracks`.
   `fromSimEventLog(log.events, log.meta)` and renders the fog view + heatmap. Pass an explicit
   `meta.perception` to override (e.g. a match-level merge of all rounds).
 
+## Command trace (policy debugging — `traceCommands`)
+
+Set `config.traceCommands: true` (off by default) to get `RoundResult.commandTrace` /
+`MatchRoundOutput.round.commandTrace`: a flat, time-ordered `CommandTraceEvent[]` showing what
+each player was told to do and what actually happened. Built for debugging why a policy's intent
+doesn't turn into round events (e.g. plants that never fire). Each event has `{ tick, elapsedMs,
+playerId, phase, command?, targetZone?, fromZone?, toZone?, abilityId?, result? }`:
+
+- `phase: "issued"` — a command was received. `command` is its kind; `result` is `"active"` or
+  `"deferred"` (held by `executeAtMs`). Deduped per distinct command, so re-issuing the same
+  command every decision logs once.
+- `phase: "move"` — a zone-hop executed (`fromZone`→`toZone`, `targetZone` = the move goal).
+- `phase: "arrived"` — the player reached the end of its path (`toZone`).
+- `phase: "plant"` — a plant command was evaluated. `result`: `"started"` | `"planting"` |
+  `"notPlantableZone"` | `"notCarrier"` | `"dead"` (deduped per distinct reason).
+- `phase: "ability"` — a useAbility command: `result` `"used"` | `"noSlot"` | `"unavailable"` |
+  `"noSpec"`.
+- `phase: "defuse"` — a defuse command: `result` `"started"` | `"defusing"` | `"notOnSpikeZone"`
+  | `"notPlanted"` | `"dead"`.
+
+Typical use: filter `commandTrace` by a player id to see its issued commands vs its moves and
+arrivals; filter `phase === "plant"` to see, per tick, whether a plant was attempted and why it
+was rejected. Deterministic with the seed. Works through `runMatchRound` via `config`.
+
 ## Minimal example
 
 ```ts

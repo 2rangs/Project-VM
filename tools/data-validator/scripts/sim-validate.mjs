@@ -38,7 +38,7 @@ const VALID_SCOPES = new Set(["ascent", "all_maps"]);
 
 function parseArgs(argv) {
   const out = { era: null, scope: "ascent", priors: null, logs: null, outPrefix: null,
-                example: false, stdout: false, python: null };
+                example: false, stdout: false, python: null, compare: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -51,6 +51,7 @@ function parseArgs(argv) {
       case "--era": out.era = next(); break;
       case "--scope": out.scope = next(); break;
       case "--priors": out.priors = next(); break;
+      case "--compare": out.compare = next(); break;
       case "--out": out.outPrefix = next(); break;
       case "--python": out.python = next(); break;
       case "--example": out.example = true; break;
@@ -129,9 +130,15 @@ function main() {
   mkdirSync(dirname(outPrefix), { recursive: true });
 
   const python = args.python ?? process.env.PYTHON ?? "python3";
+  let comparePath = null;
+  if (args.compare) {
+    comparePath = resolvePath(args.compare);
+    if (!existsSync(comparePath)) fail(`--compare file not found: ${comparePath}`);
+  }
   const pyArgs = ["-m", "pv_data_validator.sim_cli",
     "--logs", logsPath, "--priors", priorsDir,
-    "--scope", args.scope, "--era", era, "--out", outPrefix];
+    "--scope", args.scope, "--era", era, "--out", outPrefix,
+    ...(comparePath ? ["--compare", comparePath] : [])];
 
   console.error(`sim:validate: era=${era} scope=${args.scope} priors=${rel(priorsDir)}`);
   console.error(`sim:validate: validating ${rel(logsPath)} → ${rel(outPrefix)}.{json,md}`);

@@ -110,6 +110,14 @@ describe("Match Runner", () => {
     expect(timeExpired).toBeLessThan(m.rounds.length * 0.4); // timeExpired is a clear minority
   });
 
+  it("recordPerception populates replay.meta.perception when enabled (PV-6 fog-of-war)", () => {
+    const off = runMatch({ ...cfg(5), maxRounds: 2 });
+    expect(off.rounds[0]?.replay.meta.perception).toBeUndefined();
+    const on = runMatch({ ...cfg(5), maxRounds: 2, recordPerception: true });
+    expect(on.rounds[0]?.replay.meta.perception).toBeTruthy();
+    expect(Array.isArray(on.rounds[0]?.replay.meta.perception)).toBe(true);
+  });
+
   it("game-data: unknown team ids fall back; teamSkills returns a valid [0,1] profile", () => {
     const unknown = resolveTeamRef("___no_such_team___");
     expect(unknown.name).toBe("___no_such_team___"); // falls back to the id

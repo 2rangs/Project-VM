@@ -171,6 +171,37 @@ export interface PerceptionTrack {
   readonly snapshots: readonly PerceptionSnapshot[];
 }
 
+// ---- Command execution trace (policy-debugging aid for PV-3, config.traceCommands) ----
+
+export type CommandTracePhase =
+  | "issued" // a policy command was received for this player
+  | "move" // a zone-hop was executed
+  | "arrived" // the player reached the end of its move path
+  | "plant" // a plant command was evaluated (see `result` for why it did/didn't start)
+  | "ability" // a useAbility command was evaluated
+  | "defuse"; // a defuse command was evaluated
+
+/** One step in the command→execution trace. `result` carries the outcome / rejection reason. */
+export interface CommandTraceEvent {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly playerId: PlayerId;
+  readonly phase: CommandTracePhase;
+  /** The ActionCommand kind involved (for "issued"). */
+  readonly command?: SimEventKind | string;
+  readonly targetZone?: string;
+  readonly fromZone?: string;
+  readonly toZone?: string;
+  readonly abilityId?: string;
+  /**
+   * Outcome / rejection reason. For "plant": "started" | "planting" | "notPlantableZone" |
+   * "noCarrier" | "notCarrier" | "dead". For "ability": "used" | "noSlot" | "unavailable" |
+   * "noSpec". For "defuse": "started" | "notOnSpikeZone" | "dead". For "issued": "deferred"
+   * when held by executeAtMs, else "active".
+   */
+  readonly result?: string;
+}
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -184,6 +215,8 @@ export interface RoundResult {
   readonly tracks?: readonly TrackFrame[];
   /** Per-team observation/belief series, present only when config.recordPerception is true. */
   readonly perception?: readonly PerceptionTrack[];
+  /** Command→execution trace, present only when config.traceCommands is true. */
+  readonly commandTrace?: readonly CommandTraceEvent[];
 }
 
 export interface SimConfig {
@@ -197,6 +230,8 @@ export interface SimConfig {
   readonly recordTracks: boolean;
   /** Record per-team observation/belief snapshots (PV-6 fog-of-war). Off by default (cost). */
   readonly recordPerception: boolean;
+  /** Record a command→execution trace (policy debugging for PV-3). Off by default. */
+  readonly traceCommands: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while standing in a molly / area-denial zone. */
@@ -215,5 +250,6 @@ export const DEFAULT_CONFIG: SimConfig = {
   seed: 1,
   recordTracks: false,
   recordPerception: false,
+  traceCommands: false,
   mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
 };

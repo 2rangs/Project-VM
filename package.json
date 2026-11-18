@@ -13,10 +13,12 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sim:match": "pnpm --filter @pv/match-runner sim:match",
-    "sim:validate": "node tools/data-validator/scripts/sim-validate.mjs"
+    "sim:validate": "node tools/data-validator/scripts/sim-validate.mjs",
+    "sim:batch": "tsx tools/data-validator/scripts/sim-batch.mts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.9"
   },
