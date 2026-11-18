@@ -127,6 +127,31 @@ def test_equipment_validate_and_sourced():
         assert e["needsCrossCheckPV3"] is True
 
 
+def test_riot_crosscheck_uuids_pure():
+    import riot_content
+    content = {"version": "release-13.10",
+               "characters": [{"id": "AAA", "name": "A"}, {"id": "BBB", "name": "B"}],
+               "equips": [{"id": "WWW", "name": "W"}]}
+    agents = [{"id": "aaa", "name": "A"}, {"id": "zzz", "name": "Z"}]
+    weapons = [{"id": "www", "name": "W"}]
+    xc = riot_content.crosscheck_uuids(content, agents, weapons)
+    assert xc["build"] == "release-13.10"
+    assert xc["agents_matched"] == 1 and xc["agents_missing"] == ["Z"]
+    assert xc["weapons_matched"] == 1 and xc["weapons_missing"] == []
+
+
+def test_riot_try_fetch_skips_cleanly(monkeypatch):
+    import urllib.error
+    import riot_content
+
+    def boom(url, timeout=30):
+        raise urllib.error.HTTPError(url, 401, "Unauthorized", {}, None)
+
+    monkeypatch.setattr(riot_content, "fetch_content", boom)
+    content, reason = riot_content.try_fetch_content()
+    assert content is None and "401" in reason  # expired/absent dev key -> clean skip
+
+
 def test_ability_facts_loaded_and_applied(agents_raw):
     from ability_facts import ABILITY_FACTS
     assert len(ABILITY_FACTS) >= 100

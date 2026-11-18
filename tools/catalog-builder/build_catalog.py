@@ -27,6 +27,7 @@ sys.path.insert(0, str(HERE))
 
 import fetch  # noqa: E402
 import normalize  # noqa: E402
+import riot_content  # noqa: E402
 import validate as validate_mod  # noqa: E402
 from ability_facts import ABILITY_FACTS  # noqa: E402
 from equipment_facts import EQUIPMENT  # noqa: E402
@@ -80,6 +81,20 @@ def build(patch: str, offline: bool) -> int:
         print(f"  {schema:28} {len(recs):3} records  {status}")
         for e in errs[:10]:
             print("    " + e, file=sys.stderr)
+
+    # optional Riot content API UUID cross-check (skips cleanly on auth failure)
+    if not offline:
+        content, reason = riot_content.try_fetch_content()
+        if content is not None:
+            xc = riot_content.crosscheck_uuids(content, agents, weapons)
+            _write(out_dir / "riot_uuid_crosscheck.json", xc)
+            print(f"  Riot content x-check: build={xc['build']} "
+                  f"agents {xc['agents_matched']}/{xc['agents_total']} "
+                  f"weapons {xc['weapons_matched']}/{xc['weapons_total']}"
+                  + (f" MISSING agents={xc['agents_missing']}" if xc['agents_missing'] else "")
+                  + (f" MISSING weapons={xc['weapons_missing']}" if xc['weapons_missing'] else ""))
+        else:
+            print(f"  Riot content x-check: {reason}")
 
     # coverage report
     ab_verified = sum(1 for a in abilities if a["gameplay"]["gameplayVerified"])

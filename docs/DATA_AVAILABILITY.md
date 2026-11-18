@@ -44,9 +44,20 @@ PV-1은 도달성(HTTP 200)만 확인했고 다운로드/스키마 분석은 하
 
 | 소스 | 상태 | 수준 | 인증 | 근거 |
 |---|---|---|---|---|
-| Riot Developer API | AUTH_REQUIRED | L0 | 사용자 API 키 | HTTP 200 `/apis`; 인증 호출 없음 |
+| Riot Developer API | **VERIFIED_API** | **L2** | 사용자 키(프록시 주입) | 아래 엔드포인트 매트릭스 참조 |
 | Riot × GRID Open Access | AUTH_REQUIRED | L0 | VCT 파트너 | HTTP 200 docs; C9 스크립트로 포털 전용 확인 |
 | 사용자 Blender 맵(Drive) | AUTH_REQUIRED | L0 | Drive 로그인 | URL만; 미다운로드 |
+
+**Riot API 엔드포인트 접근 매트릭스 (kr.api.riotgames.com, 2026-11-18, 개발 키):**
+| 엔드포인트 | 결과 | 비고 |
+|---|---|---|
+| `/val/status/v1/platform-data` | **200** | |
+| `/val/content/v1/contents?locale=…` | **200** | build `release-13.10`; UUID만(게임플레이 수치 없음) |
+| `/val/ranked/v1/leaderboards/by-act/*` | **404** | 해당 액트 항목 없음 |
+| `/val/match/*` (텔레메트리) | **403** | **production 키 승인 필요** |
+
+- 키는 세션 프록시가 `X-Riot-Token` 주입(값 미열람·미커밋). **개발 키는 ~24시간마다 만료** → 재현 스크립트(`riot_content.try_fetch_content`)는 401/403에서 **깔끔히 건너뜀**.
+- content API로 카탈로그 UUID 교차검증: **요원 30/30, 무기 21/21 일치**(`build_catalog.py`). 리플레이/위치 텔레메트리는 없음.
 
 ---
 

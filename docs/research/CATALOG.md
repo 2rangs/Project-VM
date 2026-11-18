@@ -72,11 +72,20 @@ valorant-api 요원(raw)과 **스킬 이름으로 조인**해 슬롯에 매핑. 
 실드 명칭 변경 주의: 과거 "Light/Heavy Shield" → 현재 "Light/Heavy Armor"(공식 위키).
 
 ## 3.5 Riot 공식 content API 교차검증 (3차)
-`GET https://kr.api.riotgames.com/val/content/v1/contents?locale=ko-KR` → **HTTP 200**
-(프록시가 `X-Riot-Token` 주입; 키 값은 미열람). version **release-13.10**.
-- **UUID 교차검증:** 카탈로그 요원 **30/30**, 무기 **21/21**의 UUID가 Riot content API의 characters/equips와 일치.
-- content API는 ID·이름만 제공(게임플레이 수치 없음) → 스킬/경제 수치 소싱에는 쓰지 않음, UUID 확인에만 사용.
-- 레이트 리밋(20/초·100/2분) 준수. 키 값은 파일/커밋/로그에 미기록.
+`kr.api.riotgames.com` (프록시가 `X-Riot-Token` 주입; 키 값 미열람·미커밋). **재현 가능** — `build_catalog.py`가
+`riot_content.py`로 자동 교차검증하고, 인증 실패 시 깔끔히 건너뜀.
+
+**엔드포인트 접근 매트릭스 (2026-11-18, 개발 키):**
+| 엔드포인트 | 결과 | 비고 |
+|---|---|---|
+| `/val/status/v1/platform-data` | 200 | |
+| `/val/content/v1/contents` | 200 | **release-13.10** |
+| `/val/ranked/v1/leaderboards/by-act/*` | 404 | 액트 항목 없음 |
+| `/val/match/*` | **403** | **production 키 승인 필요** |
+
+- **UUID 교차검증:** 카탈로그 요원 **30/30**, 무기 **21/21**이 content API characters/equips와 일치.
+- content API는 ID·이름만(게임플레이 수치·리플레이·위치 없음) → UUID 확인에만 사용.
+- **개발 키는 ~24시간 만료** → 재현 스크립트는 401/403에서 건너뛰도록 작성(`riot_content.try_fetch_content`, 테스트 포함). 레이트 리밋 20/초·100/2분 준수.
 
 ## 3.6 PV-3 game-rules 대조 (`origin/claude/pv-core`, 읽기 전용)
 `packages/game-rules/src/{economy,spike,ultimate,weapons}.ts`를 fetch·열람(수정 안 함). 모두 provisional(verified:false).
