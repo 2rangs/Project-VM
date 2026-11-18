@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PerceptionEngine } from "@pv/perception-engine";
 import { AVERAGE_SKILLS } from "@pv/combat-engine";
 import {
-  RoundSimulator, buildPolicyView, makeSyntheticRound,
+  RoundSimulator, buildPolicyView, makeSyntheticRound, SpatialQueryAdapter,
   type ActionCommand, type DecisionPolicy, type PolicyDecision, type PolicyView, type SimPlayer, type SimState,
 } from "../src/index.js";
 import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
@@ -31,7 +31,7 @@ describe("PV-3 contract supplement", () => {
       players: [atk, def],
       spike: { phase: "carried", carrierId: "atk", zoneId: null, position: null, plantProgressMs: 0, defuseProgressMs: 0, defuserId: null, detonateAtElapsedMs: null },
     };
-    const view = buildPolicyView("attack", state, new PerceptionEngine(spatial));
+    const view = buildPolicyView("attack", state, new PerceptionEngine(spatial), new SpatialQueryAdapter(spatial));
 
     const t = view.teammates[0];
     expect(t.id).toBe("atk");

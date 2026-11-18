@@ -1,11 +1,16 @@
 import type { SpatialEngine } from "@pv/spatial-engine";
 import type { ObservationState, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
 import type { PerceptionEngine } from "@pv/perception-engine";
+import { buildBelief } from "@pv/decision-engine";
+import type {
+  BeliefState as SharedBeliefState,
+  ObservationState as SharedObservationState,
+  SpatialQuery as SharedSpatialQuery,
+} from "@pv/shared-types";
 import { mulberry32, type Rng } from "./rng.js";
 import type {
   AudibleZoneResult,
   BeliefState,
-  EnemyPositionBelief,
   PolicyTeammate,
   PolicyView,
   RandomSource,
@@ -105,34 +110,22 @@ function publicSpike(state: SimState): PSpikeState {
 }
 
 /**
- * Local belief builder — a PLACEHOLDER mirroring the OUTPUT shape of PV-3's
- * `@pv/decision-engine` `buildBelief(prev, teamObservation, spatial, dtMs)`, which this
- * package cannot import across branches. It seeds one hypothesis per observed enemy at its
- * last-seen position (staleness = age), so belief is non-empty whenever enemies have been
- * seen. TODO(PV-3): replace with the real `buildBelief` (diffusion over reachable zones)
- * once @pv/decision-engine is importable at integration.
- */
-function buildLocalBelief(teamId: string, obs: ObservationState, nowMs: number): BeliefState {
-  const enemyPositionBeliefs: EnemyPositionBelief[] = obs.visibleEnemies.map((e) => ({
-    enemyId: e.playerId,
-    agentId: e.agentId,
-    hypotheses: [{ position: e.lastSeenPosition, weight: 1 }],
-    staleness: Math.max(0, obs.timestampMs - e.lastSeenAtMs),
-  }));
-  const visible = obs.visibleEnemies.filter((e) => e.currentlyVisible).length;
-  const confidence = obs.visibleEnemies.length === 0 ? 0 : visible / obs.visibleEnemies.length;
-  return { playerId: teamId, timestampMs: nowMs, enemyPositionBeliefs, tacticalHypotheses: [], threatZones: [], confidence };
-}
-
-/**
  * Build the observable PolicyView for one side. Enemies appear ONLY through `observation`
- * (last-seen snapshots); `teammates` is own-team players only. There is no field carrying
- * an unseen enemy's live state (DECISION-004) — asserted in test/view.test.ts.
+ * (last-seen snapshots) and `belief`; `teammates` is own-team players only. There is no
+ * field carrying an unseen enemy's live state (DECISION-004) — asserted in test/leak.test.ts.
+ *
+ * `belief` is produced by PV-3's real `@pv/decision-engine` `buildBelief(prev, observation,
+ * spatial, dtMs)` — zone-probability distributions with time diffusion — not a local
+ * placeholder. The caller (RoundSimulator) threads the previous tick's belief as `prevBelief`
+ * and the elapsed `dtMs` so unseen enemies age correctly across decisions (README §17.3).
  */
 export function buildPolicyView(
   side: Side,
   state: SimState,
   perception: PerceptionEngine,
+  spatial: SpatialQuery,
+  prevBelief: BeliefState | null = null,
+  dtMs = 0,
 ): PolicyView {
   const result = perception.perceive(toPerceptionWorldForView(state));
   const teamId = side === "attack" ? "attackers" : "defenders";
@@ -164,7 +157,19 @@ export function buildPolicyView(
     teammates,
     observation,
     perPlayerObservation,
-    belief: buildLocalBelief(teamId, observation, state.timeRemainingMs),
+    // buildBelief is the real @pv/decision-engine implementation. Its params are
+    // shared-types' BRANDED-id shapes; the round-simulator still carries the string-aliased
+    // mirrors (perception-engine shared-mirror / policy-contract). A branded PlayerId IS a
+    // string at runtime and we only pass ids through, so bridging the two with a cast at this
+    // single boundary is sound. The RESULT (branded) assigns back to our mirror BeliefState
+    // because a brand is a subtype of string. (Removed once the mirrors are deleted in favour
+    // of importing @pv/shared-types everywhere.)
+    belief: buildBelief(
+      prevBelief as unknown as SharedBeliefState | null,
+      observation as unknown as SharedObservationState,
+      spatial as unknown as SharedSpatialQuery,
+      dtMs,
+    ),
     economy: economyStub(teamId, side),
     knownEnemyAliveCount: state.players.filter((p) => p.side !== side && p.alive).length,
     matchScore: null,

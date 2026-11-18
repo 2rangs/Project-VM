@@ -22,8 +22,8 @@ import type {
   TrackFrame,
 } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
-import type { ActionCommand, DecisionPolicy } from "./policy-contract.js";
-import { buildPolicyView, SeededRandomSource } from "./view.js";
+import type { ActionCommand, BeliefState, DecisionPolicy } from "./policy-contract.js";
+import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
 export interface RoundSimulatorDeps {
@@ -74,6 +74,11 @@ export class RoundSimulator {
     const state = initial;
     const perception = new PerceptionEngine(this.spatial);
     const abilityEngine = new AbilityEngine(this.spatial);
+    const spatialQuery = new SpatialQueryAdapter(this.spatial);
+    // Previous-tick belief per side, threaded into buildBelief so unseen enemies age
+    // across decisions (real @pv/decision-engine diffusion, not a per-tick reset).
+    const prevBelief: Record<Side, BeliefState | null> = { attack: null, defense: null };
+    const decisionDtMs = this.cfg.decisionIntervalTicks * this.cfg.tickMs;
     const events: SimEvent[] = [];
     const tracks: TrackFrame[] = [];
     const commands = new Map<string, ActionCommand>();
@@ -96,7 +101,9 @@ export class RoundSimulator {
       // 1. decisions (every N ticks): one TEAM decision per side (PV-3 contract).
       if (state.tick % this.cfg.decisionIntervalTicks === 0) {
         for (const side of ["attack", "defense"] as const) {
-          const view = buildPolicyView(side, state, perception);
+          const dt = prevBelief[side] ? decisionDtMs : 0;
+          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt);
+          prevBelief[side] = view.belief;
           const decision = this.policies[side].decide(view, rngOf[side]);
           for (const c of decision.commands) commands.set(c.playerId, c);
         }
