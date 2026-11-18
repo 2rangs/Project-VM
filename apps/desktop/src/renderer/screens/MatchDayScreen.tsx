@@ -15,7 +15,6 @@ import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import type { MatchSummary } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
 import { ZONE_POSITIONS } from '../zones.ts';
-import perceptionDemo from '../../data/perception-demo.replay.json';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [running, setRunning] = useState(false);
@@ -50,13 +49,6 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
       setMatch(res.match ?? null);
       setSource(res.source);
     } catch (e) { setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
-  }
-
-  // Load a REAL perception-bearing replay (PV-4 recordPerception output, bundled) so the
-  // fog view is demonstrable before PV-3 enables match-level recording on the live match.
-  function loadPerceptionDemo() {
-    ctx.setReplay(perceptionDemo as unknown as Replay);
-    setMatch(null); setSource('perception-demo'); setPov(0); setBeliefOn(true);
   }
 
   const engineLabel = source === 'match-runner' ? '@pv/match-runner (real match, separate process)'
@@ -96,10 +88,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
               <span className="muted small">관측된 적 · 고스트 · 소리 구역 · 진실 시점은 Dev</span>
             </>
           ) : (
-            <>
-              <span className="muted small">fog-of-war + Belief heatmap: live 경기는 PV-3 recordPerception 대기 중</span>
-              <button className="fog-demo" onClick={loadPerceptionDemo} data-testid="load-perception-demo">관측/벨리프 데모 보기</button>
-            </>
+            <span className="muted small">run a match to see the fog-of-war view (observed enemies · belief · sounds)</span>
           )}
         </div>
         {log.length > 0 && <div className="md-roundlog small muted">{log.join('  ·  ')}</div>}

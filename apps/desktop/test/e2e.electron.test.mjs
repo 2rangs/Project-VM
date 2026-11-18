@@ -54,14 +54,15 @@ async function main() {
   await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(OUT, 'desktop-matchday.png') });
 
-  // Fog-of-war: load the bundled perception demo (real PV-4 recordPerception data)
-  // and render one team's view — observed enemies, ghosts, sound zones, belief heatmap.
-  await page.getByTestId('load-perception-demo').click();
+  // Fog-of-war on the LIVE match — the match-runner records perception, so the fog
+  // controls appear with no demo. Render one team's view: observed enemies, ghosts,
+  // sound zones, belief heatmap.
   await page.waitForSelector('[data-testid="fog-on"]', { timeout: 10000 });
-  // seek to a moment with live contacts (first observation ~11s into round 1)
-  await page.locator('.rv-scrub').fill('15000');
+  // Seed-42 match: team-A's richest perception frame (observed enemies + belief) is
+  // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
+  await page.locator('.rv-scrub').fill('223900');
+  await page.getByTestId('fog-belief').check();
   await page.waitForTimeout(1200);
-  assert.ok(await page.getByTestId('fog-belief').isChecked(), 'belief heatmap on by default in demo');
   await page.screenshot({ path: path.join(OUT, 'desktop-fog.png') });
   // toggle belief off → fog without heatmap, and switch POV to the other team
   await page.getByTestId('fog-belief').uncheck();
