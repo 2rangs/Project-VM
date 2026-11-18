@@ -1,0 +1,22 @@
+# SYNTHETIC decode-full fixture — fabricated, NOT a real VALORANT match.
+# Shape mirrors ValorantReplayParser --verbose --full output. See make-fixture.mjs.
+MapUrl=/Game/Maps/Ascent/Ascent
+info: ValorantReplayParser.ValorantReplayReader[0]
+      Not reading type /Script/ShooterGame.ViewTargetComponent
+Chindex=16	Type=BombTeamComponent	Fields=[{"Name":"Team","Value":0}]
+Chindex=16	Type=BombPlayerState	Fields=[{"Name":"PlayerId","Value":256},{"Name":"ProfileName","Value":"SynthPlayerA"},{"Name":"CompetitiveTier","Value":-1}]
+Chindex=17	Type=BombTeamComponent	Fields=[{"Name":"Team","Value":1}]
+Chindex=17	Type=BombPlayerState	Fields=[{"Name":"PlayerId","Value":257},{"Name":"ProfileName","Value":"SynthPlayerB"},{"Name":"CompetitiveTier","Value":-1}]
+Chindex=1	Type=ClientGamePhaseEnded	Fields=[{"Name":"OldPhase","Value":1}]
+Chindex=17	Type=BombGameState	Fields=[{"Name":"ReplicatedWorldTimeSecondsDouble","Value":10}]
+Chindex=1	Type=ClientGamePhaseEnded	Fields=[{"Name":"OldPhase","Value":2}]
+Chindex=1	Type=ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous	Fields=[{"Name":"RemoteCharacterUpdates","Value":[{"ShooterCharacterNetGuidValue":100,"ComponentDataStream":{"HasMovementSection":true,"Moves":[{"Marker":1,"MoveType":1,"Position":{"X":100,"Y":200,"Z":50,"ScaleFactor":100,"Bits":21},"Velocity":{"X":0,"Y":0,"Z":0,"ScaleFactor":10,"Bits":1},"RotationInput":{"X":0,"Y":0,"Z":0,"ScaleFactor":65536,"Bits":16},"Timestamp":2,"Yaw":90,"Pitch":0,"ErrorSentinel":false},{"Marker":1,"MoveType":1,"Position":{"X":110,"Y":200,"Z":50,"ScaleFactor":100,"Bits":21},"Velocity":{"X":0,"Y":0,"Z":0,"ScaleFactor":10,"Bits":1},"RotationInput":{"X":0,"Y":0,"Z":0,"ScaleFactor":65536,"Bits":16},"Timestamp":3,"Yaw":90,"Pitch":0,"ErrorSentinel":false}]}}]}]
+Chindex=2	Type=ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous	Fields=[{"Name":"RemoteCharacterUpdates","Value":[{"ShooterCharacterNetGuidValue":200,"ComponentDataStream":{"HasMovementSection":true,"Moves":[{"Marker":1,"MoveType":1,"Position":{"X":-100,"Y":-200,"Z":50,"ScaleFactor":100,"Bits":21},"Velocity":{"X":0,"Y":0,"Z":0,"ScaleFactor":10,"Bits":1},"RotationInput":{"X":0,"Y":0,"Z":0,"ScaleFactor":65536,"Bits":16},"Timestamp":2,"Yaw":270,"Pitch":0,"ErrorSentinel":false}]}}]}]
+Chindex=17	Type=BombGameState	Fields=[{"Name":"ReplicatedWorldTimeSecondsDouble","Value":11}]
+Chindex=1	Type=ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous	Fields=[{"Name":"RemoteCharacterUpdates","Value":[{"ShooterCharacterNetGuidValue":100,"ComponentDataStream":{"HasMovementSection":true,"Moves":[{"Marker":1,"MoveType":1,"Position":{"X":120,"Y":200,"Z":50,"ScaleFactor":100,"Bits":21},"Velocity":{"X":0,"Y":0,"Z":0,"ScaleFactor":10,"Bits":1},"RotationInput":{"X":0,"Y":0,"Z":0,"ScaleFactor":65536,"Bits":16},"Timestamp":4,"Yaw":45,"Pitch":0,"ErrorSentinel":false}]}}]}]
+Chindex=17	Type=BombGameState	Fields=[{"Name":"ReplicatedWorldTimeSecondsDouble","Value":45}]
+Chindex=1	Type=ClientGamePhaseEnded	Fields=[{"Name":"OldPhase","Value":4}]
+Chindex=1	Type=ClientGamePhaseEnded	Fields=[{"Name":"OldPhase","Value":5}]
+Chindex=1	Type=ClientGamePhaseEnded	Fields=[{"Name":"OldPhase","Value":2}]
+Chindex=1	Type=ReplaysClientReceiveRemoteCharacterUpdatesSingleArrayNoAutonomous	Fields=[{"Name":"RemoteCharacterUpdates","Value":[{"ShooterCharacterNetGuidValue":100,"ComponentDataStream":{"HasMovementSection":true,"Moves":[{"Marker":1,"MoveType":1,"Position":{"X":500,"Y":500,"Z":50,"ScaleFactor":100,"Bits":21},"Velocity":{"X":0,"Y":0,"Z":0,"ScaleFactor":10,"Bits":1},"RotationInput":{"X":0,"Y":0,"Z":0,"ScaleFactor":65536,"Bits":16},"Timestamp":2,"Yaw":0,"Pitch":0,"ErrorSentinel":false}]}}]}]
+Chindex=17	Type=BombGameState	Fields=[{"Name":"ReplicatedWorldTimeSecondsDouble","Value":60}]

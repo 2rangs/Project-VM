@@ -1,0 +1,6 @@
+# Build artifacts and run outputs — never committed (README §08 rule, PV-6 scope).
+bin/
+output/
+*.decode-full.txt
+decode-full.txt
+node_modules/

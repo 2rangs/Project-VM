@@ -1,0 +1,5 @@
+{"ev":"open","ch":1,"guid":2,"arch":9,"cls":"BaseReplayController_C","x":2382.2,"y":-10417.9,"z":400,"t":0}
+{"ev":"open","ch":30,"guid":501,"arch":40,"cls":"Smoke_Production_Astra_C","x":100,"y":210,"z":50,"t":12.5}
+{"ev":"open","ch":31,"guid":502,"arch":41,"cls":"Patch_Phoenix_MolotovFire_C","x":-110,"y":-190,"z":50,"t":18.2}
+{"ev":"open","ch":32,"guid":503,"arch":42,"cls":"Wall_Fortifying_Sage_C","x":520,"y":480,"z":50,"t":40.1}
+{"ev":"open","ch":33,"guid":504,"arch":9,"cls":"SomeWorldActor_C","x":0,"y":0,"z":0,"t":0}
