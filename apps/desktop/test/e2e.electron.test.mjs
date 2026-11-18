@@ -27,7 +27,12 @@ async function main() {
       '--ignore-gpu-blocklist', '--disable-gpu-sandbox',
     ],
     cwd: appDir,
-    env: { ...process.env, PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces') },
+    env: {
+      ...process.env,
+      PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces'),
+      PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
+      PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
+    },
   });
   const page = await app.firstWindow();
   page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
@@ -39,8 +44,13 @@ async function main() {
 
   // run a stub match (separate process → IPC → replay) and confirm it loads
   await page.getByTestId('run-match').click();
-  await page.waitForSelector('.rv-src-simulated', { timeout: 30000 });
+  // match-runner subprocess (npx tsx) + full map can take a while to cold-start
+  await page.waitForSelector('.rv-src-simulated', { timeout: 90000 });
   assert.ok(/SIMULATED/.test(await page.locator('.rv-src-simulated').innerText()), 'simulated replay loaded');
+  // real match scoreboard rendered (first-to-13)
+  await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 5000 });
+  const sb = await page.getByTestId('scoreboard').innerText();
+  assert.ok(/\d+/.test(sb), 'scoreboard shows a score');
   await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(OUT, 'desktop-matchday.png') });
 
