@@ -61,7 +61,9 @@ export class WrappedTeamPolicy implements DecisionPolicy {
       ...p,
       weapon: p.weapon ?? null,
       inventory: { primary: null, secondary: null, armor: { type: "none", points: p.armor ?? 0 }, hasSpike: false },
-      abilities: { basic: [], signature: null, ultimate: { abilityId: `${p.agentId}:x` as never, points: p.ultimatePoints ?? 0, required: 7, ready: false } },
+      // Keep the sim's real ability inventory (built from the loadout) so the action-generator
+      // can emit useAbility candidates; fall back to an empty one only if the sim omits it.
+      abilities: p.abilities ?? { basic: [], signature: null, ultimate: { abilityId: `${p.agentId}:x` as never, points: p.ultimatePoints ?? 0, required: 7, ready: false } },
       credits: p.credits ?? 0, ultimatePoints: p.ultimatePoints ?? 0,
       velocity: { x: 0, y: 0, z: 0 }, behaviorState: "idle", currentOrderId: null,
     }));
