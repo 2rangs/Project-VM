@@ -134,3 +134,91 @@ There is **no dedicated collision/blockout collection** — the file ships the A
 mesh only (VALORANT's real blocking volumes are not in this export). Per
 README §10.3 ("원본에 충돌 메시가 없다면 직접 생성해야 한다") the collision/walkable
 surface is **generated from the playable art geometry** (see §4).
+
+---
+
+## 4. Collision mesh extraction ✅
+
+**Tool:** `tools/map-mesh/blender/extract-collision.py`. Merges all **playable**
+collections (the 10 non-Vista collections), evaluates modifiers, triangulates,
+and writes world-space geometry as a compact binary (`PVMESH01`: float32
+positions + uint32 indices) plus a committable stats JSON.
+
+```bash
+/opt/blender-4.2/blender --background --factory-startup \
+  --python tools/map-mesh/blender/extract-collision.py -- \
+  --blend "datasets/spatial/ascent/mesh/raw/Ascent (blender 4.2).blend" \
+  --mesh-out datasets/spatial/ascent/mesh/derived/ascent_playable.bin \
+  --stats-out datasets/spatial/ascent/mesh/ascent-extract-stats.json
+```
+
+| Measure | Value |
+|---|---|
+| Playable objects (Vista excluded) | 6,736 |
+| Playable vertices | 3,135,792 |
+| Playable triangles | 2,355,371 |
+| — floor (normal within 45° of +Z) | 410,858 |
+| — wall (near-vertical, within 70° of horizontal) | 1,111,794 |
+| — steep (between) | 832,719 |
+| Playable world bbox (uu / **m**) | min (−67.5,−47.75,−5.58) · max (96.49,113.91,68.06) → **164.0 × 161.7 × 73.6 m** |
+
+The playable bbox (≈164 × 162 m) is the real map extent; it confirms the
+metres↔uu reading (§3.1). Floor triangles (≈411 k) are the walkable candidate
+surface; walls (≈1.11 M) are the collision blockers that Recast voxelises into
+impassable spans.
+
+**Walkable/wall split** is produced by world-space triangle-normal
+classification (not a separate authored collision mesh). Recast re-derives
+walkability from slope during voxelisation (§7); the split here is for
+inspection and statistics.
+
+**License gate (derivative not committed).** The extracted mesh reproduces
+Riot/VALORANT map geometry from the user-provided `.blend`. Its redistribution
+licence is **unverified** (see §9). The `.bin` therefore lives in
+`datasets/spatial/ascent/mesh/derived/` (`.gitignored`); only the numeric stats
+(`ascent-extract-stats.json`) are committed.
+
+---
+
+## 5. Coordinate alignment: Blender ↔ PV-4 game coords ✅ (region-level)
+
+**Goal:** relate Blender world coords (metres) to PV-4's game coords (Unreal uu,
+from valorant-api) so PV-4's 22 callouts can be placed on the mesh/navmesh.
+
+**Anchors.** Both coordinate sets only expose *region-level* markers, so the fit
+uses region anchors, not exact per-callout correspondences:
+
+| Anchor | Blender (m) | PV-4 game (uu) | Blender source |
+|---|---|---|---|
+| atk-spawn | (18.50, 9.30) | (60.0, 50.0) | `Ascent_Art_Atk` floor centroid |
+| def-spawn | (14.00, 97.80) | (1995.2, −9744.9) | `Ascent_Art_Def` floor centroid |
+| a-site | (55.96, 66.38) | (6153.6, −6626.2) | `ABombsite*` landmark |
+| b-site | (−48.50, 75.60) | (−2344.1, −7548.5) | `BSite*` landmark |
+| mid | (14.10, 52.30) | (1222.7, −4586.6) | `Ascent_Art_Mid` floor centroid |
+
+Blender anchors from `floor-centroids.py` (area-weighted walkable-floor
+centroid) and `landmark-centroids.py` (named site geometry). Fit by
+`tools/map-mesh/align/fit-transform.py` (numpy least squares), result in
+`datasets/spatial/ascent/mesh/ascent-blender-to-game-transform.json`.
+
+**Result.**
+
+| Model | Parameters | Residual (RMS / max) |
+|---|---|---|
+| Affine `game = A·bl + t` | A = [[81.19, 32.09], [−0.34, −112.40]], t = (−1394.65, 1087.50); singular values 120.6 / 75.6 uu·m⁻¹ | **659.8 uu (6.6 m) / 905.4 uu (9.1 m)** |
+| Similarity (isotropic) | scale 93.25 uu·m⁻¹, rotation 10.31°, **reflection = true**, t = (−957.8, −417.7) | 1180.7 uu (11.8 m) / 1531.8 uu (15.3 m) |
+
+**Interpretation (honest).**
+- The frames are related by a **reflection** (`det R < 0`) at scale ≈ **90–100 uu
+  per metre** — i.e. Blender is right-handed, VALORANT/valorant-api left-handed,
+  ≈100 uu/m as expected. This is the structural relationship.
+- The **affine** is the working `Blender ↔ game` map (lower residual, absorbs the
+  reflection and anchor anisotropy). Its ~6.6 m RMS residual is **region-level,
+  not callout-precise**: both anchor sets are *approximate* region markers
+  (valorant-api callout points are themselves region centres, and the Blender
+  anchors are floor/geometry centroids). A ~7 m agreement between two independent
+  approximate datasets is the honest precision available without per-callout
+  ground truth.
+- Consequence for downstream use: when placing PV-4 callouts on the navmesh,
+  snap each mapped point to the nearest navmesh polygon (search radius ≥ 10 m) to
+  absorb this placement uncertainty (see §8).
