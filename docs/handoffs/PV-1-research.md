@@ -492,4 +492,39 @@ HANDOFF.md, NEXT_TASKS.md, DEVELOPMENT_LOG.md, ARCHITECTURE.integrated.md, PRE_M
 (위 분류·명세는 **미검증 초안 수준의 메모**이며, 실제 산출 시 각 스킬 위키 페이지 URL로 재확인 필요.)
 
 ---
-**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음. PV-1 동결.**
+**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**
+
+---
+
+# PROJECT V — TASK HANDOFF (PV-1 12차: 런타임 데이터 패키지 `@pv/game-data`)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research` (pv-integration 미push → 내 브랜치 시작, 추후 이동) · **동결 해제됨**
+
+## 1. 작업 목표
+Match Runner(PV-3)·데스크톱(PV-6)이 **한 곳에서 타입 있는 형태로** 게임 데이터를 불러오는 런타임 패키지.
+
+## 2. 완료한 작업 (실제 구현·검증)
+- **`packages/game-data/`** (TypeScript, node:test): `src/{types,normalize,index}.ts` + 데이터 번들 `data/` + 테스트.
+  - API: `getWeapon/getAgent/getAbilityEffects/getTeam/getPlayer/getAscentComps/getAscentTactics/getPatchMeta/listTeams/listPlayers/listAgents/listWeapons/listSimulatableTeams/meta`.
+  - 식별자 정규화 PV-3 규칙 미러(`kayo/kay/o → kay-o`).
+- **생성기** `tools/catalog-builder/build_game_data.py`: PV-1 데이터(효과120·comps·tactics·patch) + PV-2(ratings/names/teams, `--pv2-ref`) + **VCT Reference 로스터 추출**(최근 ≥2025, 팀당 ≥5) 조립.
+- **무기**: valorant-api로 **빌드 시 생성**(`weapons.generated.json`, **gitignore**); 없으면 TS **manual-approx 폴백**(공개 가격).
+- **로스터**: 67팀 전부 ≥5. **선수 1,227명 전원 번들 포함**(로스터 선수 누락 0). ratings 없는 선수는 `hasRatings:false`로 표시(기본값 사용, 날조 금지).
+- **테스트:** `node --experimental-strip-types --test` **7 passed**(팀 ≥5, 로스터 선수 전원 존재, ratings 플래그, 매치업 2팀×5, 별칭, 효과 조인, 무기). catalog pytest **19 passed** 유지.
+
+## 3. 변경한 파일
+`packages/game-data/**`(신규), `tools/catalog-builder/build_game_data.py`(신규), 본 handoff. 커밋 데이터: agents/ability-effects/ascent-comps/ascent-tactics/patch-meta/players/teams/rosters/meta. 미커밋: weapons.generated.json.
+
+## 4. 라이선스/개인정보
+실명(프로)·팀명은 사용자 결정(2026-11-18)으로 포함(공개 VCT만). meta.disclaimer에 "출시 전 초상권·상표 재검토" 명시. weapons는 valorant-api 불명확 → 생성·미커밋.
+
+## 8. 미완/이동
+- pv-integration push 시 패키지+생성기를 그 브랜치로 **이동**(`git pull --rebase`), 번들은 머지된 PV-2 경로로 재생성(현재는 `--pv2-ref origin/claude/pv-data` 스냅샷).
+- typecheck(`tsc`)는 devDep 설치 필요(미실행). 런타임은 node:test로 검증.
+- 11차(ability-coverage, Lotus mechanics)는 여전히 TODO(위 11차 섹션).
+
+## 13. 작업 재개 지점
+`packages/game-data/README.md` → `src/index.ts`; 재생성/테스트는 README 명령.
+
+---
+**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음.**

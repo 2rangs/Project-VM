@@ -1,0 +1,21 @@
+{
+ "generatedAt": "2026-11-18T14:41:17Z",
+ "generatedBy": "PV-1 build_game_data",
+ "currentBuild": "release-13.10",
+ "disclaimer": "Pre-launch INTERNAL dev. Real pro player/team names included by user decision 2026-11-18 (PUBLIC VCT only). Name/likeness + trademark MUST be re-reviewed before launch. Ratings are statistical estimates, not real-ability assessments.",
+ "sources": {
+  "abilities_tactics_comps_patch": "PV-1 (official wiki/API + VCT Reference)",
+  "players_teams": "PV-2 (VCT Reference, free incl. commercial)",
+  "rosters": "VCT Reference player_map (recent >=2025)",
+  "weapons": "https://valorant-api.com/v1/weapons"
+ },
+ "counts": {
+  "agents": 30,
+  "abilities": 120,
+  "players": 1227,
+  "teams": 70,
+  "rosters": 67,
+  "weapons": 21
+ },
+ "rosterAsOf": "recent seasons >=2025 (by appearance count)"
+}
