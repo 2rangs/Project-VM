@@ -271,6 +271,9 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
       defenders,
       seed,
       roundNumber,
+      // With abilities on, carry the spike on the sentinel (atk4) so the controller/initiators/
+      // duelist (atk1/2/3/5) are free to deploy execute utility (the carrier is forced to plant).
+      ...(abilitiesOn ? { spikeCarrierId: "atk4" } : {}),
       mapId: config.map,
       matchId,
       roundId: `r${roundNumber}`,

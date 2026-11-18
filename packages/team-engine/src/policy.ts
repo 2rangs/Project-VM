@@ -58,8 +58,10 @@ const SMOKE_WINDOW_MS = 7000;
  * side, mid angles); a later pass can read these from the KB directly.
  */
 const SMOKE_TARGETS: Readonly<Record<string, readonly string[]>> = {
-  "a-site": ["a-rafters", "a-wine"],
-  "b-site": ["b-boathouse"],
+  // The forward CHOKE the attack pushes through: smoking it denies the forward defender's hold
+  // angle (the team pushes the smoke; the holder can't pre-aim), then the deeper angle.
+  "a-site": ["a-main", "a-rafters", "a-wine"],
+  "b-site": ["b-main", "b-boathouse"],
   "mid-courtyard": ["mid-top"],
 };
 /** Entry choke each defender anchor watches (pre-aim direction); others fall back to the engine default. */
