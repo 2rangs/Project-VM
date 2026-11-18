@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T09:53:29+00:00",
+  "generatedAt": "2026-11-18T10:06:28+00:00",
   "source": {
     "sourceId": "vct-reference",
     "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
@@ -49,7 +49,7 @@
       }
     }
   },
-  "disclaimer": "Attributes are statistical ESTIMATES derived from public professional match box scores, not assessments of real players' ability. Positional/utility/comms attributes are left null because the data cannot support them. Using real names in a distributed game raises name/likeness questions — see docs/research/PLAYER_RATINGS.md.",
+  "disclaimer": "Pre-launch INTERNAL development use. Real player/team names are included by user decision (2026-11-18); scope is PUBLIC VCT professional players and teams only (no private individuals). License and name/likeness rights MUST be re-reviewed before any launch. Values remain statistical ESTIMATES from public match stats, not assessments of real ability. Positional/utility/comms attributes are null (data cannot support them). Names are in player_names.json; see docs/research/PLAYER_RATINGS.md.",
   "unestimableAttributes": {
     "movement": "needs positional/replay data (no movement traces in VCT Reference)",
     "weaponControl": "needs per-spray data (not in box scores)",

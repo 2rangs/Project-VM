@@ -8,15 +8,13 @@ assessments of real players' ability.** Full method + ethics: [`docs/research/PL
   Conforms to [`../../schema/player-rating.schema.json`](../../schema/player-rating.schema.json).
 - `ratings_meta.json` — build metadata, shrinkage params, validation (shrinkage gain, attribute
   correlations), attribute distribution, and the disclaimer.
+- `player_names.json` — `playerId → handle` mapping with source (build, sha256).
 
-## Names
-Names are intentionally **not** stored. To join them locally for analysis:
-```sql
--- after datasets/raw/vct-reference/download.sh
-SELECT pr.playerId, p.player_name
-FROM read_json_auto('datasets/derived/ratings/player_ratings.json') pr
-JOIN players p ON p.player_id = CAST(pr.playerId AS INTEGER);
-```
+## Names (user decision 2026-11-18)
+Real player handles **are committed** in `player_names.json` (user decision 2026-11-18; **public VCT
+pros only**). Records stay `playerId`-keyed; join names via the mapping file. **Pre-launch internal
+dev use only — license / name-likeness must be re-reviewed before any launch.** The values remain
+estimates from public stats, not real skill assessments.
 
 ## What is estimated vs null
 Estimated (shrunk, [0,1], median ~0.6): `aim, crosshairPlacement, firstBulletAccuracy, reaction,

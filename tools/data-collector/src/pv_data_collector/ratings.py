@@ -280,7 +280,9 @@ def build_ratings(duckdb_path: str) -> dict[str, Any]:
                            "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
                            "retrievedAt": _NOW, "sha256": sha, "synthetic": False,
                            "evidenceType": "derived", "verified": False, "confidence": None,
-                           "notes": ["Estimate from public box-score stats; NOT a real skill rating."]},
+                           "notes": ["Estimate from public box-score stats; NOT a real skill rating.",
+                                     "Real-name mapping in player_names.json (user decision 2026-11-18, "
+                                     "public VCT pros; re-review license/likeness before launch)."]},
         })
 
     meta = {
@@ -290,10 +292,8 @@ def build_ratings(duckdb_path: str) -> dict[str, Any]:
         "method": {"shrinkage": "empirical Bayes toward league mean, weight n/(n+k)",
                    "minMapsQualify": MIN_MAPS_QUALIFY, "skillMapping": "percentile -> 0.35 + 0.5*pct (median~0.6)",
                    "roleRelative": ["reaction", "entryAggression"], "shrinkStats": shrink_meta},
-        "disclaimer": ("Attributes are statistical ESTIMATES derived from public professional match "
-                       "box scores, not assessments of real players' ability. Positional/utility/comms "
-                       "attributes are left null because the data cannot support them. Using real names "
-                       "in a distributed game raises name/likeness questions — see docs/research/PLAYER_RATINGS.md."),
+        "disclaimer": NAME_DISCLAIMER + " Positional/utility/comms attributes are null (data cannot "
+        "support them). Names are in player_names.json; see docs/research/PLAYER_RATINGS.md.",
         "unestimableAttributes": UNESTIMABLE,
     }
     return {"ratings": records, "meta": meta, "aggregates": agg}
@@ -335,6 +335,42 @@ def time_split_shrinkage_gain(agg, stat="rating", per_map_col="rating_all") -> d
             "shrinkageHelps": shr_err < raw_err}
 
 
+# User decision (2026-11-18): not launching yet -> real names are used for public VCT pros/teams.
+NAME_DISCLAIMER = (
+    "Pre-launch INTERNAL development use. Real player/team names are included by user decision "
+    "(2026-11-18); scope is PUBLIC VCT professional players and teams only (no private individuals). "
+    "License and name/likeness rights MUST be re-reviewed before any launch. Values remain statistical "
+    "ESTIMATES from public match stats, not assessments of real ability."
+)
+
+
+def _write_player_names(duckdb_path: str, out_dir: str, player_ids: list[str], sha: str) -> str:
+    """Commit the playerId -> handle mapping for the rated players (public VCT pros)."""
+    import json
+    import duckdb
+    ids = [int(p) for p in player_ids]
+    con = duckdb.connect(duckdb_path, read_only=True)
+    try:
+        qmarks = ",".join("?" * len(ids)) or "NULL"
+        rows = con.execute(
+            f"SELECT player_id, player_name, country, player_url FROM players WHERE player_id IN ({qmarks})",
+            ids).fetchall()
+    finally:
+        con.close()
+    names = [{"playerId": str(r[0]), "handle": r[1], "country": r[2], "sourceUrl": r[3]} for r in rows]
+    payload = {
+        "meta": {"sourceId": "vct-reference", "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+                 "sha256": sha, "retrievedAt": _NOW, "count": len(names),
+                 "disclaimer": NAME_DISCLAIMER},
+        "players": sorted(names, key=lambda x: x["playerId"]),
+    }
+    path = os.path.join(out_dir, "player_names.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return path
+
+
 def write_ratings(duckdb_path: str, out_dir: str) -> dict[str, str]:
     import json
     built = build_ratings(duckdb_path)
@@ -366,6 +402,10 @@ def write_ratings(duckdb_path: str, out_dir: str) -> dict[str, str]:
             json.dump(payload, f, indent=2, ensure_ascii=False)
             f.write("\n")
         written[name] = p
+    # Commit the id -> handle mapping (user decision 2026-11-18; public VCT pros only).
+    sha = built["ratings"][0]["provenance"]["sha256"] if built["ratings"] else ""
+    written["player_names.json"] = _write_player_names(
+        duckdb_path, out_dir, [r["playerId"] for r in built["ratings"]], sha)
     return written
 
 

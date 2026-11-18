@@ -81,14 +81,14 @@ teamworkDiscipline, lurking, anchoring, weaponPreference, agentMastery` — each
 → entry/peek willingness; `trading` → trade discipline; `clutch`/`consistency` → composure. Carry the
 `uncertainty` so the policy can widen behaviour variance for low-sample players.
 
-## Ethics / name & likeness  — **user decision required**
-- Records are keyed by **player_id only**; names are **not** committed. Regenerate names locally from
-  the DB (`datasets/derived/ratings/README.md`).
-- Attributes are estimates from public stats, surfaced as such in the data (`provenance.notes`) and
-  meta (`disclaimer`). Do not present them as objective skill ratings of real people.
-- **Shipping a distributed game with real player names/attributes raises name/likeness and data-rights
-  questions.** That is a product/legal decision for the user — flagged here, not decided. Options the
-  user may consider: anonymised/fictional rosters, opt-in, or licensing.
+## Ethics / name & likeness  — **user decision recorded (2026-11-18)**
+- **Decision (2026-11-18):** not launching yet, so real player **handles are committed** in
+  `player_names.json`. Scope is **public VCT professional players only** (no private individuals).
+- Records stay `playerId`-keyed; the handle mapping is a sibling file with its source (build, sha256).
+- Attributes remain estimates from public stats, surfaced as such (`provenance.notes`, meta
+  `disclaimer`) — **not** objective skill ratings of real people.
+- **Pre-launch internal development use only. License and name/likeness rights MUST be re-reviewed
+  before any launch** (options: licensing, opt-in, or anonymised/fictional rosters).
 
 ## Reproduce
 ```bash

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-18T10:02:13+00:00",
+  "generatedAt": "2026-11-18T10:06:28+00:00",
   "source": {
     "sourceId": "vct-reference",
     "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
@@ -45,7 +45,7 @@
       }
     }
   },
-  "disclaimer": "Team tendencies are statistical ESTIMATES from public match economy data, not verified scouting intel. Tactical tendencies needing positions are null. Team names are not committed (teamId only). Real-name use in a shipped game is a user/legal decision — see docs/research/TEAM_PROFILES.md.",
+  "disclaimer": "Pre-launch INTERNAL development use. Real team names are included by user decision (2026-11-18); scope is PUBLIC VCT professional teams only. License and name/likeness rights MUST be re-reviewed before any launch. Tendencies remain statistical ESTIMATES from public match economy, not scouting truth. Tactical tendencies needing positions are null. Names are in team_names.json; see docs/research/TEAM_PROFILES.md.",
   "unestimableTactical": {
     "sitePreference": "needs per-round plant site / positions (Layer B not available)",
     "executeTempo": "needs timing of site hits (no per-round timeline in VCT Reference)",

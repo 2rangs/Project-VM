@@ -574,3 +574,9 @@ dataset 검증    : 31/31 files valid, 661 records (team_profiles 70 포함)
 ## 7-8. 다음 권장
 1. **(PV-3)** team-engine 정의 후 위 매핑 연결, as-of로 상대 프로필 생성.
 2. **(Layer B 확보 후)** 전술 성향(사이트 선호·템포 등) 추가.
+
+## 7-9. 실명 반영 (사용자 결정 2026-11-18)
+사용자 결정: 우선 출시가 아니므로 **공개 VCT 프로 선수·팀 전부 실명 사용**. 반영:
+- `datasets/derived/ratings/player_names.json`(playerId→핸들, 402명), `datasets/derived/team-profiles/team_names.json`(teamId→팀명, 70팀) **커밋**. 각 파일에 출처(빌드일·sha256)·고지 포함. 레코드는 계속 ID 기반(이름은 사이드카 매핑).
+- 고지 변경: "**출시 전 내부 개발용. 실명 사용은 사용자 결정(2026-11-18). 출시 전 라이선스·초상권 재검토 필요.**" + "공개 통계 기반 추정치이며 실제 실력 평가 아님" 유지. 범위: **공개 VCT 프로 선수·팀만**(비공개 개인 데이터 제외).
+- 스키마·README·research 문서 고지 동기화. 테스트 추가(매핑 생성 검증). gen-ratings/gen-team-profiles가 매핑도 자동 생성.

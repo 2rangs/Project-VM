@@ -92,6 +92,24 @@ def test_determinism_of_attributes(tmp_path):
     assert a == b  # attributes are deterministic (provenance timestamp excluded)
 
 
+def test_write_player_names_mapping(tmp_path):
+    import json
+    db = tmp_path / "n.duckdb"
+    con = duckdb.connect(str(db))
+    con.execute("CREATE TABLE players(player_id INTEGER, player_name VARCHAR, country VARCHAR, player_url VARCHAR)")
+    con.executemany("INSERT INTO players VALUES (?,?,?,?)",
+                    [(1, "acePlayer", "kr", "u1"), (2, "midPlayer", "us", "u2"), (3, "x", "eu", "u3")])
+    con.close()
+    out = tmp_path / "out"
+    out.mkdir()
+    R._NOW = "2026-11-18T00:00:00+00:00"
+    path = R._write_player_names(str(db), str(out), ["1", "2"], "a" * 64)
+    d = json.load(open(path))
+    assert d["meta"]["count"] == 2 and d["meta"]["sha256"] == "a" * 64
+    assert {p["playerId"]: p["handle"] for p in d["players"]} == {"1": "acePlayer", "2": "midPlayer"}
+    assert "(2026-11-18)" in d["meta"]["disclaimer"]
+
+
 def test_missing_db_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         R.build_ratings(str(tmp_path / "none.duckdb"))

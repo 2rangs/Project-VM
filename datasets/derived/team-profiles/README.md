@@ -8,6 +8,7 @@ truth.** Method + ethics + mapping: [`docs/research/TEAM_PROFILES.md`](../../../
   Conforms to [`../../schema/team-profile.schema.json`](../../schema/team-profile.schema.json).
 - `team_profiles_meta.json` — build metadata, league means + shrinkage pseudocounts, **season
   stability**, disclaimer.
+- `team_names.json` — `teamId → name` mapping with source (build, sha256).
 
 ## Point-in-time (`--as-of`)
 `build_team_profiles(db, as_of=...)` uses only matches **strictly before** `as_of`, so a simulation
@@ -21,9 +22,10 @@ Economic: `forceBuyAfterLoss` (+ by loss tier 1/2/3+), `pistolLossForceBuy`, `bo
 **Null with reason** (need positions): `sitePreference, executeTempo, defaultSetup, utilityUsage,
 rotationTendency, lurkTendency, retakeVsSaveTendency, fakeTendency` — never invented.
 
-## Names
-Not stored. Join locally: `SELECT tp.teamId, t.team_name FROM read_json_auto('team_profiles.json') tp
-JOIN teams t ON t.team_id = CAST(tp.teamId AS INTEGER)`.
+## Names (user decision 2026-11-18)
+Real team names **are committed** in `team_names.json` (user decision 2026-11-18; **public VCT teams
+only**). Records stay `teamId`-keyed; join via the mapping. **Pre-launch internal dev use only —
+license / name-likeness must be re-reviewed before any launch.**
 
 ## Regenerate
 ```bash

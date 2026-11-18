@@ -278,7 +278,9 @@ def build_team_profiles(duckdb_path: str, as_of: str | None = None) -> dict[str,
                            "retrievedAt": _NOW, "sha256": sha, "synthetic": False,
                            "evidenceType": "derived", "verified": False, "confidence": None,
                            "notes": ["Team tendency estimate from public match economy; NOT a scouting truth."
-                                     + (f" asOf={as_of}" if as_of else "")]},
+                                     + (f" asOf={as_of}" if as_of else ""),
+                                     "Real-name mapping in team_names.json (user decision 2026-11-18, "
+                                     "public VCT teams; re-review license/likeness before launch)."]},
         })
 
     meta = {
@@ -290,10 +292,8 @@ def build_team_profiles(duckdb_path: str, as_of: str | None = None) -> dict[str,
                    "forceBuy": "loadout tier in {semi,full} (not eco) in a non-pistol, non-OT round",
                    "leagueParams": {k: {"mean": round(v[0], 4), "pseudocount": round(v[1], 1)}
                                     for k, v in league_params.items()}},
-        "disclaimer": ("Team tendencies are statistical ESTIMATES from public match economy data, not "
-                       "verified scouting intel. Tactical tendencies needing positions are null. Team "
-                       "names are not committed (teamId only). Real-name use in a shipped game is a "
-                       "user/legal decision — see docs/research/TEAM_PROFILES.md."),
+        "disclaimer": NAME_DISCLAIMER + " Tactical tendencies needing positions are null. Names are in "
+        "team_names.json; see docs/research/TEAM_PROFILES.md.",
         "unestimableTactical": UNESTIMABLE,
     }
     return {"profiles": records, "meta": meta, "_teams": teams}
@@ -331,6 +331,40 @@ def season_stability(duckdb_path: str) -> dict:
     }
 
 
+# User decision (2026-11-18): not launching yet -> real names used for public VCT pros/teams.
+NAME_DISCLAIMER = (
+    "Pre-launch INTERNAL development use. Real team names are included by user decision (2026-11-18); "
+    "scope is PUBLIC VCT professional teams only. License and name/likeness rights MUST be re-reviewed "
+    "before any launch. Tendencies remain statistical ESTIMATES from public match economy, not scouting truth."
+)
+
+
+def _write_team_names(duckdb_path: str, out_dir: str, team_ids: list[str], sha: str) -> str:
+    """Commit the teamId -> name mapping for the profiled teams (public VCT teams)."""
+    import json
+    import duckdb
+    ids = [int(t) for t in team_ids]
+    con = duckdb.connect(duckdb_path, read_only=True)
+    try:
+        qmarks = ",".join("?" * len(ids)) or "NULL"
+        rows = con.execute(
+            f"SELECT team_id, team_name, country, team_url FROM teams WHERE team_id IN ({qmarks})",
+            ids).fetchall()
+    finally:
+        con.close()
+    names = [{"teamId": str(r[0]), "name": r[1], "country": r[2], "sourceUrl": r[3]} for r in rows]
+    payload = {
+        "meta": {"sourceId": "vct-reference", "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+                 "sha256": sha, "retrievedAt": _NOW, "count": len(names), "disclaimer": NAME_DISCLAIMER},
+        "teams": sorted(names, key=lambda x: x["teamId"]),
+    }
+    path = os.path.join(out_dir, "team_names.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return path
+
+
 def write_profiles(duckdb_path: str, out_dir: str, as_of: str | None = None) -> dict[str, str]:
     import json
     built = build_team_profiles(duckdb_path, as_of)
@@ -344,4 +378,8 @@ def write_profiles(duckdb_path: str, out_dir: str, as_of: str | None = None) -> 
             json.dump(payload, f, indent=2, ensure_ascii=False)
             f.write("\n")
         written[name] = p
+    # Commit the id -> name mapping (user decision 2026-11-18; public VCT teams only).
+    sha = built["profiles"][0]["provenance"]["sha256"] if built["profiles"] else ""
+    written["team_names.json"] = _write_team_names(
+        duckdb_path, out_dir, [r["teamId"] for r in built["profiles"]], sha)
     return written

@@ -88,6 +88,23 @@ def test_determinism(tmp_path):
     assert a == b
 
 
+def test_write_team_names_mapping(tmp_path):
+    import json
+    db = tmp_path / "tn.duckdb"
+    con = duckdb.connect(str(db))
+    con.execute("CREATE TABLE teams(team_id INTEGER, team_name VARCHAR, country VARCHAR, team_url VARCHAR)")
+    con.executemany("INSERT INTO teams VALUES (?,?,?,?)",
+                    [(10, "Team Alpha", "kr", "u10"), (20, "Team Beta", "eu", "u20")])
+    con.close()
+    out = tmp_path / "out"
+    out.mkdir()
+    P._NOW = "2026-11-18T00:00:00+00:00"
+    path = P._write_team_names(str(db), str(out), ["10", "20"], "b" * 64)
+    d = json.load(open(path))
+    assert {t["teamId"]: t["name"] for t in d["teams"]} == {"10": "Team Alpha", "20": "Team Beta"}
+    assert "(2026-11-18)" in d["meta"]["disclaimer"]
+
+
 def test_missing_db_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         P.build_team_profiles(str(tmp_path / "no.duckdb"))

@@ -61,11 +61,12 @@ suppresses its correlation.)
 Carry `uncertainty` so the IGL widens behaviour variance for low-sample opponents. Build the opponent
 profile **as-of the match date** so the sim never uses future form.
 
-## Ethics / name & likeness — **user decision required**
-Records are keyed by **teamId only**; names are not committed (regenerate locally, see data README).
-Tendencies are estimates from public match economy, surfaced as such (`provenance.notes`, meta
-`disclaimer`). Shipping real team names/tendencies raises name/likeness and data-rights questions — a
-product/legal decision for the user (anonymised/fictional teams, opt-in, or licensing), flagged here.
+## Ethics / name & likeness — **user decision recorded (2026-11-18)**
+**Decision (2026-11-18):** not launching yet, so real team **names are committed** in `team_names.json`
+(scope: **public VCT teams only**). Records stay `teamId`-keyed; names are a sibling mapping with
+source (build, sha256). Tendencies remain estimates from public match economy, surfaced as such
+(`provenance.notes`, meta `disclaimer`). **Pre-launch internal development use only — license and
+name/likeness rights MUST be re-reviewed before any launch** (licensing, opt-in, or anonymised teams).
 
 ## Reproduce
 ```bash
