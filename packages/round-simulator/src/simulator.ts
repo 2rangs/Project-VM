@@ -168,15 +168,21 @@ export class RoundSimulator {
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         if (cmd?.kind !== "useAbility" || !cmd.abilityId) continue;
         const abilityId = cmd.abilityId;
+        // suppressed players (KAY/O knife, Killjoy ult) cannot cast abilities this tick.
+        if (abilityEngine.suppressRemainingMs(p.id, state.elapsedMs) > 0) {
+          trace({ playerId: p.id, phase: "ability", abilityId, result: "suppressed" }, `ability:${p.id}:${abilityId}:suppressed`);
+          continue;
+        }
         const slot = p.abilities.find((a) => a.abilityId === abilityId);
         if (!slot) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSlot" }, `ability:${p.id}:${abilityId}:noSlot`); continue; }
         const avail = checkAvailability(this.abilitiesCatalog, slot, state.elapsedMs, { points: p.ultimatePoints, required: p.ultimateCost });
         if (!avail.usable) { trace({ playerId: p.id, phase: "ability", abilityId, result: "unavailable" }, `ability:${p.id}:${abilityId}:unavailable`); continue; }
         const spec = this.abilitiesCatalog[abilityId];
         if (!spec) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSpec" }, `ability:${p.id}:${abilityId}:noSpec`); continue; }
-        // flash/concuss: resolve which enemies are blinded (in range + line of sight).
+        // flash/concuss (blind) and suppress (ability-silence) both hit enemies in range + LoS.
         const isFlash = spec.effectTypes.includes("flash") || spec.effectTypes.includes("concuss");
-        const affectedPlayerIds = isFlash ? this.flashTargets(state, p, spec.radiusUnits ?? 1500) : undefined;
+        const isSuppress = spec.effectTypes.includes("suppress");
+        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500) : undefined;
         abilityEngine.use(spec, {
           instanceId: `${p.id}:${abilityId}:${state.tick}`,
           abilityId, ownerId: p.id, teamId: p.teamId,
@@ -186,6 +192,22 @@ export class RoundSimulator {
         slot.lastUsedAtMs = state.elapsedMs;
         push({ kind: "abilityUsed", tick: state.tick, elapsedMs: state.elapsedMs, actor: p.id, detail: abilityId });
         trace({ playerId: p.id, phase: "ability", abilityId, result: "used" });
+        // movement effect (Jett dash, Omen Shrouded Step): instantly displace the caster to the
+        // commanded target zone when it is within the ability's range. Cancels any current path.
+        if (spec.effectTypes.includes("movement") && cmd.targetZone) {
+          const target = this.spatial.getZone(cmd.targetZone);
+          const rangeUnits = spec.rangeUnits ?? 1500;
+          if (target && dist3(p.position, target.position) <= rangeUnits) {
+            p.zoneId = target.id;
+            p.position = { ...target.position };
+            p.path = [];
+            p.pathIndex = 0;
+            p.edgeProgressMs = 0;
+            trace({ playerId: p.id, phase: "ability", abilityId, toZone: target.id, result: "displaced" });
+          } else {
+            trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
+          }
+        }
       }
       abilityEngine.advance(state.elapsedMs);
 
