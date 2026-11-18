@@ -31,6 +31,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "sim:match": "tsx src/cli.ts"
   }
 }
