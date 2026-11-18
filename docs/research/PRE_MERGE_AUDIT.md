@@ -57,8 +57,9 @@
 **[D] (FIX-AT-MERGE) pv-replay 이력 squash (기 계획)**
 - 오케스트레이터가 알린 "과거 커밋 ProfileName 1건"은 접근 가능한 이력에서 합성값으로만 확인됨. 그래도 **계획대로 pv-replay를 squash**해 과거 커밋 평문을 제거(belt-and-suspenders). 추가 실명은 발견되지 않음.
 
-**[E] (FIX-AT-MERGE) `screenshot-real.png` 육안 확인**
-- `pv-replay:apps/replay-viewer/docs/screenshot-real.png`는 실제 캡처 기반 뷰어 화면. 파이프라인이 이름을 player_N으로 가리지만, **머지 전 화면에 RiotID/실명이 보이지 않는지 육안 확인** 권장(본 감사 환경에선 OCR 불가). synthetic 스크린샷은 무관.
+**[E] (해결됨) `screenshot-real.png` 육안 확인 — 통과**
+- `pv-replay:apps/replay-viewer/docs/screenshot-real.png`: **오케스트레이터가 직접 육안 확인(2026-11-18)** — 선수 라벨은 익명 `P1`뿐, 실명 없음 → **통과**.
+- **참고(출시 전 재검토):** 배경 미니맵은 valorant-api에서 받은 **Riot 맵 이미지**(게임 자산). 비상업/내부 개발 단계는 무방하나, 상업 출시 전 자산 사용 권한을 재검토(§LICENSE_AUDIT §0 출시 전 검토와 함께).
 
 ## 4. 출처(provenance) 일관성
 - **실/합성 분리 양호:** pv-data `datasets/synthetic/` ↔ `datasets/normalized/vct-reference/`(실, match 754737/754730) ↔ `derived/`. 혼재 없음.

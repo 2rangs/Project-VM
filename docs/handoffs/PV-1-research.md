@@ -437,4 +437,38 @@ PV-4 navgraph(구역/경로), 내 ability-effects(유틸 어휘), ascent-comps.j
 - `docs/research/PRE_MERGE_AUDIT.md` → `docs/THIRD_PARTY_NOTICES.md`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 9차: 통합 후 문서 세트 초안)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research` · **범위:** 읽기 전용 종합
+
+## 1. 작업 목표
+최종 머지 시 쓸 "현재 상태 문서" 초안을 전 브랜치 handoff·커밋을 읽어 종합. 루트 원본 미수정.
+
+## 2. 완료한 작업 (실제 수행)
+- `docs/HANDOFF.md`(신규): 기준 커밋표 + §4 실제 검증 상태표(✅/🟡/⛔/🚫 + 근거) + 결정(DECISION + OPS-A~G).
+- `docs/NEXT_TASKS.md`(신규): P0~P4 우선순위 + 선행/블로커(사용자 조치 표기).
+- `docs/DEVELOPMENT_LOG.md`(신규): 6브랜치 차수별 커밋·핵심·음성 결과.
+- `docs/ARCHITECTURE.integrated.md`(신규): 패키지 의존(Mermaid)·데이터흐름·프로세스 경계. PV-3 ARCHITECTURE.md 기반(원본 미수정, 파일명 분리).
+- 감사 후속: PRE_MERGE_AUDIT [E] screenshot-real.png = 오케스트레이터 육안확인 통과(익명 P1), 미니맵 Riot 이미지 출시전 재검토 참고 추가.
+
+## 3. 변경한 파일 (내 브랜치 문서만)
+HANDOFF.md, NEXT_TASKS.md, DEVELOPMENT_LOG.md, ARCHITECTURE.integrated.md, PRE_MERGE_AUDIT.md(수정), handoff. **다른 브랜치 미수정.**
+
+## 4. 데이터 출처
+전 브랜치 `docs/handoffs/PV-*.md`, `docs/ARCHITECTURE.md`(pv-core), `git log main..origin/claude/pv-*`.
+
+## 8. 현재 미완료
+- 진행 중 세션(PV-2 7차/PV-3 리허설/PV-4 7차/PV-5 2차/PV-6 4차) 종료 후 문서 갱신 필요(섹션 분리해 둠).
+
+## 10. 설계 결정
+- 사실은 handoff/커밋/명시 테스트 수만 기재, 추측 배제. 미머지·분산 상태를 명시하고 통합 "제안"으로 표기.
+
+## 12. 다음 권장 작업
+머지 후 이 4문서를 실제 통합 코드 기준으로 확정; 진행 중 세션 결과 반영.
+
+## 13. 작업 재개 지점
+- `docs/HANDOFF.md`(기준 커밋표) → NEXT_TASKS → DEVELOPMENT_LOG → ARCHITECTURE.integrated.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**
