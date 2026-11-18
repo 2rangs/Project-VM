@@ -26,9 +26,10 @@ import {
   loadSpatial,
   loadWeapons,
   makeSpatialQuery,
-  NO_ABILITIES,
   makeSimPolicies,
+  NO_ABILITIES,
 } from "./setup.js";
+import { loadAbilityCatalog, agentAbilityLoadout, ASCENT_COMP } from "./abilities.js";
 import {
   newTeamEconomy,
   decideBuy,
@@ -43,7 +44,9 @@ import { rosterSkills } from "./teams.js";
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
-const ULT_COST = 7; // provisional default; per-agent ult costs arrive with the abilities layer.
+const ULT_COST = 7; // provisional default ult cost (per-agent costs are a later refinement).
+/** Precomputed per-slot agent + ability loadout for the fixed comp (both teams use it). */
+const COMP_LOADOUTS = ASCENT_COMP.map((agent) => ({ agent, abilities: agentAbilityLoadout(agent) }));
 
 export type TeamSlot = "A" | "B";
 export type Side = "attack" | "defense";
@@ -66,6 +69,13 @@ export interface MatchConfig {
    * round's `replay.meta.perception` is populated (round-simulator → toPv6ReplayFormat).
    */
   readonly recordPerception?: boolean;
+  /**
+   * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
+   * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
+   * coordinate ATTACKER utility to execute, so enabling it makes defense dominant (attack win
+   * ~0.02). Kept off until attacker util-for-executes is modelled; on is for ability experiments.
+   */
+  readonly enableAbilities?: boolean;
 }
 
 export interface RoundRecord {
@@ -163,16 +173,25 @@ function armorFor(tier: BuyDecision["tier"]): number {
  * Defenders spawn on their anchors (a/b/mid); attackers use the default attacker spawn. Per-player
  * skills come from the team's real ratings. Abilities/ults are the next layer (Stage 2).
  */
-function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][]): MatchRoundPlayer[] {
+function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean): MatchRoundPlayer[] {
   const prefix = side === "attack" ? "atk" : "def";
   const armor = armorFor(buy.tier);
-  return Array.from({ length: 5 }, (_, i): MatchRoundPlayer => ({
-    id: `${prefix}${i + 1}`,
-    agentId: "agent",
-    skills: skills[i],
-    ...(side === "defense" ? { spawnZoneId: DEFENDER_SPAWNS[i] } : {}),
-    loadout: { weaponId: buy.weapon, armor, ultimatePoints: 0, ultimateCost: ULT_COST },
-  }));
+  return Array.from({ length: 5 }, (_, i): MatchRoundPlayer => {
+    const comp = COMP_LOADOUTS[i]!;
+    return {
+      id: `${prefix}${i + 1}`,
+      agentId: comp.agent,
+      skills: skills[i],
+      ...(side === "defense" ? { spawnZoneId: DEFENDER_SPAWNS[i] } : {}),
+      loadout: {
+        weaponId: buy.weapon,
+        armor,
+        ...(withAbilities ? { abilities: comp.abilities } : {}),
+        ultimatePoints: 0,
+        ultimateCost: ULT_COST,
+      },
+    };
+  });
 }
 
 /**
@@ -190,6 +209,8 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
     B: rosterSkills(config.teamB.id, 5),
   };
   const policies = makeSimPolicies(sq);
+  const abilitiesOn = config.enableAbilities ?? false;
+  const abilities = abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
   const matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
   const teamRef = (slot: TeamSlot): TeamRef => (slot === "A" ? config.teamA : config.teamB);
 
@@ -227,17 +248,17 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
     const attackers: MatchRoundTeam = {
       teamId: teamRef(attacker).id,
       economy: toEconomyState(economy[attacker], "attack"),
-      players: makeRoster("attack", buys[attacker], skillsBySlot[attacker]),
+      players: makeRoster("attack", buys[attacker], skillsBySlot[attacker], abilitiesOn),
     };
     const defenders: MatchRoundTeam = {
       teamId: teamRef(defender).id,
       economy: toEconomyState(economy[defender], "defense"),
-      players: makeRoster("defense", buys[defender], skillsBySlot[defender]),
+      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn),
     };
     const out = runMatchRound({
       spatial,
       weapons,
-      abilities: NO_ABILITIES,
+      abilities,
       policies,
       attackers,
       defenders,
