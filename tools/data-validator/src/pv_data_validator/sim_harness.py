@@ -246,8 +246,61 @@ def _judge(metric, scope, dims, sim, target, tol) -> MetricResult:
 ERA_SUBDIR = {"all": "", "patch>=9": "patch-ge9"}
 
 
+def _metric_key(m: dict) -> tuple:
+    """Stable identity for a metric row: (metric, scope, sorted dims)."""
+    dims = m.get("dims") or {}
+    return (m.get("metric"), m.get("scope"), tuple(sorted((k, str(v)) for k, v in dims.items())))
+
+
+def attach_comparison(report: dict[str, Any], baseline: dict) -> dict[str, Any]:
+    """Annotate each metric with its change vs a baseline report (same shape), and add a summary.
+
+    Per metric: baselineSimValue, delta (sim − baselineSim), movedToward (improved/worsened/unchanged
+    for judged metrics with a real target; n/a for reported-only; new if absent from the baseline).
+    "improved" means the sim value moved closer to the real target than the baseline was.
+    """
+    base_by = {_metric_key(m): m for m in baseline.get("metrics", [])}
+    eps = 1e-9
+    improved = worsened = unchanged = newly_passed = newly_failed = 0
+    for m in report["metrics"]:
+        b = base_by.get(_metric_key(m))
+        if b is None:
+            m["baselineSimValue"], m["delta"], m["movedToward"] = None, None, "new"
+            continue
+        bs, cs = b.get("simValue"), m.get("simValue")
+        m["baselineSimValue"] = bs
+        if bs is None or cs is None:
+            m["delta"], m["movedToward"] = None, "n/a"
+        else:
+            m["delta"] = cs - bs
+            real = m.get("realRate")
+            if real is None:
+                m["movedToward"] = "n/a"
+            else:
+                d_now, d_base = abs(cs - real), abs(bs - real)
+                if d_now < d_base - eps:
+                    m["movedToward"], _ = "improved", (improved := improved + 1)
+                elif d_now > d_base + eps:
+                    m["movedToward"], _ = "worsened", (worsened := worsened + 1)
+                else:
+                    m["movedToward"], _ = "unchanged", (unchanged := unchanged + 1)
+        if b.get("passed") is not None and m.get("passed") is not None:
+            if m["passed"] and not b["passed"]:
+                newly_passed += 1
+            elif not m["passed"] and b["passed"]:
+                newly_failed += 1
+    report["comparison"] = {
+        "baselineLabel": (baseline.get("simMeta") or {}).get("label"),
+        "baselineGeneratedAt": baseline.get("generatedAt"),
+        "improved": improved, "worsened": worsened, "unchanged": unchanged,
+        "newlyPassed": newly_passed, "newlyFailed": newly_failed,
+    }
+    return report
+
+
 def evaluate_sim_run(sim_run: dict, priors_dir: str, *, scope: str = "ascent",
-                     tolerances: dict | None = None, era: str = "all") -> dict[str, Any]:
+                     tolerances: dict | None = None, era: str = "all",
+                     compare_path: str | None = None) -> dict[str, Any]:
     tol = {**DEFAULT_TOLERANCES, **(tolerances or {})}
     sub = ERA_SUBDIR.get(era, "")
     priors = load_priors(os.path.join(priors_dir, sub) if sub else priors_dir)
@@ -298,7 +351,7 @@ def evaluate_sim_run(sim_run: dict, priors_dir: str, *, scope: str = "ascent",
 
     judged = [r for r in results if r.passed is not None]
     passed = sum(1 for r in judged if r.passed)
-    return {
+    report = {
         "generatedAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
         "scope": scope,
         "era": era,
@@ -308,6 +361,37 @@ def evaluate_sim_run(sim_run: dict, priors_dir: str, *, scope: str = "ascent",
                     "allPassed": passed == len(judged) and len(judged) > 0},
         "metrics": [asdict(r) for r in results],
     }
+    if compare_path:
+        with open(compare_path, encoding="utf-8") as f:
+            attach_comparison(report, json.load(f))
+    return report
+
+
+_MOVE_SYMBOL = {"improved": "↑ better", "worsened": "↓ worse", "unchanged": "= same",
+                "n/a": "·", "new": "＋ new"}
+
+
+def _comparison_markdown(report: dict) -> list[str]:
+    """The metrics table with baseline columns, used when a comparison is attached."""
+    c = report["comparison"]
+    lines = [
+        f"- **Compared to baseline** `{c['baselineLabel']}` ({c['baselineGeneratedAt']}): "
+        f"{c['improved']} improved, {c['worsened']} worsened, {c['unchanged']} unchanged; "
+        f"{c['newlyPassed']} newly pass, {c['newlyFailed']} newly fail.", "",
+        "| Metric | Dims | Base | Sim | Δ | Move | Real | Result |",
+        "|---|---|---|---|---|---|---|---|"]
+    for m in report["metrics"]:
+        is_dur = m["metric"] == "round_duration_ms"
+        fmt = (lambda v: "—" if v is None else (f"{v:.0f}ms" if is_dur else f"{v:.3f}"))
+        base = fmt(m.get("baselineSimValue"))
+        sim = fmt(m["simValue"])
+        delta = "—" if m.get("delta") is None else (f"{m['delta']:+.0f}" if is_dur else f"{m['delta']:+.3f}")
+        move = _MOVE_SYMBOL.get(m.get("movedToward"), "·")
+        real = "—" if m["realRate"] is None else f"{m['realRate']:.3f}"
+        result = "report-only" if m["passed"] is None else ("✅ PASS" if m["passed"] else "❌ FAIL")
+        dims = ", ".join(f"{k}={v}" for k, v in m["dims"].items()) or "—"
+        lines.append(f"| {m['metric']} | {dims} | {base} | {sim} | {delta} | {move} | {real} | {result} |")
+    return lines
 
 
 def report_markdown(report: dict) -> str:
@@ -316,9 +400,11 @@ def report_markdown(report: dict) -> str:
              f"- Baselines: VCT Reference priors ({', '.join(sorted(set(v for v in report['priorsSource'].values() if v)))[:16]}…)",
              f"- Sim meta: `{json.dumps(report['simMeta'])}`",
              f"- **{report['summary']['passed']}/{report['summary']['judged']} judged metrics passed** "
-             f"({report['summary']['reportedOnly']} reported-only)", "",
-             "| Metric | Dims | Sim | Real | Real 95% CI | Tol | Result |",
-             "|---|---|---|---|---|---|---|"]
+             f"({report['summary']['reportedOnly']} reported-only)", ""]
+    if report.get("comparison"):
+        return "\n".join(lines + _comparison_markdown(report)) + "\n"
+    lines += ["| Metric | Dims | Sim | Real | Real 95% CI | Tol | Result |",
+              "|---|---|---|---|---|---|---|"]
     for m in report["metrics"]:
         sim = "—" if m["simValue"] is None else f"{m['simValue']:.3f}" if m["metric"] != "round_duration_ms" \
             else f"{m['simValue']:.0f}ms"

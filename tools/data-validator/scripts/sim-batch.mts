@@ -17,6 +17,8 @@
 //   --out FILE         SimRun bundle path (default reports/sim-batch-run.json)
 //   --report PREFIX    report path prefix for sim:validate (default reports/sim-batch)
 //   --era ERA          baseline era for sim:validate: "all" (default) | "patch>=9"
+//   --compare FILE     a prior report JSON (e.g. docs/research/SIM_BASELINE_2026-11-18.json) to diff
+//                      against — the report gains Δ-vs-baseline + improved/worsened columns
 //   --no-validate      only write the SimRun bundle + print the summary; skip sim:validate
 //
 // Players are side-named (atk1..atk5 / def1..def5) by the round simulator, so the per-round roster
@@ -78,6 +80,7 @@ async function main(): Promise<void> {
   const outPath = resolvePath(String(args["out"] ?? "reports/sim-batch-run.json"));
   const reportPrefix = resolvePath(String(args["report"] ?? "reports/sim-batch"));
   const era = String(args["era"] ?? "all");
+  const comparePath = args["compare"] !== undefined ? resolvePath(String(args["compare"])) : undefined;
   const doValidate = args["no-validate"] !== true;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
@@ -142,9 +145,10 @@ async function main(): Promise<void> {
   console.error(`  wrote SimRun bundle   : ${outPath.replace(REPO_ROOT + "/", "")}`);
 
   if (!doValidate) return;
-  console.error(`\nsim:batch: running sim:validate (era=${era}) ...`);
+  console.error(`\nsim:batch: running sim:validate (era=${era}${comparePath ? `, compare=${comparePath.replace(REPO_ROOT + "/", "")}` : ""}) ...`);
   const res = spawnSync("node", [join(TOOL_DIR, "scripts", "sim-validate.mjs"),
-    "--logs", outPath, "--era", era, "--out", reportPrefix, "--stdout"], { cwd: REPO_ROOT, stdio: "inherit" });
+    "--logs", outPath, "--era", era, "--out", reportPrefix, "--stdout",
+    ...(comparePath ? ["--compare", comparePath] : [])], { cwd: REPO_ROOT, stdio: "inherit" });
   process.exit(res.status ?? 1);
 }
 
