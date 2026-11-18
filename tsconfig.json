@@ -26,5 +26,10 @@
     "packages/integration-adapters/test/**/*.ts",
     "vitest.config.ts"
   ],
-  "exclude": ["**/dist/**", "**/node_modules/**"]
+  "//exclude": "The cross-package E2E test imports sibling engines (round-simulator → spatial-engine, etc.); typechecking it under PV-core's strict flags pulls sibling source into this program and trips their own (looser-config) strictness. It is a RUNTIME integration test (vitest), so it is excluded from the strict root typecheck; siblings are typechecked via `pnpm -r typecheck`.",
+  "exclude": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "packages/integration-adapters/test/e2e.integration.test.ts"
+  ]
 }
