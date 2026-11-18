@@ -1,14 +1,19 @@
 # PROJECT V — TASK HANDOFF
 
 **Agent:** PV-4 Spatial → Agent Simulation
-**Version:** v2 (2026-11-18) — adds perception-engine; supersedes v0/v1
+**Version:** v3 (2026-11-18) — adds combat-engine; supersedes v0/v1/v2
 **Branch:** `claude/pv-spatial`
 **Map:** Ascent (per DECISION-009 — first and only implemented map)
 
-> **v2 changelog (this update):** added `packages/perception-engine` (3차 작업) — Vision/
-> Hearing/Memory/Communication producing per-player & per-team Observations from WorldState,
-> enforcing the ground-truth boundary (DECISION-004). 17 tests passing; `tsc` clean. Details
-> in **§A. Perception Engine** below. spatial-engine unchanged (still 21 tests).
+> **v3 changelog (this update):** added `packages/combat-engine` (4차 작업) — deterministic
+> timeline-based duel resolution from weapons/distance/info/skills; winner & TTK emergent
+> (DECISION-002), OVR cannot beat an info deficit (README §29). 15 tests passing; `tsc`
+> clean. Weapon values NOT committed (PV-1 LICENSE_AUDIT) — manual-approx fixture + local
+> regen script instead. Details in **§B. Combat Engine** below.
+>
+> **v2:** added `packages/perception-engine` (3차) — Vision/Hearing/Memory/Communication →
+> per-player/team Observations, enforcing the ground-truth boundary (DECISION-004). 17 tests.
+> Details in **§A**. spatial-engine unchanged (21 tests).
 
 > **v1 changelog (this update):**
 > - Investigated real per-event player positions via vlr.gg 2D-replay logs. The data exists and is
@@ -196,6 +201,48 @@ npm test            # vitest run
 
 **미완료/주의:** 모든 수치 `manual-approx`(실측 보정 전). 시야는 구역 단위 LoS(정밀 ray-cast 아님).
 연막 판정은 구역 incident smokeable sightline 차단(볼륨 교차 아님). `knownMapChanges`는 v0에서 빈 배열.
+
+---
+
+## §B. Combat Engine (4차 작업, `packages/combat-engine`)
+
+**목표 (Handoff §14.4, README §23, §29 "OVR만으로 교전 결정 금지", DECISION-002):** 두 선수 교전을
+**물리·정보 요소로** 결정론적으로 해결. 승자/TTK를 미리 정하지 않고, 입력 상태에서 사건(사격→명중→피해→사망)을
+시간순으로 생성.
+
+**설계:**
+- `engine.ts` `resolveDuel(duel, seed)` — 반응 지연(pre-aim≈즉시, 플래시=긴 지연) 후 연사력 간격으로 사격,
+  탄창 소진 시 장전. 매 사격: 명중 판정(`hitChance`) → 부위(`headshotChance`) → 거리밴드 피해 → 실드/체력 적용.
+  시드 RNG 스트림을 **선수별로 분리**(한쪽 롤 변화가 다른쪽에 영향 안 줌). 출력: `shot/hit/damage/kill/reload`
+  이벤트 로그 + 남은 체력·탄약·명중수, winner/TTK(둘 다 생존이면 null).
+- `damage.ts` — 거리밴드 피해 + 실드 1:1 흡수(Operator 몸샷 150이 풀중실드 100+50=150 관통 1킬).
+- `skills.ts` — README §23.1 Mechanical 능력치(aim/reaction/crosshair/firstBullet/tracking/movement/weaponControl)를
+  반응시간·명중·헤드샷 확률로 매핑.
+- `montecarlo.ts` — N회 시드 교전 승률.
+- `params.ts` — 모든 튜닝값 `manual-approx` 집약. `CombatCalibration`은 PV-2 실측 VCT 통계(첫킬 승률 등)로
+  보정할 **인터페이스 자리**(엔진 수정 없이 승률 스케일 주입).
+
+**무기 데이터 / 라이선스 (중요):** PV-1 `docs/LICENSE_AUDIT.md` 판단 = valorant-api 라이선스 불명확 →
+Riot 파생 카탈로그 **값은 커밋 안 함**(스키마·픽스처만). 따라서:
+- 커밋: `test/fixtures/weapons.manual-approx.json` — 공개 게임 규칙의 **수작업 근사치**(Vandal/Phantom/
+  Operator/Sheriff/Spectre/Classic), `manual-approx` 표기. 테스트는 이것만 사용(오프라인·결정적·라이선스 안전).
+- 미커밋(gitignore): `npm run fetch-weapons` → `test/fixtures/weapons.real.generated.json`(valorant-api 정확값
+  로컬 재생성). PV-1 `tools/catalog-builder`(release-13.10)로도 재생성 가능.
+- 이 세션에서 실제 valorant-api 값은 픽스처 보정용으로만 참조(커밋 안 함).
+
+**테스트 (실제 실행, 15개 통과 / `tsc` 통과). 실측 승률 마진:**
+- pre-aim 우위: winRateA **0.82** (>0.6) — 같은 조건이면 선피킹/선관측이 유리.
+- 원거리(42m) 라이플>SMG: Vandal winRate **0.91**.
+- 근거리(8m) SMG 경쟁력: Vandal winRate **0.52**(지배당하지 않음).
+- Operator 몸샷 1킬: 실드 50/25/0 전부 즉사(damage 테스트).
+- 플래시 지연: 피격측 선사격 불가 → winRateA **0.00**.
+- 결정론: 동일 시드+입력 → 동일 이벤트 로그(단일·몬테카를로 모두).
+- 정보 우위 > OVR: 능력치 0.4+pre-aim 이 능력치 0.95+지연 상대에게 승률 >0.5 → OVR 결정론 금지 확인.
+
+**실행:** `cd packages/combat-engine && npm install && npm test`. (런타임 의존성 없음 — 완전 독립.)
+
+**미완료/주의:** 전부 `manual-approx`. 1v1 중심(다대다 트레이드/크로스파이어 미구현). 엄폐·높이우위는 구역 근사
+파라미터(`behindCover`)로만. 스킬→확률 매핑은 PV-2 실측으로 보정 필요(`CombatCalibration` 사용).
 
 ---
 
