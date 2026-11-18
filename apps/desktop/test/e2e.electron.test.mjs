@@ -54,6 +54,22 @@ async function main() {
   await page.waitForTimeout(2000);
   await page.screenshot({ path: path.join(OUT, 'desktop-matchday.png') });
 
+  // Fog-of-war on the LIVE match — the match-runner records perception, so the fog
+  // controls appear with no demo. Render one team's view: observed enemies, ghosts,
+  // sound zones, belief heatmap.
+  await page.waitForSelector('[data-testid="fog-on"]', { timeout: 10000 });
+  // Seed-42 match: team-A's richest perception frame (observed enemies + belief) is
+  // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
+  await page.locator('.rv-scrub').fill('223900');
+  await page.getByTestId('fog-belief').check();
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: path.join(OUT, 'desktop-fog.png') });
+  // toggle belief off → fog without heatmap, and switch POV to the other team
+  await page.getByTestId('fog-belief').uncheck();
+  await page.selectOption('[data-testid="fog-pov"]', '1');
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: path.join(OUT, 'desktop-fog-pov.png') });
+
   // Squad (sortable table of real VCT names)
   await page.getByTestId('nav-squad').click();
   await page.waitForSelector('[data-testid="dt-row"]', { timeout: 10000 });

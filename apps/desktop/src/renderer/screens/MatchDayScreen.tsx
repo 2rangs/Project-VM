@@ -14,6 +14,7 @@ import { bridge, runtime } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import type { MatchSummary } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
+import { ZONE_POSITIONS } from '../zones.ts';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [running, setRunning] = useState(false);
@@ -26,9 +27,14 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [teamA, setTeamA] = useState('NRG');
   const [teamB, setTeamB] = useState('Team Heretics');
   const [seed, setSeed] = useState(42);
+  const [pov, setPov] = useState(0);            // fog point of view: 0 = our team (A), 1 = B
+  const [beliefOn, setBeliefOn] = useState(false);
   const replay = ctx.replay;
   const refOf = (name: string) => { const t = allTeams.find((x) => x.name === name); return { id: t?.teamId ?? name, name }; };
   const lastRound = match?.rounds[match.rounds.length - 1];
+  const hasPerception = !!(replay?.perception && replay.perception.length > 0);
+  // POV labels: real match team names when we have them, else the demo/fixture teams.
+  const povName = (i: number) => match?.teams[i === 0 ? 'A' : 'B']?.name ?? (i === 0 ? 'our team' : 'opponent');
 
   useEffect(() => { bridge.loadTrace('trace-scenario-01').then((j) => setTrace(parseTrace(j))).catch(() => {}); }, []);
 
@@ -64,9 +70,26 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
             {running ? `Simulating… ${Math.round(pct * 100)}%` : '▶ Run match'}
           </button>
         </div>
-        <div className="md-toolbar">
+        <div className="md-toolbar" data-testid="fog-toolbar">
           <span className="pill">{engineLabel}</span>
-          <span className="muted small">fog-of-war + Belief heatmap: 준비 중 (needs PV-4 recordPerception)</span>
+          {hasPerception ? (
+            <>
+              <span className="fog-tag" data-testid="fog-on">🌫 Fog of war</span>
+              <label className="fog-ctl">POV
+                <select value={pov} onChange={(e) => setPov(Number(e.target.value))} data-testid="fog-pov">
+                  <option value={0}>{povName(0)}</option>
+                  <option value={1}>{povName(1)}</option>
+                </select>
+              </label>
+              <label className="fog-ctl">
+                <input type="checkbox" checked={beliefOn} onChange={(e) => setBeliefOn(e.target.checked)} data-testid="fog-belief" />
+                Belief heatmap
+              </label>
+              <span className="muted small">관측된 적 · 고스트 · 소리 구역 · 진실 시점은 Dev</span>
+            </>
+          ) : (
+            <span className="muted small">run a match to see the fog-of-war view (observed enemies · belief · sounds)</span>
+          )}
         </div>
         {log.length > 0 && <div className="md-roundlog small muted">{log.join('  ·  ')}</div>}
 
@@ -81,7 +104,14 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
           </div>
         )}
 
-        {replay ? <ReplayViewer replay={replay} /> : (
+        {replay ? (
+          <ReplayViewer
+            replay={replay}
+            perceptionPovTeamIdx={hasPerception ? pov : null}
+            showBelief={beliefOn}
+            zonePositions={ZONE_POSITIONS}
+          />
+        ) : (
           <div className="md-empty muted">Pick two teams and run the match.</div>
         )}
 
