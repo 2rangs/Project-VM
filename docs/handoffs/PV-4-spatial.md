@@ -392,6 +392,27 @@ world units로 동작(zone-id 질의는 프레임 무관) — PV-2 포함 좌표
   - round-simulator: 스파이크 줍기·포스트플랜트·유틸 활용 정책은 PV-3 실제 AI 통합 후.
   - 검증 재실행은 PV-3 실제 TeamDecisionPolicy로 통합 브랜치에서.
 
+## §G. 통합 브랜치 작업 (claude/pv-integration, 2026-11-18)
+
+통합 브랜치에서 `@pv/*` 스코프로 PV-1/PV-3 패키지와 실제 연결. §F의 TODO를 해소:
+
+- **Match Runner 라운드 실행 API (최우선, `runMatchRound`)**: PV-3의 `pnpm sim:match`용 상위 진입점.
+  입력 = 양 팀 로스터·로드아웃(무기/방어구/어빌리티/궁극기 포인트)·팀 경제·정책·시드. 출력 = winner/reason·EventLog·
+  survivors·플레이어별 `PlayerRoundOutcome`{생존·장비 보존(weaponRetained/armorRetained/abilitiesRemaining)·
+  궁극기 포인트 변화(start/earned/spent/end/ultimateUsed)}·원본 RoundResult. 결정론 보장.
+  궁극기 적립값은 `@pv/game-rules` `ULTIMATE_POINT_RULES`(PV-1) 사용. 문서: `docs/handoffs/ROUND_EXECUTION_API.md`.
+- **belief 실제 구현 교체(#1)**: 로컬 placeholder 제거 → PV-3 `@pv/decision-engine` `buildBelief(prev, obs, spatial, dtMs)`.
+  simulator가 side별 직전 belief + 결정 dt 스레딩(미관측 적 staleness 반영). mirror(string id)↔shared-types(branded id)
+  임피던스는 `buildBelief` 호출 한 지점의 문서화된 캐스트로 브리지.
+- **R2-B teammate abilities 실타입**: `PolicyTeammate.abilities`를 커스텀 `TeammateAbility[]` → PV-3 실제
+  `@pv/shared-types` `AbilityInventory`(basic/signature/ultimate + 궁극기 포인트/required/ready)로 교체.
+  타입 임포트라 PV-3 계약 드리프트가 typecheck 에러로 잡힘. SimPlayer 로드아웃 슬롯에 `slot` 추가.
+- **스파이크 포스트플랜트 운영**: 스크립트 수비 정책 리테이크를 "clear일 때만 해체"로 개선(설치 지점에서 적이 보이면
+  홀드 후 교전, 자살 해체 금지). `fromPv2Scenario` v2(worldPos→nearestZone)는 이 브랜치에 이미 반영돼 있었음.
+- **의존성 추가**: round-simulator deps에 `@pv/decision-engine`, `@pv/shared-types`, `@pv/game-rules`.
+- **테스트**: round-simulator 20개(match-round 4 신규) green, 전 워크스페이스 `pnpm -r test` green, perf ~24ms/round.
+- 커밋: belief `c6d8c61`, Match Runner API `eec2bf7`, R2-B `11fb43d`, 스파이크 운영 `94421a3`.
+
 ---
 
 ## 부록 — §24.3 전달 산출물 요약 (Agent Spatial → Agent Simulation)
