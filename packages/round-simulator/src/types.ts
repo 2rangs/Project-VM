@@ -266,6 +266,13 @@ export interface SimConfig {
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while standing in a molly / area-denial zone. */
   readonly mollyDamagePerTick: number;
+  /**
+   * Peeker's advantage (ms): a stationary holder reacts this much LATER to an enemy who is
+   * moving (peeking) into it, even on mutual sight — the aggressor's initiative. This is the
+   * opening-duel calibration lever once holders face their angle (so first contact is mutual,
+   * not attacker-surprise). Opening-duel calibration target only (README §31).
+   */
+  readonly peekerAdvantageMs: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
   readonly combatCalibration?: CombatCalibration;
 }
@@ -282,4 +289,5 @@ export const DEFAULT_CONFIG: SimConfig = {
   recordPerception: false,
   traceCommands: false,
   mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
+  peekerAdvantageMs: 210, // calibrated with hitChanceScale 0.50 → attacker opening ≈ 0.45 (CI [0.420,0.454])
 };

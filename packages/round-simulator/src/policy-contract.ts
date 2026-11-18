@@ -84,6 +84,12 @@ export interface ActionCommand {
   readonly abilityId?: AbilityId;
   readonly executeAtMs?: number;
   readonly sourceActionId?: string;
+  /**
+   * Direction a holding/stationary player should aim: the zone to watch (a choke/entry). Sets
+   * the player's facing (perception FOV + combat pre-aim) while not moving. When absent on a
+   * hold/peek, `targetZone` is used; absent entirely, the sim defaults to the enemy entry choke.
+   */
+  readonly aimZone?: ZoneId;
 }
 
 export type TeamStrategy =

@@ -52,6 +52,17 @@ const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see
 /** Command-trace sink; a no-op unless config.traceCommands is on (see runRound). */
 type Tracer = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string) => void;
 
+/** The most common zone among players (deterministic tie-break by zone id); "" if none. */
+function modeZone(players: readonly SimPlayer[]): string {
+  const counts = new Map<string, number>();
+  for (const p of players) counts.set(p.zoneId, (counts.get(p.zoneId) ?? 0) + 1);
+  let best = "", bestN = -1;
+  for (const [z, n] of [...counts.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    if (n > bestN) { best = z; bestN = n; }
+  }
+  return best;
+}
+
 function dist3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }): number {
   const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -90,6 +101,12 @@ export class RoundSimulator {
     const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke });
     const abilityEngine = new AbilityEngine(this.spatial);
     const spatialQuery = new SpatialQueryAdapter(this.spatial);
+    // Each side's starting zone (mode of its players' tick-0 zones), used as the structural
+    // origin for the default hold-facing (a defender watches the choke attackers enter from).
+    const originOf: Record<Side, string> = {
+      attack: modeZone(state.players.filter((p) => p.side === "attack")),
+      defense: modeZone(state.players.filter((p) => p.side === "defense")),
+    };
     // Previous-tick belief per side, threaded into buildBelief so unseen enemies age
     // across decisions (real @pv/decision-engine diffusion, not a per-tick reset).
     const prevBelief: Record<Side, BeliefState | null> = { attack: null, defense: null };
@@ -162,6 +179,9 @@ export class RoundSimulator {
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", denied);
         this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined);
+        // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
+        // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
+        if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
       }
 
       // 3. abilities
@@ -352,6 +372,34 @@ export class RoundSimulator {
     return p.pathIndex < p.path.length;
   }
 
+  /**
+   * Orient a stationary player toward the zone it is watching. Priority: the command's explicit
+   * `aimZone`; else a hold/peek command's `targetZone`; else the default — the choke an enemy
+   * enters this zone from (the neighbour on the shortest path from the enemy's origin). Facing
+   * feeds perception's FOV cone and combat pre-aim, so a holder sees the entry it watches.
+   */
+  private faceStationary(p: SimPlayer, cmd: ActionCommand | undefined, originOf: Record<Side, string>): void {
+    const hintZone =
+      cmd?.aimZone ??
+      (cmd && (cmd.kind === "hold" || cmd.kind === "peek") ? cmd.targetZone : undefined) ??
+      this.defaultHoldZone(p, originOf);
+    if (!hintZone || hintZone === p.zoneId) return;
+    const z = this.spatial.getZone(hintZone);
+    if (!z) return;
+    const dx = z.position.x - p.position.x, dy = z.position.y - p.position.y;
+    if (dx === 0 && dy === 0) return;
+    p.facing = { x: dx, y: dy };
+  }
+
+  /** The zone an enemy would enter this player's zone from: the predecessor on enemy-origin → here. */
+  private defaultHoldZone(p: SimPlayer, originOf: Record<Side, string>): string | undefined {
+    const enemyOrigin = originOf[p.side === "attack" ? "defense" : "attack"];
+    if (!enemyOrigin || enemyOrigin === p.zoneId) return undefined;
+    const r = this.spatial.findPath(enemyOrigin, p.zoneId);
+    if (!r || r.path.length < 2) return undefined;
+    return r.path[r.path.length - 2]; // the choke adjacent to this zone on the enemy's approach
+  }
+
   private resolveEngagements(
     state: SimState,
     sight: ReturnType<PerceptionEngine["perceive"]>,
@@ -379,8 +427,8 @@ export class RoundSimulator {
         busy.add(a.id);
         busy.add(b.id);
         const seed = deriveSeed(this.cfg.seed, `${state.tick}:${key}`);
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA);
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB);
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA, this.isMoving(b));
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB, this.isMoving(a));
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
@@ -419,17 +467,21 @@ export class RoundSimulator {
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean): Combatant {
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
-    const preAim = seesEnemy && !enemySeesSelf && !this.isMoving(p);
+    const stationary = !this.isMoving(p);
+    const preAim = seesEnemy && !enemySeesSelf && stationary;
+    // Peeker's advantage: a stationary holder reacts late to an enemy peeking into it, even on
+    // mutual sight. One who did not see first keeps the full surprise delay.
+    const seesEnemyAtMs = !seesEnemy ? SURPRISE_DELAY_MS : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
     return {
       id: p.id, teamId: p.teamId, health: p.health, armor: p.armor, weapon, skills: p.skills,
       posture: {
         ...OPEN_POSTURE,
         preAim,
         moving: this.isMoving(p),
-        seesEnemyAtMs: seesEnemy ? 0 : SURPRISE_DELAY_MS,
+        seesEnemyAtMs,
         flashBlindMs: abilityEngine.blindRemainingMs(p.id, state.elapsedMs),
         behindCover: 0,
       },
