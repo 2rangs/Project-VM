@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/ability-effect.schema.json",
+  "title": "PROJECT V ability effect spec",
+  "description": "Per-ability effect parameters for the Ability Engine / perception / action generation. Units: time ms, distance m (VALORANT 1 m = 100 Unreal units; PV-4 perception-engine and spatial-engine use world units = ×100). Numerics sourced from official wiki per-ability pages (Stat/Value table + infobox), patch-versioned; unsourced values are null. Joins abilities.json / ability_facts by abilityId.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["abilityId", "agentName", "slot", "name", "effectTypes", "params", "verified"],
+  "properties": {
+    "abilityId": {"type": "string", "description": "<agent-slug>:<slot>, joins abilities.json"},
+    "agentName": {"type": "string"},
+    "slot": {"type": "string", "enum": ["Ability1", "Ability2", "Grenade", "Ultimate", "Passive"]},
+    "name": {"type": "string"},
+    "effectTypes": {
+      "type": "array",
+      "description": "derived from the official wiki Functions/Function label",
+      "items": {"type": "string", "enum": ["smoke", "flash", "concuss", "recon", "molly", "wall", "slow", "heal", "trap", "decoy", "movement", "suppress"]}
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "windupMs": {"type": ["number", "null"], "description": "activation/windup delay before the effect"},
+        "deployTimeMs": {"type": ["number", "null"]},
+        "rangeMeters": {"type": ["number", "null"], "description": "max cast/throw/deploy distance (m)"},
+        "radiusMeters": {"type": ["number", "null"], "description": "effect radius (m)"},
+        "durationMs": {"type": ["number", "null"], "description": "how long the effect persists"},
+        "cooldownMs": {"type": ["number", "null"], "description": "time-based cooldown/restock"},
+        "killRecharge": {"type": ["boolean", "null"], "description": "recharges on kills instead of time"},
+        "revealDurationMs": {"type": ["number", "null"], "description": "enemy reveal/tag duration (recon)"},
+        "damage": {"type": ["number", "null"]},
+        "destructible": {"type": ["boolean", "null"]},
+        "destructibleHp": {"type": ["integer", "null"]},
+        "blocksVision": {"type": ["boolean", "null"], "description": "occludes sightlines (feeds PV-4 smokedPairs)"},
+        "affectsAllies": {"type": ["boolean", "null"]},
+        "makesSound": {"type": ["boolean", "null"], "description": "emits cast audio (feeds PV-4 abilityCast sound)"},
+        "defaultKeybind": {"type": ["string", "null"], "enum": ["C", "Q", "E", "X", null]}
+      },
+      "required": ["makesSound"]
+    },
+    "fieldSources": {
+      "type": "object",
+      "description": "per-field provenance: {field: {raw, confirmed, patch?}} where confirmed is the wiki 'Confirmed value?' column (Game files / In-game / infobox / definition)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "raw": {"type": "string"},
+          "confirmed": {"type": ["string", "null"]},
+          "patch": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "sourcePage": {"type": ["string", "null"], "description": "official wiki ability page URL"},
+    "verified": {"type": "boolean", "description": "true if at least one param was sourced from the official page"},
+    "notes": {"type": ["string", "null"]}
+  }
+}

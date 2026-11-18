@@ -1,0 +1,459 @@
+{
+ "map": "Ascent",
+ "currentBuild": "release-13.10",
+ "provenance": {
+  "source": "Official VALORANT wiki (wiki.playvalorant.com) Update History sections + official patch notes",
+  "retrievedAt": "2026-11-18",
+  "note": "Patch-tagged changes extracted from the official wiki; each patch note URL verified to resolve (patchNoteResolves). Some hotfix patches (e.g. 9.01, 9.06, 13.09) have no standalone note page -> wiki Update History is the source.",
+  "verified": true
+ },
+ "mapStructuralStability": "Ascent's layout has been structurally stable across its history: only minor wall/window/door interaction fixes (e.g. v10.04 B Lane wall non-pennable, v6.0 Market door un-breakable), no site/route rework. So map changes do NOT invalidate older Ascent stats; the meta driver is AGENT balance, not map structure.",
+ "mapUpdateHistory": [
+  {
+   "patch": "1.0",
+   "summary": "Added",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-0/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "1.01",
+   "summary": "Fixed several spots where weapons were falling through the world and issues with wall penetration.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-01/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "1.02",
+   "summary": "Adjusted numerous locations to allow clearing angles to be a bit more straightforward in the following places Defender spawn entrance Attacker side of A Main (Including a self-boost to gain an additio",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-1-02/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "2.09",
+   "summary": "Fixed an issue where players could sandwich themselves in between Sage 's wall and mechanical doors",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-2-09/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "3.06",
+   "summary": "One crate on A site is no longer pennable, this is to create a safer position on site for defenders",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-3-06/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "4.04",
+   "summary": "B orb can now be taken from the lower box (previously, you had to double jump up to the box to get it)",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-4-04/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "6.0",
+   "summary": "Can no longer break the door at Market by using an ability on the wall to the side of it",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-0/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "9.06",
+   "summary": "Agent abilities involving walls have had their interaction with the glass window changed. Phoenix ’s Blaze and Neon ’s Fast Lane will break the window if their initial cast center point would hit the ",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-06/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "9.08",
+   "summary": "Jett ’s Tailwind and Skye ’s Trailblazer will no longer stop at the window. Instead, they will burst through and continue movement onto the other side.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-08/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "10.04",
+   "summary": "Changed part of the B Main wall along B Lane to non-pennable.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-10-04/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "11.07",
+   "summary": "Fixed an issue when Phoenix ’s Blaze would break the glass despite not overlapping it.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-07/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "13.00",
+   "summary": "Fixed a bug where the smoke of Viper's Pit from Viper could appear with artifacts or form incorrectly",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-00/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "13.10",
+   "summary": "Bugfix: Agent utility being hidden behind foliage in several areas",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-10/",
+   "patchNoteResolves": true
+  }
+ ],
+ "agents": {
+  "Sova": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Sova",
+   "notableChanges": [
+    {
+     "patch": "7.04",
+     "summary": "Recon Bolt Total number of scans reduced 3 >>> 2",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "9.04",
+     "summary": "Hunter's Fury There are now reduced spikes in rotational speed after firing each shot of Hunter’s Fury.",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.00",
+     "summary": "Recon Bolt Increased volume of Recon Bolt’s projectile loop and improved how the arrow’s sound travels through the air to make it easier to track Audio priority and attenuation adjusted so that you can more reliably hear",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-00/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.08",
+     "summary": "Recon Bolt Cooldown increased from 40s → 60s",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "13.00",
+     "summary": "Recon Bolt Cooldown reduced from 60s to 50s",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-00/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  },
+  "Omen": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Omen",
+   "notableChanges": [
+    {
+     "patch": "6.10",
+     "summary": "From the Shadows Removed the mouse cursor that was displayed",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-10/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "7.04",
+     "summary": "Paranoia Movement velocity no longer imparted when casting Base speed decreased from 20 >>> 16 meters per second This is an undocumented change",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "9.05",
+     "summary": "Dark Cover Fixed an issue where Dark Cover would move slower than intended. From the Shadows Fixed an issue where From the Shadows was not cancellable with certain bindings. Profile [ edit | edit source ] Biography [ edi",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-05/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.00",
+     "summary": "Dark Cover Given no other dome smoke controllers reveal their own location on smoking, removed this opponent counterplay specific to Omen. No longer plays audio in third person within 12.5 meters for opponents. This audi",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-00/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.08",
+     "summary": "Dark Cover Cooldown increased from 30s → 40s Paranoia Projectile speed increased from 16 meters per second → 20 meters per second Travel distance reduced from 32.5m → 25m",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  },
+  "Jett": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Jett",
+   "notableChanges": [
+    {
+     "patch": "3.08",
+     "summary": ") Updraft Cost increased 150 >>> 200 Reverted in a hotfix Tailwind Weapon equip time after casting increased Reverted in a hotfix",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-3-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "5.03",
+     "summary": "Blade Storm Blade Storm legshot multiplier reduced from 1.0 >>> 0.85 Tailwind Fixed a bug where switching weapons in the middle of the dash for Tailwind would cause the weapon pull out animation to take longer",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-5-03/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "7.04",
+     "summary": "Tailwind Dash window decreased 12s >>> 7.5s Activation windup increased 0.75s >>> 1s Cloudburst Duration decreased 4.5s >>> 2.5s Time to re-equip gun takes slightly longer after using the ability. Updraft Charges decreas",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "9.10",
+     "summary": "Drift Can no longer float while suppressed or detained . Tailwind Concuss now slows dashes by 50%",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-10/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "13.09",
+     "summary": "Drift Removed from the Buy Menu to be consistent with other non-purchaseable passives",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-09/",
+     "patchNoteResolves": false,
+     "strength": "official"
+    }
+   ]
+  },
+  "KAY/O": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/KAY%2FO",
+   "notableChanges": [
+    {
+     "patch": "5.08",
+     "summary": "ZERO/point The position indicator will no longer appear twice on the minimap in some cases",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-5-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "5.12",
+     "summary": "FRAG/ment Now deals damage to Fade 's Prowler Damage modifier to non-players reduced 250% >>> 100% ZERO/point Health increased 1 HP >>> 20 HP Now immune to all allied damage Added voiceover that informs allies on exactly",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-5-12/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "9.05",
+     "summary": "NULL/cmd Increased rate of fire to have consistent recoil control that matches the default rate of fire.",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-05/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.08",
+     "summary": "ZERO/point Cooldown increased from 40s → 60s FLASH/drive Underhand maximum flash duration increased from 1.5s → 2.25s NULL/cmd Increased fire rate reduced from 15% → 10% Increased weapon draw speed by 10%",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "13.00",
+     "summary": "ZERO/point Cooldown reduced from 60s to 50s",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-00/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  },
+  "Killjoy": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Killjoy",
+   "notableChanges": [
+    {
+     "patch": "7.04",
+     "summary": "Lockdown Ultimate points increased 8 >>> 9",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "8.0",
+     "summary": "Turret Vision radius reduced 180 degrees >>> 100 degrees Added a representation of the Turret’s vision cone on Killjoy’s minimap when she is placing the Turret. Added VFX and updated the Turret’s animations to communicat",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-8-0/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.08",
+     "summary": "Turret Cooldown when destroyed increased from 45s → 60s Reactivation time for turret increased from 0.5s → 2s Movement tagging per bullet increased 29.5% → 50% Added a “windup” effect when Killjoy first re-enters the act",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "13.00",
+     "summary": "Turret Rate of fire increased by 50% Nanoswarm Duration increased from 4s to 5s. Fixed a bug where cast VO line would not play Alarmbot Movement speed increased by 50%",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-00/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "13.10",
+     "summary": "Turret Cooldown when destroyed decreased 60s >>> 45s",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-10/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  },
+  "Astra": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Astra",
+   "notableChanges": [
+    {
+     "patch": "4.04",
+     "summary": "Astral Form Increased the speed of the overlay that covers Astra's screen when transitioning in and out of Astral form Astra's targeting ring in Astral form is reduced to one ring that reflects the now unified size of al",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-4-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "5.10",
+     "summary": "Nebula/Dissipate Can no longer cast Dissipate right at round start before stars are charged up",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-5-10/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "7.04",
+     "summary": "Gravity Well Startup time increased .6 >>> 1.25 Gravity time duration decreased 2.75 >>> 2.0 Nova Pulse Startup time decreased from 1.25 >>> 1.0 Cosmic Divide Audio now is blocked completely by the wall rather than muffl",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "9.05",
+     "summary": "Stars Charges increased from 4 >>> 5",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-05/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.08",
+     "summary": "Gravity Well Fragile (Vulnerable) duration decreased from 5s → 2.5s Cooldown increased from 45s → 60s Nova Pulse Concuss duration decreased from 3.5s → 2.5s Cooldown increased from 45s → 60s Nebula/Dissipate Cooldown inc",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  },
+  "Fade": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Fade",
+   "notableChanges": [
+    {
+     "patch": "5.12",
+     "summary": "Prowler Health decreased 100 HP >>> 60 HP Now immune to all allied damage Haunt Now immune to all allied damage",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-5-12/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "6.0",
+     "summary": "Prowler Can no longer continue controlling Prowlers while suppressed Haunt Will no longer take damage from allied Hunter's Fury",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-0/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "7.10",
+     "summary": "Prowler Fixed issues with it passing through certain objects. Team Deathmatch only: Prowler Cooldown decreased 44s >>> 36s Seize Cooldown decreased 51s >>> 48s",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-10/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.08",
+     "summary": "Haunt Cooldown increased from 40s → 60s Haunt active duration decreased 2s → 1.5s Prowler Visibility in Nearsight increased from 5m → 7m Nightfall Deafen and Marked duration decreased from 12s → 8s Width decreased from 2",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-08/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "13.00",
+     "summary": "Haunt Cooldown reduced from 60s to 50s",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-00/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  },
+  "Chamber": {
+   "wikiSource": "https://wiki.playvalorant.com/en-us/Chamber",
+   "notableChanges": [
+    {
+     "patch": "6.11",
+     "summary": "Rendezvous Reduced weapon equip time after post-teleport lockout 0.7s >>> 0s Trademark Disable range increased 4000 >>> 5000 Trap arm speed reduced 4s >>> 2s Tour De Force Firing rate adjusted from 0.75/0.6 (Primary/Scop",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-11/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "8.03",
+     "summary": "Headhunter Price decreased 150 >>> 100 Tour De Force Firing rate increased 0.7 >>> 0.9",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-8-03/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "9.01",
+     "summary": "Rendezvous Fixed an issue where AimAssist was incorrectly being applied when it was equipped. Profile [ edit | edit source ] Biography [ edit | edit source ] Vincent Fabron lives his life in search of one necessary goal,",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-01/",
+     "patchNoteResolves": false,
+     "strength": "official"
+    },
+    {
+     "patch": "9.05",
+     "summary": "Rendezvous Teleport radius increased from 13m >>> 18m",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-05/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    },
+    {
+     "patch": "11.04",
+     "summary": "Trademark No longer has range restriction. (changed in",
+     "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-11-04/",
+     "patchNoteResolves": true,
+     "strength": "official"
+    }
+   ]
+  }
+ },
+ "sampleByPatchEra": {
+  "byEpisodeMajor": {
+   "2": 10,
+   "3": 21,
+   "4": 12,
+   "5": 28,
+   "6": 15,
+   "7": 13,
+   "8": 12,
+   "9": 4,
+   "10": 7,
+   "11": 11,
+   "12": 7,
+   "13": 13
+  },
+  "cumulativeAtOrAbove": {
+   "2": 153,
+   "3": 143,
+   "4": 122,
+   "5": 110,
+   "6": 82,
+   "7": 67,
+   "8": 54,
+   "9": 42,
+   "10": 38,
+   "11": 31,
+   "12": 20,
+   "13": 13
+  },
+  "totalAscentIntlMaps": 153,
+  "note": "International-Ascent map counts from VCT Reference (datasets/derived/comps). Recent windows are smaller."
+ },
+ "dataWindowRecommendation": {
+  "forCurrentMetaComparability": "patch >= 9.x",
+  "mapsInWindow": 42,
+  "tightestUsableWindow": "patch >= 11.x",
+  "tightestMaps": 31,
+  "tooSmall": "patch >= 13.x (only 13 maps)",
+  "fullHistoryUseFor": "structural/directional trends + role templates only (153 maps, patch 2.09-13.05)",
+  "rationale": "Map is structurally stable, but agent balance shifted (Chamber 5.12/6.07 nerfs, Jett Tailwind rework 7.04/9.10, economy/ult-point changes). Episode 9+ (>=9.x) captures the modern roster/economy with a usable 42-map sample; <9.x blends older metas.",
+  "pv2PriorsFilter": {
+   "note": "PV-2 priors are PV-2-owned (datasets/derived/priors/, NOT modified here). Recommendation only.",
+   "suggestedPredicate": "filter matches by patch >= '9.0' (numeric major.minor) or season/episode >= 9 when building current-meta priors; keep a separate full-history prior for structural baselines.",
+   "columns": "matches.patch (e.g. 'Patch 9.05'), matches.season/event for episode"
+  }
+ }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/tactic.schema.json",
+  "title": "PROJECT V tactical primitive",
+  "description": "A composable tactical element for the IGL / Action Generator (README §15-18, §24). NOT a fixed action list: each primitive carries preconditions (utility requirements, players, zones) so the generator can compose and validate against the current state (§29). Zones/routes reference PV-4 navgraph IDs; utility uses the ability-effect effectTypes vocabulary. Unsourced expert knowledge is explicitly marked.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "side", "category", "name", "tacticType", "zones", "provenance"],
+  "properties": {
+    "id": {"type": "string"},
+    "side": {"type": "string", "enum": ["attack", "defense"]},
+    "category": {"type": "string", "enum": ["strategic", "tactical"], "description": "PV-3 ActionCategory (individual actions are per-player, not here)"},
+    "name": {"type": "string"},
+    "tacticType": {
+      "type": "string",
+      "enum": ["execute", "fast-execute", "split", "fake", "double-fake", "default", "lurk", "map-control", "mid-control", "rotate", "re-execute",
+                "default-hold", "anchor", "sentinel-setup", "retake", "info-push", "aggressive-push", "flank-watch", "stack"]
+    },
+    "site": {"type": ["string", "null"], "enum": ["A", "B", "Mid", null]},
+    "zones": {"type": "array", "items": {"type": "string"}, "description": "navgraph zone IDs this tactic touches (validated ⊆ navgraph zones)"},
+    "route": {
+      "type": "array",
+      "description": "ordered navgraph edges (each [from,to] must exist in the navgraph edge set, either direction)",
+      "items": {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+    },
+    "utilityRequirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["effectType", "purpose"],
+        "properties": {
+          "effectType": {"type": "string", "enum": ["smoke", "flash", "concuss", "recon", "molly", "wall", "slow", "heal", "trap", "decoy", "movement", "suppress"]},
+          "purpose": {"type": "string"},
+          "targetZones": {"type": "array", "items": {"type": "string"}},
+          "optional": {"type": "boolean"}
+        }
+      }
+    },
+    "minPlayers": {"type": ["integer", "null"]},
+    "idealPlayers": {"type": ["integer", "null"]},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "counterSetup": {"type": "array", "items": {"type": "string"}, "description": "defensive/offensive answers that blunt this tactic"},
+    "notes": {"type": ["string", "null"]},
+    "sources": {
+      "type": "array",
+      "description": "public references. Each states exactly what it supports (mentions); strength is official|analyst|community. Geography-only sources do not by themselves upgrade a strategic claim.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["url", "strength", "mentions"],
+        "properties": {
+          "url": {"type": "string", "pattern": "^https://"},
+          "date": {"type": ["string", "null"]},
+          "strength": {"type": "string", "enum": ["official", "analyst", "community"]},
+          "mentions": {"type": "string"}
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"type": "string", "enum": ["official", "reputable-analysis", "navgraph-derived", "expert-knowledge-unsourced"]},
+        "source": {"type": ["string", "null"], "description": "URL when type is official/reputable-analysis"},
+        "note": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

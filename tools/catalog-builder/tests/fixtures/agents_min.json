@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "data": [
+    {
+      "uuid": "test-agent-0001",
+      "displayName": "TestAgent",
+      "role": {"displayName": "Controller"},
+      "abilities": [
+        {"slot": "Ability1", "displayName": "TestSmoke", "description": "Deploys a test smoke."},
+        {"slot": "Ability2", "displayName": "TestFlash", "description": "A test flash."},
+        {"slot": "Grenade", "displayName": "TestWall", "description": "A test wall."},
+        {"slot": "Ultimate", "displayName": "TestUlt", "description": "A test ultimate."},
+        {"slot": "Passive", "displayName": "TestPassive", "description": "A test passive."}
+      ]
+    }
+  ]
+}

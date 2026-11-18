@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/agent.schema.json",
+  "title": "PROJECT V agent catalog record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "role", "abilitySlots", "provenance"],
+  "properties": {
+    "id": {"type": "string", "description": "agent UUID"},
+    "name": {"type": "string"},
+    "role": {"type": ["string", "null"], "description": "Duelist | Initiator | Controller | Sentinel"},
+    "abilitySlots": {
+      "type": "array",
+      "description": "ability slots as named by valorant-api; full detail in abilities.json keyed by {agentId, slot}",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot", "name"],
+        "properties": {
+          "slot": {"type": "string", "enum": ["Ability1", "Ability2", "Grenade", "Ultimate", "Passive"]},
+          "name": {"type": "string"},
+          "abilityId": {"type": "string", "description": "join key into abilities.json"}
+        }
+      }
+    },
+    "provenance": {"$ref": "provenance.schema.json"}
+  }
+}

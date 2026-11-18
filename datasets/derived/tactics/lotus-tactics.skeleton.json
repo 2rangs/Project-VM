@@ -1,0 +1,120 @@
+{
+ "map": "Lotus",
+ "status": "SKELETON — structural element list only (no navgraph routes, no utility sourcing yet).",
+ "zoneVocabularyRef": "datasets/derived/tactics/lotus-zone-vocabulary.json (TEMPORARY callout ids)",
+ "needsPV4Navgraph": true,
+ "note": "3-site map (A/B/C) with rotating doors + rope ascenders. Attack/Defense elements are placeholders to be fleshed out (utilityRequirements/routes/risks) AFTER PV-4 publishes the Lotus navgraph; follow the Ascent tactic.schema.json shape then.",
+ "attackElements": [
+  {
+   "name": "A Execute",
+   "site": "A",
+   "zonesTemp": [
+    "a-main",
+    "a-site",
+    "a-tree",
+    "a-hut"
+   ]
+  },
+  {
+   "name": "A Drop/Top control",
+   "site": "A",
+   "zonesTemp": [
+    "a-top",
+    "a-drop",
+    "a-rubble"
+   ]
+  },
+  {
+   "name": "B Main (mid) control",
+   "site": "B",
+   "zonesTemp": [
+    "b-main",
+    "b-pillars"
+   ]
+  },
+  {
+   "name": "C Execute",
+   "site": "C",
+   "zonesTemp": [
+    "c-main",
+    "c-site",
+    "c-mound",
+    "c-waterfall"
+   ]
+  },
+  {
+   "name": "C Lobby/Door split",
+   "site": "C",
+   "zonesTemp": [
+    "c-lobby",
+    "c-door"
+   ]
+  },
+  {
+   "name": "Default spread (3-site)",
+   "site": null,
+   "zonesTemp": [
+    "a-lobby",
+    "b-main",
+    "c-lobby"
+   ]
+  },
+  {
+   "name": "Rotating-door / ascender mind-games",
+   "site": null,
+   "zonesTemp": [],
+   "note": "Lotus-specific: destructible rotating doors (A/C) + rope ascenders change timings."
+  }
+ ],
+ "defenseElements": [
+  {
+   "name": "A Default Hold",
+   "site": "A",
+   "zonesTemp": [
+    "a-site",
+    "a-main",
+    "a-tree"
+   ]
+  },
+  {
+   "name": "B Hold / mid denial",
+   "site": "B",
+   "zonesTemp": [
+    "b-main",
+    "b-pillars"
+   ]
+  },
+  {
+   "name": "C Default Hold",
+   "site": "C",
+   "zonesTemp": [
+    "c-site",
+    "c-main",
+    "c-mound"
+   ]
+  },
+  {
+   "name": "Sentinel setup (A/C doors)",
+   "site": null,
+   "zonesTemp": [
+    "a-door",
+    "c-door"
+   ]
+  },
+  {
+   "name": "Retake A/C",
+   "site": null,
+   "zonesTemp": [
+    "a-site",
+    "c-site"
+   ]
+  },
+  {
+   "name": "Rotate A-B-C",
+   "site": null,
+   "zonesTemp": [
+    "b-main"
+   ]
+  }
+ ]
+}
