@@ -39,6 +39,11 @@
       ],
       "node": 3808,
       "snapDist_m": 0.42,
+      "worldFloor": [
+        14.7,
+        9.25,
+        1.59
+      ],
       "onMainComponent": true
     },
     "defender-spawn": {
@@ -54,6 +59,11 @@
       ],
       "node": 11490,
       "snapDist_m": 0.76,
+      "worldFloor": [
+        3.9,
+        95.65,
+        1.82
+      ],
       "onMainComponent": true
     },
     "a-lobby": {
@@ -69,6 +79,11 @@
       ],
       "node": 14676,
       "snapDist_m": 1.51,
+      "worldFloor": [
+        56.7,
+        36.85,
+        12.0
+      ],
       "onMainComponent": true
     },
     "a-main": {
@@ -84,6 +99,11 @@
       ],
       "node": 5985,
       "snapDist_m": 0.33,
+      "worldFloor": [
+        62.7,
+        51.25,
+        4.0
+      ],
       "onMainComponent": true
     },
     "a-window": {
@@ -99,6 +119,11 @@
       ],
       "node": 11068,
       "snapDist_m": 0.93,
+      "worldFloor": [
+        35.1,
+        82.45,
+        7.32
+      ],
       "onMainComponent": true
     },
     "a-tree": {
@@ -114,6 +139,11 @@
       ],
       "node": 12272,
       "snapDist_m": 0.97,
+      "worldFloor": [
+        41.1,
+        63.25,
+        4.04
+      ],
       "onMainComponent": true
     },
     "a-site": {
@@ -129,6 +159,11 @@
       ],
       "node": 1005,
       "snapDist_m": 0.54,
+      "worldFloor": [
+        66.3,
+        68.05,
+        5.0
+      ],
       "onMainComponent": true
     },
     "a-garden": {
@@ -144,6 +179,11 @@
       ],
       "node": 3620,
       "snapDist_m": 1.08,
+      "worldFloor": [
+        32.7,
+        77.65,
+        3.81
+      ],
       "onMainComponent": true
     },
     "a-wine": {
@@ -159,6 +199,11 @@
       ],
       "node": 5666,
       "snapDist_m": 2.11,
+      "worldFloor": [
+        85.5,
+        51.25,
+        15.96
+      ],
       "onMainComponent": true
     },
     "a-rafters": {
@@ -174,6 +219,11 @@
       ],
       "node": 878,
       "snapDist_m": 0.26,
+      "worldFloor": [
+        60.3,
+        82.45,
+        5.02
+      ],
       "onMainComponent": true
     },
     "b-lobby": {
@@ -189,6 +239,11 @@
       ],
       "node": 12204,
       "snapDist_m": 1.85,
+      "worldFloor": [
+        -8.1,
+        22.45,
+        2.0
+      ],
       "onMainComponent": true
     },
     "b-main": {
@@ -204,6 +259,11 @@
       ],
       "node": 1963,
       "snapDist_m": 1.69,
+      "worldFloor": [
+        -30.9,
+        63.25,
+        0.87
+      ],
       "onMainComponent": true
     },
     "b-site": {
@@ -219,6 +279,11 @@
       ],
       "node": 9852,
       "snapDist_m": 0.67,
+      "worldFloor": [
+        -41.7,
+        76.45,
+        -0.95
+      ],
       "onMainComponent": true
     },
     "b-boathouse": {
@@ -234,6 +299,11 @@
       ],
       "node": 10504,
       "snapDist_m": 4.25,
+      "worldFloor": [
+        -65.7,
+        81.25,
+        5.53
+      ],
       "onMainComponent": false
     },
     "mid-top": {
@@ -249,6 +319,11 @@
       ],
       "node": 5930,
       "snapDist_m": 0.09,
+      "worldFloor": [
+        39.9,
+        28.45,
+        4.0
+      ],
       "onMainComponent": true
     },
     "mid-courtyard": {
@@ -264,6 +339,11 @@
       ],
       "node": 13234,
       "snapDist_m": 0.4,
+      "worldFloor": [
+        12.3,
+        50.05,
+        2.0
+      ],
       "onMainComponent": true
     },
     "mid-catwalk": {
@@ -279,6 +359,11 @@
       ],
       "node": 14115,
       "snapDist_m": 0.7,
+      "worldFloor": [
+        26.7,
+        46.45,
+        4.0
+      ],
       "onMainComponent": true
     },
     "mid-cubby": {
@@ -294,6 +379,11 @@
       ],
       "node": 2122,
       "snapDist_m": 0.85,
+      "worldFloor": [
+        36.3,
+        54.85,
+        4.0
+      ],
       "onMainComponent": true
     },
     "mid-bottom": {
@@ -309,6 +399,11 @@
       ],
       "node": 13352,
       "snapDist_m": 0.56,
+      "worldFloor": [
+        6.3,
+        62.05,
+        2.0
+      ],
       "onMainComponent": true
     },
     "mid-link": {
@@ -324,6 +419,11 @@
       ],
       "node": 4883,
       "snapDist_m": 1.41,
+      "worldFloor": [
+        -8.1,
+        47.65,
+        2.06
+      ],
       "onMainComponent": true
     },
     "mid-market": {
@@ -339,6 +439,11 @@
       ],
       "node": 10966,
       "snapDist_m": 0.57,
+      "worldFloor": [
+        0.3,
+        75.25,
+        3.0
+      ],
       "onMainComponent": true
     },
     "mid-pizza": {
@@ -354,6 +459,11 @@
       ],
       "node": 13603,
       "snapDist_m": 0.24,
+      "worldFloor": [
+        9.9,
+        74.05,
+        3.0
+      ],
       "onMainComponent": true
     }
   },
