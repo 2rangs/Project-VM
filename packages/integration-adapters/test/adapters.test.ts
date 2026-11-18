@@ -72,10 +72,15 @@ describe("spatial adapter", () => {
     expect(sq.hasLineOfSight(asZoneId("a-site"), asZoneId("mid"), { smokedPairs: [[asZoneId("a-site"), asZoneId("mid")]] })).toBe(false);
     expect(sq.audibleZones(asZoneId("a-site"))[0]!.strength).toBe(0.5);
   });
-  it("MinimapUnitsConverter round-trips", () => {
+  it("MinimapUnitsConverter round-trips (fallback scale path)", () => {
     const conv = new MinimapUnitsConverter(fakeCoords, { minimapScale: 1000 });
     const g = conv.toGame({ x: 500, y: 905 });
     expect(conv.fromGame(g)).toEqual({ x: 500, y: 905 });
+  });
+  it("MinimapUnitsConverter uses the injected transform when provided (the correct path)", () => {
+    const inject = (mu: { x: number; y: number }) => ({ x: mu.x * 2, y: mu.y * 2 });
+    const conv = new MinimapUnitsConverter(fakeCoords, { minimapToGame: inject });
+    expect(conv.toGame({ x: 10, y: 20 })).toEqual({ x: 20, y: 40 }); // bypasses scale/coords
   });
 });
 

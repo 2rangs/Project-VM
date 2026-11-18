@@ -37,9 +37,13 @@ export function teamIdxToId(idx: number): string {
  * table documents the risk so integration verifies the minimapUnits↔normalized mapping.
  */
 export const COORDINATE_FRAMES = {
-  /** PV-2 scenarios / PV-3 decision layer. */
-  minimapUnits: { range: "~0..1000", origin: "top-left", axis: "x right, y down" },
-  /** PV-4 spatial-engine minimap output (valorant-api transform). */
+  /**
+   * PV-2 scenarios / PV-3 decision layer. CONFIRMED (phase-5 rehearsal) to be the VLR
+   * 2D-replay minimap PIXEL frame — observed x≈170..825 in the 10 scenarios; PV-4 reports
+   * the full vlr range as x≈92..973, y≈117..844. NOT normalized×1000.
+   */
+  minimapUnits: { range: "VLR pixels ~92..973 x / 117..844 y", origin: "top-left", axis: "x right, y down" },
+  /** PV-4 spatial-engine minimap output (valorant-api transform) — a DIFFERENT frame. */
   normalizedMinimap: { range: "0..1", origin: "top-left", axis: "axis-swapped (minimapX=gameY)" },
   /** PV-4 game-world. */
   gameWorld: { unit: "Unreal uu", unitsPerMeter: 100 },
@@ -75,7 +79,13 @@ export const BRANCH_NOTATION_SURVEY: readonly BranchNotation[] = [
  * 3. Agent slug kay-o vs kayo: use normalizeAgentSlug everywhere ids cross a boundary.
  */
 export const KNOWN_MISMATCHES = [
-  "minimapUnits(0..1000) ↔ normalizedMinimap(0..1): verify scale/orientation (spatial-adapter.flipY).",
+  "COORDINATE (confirmed phase-5): PV-2 minimapUnits are VLR pixels, NOT normalized×1000. " +
+    "The spatial-adapter default scale path is wrong (mapped attacker-spawn→b-main). Inject " +
+    "PV-6's verified vlr-pixel↔game transform via SpatialAdapterOptions.minimapToGame.",
+  "CONTRACT GRANULARITY: PV-4 round-simulator (94fa92f) DecisionPolicy is per-player/tick " +
+    "(decide(ctx)→ActionCommand) with no teammates in ctx; PV-3 TeamDecisionPolicy is team/" +
+    "round (decide(view,rng)→PolicyDecision). Reconcile (PV-4 aligning per orchestrator).",
   "eco/full thresholds: bank-credits (PV-3) vs loadout-value (PV-2 priors) — different metrics.",
   "agent slug kay-o vs kayo — use normalizeAgentSlug at boundaries.",
+  "fromPv2Scenario (PV-4) currently ignores per-player positions/belief (spawns at spawn).",
 ] as const;

@@ -510,3 +510,56 @@ acceptance test once round-simulator lands.
 ## 13. 작업 재개 지점
 `docs/INTEGRATION_PLAN.md`, then `packages/integration-adapters/src/index.ts` and each
 `*-adapter.ts` header. `pnpm test && pnpm typecheck`.
+
+---
+
+# PROJECT V — TASK HANDOFF (PV-3 phase 5)
+
+**Agent:** PV-3 · **Date:** 2026-11-18 · **Branch:** `claude/pv-core`
+**Scope:** Local integration rehearsal (throwaway dry-run, nothing pushed to remote merges)
++ pv-core fixes it surfaced. Full report: `docs/INTEGRATION_REHEARSAL.md`.
+
+## 1–2. 목표 / 완료
+Executed INTEGRATION_PLAN locally in a detached `git worktree` (`/tmp/pv-rehearsal`, never
+pushed): merged all 6 branches, did the wiring (scope rename, lockfile removal, pnpm
+install), ran typecheck/tests per package, and ran an E2E (scenario → round-simulator →
+EventLog → replay) plus PV-3's TeamDecisionPolicy through the real spatial-engine adapter.
+
+## Key results
+- **Merge: zero conflicts** (additive) — confirms the collision analysis.
+- **Per-package typecheck/test pass**: round-simulator 9/9 (vitest), replay-engine 11/11
+  (node:test), economy/combat/etc. under their own configs. A single root tsc/vitest fails
+  only on strictness + mixed runners (F4/F5), not logic.
+- **E2E deterministic**: same seed → identical EventLog hash; EventLog → replay converts.
+- **Coordinate risk CONFIRMED (F1)**: PV-2 minimapUnits are VLR pixels, not normalized×1000;
+  the ×1000 adapter mapped attacker-spawn→b-main. Fixed on PV-3's side via an injectable
+  `minimapToGame` transform (supply PV-6's verified vlr-pixel↔game at integration).
+- **Contract granularity gap (F2)**: round-simulator's `DecisionPolicy` is per-player/tick;
+  PV-3's is team/round — must reconcile (PV-4 aligning). Blocks the PV-3-vs-scripted metric.
+
+## 3. 변경한 파일 (pv-core only, pushed)
+`packages/integration-adapters/src/spatial-adapter.ts` (injectable minimapToGame),
+`packages/integration-adapters/src/normalization.ts` (VLR-pixel finding + mismatches),
+`packages/integration-adapters/test/adapters.test.ts` (+1 test),
+`docs/INTEGRATION_REHEARSAL.md` (new), `docs/INTEGRATION_PLAN.md` (updated), this section.
+
+## 4–7. 실행 / 검증 / 결과
+Rehearsal in /tmp (discarded). pv-core after fixes: `pnpm typecheck` clean; `pnpm test`
+**122 passed, 4 todo**. E2E (scripted, 20 seeds, synthetic round): attackWin 5/20, reasons
+{timeExpired:11, elimination:9}.
+
+## 8. 미완료 / 9. 한계
+F2 blocks the real-policy aggregate comparison vs PV-2 baselines; `apps/desktop` not pushed
+(Viewer check pending). F1 transform must be injected with PV-6's real params at integration.
+
+## 10. 설계 결정
+Rehearse before merge to surface problems cheaply; fix only pv-core-owned files here and
+relay the rest (F2/F3/F6 to PV-4) via the orchestrator rather than editing other branches.
+
+## 12. 다음 권장 작업
+Orchestrator relays F2/F3/F6 to PV-4. After PV-4 aligns the policy contract and the position
+transform, re-run the rehearsal, inject PV-6's transform, and wire the EventLog→PV-2
+validation harness for the real-policy acceptance metric.
+
+## 13. 작업 재개 지점
+`docs/INTEGRATION_REHEARSAL.md` (findings), then `docs/INTEGRATION_PLAN.md`.

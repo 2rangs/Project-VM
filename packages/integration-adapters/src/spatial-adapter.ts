@@ -5,12 +5,14 @@
  *   packages/spatial-engine/src/{engine.ts,coordinate.ts,types.ts}
  * At merge, replace `SpatialEngineLike` with `import { SpatialEngine } from "@pv/spatial-engine"`.
  *
- * ⚠️ COORDINATE NORMALIZATION RISK (see docs/INTEGRATION_PLAN.md §Normalization):
- * PV-3/PV-2 positions are **minimapUnits ~0..1000** (scenario frame). PV-4's
- * MapCoordinateSystem maps game-world uu ↔ **normalized minimap [0,1]** (axis-swapped:
- * minimapX uses gameY). This adapter assumes minimapUnits = normalized × `minimapScale`
- * (default 1000) with the same orientation. That assumption MUST be verified against PV-2's
- * actual scenario frame at integration; `minimapScale`/`flipY` are exposed to correct it.
+ * ⚠️ COORDINATE RESULT (phase-5 rehearsal, docs/INTEGRATION_REHEARSAL.md): the default
+ * `minimapScale`=1000 assumption is **WRONG**. PV-2 minimapUnits are the **VLR 2D-replay
+ * minimap PIXEL frame** (observed x≈170..825 in scenarios, PV-4 vlr range x≈92..973,
+ * y≈117..844), NOT normalized×1000. Feeding minimapUnits/1000 into PV-4's valorant-api
+ * transform put all attacker-spawn players in `b-main` in the rehearsal. The correct path
+ * is PV-6's verified vlr-pixel↔game transform (3001 samples, inclusion 1.0). Therefore this
+ * adapter now takes an injectable `minimapToGame` (supply PV-6/PV-4's `fromPv2Scenario`
+ * transform at integration); the scale/flip path remains only as a labelled fallback.
  */
 import {
   asZoneId,
@@ -58,9 +60,14 @@ export interface SpatialEngineLike {
 }
 
 export interface SpatialAdapterOptions {
-  /** minimapUnits per 1.0 of normalized minimap space. Default 1000. */
+  /**
+   * CORRECT path: the verified PV-2 minimapUnits → game-world transform (PV-6's vlr-pixel↔
+   * game, 3001 samples). Supply this at integration (e.g. round-simulator's fromPv2Scenario
+   * conversion). When set, it overrides the scale/flip fallback.
+   */
+  readonly minimapToGame?: (mu: Vector2) => Vec2Like;
+  /** FALLBACK ONLY (known-wrong for the VLR frame): minimapUnits per 1.0 normalized. */
   readonly minimapScale?: number;
-  /** Flip the minimap Y axis if PV-2's frame is inverted relative to PV-4's. */
   readonly flipY?: boolean;
 }
 
@@ -68,12 +75,15 @@ export interface SpatialAdapterOptions {
 export class MinimapUnitsConverter {
   private readonly scale: number;
   private readonly flipY: boolean;
+  private readonly inject?: (mu: Vector2) => Vec2Like;
   constructor(private readonly coords: MapCoordinateSystemLike, opts: SpatialAdapterOptions = {}) {
     this.scale = opts.minimapScale ?? 1000;
     this.flipY = opts.flipY ?? false;
+    this.inject = opts.minimapToGame;
   }
-  /** minimapUnits (~0..scale) → game-world Vec2 (uu). */
+  /** minimapUnits → game-world Vec2 (uu). Uses the injected transform when provided. */
   toGame(mu: Vector2): Vec2Like {
+    if (this.inject) return this.inject(mu);
     const norm = { x: mu.x / this.scale, y: (this.flipY ? this.scale - mu.y : mu.y) / this.scale };
     return this.coords.toGame(norm);
   }

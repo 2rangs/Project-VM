@@ -77,9 +77,10 @@ add those globs then.
 Apply `packages/integration-adapters/src/normalization.ts` at every boundary:
 - **Agent slugs:** `kay-o` (PV-1/PV-2/game-rules) vs `kayo` (scenarios) → `normalizeAgentSlug`.
 - **Team ids:** `team-N` (PV-3) vs `teamIdx 0|1` (PV-2/PV-4) → `teamIdToIdx`/`teamIdxToId`.
-- **Coordinates:** minimapUnits `~0..1000` (PV-2/PV-3) vs normalized `0..1` axis-swapped
-  (PV-4 `coordinate-system.json`) vs game uu. `spatial-adapter.ts` converts via
-  `MinimapUnitsConverter` (assumes ×1000 same orientation — **VERIFY**, `flipY` provided).
+- **Coordinates:** ⚠️ **rehearsal-confirmed (F1, docs/INTEGRATION_REHEARSAL.md):** PV-2
+  minimapUnits are the **VLR minimap PIXEL frame** (x≈92..973, y≈117..844), NOT normalized
+  ×1000. The ×1000 fallback mis-maps attacker-spawn→b-main. Inject PV-6's verified
+  vlr-pixel↔game transform via `spatialQueryFromEngine(engine, { minimapToGame })`.
 - **Time:** all ms (no conversion).
 - **Eco/full thresholds:** PV-3 `ECO_BANK_THRESHOLD=2000` (bank credits) vs PV-2 priors
   `ecoMaxCredits=5000` (loadout value) — different metrics; reconcile when wiring economy.
@@ -94,10 +95,12 @@ Apply `packages/integration-adapters/src/normalization.ts` at every boundary:
 ## 4. Post-integration test commands
 ```bash
 pnpm install
-pnpm -r typecheck     # or: pnpm typecheck (root tsconfig covers packages/*/src + test)
-pnpm test             # vitest run across all packages
+pnpm -r typecheck     # PER PACKAGE — a single root tsc fails (F4: pv-core strict flags vs
+                      # siblings' looser configs). Do NOT use one root tsconfig over all.
+pnpm -r test          # PER PACKAGE — siblings mix runners (F5: replay-engine uses node:test,
+                      # others vitest). A single root vitest cannot run node:test files.
 ```
-Expect pv-core's current suite (109 passed, 4 todo) plus each engine's own tests. The 4
+Expect pv-core's current suite (121 passed, 4 todo) plus each engine's own tests. The 4
 `it.todo` scenarios (07–10 economy valuation) become real assertions once economy-engine is
 wired through `economyEvaluatorFromEngine`.
 
@@ -134,10 +137,17 @@ scenario_XX.json (PV-2)
    baselines (e.g. opening-duel / economy win-rate priors), not a pre-decided winner
    (DECISION-002).
 
-## 6. Risks / open items
-- `round-simulator` (PV-4) and `apps/desktop` (PV-6) were not yet pushed at survey time;
-  the e2e harness and the DecisionTrace→UI adapter are blocked on them.
-- The minimapUnits↔normalized-minimap scale/orientation assumption (§2e) must be verified
-  with real coordinates before trusting spatial feasibility in integrated runs.
-- `DecisionPolicy` is PV-3's proposed contract; if PV-4's round-simulator diverges, reconcile
-  `packages/shared-types/src/decision-policy.ts` (PV-3 will adjust on request).
+## 6. Risks / open items (updated from phase-5 rehearsal)
+- **F1 (HIGH, coordinates):** inject PV-6's vlr-pixel↔game transform; the ×1000 fallback is
+  wrong. Done on PV-3's side (`minimapToGame` option).
+- **F2 (HIGH, policy contract):** `round-simulator@94fa92f` `DecisionPolicy` is per-player/
+  tick (`decide(ctx)→ActionCommand`, no teammates); PV-3's is team/round. Reconcile before
+  the team policy can drive the loop (PV-4 aligning per orchestrator). The PV-3 vs scripted
+  attack-win comparison is blocked on this.
+- **F3 (MED):** `fromPv2Scenario` ignores per-player positions/belief (spawns at spawn).
+- **F4/F5 (MED):** typecheck + test **per package** (`pnpm -r`), not one root tsc/vitest.
+- **F6 (LOW):** `@project-v` path-segment strings (not just `@project-v/`) in a PV-4 test.
+- `apps/desktop` (PV-6) not yet pushed → DecisionTrace→UI adapter and the full Viewer check
+  remain blocked; replay-engine conversion is verified.
+- `DecisionPolicy` lives at `packages/shared-types/src/decision-policy.ts`; PV-3 adjusts on
+  request if PV-4 proposes a variant.
