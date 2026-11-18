@@ -11,7 +11,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { runMatch, renderMatchSummary, renderDecisionTrace, type MatchConfig } from "./index.js";
+import { runMatch, renderMatchSummary, renderDecisionTrace, resolveTeamRef, type MatchConfig } from "./index.js";
 
 function parseArgs(argv: string[]): Record<string, string> {
   const out: Record<string, string> = {};
@@ -30,15 +30,23 @@ function main(): void {
   const args = parseArgs(process.argv.slice(2));
   const teamAId = args.teamA ?? "team-a";
   const teamBId = args.teamB ?? "team-b";
+  // Resolve real team names from @pv/game-data (falls back to the id); --nameA/--nameB override.
+  const refA = resolveTeamRef(teamAId);
+  const refB = resolveTeamRef(teamBId);
   const config: MatchConfig = {
-    teamA: { id: teamAId, name: args.nameA ?? teamAId },
-    teamB: { id: teamBId, name: args.nameB ?? teamBId },
+    teamA: { id: teamAId, name: args.nameA ?? refA.name },
+    teamB: { id: teamBId, name: args.nameB ?? refB.name },
     map: args.map ?? "ascent",
     seed: Number(args.seed ?? "1"),
     ...(args.maxRounds ? { maxRounds: Number(args.maxRounds) } : {}),
   };
 
-  const result = runMatch(config);
+  const verbose = args.verbose === "true" || args.progress === "true";
+  const result = runMatch(config, {
+    onRound: verbose
+      ? (r, score) => console.error(`  … R${r.roundNumber} ${r.winner} (${r.reason}) → ${score.A}-${score.B}`)
+      : undefined,
+  });
   const summary = renderMatchSummary(result);
   console.log(summary);
 

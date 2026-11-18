@@ -10,11 +10,13 @@ export type {
   MatchConfig,
   MatchResult,
   RoundRecord,
+  RunMatchOptions,
   TeamRef,
   TeamSlot,
   Side,
   OpponentMemory,
 } from "./match.js";
+export { resolveTeamRef, teamSkills, isKnownTeam } from "./teams.js";
 export {
   newTeamEconomy,
   decideBuy,
