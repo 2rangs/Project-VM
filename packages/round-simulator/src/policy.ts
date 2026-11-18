@@ -60,13 +60,14 @@ export class ScriptedPolicy implements DecisionPolicy {
         commands.push({ playerId: p.id, kind: "move", targetZone: dropZone, moveMode: "run" });
         continue;
       }
-      // deploy utility mid-execute (once, while approaching but not yet on site).
-      // abilities is PV-3's AbilityInventory (R2-B): pick a basic/signature slot with charges.
+      // deploy utility mid-execute (once, while approaching but not yet on site). Throw it AT the
+      // site (targetZone) — not on self — so a smoke/flash covers the defenders' angle instead of
+      // blinding the attacker's own vision. abilities is PV-3's AbilityInventory (R2-B).
       if (this.opts.useUtility && zone !== site) {
         const pool = [...p.abilities.basic, ...(p.abilities.signature ? [p.abilities.signature] : [])];
         const ready = pool.find((a) => a.charges > 0);
         if (ready && p.id !== carrierId) {
-          commands.push({ playerId: p.id, kind: "useAbility", abilityId: ready.abilityId });
+          commands.push({ playerId: p.id, kind: "useAbility", abilityId: ready.abilityId, targetZone: site });
           continue;
         }
       }

@@ -110,6 +110,15 @@ describe("Match Runner", () => {
     expect(timeExpired).toBeLessThan(m.rounds.length * 0.4); // timeExpired is a clear minority
   });
 
+  it("enableAbilities runs the game-data ability path deterministically (WIP, default off)", () => {
+    const a = runMatch({ ...cfg(5), maxRounds: 3, enableAbilities: true });
+    const b = runMatch({ ...cfg(5), maxRounds: 3, enableAbilities: true });
+    expect(a.rounds.length).toBe(3);
+    expect(a.rounds[0]?.events[0]?.kind).toBe("roundStart");
+    // deterministic with abilities on
+    expect(a.rounds.map((r) => [r.winner, r.reason])).toEqual(b.rounds.map((r) => [r.winner, r.reason]));
+  });
+
   it("recordPerception populates replay.meta.perception when enabled (PV-6 fog-of-war)", () => {
     const off = runMatch({ ...cfg(5), maxRounds: 2 });
     expect(off.rounds[0]?.replay.meta.perception).toBeUndefined();

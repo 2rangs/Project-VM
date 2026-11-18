@@ -202,6 +202,34 @@ export interface CommandTraceEvent {
   readonly result?: string;
 }
 
+/**
+ * One duel's first-contact state — the posture inputs that decide an opening duel. Captured
+ * for every engagement when config.traceCommands is on, so a policy's opening-duel win rate can
+ * be explained (who saw first, pre-aim/holding vs moving, flashed, distance, zones).
+ */
+export interface EngagementRecord {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly attackerId: PlayerId;
+  readonly defenderId: PlayerId;
+  readonly attackerZone: string;
+  readonly defenderZone: string;
+  readonly distanceMeters: number;
+  readonly attackerSawDefender: boolean;
+  readonly defenderSawAttacker: boolean;
+  /** Who had first sight (the reaction-time edge): "attacker" | "defender" | "mutual". */
+  readonly firstSight: "attacker" | "defender" | "mutual";
+  /** preAim = sees the enemy, is not seen back, and is not moving (a held angle). */
+  readonly attackerPreAim: boolean;
+  readonly defenderPreAim: boolean;
+  readonly attackerMoving: boolean;
+  readonly defenderMoving: boolean;
+  readonly attackerFlashedMs: number;
+  readonly defenderFlashedMs: number;
+  /** Winning side of this duel, or null if no one died this duel. */
+  readonly winnerSide: Side | null;
+}
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -217,6 +245,8 @@ export interface RoundResult {
   readonly perception?: readonly PerceptionTrack[];
   /** Command→execution trace, present only when config.traceCommands is true. */
   readonly commandTrace?: readonly CommandTraceEvent[];
+  /** First-contact posture of every duel, present only when config.traceCommands is true. */
+  readonly engagementTrace?: readonly EngagementRecord[];
 }
 
 export interface SimConfig {
@@ -236,6 +266,13 @@ export interface SimConfig {
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while standing in a molly / area-denial zone. */
   readonly mollyDamagePerTick: number;
+  /**
+   * Peeker's advantage (ms): a stationary holder reacts this much LATER to an enemy who is
+   * moving (peeking) into it, even on mutual sight — the aggressor's initiative. This is the
+   * opening-duel calibration lever once holders face their angle (so first contact is mutual,
+   * not attacker-surprise). Opening-duel calibration target only (README §31).
+   */
+  readonly peekerAdvantageMs: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
   readonly combatCalibration?: CombatCalibration;
 }
@@ -252,4 +289,5 @@ export const DEFAULT_CONFIG: SimConfig = {
   recordPerception: false,
   traceCommands: false,
   mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
+  peekerAdvantageMs: 210, // calibrated with hitChanceScale 0.50 → attacker opening ≈ 0.45 (CI [0.420,0.454])
 };

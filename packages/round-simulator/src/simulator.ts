@@ -17,9 +17,11 @@ import {
   toPerceptionAbilityStates,
   visionBlockerIsSmoke,
   deniedZoneIds,
+  activeAreaDenials,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
+  EngagementRecord,
   PerceptionSnapshot,
   PerceptionTrack,
   RoundEndReason,
@@ -47,9 +49,26 @@ export interface RoundSimulatorDeps {
 const RUN_UNITS_PER_SEC = 675;
 const WALK_UNITS_PER_SEC = 340;
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
+// Passable-hazard (molly / area-denial) pathfinding cost: how long you'd detour to avoid 1 HP of
+// damage, and how long a crosser is assumed exposed in a hazard zone. A fresh molly thus adds a
+// multi-second detour cost that shrinks to ~0 as it expires, so the planner routes around a fresh
+// molly but walks a dying one.
+const HAZARD_MS_PER_HP = 50;
+const HAZARD_EXPOSURE_MS = 700;
 
 /** Command-trace sink; a no-op unless config.traceCommands is on (see runRound). */
 type Tracer = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string) => void;
+
+/** The most common zone among players (deterministic tie-break by zone id); "" if none. */
+function modeZone(players: readonly SimPlayer[]): string {
+  const counts = new Map<string, number>();
+  for (const p of players) counts.set(p.zoneId, (counts.get(p.zoneId) ?? 0) + 1);
+  let best = "", bestN = -1;
+  for (const [z, n] of [...counts.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+    if (n > bestN) { best = z; bestN = n; }
+  }
+  return best;
+}
 
 function dist3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }): number {
   const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
@@ -89,6 +108,12 @@ export class RoundSimulator {
     const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke });
     const abilityEngine = new AbilityEngine(this.spatial);
     const spatialQuery = new SpatialQueryAdapter(this.spatial);
+    // Each side's starting zone (mode of its players' tick-0 zones), used as the structural
+    // origin for the default hold-facing (a defender watches the choke attackers enter from).
+    const originOf: Record<Side, string> = {
+      attack: modeZone(state.players.filter((p) => p.side === "attack")),
+      defense: modeZone(state.players.filter((p) => p.side === "defense")),
+    };
     // Previous-tick belief per side, threaded into buildBelief so unseen enemies age
     // across decisions (real @pv/decision-engine diffusion, not a per-tick reset).
     const prevBelief: Record<Side, BeliefState | null> = { attack: null, defense: null };
@@ -101,6 +126,7 @@ export class RoundSimulator {
     // `dedupeKey`, when given, logs that key only once (so recurring per-tick evaluations — a
     // plant rejected every tick, say — appear once, not hundreds of times).
     const commandTrace: CommandTraceEvent[] = [];
+    const engagementTrace: EngagementRecord[] = [];
     const tracedKeys = new Set<string>();
     const trace = (e: Omit<CommandTraceEvent, "tick" | "elapsedMs">, dedupeKey?: string): void => {
       if (!this.cfg.traceCommands) return;
@@ -153,13 +179,18 @@ export class RoundSimulator {
         }
       }
 
-      // 2. movement (paths route around active molly / area-denial zones)
-      const denied = deniedZoneIds(abilityEngine);
+      // 2. movement. Molly / area-denial is a PASSABLE hazard: it adds pathfinding cost (the
+      // planner detours when cheaper, else crosses and takes the damage below), not a hard block.
+      const denied = deniedZoneIds(abilityEngine); // zones that deal per-tick damage (step 5b)
+      const hazardCosts = this.hazardCostMap(abilityEngine, state.elapsedMs);
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
-        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", denied);
+        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", hazardCosts);
         this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined);
+        // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
+        // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
+        if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
       }
 
       // 3. abilities
@@ -179,14 +210,34 @@ export class RoundSimulator {
         if (!avail.usable) { trace({ playerId: p.id, phase: "ability", abilityId, result: "unavailable" }, `ability:${p.id}:${abilityId}:unavailable`); continue; }
         const spec = this.abilitiesCatalog[abilityId];
         if (!spec) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSpec" }, `ability:${p.id}:${abilityId}:noSpec`); continue; }
-        // flash/concuss (blind) and suppress (ability-silence) both hit enemies in range + LoS.
+        // Where the effect lands. A thrown/placed ability (smoke, molly/area-denial, remote
+        // recon, wall, slow) deploys at the commanded targetZone's centre when within the
+        // catalog range; out of range it is rejected (no charge spent). Movement (dash) is
+        // self-displacement, handled below, so it always originates at the caster. Flash/concuss
+        // also honour targetZone (pop-flash: blind enemies near the target). ASSUMPTION
+        // (manual-approx): caster→target is treated as unobstructed — no throw-arc/LoS check yet.
+        const isMovement = spec.effectTypes.includes("movement");
+        let origin = p.position;
+        if (!isMovement && cmd.targetZone) {
+          const tz = this.spatial.getZone(cmd.targetZone);
+          if (tz) {
+            const rangeUnits = spec.rangeUnits ?? Infinity;
+            if (dist3(p.position, tz.position) > rangeUnits) {
+              trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
+              continue;
+            }
+            origin = { ...tz.position };
+          }
+        }
+        // flash/concuss (blind) and suppress (ability-silence) hit enemies in range + LoS of the
+        // effect origin (the throw target when one was given, else the caster).
         const isFlash = spec.effectTypes.includes("flash") || spec.effectTypes.includes("concuss");
         const isSuppress = spec.effectTypes.includes("suppress");
-        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500) : undefined;
+        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500, origin) : undefined;
         abilityEngine.use(spec, {
           instanceId: `${p.id}:${abilityId}:${state.tick}`,
           abilityId, ownerId: p.id, teamId: p.teamId,
-          origin: p.position, startedAtMs: state.elapsedMs,
+          origin, startedAtMs: state.elapsedMs,
         }, { affectedPlayerIds });
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
@@ -215,10 +266,11 @@ export class RoundSimulator {
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events);
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null);
 
-      // 5b. molly / area-denial damage to anyone standing in a denied zone
-      for (const z of denied) {
+      // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
+      // overlapping mollies in the same zone do not double-dip the per-tick damage.
+      for (const z of new Set(denied)) {
         for (const p of state.players) {
           if (p.alive && p.zoneId === z) {
             p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
@@ -285,18 +337,19 @@ export class RoundSimulator {
           ] satisfies PerceptionTrack[])
         : undefined,
       commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
+      engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
     };
   }
 
   // ---- helpers ----
 
-  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", blockedZones: readonly string[] = []): void {
+  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", hazardCosts?: ReadonlyMap<string, number>): void {
     p.moveMode = mode;
-    // keep the cached path unless the goal changed or it now runs through a denied zone
-    const sameGoal = p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length;
-    const crossesDenied = blockedZones.length > 0 && p.path.slice(p.pathIndex).some((z) => blockedZones.includes(z));
-    if (sameGoal && !crossesDenied) return;
-    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { blockedZones });
+    // Keep the cached path while the goal is unchanged; the path is planned with the hazard costs
+    // active when it was computed (a hazard appearing mid-route is not re-routed — the crosser
+    // takes the damage, which is the intended passable-hazard behaviour).
+    if (p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length) return;
+    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { hazardCosts });
     if (r) {
       p.path = r.path;
       p.pathIndex = p.path[0] === p.zoneId ? 1 : 0;
@@ -304,14 +357,30 @@ export class RoundSimulator {
     }
   }
 
-  /** Enemies of `caster` that a flash/concuss at `caster` blinds: alive, in range, with LoS. */
-  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number): string[] {
-    const flashZone = caster.zoneId;
+  /** Passable-hazard pathfinding costs from active molly/area-denial (shrink as they expire). */
+  private hazardCostMap(abilityEngine: AbilityEngine, nowMs: number): ReadonlyMap<string, number> {
+    const m = new Map<string, number>();
+    for (const h of activeAreaDenials(abilityEngine, nowMs)) {
+      const exposureMs = Math.min(h.remainingMs, HAZARD_EXPOSURE_MS);
+      const ticks = Math.ceil(exposureMs / this.cfg.tickMs);
+      const cost = ticks * this.cfg.mollyDamagePerTick * HAZARD_MS_PER_HP;
+      m.set(h.zoneId, Math.max(m.get(h.zoneId) ?? 0, cost)); // overlapping mollies: one hazard, max cost
+    }
+    return m;
+  }
+
+  /**
+   * Enemies of `caster` blinded/suppressed by an effect centred at `center` (the caster, or a
+   * thrown target point): alive, within `radiusUnits`, in the centre zone or with LoS to it.
+   */
+  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number, center?: { x: number; y: number; z: number }): string[] {
+    const centerPos = center ?? caster.position;
+    const centerZone = this.spatial.nearestZone(centerPos).id;
     const out: string[] = [];
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
-      if (dist3(caster.position, e.position) > radiusUnits) continue;
-      if (e.zoneId === flashZone || this.spatial.hasLineOfSight(flashZone, e.zoneId)) out.push(e.id);
+      if (dist3(centerPos, e.position) > radiusUnits) continue;
+      if (e.zoneId === centerZone || this.spatial.hasLineOfSight(centerZone, e.zoneId)) out.push(e.id);
     }
     return out;
   }
@@ -349,12 +418,41 @@ export class RoundSimulator {
     return p.pathIndex < p.path.length;
   }
 
+  /**
+   * Orient a stationary player toward the zone it is watching. Priority: the command's explicit
+   * `aimZone`; else a hold/peek command's `targetZone`; else the default — the choke an enemy
+   * enters this zone from (the neighbour on the shortest path from the enemy's origin). Facing
+   * feeds perception's FOV cone and combat pre-aim, so a holder sees the entry it watches.
+   */
+  private faceStationary(p: SimPlayer, cmd: ActionCommand | undefined, originOf: Record<Side, string>): void {
+    const hintZone =
+      cmd?.aimZone ??
+      (cmd && (cmd.kind === "hold" || cmd.kind === "peek") ? cmd.targetZone : undefined) ??
+      this.defaultHoldZone(p, originOf);
+    if (!hintZone || hintZone === p.zoneId) return;
+    const z = this.spatial.getZone(hintZone);
+    if (!z) return;
+    const dx = z.position.x - p.position.x, dy = z.position.y - p.position.y;
+    if (dx === 0 && dy === 0) return;
+    p.facing = { x: dx, y: dy };
+  }
+
+  /** The zone an enemy would enter this player's zone from: the predecessor on enemy-origin → here. */
+  private defaultHoldZone(p: SimPlayer, originOf: Record<Side, string>): string | undefined {
+    const enemyOrigin = originOf[p.side === "attack" ? "defense" : "attack"];
+    if (!enemyOrigin || enemyOrigin === p.zoneId) return undefined;
+    const r = this.spatial.findPath(enemyOrigin, p.zoneId);
+    if (!r || r.path.length < 2) return undefined;
+    return r.path[r.path.length - 2]; // the choke adjacent to this zone on the enemy's approach
+  }
+
   private resolveEngagements(
     state: SimState,
     sight: ReturnType<PerceptionEngine["perceive"]>,
     abilityEngine: AbilityEngine,
     engaged: Set<string>,
     events: SimEvent[],
+    engTrace: EngagementRecord[] | null,
   ): void {
     const alive = state.players.filter((p) => p.alive);
     // A player can be in at most one duel per tick — you can only shoot one target at a
@@ -375,8 +473,8 @@ export class RoundSimulator {
         busy.add(a.id);
         busy.add(b.id);
         const seed = deriveSeed(this.cfg.seed, `${state.tick}:${key}`);
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA);
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB);
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA, this.isMoving(b));
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB, this.isMoving(a));
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
@@ -391,21 +489,45 @@ export class RoundSimulator {
           }
           events.push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: r.winner, target: r.loser, zoneId: loser.zoneId });
         }
+        if (engTrace) {
+          const atkP = a.side === "attack" ? a : b;
+          const defP = a.side === "attack" ? b : a;
+          const atkSees = atkP === a ? aSeesB : bSeesA;
+          const defSees = defP === a ? aSeesB : bSeesA;
+          const winnerSide = r.winner ? (state.players.find((p) => p.id === r.winner)?.side ?? null) : null;
+          engTrace.push({
+            tick: state.tick, elapsedMs: state.elapsedMs,
+            attackerId: atkP.id, defenderId: defP.id, attackerZone: atkP.zoneId, defenderZone: defP.zoneId,
+            distanceMeters: dm,
+            attackerSawDefender: atkSees, defenderSawAttacker: defSees,
+            firstSight: atkSees && !defSees ? "attacker" : defSees && !atkSees ? "defender" : "mutual",
+            attackerPreAim: atkSees && !defSees && !this.isMoving(atkP),
+            defenderPreAim: defSees && !atkSees && !this.isMoving(defP),
+            attackerMoving: this.isMoving(atkP), defenderMoving: this.isMoving(defP),
+            attackerFlashedMs: abilityEngine.blindRemainingMs(atkP.id, state.elapsedMs),
+            defenderFlashedMs: abilityEngine.blindRemainingMs(defP.id, state.elapsedMs),
+            winnerSide,
+          });
+        }
       }
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean): Combatant {
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
-    const preAim = seesEnemy && !enemySeesSelf && !this.isMoving(p);
+    const stationary = !this.isMoving(p);
+    const preAim = seesEnemy && !enemySeesSelf && stationary;
+    // Peeker's advantage: a stationary holder reacts late to an enemy peeking into it, even on
+    // mutual sight. One who did not see first keeps the full surprise delay.
+    const seesEnemyAtMs = !seesEnemy ? SURPRISE_DELAY_MS : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
     return {
       id: p.id, teamId: p.teamId, health: p.health, armor: p.armor, weapon, skills: p.skills,
       posture: {
         ...OPEN_POSTURE,
         preAim,
         moving: this.isMoving(p),
-        seesEnemyAtMs: seesEnemy ? 0 : SURPRISE_DELAY_MS,
+        seesEnemyAtMs,
         flashBlindMs: abilityEngine.blindRemainingMs(p.id, state.elapsedMs),
         behindCover: 0,
       },

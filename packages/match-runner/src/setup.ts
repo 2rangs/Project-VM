@@ -53,15 +53,17 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery) {
-    this.inner = new TeamDecisionPolicy(sq);
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined) {
+    this.inner = new TeamDecisionPolicy(sq, abilityEffect ? { abilityEffect } : {});
   }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({
       ...p,
       weapon: p.weapon ?? null,
       inventory: { primary: null, secondary: null, armor: { type: "none", points: p.armor ?? 0 }, hasSpike: false },
-      abilities: { basic: [], signature: null, ultimate: { abilityId: `${p.agentId}:x` as never, points: p.ultimatePoints ?? 0, required: 7, ready: false } },
+      // Keep the sim's real ability inventory (built from the loadout) so the action-generator
+      // can emit useAbility candidates; fall back to an empty one only if the sim omits it.
+      abilities: p.abilities ?? { basic: [], signature: null, ultimate: { abilityId: `${p.agentId}:x` as never, points: p.ultimatePoints ?? 0, required: 7, ready: false } },
       credits: p.credits ?? 0, ultimatePoints: p.ultimatePoints ?? 0,
       velocity: { x: 0, y: 0, z: 0 }, behaviorState: "idle", currentOrderId: null,
     }));
@@ -81,7 +83,10 @@ export class WrappedTeamPolicy implements DecisionPolicy {
  * structurally identical and runtime-compatible, so this crosses the brand boundary with a
  * single localized cast (R2-B seam; harmless at runtime, see e2e.integration.test.ts).
  */
-export function makeSimPolicies(sq: SpatialQuery): Readonly<Record<Side, SimDecisionPolicy>> {
-  const mk = () => new WrappedTeamPolicy(sq) as unknown as SimDecisionPolicy;
+export function makeSimPolicies(
+  sq: SpatialQuery,
+  abilityEffect?: (abilityId: string) => string | undefined,
+): Readonly<Record<Side, SimDecisionPolicy>> {
+  const mk = () => new WrappedTeamPolicy(sq, abilityEffect) as unknown as SimDecisionPolicy;
   return { attack: mk(), defense: mk() };
 }

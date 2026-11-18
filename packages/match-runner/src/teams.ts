@@ -39,6 +39,15 @@ function attrValue(attrs: unknown, key: string): number | null {
   return typeof slot?.value === "number" ? slot.value : null;
 }
 
+function skillsFromAttributes(attrs: unknown, hasRatings: boolean): CombatSkills {
+  const out = {} as Record<keyof CombatSkills, number>;
+  for (const key of SKILL_KEYS) {
+    const v = hasRatings ? attrValue(attrs, key) : null;
+    out[key] = v !== null ? v : AVERAGE_SKILLS[key];
+  }
+  return out;
+}
+
 /**
  * Team-aggregate CombatSkills from the roster's real ratings. Each skill is the mean of the
  * rostered players' values for that attribute; missing values fall back to AVERAGE_SKILLS.
@@ -55,6 +64,23 @@ export function teamSkills(id: string): CombatSkills {
       .map((p) => (p.hasRatings ? attrValue(p.attributes, key) : null))
       .filter((v): v is number => v !== null);
     out[key] = vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : AVERAGE_SKILLS[key];
+  }
+  return out;
+}
+
+/**
+ * Per-player CombatSkills for the first `count` roster players (real ratings, AVERAGE fallback
+ * for players without ratings or beyond the roster). Feeds runMatchRound's per-player `skills`.
+ */
+export function rosterSkills(id: string, count: number): CombatSkills[] {
+  const team = getTeam(id);
+  const players = team
+    ? team.roster.map((r) => getPlayer(r.playerId)).filter((p): p is NonNullable<typeof p> => !!p)
+    : [];
+  const out: CombatSkills[] = [];
+  for (let i = 0; i < count; i++) {
+    const p = players[i];
+    out.push(p ? skillsFromAttributes(p.attributes, p.hasRatings) : AVERAGE_SKILLS);
   }
   return out;
 }

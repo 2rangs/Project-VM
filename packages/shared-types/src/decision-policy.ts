@@ -42,6 +42,13 @@ export interface ActionCommand {
   readonly executeAtMs?: number;
   /** The CandidateAction id this command was chosen from (trace link). */
   readonly sourceActionId?: string;
+  /**
+   * The zone a holding/stationary player watches (a choke/entry). The round-simulator sets the
+   * player's facing from it while not moving, which drives perception FOV and combat pre-aim.
+   * When absent on a hold/peek the simulator falls back to `targetZone`, then to the enemy
+   * entry choke. Optional; a policy that omits it keeps the default-choke behaviour.
+   */
+  readonly aimZone?: ZoneId;
 }
 
 /**
@@ -84,6 +91,13 @@ export interface PolicyView {
   readonly economy: TeamEconomyState;
   readonly knownEnemyAliveCount: number | null;
   readonly matchScore: readonly [number, number] | null;
+  /**
+   * Passable hazards (molly / area-denial) the team can currently OBSERVE (a teammate in the
+   * zone or with line of sight to it): zone id + remaining lifetime in ms. A path may cross one
+   * and take damage or wait it out, so the policy can choose. Observation-limited
+   * (DECISION-004) — unseen hazards are absent. Optional; producers without hazard tracking omit it.
+   */
+  readonly visibleHazards?: readonly { readonly zoneId: ZoneId; readonly remainingMs: number }[];
 }
 
 /** Team strategy the IGL selects (Handoff §16). */

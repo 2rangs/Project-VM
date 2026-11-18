@@ -12,22 +12,24 @@
  */
 import { ROUND_RULES } from "@pv/game-rules";
 import {
-  RoundSimulator,
-  makeSyntheticRound,
+  runMatchRound,
   deriveSeed,
   toPv6ReplayFormat,
-  type RoundResult,
   type RoundEndReason,
   type SimEvent,
   type Pv6SimEventLog,
+  type MatchRoundPlayer,
+  type MatchRoundTeam,
 } from "@pv/round-simulator";
+import { lossBonusTierFor, type TeamEconomyState } from "@pv/economy-engine";
 import {
   loadSpatial,
   loadWeapons,
   makeSpatialQuery,
-  NO_ABILITIES,
   makeSimPolicies,
+  NO_ABILITIES,
 } from "./setup.js";
+import { loadAbilityCatalog, agentAbilityLoadout, ASCENT_COMP } from "./abilities.js";
 import {
   newTeamEconomy,
   decideBuy,
@@ -38,7 +40,13 @@ import {
   type TeamEconomy,
   type BuyDecision,
 } from "./economy.js";
-import { teamSkills } from "./teams.js";
+import { rosterSkills } from "./teams.js";
+
+/** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
+const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
+const ULT_COST = 7; // provisional default ult cost (per-agent costs are a later refinement).
+/** Precomputed per-slot agent + ability loadout for the fixed comp (both teams use it). */
+const COMP_LOADOUTS = ASCENT_COMP.map((agent) => ({ agent, abilities: agentAbilityLoadout(agent) }));
 
 export type TeamSlot = "A" | "B";
 export type Side = "attack" | "defense";
@@ -61,6 +69,13 @@ export interface MatchConfig {
    * round's `replay.meta.perception` is populated (round-simulator → toPv6ReplayFormat).
    */
   readonly recordPerception?: boolean;
+  /**
+   * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
+   * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
+   * coordinate ATTACKER utility to execute, so enabling it makes defense dominant (attack win
+   * ~0.02). Kept off until attacker util-for-executes is modelled; on is for ability experiments.
+   */
+  readonly enableAbilities?: boolean;
 }
 
 export interface RoundRecord {
@@ -141,6 +156,44 @@ function emptyMemory(): OpponentMemory {
   return { buyTiers: [], pistolWon: null, roundsWon: 0, roundsLost: 0 };
 }
 
+/** Our light TeamEconomy → the economy-engine TeamEconomyState surfaced to PolicyView.economy. */
+function toEconomyState(eco: TeamEconomy, side: Side): TeamEconomyState {
+  return { teamId: "", side, credits: eco.credits, consecutiveLosses: eco.consecutiveLosses, lossBonusTier: lossBonusTierFor(eco.consecutiveLosses) };
+}
+
+/** Armor points a buy tier equips (heavy 50 / light 25 / none). */
+function armorFor(tier: BuyDecision["tier"]): number {
+  if (tier === "full") return 50;
+  if (tier === "force" || tier === "pistol") return 25;
+  return 0; // eco
+}
+
+/**
+ * Build a 5-player roster for one side (ids atk1..5 / def1..5 so the SimRun roster is stable).
+ * Defenders spawn on their anchors (a/b/mid); attackers use the default attacker spawn. Per-player
+ * skills come from the team's real ratings. Abilities/ults are the next layer (Stage 2).
+ */
+function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean): MatchRoundPlayer[] {
+  const prefix = side === "attack" ? "atk" : "def";
+  const armor = armorFor(buy.tier);
+  return Array.from({ length: 5 }, (_, i): MatchRoundPlayer => {
+    const comp = COMP_LOADOUTS[i]!;
+    return {
+      id: `${prefix}${i + 1}`,
+      agentId: comp.agent,
+      skills: skills[i],
+      ...(side === "defense" ? { spawnZoneId: DEFENDER_SPAWNS[i] } : {}),
+      loadout: {
+        weaponId: buy.weapon,
+        armor,
+        ...(withAbilities ? { abilities: comp.abilities } : {}),
+        ultimatePoints: 0,
+        ultimateCost: ULT_COST,
+      },
+    };
+  });
+}
+
 /**
  * Run a full match. Pure given its config: no I/O, no clock — only the seeded RNG.
  */
@@ -150,11 +203,18 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
   const sq = makeSpatialQuery(spatial);
   const maxRounds = config.maxRounds ?? 60;
 
-  // Real per-team combat skills from game-data ratings (team-aggregate; AVERAGE fallback).
-  const skillsBySlot: Record<TeamSlot, ReturnType<typeof teamSkills>> = {
-    A: teamSkills(config.teamA.id),
-    B: teamSkills(config.teamB.id),
+  // Real per-player combat skills from game-data ratings (AVERAGE fallback), 5 per team.
+  const skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>> = {
+    A: rosterSkills(config.teamA.id, 5),
+    B: rosterSkills(config.teamB.id, 5),
   };
+  const abilitiesOn = config.enableAbilities ?? false;
+  const abilities = abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
+  // Give the policy an abilityId → effectType lookup so it can coordinate entry utility.
+  const abilityEffect = abilitiesOn ? (id: string): string | undefined => abilities[id]?.effectType : undefined;
+  const policies = makeSimPolicies(sq, abilityEffect);
+  const matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
+  const teamRef = (slot: TeamSlot): TeamRef => (slot === "A" ? config.teamA : config.teamB);
 
   const economy: Record<TeamSlot, TeamEconomy> = { A: newTeamEconomy(), B: newTeamEconomy() };
   const score: Record<TeamSlot, number> = { A: 0, B: 0 };
@@ -185,40 +245,42 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
     economy.B = { ...economy.B, credits: spend(economy.B.credits, buyB.cost) };
     const buys: Record<TeamSlot, BuyDecision> = { A: buyA, B: buyB };
 
-    // --- Run the round through the round-simulator, PV-3 policy both sides ---
-    const seed = deriveSeed(config.seed, `${config.teamA.id}:${config.teamB.id}:round:${roundNumber}`);
-    const base = makeSyntheticRound(spatial, {
-      matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
-      roundId: `r${roundNumber}`,
-      attackerWeapon: buys[attacker].weapon,
-      defenderWeapon: buys[defender].weapon,
-    });
-    // Override each player's skills with their real team's aggregate profile (makeSyntheticRound
-    // applies one skill set to all; we re-key by side so both teams play to their own ratings).
-    const state = {
-      ...base,
-      players: base.players.map((p) => ({
-        ...p,
-        skills: p.side === "attack" ? skillsBySlot[attacker] : skillsBySlot[defender],
-      })),
+    // --- Run the round through PV-4's runMatchRound (the match-loop seam) ---
+    const seed = deriveSeed(config.seed, `${matchId}:round:${roundNumber}`);
+    const attackers: MatchRoundTeam = {
+      teamId: teamRef(attacker).id,
+      economy: toEconomyState(economy[attacker], "attack"),
+      players: makeRoster("attack", buys[attacker], skillsBySlot[attacker], abilitiesOn),
     };
-    const result: RoundResult = new RoundSimulator({
+    const defenders: MatchRoundTeam = {
+      teamId: teamRef(defender).id,
+      economy: toEconomyState(economy[defender], "defense"),
+      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn),
+    };
+    const out = runMatchRound({
       spatial,
       weapons,
-      abilities: NO_ABILITIES,
-      policies: makeSimPolicies(sq),
-      config: { seed, recordPerception: config.recordPerception ?? false },
-    }).runRound(state);
+      abilities,
+      policies,
+      attackers,
+      defenders,
+      seed,
+      roundNumber,
+      mapId: config.map,
+      matchId,
+      roundId: `r${roundNumber}`,
+      config: { recordPerception: config.recordPerception ?? false },
+    });
+    const result = out.round;
 
     // --- Resolve outcome onto teams ---
-    const winner: TeamSlot = result.winner === "attack" ? attacker : defender;
-    const planted = result.events.some((e) => e.kind === "planted");
-    // Kills a team scored = opponents eliminated = 5 − surviving opponents.
-    const attackerKills = 5 - result.survivors.defense.length;
-    const defenderKills = 5 - result.survivors.attack.length;
+    const winner: TeamSlot = out.winner === "attack" ? attacker : defender;
+    const planted = out.events.some((e) => e.kind === "planted");
+    // Kills a team scored, from per-player outcomes (dead players' guns drop next round).
+    const killsOf = (side: Side) => out.players.filter((p) => p.side === side).reduce((s, p) => s + p.kills, 0);
     const kills: Record<TeamSlot, number> = {
-      [attacker]: attackerKills,
-      [defender]: defenderKills,
+      [attacker]: killsOf("attack"),
+      [defender]: killsOf("defense"),
     } as Record<TeamSlot, number>;
 
     // Between-round economy (mirror of economy-engine's advanceMatchEconomy; SWAP TARGET in

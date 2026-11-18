@@ -118,6 +118,57 @@ Typical use: filter `commandTrace` by a player id to see its issued commands vs 
 arrivals; filter `phase === "plant"` to see, per tick, whether a plant was attempted and why it
 was rejected. Deterministic with the seed. Works through `runMatchRound` via `config`.
 
+`traceCommands` also fills `RoundResult.engagementTrace: EngagementRecord[]` — the first-contact
+state of every duel, which decides opening duels: `{ attackerId, defenderId, attackerZone,
+defenderZone, distanceMeters, attackerSawDefender, defenderSawAttacker, firstSight
+("attacker"|"defender"|"mutual"), attackerPreAim, defenderPreAim, attackerMoving, defenderMoving,
+attackerFlashedMs, defenderFlashedMs, winnerSide }`. Take the earliest entry per round for the
+opening duel; tally `firstSight`, `*Moving`, `*PreAim` and `winnerSide` to explain a policy's
+opening-duel win rate (a defender caught `moving` shoots far worse than one holding still).
+
+## Hold facing (`aimZone`) and opening-duel calibration
+
+A stationary player now aims at the zone it is watching, and that facing drives perception's FOV
+cone and combat pre-aim — a holder sees the entry it watches instead of staring at a stale
+direction. `ActionCommand.aimZone` (added, optional, also in `@pv/shared-types`) sets it
+explicitly; on a `hold`/`peek` without it the simulator falls back to `targetZone`; with neither
+it defaults to the **enemy entry choke** (the neighbour on the shortest path from the enemy's
+starting zone). **Policies should set `aimZone` to the real expected threat** — the default
+choke only matches a head-on push, so a defender covering a flank/mid should name that zone.
+
+Because holders now get mutual sight at first contact (not attacker-surprise), the opening-duel
+calibration was re-derived: `SimConfig.peekerAdvantageMs` (default 210) models the entry
+attacker's initiative (a holder reacts late to a moving peeker even on mutual sight), and
+`ASCENT_OPENING_DUEL_CALIBRATION.hitChanceScale` is now 0.50. Together they put the ScriptedPolicy
+attacker opening-duel win at ~0.45 (real 0.437, CI [0.420, 0.454]). The SAME calibration applies
+to every policy — pass `combatCalibration: ASCENT_OPENING_DUEL_CALIBRATION`; `peekerAdvantageMs`
+is a default, overridable per run.
+
+## Target-zone abilities (`useAbility` + `targetZone`)
+
+A `useAbility` command may carry `targetZone`: a thrown/placed effect — smoke, molly/area-denial,
+remote recon, wall, slow — deploys at that zone's centre (not the caster) when within the
+catalog range (`rangeMeters`); beyond range it is rejected (`outOfRange`, no charge spent).
+Flash/concuss also honour `targetZone` (pop-flash: enemies near the target are blinded). Movement
+(dash) is self-displacement and always originates at the caster. **Assumption (manual-approx):**
+caster→target is treated as unobstructed — there is no throw-arc or LoS check between them yet;
+the effect's own zone then drives perception (a smoke at the target blocks sightlines through it).
+Policies set `targetZone` on `useAbility` to place utility on angles/chokes rather than on self.
+
+## Passable hazards (molly / area-denial)
+
+Molly / area-denial is a **passable hazard**, not a wall: it no longer removes the zone from
+pathfinding. Instead each active hazard adds a traversal **cost** (detour-worthiness ≈ expected
+damage × a per-HP factor) that shrinks toward zero as the effect expires, via
+`PathOptions.hazardCosts` in the spatial engine. So the planner routes around a fresh molly when a
+detour is cheaper and walks a dying one — and a path that crosses a molly takes the real per-tick
+damage. Physical walls still fully block (`blockedZones`); slow is a movement-speed effect.
+
+`PolicyView.visibleHazards` (added, optional, also in `@pv/shared-types`) exposes the active
+hazards the team can **observe** — `{ zoneId, remainingMs }` for each molly a teammate occupies or
+can see — so a policy can wait one out or accept the damage and push. Observation-limited
+(DECISION-004): unseen hazards are absent.
+
 ## Minimal example
 
 ```ts
