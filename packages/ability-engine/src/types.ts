@@ -59,6 +59,7 @@ export interface AbilitySpec {
   readonly wallHp: number | null; // destructible HP (PV-1 destructibleHp)
   readonly flashDurationMs: number | null; // blind duration applied to combat
   readonly suppressDurationMs: number | null; // ability-silence duration (suppress: KAY/O, Killjoy ult)
+  readonly windupMs: number | null; // equip/throw time the caster is weapon-unready (cast occupation)
   readonly revealDurationMs: number | null; // recon reveal duration
   /** Occludes sightlines (PV-1 blocksVision); drives perception smokedPairs. */
   readonly blocksVision: boolean | null;

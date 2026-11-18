@@ -50,6 +50,18 @@ const ATTACK_EXECUTE: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>([
 ]);
 /** A non-carrier within this run-travel time of the site is "entering" → fire entry util now. */
 const ENTRY_WINDOW_MS = 3500;
+/** A controller within this window of the site smokes the defender angles ahead of the entry. */
+const SMOKE_WINDOW_MS = 7000;
+/**
+ * Defender sightline zones to smoke per objective site (block vision INTO the site, not the team's
+ * own entry path). From the PV-1 tactics KB execute utilityRequirements (a-rafters/a-wine, b-heaven
+ * side, mid angles); a later pass can read these from the KB directly.
+ */
+const SMOKE_TARGETS: Readonly<Record<string, readonly string[]>> = {
+  "a-site": ["a-rafters", "a-wine"],
+  "b-site": ["b-boathouse"],
+  "mid-courtyard": ["mid-top"],
+};
 /** Entry choke each defender anchor watches (pre-aim direction); others fall back to the engine default. */
 const DEFENSE_AIM: Readonly<Record<string, string>> = {
   "a-site": "a-main",
@@ -113,24 +125,44 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       this.spatial.zonesByType("site").find((z) => this.spatial.isPlantableZone(z)) || null;
     if (!site) return out;
 
+    const replace = (arr: ActionCommand[], p: (typeof view.teammates)[number], cmd: ActionCommand) => {
+      const idx = arr.findIndex((c) => String(c.playerId) === String(p.id));
+      if (idx >= 0) arr[idx] = cmd;
+      else arr.push(cmd);
+    };
+    const effectOf = (id: string): string | undefined => lookup(String(id));
+    // Cast discipline: don't cast with an enemy already in the player's zone (fight, don't cast).
+    const enemyInZone = (zone: ZoneId): boolean =>
+      view.observation.visibleEnemies.some((e) => this.spatial.nearestZone({ x: e.lastSeenPosition.x, y: e.lastSeenPosition.y }) === zone);
+    const smokeTargets = SMOKE_TARGETS[site] ?? [];
+
     for (const p of view.teammates) {
       if (!p.alive || (holderId && String(p.id) === String(holderId))) continue;
       const pz = this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
       if (pz === site) continue; // already entered
       const t = this.spatial.shortestTravelTimeMs(pz, site, "run");
-      if (t === null || t > ENTRY_WINDOW_MS) continue; // hold util — not at the entry yet
+      if (t === null) continue;
+      if (enemyInZone(pz)) continue; // in a fight — shoot, don't cast
 
       const slots = [...p.abilities.basic, ...(p.abilities.signature ? [p.abilities.signature] : [])];
-      const effectOf = (id: string): string | undefined => lookup(String(id));
-      const flash = slots.find((a) => a.charges > 0 && (effectOf(a.abilityId) === "flash" || effectOf(a.abilityId) === "concuss"));
-      const dash = slots.find((a) => a.charges > 0 && effectOf(a.abilityId) === "movement");
-      const chosen = flash ?? dash;
-      if (!chosen) continue;
+      const avail = (fx: (e: string | undefined) => boolean) => slots.find((a) => a.charges > 0 && fx(effectOf(a.abilityId)));
 
-      const cmd: ActionCommand = { playerId: p.id, kind: "useAbility", abilityId: chosen.abilityId, targetZone: site, executeAtMs: 0, sourceActionId: "attack-util:entry" };
-      const idx = out.findIndex((c) => String(c.playerId) === String(p.id));
-      if (idx >= 0) out[idx] = cmd;
-      else out.push(cmd);
+      // Controller smoke ahead of the entry: block a defender sightline zone (not the entry path).
+      const smoke = avail((e) => e === "smoke" || e === "wall");
+      if (smoke && t <= SMOKE_WINDOW_MS) {
+        const target = smokeTargets.find((z) => z !== pz) as ZoneId | undefined;
+        if (target) {
+          replace(out, p, { playerId: p.id, kind: "useAbility", abilityId: smoke.abilityId, targetZone: target, executeAtMs: 0, sourceActionId: "attack-util:smoke" });
+          continue;
+        }
+      }
+      // Entry flash/dash at the site.
+      if (t <= ENTRY_WINDOW_MS) {
+        const chosen = avail((e) => e === "flash" || e === "concuss") ?? avail((e) => e === "movement");
+        if (chosen) {
+          replace(out, p, { playerId: p.id, kind: "useAbility", abilityId: chosen.abilityId, targetZone: site, executeAtMs: 0, sourceActionId: "attack-util:entry" });
+        }
+      }
     }
     return out;
   }
@@ -144,6 +176,34 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * This only overrides the carrier's own command; everyone else's choice is untouched, and no
    * combat parameter is changed — it just stops the carrier abandoning the plant.
    */
+  /**
+   * ATTACK post-plant contest: after the plant, surviving attackers near the spike hold it
+   * (aimZone = plant zone) to watch the defuser, instead of wandering off — without this the
+   * committed defuser retakes uncontested and every plant is defused (0 detonations). Alive
+   * attackers within ~3s of the plant zone hold it pre-aimed; the combat engine then resolves the
+   * retake fight (a realistic defuse/detonation mix).
+   */
+  private commitPostPlantContest(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+    const out = commands.slice();
+    // Abilities-on only: with util, the plant is held by util-equalised fights; abilities-off is a
+    // merged, balance-tuned state (attack already slightly high) that this hold would inflate.
+    if (!this.options.abilityEffect || view.side !== "attack") return out;
+    const phase = view.spike.phase;
+    if (phase !== "planted" && phase !== "defusing") return out;
+    const pos = view.spike.position;
+    if (!pos) return out;
+    const plantZone = this.spatial.nearestZone({ x: pos.x, y: pos.y });
+    return out.map((c) => {
+      if (c.kind === "useAbility" || c.kind === "defuse") return c; // keep util / (n/a on attack)
+      const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
+      if (!tm) return c;
+      const pz = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
+      const near = pz === plantZone || (this.spatial.shortestTravelTimeMs(pz, plantZone, "run") ?? Infinity) <= 3000;
+      if (!near) return c; // far — let them rotate in / lurk
+      return { playerId: c.playerId, kind: "hold", aimZone: plantZone, executeAtMs: 0, sourceActionId: "attack-postplant-hold" };
+    });
+  }
+
   private commitSpikeCarrier(
     view: PolicyView,
     strategy: TeamStrategy,
@@ -293,6 +353,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
 
     let commands = this.commitAttackUtil(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
     commands = this.commitSpikeCarrier(view, strategy, commands);
+    commands = this.commitPostPlantContest(view, commands);
     commands = this.commitDefenseHold(view, strategy, commands);
     commands = this.commitDefuser(view, commands);
 

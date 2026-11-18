@@ -66,6 +66,7 @@ export function abilitySpecFromCatalog(rec: CatalogEffectRecord, facts: CatalogF
     // flash blind duration: explicit facts override, else the effect's own duration.
     flashDurationMs: facts.flashDurationMs ?? (isFlash ? p.durationMs ?? null : null),
     suppressDurationMs: isSuppress ? p.durationMs ?? null : null,
+    windupMs: p.windupMs ?? null,
     revealDurationMs: p.revealDurationMs ?? null,
     blocksVision: p.blocksVision ?? (isOccluder ? true : null),
     makesSound: p.makesSound ?? null,

@@ -41,6 +41,7 @@ import {
   type BuyDecision,
 } from "./economy.js";
 import { rosterSkills } from "./teams.js";
+import { selectDefenseSetup } from "./defense-setups.js";
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
@@ -173,7 +174,7 @@ function armorFor(tier: BuyDecision["tier"]): number {
  * Defenders spawn on their anchors (a/b/mid); attackers use the default attacker spawn. Per-player
  * skills come from the team's real ratings. Abilities/ults are the next layer (Stage 2).
  */
-function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean): MatchRoundPlayer[] {
+function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean, defenderSpawns: readonly string[] = DEFENDER_SPAWNS): MatchRoundPlayer[] {
   const prefix = side === "attack" ? "atk" : "def";
   const armor = armorFor(buy.tier);
   return Array.from({ length: 5 }, (_, i): MatchRoundPlayer => {
@@ -182,7 +183,7 @@ function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<ty
       id: `${prefix}${i + 1}`,
       agentId: comp.agent,
       skills: skills[i],
-      ...(side === "defense" ? { spawnZoneId: DEFENDER_SPAWNS[i] } : {}),
+      ...(side === "defense" ? { spawnZoneId: defenderSpawns[i] ?? DEFENDER_SPAWNS[i] } : {}),
       loadout: {
         weaponId: buy.weapon,
         armor,
@@ -252,10 +253,14 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
       economy: toEconomyState(economy[attacker], "attack"),
       players: makeRoster("attack", buys[attacker], skillsBySlot[attacker], abilitiesOn),
     };
+    // Diversified VCT defender setup (PV-2) chosen per round — breaks the vacant-site 5v2.
+    // Applied only with abilities ON: forward holds (a-main/b-main) need utility/crossfire to be
+    // viable; abilities-off they just feed (attack 0.62→0.75), so off keeps the balanced 2-2-1.
+    const defSpawns = abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
     const defenders: MatchRoundTeam = {
       teamId: teamRef(defender).id,
       economy: toEconomyState(economy[defender], "defense"),
-      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn),
+      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn, defSpawns),
     };
     const out = runMatchRound({
       spatial,

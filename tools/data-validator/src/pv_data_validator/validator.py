@@ -52,6 +52,11 @@ def _schema_for(path: str) -> tuple[str, str] | None:
         if name == "README.json":
             return None
         return ("prior.schema.json", "object")
+    # Defensive setup packs under datasets/synthetic/setups/.
+    if "/datasets/synthetic/setups/" in norm or norm.startswith("datasets/synthetic/setups/"):
+        if name == "README.json":
+            return None
+        return ("defense-setup.schema.json", "object")
     if name in FILE_SCHEMA_MAP:
         return FILE_SCHEMA_MAP[name]
     for prefix, spec in PREFIX_SCHEMA_MAP.items():
