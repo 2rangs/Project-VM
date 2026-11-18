@@ -379,18 +379,33 @@ world units로 동작(zone-id 질의는 프레임 무관) — PV-2 포함 좌표
   F6: fixture를 패키지 상대 경로로 로드(하드코딩 `@project-v` 경로 제거). F3: `fromPv2Scenario`가 worldPos/zoneId 있으면 사용,
   없으면 스폰 배치(TODO).
 
-## §F. 동결 시점 (FREEZE, 2026-11-18)
+## §F. 라운드 엔진 완성 (시뮬레이션 품질, 동결 해제 후)
 
-**사용자 지시로 작업 동결, 오케스트레이터가 main 통합.** 최종 상태:
-- **5개 패키지 전부 green: spatial 21 + perception 17 + combat 15 + ability 18 + round-sim 16 = 87 테스트**, 전부 `tsc` 통과.
-- 완료(커밋됨): spatial/perception/combat/ability 엔진, round-simulator(결정론 5v5 루프 + PV-3 DecisionPolicy 팀 계약),
-  첫 검증 실행 + 오프닝 듀얼 보정, PV-6 리플레이 브리지, 계약 보완(teammate 필드/perPlayerObservation/비어있지 않은 belief/executeAtMs/F6).
-- **미완(TODO, 통합 브랜치에서):**
-  - `belief`: 로컬 placeholder 빌더 → PV-3 `@pv/decision-engine` `buildBelief` 실제 import로 교체(크로스브랜치라 지금은 미연결).
-  - `fromPv2Scenario`: PV-2 v2(게임 좌표+zoneId) push되면 position 직접 사용. 현재 v1 좌표(일루스트레이티브 0..1000)는 폐기 결정.
-  - 패키지 스코프 `@pv/*` 리네임은 통합 시 일괄(현재 `@project-v/*`).
-  - round-simulator: 스파이크 줍기·포스트플랜트·유틸 활용 정책은 PV-3 실제 AI 통합 후.
-  - 검증 재실행은 PV-3 실제 TeamDecisionPolicy로 통합 브랜치에서.
+사용자 지시로 동결 해제 → "시뮬레이션 가능한 초안"까지 라운드 엔진을 완성. `claude/pv-spatial`에서 진행(통합 브랜치에 가져갈 예정).
+
+- **PV-5 실측 반영:** `origin/claude/pv-mapmesh` replacement-proposal의 32 간선 중 **medium 신뢰도 30개**를 navgraph에
+  반영(2.5D walkable-grid geodesic @6.75 m/s). low 2개(b-boathouse 주변)·sightline 11개는 manual-approx 유지(저신뢰),
+  우회비율은 노트로 보존. `datasets/spatial/ascent/pv5-measured-edges.json` + provenance. 총 간선 952m→1310m.
+- **스킬 실제 작동:** ability-engine 효과를 루프에 연결 — 연막/벽이 perception LoS 차단(decision·engagement 양쪽),
+  플래시가 시야 내 적을 블라인드→combat posture, 몰리가 경로 우회(blockedZones)+틱 피해, 정찰 공개가 팀 관측에
+  주입(frozen 스냅샷, 누출 없음). `makeSyntheticRound{withAbilities}` 로드아웃 + `ScriptedPolicy{useUtility}` 전개(옵트인).
+- **스파이크 운영:** 캐리어 사망 시 **스파이크 줍기**(드롭 지점의 공격수가 회수) + **클리어 후 해체**(수비는 사이트의
+  가시 공격수를 정리한 뒤 해체). → 검증 결과 대폭 개선.
+- **첫 검증 재실행 (`FIRST_VALIDATION_RUN.md`):** PV-2 `pv-validate-sim` 1,000 라운드. **판정 지표 1/7 → 4/7 통과:**
+  side_winrate 공격 **0.509 = 실측 0.509(정확)**, opening_duel 0.453, elimination 0.685, economy 0.509 PASS.
+  남은 3개(defuse 과다·bomb_detonated 0·time_expired 0)는 **포스트플랜트 홀드/세이브 판단** 1개 행동 미구현 때문(문서화).
+  공격 승률 일치는 **메커닉/정책(줍기)** 효과이지 교전 왜곡 아님(오프닝 듀얼 보정은 별도·불변).
+- **성능:** 1,000 라운드 ~24 ms/round.
+
+**현재 상태: 5개 패키지 green — spatial 21 + perception 17 + combat 15 + ability 18 + round-sim 21 = 92 테스트, 전부 `tsc` 통과.**
+
+**미완(TODO, 통합 브랜치에서):**
+- `belief`: 로컬 placeholder → PV-3 `@pv/decision-engine` `buildBelief` 실제 import로 교체(크로스브랜치라 미연결).
+- **포스트플랜트 홀드/세이브**(detonation 생성, defuse 비율 보정) — 세이브 휴리스틱은 elimination 지표를 깨서 보류, 더 정교한
+  리테이크 성공확률 모델 필요.
+- `fromPv2Scenario`: PV-2 v2(게임좌표+zoneId) push되면 worldPos/zoneId 직접 사용(이미 그 경로 구현, v1 좌표는 폐기).
+- 패키지 스코프 `@pv/*` 일괄 리네임(현재 `@project-v/*`).
+- PV-3 실제 TeamDecisionPolicy로 검증 재실행(통합 브랜치).
 
 ---
 
