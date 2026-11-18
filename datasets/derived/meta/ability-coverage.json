@@ -1,0 +1,514 @@
+{
+  "schema": "ability-coverage/1",
+  "generated": "2026-11-18",
+  "scope": "Ascent top-pick agents (ascent-comps.json pickRate>=0.49)",
+  "engineModel": "PV-4 ability-engine static placed-effect (packages/ability-engine/src/types.ts, read-only ref)",
+  "pickRates": {
+    "sova": 0.814,
+    "omen": 0.722,
+    "jett": 0.699,
+    "kayo": 0.552,
+    "killjoy": 0.497
+  },
+  "statusCounts": {
+    "partial": 4,
+    "full": 5,
+    "unsupported": 10,
+    "out-of-scope": 1
+  },
+  "abilities": [
+    {
+      "abilityId": "jett:Ability1",
+      "agentName": "Jett",
+      "slot": "Ability1",
+      "name": "Updraft",
+      "effectTypes": [
+        "movement"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "self-displacement"
+      ],
+      "paramsPresent": {
+        "durationMs": 600.0
+      }
+    },
+    {
+      "abilityId": "jett:Ability2",
+      "agentName": "Jett",
+      "slot": "Ability2",
+      "name": "Tailwind",
+      "effectTypes": [
+        "movement"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "self-displacement"
+      ],
+      "paramsPresent": {
+        "windupMs": 1000.0,
+        "durationMs": 7500.0
+      }
+    },
+    {
+      "abilityId": "jett:Grenade",
+      "agentName": "Jett",
+      "slot": "Grenade",
+      "name": "Cloudburst",
+      "effectTypes": [
+        "smoke"
+      ],
+      "status": "full",
+      "engineNeeds": [],
+      "paramsPresent": {
+        "radiusMeters": 3.35,
+        "durationMs": 2500.0
+      }
+    },
+    {
+      "abilityId": "jett:Ultimate",
+      "agentName": "Jett",
+      "slot": "Ultimate",
+      "name": "Blade Storm",
+      "effectTypes": [],
+      "status": "out-of-scope",
+      "engineNeeds": [
+        "weapon-ult-combat-engine"
+      ],
+      "paramsPresent": {}
+    },
+    {
+      "abilityId": "kay-o:Ability1",
+      "agentName": "KAY/O",
+      "slot": "Ability1",
+      "name": "FLASH/drive",
+      "effectTypes": [
+        "flash"
+      ],
+      "status": "full",
+      "engineNeeds": [],
+      "paramsPresent": {
+        "windupMs": 800.0,
+        "durationMs": 2250.0
+      }
+    },
+    {
+      "abilityId": "kay-o:Ability2",
+      "agentName": "KAY/O",
+      "slot": "Ability2",
+      "name": "ZERO/point",
+      "effectTypes": [
+        "recon",
+        "suppress"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "suppress-disable"
+      ],
+      "paramsPresent": {
+        "windupMs": 1000.0,
+        "radiusMeters": 15.0,
+        "durationMs": 8000.0
+      }
+    },
+    {
+      "abilityId": "kay-o:Grenade",
+      "agentName": "KAY/O",
+      "slot": "Grenade",
+      "name": "FRAG/ment",
+      "effectTypes": [
+        "molly"
+      ],
+      "status": "partial",
+      "engineNeeds": [
+        "molly-damage-magnitude"
+      ],
+      "paramsPresent": {
+        "windupMs": 500.0,
+        "durationMs": 4000.0
+      }
+    },
+    {
+      "abilityId": "kay-o:Ultimate",
+      "agentName": "KAY/O",
+      "slot": "Ultimate",
+      "name": "NULL/cmd",
+      "effectTypes": [
+        "suppress"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "suppress-disable",
+        "downed-revive",
+        "destructible-deployable-hp"
+      ],
+      "paramsPresent": {
+        "windupMs": 1000.0,
+        "radiusMeters": 42.5,
+        "durationMs": 4000.0,
+        "destructibleHp": 850
+      }
+    },
+    {
+      "abilityId": "killjoy:Ability1",
+      "agentName": "Killjoy",
+      "slot": "Ability1",
+      "name": "ALARMBOT",
+      "effectTypes": [
+        "slow",
+        "recon"
+      ],
+      "status": "partial",
+      "engineNeeds": [
+        "active-recon-entity"
+      ],
+      "paramsPresent": {
+        "windupMs": 1000.0,
+        "radiusMeters": 40.0,
+        "durationMs": 4000.0
+      }
+    },
+    {
+      "abilityId": "killjoy:Ability2",
+      "agentName": "Killjoy",
+      "slot": "Ability2",
+      "name": "TURRET",
+      "effectTypes": [
+        "recon"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "active-recon-entity"
+      ],
+      "paramsPresent": {
+        "windupMs": 750.0,
+        "radiusMeters": 40.0
+      }
+    },
+    {
+      "abilityId": "killjoy:Grenade",
+      "agentName": "Killjoy",
+      "slot": "Grenade",
+      "name": "Nanoswarm",
+      "effectTypes": [
+        "molly"
+      ],
+      "status": "partial",
+      "engineNeeds": [
+        "molly-damage-magnitude"
+      ],
+      "paramsPresent": {
+        "windupMs": 1000.0,
+        "radiusMeters": 5.25,
+        "durationMs": 5000.0
+      }
+    },
+    {
+      "abilityId": "killjoy:Ultimate",
+      "agentName": "Killjoy",
+      "slot": "Ultimate",
+      "name": "Lockdown",
+      "effectTypes": [
+        "suppress"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "detain",
+        "destructible-deployable-hp"
+      ],
+      "paramsPresent": {
+        "windupMs": 13000.0,
+        "radiusMeters": 32.5,
+        "durationMs": 8000.0
+      }
+    },
+    {
+      "abilityId": "omen:Ability1",
+      "agentName": "Omen",
+      "slot": "Ability1",
+      "name": "Paranoia",
+      "effectTypes": [
+        "flash"
+      ],
+      "status": "full",
+      "engineNeeds": [],
+      "paramsPresent": {
+        "radiusMeters": 7.5,
+        "durationMs": 2000.0
+      }
+    },
+    {
+      "abilityId": "omen:Ability2",
+      "agentName": "Omen",
+      "slot": "Ability2",
+      "name": "Dark Cover",
+      "effectTypes": [
+        "smoke"
+      ],
+      "status": "full",
+      "engineNeeds": [],
+      "paramsPresent": {
+        "rangeMeters": 80.0,
+        "radiusMeters": 4.1,
+        "durationMs": 15000.0
+      }
+    },
+    {
+      "abilityId": "omen:Grenade",
+      "agentName": "Omen",
+      "slot": "Grenade",
+      "name": "Shrouded Step",
+      "effectTypes": [
+        "movement"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "teleport-destination"
+      ],
+      "paramsPresent": {
+        "windupMs": 4040.0,
+        "radiusMeters": 12.5,
+        "durationMs": 1200.0
+      }
+    },
+    {
+      "abilityId": "omen:Ultimate",
+      "agentName": "Omen",
+      "slot": "Ultimate",
+      "name": "From the Shadows",
+      "effectTypes": [
+        "movement"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "teleport-destination"
+      ],
+      "paramsPresent": {
+        "radiusMeters": 22.5,
+        "durationMs": 4000.0
+      }
+    },
+    {
+      "abilityId": "sova:Ability1",
+      "agentName": "Sova",
+      "slot": "Ability1",
+      "name": "Shock Bolt",
+      "effectTypes": [
+        "molly"
+      ],
+      "status": "partial",
+      "engineNeeds": [
+        "molly-damage-magnitude"
+      ],
+      "paramsPresent": {
+        "windupMs": 400.0
+      }
+    },
+    {
+      "abilityId": "sova:Ability2",
+      "agentName": "Sova",
+      "slot": "Ability2",
+      "name": "Recon Bolt",
+      "effectTypes": [
+        "recon"
+      ],
+      "status": "full",
+      "engineNeeds": [],
+      "paramsPresent": {
+        "windupMs": 667.0,
+        "radiusMeters": 30.0,
+        "revealDurationMs": 750.0
+      }
+    },
+    {
+      "abilityId": "sova:Grenade",
+      "agentName": "Sova",
+      "slot": "Grenade",
+      "name": "Owl Drone",
+      "effectTypes": [
+        "recon"
+      ],
+      "status": "unsupported",
+      "engineNeeds": [
+        "active-recon-entity"
+      ],
+      "paramsPresent": {
+        "durationMs": 7000.0
+      }
+    },
+    {
+      "abilityId": "sova:Ultimate",
+      "agentName": "Sova",
+      "slot": "Ultimate",
+      "name": "Hunter's Fury",
+      "effectTypes": [],
+      "status": "unsupported",
+      "engineNeeds": [
+        "linear-beam-damage"
+      ],
+      "paramsPresent": {
+        "windupMs": 1000.0,
+        "durationMs": 6000.0,
+        "revealDurationMs": 1000.0,
+        "damage": 80.0
+      }
+    }
+  ],
+  "engineNeeds": [
+    {
+      "id": "suppress-disable",
+      "rank": 1,
+      "mechanic": "ability-disable (suppress) state",
+      "params": [
+        "radiusUnits",
+        "durationMs"
+      ],
+      "pv4Status": "enum-only-no-state",
+      "newEffectType": false,
+      "agents": [
+        "kayo",
+        "killjoy"
+      ]
+    },
+    {
+      "id": "self-displacement",
+      "rank": 2,
+      "mechanic": "self dash / vertical displacement",
+      "params": [
+        "durationMs",
+        "direction"
+      ],
+      "pv4Status": "enum-only-no-owner-move",
+      "newEffectType": false,
+      "agents": [
+        "jett",
+        "omen"
+      ]
+    },
+    {
+      "id": "teleport-destination",
+      "rank": 3,
+      "mechanic": "targeted teleport (cancelable)",
+      "params": [
+        "rangeUnits",
+        "durationMs"
+      ],
+      "pv4Status": "unimplemented",
+      "newEffectType": false,
+      "agents": [
+        "omen"
+      ]
+    },
+    {
+      "id": "active-recon-entity",
+      "rank": 4,
+      "mechanic": "active/controllable recon entity (live FOV, HP, fire)",
+      "params": [
+        "radiusUnits",
+        "durationMs",
+        "hp"
+      ],
+      "pv4Status": "static-snapshot-approx",
+      "newEffectType": true,
+      "agents": [
+        "sova",
+        "killjoy"
+      ]
+    },
+    {
+      "id": "linear-beam-damage",
+      "rank": 5,
+      "mechanic": "linear/beam damage ult (terrain-piercing)",
+      "params": [
+        "damage",
+        "blasts",
+        "revealDurationMs"
+      ],
+      "pv4Status": "no-damage-type-effectTypes-empty",
+      "newEffectType": true,
+      "agents": [
+        "sova"
+      ]
+    },
+    {
+      "id": "molly-damage-magnitude",
+      "rank": 6,
+      "mechanic": "molly damage-over-time magnitude",
+      "params": [
+        "damagePerTick",
+        "durationMs"
+      ],
+      "pv4Status": "zone-only-no-damage-field",
+      "newEffectType": false,
+      "agents": [
+        "sova",
+        "kayo",
+        "killjoy"
+      ]
+    },
+    {
+      "id": "detain",
+      "rank": 7,
+      "mechanic": "detain (distinct from suppress)",
+      "params": [
+        "radiusUnits",
+        "durationMs",
+        "destructibleHp"
+      ],
+      "pv4Status": "unimplemented",
+      "newEffectType": true,
+      "agents": [
+        "killjoy"
+      ]
+    },
+    {
+      "id": "downed-revive",
+      "rank": 8,
+      "mechanic": "downed state + revive window",
+      "params": [
+        "reviveWindowMs",
+        "bodyHp"
+      ],
+      "pv4Status": "unimplemented",
+      "newEffectType": true,
+      "agents": [
+        "kayo"
+      ]
+    },
+    {
+      "id": "weapon-ult-combat-engine",
+      "rank": 9,
+      "mechanic": "weapon ult (equip throwing knives)",
+      "params": [
+        "ammo",
+        "killRecharge",
+        "damage"
+      ],
+      "pv4Status": "out-of-ability-engine-scope",
+      "newEffectType": false,
+      "agents": [
+        "jett"
+      ],
+      "owner": "combat-engine"
+    },
+    {
+      "id": "destructible-deployable-hp",
+      "rank": 10,
+      "mechanic": "destructible non-wall deployable HP",
+      "params": [
+        "destructibleHp"
+      ],
+      "pv4Status": "hp-wall-only",
+      "newEffectType": false,
+      "agents": [
+        "kayo",
+        "killjoy"
+      ]
+    }
+  ],
+  "provenance": {
+    "abilityData": "tools/catalog-builder/data/ability_effects.json (official-wiki sourced)",
+    "pickRates": "datasets/derived/comps/ascent-comps.json",
+    "classification": "PV-1 vs PV-4 engine model (manual, read-only)"
+  }
+}
