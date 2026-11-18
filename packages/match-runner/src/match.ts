@@ -55,6 +55,12 @@ export interface MatchConfig {
   readonly seed: number;
   /** Safety cap on total rounds (OT can in principle run long). Default 60. */
   readonly maxRounds?: number;
+  /**
+   * Record per-tick perception (observation/belief) time series for PV-6's fog-of-war + belief
+   * heatmap. Default false — off has no effect on determinism or performance. When on, each
+   * round's `replay.meta.perception` is populated (round-simulator → toPv6ReplayFormat).
+   */
+  readonly recordPerception?: boolean;
 }
 
 export interface RoundRecord {
@@ -201,7 +207,7 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
       weapons,
       abilities: NO_ABILITIES,
       policies: makeSimPolicies(sq),
-      config: { seed },
+      config: { seed, recordPerception: config.recordPerception ?? false },
     }).runRound(state);
 
     // --- Resolve outcome onto teams ---
