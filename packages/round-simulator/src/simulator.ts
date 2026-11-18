@@ -259,8 +259,9 @@ export class RoundSimulator {
       // 5. engagement detection (mutual or one-sided visibility → duel)
       this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null);
 
-      // 5b. molly / area-denial damage to anyone standing in a denied zone
-      for (const z of denied) {
+      // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
+      // overlapping mollies in the same zone do not double-dip the per-tick damage.
+      for (const z of new Set(denied)) {
         for (const p of state.players) {
           if (p.alive && p.zoneId === z) {
             p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
