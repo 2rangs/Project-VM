@@ -70,6 +70,17 @@ async function main() {
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-fog-pov.png') });
 
+  // Post-match Review tab: round strip, economy timeline, decisions, MVP, ground truth.
+  await page.getByTestId('tab-review').click();
+  await page.waitForSelector('[data-testid="review-panel"]', { timeout: 10000 });
+  assert.ok(await page.getByTestId('rev-strip').isVisible(), 'round-result strip rendered');
+  assert.ok(await page.getByTestId('rev-econ').isVisible(), 'economy timeline rendered');
+  await page.waitForSelector('[data-testid="rev-decision"]', { timeout: 10000 }); // traces loaded
+  const mvp = await page.getByTestId('rev-mvp').innerText();
+  assert.ok(/\bK\b/.test(mvp), 'MVP shows a kill stat');
+  await page.waitForTimeout(1200); // ground-truth viewer paints
+  await page.screenshot({ path: path.join(OUT, 'desktop-review.png') });
+
   // Squad (sortable table of real VCT names)
   await page.getByTestId('nav-squad').click();
   await page.waitForSelector('[data-testid="dt-row"]', { timeout: 10000 });

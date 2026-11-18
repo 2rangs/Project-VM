@@ -15,6 +15,7 @@ import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import type { MatchSummary } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
 import { ZONE_POSITIONS } from '../zones.ts';
+import { ReviewPanel } from './ReviewPanel.tsx';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [running, setRunning] = useState(false);
@@ -29,6 +30,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [seed, setSeed] = useState(42);
   const [pov, setPov] = useState(0);            // fog point of view: 0 = our team (A), 1 = B
   const [beliefOn, setBeliefOn] = useState(false);
+  const [tab, setTab] = useState<'match' | 'review'>('match'); // post-match review tab
   const replay = ctx.replay;
   const refOf = (name: string) => { const t = allTeams.find((x) => x.name === name); return { id: t?.teamId ?? name, name }; };
   const lastRound = match?.rounds[match.rounds.length - 1];
@@ -70,6 +72,16 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
             {running ? `Simulating… ${Math.round(pct * 100)}%` : '▶ Run match'}
           </button>
         </div>
+        {match && (
+          <div className="md-tabs" data-testid="md-tabs">
+            <button className={tab === 'match' ? 'on' : ''} onClick={() => setTab('match')} data-testid="tab-match">경기</button>
+            <button className={tab === 'review' ? 'on' : ''} onClick={() => setTab('review')} data-testid="tab-review">리뷰 (경기 후)</button>
+          </div>
+        )}
+        {tab === 'review' && match ? (
+          <ReviewPanel match={match} replay={replay} />
+        ) : (
+        <>
         <div className="md-toolbar" data-testid="fog-toolbar">
           <span className="pill">{engineLabel}</span>
           {hasPerception ? (
@@ -134,8 +146,11 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
           ))}
           {!replay && <div className="row small muted">no events yet</div>}
         </div>
+        </>
+        )}
       </div>
 
+      {!(tab === 'review' && match) && (
       <aside className="md-side">
         <section className="md-card" data-testid="economy-panel">
           <h3>Economy {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
@@ -170,6 +185,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
           ) : <div className="row small muted">loading trace…</div>}
         </section>
       </aside>
+      )}
     </div>
   );
 }
