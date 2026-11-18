@@ -65,6 +65,25 @@ importers:
         specifier: workspace:*
         version: link:../shared-types
 
+  packages/outcome-predictor:
+    dependencies:
+      '@pv/action-generator':
+        specifier: workspace:*
+        version: link:../action-generator
+      '@pv/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+    devDependencies:
+      '@pv/decision-engine':
+        specifier: workspace:*
+        version: link:../decision-engine
+      '@pv/team-engine':
+        specifier: workspace:*
+        version: link:../team-engine
+      '@pv/world-state':
+        specifier: workspace:*
+        version: link:../world-state
+
   packages/shared-types: {}
 
   packages/simulation-core:
