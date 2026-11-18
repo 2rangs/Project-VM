@@ -471,4 +471,25 @@ HANDOFF.md, NEXT_TASKS.md, DEVELOPMENT_LOG.md, ARCHITECTURE.integrated.md, PRE_M
 - `docs/HANDOFF.md`(기준 커밋표) → NEXT_TASKS → DEVELOPMENT_LOG → ARCHITECTURE.integrated.
 
 ---
-**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**
+
+# PROJECT V — TASK HANDOFF (PV-1 11차: 동결 — TODO)
+
+**기준일:** 2026-11-18 · **상태:** 사용자 지시로 **동결(FROZEN)**. 11차는 착수했으나 산출물 미완 → TODO.
+동결 시점 브랜치 tip: 10차(`0f9e488`) 기준(테스트 19 passed). 11차 산출 파일은 커밋하지 않음(미완·미검증).
+
+## 미완 작업 (다음 에이전트 인계)
+### (A) 스킬 엔진 커버리지 갭 분석 — 미완
+- 목표: 내 `ability_effects.json`(120) vs PV-4 `packages/ability-engine`(읽기) 대조 → full/partial/unsupported 분류, Ascent 픽률 가중 상위 10 갭.
+- **확인된 사실(읽기 완료):** PV-4 ability-engine은 **정적 배치 효과 모델** — `AbilitySpec`{effectType(s), durationMs, radiusUnits, rangeUnits, wallHp, flashDurationMs, revealDurationMs, blocksVision, cost/charges/cooldown}. 지원: 연막/벽 가림(blocksVision), molly 존 차단(`PathOptions.blockedZones`), recon/trap reveal 스냅샷(누출 없음), flash blind(combat). EffectType enum = 내 12종과 일치.
+- **미지원(필드 없음) = partial/unsupported 후보:** 조종형(Sova Owl Drone, Skye Trailblazer, Fade Prowler, Gekko 생물, Cypher Spycam, Killjoy Turret/Alarmbot), 변위·텔레포트(Omen Shrouded Step/From the Shadows, Chamber Rendezvous, Jett Tailwind/Updraft, Yoru Gatecrash, Astra Gravity Well 당김), 오브-스택 활성화(Astra Stars→Nova/Nebula/GravityWell), 억제-무력화(KAY/O ZERO/NULL, Killjoy Lockdown, Gekko Thrash), 부활(Sage Resurrection, KAY/O NULL/cmd, Clove), 대상 힐(Sage Healing Orb, Skye Regrowth, Reyna Devour), 연료·감쇠·재사용(Viper 전체), 무기 궁(Sova Hunter's Fury/Jett Blade Storm/Chamber Headhunter = combat-engine 소관).
+- **데이터 갭 발견:** `cypher:Ability1 Cyber Cage`, `reyna:Ability2 Dismiss` 등 일부 effectTypes가 **빈 배열** — 내 효과 소싱 재점검 필요.
+- 산출 예정: `docs/research/ABILITY_COVERAGE.md`, `datasets/derived/meta/ability-coverage.json`(상위 10 갭 + 필요 파라미터).
+
+### (B) Lotus 고유 메커니즘 명세 — 미완
+- 목표: Lotus 회전문(레버 개폐)·파괴 벽·소리 지형·로프 어센더·3사이트를 공식 위키에서 소싱 → 공간 엔진 신규 요구(동적 경로·시야, 상호작용 액션) 명세. PV-4 spatial-engine `PathOptions.blockedZones` 등과 대조.
+- **확인된 사실:** Lotus 위키에 회전문(A/C), 로프 어센더, 파괴 가능 요소 기록(§NEXT_MAP_PREP). 산출 예정: `docs/research/LOTUS_MECHANICS.md`.
+
+(위 분류·명세는 **미검증 초안 수준의 메모**이며, 실제 산출 시 각 스킬 위키 페이지 URL로 재확인 필요.)
+
+---
+**실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음. PV-1 동결.**
