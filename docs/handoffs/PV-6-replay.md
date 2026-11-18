@@ -153,3 +153,64 @@ run-analysis(real .vrf) → map=Ascent, topSpeed=6.837 m/s, projection fracInUni
 ## 7. 재개 지점
 - `docs/research/replay-kinematics.md` → `datasets/derived/kinematics/*.json`.
 - `cd tools/replay-parser && npm test` (14/14).
+
+---
+
+# PV-6 3차 작업 — Replay Format + Viewer v0 (2026-11-18)
+
+## 1. 목표
+실제 `.vrf` 궤적과 향후 시뮬레이션 결과를 **같은 포맷**으로 재생하는 뷰어(Handoff Phase 11, §24.5, DECISION-007/010).
+
+## 2. 완료한 작업 (검증한 것만)
+- **`packages/replay-engine`** (독립 TS 패키지): Replay 포맷 스키마(메타/라운드/트랙/이벤트), 보간 규칙
+  (위치 선형·facing 최단호·state step·클램프), `loadReplay`/`stateAt`/`seek`/`roundAt`/`eventsInRange`,
+  좌표 변환(PV-4 coordinate-system 적용). 변환기 2종: `fromReplayParser`(내 파서 출력→Replay, 익명 player_N),
+  `fromSimEventLog`(pv-core `@pv/shared-types` GameEvent[]→Replay, 구조적 타이핑). **단위테스트 11/11 통과**, `tsc --noEmit` 통과.
+- **`apps/replay-viewer`** (Vite+React+TS+PixiJS, 독립 package.json): 미니맵 위 선수 점+시야선, 팀 색, 생사,
+  이벤트 마커(kill/plant/ability), 타임라인 스크럽, 재생/일시정지/배속(0.5–4×, 판정과 독립), 라운드 점프,
+  드래그앤드롭·파일열기, source 배지. 미니맵은 valorant-api에서 런타임 로드(이미지 미커밋). **빌드·tsc 통과.**
+- **합성 Replay fixture** 동봉(`public/fixtures/synthetic-replay.json`, 커밋 가능). Ascent 좌표·2라운드·3선수·이벤트.
+- **Playwright 스크린샷**: 합성 fixture와 **실제 `.vrf`에서 변환한(익명) Replay**를 각각 로드해 미니맵 위 점 렌더 확인.
+  스크린샷 `apps/replay-viewer/docs/screenshot-{synthetic,real}.png` 커밋(문서 첨부). 실제 Replay JSON은 미커밋(로컬 재생성).
+
+## 3. 변경/추가 파일
+- `packages/replay-engine/`: `src/{types,coordinate,engine,convert-parser,convert-sim,index}.ts`, `test/{engine,convert}.test.ts`,
+  `test/fixtures/ascent-coordinate-system.json`(PV-4 복사, 출처 명기), `package.json`, `tsconfig.json`, `README.md`, `.gitignore`.
+- `apps/replay-viewer/`: `src/{main.tsx,App.tsx,styles.css,viewer/PixiStage.ts}`, `index.html`, `vite.config.ts`, `tsconfig.json`,
+  `package.json`, `public/fixtures/synthetic-replay.json`, `scripts/{gen-real-replay.ts,screenshot.mjs}`, `docs/screenshot-*.png`, `README.md`, `.gitignore`.
+- 미커밋: node_modules, dist, 실제 `.vrf`/실제 변환 Replay(`real-*.json` gitignore), valorant-api 미니맵 이미지.
+
+## 4. 실행/검증
+```
+cd packages/replay-engine && npm test          # 11/11, + npm run typecheck
+cd apps/replay-viewer && npm install && npm run dev   # http://localhost:5178 (합성 fixture)
+# .vrf 한 줄 흐름: run.sh → gen-real-replay.ts → ?replay=/fixtures/real-ascent.local.json  (README 참조)
+cd apps/replay-viewer && npm run build && npm run screenshot
+```
+
+## 5. 테스트 결과 (실제)
+- replay-engine: `# tests 11 # pass 11 # fail 0`; `tsc --noEmit` exit 0.
+- replay-viewer: `vite build` exit 0; `tsc --noEmit` exit 0; Playwright 스크린샷 2종 생성(합성=다중 선수+이벤트, 실제=익명 P1 on Ascent).
+
+## 6. 미완료/한계
+- combat/perception 세부 이벤트(shot/hit)는 pv-spatial에 아직 정의 없음 → 매핑 훅만 준비(forward-safe).
+- 실제 샘플은 1인·짧은 캡처라 뷰어에선 점 1개(익명 P1). 완전한 5v5 `.vrf`면 10점 재생.
+- 스킬 효과는 spawn 마커만(반경·지속 시각화 미구현). `fromReplayParser`는 guid↔팀 링크 부재로 teamIdx=null.
+- 엔진은 번들러/Node strip-types용 소스 배포(빌드 산출물 없음) — 외부 소비 시 빌드 스텝 필요.
+
+## 7. 설계 결정
+- 포맷 단일화(real/synthetic/simulated) + 보간 규칙 1곳 → 뷰어가 출처를 몰라도 재생(§24.5).
+- 배속과 상태계산 분리(DECISION-010): 뷰어는 clock만 돌리고 `stateAt(tMs)`는 배속 불변.
+- 좌표 변환은 PV-4 소유: 엔진은 적용만, 미니맵 x/y 날조 안 함.
+- 앱 독립성: 자체 package.json + Vite alias로 엔진 소스 참조(루트 모노레포 설정 비의존).
+- 개인정보: 변환 시 ProfileName 제거, 뷰어는 player_N만. 실제 Replay JSON 미커밋.
+
+## 8. 다음 작업
+1. 완전한 5v5 `.vrf` → 10선수 재생 + 라운드별 정합.
+2. pv-spatial combat/perception 이벤트 확정 시 shot/hit·스킬 반경/지속 시각화.
+3. 시뮬레이션(pv-core/pv-spatial) 로그 → `fromSimEventLog`로 실제 연결(현재 인터페이스만).
+4. 엔진 빌드 산출물(dist) + 패키지 export 정비(외부 소비용).
+
+## 9. 재개 지점
+- `apps/replay-viewer/README.md`(.vrf→뷰어 한 줄 흐름) → `packages/replay-engine/README.md`(포맷).
+- `cd packages/replay-engine && npm test`; `cd apps/replay-viewer && npm install && npm run dev`.
