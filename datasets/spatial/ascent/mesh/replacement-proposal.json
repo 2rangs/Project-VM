@@ -1,0 +1,800 @@
+{
+  "note": "PV-5 measured replacements for PV-4's Ascent callout graph. AGGREGATE values only (no geometry). PV-4 files are NOT modified; the orchestrator integrates these at merge time. Each value carries its basis and an honest confidence.",
+  "generatedBy": "tools/map-mesh/make_proposal.py",
+  "sources": {
+    "pv4Navgraph": "origin/claude/pv-spatial:datasets/spatial/ascent/ascent.navgraph.json (read-only)",
+    "gridCalibration": "datasets/spatial/ascent/mesh/ascent-grid-calibration.json",
+    "losMatrix": "datasets/spatial/ascent/mesh/ascent-los-matrix.json",
+    "transform": "datasets/spatial/ascent/mesh/ascent-blender-to-game-transform.json"
+  },
+  "summary": {
+    "edgesProposed": 32,
+    "edgesReachable": 32,
+    "edgeConfidence": {
+      "medium": 30,
+      "low": 2,
+      "very-low": 0,
+      "none": 0
+    },
+    "sightlinesProposed": 11,
+    "note": "Edge distances are usable (medium/low confidence). Sightline visibility is low confidence pending meter-precise alignment."
+  },
+  "edgeReplacements": [
+    {
+      "from": "attacker-spawn",
+      "to": "a-lobby",
+      "current": {
+        "distanceMeters": 53.9,
+        "runTimeMs": 7985,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 63.06,
+        "runTimeMs": 9343,
+        "detourRatioVsStraightLine": 1.23
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.42,
+      "snapDist_to_m": 1.51
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "b-lobby",
+      "current": {
+        "distanceMeters": 21.16,
+        "runTimeMs": 3135,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 29.47,
+        "runTimeMs": 4366,
+        "detourRatioVsStraightLine": 1.12
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.42,
+      "snapDist_to_m": 1.85
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "mid-top",
+      "current": {
+        "distanceMeters": 34.72,
+        "runTimeMs": 5143,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 38.58,
+        "runTimeMs": 5715,
+        "detourRatioVsStraightLine": 1.21
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.42,
+      "snapDist_to_m": 0.09
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-main",
+      "current": {
+        "distanceMeters": 18.89,
+        "runTimeMs": 2799,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 35.73,
+        "runTimeMs": 5293,
+        "detourRatioVsStraightLine": 2.04
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 1.51,
+      "snapDist_to_m": 0.33
+    },
+    {
+      "from": "a-main",
+      "to": "a-tree",
+      "current": {
+        "distanceMeters": 18.19,
+        "runTimeMs": 2694,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 26.61,
+        "runTimeMs": 3943,
+        "detourRatioVsStraightLine": 1.08
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.33,
+      "snapDist_to_m": 0.97
+    },
+    {
+      "from": "a-main",
+      "to": "a-window",
+      "current": {
+        "distanceMeters": 37.27,
+        "runTimeMs": 5522,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 46.41,
+        "runTimeMs": 6875,
+        "detourRatioVsStraightLine": 1.11
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.33,
+      "snapDist_to_m": 0.93
+    },
+    {
+      "from": "a-main",
+      "to": "a-site",
+      "current": {
+        "distanceMeters": 20.91,
+        "runTimeMs": 3098,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 18.86,
+        "runTimeMs": 2793,
+        "detourRatioVsStraightLine": 1.1
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.33,
+      "snapDist_to_m": 0.54
+    },
+    {
+      "from": "a-tree",
+      "to": "a-site",
+      "current": {
+        "distanceMeters": 22.81,
+        "runTimeMs": 3379,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 27.79,
+        "runTimeMs": 4117,
+        "detourRatioVsStraightLine": 1.08
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.97,
+      "snapDist_to_m": 0.54
+    },
+    {
+      "from": "a-window",
+      "to": "a-site",
+      "current": {
+        "distanceMeters": 26.55,
+        "runTimeMs": 3933,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 41.66,
+        "runTimeMs": 6172,
+        "detourRatioVsStraightLine": 1.21
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.93,
+      "snapDist_to_m": 0.54
+    },
+    {
+      "from": "a-site",
+      "to": "a-wine",
+      "current": {
+        "distanceMeters": 22.83,
+        "runTimeMs": 3383,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 60.8,
+        "runTimeMs": 9008,
+        "detourRatioVsStraightLine": 2.19
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.54,
+      "snapDist_to_m": 2.11
+    },
+    {
+      "from": "a-site",
+      "to": "a-rafters",
+      "current": {
+        "distanceMeters": 15.84,
+        "runTimeMs": 2347,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 17.06,
+        "runTimeMs": 2527,
+        "detourRatioVsStraightLine": 1.09
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.54,
+      "snapDist_to_m": 0.26
+    },
+    {
+      "from": "a-site",
+      "to": "a-garden",
+      "current": {
+        "distanceMeters": 25.55,
+        "runTimeMs": 3786,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 44.01,
+        "runTimeMs": 6519,
+        "detourRatioVsStraightLine": 1.26
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.54,
+      "snapDist_to_m": 1.08
+    },
+    {
+      "from": "a-garden",
+      "to": "mid-cubby",
+      "current": {
+        "distanceMeters": 24.54,
+        "runTimeMs": 3636,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 27.08,
+        "runTimeMs": 4012,
+        "detourRatioVsStraightLine": 1.17
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 1.08,
+      "snapDist_to_m": 0.85
+    },
+    {
+      "from": "a-wine",
+      "to": "defender-spawn",
+      "current": {
+        "distanceMeters": 73.77,
+        "runTimeMs": 10928,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 129.39,
+        "runTimeMs": 19169,
+        "detourRatioVsStraightLine": 1.38
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 2.11,
+      "snapDist_to_m": 0.76
+    },
+    {
+      "from": "a-rafters",
+      "to": "defender-spawn",
+      "current": {
+        "distanceMeters": 44.29,
+        "runTimeMs": 6561,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 68.98,
+        "runTimeMs": 10220,
+        "detourRatioVsStraightLine": 1.19
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.26,
+      "snapDist_to_m": 0.76
+    },
+    {
+      "from": "mid-top",
+      "to": "mid-courtyard",
+      "current": {
+        "distanceMeters": 28.97,
+        "runTimeMs": 4292,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 47.98,
+        "runTimeMs": 7107,
+        "detourRatioVsStraightLine": 1.37
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.09,
+      "snapDist_to_m": 0.4
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-catwalk",
+      "current": {
+        "distanceMeters": 11.86,
+        "runTimeMs": 1757,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 17.0,
+        "runTimeMs": 2518,
+        "detourRatioVsStraightLine": 1.13
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.4,
+      "snapDist_to_m": 0.7
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-cubby",
+      "current": {
+        "distanceMeters": 22.32,
+        "runTimeMs": 3306,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 27.39,
+        "runTimeMs": 4058,
+        "detourRatioVsStraightLine": 1.12
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.4,
+      "snapDist_to_m": 0.85
+    },
+    {
+      "from": "mid-catwalk",
+      "to": "mid-bottom",
+      "current": {
+        "distanceMeters": 21.82,
+        "runTimeMs": 3233,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 27.98,
+        "runTimeMs": 4145,
+        "detourRatioVsStraightLine": 1.09
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.7,
+      "snapDist_to_m": 0.56
+    },
+    {
+      "from": "mid-cubby",
+      "to": "mid-bottom",
+      "current": {
+        "distanceMeters": 24.12,
+        "runTimeMs": 3573,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 36.33,
+        "runTimeMs": 5382,
+        "detourRatioVsStraightLine": 1.18
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.85,
+      "snapDist_to_m": 0.56
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-market",
+      "current": {
+        "distanceMeters": 14.15,
+        "runTimeMs": 2097,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 24.31,
+        "runTimeMs": 3602,
+        "detourRatioVsStraightLine": 1.67
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.56,
+      "snapDist_to_m": 0.57
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-link",
+      "current": {
+        "distanceMeters": 24.23,
+        "runTimeMs": 3590,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 28.43,
+        "runTimeMs": 4212,
+        "detourRatioVsStraightLine": 1.4
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.56,
+      "snapDist_to_m": 1.41
+    },
+    {
+      "from": "mid-link",
+      "to": "b-site",
+      "current": {
+        "distanceMeters": 36.91,
+        "runTimeMs": 5468,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 54.01,
+        "runTimeMs": 8001,
+        "detourRatioVsStraightLine": 1.22
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 1.41,
+      "snapDist_to_m": 0.67
+    },
+    {
+      "from": "mid-link",
+      "to": "defender-spawn",
+      "current": {
+        "distanceMeters": 60.64,
+        "runTimeMs": 8984,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 61.16,
+        "runTimeMs": 9061,
+        "detourRatioVsStraightLine": 1.24
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 1.41,
+      "snapDist_to_m": 0.76
+    },
+    {
+      "from": "mid-market",
+      "to": "mid-pizza",
+      "current": {
+        "distanceMeters": 7.2,
+        "runTimeMs": 1066,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 12.2,
+        "runTimeMs": 1807,
+        "detourRatioVsStraightLine": 1.26
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.57,
+      "snapDist_to_m": 0.24
+    },
+    {
+      "from": "mid-market",
+      "to": "b-site",
+      "current": {
+        "distanceMeters": 34.38,
+        "runTimeMs": 5094,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 49.77,
+        "runTimeMs": 7374,
+        "detourRatioVsStraightLine": 1.18
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.57,
+      "snapDist_to_m": 0.67
+    },
+    {
+      "from": "mid-pizza",
+      "to": "b-main",
+      "current": {
+        "distanceMeters": 40.43,
+        "runTimeMs": 5990,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 52.49,
+        "runTimeMs": 7776,
+        "detourRatioVsStraightLine": 1.24
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.24,
+      "snapDist_to_m": 1.69
+    },
+    {
+      "from": "b-lobby",
+      "to": "b-main",
+      "current": {
+        "distanceMeters": 44.79,
+        "runTimeMs": 6636,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 68.05,
+        "runTimeMs": 10082,
+        "detourRatioVsStraightLine": 1.46
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 1.85,
+      "snapDist_to_m": 1.69
+    },
+    {
+      "from": "b-main",
+      "to": "b-site",
+      "current": {
+        "distanceMeters": 17.45,
+        "runTimeMs": 2586,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 19.17,
+        "runTimeMs": 2840,
+        "detourRatioVsStraightLine": 1.12
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 1.69,
+      "snapDist_to_m": 0.67
+    },
+    {
+      "from": "b-site",
+      "to": "b-boathouse",
+      "current": {
+        "distanceMeters": 21.51,
+        "runTimeMs": 3187,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 31.86,
+        "runTimeMs": 4720,
+        "detourRatioVsStraightLine": 1.26
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "low",
+      "reachable": true,
+      "snapDist_from_m": 0.67,
+      "snapDist_to_m": 4.25
+    },
+    {
+      "from": "b-boathouse",
+      "to": "b-main",
+      "current": {
+        "distanceMeters": 31.55,
+        "runTimeMs": 4674,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 48.21,
+        "runTimeMs": 7142,
+        "detourRatioVsStraightLine": 1.22
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "low",
+      "reachable": true,
+      "snapDist_from_m": 4.25,
+      "snapDist_to_m": 1.69
+    },
+    {
+      "from": "b-site",
+      "to": "defender-spawn",
+      "current": {
+        "distanceMeters": 48.64,
+        "runTimeMs": 7205,
+        "provenance": "manual-approx"
+      },
+      "proposed": {
+        "distanceMeters": 55.13,
+        "runTimeMs": 8167,
+        "detourRatioVsStraightLine": 1.11
+      },
+      "basis": "2.5D walkable-grid geodesic (floor triangles, cs 1.2 m, step-tol 3.0 m, 8-neighbour, 1 auto off-mesh bridge); endpoints placed via region-level affine (~6-9 m RMS) then snapped to nearest grid node, run time at 6.75 m/s.",
+      "confidence": "medium",
+      "reachable": true,
+      "snapDist_from_m": 0.67,
+      "snapDist_to_m": 0.76
+    }
+  ],
+  "sightlineReplacements": [
+    {
+      "a": "a-main",
+      "b": "a-site",
+      "current": {
+        "type": "direct",
+        "smokeable": true,
+        "note": "main entry onto site"
+      },
+      "proposed": {
+        "visibilityProbability": 0.61,
+        "visibleAtThreshold_0_25": true
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "a-window",
+      "b": "a-site",
+      "current": {
+        "type": "angle",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "a-tree",
+      "b": "a-site",
+      "current": {
+        "type": "angle",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "a-wine",
+      "b": "a-site",
+      "current": {
+        "type": "angle",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-site",
+      "current": {
+        "type": "angle",
+        "smokeable": false
+      },
+      "proposed": {
+        "visibilityProbability": 0.17,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "mid-top",
+      "b": "mid-courtyard",
+      "current": {
+        "type": "direct",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-bottom",
+      "current": {
+        "type": "direct",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.67,
+        "visibleAtThreshold_0_25": true
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "mid-link",
+      "b": "b-site",
+      "current": {
+        "type": "angle",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "mid-market",
+      "b": "b-site",
+      "current": {
+        "type": "direct",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "b-main",
+      "b": "b-site",
+      "current": {
+        "type": "direct",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.17,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    },
+    {
+      "a": "b-boathouse",
+      "b": "b-site",
+      "current": {
+        "type": "angle",
+        "smokeable": true
+      },
+      "proposed": {
+        "visibilityProbability": 0.0,
+        "visibleAtThreshold_0_25": false
+      },
+      "basis": "eye-to-eye wall raycast, seeded KxK jittered samples (eye height 1.6 m).",
+      "confidence": "low",
+      "caveat": "Eye points carry the region-level transform error (~7 m), which OVER-estimates blocking; a 0 here is often a placement artifact, not a real block. Use as corroboration where >0, not as refutation where 0. Needs meter-precise alignment."
+    }
+  ]
+}

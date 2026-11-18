@@ -121,3 +121,77 @@
 
 **실제 테스트 여부:** 위 모든 수치는 이 환경에서 실제 실행한 결과. 연결되지 않은
 엣지를 측정 성공으로 기록하지 않았다.
+
+---
+---
+
+# 2차 작업 (Round 2) — 보행 연결 + 실측 시야 + 교체 제안
+
+오케스트레이터 2차 지시(handoff §12 권고 1–3 + 시야)에 따른 작업. 같은 브랜치
+`claude/pv-mapmesh`, 머지·PR·리베이스 없음.
+
+## R2-1. 완료한 작업 (실측)
+- **2.5D 보행 격자**(`tools/map-mesh/nav2d/build_grid.py`): 바닥 삼각형을 높이
+  레이어별 occupancy grid로 래스터화, 이웃 셀을 계단 높이(step-tol) 내에서 연결.
+  Recast(연결 성분 ~27%)를 대체. 결과(cs 1.2m, step-tol 3.0m): 최대 연결 성분
+  **95%**, 콜아웃 **22/22**, PV-4 엣지 **32/32** 측정 가능. 우회 비율 중앙값
+  1.21, 최대 2.19(벽이 강제하는 우회가 실제로 드러남: a-lobby→a-main 2.04 등).
+- **Off-mesh 브리지 자동 탐지**(`offmesh_candidates.py`): 분리된 성분 사이 짧은
+  계단/드롭 후보를 바닥 높이 불연속으로 생성. 1개 자동 후보(b-boathouse 구출,
+  hGap 3.8m/vGap 1.2m)로 21/22→**22/22** 달성. 수작업 보정 파일
+  `offmesh-manual.json`(provenance:manual) 제공(이번엔 불필요).
+- **실측 시야**(`tools/map-mesh/los/los.py`): 벽 삼각형(927,089개)에 대해 눈높이
+  레이캐스트(uniform-grid broadphase + 배치 Möller–Trumbore), 시드 K×K 샘플링.
+  PV-4 수작업 sightline 11개 중 **4개 실측 corroborate**. ⚠️ 한계: 눈 위치가
+  구역 단위 변환 오차(~7m)를 상속받아 **차단을 과대평가**(일부 PV-4 direct
+  sightline이 0으로 — 배치 아티팩트, 반증 아님). 정밀 정합 필요.
+- **PV-6 교차검증**(`align/validate_pv6.py`): PV-6 실측 3,001 샘플(전부
+  defender-spawn). 원점 재생성 불가(.vrf/파서 바이너리 없음)라 커밋된 minimap
+  bbox를 역투영→게임좌표→내 변환→Blender. 캡처 중심이 바닥에서 **2.9m**,
+  defender-spawn에서 **6.8m**(~7m 오차 이내). **PASS** — 독립 리플레이 데이터와
+  변환 자기일관성 확인.
+- **교체 제안서**(`make_proposal.py` → `replacement-proposal.json`): PV-4 그래프
+  엣지 32개(거리·시간, 신뢰도 medium 30/low 2) + sightline 11개(가시확률, low)
+  의 교체값. 각 값에 근거·신뢰도. 집계 수치만, 지오메트리 없음. **PV-4 파일 미수정.**
+- **테스트**: `nav2d/test_grid.py`(cluster_layers/build_adjacency/dijkstra/
+  connected_components/is_bridge_candidate), `los/test_los.py`(ray hit·miss·
+  short-segment/segment_cells/WallIndex) — 전부 통과.
+
+## R2-2. 변경/추가 파일
+- `tools/map-mesh/nav2d/`(build_grid.py, offmesh_candidates.py, test_grid.py)
+- `tools/map-mesh/los/`(los.py, test_los.py)
+- `tools/map-mesh/align/validate_pv6.py`, `tools/map-mesh/make_proposal.py`
+- `tools/map-mesh/blender/extract-collision.py`(--walls-only 추가)
+- `datasets/spatial/ascent/mesh/`: ascent-grid-calibration.json,
+  ascent-los-matrix.json, offmesh-candidates.json, offmesh-manual.json,
+  ascent-pv6-validation.json, replacement-proposal.json
+- `docs/research/ascent-mesh.md` §9–§14
+- 파생 바이너리(ascent_floor_all.bin, ascent_walls.bin)는 derived/ gitignore.
+
+## R2-3. 실행 방법
+`tools/map-mesh/README.md` 파이프라인에 이어서:
+```
+# floor(all heights)·walls 추출: extract-collision.py --floor-only / --walls-only
+python3 -I tools/map-mesh/nav2d/build_grid.py --mesh ...floor_all.bin \
+  --navgraph <PV-4> --transform ...transform.json \
+  --out ...grid-calibration.json --cs 1.2 --step-tol 3.0 --full-matrix \
+  --offmesh ...offmesh-candidates.json
+python3 -I tools/map-mesh/nav2d/offmesh_candidates.py ... --radius 12 --max-gap 6 --min-comp 1
+python3 -I tools/map-mesh/los/los.py --walls ...walls.bin --grid ...grid-calibration.json ...
+python3 -I tools/map-mesh/align/validate_pv6.py ...
+python3 -I tools/map-mesh/make_proposal.py ...
+# tests:
+python3 -I tools/map-mesh/nav2d/test_grid.py && python3 -I tools/map-mesh/los/test_los.py
+```
+
+## R2-4. 미완료 / 알려진 문제
+- **시야 정밀도**: 구역 단위 변환(~7m)이 LoS를 과대차단. 콜아웃 단위 정밀 정합
+  (명명 오브젝트 매칭) 후 재실행하면 신뢰도 상승. (handoff §12 권고 5, 시간상 미실시.)
+- 격자 step-tol 3.0m은 일부 드롭/점프를 걷기로 간주 — 이동시간 상한에 영향.
+  필요하면 방향성(내리막만 큰 tol) 엣지로 세분화 가능.
+- Recast off-mesh 연결 API 직접 통합 대신 격자 브리지로 해결(격자가 우수).
+
+## R2-5. 다음 권장 작업
+1. 콜아웃 단위 정밀 정합 → LoS/경로 신뢰도 상향.
+2. `replacement-proposal.json`을 PV-4 그래프에 반영(오케스트레이터/PV-4).
+3. 나머지 10개 맵에 동일 파이프라인 적용.

@@ -334,3 +334,108 @@ large measured detour because the sites/lanes (where real wall-detours live)
 are not on the connected component. Once a connected navmesh exists (options
 above), re-run `calibrate-paths.cjs`; the report's `replacementProposal` array is
 the drop-in table of `distanceMeters` → `navmeshPath_m` suggestions for PV-4.
+
+---
+---
+
+# Round 2 — connectivity, line-of-sight, and replacement proposal
+
+Round 1 produced a Recast navmesh that was only ~27% connected. Round 2 adds a
+**2.5D walkable grid** that connects the whole map, real **line-of-sight**, an
+**off-mesh bridge** detector, a **PV-6 cross-validation**, and a **replacement
+proposal** for PV-4. PV-4 files remain unmodified.
+
+## 9. 2.5D walkable grid ✅ (22/22 zones connected)
+
+**Tool:** `tools/map-mesh/nav2d/build_grid.py` (pure stdlib; core unit-tested in
+`test_grid.py`). Floor triangles (all heights, foliage dropped —
+`ascent_floor_all.bin`, 355,792 tris) are rasterised into a **height-layered
+occupancy grid**: per XY cell, floor-height samples are clustered into layers
+(`cluster_layers`); neighbouring cells link when their layer heights differ by
+≤ `step-tol`, which bridges stairs/ramps. Zones are placed via the inverse affine
+and snapped to the nearest node; Dijkstra gives zone-to-zone geodesics.
+
+Committed config (`ascent-grid-calibration.json`): **cs 1.2 m, layer-merge 0.8 m,
+step-tol 3.0 m**, with the one auto off-mesh bridge (§11) applied.
+
+| Metric | Recast (round 1) | 2.5D grid (round 2) |
+|---|---|---|
+| Largest connected component | ~27 % of area | **95 %** (14,686 / 15,422 nodes) |
+| PV-4 callouts on main component | 3 / 22 | **22 / 22** |
+| PV-4 edges measurable | 2 / 32 | **32 / 32** |
+
+**Detour ratios (grid geodesic ÷ straight-line), 32 edges:** min 1.08, median
+**1.21**, mean 1.27, max **2.19**. Large detours fall exactly where walls force
+them — `a-lobby→a-main` 2.04, `a-site→a-wine` 2.19, `mid-bottom→mid-market`
+1.67, `b-lobby→b-main` 1.46 — while open links stay near-straight
+(`a-site→a-rafters` 1.09, `mid-courtyard→mid-catwalk` 1.13). This is the real
+calibration PV-4's straight-line lower bounds were waiting for.
+
+## 10. Why the grid beats Recast here
+
+Recast voxelises the *solid* art (walls + props + multi-level) and the walkable
+surface shatters (round 1, §7–§8). The 2.5D grid instead treats **only the floor
+surface** as nodes and reconnects levels by height adjacency, so stairs and ramps
+join naturally and doorways are preserved at cell resolution. It is also pure
+Python, fast (~2 s), and fully unit-tested.
+
+## 11. Off-mesh bridge connections ✅
+
+**Tool:** `tools/map-mesh/nav2d/offmesh_candidates.py`. After building the grid it
+finds nodes on a non-main component with a nearby main-component node within a
+horizontal radius and vertical gap (`is_bridge_candidate`, unit-tested) — i.e.
+places a short stair/ramp/drop would rejoin. One candidate was auto-detected:
+
+- **rescues `b-boathouse`** (the isolated B dock alcove): horizontal gap 3.8 m,
+  vertical gap 1.2 m, kind `step`, `provenance: auto-detected`.
+
+Applying it (`build_grid.py --offmesh`) lifts connectivity from 21/22 → **22/22**
+zones and 30/32 → **32/32** edges. Manual corrections can be added in
+`offmesh-manual.json` (`provenance: manual`); none were needed for Ascent.
+
+## 12. Real line-of-sight ⚠️ computed, alignment-limited
+
+**Tool:** `tools/map-mesh/los/los.py` (core unit-tested in `test_los.py`).
+Eye-to-eye segments between zone representatives (grid floor + 1.6 m eye height)
+are ray-cast against the **wall occluder mesh** (`ascent_walls.bin`, 927,089
+near-vertical tris) with a uniform-grid broadphase + batched Möller–Trumbore;
+seeded K×K jittered sampling gives a visibility probability per zone pair.
+
+Result (`ascent-los-matrix.json`): 231 pairs; **4 of PV-4's 11 sightlines
+corroborated** (`a-main↔a-site` 0.61, `mid-courtyard↔mid-bottom` 0.67,
+`b-main↔b-site` 0.17, `a-rafters↔a-site` 0.17).
+
+**Honest limitation.** Eye points inherit the region-level transform error
+(~6–9 m), which places eyes near/behind walls and **over-estimates blocking** —
+several PV-4 "direct" sightlines read 0 (a placement artifact, *not* a refutation
+of the sightline). The LoS matrix is therefore a **conservative/relative** signal;
+reliable absolute LoS needs the meter-precise alignment noted in §5. The pipeline
+itself is correct and tested.
+
+## 13. PV-6 replay cross-validation ✅ PASS
+
+**Tool:** `tools/map-mesh/align/validate_pv6.py`. PV-6 decoded 3,001 real Ascent
+position samples from a `.vrf` (game uu, Z-up), all in the `defender-spawn` zone.
+The raw points are not regenerable here (no `.vrf` / parser binary), but PV-6
+committed the capture's minimap bbox; inverse-projecting it to game coords and
+mapping through PV-5's affine puts the capture centre at Blender (0.0, 102.1):
+
+- distance to nearest walkable floor: **2.9 m** (lands on the floor), and
+- distance to PV-5's `defender-spawn`: **6.8 m** (within the ~7 m region-level
+  transform error, and consistent with PV-6's own `nearestZoneDistUU` p50 = 4.6 m).
+
+**Verdict: PASS** — an independent real-replay dataset is self-consistent with
+PV-5's transform and walkable mesh. Report: `ascent-pv6-validation.json`.
+
+## 14. Replacement proposal for PV-4
+
+**Tool:** `tools/map-mesh/make_proposal.py` → `replacement-proposal.json`
+(aggregate values only; **PV-4 files unchanged** — the orchestrator integrates).
+
+- **32 edge replacements** (all reachable): grid-geodesic `distanceMeters` +
+  `runTimeMs` (at 6.75 m/s) + detour ratio. Confidence: **30 medium, 2 low**
+  (by snap distance).
+- **11 sightline replacements**: measured visibility probability, **low**
+  confidence, each carrying the alignment caveat from §12.
+
+Each entry records its `basis` and `confidence` so integration can weight it.
