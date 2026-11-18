@@ -1,0 +1,45 @@
+{
+  "note": "Ascent NavMesh built with recast-navigation-js (Recast/Detour) from the playable art geometry. Geometry itself not stored here; the exported navmesh .bin is a derivative and stays gitignored (see ascent-mesh.md §9).",
+  "recastNavigationVersion": "0.44.0",
+  "inputMesh": {
+    "verts": 2410949,
+    "tris": 279093
+  },
+  "axis": "input Blender Z-up swapped to Recast Y-up: recast=[blX, blZ, blY]",
+  "config": {
+    "cs": 0.3,
+    "ch": 0.3,
+    "walkableSlopeAngle": 45,
+    "walkableHeight": 2,
+    "walkableClimb": 2,
+    "walkableRadius": 0.3,
+    "maxEdgeLen": 12,
+    "maxSimplificationError": 1.3,
+    "minRegionArea": 5,
+    "mergeRegionArea": 60,
+    "maxVertsPerPoly": 6,
+    "detailSampleDist": 6,
+    "detailSampleMaxError": 1,
+    "tileSize": 128
+  },
+  "output": {
+    "navmeshFile": "ascent.navmesh.bin",
+    "navmeshBytes": 11456,
+    "tilesUsed": 7,
+    "polyCount": 66,
+    "vertCount": 147,
+    "boundsBlenderMetres": {
+      "min": [
+        -67.5,
+        -9.35,
+        -1.36
+      ],
+      "max": [
+        86.1,
+        105.85,
+        15.53
+      ]
+    }
+  },
+  "buildSeconds": 1.1
+}

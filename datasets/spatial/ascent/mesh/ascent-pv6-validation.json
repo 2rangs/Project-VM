@@ -1,0 +1,71 @@
+{
+  "note": "Independent cross-validation of PV-5's Blender<->game transform against PV-6's replay capture (3,001 real Ascent samples, all in defender-spawn). Raw points are not regenerable here (no .vrf / parser binary); the capture's committed minimap bbox is inverse-projected to game coords and mapped through PV-5's affine.",
+  "pv6Capture": {
+    "sampleCount": 3001,
+    "occupiedZone": "defender-spawn",
+    "nearestZoneDistUU": {
+      "p50": 458.3,
+      "p90": 795.3,
+      "max": 910.3
+    },
+    "minimapBBox": {
+      "minX": 0.0706,
+      "maxX": 0.1028,
+      "minY": 0.4065,
+      "maxY": 0.4765
+    }
+  },
+  "captureRegionGameCoords": {
+    "centre": [
+      1882.0,
+      -10388.5
+    ],
+    "cornersXY": [
+      [
+        2382.0,
+        -10618.5
+      ],
+      [
+        2382.0,
+        -10158.5
+      ],
+      [
+        1382.0,
+        -10618.5
+      ],
+      [
+        1382.0,
+        -10158.5
+      ]
+    ]
+  },
+  "captureRegionBlender": {
+    "centreXY": [
+      0.0,
+      102.1
+    ],
+    "nearestFloorVertex": [
+      -0.82,
+      99.33,
+      12.57
+    ],
+    "distToNearestFloor_m": 2.89
+  },
+  "defenderSpawnCheck": {
+    "pv4GameXY": [
+      1995.2,
+      -9744.9
+    ],
+    "pv5BlenderXY": [
+      3.66,
+      96.36
+    ],
+    "captureCentreToDefenderSpawn_m": 6.81
+  },
+  "verdict": {
+    "captureLandsOnFloor": true,
+    "captureNearDefenderSpawn": true,
+    "transformConsistentWithReplay": true,
+    "interpretation": "PASS: the replay capture maps onto the walkable floor close to PV-5's defender-spawn, consistent with PV-6's independent labelling."
+  }
+}

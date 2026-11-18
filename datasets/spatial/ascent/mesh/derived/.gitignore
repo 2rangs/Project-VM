@@ -1,0 +1,6 @@
+# PV-5: extracted/derived geometry (collision mesh, navmesh binaries) is NOT
+# committed — it reproduces Riot/VALORANT map geometry from the user-provided
+# .blend, whose redistribution license is unverified (see ascent-mesh.md §6).
+# Only generation scripts + numeric stats/reports are committed.
+*
+!.gitignore

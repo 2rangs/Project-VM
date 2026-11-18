@@ -1,0 +1,20 @@
+{
+  "agent": "PV-5 (Map Mesh)",
+  "description": "Provenance for the user-provided Ascent Blender source. The .blend itself is NOT committed (user-provided material, copyright/size unverified; README §10.1). It lives in ./raw/ which is .gitignored. This file records what was obtained so the acquisition is reproducible.",
+  "downloads": [
+    {
+      "map": "Ascent",
+      "fileId": "1n9Z3-kMqzaqETP1lxGvQpfQSBrX5zChB",
+      "sourceUrl": "https://drive.google.com/open?id=1n9Z3-kMqzaqETP1lxGvQpfQSBrX5zChB",
+      "savedAs": "datasets/spatial/ascent/mesh/raw/Ascent (blender 4.2).blend",
+      "bytes": 326114514,
+      "sha256": "51e0b327393356c197687b075bd511e591fc08a207ed1059e0817d7482f2b5e2",
+      "blenderHeader": "BLENDER-v402 (Blender 4.2, 64-bit, little-endian)",
+      "method": "Playwright/Chromium; Drive virus-scan interstitial -> 'Download anyway' (confirm-token form). Normal download-button flow, no protection bypassed.",
+      "retrievedAt": "2026-11-18",
+      "retrievedBy": "tools/map-mesh/download/download-drive-map.cjs"
+    }
+  ],
+  "reproduce": "node tools/map-mesh/download/download-drive-map.cjs 1n9Z3-kMqzaqETP1lxGvQpfQSBrX5zChB datasets/spatial/ascent/mesh/raw ascent",
+  "accessCheck": "node tools/map-mesh/download/check-drive-access.cjs  (probes all 11 maps, downloads nothing)"
+}
