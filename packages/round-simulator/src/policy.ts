@@ -14,6 +14,8 @@ export interface ScriptedPolicyOptions {
   readonly attackSite?: string;
   /** Defense: anchor zone per player id; falls back to holding the current zone. */
   readonly defenseAnchors?: Readonly<Record<string, string>>;
+  /** Deploy utility (smoke/flash/recon/molly) while executing. Opt-in. */
+  readonly useUtility?: boolean;
 }
 
 /**
@@ -48,6 +50,14 @@ export class ScriptedPolicy implements DecisionPolicy {
       if (!p.alive) continue;
       roles.push({ playerId: p.id, role: idx++ === 0 ? "entry" : "support" });
       const zone = this.zoneOf(p.position);
+      // deploy utility mid-execute (once, while approaching but not yet on site)
+      if (this.opts.useUtility && zone !== site) {
+        const ready = p.abilities.find((a) => a.chargesRemaining > 0 && a.cooldownRemainingMs <= 0);
+        if (ready && p.id !== carrierId) {
+          commands.push({ playerId: p.id, kind: "useAbility", abilityId: ready.abilityId });
+          continue;
+        }
+      }
       if (p.id === carrierId && zone === site && planting) {
         commands.push({ playerId: p.id, kind: "plant", targetZone: site });
       } else if (zone !== site) {

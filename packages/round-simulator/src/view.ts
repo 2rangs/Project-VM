@@ -1,6 +1,7 @@
 import type { SpatialEngine } from "@project-v/spatial-engine";
-import type { ObservationState, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@project-v/perception-engine";
+import type { AbilityState, ObservationState, ObservedEnemy, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@project-v/perception-engine";
 import type { PerceptionEngine } from "@project-v/perception-engine";
+import { revealedEnemies, type AbilityEngine } from "@project-v/ability-engine";
 import { mulberry32, type Rng } from "./rng.js";
 import type {
   AudibleZoneResult,
@@ -129,22 +130,40 @@ function buildLocalBelief(teamId: string, obs: ObservationState, nowMs: number):
  * (last-seen snapshots); `teammates` is own-team players only. There is no field carrying
  * an unseen enemy's live state (DECISION-004) — asserted in test/view.test.ts.
  */
+export interface BuildViewOptions {
+  /** Active vision-blocking abilities (smoke/wall) so decisions are LoS-aware. */
+  readonly activeAbilities?: readonly AbilityState[];
+  /** Ability engine, to fold recon/trap reveals into the team picture. */
+  readonly abilityEngine?: AbilityEngine;
+}
+
 export function buildPolicyView(
   side: Side,
   state: SimState,
   perception: PerceptionEngine,
+  opts: BuildViewOptions = {},
 ): PolicyView {
-  const result = perception.perceive(toPerceptionWorldForView(state));
+  const result = perception.perceive(toPerceptionWorldForView(state, opts.activeAbilities));
   const teamId = side === "attack" ? "attackers" : "defenders";
   const team = result.teams.get(teamId);
   const teammates = state.players.filter((p) => p.side === side).map(toTeammate);
 
-  // team-level observation assembled from the per-team picture (no live enemy truth)
+  // recon/trap reveals (frozen snapshots) become remembered enemies in the team picture.
+  const reveals: ObservedEnemy[] = opts.abilityEngine
+    ? revealedEnemies(opts.abilityEngine)
+        .filter((r) => r.teamId !== teamId)
+        .map((r) => ({ playerId: r.enemyId, agentId: null, lastSeenPosition: r.position, lastSeenAtMs: r.revealedAtMs, healthBand: "unknown", observedWeaponId: null, currentlyVisible: false }))
+    : [];
+
+  // team-level observation: perceived picture + recon reveals (dedup, prefer live sight)
+  const picture = new Map<string, ObservedEnemy>();
+  for (const e of reveals) picture.set(e.playerId, e);
+  for (const e of team?.teamEnemyPicture ?? []) picture.set(e.playerId, e); // live/remembered overrides reveal
   const observation: ObservationState = {
     observerId: teamId,
     teamId,
     timestampMs: state.timeRemainingMs,
-    visibleEnemies: team?.teamEnemyPicture ?? [],
+    visibleEnemies: [...picture.values()],
     audibleEvents: team ? Object.values(team.perPlayer).flatMap((o) => o.audibleEvents) : [],
     teammateReports: team?.sharedReports ?? [],
     knownMapChanges: [],
@@ -176,7 +195,7 @@ function economyStub(teamId: string, side: Side): TeamEconomyState {
 }
 
 // Local perception-world builder (mirror of simulator's; kept here so view is self-contained).
-function toPerceptionWorldForView(state: SimState) {
+function toPerceptionWorldForView(state: SimState, activeAbilities: readonly AbilityState[] = []) {
   const players: PPlayerState[] = state.players.map((p) => ({
     id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
     position: p.position, velocity: { x: 0, y: 0, z: 0 }, facing: p.facing,
@@ -187,7 +206,7 @@ function toPerceptionWorldForView(state: SimState) {
     matchId: state.matchId, roundId: state.roundId, roundNumber: 1, tick: state.tick,
     timeRemainingMs: state.timeRemainingMs, mapId: state.mapId, patchVersion: "synthetic",
     players, spike: { phase: "carried" as const, position: null, holderId: null, detonationInMs: null },
-    activeAbilities: [], events: [],
+    activeAbilities, events: [],
   };
 }
 

@@ -10,16 +10,31 @@ export interface SyntheticRoundOptions {
   readonly attackerWeapon?: string;
   readonly defenderWeapon?: string;
   readonly skills?: CombatSkills;
+  /** Assign a default Ascent-meta utility loadout (ability ids must exist in the sim catalog). */
+  readonly withAbilities?: boolean;
 }
 
-function mkPlayer(spatial: SpatialEngine, id: string, side: "attack" | "defense", zoneId: string, weaponId: string, skills: CombatSkills): SimPlayer {
+/** One ability per attacker (ids match the ability-engine manual-approx fixture). */
+const ATTACKER_ABILITIES: Readonly<Record<string, string>> = {
+  atk1: "omen:Ability2", // smoke
+  atk2: "breach:Ability2", // flash
+  atk3: "sova:Ability2", // recon
+  atk4: "brimstone:Ability1", // molly
+  atk5: "omen:Ability2", // smoke
+};
+const DEFENDER_ABILITIES: Readonly<Record<string, string>> = {
+  def1: "omen:Ability2", def3: "sova:Ability2", def5: "brimstone:Ability1",
+};
+
+function mkPlayer(spatial: SpatialEngine, id: string, side: "attack" | "defense", zoneId: string, weaponId: string, skills: CombatSkills, abilityId?: string): SimPlayer {
   const zone = spatial.getZone(zoneId);
   if (!zone) throw new Error(`no zone ${zoneId}`);
   return {
     id, teamId: side === "attack" ? "attackers" : "defenders", side, agentId: "agent",
     position: { ...zone.position }, zoneId, facing: { x: 1, y: 0 },
     health: 100, armor: 50, alive: true, weaponId, skills,
-    abilities: [], ultimatePoints: 0, ultimateCost: 7,
+    abilities: abilityId ? [{ abilityId, chargesRemaining: 1, lastUsedAtMs: null }] : [],
+    ultimatePoints: 0, ultimateCost: 7,
     path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run",
   };
 }
@@ -33,20 +48,21 @@ export function makeSyntheticRound(spatial: SpatialEngine, opts: SyntheticRoundO
   const skills = opts.skills ?? AVERAGE_SKILLS;
   const aw = opts.attackerWeapon ?? "Vandal";
   const dw = opts.defenderWeapon ?? "Vandal";
+  const ab = (id: string, def?: string) => (opts.withAbilities ? ATTACKER_ABILITIES[id] ?? DEFENDER_ABILITIES[id] ?? def : undefined);
 
   const attackers = [
-    mkPlayer(spatial, "atk1", "attack", "attacker-spawn", aw, skills),
-    mkPlayer(spatial, "atk2", "attack", "attacker-spawn", aw, skills),
-    mkPlayer(spatial, "atk3", "attack", "attacker-spawn", aw, skills),
-    mkPlayer(spatial, "atk4", "attack", "attacker-spawn", aw, skills),
-    mkPlayer(spatial, "atk5", "attack", "attacker-spawn", aw, skills),
+    mkPlayer(spatial, "atk1", "attack", "attacker-spawn", aw, skills, ab("atk1")),
+    mkPlayer(spatial, "atk2", "attack", "attacker-spawn", aw, skills, ab("atk2")),
+    mkPlayer(spatial, "atk3", "attack", "attacker-spawn", aw, skills, ab("atk3")),
+    mkPlayer(spatial, "atk4", "attack", "attacker-spawn", aw, skills, ab("atk4")),
+    mkPlayer(spatial, "atk5", "attack", "attacker-spawn", aw, skills, ab("atk5")),
   ];
   const defenders = [
-    mkPlayer(spatial, "def1", "defense", "a-site", dw, skills),
+    mkPlayer(spatial, "def1", "defense", "a-site", dw, skills, ab("def1")),
     mkPlayer(spatial, "def2", "defense", "a-site", dw, skills),
-    mkPlayer(spatial, "def3", "defense", "b-site", dw, skills),
+    mkPlayer(spatial, "def3", "defense", "b-site", dw, skills, ab("def3")),
     mkPlayer(spatial, "def4", "defense", "b-site", dw, skills),
-    mkPlayer(spatial, "def5", "defense", "mid-courtyard", dw, skills),
+    mkPlayer(spatial, "def5", "defense", "mid-courtyard", dw, skills, ab("def5")),
   ];
   const roundTimeMs = opts.roundTimeMs ?? 100000;
 
