@@ -2,7 +2,10 @@ import type { SpatialEngine } from "@pv/spatial-engine";
 import type { ObservationState, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
 import type { PerceptionEngine } from "@pv/perception-engine";
 import { buildBelief } from "@pv/decision-engine";
+import { asAbilityId } from "@pv/shared-types";
 import type {
+  AbilityInventory,
+  AbilityChargeState,
   BeliefState as SharedBeliefState,
   ObservationState as SharedObservationState,
   SpatialQuery as SharedSpatialQuery,
@@ -87,12 +90,39 @@ export class SeededRandomSource implements RandomSource {
   }
 }
 
+/**
+ * Build PV-3's AbilityInventory from the player's loadout slots. Slots marked "ultimate"
+ * identify the ult ability id; everything else is basic unless marked "signature". The
+ * ultimate's `ready`/`points`/`required` come from the player's banked ult points vs cost.
+ */
+function toAbilityInventory(p: SimPlayer): AbilityInventory {
+  const charge = (abilityId: string, charges: number): AbilityChargeState => ({ abilityId: asAbilityId(abilityId), charges });
+  const basic: AbilityChargeState[] = [];
+  let signature: AbilityChargeState | null = null;
+  let ultId = "ultimate";
+  for (const a of p.abilities) {
+    if (a.slot === "ultimate") ultId = a.abilityId;
+    else if (a.slot === "signature" && signature === null) signature = charge(a.abilityId, a.chargesRemaining);
+    else basic.push(charge(a.abilityId, a.chargesRemaining));
+  }
+  return {
+    basic,
+    signature,
+    ultimate: {
+      abilityId: asAbilityId(ultId),
+      points: p.ultimatePoints,
+      required: p.ultimateCost,
+      ready: p.ultimatePoints >= p.ultimateCost,
+    },
+  };
+}
+
 function toTeammate(p: SimPlayer): PolicyTeammate {
   return {
     id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
     position: p.position, facing: p.facing, health: p.health, armor: p.armor, alive: p.alive,
     weapon: p.weaponId ? { weaponId: p.weaponId } : null,
-    abilities: p.abilities.map((a) => ({ abilityId: a.abilityId, chargesRemaining: a.chargesRemaining, cooldownRemainingMs: 0 })),
+    abilities: toAbilityInventory(p),
     credits: 0, // TODO(econ): the sim does not model per-player economy yet
     ultimatePoints: p.ultimatePoints, ultimateCost: p.ultimateCost,
   };

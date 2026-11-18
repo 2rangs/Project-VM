@@ -16,8 +16,13 @@ export type PlayerId = string;
 export type TeamId = string;
 export type Side = "attack" | "defense";
 
+/** Which inventory slot an ability occupies (maps to @pv/shared-types AbilityInventory). */
+export type AbilitySlotKind = "basic" | "signature" | "ultimate";
+
 export interface AbilityLoadoutSlot {
   readonly abilityId: string;
+  /** Inventory slot; absent is treated as "basic". The "ultimate" slot is the player's ult. */
+  readonly slot?: AbilitySlotKind;
   chargesRemaining: number;
   lastUsedAtMs: number | null;
 }

@@ -148,6 +148,7 @@ function buildSimPlayer(spatial: SpatialEngine, p: MatchRoundPlayer, side: Side)
   if (!zone) throw new Error(`runMatchRound: no spawn zone '${zoneId}' for ${p.id}`);
   const abilities: AbilityLoadoutSlot[] = (p.loadout.abilities ?? []).map((a) => ({
     abilityId: a.abilityId,
+    slot: a.slot,
     chargesRemaining: a.charges,
     lastUsedAtMs: null,
   }));
