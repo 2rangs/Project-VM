@@ -173,6 +173,23 @@
 - 검증: typecheck clean, core 128 pass / 4 todo, round-simulator 25, match-runner 10, 전 패키지 통과, 비밀 0건.
 - **품질 측정(Team Heretics vs NRG, seed 42/7/99):** 53라운드 중 timeExpired 46(≈87%) — 개선 없음. PV-4 ScriptedPolicy는 검증 4/7을 통과하므로, **TeamDecisionPolicy의 공격 실행(진입·설치) 부재**가 원인으로 추정. 최우선 과제로 지정.
 
+### 3차 main 머지 (19:45 UTC) — timeExpired 해결
+- 원인(PV-3 진단): TeamDecisionPolicy가 500ms마다 명령을 재추첨해 설치(4s)·해체(7s)가 매번 중단됨. 스파이크 캐리어·해체 담당이 행동을 끝까지 유지하도록 수정(`717750f`/`b739123`). 교전 파라미터는 변경 없음.
+- 같이 반영: economy-engine 소스 exports(`8aab3e1`), `sim:batch` 20경기 검증 러너 + 기준 스냅샷(`b71cb76`, `docs/research/SIM_BASELINE_2026-11-18.md`).
+- 오케스트레이터 재현(20경기·428R, `npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20`):
+
+| 지표 | 수정 전 | 수정 후 | 실측 |
+|---|---|---|---|
+| time_expired | 61.8% | 0% | 4.3% |
+| elimination | — | 61.7% | 71.4% |
+| defuse | 0% | 38.3% | 16.0% |
+| bomb_detonated | 0.4% | 0% | 8.2% |
+| 공격 승률 | 19.7% | 61.7% | 50.9% |
+| 공격 오프닝 듀얼 | 68.6% | 75.0% | 43.7% |
+| judged 통과 | 0/9 | 2/8 | — |
+
+- 남은 편향: 모든 라운드에서 설치가 일어남(수비의 설치 전 저지 0, 폭발 0), 공격 오프닝 듀얼 과다 → 수비 정책의 홀드·프리에임 부재가 유력. 다음 과제.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
