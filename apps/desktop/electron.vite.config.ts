@@ -4,13 +4,22 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+const pkg = (p: string) => path.resolve(here, '../../packages', p, 'src/index.ts');
 const alias = {
-  '@pv/replay-engine': path.resolve(here, '../../packages/replay-engine/src/index.ts'),
+  '@pv/replay-engine': pkg('replay-engine'),
   '@pv/replay-viewer': path.resolve(here, '../replay-viewer/src/lib/index.ts'),
+  // PV-4 round simulator + its engines + PV-core shared-types, all pure-TS source
+  // bundled into the Electron worker so the real match runs in a separate process.
+  '@pv/round-simulator': pkg('round-simulator'),
+  '@pv/spatial-engine': pkg('spatial-engine'),
+  '@pv/combat-engine': pkg('combat-engine'),
+  '@pv/perception-engine': pkg('perception-engine'),
+  '@pv/ability-engine': pkg('ability-engine'),
+  '@pv/shared-types': pkg('shared-types'),
 };
 
 // Bundle the @pv workspace sources (they are TS aliases, not published deps).
-const bundlePv = { exclude: ['@pv/replay-engine', '@pv/replay-viewer'] };
+const bundlePv = { exclude: Object.keys(alias) };
 
 export default defineConfig({
   main: {

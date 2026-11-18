@@ -119,3 +119,8 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .exid { font-family:monospace; color:#ff9f9a; } .exwhy { color:#cdd9e5; }
 .tag { font-size:11px; font-family:monospace; color:#ff7b72; border:1px solid #ff7b7244; border-radius:999px; padding:1px 7px; margin-left:4px; }
 .selected-card { border-color:#2ea04366; } .selhead { font-size:15px; color:#7ee787; font-weight:700; } .rationale { font-size:13px; color:#cdd9e5; margin:6px 0 0; }
+.md-teamsel { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+.md-teamsel select { background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:7px; padding:6px 10px; font-weight:600; }
+.md-teamsel .vs { color:var(--muted); font-size:12px; }
+.md-seed { font-size:12px; color:var(--muted); } .md-seed input { width:64px; margin-left:4px; background:var(--panel); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:4px 6px; }
+.md-roundlog { margin:8px 0; font-family:monospace; }

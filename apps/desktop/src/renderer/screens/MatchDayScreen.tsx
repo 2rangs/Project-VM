@@ -6,12 +6,13 @@
 // team observes) and the Belief heatmap overlay are a TODO — they need PV-3
 // Belief State output. Everything shown as economy/ultimate here is SYNTHETIC
 // stub data, labelled as such. See apps/desktop handoff.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ReplayViewer } from '@pv/replay-viewer';
 import type { Replay } from '@pv/replay-engine';
 import type { ScreenCtx } from '../App.tsx';
-import { bridge } from '../platform.ts';
+import { bridge, runtime } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
+import { teams } from '../data.ts';
 
 const BUY_TYPES = ['eco', 'half', 'force', 'full'] as const;
 function synthEconomy(seed: number) {
@@ -26,30 +27,54 @@ function synthEconomy(seed: number) {
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [running, setRunning] = useState(false);
   const [pct, setPct] = useState(0);
+  const [log, setLog] = useState<string[]>([]);
   const [trace, setTrace] = useState<DecisionTrace | null>(null);
+  const allTeams = useMemo(() => teams().sort((a, b) => a.name.localeCompare(b.name)), []);
+  const [teamA, setTeamA] = useState('NRG');
+  const [teamB, setTeamB] = useState('Team Heretics');
+  const [seed, setSeed] = useState(42);
+  const [rounds, setRounds] = useState(5);
   const replay = ctx.replay;
   const econ = synthEconomy(replay?.meta.seed ?? 1);
 
   useEffect(() => { bridge.loadTrace('trace-scenario-01').then((j) => setTrace(parseTrace(j))).catch(() => {}); }, []);
 
   async function runMatch() {
-    setRunning(true); setPct(0);
+    setRunning(true); setPct(0); setLog([]);
     try {
-      const res = await bridge.runSimulation({ mapId: 'ascent', seed: 42, rounds: 3 }, (p) => setPct(p.pct));
+      const res = await bridge.runSimulation({ mapId: 'ascent', seed, rounds }, (p) => {
+        setPct(p.pct);
+        if (p.message) setLog((l) => [...l, p.message!]);
+      });
       ctx.setReplay(res.replay as Replay);
-    } catch { /* ignore */ } finally { setRunning(false); }
+      setLog((l) => [...l, `✓ ${res.source} · ${res.replay.rounds.length} rounds`]);
+    } catch (e) { setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
   }
+
+  const engineLabel = runtime === 'electron' ? '@pv/round-simulator (real, separate process)' : 'stub (browser fallback)';
 
   return (
     <div className="matchday">
       <div className="md-main">
+        <div className="md-teamsel">
+          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={running} data-testid="team-a">
+            {allTeams.map((t) => <option key={t.teamId} value={t.name}>{t.name}</option>)}
+          </select>
+          <span className="vs">vs</span>
+          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={running} data-testid="team-b">
+            {allTeams.map((t) => <option key={t.teamId} value={t.name}>{t.name}</option>)}
+          </select>
+          <label className="md-seed">seed <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={running} /></label>
+          <label className="md-seed">Bo<input type="number" min={1} max={13} value={rounds} onChange={(e) => setRounds(Number(e.target.value))} disabled={running} /></label>
+        </div>
         <div className="md-toolbar">
           <button className="md-run" onClick={runMatch} disabled={running} data-testid="run-match">
-            {running ? `Simulating… ${Math.round(pct * 100)}%` : '▶ Run match (stub)'}
+            {running ? `Simulating… ${Math.round(pct * 100)}%` : '▶ Run match'}
           </button>
-          <span className="pill synth">SYNTHETIC / STUB</span>
+          <span className="pill">{engineLabel}</span>
           <span className="muted small">fog-of-war + Belief heatmap: 준비 중 (needs PV-3 Belief State)</span>
         </div>
+        {log.length > 0 && <div className="md-roundlog small muted">{log.join('  ·  ')}</div>}
         {replay ? <ReplayViewer replay={replay} /> : (
           <div className="md-empty muted">Run the match to generate a replay, or open one in the viewer.</div>
         )}

@@ -15,9 +15,11 @@ const FALLBACK_TRACES: Record<string, unknown> = {
 };
 
 const browserBridge: PvBridge = {
+  // Browser fallback only (no Electron): the real round-simulator reads node:fs
+  // and runs in the Electron worker, so here we use the in-page stub.
   async runSimulation(req: SimRunRequest, onProgress: (p: SimProgress) => void): Promise<SimResult> {
     const runId = 'browser-' + Date.now();
-    const events = await new StubRunner().run(req, (p) => onProgress({ ...p, runId }));
+    const events = await new StubRunner().run(req, (x) => onProgress({ ...x, runId }));
     const replay = fromSimEventLog(events as SimEvent[], {
       mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
     });

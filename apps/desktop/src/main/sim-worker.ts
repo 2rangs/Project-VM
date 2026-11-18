@@ -2,6 +2,7 @@
 // Electron's utilityProcess forks this; the run request is passed as fork ARGS
 // (available at spawn), so there is no main→worker message handshake to race on.
 // The worker only POSTS progress + the final event log back to main.
+import { RealMatchRunner } from '../shared/real-sim.ts';
 import { StubRunner } from '../shared/sim.ts';
 import type { SimProgress, SimRunRequest } from '../shared/ipc.ts';
 
@@ -19,7 +20,15 @@ let req: SimRunRequest;
 try { req = JSON.parse(process.argv[process.argv.length - 1] ?? '{}'); }
 catch (e) { post({ type: 'error', runId, message: `bad request: ${(e as Error).message}` }); process.exit(1); }
 
-new StubRunner()
-  .run(req, (p) => post({ type: 'progress', progress: { ...p, runId } }))
+const onP = (p: Omit<SimProgress, 'runId'>) => post({ type: 'progress', progress: { ...p, runId } });
+
+// Prefer the real round simulator; fall back to the stub if the engines throw,
+// so Match Day always produces a replay.
+new RealMatchRunner()
+  .run(req, onP)
+  .catch((err: unknown) => {
+    onP({ phase: 'start', pct: 0, message: `real sim failed (${(err as Error).message}); using stub` });
+    return new StubRunner().run(req, onP);
+  })
   .then((events) => post({ type: 'result', runId, events }))
   .catch((err: unknown) => post({ type: 'error', runId, message: (err as Error).message }));

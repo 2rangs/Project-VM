@@ -57,7 +57,7 @@ ipcMain.handle(IPC.simRun, async (event, req: SimRunRequest): Promise<SimResult>
           mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
         });
         child.kill();
-        resolve({ runId, source: 'stub', replay });
+        resolve({ runId, source: 'round-simulator', replay });
       } else if (m.type === 'error') { clearTimeout(timeout); child.kill(); reject(new Error(m.message)); }
     };
     child.on('message', onMsg);

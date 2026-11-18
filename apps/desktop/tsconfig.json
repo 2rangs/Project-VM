@@ -14,7 +14,13 @@
     "types": ["node"],
     "paths": {
       "@pv/replay-engine": ["../../packages/replay-engine/src/index.ts"],
-      "@pv/replay-viewer": ["../replay-viewer/src/lib/index.ts"]
+      "@pv/replay-viewer": ["../replay-viewer/src/lib/index.ts"],
+      "@pv/round-simulator": ["../../packages/round-simulator/src/index.ts"],
+      "@pv/spatial-engine": ["../../packages/spatial-engine/src/index.ts"],
+      "@pv/combat-engine": ["../../packages/combat-engine/src/index.ts"],
+      "@pv/perception-engine": ["../../packages/perception-engine/src/index.ts"],
+      "@pv/ability-engine": ["../../packages/ability-engine/src/index.ts"],
+      "@pv/shared-types": ["../../packages/shared-types/src/index.ts"]
     }
   },
   "include": ["src", "test", "electron.vite.config.ts"]

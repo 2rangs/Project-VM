@@ -1,0 +1,869 @@
+{
+  "mapId": "ascent",
+  "mapUuid": "7eaecc1b-4337-bbf6-6ab9-04b8f06b3319",
+  "schemaVersion": "0.1.0",
+  "patchVersion": "UNVERIFIED",
+  "provenance": {
+    "nodePositions": {
+      "sourceId": "valorant-api-maps",
+      "sourceUrl": "https://valorant-api.com/v1/maps",
+      "retrievedAt": "2026-11-18",
+      "evidenceType": "decoded",
+      "verified": true,
+      "notes": [
+        "Node (x,y,z) are the real callout locations returned by valorant-api for Ascent."
+      ]
+    },
+    "graph": "manual-approx",
+    "plantZones": "manual-approx",
+    "sightlines": "manual-approx",
+    "soundLinks": "manual-approx",
+    "notes": [
+      "Adjacency, edge geometry, plant polygons, line-of-sight pairs and sound links are hand-authored approximations of Ascent's layout. No collision mesh or navmesh was available, so these are NOT measured values.",
+      "Google Drive Blender maps (Handoff section 9.1) were not downloaded in this environment; see docs/research/spatial-sources.md."
+    ]
+  },
+  "movement": {
+    "unitsPerMeter": 100,
+    "runSpeedMetersPerSec": 6.75,
+    "walkSpeedMetersPerSec": 3.4,
+    "note": "run 6.75 m/s is the documented VALORANT base move speed; walk (shift) ~3.4 m/s is approximate. Both are provenance: manual-approx for travel-time purposes."
+  },
+  "zones": [
+    {
+      "id": "attacker-spawn",
+      "name": "Attacker Spawn",
+      "callout": "Attacker Side Spawn",
+      "superRegion": "Attacker Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "transit": false,
+      "position": {
+        "x": 60,
+        "y": 50,
+        "z": 190
+      }
+    },
+    {
+      "id": "defender-spawn",
+      "name": "Defender Spawn",
+      "callout": "Defender Side Spawn",
+      "superRegion": "Defender Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "transit": false,
+      "position": {
+        "x": 1995.2,
+        "y": -9744.9,
+        "z": 100
+      }
+    },
+    {
+      "id": "a-lobby",
+      "name": "A Lobby",
+      "callout": "A Lobby",
+      "superRegion": "A",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": 4489,
+        "y": -3014.1,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-main",
+      "name": "A Main",
+      "callout": "A Main",
+      "superRegion": "A",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": 5321.6,
+        "y": -4710.1,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-window",
+      "name": "A Window",
+      "callout": "A Window",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 4023,
+        "y": -8180.7,
+        "z": 803
+      }
+    },
+    {
+      "id": "a-tree",
+      "name": "A Tree",
+      "callout": "A Tree",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 3980.9,
+        "y": -5938.8,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-site",
+      "name": "A Site",
+      "callout": "A Site",
+      "superRegion": "A",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": 6153.6,
+        "y": -6626.2,
+        "z": 500
+      }
+    },
+    {
+      "id": "a-garden",
+      "name": "A Garden",
+      "callout": "A Garden",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 3773.7,
+        "y": -7551.4,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-wine",
+      "name": "A Wine",
+      "callout": "A Wine",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 7358.7,
+        "y": -4689.3,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-rafters",
+      "name": "A Rafters",
+      "callout": "A Rafters",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 6129.9,
+        "y": -8210,
+        "z": 500
+      }
+    },
+    {
+      "id": "b-lobby",
+      "name": "B Lobby",
+      "callout": "B Lobby",
+      "superRegion": "B",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": -1490.6,
+        "y": -1390,
+        "z": 200
+      }
+    },
+    {
+      "id": "b-main",
+      "name": "B Main",
+      "callout": "B Main",
+      "superRegion": "B",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": -1983.7,
+        "y": -5840.8,
+        "z": 100
+      }
+    },
+    {
+      "id": "b-site",
+      "name": "B Site",
+      "callout": "B Site",
+      "superRegion": "B",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": -2344.1,
+        "y": -7548.5,
+        "z": 100
+      }
+    },
+    {
+      "id": "b-boathouse",
+      "name": "B Boat House",
+      "callout": "B Boat House",
+      "superRegion": "B",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -4484.8,
+        "y": -7763.4,
+        "z": 100
+      }
+    },
+    {
+      "id": "mid-top",
+      "name": "Mid Top",
+      "callout": "Mid Top",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 2753.9,
+        "y": -2129.6,
+        "z": 400
+      }
+    },
+    {
+      "id": "mid-courtyard",
+      "name": "Mid Courtyard",
+      "callout": "Mid Courtyard",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 1222.7,
+        "y": -4586.6,
+        "z": 300
+      }
+    },
+    {
+      "id": "mid-catwalk",
+      "name": "Mid Catwalk",
+      "callout": "Mid Catwalk",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 2315.8,
+        "y": -4127.3,
+        "z": 300
+      }
+    },
+    {
+      "id": "mid-cubby",
+      "name": "Mid Cubby",
+      "callout": "Mid Cubby",
+      "superRegion": "Mid",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 3387.3,
+        "y": -5129.8,
+        "z": 300
+      }
+    },
+    {
+      "id": "mid-bottom",
+      "name": "Mid Bottom",
+      "callout": "Mid Bottom",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 1122.2,
+        "y": -5951.7,
+        "z": 200
+      }
+    },
+    {
+      "id": "mid-link",
+      "name": "Mid Link",
+      "callout": "Mid Link",
+      "superRegion": "Mid",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": -632.1,
+        "y": -4280.3,
+        "z": 200
+      }
+    },
+    {
+      "id": "mid-market",
+      "name": "Mid Market",
+      "callout": "Mid Market",
+      "superRegion": "Mid",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": 1089.1,
+        "y": -7363.2,
+        "z": 100
+      }
+    },
+    {
+      "id": "mid-pizza",
+      "name": "Mid Pizza",
+      "callout": "Mid Pizza",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 1801.6,
+        "y": -7262.2,
+        "z": 100
+      }
+    }
+  ],
+  "plantZones": [
+    {
+      "id": "plant-a",
+      "site": "A",
+      "zoneId": "a-site",
+      "provenance": "manual-approx",
+      "polygon": [
+        {
+          "x": 5500,
+          "y": -6050
+        },
+        {
+          "x": 6850,
+          "y": -6050
+        },
+        {
+          "x": 6850,
+          "y": -7200
+        },
+        {
+          "x": 5500,
+          "y": -7200
+        }
+      ]
+    },
+    {
+      "id": "plant-b",
+      "site": "B",
+      "zoneId": "b-site",
+      "provenance": "manual-approx",
+      "polygon": [
+        {
+          "x": -3050,
+          "y": -6950
+        },
+        {
+          "x": -1650,
+          "y": -6950
+        },
+        {
+          "x": -1650,
+          "y": -8150
+        },
+        {
+          "x": -3050,
+          "y": -8150
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "attacker-spawn",
+      "to": "a-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 5390,
+      "distanceMeters": 53.9,
+      "runTimeMs": 7985,
+      "walkTimeMs": 15852,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "b-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2116,
+      "distanceMeters": 21.16,
+      "runTimeMs": 3135,
+      "walkTimeMs": 6224,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3472,
+      "distanceMeters": 34.72,
+      "runTimeMs": 5143,
+      "walkTimeMs": 10211,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1889,
+      "distanceMeters": 18.89,
+      "runTimeMs": 2799,
+      "walkTimeMs": 5557,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-main",
+      "to": "a-tree",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1819,
+      "distanceMeters": 18.19,
+      "runTimeMs": 2694,
+      "walkTimeMs": 5349,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-main",
+      "to": "a-window",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3727,
+      "distanceMeters": 37.27,
+      "runTimeMs": 5522,
+      "walkTimeMs": 10963,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-main",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2091,
+      "distanceMeters": 20.91,
+      "runTimeMs": 3098,
+      "walkTimeMs": 6151,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-tree",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2281,
+      "distanceMeters": 22.81,
+      "runTimeMs": 3379,
+      "walkTimeMs": 6709,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-window",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2655,
+      "distanceMeters": 26.55,
+      "runTimeMs": 3933,
+      "walkTimeMs": 7808,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-site",
+      "to": "a-wine",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2283,
+      "distanceMeters": 22.83,
+      "runTimeMs": 3383,
+      "walkTimeMs": 6716,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-site",
+      "to": "a-rafters",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1584,
+      "distanceMeters": 15.84,
+      "runTimeMs": 2347,
+      "walkTimeMs": 4659,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-site",
+      "to": "a-garden",
+      "bidirectional": true,
+      "door": {
+        "name": "A Link Door",
+        "defaultOpen": true,
+        "destructibleSwitch": true
+      },
+      "destructible": null,
+      "distanceUnits": 2555,
+      "distanceMeters": 25.55,
+      "runTimeMs": 3786,
+      "walkTimeMs": 7516,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-garden",
+      "to": "mid-cubby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2454,
+      "distanceMeters": 24.54,
+      "runTimeMs": 3636,
+      "walkTimeMs": 7218,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-wine",
+      "to": "defender-spawn",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 7377,
+      "distanceMeters": 73.77,
+      "runTimeMs": 10928,
+      "walkTimeMs": 21696,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "a-rafters",
+      "to": "defender-spawn",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4429,
+      "distanceMeters": 44.29,
+      "runTimeMs": 6561,
+      "walkTimeMs": 13025,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-top",
+      "to": "mid-courtyard",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2897,
+      "distanceMeters": 28.97,
+      "runTimeMs": 4292,
+      "walkTimeMs": 8520,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-catwalk",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1186,
+      "distanceMeters": 11.86,
+      "runTimeMs": 1757,
+      "walkTimeMs": 3487,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-cubby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2232,
+      "distanceMeters": 22.32,
+      "runTimeMs": 3306,
+      "walkTimeMs": 6564,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-catwalk",
+      "to": "mid-bottom",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2182,
+      "distanceMeters": 21.82,
+      "runTimeMs": 3233,
+      "walkTimeMs": 6419,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-cubby",
+      "to": "mid-bottom",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2412,
+      "distanceMeters": 24.12,
+      "runTimeMs": 3573,
+      "walkTimeMs": 7093,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-market",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1415,
+      "distanceMeters": 14.15,
+      "runTimeMs": 2097,
+      "walkTimeMs": 4163,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-link",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2423,
+      "distanceMeters": 24.23,
+      "runTimeMs": 3590,
+      "walkTimeMs": 7127,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-link",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": {
+        "name": "B Link Door",
+        "defaultOpen": true,
+        "destructibleSwitch": true
+      },
+      "destructible": null,
+      "distanceUnits": 3691,
+      "distanceMeters": 36.91,
+      "runTimeMs": 5468,
+      "walkTimeMs": 10855,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-link",
+      "to": "defender-spawn",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 6064,
+      "distanceMeters": 60.64,
+      "runTimeMs": 8984,
+      "walkTimeMs": 17836,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-market",
+      "to": "mid-pizza",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 720,
+      "distanceMeters": 7.2,
+      "runTimeMs": 1066,
+      "walkTimeMs": 2117,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-market",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3438,
+      "distanceMeters": 34.38,
+      "runTimeMs": 5094,
+      "walkTimeMs": 10112,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "mid-pizza",
+      "to": "b-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4043,
+      "distanceMeters": 40.43,
+      "runTimeMs": 5990,
+      "walkTimeMs": 11892,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "b-lobby",
+      "to": "b-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4479,
+      "distanceMeters": 44.79,
+      "runTimeMs": 6636,
+      "walkTimeMs": 13174,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "b-main",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1745,
+      "distanceMeters": 17.45,
+      "runTimeMs": 2586,
+      "walkTimeMs": 5133,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "b-site",
+      "to": "b-boathouse",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2151,
+      "distanceMeters": 21.51,
+      "runTimeMs": 3187,
+      "walkTimeMs": 6328,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "b-boathouse",
+      "to": "b-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3155,
+      "distanceMeters": 31.55,
+      "runTimeMs": 4674,
+      "walkTimeMs": 9278,
+      "provenance": "manual-approx"
+    },
+    {
+      "from": "b-site",
+      "to": "defender-spawn",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4864,
+      "distanceMeters": 48.64,
+      "runTimeMs": 7205,
+      "walkTimeMs": 14304,
+      "provenance": "manual-approx"
+    }
+  ],
+  "sightlines": [
+    {
+      "a": "a-main",
+      "b": "a-site",
+      "type": "direct",
+      "smokeable": true,
+      "note": "main entry onto site"
+    },
+    {
+      "a": "a-window",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true
+    },
+    {
+      "a": "a-tree",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true
+    },
+    {
+      "a": "a-wine",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": false
+    },
+    {
+      "a": "mid-top",
+      "b": "mid-courtyard",
+      "type": "direct",
+      "smokeable": true
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-bottom",
+      "type": "direct",
+      "smokeable": true
+    },
+    {
+      "a": "mid-link",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true
+    },
+    {
+      "a": "mid-market",
+      "b": "b-site",
+      "type": "direct",
+      "smokeable": true
+    },
+    {
+      "a": "b-main",
+      "b": "b-site",
+      "type": "direct",
+      "smokeable": true
+    },
+    {
+      "a": "b-boathouse",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true
+    }
+  ],
+  "soundLinks": [
+    {
+      "a": "a-main",
+      "b": "a-site",
+      "attenuation": 0.2
+    },
+    {
+      "a": "a-site",
+      "b": "a-garden",
+      "attenuation": 0.4
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-link",
+      "attenuation": 0.3
+    },
+    {
+      "a": "mid-link",
+      "b": "b-site",
+      "attenuation": 0.4
+    },
+    {
+      "a": "mid-market",
+      "b": "b-site",
+      "attenuation": 0.3
+    },
+    {
+      "a": "b-main",
+      "b": "b-site",
+      "attenuation": 0.2
+    }
+  ],
+  "generatedBy": "tools/map-processor/build-ascent.mjs",
+  "generatedNote": "Edge distances/times computed from node centers; straight-line approximation."
+}
