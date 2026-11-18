@@ -1,77 +1,67 @@
 # @pv/desktop
 
-PROJECT V desktop shell (Electron + Vite + React + TypeScript, DECISION-007).
-Three screens behind a tab bar:
+PROJECT V desktop app — a **manager-game-style** front end (Electron + Vite +
+React + TS, DECISION-007) over the PROJECT V simulation and data packages. It
+adopts sports-manager **information conventions only**; no third-party game's
+branding, screen designs, icons or colour schemes are copied.
 
-| Screen | What it does |
-|---|---|
-| **Replay Viewer** | Reuses the shared `@pv/replay-viewer` `<ReplayViewer>` (not copy-pasted) to play decoded `.vrf` and simulated replays. Open / drag a replay JSON. |
-| **Decision Debugger** | Renders a PV-3 `DecisionTrace` (Handoff §21): observation/belief vs ground-truth (clearly separated, truth is a **debug-only** view, not an AI input), candidate actions with computed Feasibility/Time/Risk/Utility, **excluded actions + reasons**, and the selected action + rationale. "View round in Replay ↗" cross-links. |
-| **Simulation Runner** | Runs a simulation in a **separate process** (Electron `utilityProcess`), streams progress, and loads the resulting replay. |
+![Match Day](docs/desktop-matchday.png)
 
-![decision debugger](docs/desktop-debugger.png)
-![simulation runner](docs/desktop-simulation.png)
+Shell: left nav (MATCH / TEAM / CLUB / DEV), a top context bar (team · season ·
+next match · Continue), main content, and a right detail panel. DECISION-001 —
+the match/data screens work first; club ops are reserved "준비 중" placeholders.
 
-Screens: `docs/desktop-replay.png`, `docs/desktop-debugger.png`,
-`docs/desktop-simulation.png`, `docs/desktop-replay-simulated.png`.
+## Screens & data sources
+
+| Screen | Status | Data |
+|---|---|---|
+| **Match Day** | working (stub match) | SimulationRunner (stub → real), real PV-3 decision trace for the coach note; fog-of-war + Belief heatmap are **TODO** (need PV-3 Belief State) |
+| **Squad / Player Profile** | working | PV-2 `player_ratings` + `player_names` — 402 real VCT players, 1–20 grid, uncertainty, explicit null |
+| **Opponent Report** | working | PV-2 `team_profiles` + `team_names` — 70 real teams, economy + map pool |
+| **Tactics** | working (list) | PV-1 `ascent-tactics` (provenance tags shown) |
+| **Agent Select** | working (data) | PV-1 `ascent-comps` (win rates + CI, role templates) |
+| **Dev → Decision Debugger** | working | real PV-3 `@pv/decision-debugger` traces (Handoff §21) |
+| **About** | working | pre-release real-names disclaimer |
+| Map Veto / Inbox / Schedule / Finance / Transfers / Training / Scouting | 준비 중 | — |
+
+Data fixtures are copied from PV-1/PV-2 branches; see `src/data/README.md` and
+`test/fixtures/traces/README.md` for exact sources. All values are
+**synthetic/estimated**. Real VCT **professional** player/team names are shown by
+user decision for pre-release internal development only — license / name /
+likeness rights must be re-reviewed before any launch. The `.vrf` sample players
+(non-pro) stay anonymous (`player_N`).
 
 ## Security posture
-- `contextIsolation: true`, `nodeIntegration: false` — the renderer cannot touch
-  Node or Electron directly.
-- The renderer reaches privileged work only through the **preload whitelist**
-  (`src/preload`), which exposes a minimal `window.pv` (`runSimulation`,
-  `loadTrace`, `listTraces`) via `contextBridge` — no `ipcRenderer` leaks.
-- A Content-Security-Policy is set in `index.html` (PixiJS needs `unsafe-eval` +
-  blob workers for shader/worker setup; allowed only in this local renderer).
-- `sandbox` is currently **off** for ESM-preload compatibility on Electron 33;
-  switch the preload to CommonJS to re-enable the OS sandbox.
+- `contextIsolation: true`, `nodeIntegration: false`; the renderer reaches
+  privileged work only through the preload whitelist (`src/preload` → `window.pv`:
+  `runSimulation`, `loadTrace`, `listTraces`) via `contextBridge`.
+- CSP set in `index.html` (PixiJS needs `unsafe-eval` + blob workers, allowed only
+  in this local renderer). `sandbox` is off for ESM-preload compat on Electron 33.
 
-## Run / build
+## Run / build / verify
 
 ```bash
 cd apps/desktop
 npm install
-npm run dev        # electron-vite dev (hot reload)
-npm run build      # → out/{main,preload,renderer}
-npm run start      # preview the built app
+npm run dev                                   # electron-vite dev
+npm run build                                 # → out/{main,preload,renderer}
+npm run test:unit                             # IPC contract + trace parser (6)
+npm run build && xvfb-run -a npm run test:e2e # Playwright _electron E2E + screenshots
 ```
 
-**Target platform is Windows first** (README §07 / DECISION-007); development and
-all verification here were done on **Linux** (Electron under `xvfb`). macOS/Windows
-packaging (electron-builder) is not set up yet.
+Windows is the first target (README §07); development and verification here were
+on Linux (Electron under `xvfb` + SwiftShader). If Electron can't be installed,
+the renderer still runs in plain-browser mode (`window.pv` absent → in-page
+`StubRunner` + bundled fixtures; see `src/renderer/platform.ts`).
 
-## Verify
+## Integration swap points (TODO)
+1. **`SimulationRunner`** (`src/shared/sim.ts`) — `StubRunner` → PV-4/PV-3 real
+   Match Runner (`pnpm sim:match` on the integration branch), same interface; the
+   worker + IPC path stay unchanged.
+2. **Belief / fog** — Match Day fog-of-war and Belief heatmap need PV-3 Belief
+   State output per frame.
+3. **Spatial adapter** — `src/shared/ascent-transform.ts` (copied PV-4 transform)
+   → a real spatial-engine adapter supplying the transform per map.
+4. **Team select** — pick two real teams + seed to start a match.
 
-```bash
-npm run test:unit                 # IPC contract + trace parser (node --test), 6 tests
-npm run build && xvfb-run -a npm run test:e2e   # Playwright _electron.launch E2E
-```
-
-The E2E launches the built app, screenshots all three screens, runs the stub
-simulation end-to-end (separate process → IPC → Replay), and asserts the
-excluded-action reasons render and the simulated replay loads. On Linux it needs
-a virtual display (`xvfb-run`) and SwiftShader GL flags (set by the test). If the
-Electron binary cannot be installed in an environment, the renderer still runs in
-plain-browser mode (`window.pv` absent → in-page `StubRunner` + bundled trace
-fixtures; see `src/renderer/platform.ts`) and can be verified like the web viewer.
-
-## Integration swap points
-
-Two things are stubs until the real packages land; both are behind interfaces so
-the swap is local:
-
-1. **`SimulationRunner`** (`src/shared/sim.ts`) — `StubRunner` emits a synthetic
-   event log. Replace with PV-4's `@pv/round-simulator` (`origin/claude/pv-spatial`)
-   behind the same `SimulationRunner` interface; the worker (`src/main/sim-worker.ts`)
-   and IPC path stay unchanged.
-2. **Spatial / coordinate adapter** — `src/shared/ascent-transform.ts` is a copied
-   copy of PV-4's Ascent transform used to project simulated replays. Replace with
-   a real spatial-engine adapter (PV-4) that supplies the transform per map.
-
-The **decision traces** in `test/fixtures/traces/` are **real** output of PV-3's
-`@pv/decision-debugger` pipeline (see that folder's README); at integration the
-app can load live traces through the same `parseTrace` (`src/shared/trace.ts`).
-
-## Privacy
-No real `.vrf` or real-match-derived replay is bundled. Traces are synthetic
-(`provenance.synthetic = true`). The viewer shows anonymous `player_N` ids only.
+Screens: `docs/desktop-{shell,matchday,squad,debugger}.png`.
