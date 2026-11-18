@@ -19,6 +19,7 @@ FILE_SCHEMA_MAP: dict[str, tuple[str, str]] = {
     "rounds.json": ("round.schema.json", "array"),
     "events.json": ("event.schema.json", "array"),
     "player_ratings.json": ("player-rating.schema.json", "array"),
+    "team_profiles.json": ("team-profile.schema.json", "array"),
 }
 # prefix match (scenario_01.json, ...) -> single DecisionContext
 PREFIX_SCHEMA_MAP: dict[str, tuple[str, str]] = {

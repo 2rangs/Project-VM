@@ -18,7 +18,7 @@ __version__ = "0.1.0"
 ROUND_COMBAT_MS = 100_000  # combat clock after barriers drop (vctstats ROUND_SECONDS=100)
 SPIKE_TIMER_MS = 45_000     # spike countdown once planted (vctstats SPIKE_SECONDS=45)
 
-from . import priors, provenance, ratings, stats, synthetic_ascent, vct_reference  # noqa: E402,F401
+from . import priors, profiles, provenance, ratings, stats, synthetic_ascent, vct_reference  # noqa: E402,F401
 
-__all__ = ["provenance", "stats", "priors", "ratings", "synthetic_ascent", "vct_reference",
-           "ROUND_COMBAT_MS", "SPIKE_TIMER_MS"]
+__all__ = ["provenance", "stats", "priors", "ratings", "profiles", "synthetic_ascent",
+           "vct_reference", "ROUND_COMBAT_MS", "SPIKE_TIMER_MS"]

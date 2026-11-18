@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import priors, ratings, synthetic_ascent, vct_reference
+from . import priors, profiles, ratings, synthetic_ascent, vct_reference
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -41,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--db", required=True, help="Path to vct.duckdb")
     p.add_argument("--out", required=True, help="Output dir (datasets/derived/ratings)")
 
+    p = sub.add_parser("gen-team-profiles", help="Estimate team economic/side tendencies from VCT Reference.")
+    p.add_argument("--db", required=True, help="Path to vct.duckdb")
+    p.add_argument("--out", required=True, help="Output dir (datasets/derived/team-profiles)")
+    p.add_argument("--as-of", default=None, help="ISO date; use only matches strictly before it (point-in-time)")
+
     args = ap.parse_args(argv)
 
     if args.cmd == "normalize-vct":
@@ -58,6 +63,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"wrote {path}")
     elif args.cmd == "gen-ratings":
         for name, path in ratings.write_ratings(args.db, args.out).items():
+            print(f"wrote {path}")
+    elif args.cmd == "gen-team-profiles":
+        for name, path in profiles.write_profiles(args.db, args.out, args.as_of).items():
             print(f"wrote {path}")
     else:  # pragma: no cover
         ap.error(f"unknown command {args.cmd}")

@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-11-18T10:02:13+00:00",
+  "source": {
+    "sourceId": "vct-reference",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "scope": "international",
+    "teams": 70,
+    "asOf": null
+  },
+  "method": {
+    "shrinkage": "Beta-binomial empirical Bayes toward league mean",
+    "buyThresholds": {
+      "ecoMax": 5000,
+      "fullMin": 20000
+    },
+    "forceBuy": "loadout tier in {semi,full} (not eco) in a non-pistol, non-OT round",
+    "leagueParams": {
+      "forceBuyAfterLoss": {
+        "mean": 0.8923,
+        "pseudocount": 269.4
+      },
+      "pistolLossForceBuy": {
+        "mean": 0.1503,
+        "pseudocount": 7.6
+      },
+      "bonusBuyRate": {
+        "mean": 1.0,
+        "pseudocount": 50.0
+      },
+      "antiEcoFullBuy": {
+        "mean": 0.107,
+        "pseudocount": 13.0
+      },
+      "overtimeForceBuy": {
+        "mean": 1.0,
+        "pseudocount": 50.0
+      },
+      "attackWinRate": {
+        "mean": 0.4806,
+        "pseudocount": 70.6
+      },
+      "defenseWinRate": {
+        "mean": 0.4648,
+        "pseudocount": 43.5
+      }
+    }
+  },
+  "disclaimer": "Team tendencies are statistical ESTIMATES from public match economy data, not verified scouting intel. Tactical tendencies needing positions are null. Team names are not committed (teamId only). Real-name use in a shipped game is a user/legal decision — see docs/research/TEAM_PROFILES.md.",
+  "unestimableTactical": {
+    "sitePreference": "needs per-round plant site / positions (Layer B not available)",
+    "executeTempo": "needs timing of site hits (no per-round timeline in VCT Reference)",
+    "defaultSetup": "needs player positions",
+    "utilityUsage": "needs ability-usage data",
+    "rotationTendency": "needs positional/timing data",
+    "lurkTendency": "needs positional data",
+    "retakeVsSaveTendency": "needs post-plant positions/outcomes per round",
+    "fakeTendency": "needs utility + movement traces"
+  },
+  "stability": {
+    "forceBuyAfterLoss": {
+      "pairs": 73,
+      "correlation": -0.059,
+      "interpretation": "roster/meta dependent (weak season-to-season persistence)"
+    },
+    "attackWinRate": {
+      "pairs": 73,
+      "correlation": 0.167,
+      "interpretation": "roster/meta dependent (weak season-to-season persistence)"
+    }
+  }
+}

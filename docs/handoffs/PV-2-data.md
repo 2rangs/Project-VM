@@ -526,3 +526,51 @@ dataset 검증    : 30/30 files valid, 591 records (player_ratings 402 포함)
 1. **(PV-4)** CombatSkills에 ratings 연결, movement/weaponControl은 0.6 폴백.
 2. **(PV-3)** player policy 성향 필드 확정 후 entry/trading/clutch 연결(uncertainty 포함).
 3. **(Layer B 확보 후)** 포지셔닝·유틸 능력치 추정 추가.
+
+---
+
+# PROJECT V — TASK HANDOFF · 7차 (Team Profiles)
+
+**추가 작업일:** 2026-11-18 · **범위:** Handoff P4, README §24. 소유: `datasets/derived/team-profiles/`,
+`docs/research/TEAM_PROFILES.md`, `tools/data-collector` profiles 모듈.
+
+## 7-1. 목표
+PV-3 IGL 상대 모델링·자팀 성향용 **팀 단위 행동 프로필**을 VCT Reference 라운드/경제로 생성.
+
+## 7-2. 완료한 작업
+- **profiles 모듈** `tools/data-collector/profiles.py` + CLI `gen-team-profiles`(`--as-of` 지원).
+  경기 내 라운드 시퀀스로 로스 스트릭·직전 승자 추적 → 경제 성향 집계, Beta-binomial 축소, 시점 기준(as-of).
+- **데이터** `datasets/derived/team-profiles/`: 70팀, **teamId만(이름 미커밋)**, 스키마+meta(리그 평균·축소·안정성·고지). 스키마 `datasets/schema/team-profile.schema.json` + 검증기 연동(31/31 유효).
+- **문서** `docs/research/TEAM_PROFILES.md`(방법·TeamDecisionPolicy 매핑·윤리).
+- **테스트** 8개(분류·축소·null+이유·attack 승률 정확성·as-of 서브셋·결정성).
+
+## 7-3. 추정 vs null
+- 경제: forceBuyAfterLoss(+티어별), pistolLossForceBuy, bonusBuyRate, antiEcoFullBuy, overtimeForceBuy.
+- 사이드/맵: attackWinRate, defenseWinRate, ascentAttackWinRate, firstMinusSecondHalfAttack, mapPool.
+- **null+이유**(위치 필요): sitePreference, executeTempo, defaultSetup, utilityUsage, rotationTendency,
+  lurkTendency, retakeVsSaveTendency, fakeTendency — 지어내지 않음.
+
+## 7-4. 핵심 결과
+- 변별력 있는 경제 신호는 **pistolLossForceBuy(평균 0.15)**, **antiEcoFullBuy(0.11)**. forceBuyAfterLoss(0.89)·
+  bonusBuyRate(~1)·overtimeForceBuy(~1)는 거의 보편이라 팀별 정보 적음(그대로 기록).
+- **안정성(시즌 간)**: forceBuyAfterLoss r≈−0.06, attackWinRate r≈0.17 → **둘 다 약함 = 로스터·메타 의존적**.
+  프로필은 "이 로스터가 이 기간에 이렇게 했다"로 읽어야 하며 **시점 기준(as-of) 생성 권장**.
+
+## 7-5. PV-3 매핑 (team-engine 미정의 → 제안)
+pv-core에 `team-engine`/`TeamDecisionPolicy` 아직 없음. 제안: IGL 경제 정책←forceBuyAfterLoss/pistolLossForceBuy,
+안티에코←antiEcoFullBuy, 상대 기억(사이드 강점)←attack/defense/ascent/half, 맵 숙련←mapPool, 전술 성향←null.
+uncertainty 동반, **as-of 매치 날짜로** 프로필 생성(미래 폼 미사용).
+
+## 7-6. 윤리
+팀도 실명 → **teamId 기반 저장, 이름 미커밋**(로컬 조인 재생성). 추정치임을 provenance·meta·문서에 고지.
+실명 배포는 초상권/데이터 권리 → **사용자/법무 결정**으로 기록(익명/가상/옵트인/라이선싱).
+
+## 7-7. 테스트 결과
+```
+data-collector : 41 passed (profiles 8 포함)
+dataset 검증    : 31/31 files valid, 661 records (team_profiles 70 포함)
+```
+
+## 7-8. 다음 권장
+1. **(PV-3)** team-engine 정의 후 위 매핑 연결, as-of로 상대 프로필 생성.
+2. **(Layer B 확보 후)** 전술 성향(사이트 선호·템포 등) 추가.
