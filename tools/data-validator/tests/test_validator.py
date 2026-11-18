@@ -140,3 +140,18 @@ def test_zone_check_rejects_position_far_from_zone(tmp_path):
     res = validate_file(str(bad), reg)
     assert not res.ok
     assert any("from zone a-site" in e for e in res.errors)
+
+
+def test_defense_setup_schema_accepts_committed_and_rejects_bad_zone(tmp_path):
+    import copy
+    reg = load_registry(str(SCHEMA_DIR))
+    good = json.load(open(DATASETS_DIR / "synthetic" / "setups" / "ascent-defense.json"))
+    d = tmp_path / "datasets" / "synthetic" / "setups"
+    d.mkdir(parents=True)
+    (d / "ok.json").write_text(json.dumps(good))
+    assert validate_file(str(d / "ok.json"), reg).ok, validate_file(str(d / "ok.json"), reg).errors
+    bad = copy.deepcopy(good)
+    bad["setups"][0]["defenders"]["def1"]["zoneId"] = "not-a-zone"  # not in the navgraph enum
+    (d / "bad.json").write_text(json.dumps(bad))
+    res = validate_file(str(d / "bad.json"), reg)
+    assert not res.ok and any("zoneId" in e or "not-a-zone" in e for e in res.errors)

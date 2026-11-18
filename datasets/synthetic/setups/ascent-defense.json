@@ -1,0 +1,67 @@
+{
+  "$schema": "../../schema/defense-setup.schema.json",
+  "map": "Ascent",
+  "formatVersion": 1,
+  "description": "Synthetic Ascent defensive setups for the validation harness (sim-batch). Each setup places the 5 defenders on real PV-4 navgraph zones with forward holds, mid control and crossfires — not all stacked on sites — so the simulator faces a realistic defense instead of a 5v2 walk-in. The Match Runner selects one per round by seed (see `selection`). Grounded in PV-1's tactical KB (datasets/derived/tactics/ascent-tactics.json) defensive elements and the PV-4 navgraph zone ids; illustrative, NOT real match-frequency data.",
+  "selection": {
+    "strategy": "seed-weighted",
+    "note": "Per round, pick setups[i] where i is chosen from a seed-derived value weighted by `weight` (equal weights → round-robin by seed). Deterministic per match seed + roundId."
+  },
+  "abilityCatalog": {
+    "note": "abilityId values must exist in the sim's ability catalog (manual-approx). Current ids: omen:Ability2 (smoke), sova:Ability2 (recon dart), brimstone:Ability1 (incendiary). The Match Runner should apply these only when it runs rounds with utility enabled (withAbilities)."
+  },
+  "provenance": {
+    "sourceId": "pv2-synthetic-setups",
+    "retrievedAt": "2026-11-18T00:00:00+00:00",
+    "evidenceType": "simulated",
+    "synthetic": true,
+    "notes": [
+      "Basis: PV-1 datasets/derived/tactics/ascent-tactics.json (defensive elements) + PV-4 datasets/spatial/ascent/ascent.navgraph.json (zone ids, read-only).",
+      "Illustrative pro-style setups, not a measured distribution. Utility placement follows each source tactic's utilityRequirements where the sim catalog supports it."
+    ]
+  },
+  "setups": [
+    {
+      "id": "standard-2-1-2",
+      "name": "Standard 2-1-2 (default)",
+      "weight": 2,
+      "rationale": "Two forward site anchors (A Main, B Main) + one mid controller + two site anchors. The baseline balanced hold; attackers meet resistance at entries instead of a vacant site.",
+      "sourceTactics": ["def-a-default-hold", "def-mid-hold", "def-b-default-hold"],
+      "defenders": {
+        "def1": { "zoneId": "a-site", "role": "anchor", "abilityId": "omen:Ability2" },
+        "def2": { "zoneId": "a-main", "role": "forward" },
+        "def3": { "zoneId": "mid-courtyard", "role": "mid-control", "abilityId": "sova:Ability2" },
+        "def4": { "zoneId": "b-site", "role": "anchor" },
+        "def5": { "zoneId": "b-main", "role": "forward", "abilityId": "brimstone:Ability1" }
+      }
+    },
+    {
+      "id": "a-stack-3-1-1",
+      "name": "A Stack 3-1-1",
+      "weight": 1,
+      "rationale": "Stacks A with a site anchor, A Main forward and an A Tree crossfire; one mid controller; a lone B sentinel-style anchor. Punishes an A execute hard, concedes a fast B take.",
+      "sourceTactics": ["def-a-default-hold", "def-sentinel-setup-a", "def-mid-hold"],
+      "defenders": {
+        "def1": { "zoneId": "a-site", "role": "anchor", "abilityId": "omen:Ability2" },
+        "def2": { "zoneId": "a-main", "role": "forward" },
+        "def3": { "zoneId": "a-tree", "role": "crossfire" },
+        "def4": { "zoneId": "mid-courtyard", "role": "mid-control", "abilityId": "sova:Ability2" },
+        "def5": { "zoneId": "b-site", "role": "anchor", "abilityId": "brimstone:Ability1" }
+      }
+    },
+    {
+      "id": "mid-control-2-2-1",
+      "name": "Mid Control 2-2-1",
+      "weight": 1,
+      "rationale": "Contests mid with two players (Courtyard + Catwalk) to deny the split and gain info, a default A hold, and a lone B anchor. Tests the value of mid control against attacker executes.",
+      "sourceTactics": ["def-mid-hold", "def-mid-info-push", "def-a-default-hold"],
+      "defenders": {
+        "def1": { "zoneId": "a-site", "role": "anchor" },
+        "def2": { "zoneId": "a-main", "role": "forward", "abilityId": "omen:Ability2" },
+        "def3": { "zoneId": "mid-courtyard", "role": "mid-control", "abilityId": "sova:Ability2" },
+        "def4": { "zoneId": "mid-catwalk", "role": "mid-aggro" },
+        "def5": { "zoneId": "b-site", "role": "anchor", "abilityId": "brimstone:Ability1" }
+      }
+    }
+  ]
+}
