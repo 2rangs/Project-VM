@@ -20,7 +20,6 @@ import type {
   ObservationState,
   PatchVersion,
   PlayerId,
-  PlayerState,
   Side,
   SpikeState,
   TeamId,
@@ -145,6 +144,34 @@ export interface TeamEconomyState {
 
 // ---- PolicyView / policy ----
 
+/** Per-ability resource state a teammate exposes (PV-3 contract: charges/cooldown/ult). */
+export interface TeammateAbility {
+  readonly abilityId: AbilityId;
+  readonly chargesRemaining: number;
+  readonly cooldownRemainingMs: number;
+}
+
+/**
+ * Own-team player state the policy reads (PV-3 required fields). Mirrors the subset of
+ * @pv/shared-types PlayerState a policy needs; the real (richer) PlayerState is a superset.
+ */
+export interface PolicyTeammate {
+  readonly id: PlayerId;
+  readonly teamId: TeamId;
+  readonly side: Side;
+  readonly agentId: string;
+  readonly position: Vector3;
+  readonly facing: Vector2;
+  readonly health: number;
+  readonly armor: number;
+  readonly alive: boolean;
+  readonly weapon: { readonly weaponId: string } | null;
+  readonly abilities: readonly TeammateAbility[];
+  readonly credits: number;
+  readonly ultimatePoints: number;
+  readonly ultimateCost: number;
+}
+
 export interface PolicyView {
   readonly contextId: string;
   readonly scenarioRef: string | null;
@@ -156,8 +183,12 @@ export interface PolicyView {
   readonly patchVersion: PatchVersion;
   readonly spike: SpikeState;
   /** Own team's players — fully known (they are yours). NO enemy players here. */
-  readonly teammates: readonly PlayerState[];
+  readonly teammates: readonly PolicyTeammate[];
+  /** Team-aggregate observation (merged last-seen picture). */
   readonly observation: ObservationState;
+  /** Per-player observations keyed by PlayerId (own team), for individual-vision decisions. */
+  readonly perPlayerObservation?: Readonly<Record<string, ObservationState>>;
+  /** Deciding team's belief — REQUIRED and non-empty when enemies have been observed. */
   readonly belief: BeliefState;
   readonly economy: TeamEconomyState;
   readonly knownEnemyAliveCount: number | null;

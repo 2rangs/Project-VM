@@ -363,6 +363,37 @@ world units로 동작(zone-id 질의는 프레임 무관) — PV-2 포함 좌표
 
 ---
 
+## §E. 7차 작업 — 검증 실행 · PV-6 리플레이 · PV-3 계약 보완 (round-simulator)
+
+- **첫 검증 실행 (`docs/research/FIRST_VALIDATION_RUN.md`):** 1,000 라운드 → `toValidationRun`로 PV-2
+  `pv-validate-sim` 입력 생성 → PV-2 harness를 **로컬 실행**(priors 읽기 전용, PV-2 파일 미수정). 기준선 0/7 통과.
+  공격 승률 0.309 vs 0.509 격차를 분해: **스크립트 정책 지배**(스파이크 줍기 없음 + 홀드 교착 → time_expired 0.50,
+  bomb_detonated 0.000), 교전 탓 아님. 오프닝 듀얼만 보정 대상(공격 0.531→0.453, `CombatCalibration.hitChanceScale=0.65`
+  = `ASCENT_OPENING_DUEL_CALIBRATION`)으로 harness PASS. 라운드 승률은 억지로 안 맞춤(README §31).
+- **PV-6 리플레이 (`toPv6ReplayFormat`)**: PV-6 `replay-engine`의 `fromSimEventLog`가 먹는 pv-core GameEvent[] + meta를
+  생성(트랙에서 move 이벤트 포함). 크로스브랜치 빌드 의존 회피. `toRoundReplay`는 중립 포맷.
+- **검증 내보내기 (`toValidationRun`/`toSimGameEvents`)**: SimEvent → pv-core GameEvent[](roundStart/kill/ability/spike/roundEnd).
+- **PV-3 계약 보완 (`4727805`)**: `teammates`를 자기 팀 WorldState 필수 필드(position/facing/health/armor/alive/weapon/
+  abilities(충전·쿨다운)/credits/ultimatePoints)로 채움(`PolicyTeammate`). `perPlayerObservation` 채움. `belief`는
+  **비어있지 않게** 로컬 빌더로 채움(관측 적 → last-seen 가설). `executeAtMs`(지정 시각까지 명령 대기) 구현 + 결정론 테스트.
+  F6: fixture를 패키지 상대 경로로 로드(하드코딩 `@project-v` 경로 제거). F3: `fromPv2Scenario`가 worldPos/zoneId 있으면 사용,
+  없으면 스폰 배치(TODO).
+
+## §F. 동결 시점 (FREEZE, 2026-11-18)
+
+**사용자 지시로 작업 동결, 오케스트레이터가 main 통합.** 최종 상태:
+- **5개 패키지 전부 green: spatial 21 + perception 17 + combat 15 + ability 18 + round-sim 16 = 87 테스트**, 전부 `tsc` 통과.
+- 완료(커밋됨): spatial/perception/combat/ability 엔진, round-simulator(결정론 5v5 루프 + PV-3 DecisionPolicy 팀 계약),
+  첫 검증 실행 + 오프닝 듀얼 보정, PV-6 리플레이 브리지, 계약 보완(teammate 필드/perPlayerObservation/비어있지 않은 belief/executeAtMs/F6).
+- **미완(TODO, 통합 브랜치에서):**
+  - `belief`: 로컬 placeholder 빌더 → PV-3 `@pv/decision-engine` `buildBelief` 실제 import로 교체(크로스브랜치라 지금은 미연결).
+  - `fromPv2Scenario`: PV-2 v2(게임 좌표+zoneId) push되면 position 직접 사용. 현재 v1 좌표(일루스트레이티브 0..1000)는 폐기 결정.
+  - 패키지 스코프 `@pv/*` 리네임은 통합 시 일괄(현재 `@project-v/*`).
+  - round-simulator: 스파이크 줍기·포스트플랜트·유틸 활용 정책은 PV-3 실제 AI 통합 후.
+  - 검증 재실행은 PV-3 실제 TeamDecisionPolicy로 통합 브랜치에서.
+
+---
+
 ## 부록 — §24.3 전달 산출물 요약 (Agent Spatial → Agent Simulation)
 
 | §24.3 항목 | 전달물 | 비고 |

@@ -64,11 +64,15 @@ export const SYNTHETIC_DEFENSE_ANCHORS: Readonly<Record<string, string>> = {
 };
 
 /**
- * Structural adapter for PV-2 synthetic scenarios (datasets/synthetic/scenarios/). PV-2's
- * scenario coordinate space differs from PV-4's spatial zones, so positions are NOT
- * imported; each player is placed at its side's spawn zone and only the structured fields
- * (id, side, weapon, skills default) are carried. This is a provenance-preserving import,
- * not a spatial one — a shared coordinate agreement with PV-2 is needed for true positions.
+ * Structural adapter for PV-2 synthetic scenarios (datasets/synthetic/scenarios/).
+ *
+ * TODO(F3, coordinate reconciliation): PV-2's v1 scenarios use an *illustrative* 0..1000
+ * minimap frame (origin top-left) that is NOT valorant-api's real minimap, so positions are
+ * not geometrically convertible to PV-4 zones. Per the integration decision (PV-2-data §10,
+ * INTEGRATION_REHEARSAL F1/F3), PV-2 is regenerating scenarios in **game world units + zoneId
+ * (v2)**. When a player carries a `worldPos` (game units) or a `zoneId`, this adapter uses it
+ * directly (worldPos → nearestZone; else zoneId). Until then it falls back to placing each
+ * player at its side's spawn — a provenance-preserving import, not a spatial one.
  */
 export function fromPv2Scenario(spatial: SpatialEngine, scenario: unknown, skills: CombatSkills = AVERAGE_SKILLS): SimState {
   const ws = (scenario as { worldState?: Record<string, unknown> }).worldState ?? (scenario as Record<string, unknown>);
@@ -76,10 +80,16 @@ export function fromPv2Scenario(spatial: SpatialEngine, scenario: unknown, skill
   const rawPlayers = (ws.players as Array<Record<string, unknown>>) ?? [];
   const players: SimPlayer[] = rawPlayers.map((rp) => {
     const side: "attack" | "defense" = (rp.teamIdx as number) === attackingTeamIdx ? "attack" : "defense";
-    const spawn = side === "attack" ? "attacker-spawn" : "defender-spawn";
     const loadout = (rp.loadout as Record<string, unknown>) ?? {};
-    const p = mkPlayer(spatial, String(rp.playerId), side, spawn, capitalizeWeapon(String(loadout.weaponId ?? "Vandal")), skills);
-    return p;
+    const weapon = capitalizeWeapon(String(loadout.weaponId ?? "Vandal"));
+    // v2 (game units): use worldPos → nearest zone, or an explicit zoneId, when present.
+    const worldPos = rp.worldPos as { x: number; y: number; z?: number } | undefined;
+    const explicitZone = rp.zoneId as string | undefined;
+    let zoneId: string;
+    if (worldPos) zoneId = spatial.nearestZone({ x: worldPos.x, y: worldPos.y, z: worldPos.z ?? 0 }).id;
+    else if (explicitZone && spatial.getZone(explicitZone)) zoneId = explicitZone;
+    else zoneId = side === "attack" ? "attacker-spawn" : "defender-spawn"; // TODO(F3) fallback
+    return mkPlayer(spatial, String(rp.playerId), side, zoneId, weapon, skills);
   });
   const carrier = players.find((p) => p.side === "attack");
   return {

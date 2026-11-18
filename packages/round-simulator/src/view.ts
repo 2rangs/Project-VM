@@ -5,6 +5,8 @@ import { mulberry32, type Rng } from "./rng.js";
 import type {
   AudibleZoneResult,
   BeliefState,
+  EnemyPositionBelief,
+  PolicyTeammate,
   PolicyView,
   RandomSource,
   SpatialQuery,
@@ -80,12 +82,14 @@ export class SeededRandomSource implements RandomSource {
   }
 }
 
-function toTeammate(p: SimPlayer): PPlayerState {
+function toTeammate(p: SimPlayer): PolicyTeammate {
   return {
     id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
-    position: p.position, velocity: { x: 0, y: 0, z: 0 }, facing: p.facing,
-    health: p.health, armor: p.armor, alive: p.alive, weapon: p.weaponId ? { weaponId: p.weaponId, magazine: 0, reserve: 0 } : null,
-    behaviorState: "still",
+    position: p.position, facing: p.facing, health: p.health, armor: p.armor, alive: p.alive,
+    weapon: p.weaponId ? { weaponId: p.weaponId } : null,
+    abilities: p.abilities.map((a) => ({ abilityId: a.abilityId, chargesRemaining: a.chargesRemaining, cooldownRemainingMs: 0 })),
+    credits: 0, // TODO(econ): the sim does not model per-player economy yet
+    ultimatePoints: p.ultimatePoints, ultimateCost: p.ultimateCost,
   };
 }
 
@@ -100,8 +104,24 @@ function publicSpike(state: SimState): PSpikeState {
   };
 }
 
-function emptyBelief(teamId: string, nowMs: number): BeliefState {
-  return { playerId: teamId, timestampMs: nowMs, enemyPositionBeliefs: [], tacticalHypotheses: [], threatZones: [], confidence: 0 };
+/**
+ * Local belief builder — a PLACEHOLDER mirroring the OUTPUT shape of PV-3's
+ * `@pv/decision-engine` `buildBelief(prev, teamObservation, spatial, dtMs)`, which this
+ * package cannot import across branches. It seeds one hypothesis per observed enemy at its
+ * last-seen position (staleness = age), so belief is non-empty whenever enemies have been
+ * seen. TODO(PV-3): replace with the real `buildBelief` (diffusion over reachable zones)
+ * once @pv/decision-engine is importable at integration.
+ */
+function buildLocalBelief(teamId: string, obs: ObservationState, nowMs: number): BeliefState {
+  const enemyPositionBeliefs: EnemyPositionBelief[] = obs.visibleEnemies.map((e) => ({
+    enemyId: e.playerId,
+    agentId: e.agentId,
+    hypotheses: [{ position: e.lastSeenPosition, weight: 1 }],
+    staleness: Math.max(0, obs.timestampMs - e.lastSeenAtMs),
+  }));
+  const visible = obs.visibleEnemies.filter((e) => e.currentlyVisible).length;
+  const confidence = obs.visibleEnemies.length === 0 ? 0 : visible / obs.visibleEnemies.length;
+  return { playerId: teamId, timestampMs: nowMs, enemyPositionBeliefs, tacticalHypotheses: [], threatZones: [], confidence };
 }
 
 /**
@@ -129,6 +149,7 @@ export function buildPolicyView(
     teammateReports: team?.sharedReports ?? [],
     knownMapChanges: [],
   };
+  const perPlayerObservation: Record<string, ObservationState> = team ? { ...team.perPlayer } : {};
 
   return {
     contextId: state.roundId,
@@ -142,7 +163,8 @@ export function buildPolicyView(
     spike: publicSpike(state),
     teammates,
     observation,
-    belief: emptyBelief(teamId, state.timeRemainingMs),
+    perPlayerObservation,
+    belief: buildLocalBelief(teamId, observation, state.timeRemainingMs),
     economy: economyStub(teamId, side),
     knownEnemyAliveCount: state.players.filter((p) => p.side !== side && p.alive).length,
     matchScore: null,

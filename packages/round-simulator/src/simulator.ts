@@ -43,6 +43,13 @@ function dist3(a: { x: number; y: number; z: number }, b: { x: number; y: number
   return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
+/** A command is active only once its executeAtMs (if any) has been reached — teamwork timing. */
+function readyCommand(cmd: ActionCommand | undefined, nowMs: number): ActionCommand | undefined {
+  if (!cmd) return undefined;
+  if (cmd.executeAtMs != null && nowMs < cmd.executeAtMs) return undefined;
+  return cmd;
+}
+
 /**
  * Deterministic fixed-tick round loop. Order per tick (Handoff §17, README §28.1):
  * decisions (every N ticks) → movement → abilities → perception → engagement →
@@ -98,7 +105,7 @@ export class RoundSimulator {
       // 2. movement
       for (const p of state.players) {
         if (!p.alive) continue;
-        const cmd = commands.get(p.id);
+        const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run");
         this.stepMovement(p, dt);
       }
@@ -106,7 +113,7 @@ export class RoundSimulator {
       // 3. abilities
       for (const p of state.players) {
         if (!p.alive) continue;
-        const cmd = commands.get(p.id);
+        const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         if (cmd?.kind !== "useAbility" || !cmd.abilityId) continue;
         const abilityId = cmd.abilityId;
         const slot = p.abilities.find((a) => a.abilityId === abilityId);
@@ -283,7 +290,7 @@ export class RoundSimulator {
     // plant
     if (s.phase === "carried" || s.phase === "planting") {
       const carrier = s.carrierId ? state.players.find((p) => p.id === s.carrierId && p.alive) : null;
-      const planting = carrier && commands.get(carrier.id)?.kind === "plant" && this.spatial.isPlantableZone(carrier.zoneId);
+      const planting = carrier && readyCommand(commands.get(carrier.id), state.elapsedMs)?.kind === "plant" && this.spatial.isPlantableZone(carrier.zoneId);
       if (planting && carrier) {
         if (s.phase === "carried") { s.phase = "planting"; s.plantProgressMs = 0; events.push({ kind: "plantStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId }); }
         s.plantProgressMs += dtMs;
@@ -308,7 +315,7 @@ export class RoundSimulator {
         return;
       }
       // defuse
-      const defuser = state.players.find((p) => p.alive && p.side === "defense" && p.zoneId === s.zoneId && commands.get(p.id)?.kind === "defuse");
+      const defuser = state.players.find((p) => p.alive && p.side === "defense" && p.zoneId === s.zoneId && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
       if (defuser) {
         if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = 0; s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
         if (s.defuserId && !state.players.find((p) => p.id === s.defuserId)?.alive) {
