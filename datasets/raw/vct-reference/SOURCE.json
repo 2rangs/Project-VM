@@ -11,7 +11,8 @@
   "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
   "license": "Free to use, including commercially; no warranty. Data derived from public pro match pages. Independent hobby project, not affiliated with Riot Games.",
   "commercialUse": true,
-  "redistribution": "permitted (attribution link appreciated)",
+  "redistribution": "no explicit prohibition in terms; dataset page grants 'free to use, including commercially' with an attribution link appreciated",
+  "redistributionJudgment": "Raw .duckdb is NOT committed (size + daily rebuild). Normalized derivatives (small transformed stats under datasets/normalized/) are committed under the 'free to use' grant with provenance attribution. Revisit if an explicit no-redistribution clause is found.",
   "verificationLevel": 2,
   "tables": ["matches", "maps", "rounds", "player_map", "kill_matrix", "notables", "players", "teams", "stat_source", "feed_fill_meta"],
   "rowCounts": {

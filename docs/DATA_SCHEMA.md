@@ -32,6 +32,13 @@ Two rules run through everything:
 | **VCT Reference** `vct.duckdb` | Match / Map / Round / Player / Team / round-economy / map stats | downloadable DuckDB, free incl. commercial | **L2** (data read) |
 | **vctstats** (`bernielaird/vctstats`, MIT) | *method* for Event / Position / per-player economy via vlr.gg 2D-replay logs | code read (raw data not redistributed) | **L2** (code read) |
 
+> ⚠️ **vlr.gg ToS bars the vctstats method.** vctstats' *code* is MIT, but its data source is vlr.gg
+> 2D-replay scraping, and vlr.gg's Terms of Service (https://www.vlr.gg/terms, verified by PV-Spatial)
+> **prohibit automated access and redistribution** (personal/non-commercial only). PROJECT V therefore
+> treats the vlr `locs` shape as a *reference for the schema only* and **does not implement or commit a
+> vlr scraper or any vlr-derived data.** Real Layer-B positions must come from an authorized path
+> (Riot/GRID official feeds with a key, or vrfkit/ValorantReplayParser on self-captured VRF files).
+
 Details and evidence: [`docs/handoffs/PV-2-data.md`](handoffs/PV-2-data.md).
 
 ---
@@ -118,9 +125,11 @@ Shape mirrors the real vlr 2D-replay log event observed in vctstats (`t/type/by/
 | `pos`, `fromPos` | minimapUnits | event + shooter location |
 | `positions[]` | Position[] | **all-player snapshot at the event** (the `locs` array) |
 
-> **Availability:** real events/positions require a match whose vlr.gg page carries 2D-replay data.
-> China matches and some others have none (vctstats returns no rounds for those). This is the Layer B
-> gap: VCT Reference gives none; the vlr logs path gives sparse, event-triggered snapshots.
+> **Availability:** VCT Reference gives no events/positions. The vlr.gg 2D-replay logs hold this data
+> for some matches (China and others have none), but vlr.gg's ToS **prohibit automated access and
+> redistribution** — so this path is **not** usable for the project. Authorized real-data routes are
+> Riot/GRID official feeds (API key required) and self-captured VRF replays via vrfkit. Until one is
+> secured, Layer B is supplied as labelled synthetic data.
 
 ## Position — `position.schema.json`   **FUTURE for real data / populated for synthetic**
 One entry of a `locs` snapshot: `playerId`, `x`, `y` (minimapUnits), `facingDeg` (0–360), `alive`,
@@ -154,4 +163,5 @@ Source-Registry agent's (PV-1) responsibility (`datasets/registry/`, not written
 - Authoritative coordinate transform + plant/spawn/nav zones → **Spatial agent** (`datasets/spatial/`).
 - Per-patch economy & ultimate constants → **Game-rules** work (README §10, §19, §21); current
   synthetic constants are placeholders (`patch: synthetic-approx`).
-- A match with real 2D-replay data → to populate real `Event`/`Position` (the Layer B pipeline).
+- Real `Event`/`Position` (Layer B) → via an **authorized** source only (Riot/GRID official feeds with
+  a key, or vrfkit on self-captured VRF). **Not** vlr.gg scraping (ToS-barred).

@@ -6,10 +6,13 @@
 > **Bottom line:** Real data **WAS secured.** The VCT Reference DuckDB (13 MB, 10 tables) was
 > downloaded and read (verification level 2), and **two real matches were normalized** into
 > `datasets/normalized/` — including a real **Ascent** map with full round economy. vctstats was
-> cloned and its code read (level 2); it proves Layer-B positions are extractable from vlr.gg
-> 2D-replay logs, but its raw position data is **not** redistributed, so real per-player positions
-> were **not** obtained. The positional/decision layer is therefore supplied as **clearly-labelled
-> synthetic Ascent data** (10 scenarios + one map), never mixed with the real data.
+> cloned and its code read (level 2); it shows Layer-B positions *could* be parsed from vlr.gg
+> 2D-replay logs, but **vlr.gg's ToS prohibits the automated access + redistribution that method needs**
+> (verified by PV-Spatial at vlr.gg/terms), so the path is **not usable** — no vlr scraper or
+> vlr-derived data was implemented or committed. Real per-player positions were **not** obtained; the
+> positional/decision layer is supplied as **clearly-labelled synthetic Ascent data** (10 scenarios +
+> one map), never mixed with the real data. Authorized real Layer-B routes (later) = Riot/GRID official
+> feeds (API key) or self-captured VRF via vrfkit.
 
 ---
 
@@ -100,6 +103,11 @@ tools/data-validator/   pyproject, README, src/pv_data_validator/{__init__,valid
   (한 경기 상태를 그 경기로 학습한 모델이 보지 않음). early stopping도 경기 단위 분할. "just-before"
   행으로 미래정보 누출 방지. → README §22.3/§22.4, §26 요구사항을 **그대로 만족**.
 - **원본 데이터 포함 여부:** 아니오(코드 + 소수 HTML fixture만). 실제 위치/DB 미확보.
+- ⚠️ **vlr.gg ToS 제약(중요):** vctstats **코드는 MIT**이지만, 그 데이터 수집 방식(vlr.gg 2D 리플레이
+  스크래핑)은 **vlr.gg 이용약관이 자동 접근·재배포를 금지**(개인·비상업만 허용)한다. PV-Spatial이
+  `vlr.gg/terms` 원문으로 확인(`claude/pv-spatial:docs/research/spatial-sources.md §3b`). → PROJECT V는
+  vlr `locs` 형태를 **스키마 참고용으로만** 쓰고, **vlr 스크레이퍼나 vlr 파생 데이터를 구현·커밋하지
+  않는다.** 본 세션은 vlr 데이터·수집 스크립트를 받거나 커밋한 적이 없다(VCT Reference DuckDB만 사용).
 
 > 발견했으나 이번에 직접 접근하지 않은 소스 정보는 PV-1(소스 레지스트리) 담당. 위 내용은 그대로 전달용.
 
@@ -140,8 +148,9 @@ tools/data-validator   : 4 passed
 미실행/실패 항목 없음. (실데이터 vct_reference 테스트 4개는 vct.duckdb 가 세션에 존재하여 **실제로 실행**됨.)
 
 ## 8. 현재 미완료 사항
-- **실제 위치/이벤트(Layer B)**: 실제 경기의 per-player 위치·이벤트 타임라인은 미확보. 방식(vlr 2D
-  리플레이 `locs`)은 검증했으나, 2D 리플레이가 있는 경기 선정 + 스크레이퍼 구현은 미착수.
+- **실제 위치/이벤트(Layer B)**: 미확보. vlr 2D 리플레이 `locs` 형태는 파악했으나 **vlr ToS가 자동
+  접근·재배포를 금지**하여 그 경로는 사용 불가(스크레이퍼 미구현). 인가된 대체(Riot/GRID 키, 자가 VRF)는
+  아직 미확보 → Layer B는 합성으로 대체.
 - **경제/궁극기 상수**: 합성 데이터의 무기가/방어구/궁극 포인트는 **근사 placeholder**(patch=`synthetic-approx`).
   패치별 실제 규칙 데이터화는 미완(README §10/§19/§21, 게임룰 담당).
 - **ID 크로스워크**: 현재 ID = VCT Reference 정수 ID. 2차 소스 병합용 레지스트리는 PV-1(`datasets/registry/`).
@@ -165,18 +174,24 @@ tools/data-validator   : 4 passed
 - ETL 의존성 최소화(stdlib + duckdb + jsonschema). 과도한 프레임워크 지양(README §34).
 
 ## 11. 라이선스 및 권한
-- **VCT Reference 데이터**: 상업적 포함 무료·재배포 허용·무보증, 도박 용도 금지. `.duckdb`는 용량/일일
-  재빌드 이유로 **커밋하지 않음**(다운로드 스크립트 + SOURCE.json만 커밋). `datasets/normalized/`의
-  정규화 산출물은 공개 통계 파생으로 커밋.
-- **vctstats**: 코드 MIT. 원본 HTML/DB 미배포 → 저장소에 포함하지 않았고, 코드/방식만 참고.
+- **VCT Reference 데이터 — 약관 판단(명시):** 데이터셋 페이지 명문 "Free to use, including
+  commercially, with no warranty"(출처 링크 권장), 약관(`/terms`)은 정보·오락 목적·도박 금지·무보증을
+  규정하나 재배포 금지 조항은 **없음**. 판단: ① 원본 `.duckdb`는 **커밋하지 않음**(용량 13MB + 일일
+  재빌드로 스냅샷이 금방 낡음 → 다운로드 스크립트 + SOURCE.json만); ② `datasets/normalized/`의 정규화
+  산출물(소규모 변환 통계)은 "free to use" 허용 범위 안이고 provenance에 출처를 명시하므로 **커밋 가능**으로
+  판단. 재배포를 명시 금지하는 조항이 확인되면 이 판단을 뒤집고 정규화 산출물도 내려야 함.
+- **vctstats**: 코드 **MIT**(자유 사용). 단 수집 방식은 vlr.gg ToS(자동 접근·재배포 금지)에 저촉 →
+  원본 HTML/DB 미배포, 코드/방식은 **스키마 참고용으로만** 사용. vlr 스크레이퍼·데이터는 커밋하지 않음.
 - **합성 데이터**: PROJECT V 자체 생성물. 제약 없음. 단, 실제 경기로 오인 금지(플래그로 표시).
 
 ## 12. 다음 권장 작업 (우선순위)
 1. **(PV-3)** `datasets/schema/`를 TS 타입으로 변환하고, `datasets/synthetic/scenarios/scenario_*.json`을
    Action Generator / Decision Debugger 입력으로 로드(§19, §20). 10개 시나리오가 그 입력 계약이다.
 2. **(PV-spatial)** Ascent 미니맵↔게임 좌표 변환 + plant/spawn/nav zone 확정 → 합성 좌표를 실좌표로 교정.
-3. **(PV-2 후속)** vlr 2D 리플레이가 있는 경기 1개 선정 → `ReplayPageParser` 방식으로 **실제** Event/Position
-   수집기 구현 → `datasets/normalized/.../events.json` 채우기(Layer B 실데이터화).
+3. **(PV-2 후속) Layer B 실데이터 — vlr 스크래핑 금지.** vlr.gg ToS가 자동 접근·재배포를 금지하므로
+   vlr 리플레이 스크레이퍼는 구현하지 않는다. 대신 **인가된 경로만**: (a) Riot/GRID 공식 피드(API 키 필요,
+   사용자 제공 전까지 보류), (b) 사용자 자가 캡처 **VRF** 파일 + `vrfkit`/`ValorantReplayParser`
+   (제3자 ToS 없음). 둘 다 확보 전까지 Layer B는 합성으로 진행하고 그렇게 표시한다.
 4. **(게임룰)** 패치별 경제/궁극 상수 데이터화 → 합성 placeholder 대체.
 5. **(PV-1)** 소스 레지스트리(`docs/SOURCES.md`, `datasets/registry/`)에 위 §4 출처 반영.
 
@@ -201,9 +216,9 @@ tools/data-validator   : 4 passed
   예: LOUD=team 6961, Vitality=team 2059.
 - **라운드 데이터:** `rounds.json` — winnerTeamIdx, team0Side, attackingTeamIdx(파생), outcome,
   startEconomy{loadoutValue,bank}(가용 시). 754730 Ascent(game 283266 계열)는 경제 보유.
-- **이벤트 타임라인:** 실데이터는 FUTURE(vlr 2D 리플레이). 형태는 `event.schema.json`,
-  합성 예시는 `datasets/synthetic/ascent/events.json`(위치 스냅샷 포함).
-- **위치 데이터:** 형태 `position.schema.json`(미니맵 단위 + facingDeg). 실데이터 FUTURE, 합성 제공.
+- **이벤트 타임라인:** 실데이터 FUTURE — **인가된 경로(Riot/GRID 키, 자가 VRF)로만**(vlr 스크래핑 금지).
+  형태는 `event.schema.json`, 합성 예시는 `datasets/synthetic/ascent/events.json`(위치 스냅샷 포함).
+- **위치 데이터:** 형태 `position.schema.json`(미니맵 단위 + facingDeg). 실데이터 FUTURE(인가 경로만), 합성 제공.
 - **데이터 신뢰도:** 레코드별 `provenance`(evidenceType/verificationLevel/synthetic/confidence).
   실=observed L2, 합성=simulated L0.
 - **사용 예제:**

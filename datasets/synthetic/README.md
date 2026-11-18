@@ -5,9 +5,11 @@ Everything here is **generated**, not from any real VALORANT match. Every record
 data.** The validator fails any record here that is not flagged synthetic.
 
 Why synthetic exists: the real source we verified (VCT Reference) is Layer A (stats) only. The
-positional / belief / decision-context data the simulation needs (Layer B/C) is not freely
-available as real data, so the Ascent prototype (Handoff §19, DECISION-009) is seeded with clearly
-labelled synthetic states.
+positional / belief / decision-context data the simulation needs (Layer B/C) is not available from a
+usable real source — the vlr.gg 2D-replay logs hold it, but **vlr.gg's ToS prohibits automated access
+and redistribution**, and the authorized routes (Riot/GRID official feeds with a key, self-captured
+VRF via vrfkit) are not secured yet. So the Ascent prototype (Handoff §19, DECISION-009) is seeded
+with clearly labelled synthetic states.
 
 ## `scenarios/` — the 10 Handoff §20 decision contexts  ← PV-4 consumes these
 `scenario_01.json` … `scenario_10.json`, each a single **DecisionContext**
