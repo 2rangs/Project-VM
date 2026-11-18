@@ -208,9 +208,11 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
     A: rosterSkills(config.teamA.id, 5),
     B: rosterSkills(config.teamB.id, 5),
   };
-  const policies = makeSimPolicies(sq);
   const abilitiesOn = config.enableAbilities ?? false;
   const abilities = abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
+  // Give the policy an abilityId → effectType lookup so it can coordinate entry utility.
+  const abilityEffect = abilitiesOn ? (id: string): string | undefined => abilities[id]?.effectType : undefined;
+  const policies = makeSimPolicies(sq, abilityEffect);
   const matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
   const teamRef = (slot: TeamSlot): TeamRef => (slot === "A" ? config.teamA : config.teamB);
 

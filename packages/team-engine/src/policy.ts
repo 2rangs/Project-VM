@@ -33,7 +33,23 @@ import { applyTeamwork, type TeamworkEntry } from "./teamwork.js";
 export interface TeamPolicyOptions {
   readonly profiles?: ReadonlyMap<string, PlayerProfile>;
   readonly economy?: EconomyEvaluator;
+  /**
+   * Ability effect lookup (abilityId → primary effectType, e.g. "flash"/"smoke"/"movement").
+   * A construction dependency like SpatialQuery: the PolicyView carries ability ids but not their
+   * effects, so the policy needs this to coordinate execute utility. Omitted → no util coordination.
+   */
+  readonly abilityEffect?: (abilityId: string) => string | undefined;
 }
+
+/** Strategies that commit to a site execute (where entry utility is worth firing). */
+const ATTACK_EXECUTE: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>([
+  "aExecute",
+  "bExecute",
+  "fakeAtoB",
+  "fakeBtoA",
+]);
+/** A non-carrier within this run-travel time of the site is "entering" → fire entry util now. */
+const ENTRY_WINDOW_MS = 3500;
 
 export interface TeamRoundTrace {
   readonly contextId: string;
@@ -65,6 +81,53 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     private readonly spatial: SpatialQuery,
     private readonly options: TeamPolicyOptions = {},
   ) {}
+
+  /**
+   * ATTACK execute utility coordination: the policy knows ability ids but not effects, so with an
+   * injected effect lookup it fires ENTRY utility (flash/concuss, else a movement dash) only when a
+   * non-carrier attacker is within the entry window of the objective site — blinding/closing on the
+   * defenders at the moment of entry instead of burning charges at spawn. `targetZone` is set to the
+   * site so a future PV-4 target-zone ability model (smokes/flashes at a zone) works without a policy
+   * change; the current engine applies flash from the caster's line of sight and ignores targetZone.
+   * Smokes are intentionally NOT auto-fired here — they deploy at the caster's position today, so an
+   * "off-angle" smoke is not yet expressible (PV-4 target-zone support pending). Only non-carrier
+   * attackers are touched; the carrier is handled by commitSpikeCarrier.
+   */
+  private commitAttackUtil(view: PolicyView, strategy: TeamStrategy, commands: readonly ActionCommand[]): ActionCommand[] {
+    const out = commands.slice();
+    const lookup = this.options.abilityEffect;
+    if (!lookup || view.side !== "attack" || !ATTACK_EXECUTE.has(strategy)) return out;
+    const phase = view.spike.phase;
+    if (phase !== "carried" && phase !== "dropped") return out;
+
+    const holderId = view.spike.holderId;
+    const carrier = holderId ? view.teammates.find((p) => String(p.id) === String(holderId)) : null;
+    const carrierZone = carrier ? this.spatial.nearestZone({ x: carrier.position.x, y: carrier.position.y }) : null;
+    const site = (carrierZone && this.nearestPlantableSite(carrierZone)) ||
+      this.spatial.zonesByType("site").find((z) => this.spatial.isPlantableZone(z)) || null;
+    if (!site) return out;
+
+    for (const p of view.teammates) {
+      if (!p.alive || (holderId && String(p.id) === String(holderId))) continue;
+      const pz = this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+      if (pz === site) continue; // already entered
+      const t = this.spatial.shortestTravelTimeMs(pz, site, "run");
+      if (t === null || t > ENTRY_WINDOW_MS) continue; // hold util — not at the entry yet
+
+      const slots = [...p.abilities.basic, ...(p.abilities.signature ? [p.abilities.signature] : [])];
+      const effectOf = (id: string): string | undefined => lookup(String(id));
+      const flash = slots.find((a) => a.charges > 0 && (effectOf(a.abilityId) === "flash" || effectOf(a.abilityId) === "concuss"));
+      const dash = slots.find((a) => a.charges > 0 && effectOf(a.abilityId) === "movement");
+      const chosen = flash ?? dash;
+      if (!chosen) continue;
+
+      const cmd: ActionCommand = { playerId: p.id, kind: "useAbility", abilityId: chosen.abilityId, targetZone: site, executeAtMs: 0, sourceActionId: "attack-util:entry" };
+      const idx = out.findIndex((c) => String(c.playerId) === String(p.id));
+      if (idx >= 0) out[idx] = cmd;
+      else out.push(cmd);
+    }
+    return out;
+  }
 
   /**
    * Ensure the spike carrier COMMITS to the objective (fixes the dominant timeExpired failure:
@@ -219,7 +282,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       choices.push({ choice, entry: { command: choice.command, role, profile } });
     }
 
-    let commands = this.commitSpikeCarrier(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
+    let commands = this.commitAttackUtil(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
+    commands = this.commitSpikeCarrier(view, strategy, commands);
     commands = this.commitDefenseHold(view, strategy, commands);
     commands = this.commitDefuser(view, commands);
 

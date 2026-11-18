@@ -53,8 +53,8 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery) {
-    this.inner = new TeamDecisionPolicy(sq);
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined) {
+    this.inner = new TeamDecisionPolicy(sq, abilityEffect ? { abilityEffect } : {});
   }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({
@@ -83,7 +83,10 @@ export class WrappedTeamPolicy implements DecisionPolicy {
  * structurally identical and runtime-compatible, so this crosses the brand boundary with a
  * single localized cast (R2-B seam; harmless at runtime, see e2e.integration.test.ts).
  */
-export function makeSimPolicies(sq: SpatialQuery): Readonly<Record<Side, SimDecisionPolicy>> {
-  const mk = () => new WrappedTeamPolicy(sq) as unknown as SimDecisionPolicy;
+export function makeSimPolicies(
+  sq: SpatialQuery,
+  abilityEffect?: (abilityId: string) => string | undefined,
+): Readonly<Record<Side, SimDecisionPolicy>> {
+  const mk = () => new WrappedTeamPolicy(sq, abilityEffect) as unknown as SimDecisionPolicy;
   return { attack: mk(), defense: mk() };
 }
