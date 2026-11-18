@@ -1,0 +1,4 @@
+# The VCT Reference DuckDB is ~13 MB and rebuilt daily (a snapshot would go stale and bloat
+# git history). It is downloadable and free to use, so we commit the downloader + metadata
+# instead of the binary. Run ./download.sh to fetch it.
+*.duckdb

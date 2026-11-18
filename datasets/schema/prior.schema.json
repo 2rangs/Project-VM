@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "prior.schema.json",
+  "title": "Prior / Validation baseline",
+  "description": "An empirical statistic derived from real VCT Reference data: a set of estimates, each with a sample size, a Wilson 95% interval, and a match-clustered bootstrap interval. Used as (a) decision priors for the Action Generator / Outcome Predictor and (b) target baselines the simulation must reproduce (README §31, Handoff §22). Always real (provenance.synthetic=false).",
+  "type": "object",
+  "required": ["priorId", "description", "source", "method", "groupingUnit", "generatedAt", "estimates", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "priorId": { "type": "string" },
+    "description": { "type": "string" },
+    "source": {
+      "type": "object",
+      "required": ["sourceId", "sha256", "filters"],
+      "additionalProperties": false,
+      "properties": {
+        "sourceId": { "type": "string" },
+        "sourceUrl": { "type": ["string", "null"] },
+        "sourceVersion": { "type": ["string", "null"], "description": "Dataset build identifier (daily-rebuilt source)." },
+        "sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the exact vct.duckdb these numbers came from." },
+        "filters": { "type": "object", "description": "The row filters applied (e.g. international, economyAvailable). Free-form, recorded for reproducibility." }
+      }
+    },
+    "method": {
+      "type": "object",
+      "required": ["statistic", "bootstrap", "buyThresholds"],
+      "additionalProperties": true,
+      "properties": {
+        "statistic": { "type": "string" },
+        "wilsonZ": { "type": "number", "description": "z used for the Wilson interval (1.96 ~ 95%)." },
+        "bootstrap": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "unit": { "type": "string", "description": "Resampling unit; 'match' = cluster bootstrap over matches (leakage-aware)." },
+            "iterations": { "type": "integer", "minimum": 0 },
+            "seed": { "type": "integer" }
+          }
+        },
+        "buyThresholds": {
+          "type": "object", "additionalProperties": false,
+          "description": "Buy-tier classification thresholds on team total loadout value (credits).",
+          "properties": {
+            "ecoMaxCredits": { "type": "integer", "description": "loadout < this (non-pistol) = eco." },
+            "fullMinCredits": { "type": "integer", "description": "loadout >= this = full buy; between = semi." },
+            "pistolRounds": { "type": "array", "items": { "type": "integer" }, "description": "Round numbers treated as pistols." }
+          }
+        },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "groupingUnit": { "type": "string", "description": "Correlation/grouping unit (e.g. 'match_id'); bootstrap resamples this (Handoff §22.4)." },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "estimates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dims", "n", "rate", "wilsonLow", "wilsonHigh", "matches", "smallSample"],
+        "additionalProperties": false,
+        "properties": {
+          "dims": { "type": "object", "description": "The cell's dimensions (e.g. ownBuy/oppBuy, side/phase, outcome). Free-form key→string/number." },
+          "n": { "type": "integer", "minimum": 0, "description": "Sample size (rows; per-team rows count each round twice where noted)." },
+          "successes": { "type": ["integer", "null"], "minimum": 0 },
+          "rate": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Point estimate (proportion)." },
+          "wilsonLow": { "type": "number", "minimum": 0, "maximum": 1 },
+          "wilsonHigh": { "type": "number", "minimum": 0, "maximum": 1 },
+          "bootstrapLow": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "bootstrapHigh": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "matches": { "type": "integer", "minimum": 0, "description": "Distinct matches contributing (bootstrap clusters)." },
+          "smallSample": { "type": "boolean", "description": "True when n is below the small-sample threshold; treat the estimate with caution." }
+        }
+      }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

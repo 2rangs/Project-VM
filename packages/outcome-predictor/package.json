@@ -1,0 +1,24 @@
+{
+  "name": "@pv/outcome-predictor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Outcome Predictor v0: budget-limited lookahead over top-K candidates using move time, a CombatEstimator, and economy value (README §25).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@pv/shared-types": "workspace:*",
+    "@pv/action-generator": "workspace:*"
+  },
+  "devDependencies": {
+    "@pv/world-state": "workspace:*",
+    "@pv/decision-engine": "workspace:*",
+    "@pv/team-engine": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

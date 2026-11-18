@@ -1,0 +1,26 @@
+{
+  "name": "@pv/round-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PROJECT V round simulator: deterministic fixed-tick 5v5 round loop wiring spatial, perception, combat and ability engines behind a DecisionPolicy interface.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@pv/spatial-engine": "file:../spatial-engine",
+    "@pv/perception-engine": "file:../perception-engine",
+    "@pv/combat-engine": "file:../combat-engine",
+    "@pv/ability-engine": "file:../ability-engine"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1",
+  "meta": {
+    "mapId": "ascent",
+    "mapDisplayName": "Ascent",
+    "patch": null,
+    "source": "synthetic",
+    "seed": 42,
+    "matchId": "pv-synthetic-ascent-01",
+    "generatedAt": "2026-11-18T00:00:00.000Z",
+    "tickRateHz": null,
+    "coordinateTransform": { "xMultiplier": 0.00007, "yMultiplier": -0.00007, "xScalarToAdd": 0.813895, "yScalarToAdd": 0.573242 },
+    "provenance": { "sourceId": "pv-synthetic-replay", "evidenceType": "simulated", "synthetic": true, "notes": ["Fabricated demo replay for the viewer; NOT a real match. World coords are plausible Ascent positions."] }
+  },
+  "players": [
+    { "id": "player_1", "teamIdx": 0, "agentId": null, "displayName": "Attacker 1" },
+    { "id": "player_2", "teamIdx": 0, "agentId": null, "displayName": "Attacker 2" },
+    { "id": "player_3", "teamIdx": 1, "agentId": null, "displayName": "Defender 1" }
+  ],
+  "rounds": [
+    { "roundNum": 1, "startMs": 0, "endMs": 30000 },
+    { "roundNum": 2, "startMs": 35000, "endMs": 70000 }
+  ],
+  "tracks": [
+    { "playerId": "player_1", "keyframes": [
+      { "tMs": 0, "pos": { "x": 1995, "y": -9744, "z": 100 }, "facingDeg": 90, "state": "alive" },
+      { "tMs": 10000, "pos": { "x": 3200, "y": -6500, "z": 250 }, "facingDeg": 60, "state": "alive" },
+      { "tMs": 20000, "pos": { "x": 4489, "y": -3014, "z": 400 }, "facingDeg": 40, "state": "alive" },
+      { "tMs": 30000, "pos": { "x": 4300, "y": -3200, "z": 400 }, "facingDeg": 10, "state": "alive" },
+      { "tMs": 35000, "pos": { "x": 1995, "y": -9744, "z": 100 }, "facingDeg": 90, "state": "alive" },
+      { "tMs": 52000, "pos": { "x": 4000, "y": -4000, "z": 380 }, "facingDeg": 30, "state": "alive" }
+    ] },
+    { "playerId": "player_2", "keyframes": [
+      { "tMs": 0, "pos": { "x": 1995, "y": -9744, "z": 100 }, "facingDeg": 100, "state": "alive" },
+      { "tMs": 12000, "pos": { "x": 2500, "y": -8000, "z": 150 }, "facingDeg": 130, "state": "alive" },
+      { "tMs": 22000, "pos": { "x": 1500, "y": -9000, "z": 120 }, "facingDeg": 210, "state": "alive" },
+      { "tMs": 24000, "pos": { "x": 1500, "y": -9000, "z": 120 }, "facingDeg": 210, "state": "dead" },
+      { "tMs": 35000, "pos": { "x": 1995, "y": -9744, "z": 100 }, "facingDeg": 90, "state": "alive" },
+      { "tMs": 55000, "pos": { "x": 3000, "y": -5500, "z": 300 }, "facingDeg": 70, "state": "alive" }
+    ] },
+    { "playerId": "player_3", "keyframes": [
+      { "tMs": 0, "pos": { "x": 4800, "y": -2500, "z": 420 }, "facingDeg": 250, "state": "alive" },
+      { "tMs": 15000, "pos": { "x": 4600, "y": -3500, "z": 400 }, "facingDeg": 230, "state": "alive" },
+      { "tMs": 28000, "pos": { "x": 4300, "y": -3300, "z": 400 }, "facingDeg": 200, "state": "alive" },
+      { "tMs": 35000, "pos": { "x": 4800, "y": -2500, "z": 420 }, "facingDeg": 250, "state": "alive" },
+      { "tMs": 60000, "pos": { "x": 4200, "y": -4200, "z": 380 }, "facingDeg": 180, "state": "alive" }
+    ] }
+  ],
+  "events": [
+    { "tMs": 0, "roundNum": 1, "kind": "roundStart" },
+    { "tMs": 24000, "roundNum": 1, "kind": "kill", "actorId": "player_1", "victimId": "player_2", "pos": { "x": 1500, "y": -9000, "z": 120 }, "data": { "weapon": "Vandal" } },
+    { "tMs": 25000, "roundNum": 1, "kind": "plant", "actorId": "player_1", "pos": { "x": 4300, "y": -3200, "z": 400 }, "data": { "site": "A" } },
+    { "tMs": 30000, "roundNum": 1, "kind": "roundEnd", "data": { "reason": "spikeDetonation" } },
+    { "tMs": 35000, "roundNum": 2, "kind": "roundStart" },
+    { "tMs": 48000, "roundNum": 2, "kind": "abilitySpawn", "actorId": "player_1", "pos": { "x": 3500, "y": -5000, "z": 300 }, "data": { "abilityCls": "Smoke_Production_Astra_C" } }
+  ]
+}

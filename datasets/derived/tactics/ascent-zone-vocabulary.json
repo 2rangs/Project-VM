@@ -1,0 +1,306 @@
+{
+ "source": "PV-4 spatial-engine ascent.navgraph.json (origin/claude/pv-spatial, read-only)",
+ "mapUuid": "7eaecc1b-4337-bbf6-6ab9-04b8f06b3319",
+ "patchVersion": "UNVERIFIED",
+ "schemaVersion": "0.1.0",
+ "zoneIds": [
+  "attacker-spawn",
+  "defender-spawn",
+  "a-lobby",
+  "a-main",
+  "a-window",
+  "a-tree",
+  "a-site",
+  "a-garden",
+  "a-wine",
+  "a-rafters",
+  "b-lobby",
+  "b-main",
+  "b-site",
+  "b-boathouse",
+  "mid-top",
+  "mid-courtyard",
+  "mid-catwalk",
+  "mid-cubby",
+  "mid-bottom",
+  "mid-link",
+  "mid-market",
+  "mid-pizza"
+ ],
+ "zoneMeta": {
+  "attacker-spawn": {
+   "name": "Attacker Spawn",
+   "superRegion": "Attacker Side",
+   "zoneType": "spawn",
+   "plantable": false
+  },
+  "defender-spawn": {
+   "name": "Defender Spawn",
+   "superRegion": "Defender Side",
+   "zoneType": "spawn",
+   "plantable": false
+  },
+  "a-lobby": {
+   "name": "A Lobby",
+   "superRegion": "A",
+   "zoneType": "lobby",
+   "plantable": false
+  },
+  "a-main": {
+   "name": "A Main",
+   "superRegion": "A",
+   "zoneType": "main",
+   "plantable": false
+  },
+  "a-window": {
+   "name": "A Window",
+   "superRegion": "A",
+   "zoneType": "connector",
+   "plantable": false
+  },
+  "a-tree": {
+   "name": "A Tree",
+   "superRegion": "A",
+   "zoneType": "position",
+   "plantable": false
+  },
+  "a-site": {
+   "name": "A Site",
+   "superRegion": "A",
+   "zoneType": "site",
+   "plantable": true
+  },
+  "a-garden": {
+   "name": "A Garden",
+   "superRegion": "A",
+   "zoneType": "connector",
+   "plantable": false
+  },
+  "a-wine": {
+   "name": "A Wine",
+   "superRegion": "A",
+   "zoneType": "connector",
+   "plantable": false
+  },
+  "a-rafters": {
+   "name": "A Rafters",
+   "superRegion": "A",
+   "zoneType": "position",
+   "plantable": false
+  },
+  "b-lobby": {
+   "name": "B Lobby",
+   "superRegion": "B",
+   "zoneType": "lobby",
+   "plantable": false
+  },
+  "b-main": {
+   "name": "B Main",
+   "superRegion": "B",
+   "zoneType": "main",
+   "plantable": false
+  },
+  "b-site": {
+   "name": "B Site",
+   "superRegion": "B",
+   "zoneType": "site",
+   "plantable": true
+  },
+  "b-boathouse": {
+   "name": "B Boat House",
+   "superRegion": "B",
+   "zoneType": "connector",
+   "plantable": false
+  },
+  "mid-top": {
+   "name": "Mid Top",
+   "superRegion": "Mid",
+   "zoneType": "mid",
+   "plantable": false
+  },
+  "mid-courtyard": {
+   "name": "Mid Courtyard",
+   "superRegion": "Mid",
+   "zoneType": "mid",
+   "plantable": false
+  },
+  "mid-catwalk": {
+   "name": "Mid Catwalk",
+   "superRegion": "Mid",
+   "zoneType": "connector",
+   "plantable": false
+  },
+  "mid-cubby": {
+   "name": "Mid Cubby",
+   "superRegion": "Mid",
+   "zoneType": "position",
+   "plantable": false
+  },
+  "mid-bottom": {
+   "name": "Mid Bottom",
+   "superRegion": "Mid",
+   "zoneType": "mid",
+   "plantable": false
+  },
+  "mid-link": {
+   "name": "Mid Link",
+   "superRegion": "Mid",
+   "zoneType": "link",
+   "plantable": false
+  },
+  "mid-market": {
+   "name": "Mid Market",
+   "superRegion": "Mid",
+   "zoneType": "link",
+   "plantable": false
+  },
+  "mid-pizza": {
+   "name": "Mid Pizza",
+   "superRegion": "Mid",
+   "zoneType": "connector",
+   "plantable": false
+  }
+ },
+ "edges": [
+  [
+   "a-garden",
+   "mid-cubby"
+  ],
+  [
+   "a-lobby",
+   "a-main"
+  ],
+  [
+   "a-main",
+   "a-site"
+  ],
+  [
+   "a-main",
+   "a-tree"
+  ],
+  [
+   "a-main",
+   "a-window"
+  ],
+  [
+   "a-rafters",
+   "defender-spawn"
+  ],
+  [
+   "a-site",
+   "a-garden"
+  ],
+  [
+   "a-site",
+   "a-rafters"
+  ],
+  [
+   "a-site",
+   "a-wine"
+  ],
+  [
+   "a-tree",
+   "a-site"
+  ],
+  [
+   "a-window",
+   "a-site"
+  ],
+  [
+   "a-wine",
+   "defender-spawn"
+  ],
+  [
+   "attacker-spawn",
+   "a-lobby"
+  ],
+  [
+   "attacker-spawn",
+   "b-lobby"
+  ],
+  [
+   "attacker-spawn",
+   "mid-top"
+  ],
+  [
+   "b-boathouse",
+   "b-main"
+  ],
+  [
+   "b-lobby",
+   "b-main"
+  ],
+  [
+   "b-main",
+   "b-site"
+  ],
+  [
+   "b-site",
+   "b-boathouse"
+  ],
+  [
+   "b-site",
+   "defender-spawn"
+  ],
+  [
+   "mid-bottom",
+   "mid-link"
+  ],
+  [
+   "mid-bottom",
+   "mid-market"
+  ],
+  [
+   "mid-catwalk",
+   "mid-bottom"
+  ],
+  [
+   "mid-courtyard",
+   "mid-catwalk"
+  ],
+  [
+   "mid-courtyard",
+   "mid-cubby"
+  ],
+  [
+   "mid-cubby",
+   "mid-bottom"
+  ],
+  [
+   "mid-link",
+   "b-site"
+  ],
+  [
+   "mid-link",
+   "defender-spawn"
+  ],
+  [
+   "mid-market",
+   "b-site"
+  ],
+  [
+   "mid-market",
+   "mid-pizza"
+  ],
+  [
+   "mid-pizza",
+   "b-main"
+  ],
+  [
+   "mid-top",
+   "mid-courtyard"
+  ]
+ ],
+ "plantZones": [
+  {
+   "id": "plant-a",
+   "site": "A",
+   "zoneId": "a-site"
+  },
+  {
+   "id": "plant-b",
+   "site": "B",
+   "zoneId": "b-site"
+  }
+ ]
+}

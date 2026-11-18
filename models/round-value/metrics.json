@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-11-18T09:41:37+00:00",
+  "source": {
+    "sourceId": "vct-reference",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "rows": 23989,
+    "matches": 446,
+    "trainRows": 19212,
+    "testRows": 4777
+  },
+  "featureNames": [
+    "round_num",
+    "is_ot",
+    "half_index",
+    "atk_score",
+    "def_score",
+    "score_diff",
+    "atk_loadout",
+    "def_loadout",
+    "loadout_diff",
+    "atk_bank",
+    "def_bank",
+    "atk_streak_losses",
+    "def_streak_losses",
+    "prev_atk_won",
+    "map_code",
+    "atk_tier_code",
+    "def_tier_code"
+  ],
+  "mapCodes": {
+    "Haven": 0,
+    "Icebox": 1,
+    "Ascent": 2,
+    "Bind": 3,
+    "Split": 4,
+    "Breeze": 5,
+    "Fracture": 6,
+    "Pearl": 7,
+    "Lotus": 8,
+    "Sunset": 9,
+    "Abyss": 10,
+    "Corrode": 11,
+    "Summit": 12
+  },
+  "tierCodes": {
+    "pistol": 3,
+    "eco": 0,
+    "semi": 1,
+    "full": 2
+  },
+  "split": {
+    "method": "time_holdout(0.2 of matches) + GroupKFold(match) CV",
+    "seed": 20260101
+  },
+  "cvLogLossLightGBM": 0.6331458946074267,
+  "metrics": {
+    "priors_lookup": {
+      "logLoss": 0.631726523931874,
+      "brier": 0.22211455697631993,
+      "auc": 0.6719720487367944,
+      "accuracy": 0.613564998953318,
+      "ece": 0.011949616338307281
+    },
+    "logistic": {
+      "logLoss": 0.623406708240509,
+      "brier": 0.21792908012866974,
+      "auc": 0.6927255023286876,
+      "accuracy": 0.6219384550973415,
+      "ece": 0.019913903434630426
+    },
+    "lightgbm": {
+      "logLoss": 0.6317714706081712,
+      "brier": 0.22199184811145664,
+      "auc": 0.6800363895788379,
+      "accuracy": 0.6179610634289303,
+      "ece": 0.03179338556816904
+    }
+  },
+  "lightgbmBeatsBaselines": false,
+  "onnx": {
+    "exported": true,
+    "path": "round_value_lgbm.onnx",
+    "parity": {
+      "ok": true,
+      "maxAbsDiff": 1.256251541681408e-07
+    }
+  }
+}

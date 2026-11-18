@@ -1,0 +1,56 @@
+{
+  "matchId": "754737",
+  "sourceUrl": "https://www.vlr.gg/754737/loud-vs-team-vitality-valorant-champions-2026-gf",
+  "event": "Valorant Champions 2026",
+  "eventId": 2766,
+  "season": 2026,
+  "seriesStage": "Playoffs",
+  "seriesRound": "Grand Final",
+  "utcTimestamp": "2026-10-18T06:00:00",
+  "patch": "Patch 13.05",
+  "format": "Bo5",
+  "region": null,
+  "isInternational": true,
+  "teamIds": [
+    "6961",
+    "2059"
+  ],
+  "score": [
+    3,
+    1
+  ],
+  "veto": [
+    "LOUD ban Ascent",
+    "LOUD ban Split",
+    "LOUD pick Summit",
+    "VIT pick Lotus",
+    "LOUD pick Sunset",
+    "VIT pick Haven",
+    "Abyss remains"
+  ],
+  "maps": [
+    "283286",
+    "283287",
+    "283288",
+    "283289"
+  ],
+  "coverage": {
+    "fetchedOverview": true,
+    "fetchedPerformance": true,
+    "fetchedEconomy": true
+  },
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": "Patch 13.05",
+    "retrievedAt": "2026-11-18T08:52:57+00:00",
+    "evidenceType": "observed",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": []
+  }
+}

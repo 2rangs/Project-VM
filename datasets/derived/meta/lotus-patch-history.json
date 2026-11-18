@@ -1,0 +1,138 @@
+{
+ "map": "Lotus",
+ "currentBuild": "release-13.10",
+ "provenance": {
+  "source": "Official VALORANT wiki Lotus Update History + VCT Reference sample",
+  "retrievedAt": "2026-11-18",
+  "verified": true,
+  "note": "Map update history from official wiki; patch-note URLs verified where available. Agent balance history is GLOBAL (not map-specific) -> see datasets/derived/meta/patch-history.json."
+ },
+ "mapStructuralStability": "Lotus is structurally stable: minor art/wall fixes (e.g. v12.05 attacker-lobby wall thickened). Unique gimmicks: destructible ROTATING doors (A/C) and rope ASCENDERS. No site/route rework. Meta driver is agent balance.",
+ "mapUpdateHistory": [
+  {
+   "patch": "6.0",
+   "summary": "Added",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-0/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "6.01",
+   "summary": "The volume for the rotating doors has been reduced while rotating. Boost exploit in the back of B Site has been removed. You can no longer get yourself stuck in the rotating doors ",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-01/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "6.02",
+   "summary": "Players will no longer make footstep audio when dropping from B site platform to the fountain Door volume has been lowered further during the rotation phase Players next to each ot",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-02/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "6.04",
+   "summary": "Fixed a bug where abilities, like Sova 's Owl Drone that are pushed by the doors into other players, could continue to push players even after the door stops or the players exited ",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-04/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "6.06",
+   "summary": "Updated the destruction VFX for the destructible door located between A Link to A Main in order to make it easier to see through as it falls away.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-6-06/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "7.0",
+   "summary": "Cypher 's Spycam can no longer be placed on doors",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-7-0/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "8.0",
+   "summary": "- A Main More room has been added to A Main along with a set of boxes. The double stack of boxes outside A Stairs has been changed to non-penetrable. A Link - More room has been ad",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-8-0/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "8.01",
+   "summary": "Fixed a bug where you could stand on top of the crumbled pillar on C Site.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-8-01/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "9.04",
+   "summary": "Fixed a visual issue where agents were floating next to the rope when using the ascender line.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-04/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "9.05",
+   "summary": "Minor art fixes around the map.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-05/",
+   "patchNoteResolves": true
+  },
+  {
+   "patch": "9.07",
+   "summary": "Fixed a bug where you can avoid taking damage by standing behind the hanging foliage on A Site.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-9-07/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "12.05",
+   "summary": "- Attacker lobby wall thickened to remove wall penetration off barrier drop Jump up to Vines moved to help attackers get out of Lobby and avoid utility dump. Wall outside of Tree r",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-12-05/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "12.07",
+   "summary": ") Fixed a bug where Veto ’s Chokehold could detect enemies behind rotating doors",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-12-07/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "12.08",
+   "summary": "(",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-12-08/",
+   "patchNoteResolves": false
+  },
+  {
+   "patch": "13.05",
+   "summary": "Bugfix: Not displaying Fade 's Seize 's danger indicator to enemies in certain locations.",
+   "patchNoteUrl": "https://playvalorant.com/en-us/news/game-updates/valorant-patch-notes-13-05/",
+   "patchNoteResolves": false
+  }
+ ],
+ "agents": {},
+ "agentBalanceRef": "datasets/derived/meta/patch-history.json (global agent balance applies to all maps)",
+ "sampleByPatchEra": {
+  "byEpisodeMajor": {
+   "6": 22,
+   "7": 12,
+   "8": 22,
+   "9": 20,
+   "10": 21,
+   "11": 18,
+   "12": 15,
+   "13": 15
+  },
+  "cumulativeAtOrAbove": {
+   "6": 145,
+   "7": 123,
+   "8": 111,
+   "9": 89,
+   "10": 69,
+   "11": 48,
+   "12": 30,
+   "13": 15
+  },
+  "totalIntlMaps": 145
+ },
+ "dataWindowRecommendation": {
+  "forCurrentMetaComparability": "patch >= 9.x",
+  "mapsInWindow": 89,
+  "tightestUsableWindow": "patch >= 11.x",
+  "rationale": "Lotus intl sample 145 maps; >=9.x=89, >=11.x=48, >=13.x=15. Same logic as Ascent (structurally stable; agent-balance-driven). Note Lotus was added later than Ascent so its early-era sample is smaller.",
+  "pv2PriorsFilter": {
+   "note": "PV-2 owned (datasets/derived/priors/). Recommendation only.",
+   "suggestedPredicate": "map_name='Lotus' AND patch major.minor >= 9.0 for current-meta priors."
+  }
+ }
+}

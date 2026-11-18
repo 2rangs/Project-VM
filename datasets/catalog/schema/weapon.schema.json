@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/weapon.schema.json",
+  "title": "PROJECT V weapon catalog record",
+  "description": "Normalized weapon. Units: time in ms, distance in m (VALORANT 1 m = 100 Unreal units; vrfkit positions are cm). camelCase. All stat fields are verified from valorant-api unless provenance says otherwise.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "category", "cost", "weaponStats", "provenance"],
+  "properties": {
+    "id": {"type": "string", "description": "weapon UUID"},
+    "name": {"type": "string"},
+    "category": {"type": "string", "description": "shop category e.g. Rifles, Sidearms, SMGs, Shotguns, Snipers, Heavy, Melee"},
+    "categoryText": {"type": ["string", "null"], "description": "human category e.g. Assault Rifles"},
+    "cost": {"type": ["integer", "null"], "description": "credits; null for Melee/no shopData"},
+    "weaponStats": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["fireRate", "magazineSize", "damageRanges"],
+      "properties": {
+        "fireRate": {"type": ["number", "null"], "description": "rounds/second"},
+        "magazineSize": {"type": ["integer", "null"]},
+        "reloadTimeMs": {"type": ["number", "null"], "description": "ms (API seconds * 1000)"},
+        "equipTimeMs": {"type": ["number", "null"], "description": "ms (API seconds * 1000)"},
+        "runSpeedMultiplier": {"type": ["number", "null"], "description": "unitless movement multiplier"},
+        "firstBulletAccuracy": {"type": ["number", "null"]},
+        "shotgunPelletCount": {"type": ["integer", "null"]},
+        "wallPenetration": {"type": ["string", "null"], "description": "Low | Medium | High (normalized from enum)"},
+        "fireMode": {"type": ["string", "null"]},
+        "altFireType": {"type": ["string", "null"]},
+        "damageRanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rangeStartMeters", "rangeEndMeters", "headDamage", "bodyDamage", "legDamage"],
+            "properties": {
+              "rangeStartMeters": {"type": "number"},
+              "rangeEndMeters": {"type": "number"},
+              "headDamage": {"type": "number"},
+              "bodyDamage": {"type": "number"},
+              "legDamage": {"type": "number"}
+            }
+          }
+        },
+        "ads": {"type": ["object", "null"], "description": "aim-down-sights stats as given by API (zoomMultiplier, fireRate, runSpeedMultiplier, burstCount, firstBulletAccuracy)"},
+        "altShotgunStats": {"type": ["object", "null"]},
+        "airBurstStats": {"type": ["object", "null"]}
+      }
+    },
+    "provenance": {"$ref": "provenance.schema.json"}
+  }
+}

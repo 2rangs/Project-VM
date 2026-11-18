@@ -1,0 +1,432 @@
+{
+  "meta": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "retrievedAt": "2026-11-18T10:12:23+00:00",
+    "count": 70,
+    "disclaimer": "Pre-launch INTERNAL development use. Real team names are included by user decision (2026-11-18); scope is PUBLIC VCT professional teams only. License and name/likeness rights MUST be re-reviewed before any launch. Tendencies remain statistical ESTIMATES from public match economy, not scouting truth."
+  },
+  "teams": [
+    {
+      "teamId": "1001",
+      "name": "Team Heretics",
+      "country": "eu",
+      "sourceUrl": "/team/1001/team-heretics"
+    },
+    {
+      "teamId": "1034",
+      "name": "NRG",
+      "country": "us",
+      "sourceUrl": "/team/1034/nrg"
+    },
+    {
+      "teamId": "11058",
+      "name": "G2 Esports",
+      "country": "us",
+      "sourceUrl": "/team/11058/g2-esports"
+    },
+    {
+      "teamId": "11060",
+      "name": "Nongshim RedForce",
+      "country": "kr",
+      "sourceUrl": "/team/11060/nongshim-redforce"
+    },
+    {
+      "teamId": "1119",
+      "name": "All Gamers",
+      "country": "cn",
+      "sourceUrl": "/team/1119/all-gamers"
+    },
+    {
+      "teamId": "1120",
+      "name": "EDward Gaming",
+      "country": "cn",
+      "sourceUrl": "/team/1120/edward-gaming"
+    },
+    {
+      "teamId": "11328",
+      "name": "FunPlus Phoenix",
+      "country": "cn",
+      "sourceUrl": "/team/11328/funplus-phoenix"
+    },
+    {
+      "teamId": "1184",
+      "name": "FUT Esports",
+      "country": "tr",
+      "sourceUrl": "/team/1184/fut-esports"
+    },
+    {
+      "teamId": "11981",
+      "name": "Dragon Ranger Gaming",
+      "country": "cn",
+      "sourceUrl": "/team/11981/dragon-ranger-gaming"
+    },
+    {
+      "teamId": "120",
+      "name": "100 Thieves",
+      "country": "us",
+      "sourceUrl": "/team/120/100-thieves"
+    },
+    {
+      "teamId": "12010",
+      "name": "Guangzhou Huadu Bilibili Gaming",
+      "country": "cn",
+      "sourceUrl": "/team/12010/bilibili-gaming"
+    },
+    {
+      "teamId": "1209",
+      "name": "Guild Esports",
+      "country": "se",
+      "sourceUrl": "/team/1209/guild-esports"
+    },
+    {
+      "teamId": "12685",
+      "name": "Trace Esports",
+      "country": "cn",
+      "sourceUrl": "/team/12685/trace-esports"
+    },
+    {
+      "teamId": "12694",
+      "name": "Gentle Mates",
+      "country": "eu",
+      "sourceUrl": "/team/12694/gentle-mates"
+    },
+    {
+      "teamId": "13576",
+      "name": "JD Gaming",
+      "country": "cn",
+      "sourceUrl": "/team/13576/jd-gaming"
+    },
+    {
+      "teamId": "13581",
+      "name": "Xi Lai Gaming",
+      "country": "cn",
+      "sourceUrl": "/team/13581/xi-lai-gaming"
+    },
+    {
+      "teamId": "13790",
+      "name": "Wolves Esports",
+      "country": "cn",
+      "sourceUrl": "/team/13790/wolves-esports"
+    },
+    {
+      "teamId": "14",
+      "name": "T1",
+      "country": "kr",
+      "sourceUrl": "/team/14/t1"
+    },
+    {
+      "teamId": "14419",
+      "name": "GIANTX",
+      "country": "eu",
+      "sourceUrl": "/team/14419/giantx"
+    },
+    {
+      "teamId": "1670",
+      "name": "F4Q",
+      "country": "kr",
+      "sourceUrl": "/team/1670/f4q"
+    },
+    {
+      "teamId": "17",
+      "name": "Gen.G",
+      "country": "kr",
+      "sourceUrl": "/team/17/gen-g"
+    },
+    {
+      "teamId": "1837",
+      "name": "Attacking Soul Esports",
+      "country": "cn",
+      "sourceUrl": "/team/1837/attacking-soul-esports"
+    },
+    {
+      "teamId": "188",
+      "name": "Cloud9",
+      "country": "us",
+      "sourceUrl": "/team/188/cloud9"
+    },
+    {
+      "teamId": "198",
+      "name": "Vision Strikers",
+      "country": "kr",
+      "sourceUrl": "/team/198/vision-strikers"
+    },
+    {
+      "teamId": "2",
+      "name": "Sentinels",
+      "country": "us",
+      "sourceUrl": "/team/2/sentinels"
+    },
+    {
+      "teamId": "2059",
+      "name": "Team Vitality",
+      "country": "eu",
+      "sourceUrl": "/team/2059/team-vitality"
+    },
+    {
+      "teamId": "2112",
+      "name": "X10 Esports",
+      "country": "sg",
+      "sourceUrl": "/team/2112/x10-esports"
+    },
+    {
+      "teamId": "2304",
+      "name": "Giants Gaming",
+      "country": "eu",
+      "sourceUrl": "/team/2304/giants-gaming"
+    },
+    {
+      "teamId": "2328",
+      "name": "NUTURN",
+      "country": "kr",
+      "sourceUrl": "/team/2328/nuturn"
+    },
+    {
+      "teamId": "2355",
+      "name": "KRÜ Esports",
+      "country": "ar",
+      "sourceUrl": "/team/2355/kr-esports"
+    },
+    {
+      "teamId": "2359",
+      "name": "LEVIATÁN",
+      "country": "ar",
+      "sourceUrl": "/team/2359/leviat-n"
+    },
+    {
+      "teamId": "2406",
+      "name": "FURIA",
+      "country": "br",
+      "sourceUrl": "/team/2406/furia"
+    },
+    {
+      "teamId": "257",
+      "name": "G2 Esports",
+      "country": "eu",
+      "sourceUrl": "/team/257/g2-esports"
+    },
+    {
+      "teamId": "2593",
+      "name": "FNATIC",
+      "country": "eu",
+      "sourceUrl": "/team/2593/fnatic"
+    },
+    {
+      "teamId": "277",
+      "name": "Crazy Raccoon",
+      "country": "jp",
+      "sourceUrl": "/team/277/crazy-raccoon"
+    },
+    {
+      "teamId": "278",
+      "name": "DetonatioN FocusMe",
+      "country": "jp",
+      "sourceUrl": "/team/278/detonation-focusme"
+    },
+    {
+      "teamId": "2815",
+      "name": "Version1",
+      "country": "ca",
+      "sourceUrl": "/team/2815/version1"
+    },
+    {
+      "teamId": "2988",
+      "name": "NORTHEPTION",
+      "country": "jp",
+      "sourceUrl": "/team/2988/northeption"
+    },
+    {
+      "teamId": "3512",
+      "name": "Sharks Esports",
+      "country": "br",
+      "sourceUrl": "/team/3512/sharks-esports"
+    },
+    {
+      "teamId": "3531",
+      "name": "Acend",
+      "country": "eu",
+      "sourceUrl": "/team/3531/acend"
+    },
+    {
+      "teamId": "397",
+      "name": "BBL Esports",
+      "country": "tr",
+      "sourceUrl": "/team/397/bbl-esports"
+    },
+    {
+      "teamId": "4050",
+      "name": "FULL SENSE",
+      "country": "th",
+      "sourceUrl": "/team/4050/full-sense"
+    },
+    {
+      "teamId": "420",
+      "name": "Team Vikings",
+      "country": "br",
+      "sourceUrl": "/team/420/team-vikings"
+    },
+    {
+      "teamId": "427",
+      "name": "ENVY",
+      "country": "us",
+      "sourceUrl": "/team/427/envy"
+    },
+    {
+      "teamId": "4567",
+      "name": "Papara SuperMassive",
+      "country": "tr",
+      "sourceUrl": "/team/4567/papara-supermassive"
+    },
+    {
+      "teamId": "466",
+      "name": "BOOM Esports",
+      "country": "id",
+      "sourceUrl": "/team/466/boom-esports"
+    },
+    {
+      "teamId": "474",
+      "name": "Team Liquid",
+      "country": "eu",
+      "sourceUrl": "/team/474/team-liquid"
+    },
+    {
+      "teamId": "4894",
+      "name": "Keyd Stars",
+      "country": "br",
+      "sourceUrl": "/team/4894/keyd-stars"
+    },
+    {
+      "teamId": "4915",
+      "name": "Natus Vincere",
+      "country": "eu",
+      "sourceUrl": "/team/4915/natus-vincere"
+    },
+    {
+      "teamId": "5248",
+      "name": "Evil Geniuses",
+      "country": "us",
+      "sourceUrl": "/team/5248/evil-geniuses"
+    },
+    {
+      "teamId": "533",
+      "name": "XSET",
+      "country": "us",
+      "sourceUrl": "/team/533/xset"
+    },
+    {
+      "teamId": "5448",
+      "name": "ZETA DIVISION",
+      "country": "jp",
+      "sourceUrl": "/team/5448/zeta-division"
+    },
+    {
+      "teamId": "581",
+      "name": "Liberty",
+      "country": "br",
+      "sourceUrl": "/team/581/liberty"
+    },
+    {
+      "teamId": "6199",
+      "name": "Team Secret",
+      "country": "ph",
+      "sourceUrl": "/team/6199/team-secret"
+    },
+    {
+      "teamId": "624",
+      "name": "Paper Rex",
+      "country": "sg",
+      "sourceUrl": "/team/624/paper-rex"
+    },
+    {
+      "teamId": "628",
+      "name": "FunPlus Phoenix",
+      "country": "eu",
+      "sourceUrl": "/team/628/funplus-phoenix"
+    },
+    {
+      "teamId": "6675",
+      "name": "The Guard",
+      "country": "us",
+      "sourceUrl": "/team/6675/the-guard"
+    },
+    {
+      "teamId": "682",
+      "name": "Gambit Esports",
+      "country": "ru",
+      "sourceUrl": "/team/682/gambit-esports"
+    },
+    {
+      "teamId": "6961",
+      "name": "LOUD",
+      "country": "br",
+      "sourceUrl": "/team/6961/loud"
+    },
+    {
+      "teamId": "7035",
+      "name": "Movistar KOI",
+      "country": "eu",
+      "sourceUrl": "/team/7035/koi"
+    },
+    {
+      "teamId": "731",
+      "name": "TYLOO",
+      "country": "cn",
+      "sourceUrl": "/team/731/tyloo"
+    },
+    {
+      "teamId": "7386",
+      "name": "MIBR",
+      "country": "br",
+      "sourceUrl": "/team/7386/mibr"
+    },
+    {
+      "teamId": "7391",
+      "name": "Ninjas In Pyjamas",
+      "country": "br",
+      "sourceUrl": "/team/7391/ninjas-in-pyjamas"
+    },
+    {
+      "teamId": "7397",
+      "name": "XERXIA Esports",
+      "country": "th",
+      "sourceUrl": "/team/7397/xerxia-esports"
+    },
+    {
+      "teamId": "8127",
+      "name": "OpTic Gaming",
+      "country": "us",
+      "sourceUrl": "/team/8127/optic-gaming"
+    },
+    {
+      "teamId": "8185",
+      "name": "KIWOOM DRX",
+      "country": "kr",
+      "sourceUrl": "/team/8185/kiwoom-drx"
+    },
+    {
+      "teamId": "8304",
+      "name": "TALON",
+      "country": "th",
+      "sourceUrl": "/team/8304/talon"
+    },
+    {
+      "teamId": "878",
+      "name": "Rex Regum Qeon",
+      "country": "id",
+      "sourceUrl": "/team/878/rex-regum-qeon"
+    },
+    {
+      "teamId": "8877",
+      "name": "Karmine Corp",
+      "country": "eu",
+      "sourceUrl": "/team/8877/karmine-corp"
+    },
+    {
+      "teamId": "918",
+      "name": "Global Esports",
+      "country": "in",
+      "sourceUrl": "/team/918/global-esports"
+    }
+  ]
+}

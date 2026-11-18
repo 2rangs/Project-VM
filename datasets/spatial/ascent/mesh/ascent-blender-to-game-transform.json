@@ -1,0 +1,128 @@
+{
+  "note": "2D transform Blender-world(metres) -> PV-4 game(uu). Anchors are region/landmark centroids; they carry real spread so residuals are expected at the tens-of-metres level, not exact. Use the affine as the working Blender->game map; similarity confirms the frame relationship (scale/rotation/reflection).",
+  "anchors": [
+    {
+      "label": "atk-spawn",
+      "blender": [
+        18.5,
+        9.3
+      ],
+      "game": [
+        60.0,
+        50.0
+      ],
+      "source": "Ascent_Art_Atk floor centroid / attacker-spawn"
+    },
+    {
+      "label": "def-spawn",
+      "blender": [
+        14.0,
+        97.8
+      ],
+      "game": [
+        1995.2,
+        -9744.9
+      ],
+      "source": "Ascent_Art_Def floor centroid / defender-spawn"
+    },
+    {
+      "label": "a-site",
+      "blender": [
+        55.96,
+        66.38
+      ],
+      "game": [
+        6153.6,
+        -6626.2
+      ],
+      "source": "A-bombsite landmark / a-site"
+    },
+    {
+      "label": "b-site",
+      "blender": [
+        -48.5,
+        75.6
+      ],
+      "game": [
+        -2344.1,
+        -7548.5
+      ],
+      "source": "BSite landmark / b-site"
+    },
+    {
+      "label": "mid",
+      "blender": [
+        14.1,
+        52.3
+      ],
+      "game": [
+        1222.7,
+        -4586.6
+      ],
+      "source": "Ascent_Art_Mid floor centroid / mid-courtyard"
+    }
+  ],
+  "affine": {
+    "formula": "game_xy = A @ blender_xy + t",
+    "A": [
+      [
+        81.18774,
+        32.09119
+      ],
+      [
+        -0.34457,
+        -112.39986
+      ]
+    ],
+    "t": [
+      -1394.65,
+      1087.5
+    ],
+    "singularValues_uu_per_m": [
+      120.59,
+      75.58
+    ],
+    "residuals": {
+      "perPointUU": {
+        "atk-spawn": 346.1,
+        "def-spawn": 900.6,
+        "a-site": 905.4,
+        "b-site": 583.1,
+        "mid": 293.5
+      },
+      "rmsUU": 659.8,
+      "maxUU": 905.4
+    }
+  },
+  "similarity": {
+    "formula": "game_xy = scale * (R @ blender_xy) + t",
+    "scale_uu_per_m": 93.246,
+    "R": [
+      [
+        0.98386,
+        0.17893
+      ],
+      [
+        0.17893,
+        -0.98386
+      ]
+    ],
+    "rotationDeg": 10.31,
+    "reflection": true,
+    "t": [
+      -580.12,
+      -341.85
+    ],
+    "residuals": {
+      "perPointUU": {
+        "atk-spawn": 1531.8,
+        "def-spawn": 746.7,
+        "a-site": 1231.0,
+        "b-site": 1522.4,
+        "mid": 482.9
+      },
+      "rmsUU": 1180.7,
+      "maxUU": 1531.8
+    }
+  }
+}

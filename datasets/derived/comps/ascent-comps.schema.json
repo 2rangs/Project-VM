@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/ascent-comps.schema.json",
+  "title": "PROJECT V Ascent composition statistics",
+  "description": "Real international-Ascent agent pick rates, team compositions and atk/def win rates derived from the VCT Reference DuckDB (Layer A stats; no positions). Rates are map-level; Wilson 95% CIs. Patch-blended (not stamped to a single build).",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["map", "filter", "provenance", "overall", "pickRate", "topComps"],
+  "properties": {
+    "map": {"type": "string"},
+    "filter": {"type": "string"},
+    "provenance": {
+      "type": "object",
+      "required": ["source", "sourceUrl", "sha256", "verified", "method"],
+      "properties": {
+        "source": {"type": "string"},
+        "sourceUrl": {"type": "string"},
+        "sha256": {"type": "string"},
+        "dbBuild": {"type": "string"},
+        "retrievedAt": {"type": "string"},
+        "license": {"type": "string"},
+        "evidenceType": {"type": "string"},
+        "verified": {"type": "boolean"},
+        "method": {"type": "string"}
+      }
+    },
+    "sampleCaveats": {"type": "array", "items": {"type": "string"}},
+    "patchesPresent": {"type": "array", "items": {"type": "string"}},
+    "overall": {
+      "type": "object",
+      "required": ["teamMaps", "atkRoundWR", "defRoundWR"],
+      "properties": {
+        "teamMaps": {"type": "integer"},
+        "atkRoundWR": {"type": "number"},
+        "atkRounds": {"type": "integer"},
+        "defRoundWR": {"type": "number"},
+        "defRounds": {"type": "integer"}
+      }
+    },
+    "roleTemplates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["template", "maps", "share"],
+        "properties": {
+          "template": {"type": "object"},
+          "maps": {"type": "integer"},
+          "share": {"type": "number"}
+        }
+      }
+    },
+    "pickRate": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agent", "role", "maps", "teamMaps", "pickRate"],
+        "properties": {
+          "agent": {"type": "string"},
+          "role": {"type": ["string", "null"]},
+          "maps": {"type": "integer"},
+          "teamMaps": {"type": "integer"},
+          "pickRate": {"type": "number"},
+          "pickRateCI95": {"type": "array", "items": {"type": ["number", "null"]}}
+        }
+      }
+    },
+    "topComps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["comp", "maps"],
+        "properties": {
+          "comp": {"type": "array", "items": {"type": "string"}},
+          "roles": {"type": "object"},
+          "maps": {"type": "integer"},
+          "mapWinRate": {"type": ["number", "null"]},
+          "mapWinCI95": {"type": "array"},
+          "atkRoundWR": {"type": ["number", "null"]},
+          "atkRounds": {"type": "integer"},
+          "defRoundWR": {"type": ["number", "null"]},
+          "defRounds": {"type": "integer"}
+        }
+      }
+    }
+  }
+}

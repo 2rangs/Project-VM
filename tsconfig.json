@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "//": "Root typecheck covers the PV-core packages under their shared strict config. Sibling-branch packages keep their own (looser) tsconfigs and are typechecked via `pnpm -r typecheck` (docs/INTEGRATION_PLAN.md F4).",
+  "include": [
+    "packages/shared-types/src/**/*.ts",
+    "packages/simulation-core/src/**/*.ts",
+    "packages/simulation-core/test/**/*.ts",
+    "packages/game-rules/src/**/*.ts",
+    "packages/game-rules/test/**/*.ts",
+    "packages/world-state/src/**/*.ts",
+    "packages/world-state/test/**/*.ts",
+    "packages/decision-engine/src/**/*.ts",
+    "packages/decision-engine/test/**/*.ts",
+    "packages/action-generator/src/**/*.ts",
+    "packages/action-generator/test/**/*.ts",
+    "packages/decision-debugger/src/**/*.ts",
+    "packages/decision-debugger/test/**/*.ts",
+    "packages/team-engine/src/**/*.ts",
+    "packages/team-engine/test/**/*.ts",
+    "packages/outcome-predictor/src/**/*.ts",
+    "packages/outcome-predictor/test/**/*.ts",
+    "packages/integration-adapters/src/**/*.ts",
+    "packages/integration-adapters/test/**/*.ts",
+    "vitest.config.ts"
+  ],
+  "//exclude": "The cross-package E2E test imports sibling engines (round-simulator → spatial-engine, etc.); typechecking it under PV-core's strict flags pulls sibling source into this program and trips their own (looser-config) strictness. It is a RUNTIME integration test (vitest), so it is excluded from the strict root typecheck; siblings are typechecked via `pnpm -r typecheck`.",
+  "exclude": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "packages/integration-adapters/test/e2e.integration.test.ts"
+  ]
+}

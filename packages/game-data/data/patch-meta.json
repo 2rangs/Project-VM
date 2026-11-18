@@ -1,0 +1,20 @@
+{
+ "currentBuild": "release-13.10",
+ "dataWindowRecommendation": {
+  "forCurrentMetaComparability": "patch >= 9.x",
+  "mapsInWindow": 42,
+  "tightestUsableWindow": "patch >= 11.x",
+  "tightestMaps": 31,
+  "tooSmall": "patch >= 13.x (only 13 maps)",
+  "fullHistoryUseFor": "structural/directional trends + role templates only (153 maps, patch 2.09-13.05)",
+  "rationale": "Map is structurally stable, but agent balance shifted (Chamber 5.12/6.07 nerfs, Jett Tailwind rework 7.04/9.10, economy/ult-point changes). Episode 9+ (>=9.x) captures the modern roster/economy with a usable 42-map sample; <9.x blends older metas.",
+  "pv2PriorsFilter": {
+   "note": "PV-2 priors are PV-2-owned (datasets/derived/priors/, NOT modified here). Recommendation only.",
+   "suggestedPredicate": "filter matches by patch >= '9.0' (numeric major.minor) or season/episode >= 9 when building current-meta priors; keep a separate full-history prior for structural baselines.",
+   "columns": "matches.patch (e.g. 'Patch 9.05'), matches.season/event for episode"
+  }
+ },
+ "mapStructuralStability": {
+  "Ascent": "Ascent's layout has been structurally stable across its history: only minor wall/window/door interaction fixes (e.g. v10.04 B Lane wall non-pennable, v6.0 Market door un-breakable), no site/route rework. So map changes do NOT invalidate older Ascent stats; the meta driver is AGENT balance, not map structure."
+ }
+}

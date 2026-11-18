@@ -1,0 +1,8 @@
+node_modules/
+dist/
+# generated screenshots from scripts/screenshot.mjs land here; the committed
+# ones live in docs/, not in the app build output
+screenshots/
+# never commit a real .vrf or a replay converted from one
+*.vrf
+real-*.json

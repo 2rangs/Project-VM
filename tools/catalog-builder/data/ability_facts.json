@@ -1,0 +1,1901 @@
+{
+ "astra:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss"
+  ],
+  "ultPoints": null
+ },
+ "astra:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "astra:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "displacement"
+  ],
+  "ultPoints": null
+ },
+ "astra:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "wall"
+  ],
+  "ultPoints": 7
+ },
+ "breach:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "breach:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss"
+  ],
+  "ultPoints": null
+ },
+ "breach:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": null
+ },
+ "breach:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss",
+   "displacement"
+  ],
+  "ultPoints": 8
+ },
+ "brimstone:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "molotov"
+  ],
+  "ultPoints": null
+ },
+ "brimstone:Ability2": {
+  "charges": 3,
+  "cooldownMs": null,
+  "cost": 100,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "brimstone:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment"
+  ],
+  "ultPoints": null
+ },
+ "brimstone:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": 8
+ },
+ "chamber:Ability1": {
+  "charges": 8,
+  "cooldownMs": null,
+  "cost": 100,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "weapon",
+   "equip"
+  ],
+  "ultPoints": null
+ },
+ "chamber:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "teleport"
+  ],
+  "ultPoints": null
+ },
+ "chamber:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "intel",
+   "slow"
+  ],
+  "ultPoints": null
+ },
+ "chamber:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "slow",
+   "weapon",
+   "equip"
+  ],
+  "ultPoints": 8
+ },
+ "clove:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple"
+  ],
+  "ultPoints": null
+ },
+ "clove:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "clove:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment",
+   "heal"
+  ],
+  "ultPoints": null
+ },
+ "clove:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intangibility",
+   "revive"
+  ],
+  "ultPoints": 8
+ },
+ "cypher:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 100,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "vision",
+   "blocker"
+  ],
+  "ultPoints": null
+ },
+ "cypher:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "controlled",
+   "deployable",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "cypher:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "intel",
+   "slow"
+  ],
+  "ultPoints": null
+ },
+ "cypher:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intel"
+  ],
+  "ultPoints": 7
+ },
+ "deadlock:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "concuss",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "deadlock:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "slow"
+  ],
+  "ultPoints": null
+ },
+ "deadlock:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "barrier"
+  ],
+  "ultPoints": null
+ },
+ "deadlock:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "detain",
+   "displacement"
+  ],
+  "ultPoints": 7
+ },
+ "fade:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "tether"
+  ],
+  "ultPoints": null
+ },
+ "fade:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "fade:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "intel",
+   "nearsight"
+  ],
+  "ultPoints": null
+ },
+ "fade:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "intel"
+  ],
+  "ultPoints": 8
+ },
+ "gekko:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "concuss",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "gekko:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": true,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "blind",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "gekko:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": null
+ },
+ "gekko:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "controlled",
+   "deployable",
+   "detain"
+  ],
+  "ultPoints": 8
+ },
+ "harbor:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "slow",
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "harbor:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "harbor:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "nearsight",
+   "slow",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "harbor:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "nearsight",
+   "slow",
+   "wall",
+   "intel"
+  ],
+  "ultPoints": 7
+ },
+ "hush:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "hush:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "displacement",
+   "concuss"
+  ],
+  "ultPoints": null
+ },
+ "hush:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "dash"
+  ],
+  "ultPoints": null
+ },
+ "hush:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "controlled",
+   "deployable",
+   "detain",
+   "displacement",
+   "intel"
+  ],
+  "ultPoints": 8
+ },
+ "iso:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "limiter"
+  ],
+  "ultPoints": null
+ },
+ "iso:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": true,
+  "typeTags": [
+   "empowerment",
+   "invulnerability"
+  ],
+  "ultPoints": null
+ },
+ "iso:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "iso:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "banish",
+   "limiter"
+  ],
+  "ultPoints": 7
+ },
+ "jett:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "dash"
+  ],
+  "ultPoints": null
+ },
+ "jett:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "dash"
+  ],
+  "ultPoints": null
+ },
+ "jett:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "jett:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "weapon",
+   "equip"
+  ],
+  "ultPoints": 8
+ },
+ "kay-o:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "kay-o:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intel",
+   "limiter"
+  ],
+  "ultPoints": null
+ },
+ "kay-o:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": null
+ },
+ "kay-o:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment",
+   "limiter",
+   "revive"
+  ],
+  "ultPoints": 8
+ },
+ "killjoy:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "cripple",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "killjoy:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "killjoy:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "molotov"
+  ],
+  "ultPoints": null
+ },
+ "killjoy:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "detain"
+  ],
+  "ultPoints": 9
+ },
+ "miks:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment"
+  ],
+  "ultPoints": null
+ },
+ "miks:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 100,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "miks:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss",
+   "heal"
+  ],
+  "ultPoints": null
+ },
+ "miks:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "displacement",
+   "slow"
+  ],
+  "ultPoints": 8
+ },
+ "neon:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss"
+  ],
+  "ultPoints": null
+ },
+ "neon:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "dash"
+  ],
+  "ultPoints": null
+ },
+ "neon:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "neon:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "weapon",
+   "equip"
+  ],
+  "ultPoints": 8
+ },
+ "omen:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "nearsight"
+  ],
+  "ultPoints": null
+ },
+ "omen:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "omen:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 100,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "teleport"
+  ],
+  "ultPoints": null
+ },
+ "omen:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "teleport"
+  ],
+  "ultPoints": 7
+ },
+ "phoenix:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "molotov"
+  ],
+  "ultPoints": null
+ },
+ "phoenix:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "phoenix:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "phoenix:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "revive"
+  ],
+  "ultPoints": 7
+ },
+ "raze:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "dash",
+   "displacement"
+  ],
+  "ultPoints": null
+ },
+ "raze:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": null
+ },
+ "raze:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "raze:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "weapon",
+   "equip"
+  ],
+  "ultPoints": 8
+ },
+ "reyna:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "heal"
+  ],
+  "ultPoints": null
+ },
+ "reyna:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intangibility"
+  ],
+  "ultPoints": null
+ },
+ "reyna:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "nearsight"
+  ],
+  "ultPoints": null
+ },
+ "reyna:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment"
+  ],
+  "ultPoints": 7
+ },
+ "sage:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "slow"
+  ],
+  "ultPoints": null
+ },
+ "sage:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "heal"
+  ],
+  "ultPoints": null
+ },
+ "sage:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "barrier",
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "sage:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "revive"
+  ],
+  "ultPoints": 7
+ },
+ "skye:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss",
+   "controlled",
+   "deployable",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "skye:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "controlled",
+   "deployable",
+   "flash",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "skye:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "heal"
+  ],
+  "ultPoints": null
+ },
+ "skye:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "nearsight",
+   "slow"
+  ],
+  "ultPoints": 8
+ },
+ "sova:Ability1": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": null
+ },
+ "sova:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "sova:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 400,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "controlled",
+   "deployable",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "sova:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "weapon",
+   "equip"
+  ],
+  "ultPoints": 8
+ },
+ "tejo:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "concuss"
+  ],
+  "ultPoints": null
+ },
+ "tejo:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": null
+ },
+ "tejo:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 400,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "controlled",
+   "deployable",
+   "limiter",
+   "intel"
+  ],
+  "ultPoints": null
+ },
+ "tejo:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "deterrent"
+  ],
+  "ultPoints": 9
+ },
+ "veto:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "cripple",
+   "intel",
+   "tether"
+  ],
+  "ultPoints": null
+ },
+ "veto:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "utility",
+   "defense"
+  ],
+  "ultPoints": null
+ },
+ "veto:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "teleport"
+  ],
+  "ultPoints": null
+ },
+ "veto:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment",
+   "heal",
+   "immunity"
+  ],
+  "ultPoints": 7
+ },
+ "viper:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "smoke"
+  ],
+  "ultPoints": null
+ },
+ "viper:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": true,
+  "typeTags": [
+   "cripple",
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "viper:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "molotov"
+  ],
+  "ultPoints": null
+ },
+ "viper:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "cripple",
+   "vision",
+   "blocker"
+  ],
+  "ultPoints": 9
+ },
+ "vyse:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "autonomous",
+   "deployable",
+   "barrier",
+   "intel",
+   "wall"
+  ],
+  "ultPoints": null
+ },
+ "vyse:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "vyse:Grenade": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "slow"
+  ],
+  "ultPoints": null
+ },
+ "vyse:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "limiter"
+  ],
+  "ultPoints": 8
+ },
+ "waylay:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "dash"
+  ],
+  "ultPoints": null
+ },
+ "waylay:Ability2": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 0,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "invulnerability",
+   "mobility"
+  ],
+  "ultPoints": null
+ },
+ "waylay:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 300,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "hinder"
+  ],
+  "ultPoints": null
+ },
+ "waylay:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "empowerment",
+   "hinder"
+  ],
+  "ultPoints": 8
+ },
+ "yoru:Ability1": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 250,
+  "defaultKeybind": "Q",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "yoru:Ability2": {
+  "charges": 2,
+  "cooldownMs": null,
+  "cost": 150,
+  "defaultKeybind": "E",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "decoy",
+   "teleport"
+  ],
+  "ultPoints": null
+ },
+ "yoru:Grenade": {
+  "charges": 1,
+  "cooldownMs": null,
+  "cost": 200,
+  "defaultKeybind": "C",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "decoy",
+   "flash"
+  ],
+  "ultPoints": null
+ },
+ "yoru:Ultimate": {
+  "charges": null,
+  "cooldownMs": null,
+  "cost": null,
+  "defaultKeybind": "X",
+  "durationMs": null,
+  "gameplayNote": "Official VALORANT wiki Abilities tables (basic/signature/ultimate), fetched 2026-11-18; live game build release-13.10 confirmed via valorant-api /v1/version, so these are the current-patch values. Durations/cooldowns are not in these tables (left null). defaultKeybind derived from valorant-api slot via Ability1->Q/Ability2->E/Grenade->C/Ultimate->X, verified 100% against official wiki keybinds for 10 agents/39 abilities (2026-11-18).",
+  "gameplaySource": "https://wiki.playvalorant.com/en-us/Abilities",
+  "gameplayVerified": true,
+  "killRecharge": null,
+  "typeTags": [
+   "intangibility"
+  ],
+  "ultPoints": 8
+ }
+}

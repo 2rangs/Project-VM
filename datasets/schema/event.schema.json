@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "event.schema.json",
+  "title": "Event",
+  "description": "A discrete in-round event (kill, plant, defuse, ...). Field shape mirrors the VLR 2D-replay log event actually observed in vctstats (keys t/type/by/vid/pos/from/locs). FUTURE for real data (requires a match whose vlr.gg page carries 2D-replay data); POPULATED for synthetic rounds. Each event carries an optional position snapshot of all players (see `positions`).",
+  "type": "object",
+  "required": ["eventId", "roundId", "eventNum", "type", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": { "type": "string", "description": "PV canonical event id '<roundId>:<eventNum>'." },
+    "roundId": { "type": "string", "description": "Parent round id." },
+    "eventNum": { "type": "integer", "minimum": 0, "description": "0-based index of the event within the round (ordering key)." },
+    "type": {
+      "type": "string",
+      "enum": ["kill", "plant", "defuse", "spike_death", "environment_death", "round_start", "round_end"],
+      "description": "Event kind. kill/plant/defuse are directly observed in replay logs; spike_death/environment_death are DERIVED (victim is own killer in the log); round_start/round_end are synthetic/structural markers."
+    },
+    "timeMs": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Time since round barriers dropped, in milliseconds. Real source gives 'M:SS' round-clock, converted to ms (vctstats clock() * 1000). Round combat clock is ROUND_SECONDS=100s before plant; after plant the spike timer (SPIKE_SECONDS=45s) governs."
+    },
+    "actorPlayerId": { "type": ["string", "null"], "description": "Player who caused the event (killer/planter/defuser). Null for spike/environment deaths." },
+    "victimPlayerId": { "type": ["string", "null"], "description": "Player affected (victim of a kill). Null for plant/defuse." },
+    "actorTeamIdx": { "type": ["integer", "null"], "enum": [0, 1, null] },
+    "victimTeamIdx": { "type": ["integer", "null"], "enum": [0, 1, null] },
+    "weapon": { "type": ["string", "null"], "description": "Weapon/cause title from the kill feed, e.g. 'Vandal', 'Operator', 'Spike'." },
+    "site": { "type": ["string", "null"], "enum": ["A", "B", "C", null], "description": "Plant site letter for plant/defuse events." },
+    "afterDetonation": { "type": ["boolean", "null"], "description": "True if this event happened after the spike detonated (DERIVED from the replay 'boom' index)." },
+    "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "Event location (e.g. where the victim died), minimapUnits." },
+    "fromPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "Actor/shooter location, minimapUnits." },
+    "positions": {
+      "type": "array",
+      "description": "Snapshot of all players' positions at this event's moment (the replay `locs` array). This is the Layer-B spatial signal; it is event-triggered (sparse), not continuous.",
+      "items": { "$ref": "position.schema.json" }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  }
+}

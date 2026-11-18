@@ -1,0 +1,51 @@
+{
+  "status": 200,
+  "data": [
+    {
+      "uuid": "test-rifle-0001",
+      "displayName": "TestRifle",
+      "category": "EEquippableCategory::Rifle",
+      "weaponStats": {
+        "fireRate": 9.75,
+        "magazineSize": 25,
+        "runSpeedMultiplier": 0.8,
+        "equipTimeSeconds": 1.0,
+        "reloadTimeSeconds": 2.5,
+        "firstBulletAccuracy": 0.0,
+        "shotgunPelletCount": 0,
+        "wallPenetration": "EWallPenetrationDisplayType::Medium",
+        "fireMode": null,
+        "altFireType": "EWeaponAltFireDisplayType::ADS",
+        "adsStats": {"zoomMultiplier": 1.25, "fireRate": 8.775, "runSpeedMultiplier": 0.76, "burstCount": 1, "firstBulletAccuracy": 0.1575},
+        "altShotgunStats": null,
+        "airBurstStats": null,
+        "damageRanges": [
+          {"rangeStartMeters": 0, "rangeEndMeters": 50, "headDamage": 160, "bodyDamage": 40, "legDamage": 34}
+        ]
+      },
+      "shopData": {"cost": 2900, "category": "Rifles", "categoryText": "Assault Rifles"}
+    },
+    {
+      "uuid": "test-melee-0002",
+      "displayName": "TestMelee",
+      "category": "EEquippableCategory::Melee",
+      "weaponStats": {
+        "fireRate": 0,
+        "magazineSize": 0,
+        "runSpeedMultiplier": 1.0,
+        "equipTimeSeconds": 0.8,
+        "reloadTimeSeconds": 0,
+        "firstBulletAccuracy": 0.0,
+        "shotgunPelletCount": 0,
+        "wallPenetration": "EWallPenetrationDisplayType::Low",
+        "fireMode": null,
+        "altFireType": null,
+        "adsStats": null,
+        "altShotgunStats": null,
+        "airBurstStats": null,
+        "damageRanges": []
+      },
+      "shopData": null
+    }
+  ]
+}

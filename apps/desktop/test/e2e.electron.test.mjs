@@ -1,0 +1,65 @@
+// E2E: launch the built Electron app (manager-game shell), run a stub match in a
+// separate process, and screenshot the key screens. Run under a virtual display:
+//   xvfb-run -a node test/e2e.electron.test.mjs   (after `npm run build`)
+// Writes PNGs to apps/desktop/docs/.
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+
+const require = createRequire(process.env.PLAYWRIGHT_REQUIRE_BASE || '/opt/node-tools/');
+const { _electron: electron } = require('playwright');
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const appDir = path.resolve(here, '..');
+const OUT = path.join(appDir, 'docs');
+fs.mkdirSync(OUT, { recursive: true });
+const requireApp = createRequire(path.join(appDir, 'package.json'));
+const electronPath = requireApp('electron');
+
+async function main() {
+  const app = await electron.launch({
+    executablePath: electronPath,
+    args: [
+      path.join(appDir, 'out/main/index.js'),
+      '--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader',
+      '--ignore-gpu-blocklist', '--disable-gpu-sandbox',
+    ],
+    cwd: appDir,
+    env: { ...process.env, PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces') },
+  });
+  const page = await app.firstWindow();
+  page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
+
+  // shell + Match Day (default route)
+  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
+
+  // run a stub match (separate process → IPC → replay) and confirm it loads
+  await page.getByTestId('run-match').click();
+  await page.waitForSelector('.rv-src-simulated', { timeout: 30000 });
+  assert.ok(/SIMULATED/.test(await page.locator('.rv-src-simulated').innerText()), 'simulated replay loaded');
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: path.join(OUT, 'desktop-matchday.png') });
+
+  // Squad (sortable table of real VCT names)
+  await page.getByTestId('nav-squad').click();
+  await page.waitForSelector('[data-testid="dt-row"]', { timeout: 10000 });
+  await page.getByTestId('dt-row').first().click(); // open detail panel
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(OUT, 'desktop-squad.png') });
+
+  // Decision Debugger (Dev) — pick the scenario with exclusions
+  await page.getByTestId('nav-dev-debugger').click();
+  await page.waitForSelector('[data-testid="excluded-card"]', { timeout: 10000 });
+  await page.selectOption('[data-testid="trace-select"]', 'trace-scenario-04').catch(() => {});
+  await page.waitForTimeout(500);
+  assert.ok(/not enough time|needs|not a plantable/i.test(await page.getByTestId('excluded-card').innerText()), 'exclusion reasons visible');
+  await page.screenshot({ path: path.join(OUT, 'desktop-debugger.png') });
+
+  await app.close();
+  console.log('E2E OK — screenshots in apps/desktop/docs/');
+}
+main().catch((e) => { console.error('E2E FAILED:', e); process.exit(1); });

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-v/replay-kinematics@1",
+  "title": "PROJECT V — Replay Kinematics (derived, Layer-B)",
+  "description": "Aggregate movement statistics derived from ONE decoded VALORANT .vrf replay by tools/replay-parser/analysis. Calibration input for the simulation/combat engines. AGGREGATES ONLY — no per-frame trajectory, no ProfileName, no raw .vrf. All speeds are reported in BOTH uu/s and m/s (1 uu ≈ 1 cm; unitsPerMeter=100). Angles in degrees, yaw rate in deg/s, times in ms unless a field says seconds.",
+  "type": "object",
+  "required": ["schema", "provenance", "capture", "mapIdentification", "kinematics"],
+  "properties": {
+    "schema": { "const": "project-v/replay-kinematics@1" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "provenance": {
+      "type": "object",
+      "description": "Mirrors datasets/schema/provenance.schema.json. evidenceType=derived (computed from decoded positions). synthetic MUST be false for real captures.",
+      "required": ["sourceId", "evidenceType", "synthetic"],
+      "properties": {
+        "sourceId": { "type": "string" },
+        "evidenceType": { "enum": ["observed", "decoded", "derived", "inferred", "simulated"] },
+        "verified": { "type": "boolean" },
+        "verificationLevel": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "synthetic": { "type": "boolean" },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "description": "What replay this came from. players use anonymous player_N ids only.",
+      "properties": {
+        "sampleCount": { "type": "integer" },
+        "uniqueActors": { "type": "integer" },
+        "players": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "anonId": { "type": "string", "pattern": "^player_[0-9]+$" },
+              "teamIdx": { "type": ["integer", "null"] },
+              "playerId": { "type": "string" }
+            }
+          }
+        },
+        "mapHints": { "type": "object", "description": "mapFolder -> decoded log-line count." }
+      }
+    },
+    "mapIdentification": {
+      "type": "object",
+      "properties": {
+        "identified": { "type": ["string", "null"] },
+        "basis": { "type": "string" },
+        "decodedHint": { "type": ["string", "null"], "description": "Map folder decoded from the parser class-path (primary signal)." },
+        "transformRanking": {
+          "type": "array",
+          "description": "valorant-api transform [0,1]-containment test per candidate map (corroborating, weak for small samples).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "map": { "type": "string" },
+              "fractionInUnit": { "type": "number", "minimum": 0, "maximum": 1 },
+              "minimapBBox": { "type": "object" },
+              "bboxArea": { "type": "number" }
+            }
+          }
+        },
+        "caveat": { "type": "string" }
+      }
+    },
+    "projection": {
+      "type": ["object", "null"],
+      "description": "Result of applying the identified map's valorant-api transform (axis-swapped: minimapX=gameY*xMul+xAdd, minimapY=gameX*yMul+yAdd) to all sample positions.",
+      "properties": {
+        "map": { "type": "string" },
+        "transform": { "type": "object" },
+        "minimapBBox": { "type": "object" },
+        "fractionInUnit": { "type": "number", "description": "Fraction of samples landing in minimap [0,1]; 1.0 = transform fully valid for this capture." },
+        "minimapImage": { "type": ["string", "null"] }
+      }
+    },
+    "callouts": {
+      "type": ["object", "null"],
+      "description": "Nearest PV-4 callout-zone assignment (game-world distance). Ascent only. Zone anchor positions are PV-4 'manual-approx'.",
+      "properties": {
+        "occupiedZones": { "type": "array" },
+        "nearestZoneDistUU": { "type": "object" }
+      }
+    },
+    "kinematics": {
+      "type": "object",
+      "description": "Core movement statistics. Every block carries its sample n. See tools/replay-parser/analysis/kinematics.mjs for definitions.",
+      "required": ["config", "counts", "speed", "yawRate", "acceleration", "segments"],
+      "properties": {
+        "config": {
+          "type": "object",
+          "description": "sampleHz (128), unitsPerMeter (100), thresholdsMps (idle/walk/run band edges) + thresholdBasis.",
+          "properties": {
+            "sampleHz": { "type": "number" },
+            "unitsPerMeter": { "type": "number" },
+            "thresholdsMps": { "type": "object" },
+            "thresholdBasis": { "type": "string" }
+          }
+        },
+        "counts": { "type": "object", "description": "actors, totalSamples, stepPairs, move/idle segments." },
+        "speed": {
+          "type": "object",
+          "description": "Step-speed distribution. percentilesUU/Mps, topSpeed, meanMovingMps, and stateFractions (idle/walkOrCrouch/run/anomalous by speed band).",
+          "properties": {
+            "percentilesUU": { "type": "object" },
+            "percentilesMps": { "type": "object" },
+            "topSpeedUU": { "type": ["number", "null"] },
+            "topSpeedMps": { "type": ["number", "null"] },
+            "meanMovingMps": { "type": ["number", "null"] },
+            "stateFractions": { "type": "object" },
+            "stateCounts": { "type": "object" }
+          }
+        },
+        "yawRate": {
+          "type": "object",
+          "description": "Facing angular velocity (deg/s). percentiles + mean. Combat-engine input for turn/aim-adjust timing.",
+          "properties": {
+            "n": { "type": "integer" },
+            "percentiles": { "type": "object" },
+            "meanDegPerSec": { "type": ["number", "null"] }
+          }
+        },
+        "acceleration": {
+          "type": "object",
+          "description": "Per move-segment accel/decel proxies in seconds (start->peak, peak->end) + segment peak-speed percentiles.",
+          "properties": {
+            "n": { "type": "integer" },
+            "accelSecMean": { "type": ["number", "null"] },
+            "decelSecMean": { "type": ["number", "null"] },
+            "segPeakMpsPercentiles": { "type": "object" }
+          }
+        },
+        "segments": {
+          "type": "object",
+          "description": "Move/idle run-length durations (seconds): percentiles + means.",
+          "properties": {
+            "moveSecPercentiles": { "type": "object" },
+            "idleSecPercentiles": { "type": "object" },
+            "moveSecMean": { "type": ["number", "null"] },
+            "idleSecMean": { "type": ["number", "null"] }
+          }
+        },
+        "firstMove": {
+          "type": "object",
+          "description": "Time from round start to first moving step (ms). n, values[], meanMs. Sparse unless round starts are provided.",
+          "properties": {
+            "n": { "type": "integer" },
+            "values": { "type": "array", "items": { "type": "number" } },
+            "meanMs": { "type": ["integer", "null"] }
+          }
+        }
+      }
+    }
+  }
+}

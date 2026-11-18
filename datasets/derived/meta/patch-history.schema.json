@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-v/catalog/patch-history.schema.json",
+  "title": "PROJECT V patch / meta history",
+  "description": "Ascent map change history and top-pick agent balance history by patch, from official sources, with a data-window recommendation for comparing older VCT stats to the current build.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["map", "currentBuild", "provenance", "mapUpdateHistory", "agents", "dataWindowRecommendation"],
+  "properties": {
+    "map": {"type": "string"},
+    "currentBuild": {"type": "string"},
+    "provenance": {"type": "object", "required": ["source", "verified"], "properties": {
+      "source": {"type": "string"}, "retrievedAt": {"type": "string"}, "note": {"type": "string"}, "verified": {"type": "boolean"}}},
+    "mapStructuralStability": {"type": "string"},
+    "mapUpdateHistory": {"type": "array", "items": {"$ref": "#/definitions/change"}},
+    "agents": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["wikiSource", "notableChanges"],
+        "properties": {
+          "wikiSource": {"type": "string", "pattern": "^https://"},
+          "notableChanges": {"type": "array", "items": {"$ref": "#/definitions/change"}}
+        }
+      }
+    },
+    "sampleByPatchEra": {"type": "object"},
+    "dataWindowRecommendation": {
+      "type": "object",
+      "required": ["forCurrentMetaComparability", "rationale"],
+      "properties": {
+        "forCurrentMetaComparability": {"type": "string"},
+        "mapsInWindow": {"type": "integer"},
+        "tightestUsableWindow": {"type": "string"},
+        "rationale": {"type": "string"},
+        "pv2PriorsFilter": {"type": "object"}
+      }
+    }
+  },
+  "definitions": {
+    "change": {
+      "type": "object",
+      "required": ["patch", "summary"],
+      "properties": {
+        "patch": {"type": "string", "pattern": "^\\d+\\.\\d+$"},
+        "summary": {"type": "string"},
+        "patchNoteUrl": {"type": "string", "pattern": "^https://playvalorant\\.com/"},
+        "patchNoteResolves": {"type": "boolean"},
+        "strength": {"type": "string", "enum": ["official", "analyst", "community"]}
+      }
+    }
+  }
+}

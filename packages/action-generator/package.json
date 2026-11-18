@@ -1,0 +1,23 @@
+{
+  "name": "@pv/action-generator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Situation-aware tactical action candidate generation, constraint validation and rule/utility evaluation for PROJECT V.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@pv/shared-types": "workspace:*",
+    "@pv/game-rules": "workspace:*"
+  },
+  "devDependencies": {
+    "@pv/world-state": "workspace:*",
+    "@pv/decision-engine": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

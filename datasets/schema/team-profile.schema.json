@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-profile.schema.json",
+  "title": "Team Profile (behavioural tendencies)",
+  "description": "Team economic + side/map behavioural tendencies estimated from VCT Reference round/economy data (Handoff P4, README §24), for PV-3 IGL opponent modelling. Keyed by teamId; real names are in the sibling team_names.json (user decision 2026-11-18, public VCT teams, pre-launch internal use). Beta-binomial shrunk, with point-in-time (asOf) support. Tactical tendencies needing positions are null + reason. ESTIMATES from public match data, not scouting truth. Real/derived (provenance.synthetic=false).",
+  "type": "object",
+  "required": ["teamId", "maps", "economy", "side", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "teamId": { "type": "string", "description": "VCT Reference teams.team_id (stringified). Name is in team_names.json." },
+    "maps": { "type": "integer", "minimum": 1 },
+    "seasons": { "type": "array", "items": { "type": ["integer", "null"] } },
+    "mapPool": { "type": "object", "additionalProperties": { "type": "integer" }, "description": "Games played per map (descending)." },
+    "lowSample": { "type": "boolean" },
+    "economy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "forceBuyAfterLoss": { "$ref": "#/$defs/rate" },
+        "forceBuyAfterLossByTier": {
+          "type": "object", "additionalProperties": false,
+          "properties": { "1": { "$ref": "#/$defs/rate" }, "2": { "$ref": "#/$defs/rate" }, "3plus": { "$ref": "#/$defs/rate" } }
+        },
+        "pistolLossForceBuy": { "$ref": "#/$defs/rate" },
+        "bonusBuyRate": { "$ref": "#/$defs/rate" },
+        "antiEcoFullBuy": { "$ref": "#/$defs/rate" },
+        "overtimeForceBuy": { "$ref": "#/$defs/rate" }
+      }
+    },
+    "side": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attackWinRate": { "$ref": "#/$defs/rate" },
+        "defenseWinRate": { "$ref": "#/$defs/rate" },
+        "ascentAttackWinRate": { "$ref": "#/$defs/rate" },
+        "firstMinusSecondHalfAttack": { "$ref": "#/$defs/rate" }
+      }
+    },
+    "tacticalNull": {
+      "type": "object",
+      "description": "Tactical tendencies that need positional data — all null with a reason.",
+      "additionalProperties": { "$ref": "#/$defs/rate" }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  },
+  "$defs": {
+    "rate": {
+      "type": "object",
+      "required": ["value"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["number", "null"], "description": "Shrunk rate in [0,1] (or a signed deviation for half splits); null when not estimable." },
+        "raw": { "type": ["number", "null"], "description": "Unshrunk observed rate." },
+        "n": { "type": "integer", "minimum": 0, "description": "Qualifying rounds." },
+        "uncertainty": { "type": "number", "minimum": 0, "maximum": 1 },
+        "reason": { "type": ["string", "null"], "description": "Why the value is null / absent." }
+      }
+    }
+  }
+}
