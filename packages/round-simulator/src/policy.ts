@@ -43,6 +43,12 @@ export class ScriptedPolicy implements DecisionPolicy {
     const site = this.opts.attackSite ?? "a-site";
     const carrierId = view.spike.holderId;
     const planting = view.spike.phase === "carried" || view.spike.phase === "planting";
+    // dropped spike (carrier died): send the lowest-id alive attacker to retrieve it.
+    const dropped = carrierId == null && view.spike.position != null && view.spike.phase === "carried";
+    const dropZone = dropped ? this.zoneOf(view.spike.position!) : null;
+    const retriever = dropped
+      ? view.teammates.filter((p) => p.alive && p.side === "attack").map((p) => p.id).sort()[0]
+      : null;
     const commands: ActionCommand[] = [];
     const roles: RoleAssignment[] = [];
     let idx = 0;
@@ -50,6 +56,10 @@ export class ScriptedPolicy implements DecisionPolicy {
       if (!p.alive) continue;
       roles.push({ playerId: p.id, role: idx++ === 0 ? "entry" : "support" });
       const zone = this.zoneOf(p.position);
+      if (p.id === retriever && dropZone && zone !== dropZone) {
+        commands.push({ playerId: p.id, kind: "move", targetZone: dropZone, moveMode: "run" });
+        continue;
+      }
       // deploy utility mid-execute (once, while approaching but not yet on site)
       if (this.opts.useUtility && zone !== site) {
         const ready = p.abilities.find((a) => a.chargesRemaining > 0 && a.cooldownRemainingMs <= 0);
@@ -78,11 +88,19 @@ export class ScriptedPolicy implements DecisionPolicy {
 
     if (planted) {
       const spikeZone = this.zoneOf(view.spike.position!);
+      // only defuse when the site is clear of visible attackers; otherwise clear the angle first.
+      const attackerOnSite = view.observation.visibleEnemies.some((e) => e.currentlyVisible && this.zoneOf(e.lastSeenPosition) === spikeZone);
       for (const p of view.teammates) {
         if (!p.alive) continue;
         roles.push({ playerId: p.id, role: "rotator" });
         const zone = this.zoneOf(p.position);
-        commands.push(zone === spikeZone ? { playerId: p.id, kind: "defuse", targetZone: spikeZone } : { playerId: p.id, kind: "move", targetZone: spikeZone, moveMode: "run" });
+        if (zone !== spikeZone) {
+          commands.push({ playerId: p.id, kind: "move", targetZone: spikeZone, moveMode: "run" });
+        } else if (attackerOnSite) {
+          commands.push({ playerId: p.id, kind: "hold" }); // clear the site before defusing
+        } else {
+          commands.push({ playerId: p.id, kind: "defuse", targetZone: spikeZone });
+        }
       }
       return { strategy: "retake", roles, commands };
     }

@@ -82,6 +82,7 @@ export type SimEventKind =
   | "abilityUsed"
   | "engage"
   | "kill"
+  | "spikePickup"
   | "plantStart"
   | "planted"
   | "defuseStart"

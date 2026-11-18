@@ -165,6 +165,17 @@ export class RoundSimulator {
         }
       }
 
+      // 5c. spike pickup: an attacker standing on a dropped spike picks it up
+      if (state.spike.phase === "carried" && !state.spike.carrierId && state.spike.zoneId) {
+        const picker = state.players.find((p) => p.alive && p.side === "attack" && p.zoneId === state.spike.zoneId);
+        if (picker) {
+          state.spike.carrierId = picker.id;
+          state.spike.position = null;
+          state.spike.zoneId = null;
+          push({ kind: "spikePickup", tick: state.tick, elapsedMs: state.elapsedMs, actor: picker.id, zoneId: picker.zoneId });
+        }
+      }
+
       // 6. spike progression
       this.stepSpike(state, commands, dt, events);
 
