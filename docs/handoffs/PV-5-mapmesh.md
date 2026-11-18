@@ -195,3 +195,37 @@ python3 -I tools/map-mesh/nav2d/test_grid.py && python3 -I tools/map-mesh/los/te
 1. 콜아웃 단위 정밀 정합 → LoS/경로 신뢰도 상향.
 2. `replacement-proposal.json`을 PV-4 그래프에 반영(오케스트레이터/PV-4).
 3. 나머지 10개 맵에 동일 파이프라인 적용.
+
+---
+---
+
+# 3차 작업 (Round 3) — 동결(FROZEN)
+
+사용자 지시로 main 머지를 위해 작업 동결. 3차(정밀 좌표 정합)는 **착수 직후 동결**되어,
+완료·검증된 산출물만 남긴다. 2차까지의 파이프라인/결과(`c946796`)는 그대로 유효하며
+테스트(nav2d 5 + los 5) 전부 통과 상태.
+
+## R3 완료한 것 (검증됨)
+- `tools/map-mesh/blender/dump-object-centroids.py`: Vista 제외 전체 메시
+  오브젝트(6,736개)의 월드 중심·bbox·이름을 1회 덤프하는 유틸(정밀 정합 앵커
+  선정을 Blender 재실행 없이 Python에서 반복하기 위함). 실행 확인 완료.
+
+## R3 미완료 (TODO — 다음 에이전트)
+1. **정밀 정합(목표 RMS ≤2m, 현재 6.6m):**
+   - `dump-object-centroids.py` 출력에서 콜아웃별 명명 오브젝트(ABombsite/BSite/
+     AtkTower/스파이크 사이트 박스/계단 등)를 valorant-api 콜아웃에 대응시켜
+     앵커를 5개→더 많이 확장.
+   - **PV-6 실측 앵커:** 원본 `.vrf` 점 단위 재생성은 이 환경에서 **불가**(.NET/mono
+     미설치, 실제 .vrf·ValorantReplayParser 바이너리 없음; pv-replay엔 합성 픽스처만).
+     대안으로 커밋된 캡처 minimap bbox 중심(게임좌표 (1882,-10389)) ↔ Blender
+     defender-spawn 바닥을 앵커로 사용(이미 `ascent-pv6-validation.json`에서 2.9m
+     바닥 적중 확인). 점 단위가 필요하면 .NET 가능한 환경에서 PV-6 파이프라인 실행.
+   - reflection + 스케일(~90–100 uu/m) 고정 강체+스케일 변환 우선, 아핀은 비교용.
+   - 달성 못하면 도달 RMS와 병목(콜아웃 좌표 자체의 근사성)을 기록.
+2. **재계산:** 개선된 변환으로 grid-calibration·LoS 행렬·32간선 재계산, 이전과
+   비교(특히 PV-4 sightline 11개 중 corroborate 수 변화). `replacement-proposal.json`
+   갱신·신뢰도 재등급. **(현 동결 시점에선 마지막 유효본 유지.)**
+3. **엔진용 경량 행렬:** 구역쌍 가시확률 행렬 + 구역간 실측 이동시간 행렬을
+   제안서에 집계 수치로 추가, PV-4 `ascent.navgraph.json`의 sightlines·edges 필드 형식에 맞춤.
+4. **(선택) 2순위 맵 Lotus**(PV-1 `NEXT_MAP_PREP.md`): 파이프라인 맵 파라미터화 +
+   Lotus 다운로드·장면 분석까지만(엔진 반영 금지, DECISION-009).
