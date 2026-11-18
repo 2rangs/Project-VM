@@ -1,4 +1,4 @@
-import type { RoundResult, TrackFrame } from "./types.js";
+import type { PerceptionTrack, RoundResult, TrackFrame } from "./types.js";
 import { toSimGameEvents, type SimGameEvent } from "./export.js";
 
 /**
@@ -47,6 +47,8 @@ export interface Pv6SimMeta {
   readonly seed?: number | null;
   readonly matchId?: string | null;
   readonly coordinateTransform?: unknown;
+  /** Per-team observation/belief series (from config.recordPerception). PV-6 renders fog + heatmap. */
+  readonly perception?: readonly PerceptionTrack[];
 }
 
 export interface Pv6SimEventLog {
@@ -65,7 +67,17 @@ export interface Pv6SimEventLog {
  *
  * We return the bridge input rather than the Replay object to avoid a cross-branch build
  * dependency on PV-6's package (verified against PV-6's converter in test/replay.test.ts).
+ *
+ * When the round was run with config.recordPerception, the per-team PerceptionTrack[] is folded
+ * into meta.perception (structurally PV-6's ConvertSimMeta.perception), so PV-6 wires it with:
+ *   const log = toPv6ReplayFormat(result, { mapId, seed, coordinateTransform });
+ *   const replay = fromSimEventLog(log.events, log.meta); // log.meta.perception renders fog/heatmap
+ * An explicit meta.perception overrides the result's (e.g. a match-level merge of all rounds).
  */
 export function toPv6ReplayFormat(result: RoundResult, meta: Pv6SimMeta): Pv6SimEventLog {
-  return { events: toSimGameEvents(result, { includeMoves: true }), meta };
+  const perception = meta.perception ?? result.perception;
+  return {
+    events: toSimGameEvents(result, { includeMoves: true }),
+    meta: perception ? { ...meta, perception } : meta,
+  };
 }

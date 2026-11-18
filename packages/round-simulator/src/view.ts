@@ -25,7 +25,7 @@ import type {
   ZonePath,
   ZoneType,
 } from "./policy-contract.js";
-import type { SimPlayer, SimState, Side } from "./types.js";
+import type { PerceptionSnapshot, SimPlayer, SimState, Side } from "./types.js";
 
 /**
  * Adapter exposing PV-4's SpatialEngine as PV-3's SpatialQuery (the dependency-inversion
@@ -227,6 +227,37 @@ export function buildPolicyView(
 
 function economyStub(teamId: string, side: Side): TeamEconomyState {
   return { teamId, side, credits: 0, lossBonusTier: 0, consecutiveLosses: 0 };
+}
+
+/**
+ * Summarise one side's PolicyView into a PV-6 PerceptionSnapshot (fog-of-war + belief heatmap).
+ * Observation/belief only — never ground truth (DECISION-004). `tMs` is round-relative; the
+ * match merger offsets it onto the match timeline (as it does for event timeMs).
+ */
+export function toPerceptionSnapshot(view: PolicyView, spatial: SpatialQuery, tMs: number): PerceptionSnapshot {
+  const obs = view.observation;
+  const observedEnemies = obs.visibleEnemies.map((e) => ({
+    enemyId: e.playerId ?? null,
+    zone: spatial.nearestZone(e.lastSeenPosition),
+    pos: e.lastSeenPosition,
+    lastSeenMsAgo: e.currentlyVisible ? 0 : Math.max(0, obs.timestampMs - e.lastSeenAtMs),
+    currentlyVisible: e.currentlyVisible,
+  }));
+  // Fold the belief's per-enemy position hypotheses into a zone→probability map.
+  const byZone = new Map<string, number>();
+  for (const b of view.belief.enemyPositionBeliefs) {
+    for (const h of b.hypotheses) {
+      const z = spatial.nearestZone(h.position);
+      byZone.set(z, (byZone.get(z) ?? 0) + h.weight);
+    }
+  }
+  const beliefZones = [...byZone.entries()].map(([zone, w]) => ({ zone, p: Math.min(1, w) }));
+  const sounds = obs.audibleEvents.map((a) => ({
+    zone: spatial.nearestZone(a.approxPosition),
+    kind: a.kind,
+    tMsAgo: Math.max(0, obs.timestampMs - a.heardAtMs),
+  }));
+  return { tMs, roundNum: view.roundNumber ?? null, observedEnemies, beliefZones, sounds };
 }
 
 // Local perception-world builder (mirror of simulator's; kept here so view is self-contained).

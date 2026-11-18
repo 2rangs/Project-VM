@@ -74,6 +74,26 @@ ultimate-point changes.**
   the deterministic tick loop (`RoundSimulator.runRound`), then reads final player state + the
   event log back out. No global state; safe to call in a loop across a match.
 
+## Perception recording (PV-6 fog-of-war + belief heatmap)
+
+Set `config.recordPerception: true` (off by default — it costs per-decision work) to get a
+per-team observation/belief time series in `RoundResult.perception` / `MatchRoundOutput`. It is
+**observation and belief only, never ground truth** (DECISION-004), kept separate from the
+ground-truth `tracks`.
+
+- Shape matches PV-6's `@pv/replay-engine` `PerceptionTrack[]` field-for-field (one track per
+  team): `{ teamIdx, side, intervalTicks, snapshots: [{ tMs, roundNum, observedEnemies,
+  beliefZones, sounds }] }`. `observedEnemies` are last-seen contacts (`zone`, `pos`,
+  `lastSeenMsAgo`, `currentlyVisible`); `beliefZones` are the real `buildBelief` hypotheses
+  folded to `{ zone, p∈[0,1] }`; `sounds` are audible cues localized to a zone.
+- `teamIdx` is **side-based for a single round** (0 = attack, 1 = defense) with `side` set; the
+  match merger remaps to the real team index using `side` + that round's attacker. `tMs` is
+  round-relative — the match merger offsets it onto the match timeline (as with event `timeMs`).
+- Sampling interval is `config.perceptionIntervalTicks` (defaults to `decisionIntervalTicks`).
+- `toPv6ReplayFormat(result, meta)` folds the track into `meta.perception`, so PV-6 wires it as
+  `fromSimEventLog(log.events, log.meta)` and renders the fog view + heatmap. Pass an explicit
+  `meta.perception` to override (e.g. a match-level merge of all rounds).
+
 ## Minimal example
 
 ```ts

@@ -122,6 +122,55 @@ export interface TrackFrame {
   }>;
 }
 
+// ---- Perception/belief time series (PV-6 fog-of-war + Belief heatmap, recordPerception) ----
+// Structural mirror of @pv/replay-engine's PerceptionTrack/PerceptionSnapshot (claude/pv-replay
+// f9f7a09). Kept local so the round-simulator has no build dependency on PV-6's package; the
+// shapes match field-for-field, so toPv6ReplayFormat's output is a drop-in for its `perception`.
+// This is OBSERVATION/BELIEF, never ground truth (DECISION-004) — one track per team.
+
+/** An enemy as a team currently sees or last saw them (never ground truth). */
+export interface PerceptionObservedEnemy {
+  readonly enemyId: string | null;
+  readonly zone: string;
+  readonly pos?: { readonly x: number; readonly y: number; readonly z: number } | null;
+  readonly lastSeenMsAgo: number;
+  readonly currentlyVisible: boolean;
+}
+
+/** Probability mass this team assigns to an enemy being in a zone (0..1; need not sum to 1). */
+export interface ZoneBelief {
+  readonly zone: string;
+  readonly p: number;
+}
+
+/** A sound contact localized to a zone. */
+export interface SoundCue {
+  readonly zone: string;
+  readonly kind?: string | null;
+  readonly tMsAgo?: number;
+}
+
+/** One team's belief at one sampled instant. tMs is round-relative (the match merger offsets it). */
+export interface PerceptionSnapshot {
+  readonly tMs: number;
+  readonly roundNum?: number | null;
+  readonly observedEnemies: readonly PerceptionObservedEnemy[];
+  readonly beliefZones: readonly ZoneBelief[];
+  readonly sounds?: readonly SoundCue[];
+}
+
+/**
+ * A whole team's perception time series. `teamIdx` here is SIDE-BASED for a single round
+ * (0 = attack, 1 = defense) with `side` set; the match-level merger remaps to the real team
+ * index using `side` + that round's attacker.
+ */
+export interface PerceptionTrack {
+  readonly teamIdx: number;
+  readonly side?: Side | null;
+  readonly intervalTicks?: number | null;
+  readonly snapshots: readonly PerceptionSnapshot[];
+}
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -133,6 +182,8 @@ export interface RoundResult {
   readonly roster: Readonly<Record<PlayerId, Side>>;
   /** Per-tick position frames, present only when config.recordTracks is true. */
   readonly tracks?: readonly TrackFrame[];
+  /** Per-team observation/belief series, present only when config.recordPerception is true. */
+  readonly perception?: readonly PerceptionTrack[];
 }
 
 export interface SimConfig {
@@ -144,6 +195,10 @@ export interface SimConfig {
   readonly spikeTimerMs: number;
   readonly seed: number;
   readonly recordTracks: boolean;
+  /** Record per-team observation/belief snapshots (PV-6 fog-of-war). Off by default (cost). */
+  readonly recordPerception: boolean;
+  /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
+  readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while standing in a molly / area-denial zone. */
   readonly mollyDamagePerTick: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
@@ -159,5 +214,6 @@ export const DEFAULT_CONFIG: SimConfig = {
   spikeTimerMs: 45000,
   seed: 1,
   recordTracks: false,
+  recordPerception: false,
   mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
 };
