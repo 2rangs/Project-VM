@@ -155,6 +155,18 @@ caster→target is treated as unobstructed — there is no throw-arc or LoS chec
 the effect's own zone then drives perception (a smoke at the target blocks sightlines through it).
 Policies set `targetZone` on `useAbility` to place utility on angles/chokes rather than on self.
 
+## Cast occupation (windup)
+
+Casting an ability no longer frees the player to fight normally that tick, nor does it occupy the
+whole decision cycle. The caster is **weapon-unready for the ability's `windupMs`** (equip/throw
+time; a manual-approx default of 700 ms when the catalog has none). During that window a duel
+applies a reaction penalty (weapon not out) and the caster cannot pre-aim; after it, the player is
+normal — the window is bounded, so there is no infinitely-helpless caster. So casting right as you
+are peeked loses the duel (realistic), but a cast timed from safety costs nothing once the windup
+elapses. This is symmetric: whoever is caught mid-cast is penalized. Policies should budget casts
+to safe moments. (Non-lethal effects still apply as before: flash → blind → combat reaction delay,
+smoke → LoS block, recon → remembered reveal.)
+
 ## Passable hazards (molly / area-denial)
 
 Molly / area-denial is a **passable hazard**, not a wall: it no longer removes the zone from
