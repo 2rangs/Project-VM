@@ -13,6 +13,8 @@
     "cost": {"type": ["integer", "null"], "description": "credits (shields)"},
     "armor": {"type": ["integer", "null"], "description": "armor points (shields)"},
     "regen": {"type": ["boolean", "null"], "description": "regenerating shield"},
+    "regenPool": {"type": ["integer", "null"], "description": "total regeneration pool (regen shield)"},
+    "absorptionPercent": {"type": ["integer", "null"], "description": "percent of incoming damage absorbed"},
     "plantTimeMs": {"type": ["number", "null"], "description": "spike plant time"},
     "defuseTimeMs": {"type": ["number", "null"], "description": "spike full defuse time"},
     "defuseHalfMs": {"type": ["number", "null"], "description": "spike half-defuse checkpoint"},

@@ -77,11 +77,12 @@ ML 데이터셋(EsportsBench(200)·D2E·gaming-500-hours·X-EGO-CS[=CS]).
 |---|---|---|---|
 | weapons.json (21) | VERIFIED_API | **L3** | 빌더 실행·스키마 통과. 무기 스탯 전부 API 검증 |
 | agents.json (30) | VERIFIED_API | **L3** | 빌더 실행·스키마 통과. role+슬롯 API 검증 |
-| abilities.json (130) | 부분검증 | **L3(구조)/L0(수치)** | 이름/슬롯/설명 API 검증; cost/charges/cooldown/ultPoints/duration/typeTags는 **null+verified:false**(미소싱) |
-| equipment.json (4) | 미검증 수치 | L0 | 실드·스파이크 상수 전부 null+verified:false. `needsCrossCheckPV3:true` |
+| abilities.json (130) | 소싱(3차) | **L2** | 이름/슬롯/설명 API; cost/charges/ultPoints/typeTags는 **공식 위키 Abilities 소싱(120/130)**; cooldown/duration은 null |
+| equipment.json (4) | 소싱(3차) | **L2** | 실드·스파이크 공식 위키 소싱(4/4); spike detonate null. `needsCrossCheckPV3:true` |
 
-빌더/스키마/문서만 커밋, 생성 데이터는 gitignore(valorant-api 라이선스 불명확) → 로컬 재생성.
-검증 실행: `pytest tools/catalog-builder -q` → **9 passed**; `build_catalog.py` → 전 레코드 스키마 통과.
+빌더/스키마/문서/소싱테이블(data/ability_facts.json)만 커밋, 대량 생성 데이터는 gitignore → 로컬 재생성.
+검증 실행: `pytest tools/catalog-builder -q` → **10 passed**; `build_catalog.py` → 전 레코드 스키마 통과, ability 120/130·equipment 4/4 소싱.
+3차 교차검증: Riot content API(kr) UUID 요원30/30·무기21/21 일치; PV-3 game-rules 대조(실드·스파이크·무기가격 일치, 궁극포인트 6표본 중 4 불일치→공식 채택).
 
 ## F. 특이 사항 (혼동 방지)
 

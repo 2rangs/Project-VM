@@ -142,6 +142,7 @@ def normalize_abilities(a: dict[str, Any], *, patch: str, retrieved_at: Optional
             "typeTags": fact.get("typeTags", []),
             "gameplayVerified": bool(fact.get("gameplayVerified", False)),
             "gameplaySource": fact.get("gameplaySource"),
+            "gameplayNote": fact.get("gameplayNote"),
         }
         out.append({
             "abilityId": ability_id,

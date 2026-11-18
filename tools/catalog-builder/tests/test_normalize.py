@@ -110,9 +110,35 @@ def test_normalized_agents_and_abilities_validate(agents_raw):
     assert ok2, errs2
 
 
-def test_equipment_fixtures_validate():
+def test_equipment_validate_and_sourced():
     from equipment_facts import EQUIPMENT
     ok, errs = validate_mod.validate_records([dict(e) for e in EQUIPMENT], SCHEMA_DIR, "equipment.schema.json")
     assert ok, errs
-    # all equipment numerics are unverified until sourced
-    assert all(e["verified"] is False for e in EQUIPMENT)
+    by_id = {e["id"]: e for e in EQUIPMENT}
+    # officially sourced shield values (wiki Armor & Shield)
+    assert by_id["shield-light"]["cost"] == 400 and by_id["shield-light"]["armor"] == 25
+    assert by_id["shield-heavy"]["cost"] == 1000 and by_id["shield-heavy"]["armor"] == 50
+    assert by_id["shield-regen"]["cost"] == 650 and by_id["shield-regen"]["regenPool"] == 50
+    assert by_id["spike"]["plantTimeMs"] == 4000 and by_id["spike"]["defuseTimeMs"] == 7000
+    # every sourced value carries a source URL and cross-check flag
+    for e in EQUIPMENT:
+        if e["verified"]:
+            assert e["source"] and e["source"].startswith("https://")
+        assert e["needsCrossCheckPV3"] is True
+
+
+def test_ability_facts_loaded_and_applied(agents_raw):
+    from ability_facts import ABILITY_FACTS
+    assert len(ABILITY_FACTS) >= 100
+    # every ultimate entry has an integer ult-point cost with a source
+    ults = {k: v for k, v in ABILITY_FACTS.items() if k.endswith(":Ultimate")}
+    assert len(ults) == 30
+    for k, v in ults.items():
+        assert isinstance(v["ultPoints"], int)
+        assert v["gameplaySource"].startswith("https://")
+    # normalize applies facts onto the matching ability (join by name -> slot)
+    abilities = []
+    for a in agents_raw:
+        abilities.extend(normalize.normalize_abilities(a, patch=PATCH, retrieved_at=RETRIEVED, facts=ABILITY_FACTS))
+    # fixture agent is synthetic -> no facts match -> stays null (proves no accidental fill)
+    assert all(ab["gameplay"]["ultPoints"] is None for ab in abilities)

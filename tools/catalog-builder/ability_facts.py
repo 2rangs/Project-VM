@@ -1,35 +1,37 @@
-"""Sourced gameplay numerics for abilities (cost, charges, cooldown, ult points,
-duration, type tags, default keybind).
+"""Sourced gameplay numerics for abilities (cost, charges, ult points, type tags).
 
-valorant-api does NOT publish these. Each value here MUST come from an official
-source (Riot patch notes or the official wiki) recorded in `gameplaySource`.
-An unsourced value stays absent, so the builder emits null + gameplayVerified=false.
+Values are loaded from data/ability_facts.json, generated from the OFFICIAL
+VALORANT wiki Abilities tables (basic / signature / ultimate) at
+https://wiki.playvalorant.com/en-us/Abilities, fetched 2026-11-18. The live game
+build is release-13.10 (confirmed via valorant-api /v1/version), so the wiki's
+current tables are the current-patch values; each record carries its
+gameplaySource URL and a gameplayNote stating this.
 
-DO NOT paste remembered or estimated numbers here. A value without a verifiable
-`gameplaySource` URL is a fabrication and is forbidden (orchestrator brief;
-Handoff §29 "AI 추정값을 사실로 저장하기" / README §37).
+NOT covered by those tables and therefore still null:
+  - durationMs, cooldownMs  (not published in the aggregate tables)
+  - defaultKeybind (C/Q/E/X) (agent/UI dependent)
+Fill those only from an official source with a URL; never hardcode an estimate
+(Handoff §29 "AI 추정값을 사실로 저장" / README §37).
 
-Key: "<agent-slug>:<slot>" (e.g. "brimstone:Ultimate").
-Shape per entry (include only fields actually sourced):
-    {
-      "cost": int, "charges": int, "cooldownMs": float, "killRecharge": bool,
-      "ultPoints": int, "durationMs": float, "typeTags": [str],
-      "defaultKeybind": "C|Q|E|X",
-      "gameplayVerified": True,
-      "gameplaySource": "https://playvalorant.com/.../patch-notes-X-YZ/",
-    }
+Key: "<agent-slug>:<slot>" (e.g. "brimstone:Ultimate"). The slug matches
+normalize._slug(agent displayName); slot is the valorant-api slot. Wiki abilities
+are joined to valorant-api slots by ability NAME, so cost attaches to the right
+ability regardless of which basic/signature slot it occupies.
 
-AUTHORITATIVE SOURCES to fill this table (PV-2 / future work):
-  - Official patch notes index: https://playvalorant.com/en-us/news/game-updates/
-  - Ability rules: https://wiki.playvalorant.com/en-us/Abilities
-  - Per-agent pages on the official wiki (cost/charges/ult points per ability)
-  - Economy guide (secondary, confirm against official):
-    https://mobalytics.gg/blog/valorant/ultimate-economy-guide/
+AUTHORITATIVE SOURCES used / to extend:
+  - Abilities (cost/charges/points/functions): https://wiki.playvalorant.com/en-us/Abilities
+  - Per-ability durations/cooldowns: individual official ability pages / patch notes
+  - Patch index: https://playvalorant.com/en-us/news/game-updates/
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
-# Empty on purpose: no verified ability numerics have been sourced yet this pass.
-# Populate per the header once values are confirmed against an official URL.
-ABILITY_FACTS: dict[str, dict[str, Any]] = {}
+_DATA = Path(__file__).resolve().parent / "data" / "ability_facts.json"
+
+try:
+    ABILITY_FACTS: dict[str, dict[str, Any]] = json.loads(_DATA.read_text(encoding="utf-8"))
+except FileNotFoundError:  # pragma: no cover - data file is committed
+    ABILITY_FACTS = {}

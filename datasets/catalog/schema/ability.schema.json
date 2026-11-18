@@ -31,7 +31,8 @@
           "items": {"type": "string"}
         },
         "gameplayVerified": {"type": "boolean"},
-        "gameplaySource": {"type": ["string", "null"], "description": "URL of the official source for the gameplay numerics"}
+        "gameplaySource": {"type": ["string", "null"], "description": "URL of the official source for the gameplay numerics"},
+        "gameplayNote": {"type": ["string", "null"], "description": "sourcing / patch-currency note, incl. conflicts between sources"}
       }
     },
     "provenance": {"$ref": "provenance.schema.json"}

@@ -160,4 +160,57 @@ weapons/agents/abilities 데이터는 Riot 파생 → 재배포 보수적(생성
 - 첫 명령: `pytest tools/catalog-builder -q` → `python tools/catalog-builder/build_catalog.py`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 3차: 게임플레이 수치 공식 소싱 + 대조)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research`
+
+## 1. 작업 목표
+2차에서 null로 남긴 스킬·장비 게임플레이 수치를 공식 출처로 채우고, Riot API·PV-3와 대조 (추정 금지).
+
+## 2. 완료한 작업 (실제 수행·검증)
+- **스킬 수치 소싱:** 공식 위키 `wiki.playvalorant.com/en-us/Abilities`의 기본/시그니처/궁극기 집계표를 fetch·파싱, valorant-api와 스킬 이름으로 조인. **비패시브 120/120 소싱, 궁극기 포인트 30/30 요원 완비.** cost/charges/ultPoints/typeTags 채움. cooldown/duration은 표에 없어 **null 유지**.
+- **장비 소싱:** 공식 위키 Armor_and_Shield(실드 400/25·1000/50·650/25+pool50) + Spike(plant 4000·defuse 7000·half 3500) → **4/4 소싱**. spike detonate는 미확보 null.
+- **Riot content API:** `kr.api.riotgames.com/val/content/v1/contents` **200**(프록시 키 주입). 요원 30/30·무기 21/21 UUID 교차검증 일치. 게임플레이 수치는 없음(ID만).
+- **PV-3 대조(`origin/claude/pv-core`, 읽기전용):** 실드·스파이크·무기가격 일치. **궁극 포인트 6표본 중 4건 불일치(jett/brimstone/sage/killjoy)** → 공식 현재값 채택, PV-3에 교체 권고.
+- **테스트:** `pytest -q` **10 passed**. 빌더: ability 120/130 verified, equipment 4/4.
+
+## 3. 변경한 파일
+- `tools/catalog-builder/ability_facts.py`(JSON 로더로 변경) + **`data/ability_facts.json`(120 항목, 공식 위키 소싱, 커밋)**
+- `tools/catalog-builder/equipment_facts.py`(공식값 채움), `normalize.py`(gameplayNote 추가), `tests/test_normalize.py`(검증 강화), `.gitignore`(pyc)
+- `datasets/catalog/schema/ability.schema.json`(gameplayNote), `equipment.schema.json`(regenPool/absorptionPercent)
+- `docs/research/CATALOG.md`(§3.3~3.6, §5 갱신), `docs/handoffs/PV-1-research.md`(본 섹션)
+
+## 4. 데이터 출처
+- 스킬: https://wiki.playvalorant.com/en-us/Abilities
+- 장비: https://wiki.playvalorant.com/en-us/Armor_and_Shield, https://wiki.playvalorant.com/en-us/Spike
+- UUID: Riot content API(kr). 빌드: valorant-api /v1/version = release-13.10.
+
+## 5~7. 실행/검증/결과
+`pytest tools/catalog-builder -q` → 10 passed. `build_catalog.py` → 전 레코드 스키마 통과, ability 120/130·equipment 4/4 소싱.
+
+## 8. 현재 미완료
+- 스킬 cooldownMs/durationMs(공식 집계표에 없음), defaultKeybind 매핑, spike detonateTimeMs.
+
+## 9. 알려진 문제 / 판단 근거
+- **gameplayVerified=true 기준:** 공식 위키의 현재 값 + 라이브 빌드 13.10 확인. 패치노트 역추적은 아님(각 레코드 gameplayNote에 명시). 커뮤니티 위키(fandom)는 값 소스로 쓰지 않음(요원 페이지 수치가 Lua 모듈이라 미추출).
+- 궁극 포인트는 패치별로 변동(예: brimstone 7→8) → PV-3 provisional과 불일치 발생.
+
+## 10. 설계 결정
+- 소싱 값을 `data/ability_facts.json`(커밋)으로 분리 — PV-3가 game-rules에 수치를 커밋한 선례와 동일(작은 사실값+출처). 대량 카탈로그 덤프(descriptions/assets 포함)는 계속 gitignore.
+- 조인은 스킬 이름 기반 → 슬롯 라벨 불확실성 회피. 키는 `normalize._slug`과 동일 규칙(KAY/O=`kay-o`).
+
+## 11. 라이선스
+공식 위키/Riot content API 값은 Riot 소유 사실. 소싱 테이블(출처 URL 포함)만 커밋, 대량 생성물 미커밋(2차 결정 유지).
+
+## 12. 다음 권장 작업
+1. 스킬 cooldown/duration 요원별 공식 페이지 소싱 → `ability_facts.json`.
+2. PV-3: ultimate.ts 궁극 포인트를 카탈로그로 교체(불일치 4건), spike detonate 상호 확인.
+3. defaultKeybind 매핑 확정.
+
+## 13. 작업 재개 지점
+- 먼저 열 파일: `docs/research/CATALOG.md`(§3.3~3.6) → `tools/catalog-builder/data/ability_facts.json`.
+- 첫 명령: `pytest tools/catalog-builder -q` → `python tools/catalog-builder/build_catalog.py`.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**
