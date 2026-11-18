@@ -21,13 +21,19 @@ def _fixture_db(tmp_path):
     p = tmp_path / "fx.duckdb"
     con = duckdb.connect(str(p))
     con.execute("CREATE TABLE matches(match_id VARCHAR, is_international BOOLEAN, patch VARCHAR, season INTEGER)")
-    con.execute("CREATE TABLE maps(game_id VARCHAR, map_name VARCHAR)")
+    con.execute("CREATE TABLE maps(game_id VARCHAR, map_name VARCHAR, performance_available BOOLEAN)")
     con.execute("""CREATE TABLE rounds(match_id VARCHAR, game_id VARCHAR, round_num TINYINT,
                    winner_team TINYINT, side VARCHAR, outcome VARCHAR,
                    loadout_t0 INTEGER, loadout_t1 INTEGER)""")
+    con.execute("""CREATE TABLE player_map(match_id VARCHAR, game_id VARCHAR,
+                   fk_atk TINYINT, fd_atk TINYINT, fk_def TINYINT, fd_def TINYINT)""")
     con.executemany("INSERT INTO matches VALUES (?,?,?,?)",
                     [("M1", True, "P1", 2026), ("M2", True, "P1", 2026)])
-    con.executemany("INSERT INTO maps VALUES (?,?)", [("G1", "Ascent"), ("G2", "Ascent")])
+    con.executemany("INSERT INTO maps VALUES (?,?,?)", [("G1", "Ascent", True), ("G2", "Ascent", True)])
+    # One player's aggregate per map is enough for the opening-duel sums.
+    # G1: attackers won first blood 1 round, defenders 1 round. G2: same.
+    con.executemany("INSERT INTO player_map VALUES (?,?,?,?,?,?)",
+                    [("M1", "G1", 1, 1, 1, 1), ("M2", "G2", 1, 1, 1, 1)])
     rows = [
         # M1/G1: r1 pistol (team0 wins), r2 full(t0) vs eco(t1) team0 wins
         ("M1", "G1", 1, 0, "attack", "elimination", 4000, 4000),
@@ -85,6 +91,16 @@ def test_every_prior_has_real_provenance_and_sha(tmp_path):
         assert prior["groupingUnit"] == "match_id"
         for e in prior["estimates"]:
             assert e["wilsonLow"] <= e["wilsonHigh"]
+
+
+def test_opening_duel_sides_sum_to_one(tmp_path):
+    out = priors.build_all(_fixture_db(tmp_path), iters=50)
+    od = out["combat_opening_duel"]
+    atk = _cell(od, scope="ascent", side="attack")
+    dfn = _cell(od, scope="ascent", side="defense")
+    assert atk["n"] == dfn["n"]
+    assert abs(atk["rate"] + dfn["rate"] - 1.0) < 1e-9  # sides partition the rounds
+    assert atk["rate"] == 0.5  # fixture: 2 attacker fk out of 4 opening duels
 
 
 def test_missing_db_raises(tmp_path):

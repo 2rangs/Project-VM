@@ -6,6 +6,7 @@ Validates every normalized/synthetic JSON file against the machine schemas in
 must not be.
 """
 
+from . import sim_harness  # noqa: F401
 from .validator import (  # noqa: F401
     FILE_SCHEMA_MAP,
     ValidationResult,
@@ -14,5 +15,6 @@ from .validator import (  # noqa: F401
     validate_tree,
 )
 
-__all__ = ["FILE_SCHEMA_MAP", "ValidationResult", "load_registry", "validate_file", "validate_tree"]
+__all__ = ["FILE_SCHEMA_MAP", "ValidationResult", "load_registry", "validate_file",
+           "validate_tree", "sim_harness"]
 __version__ = "0.1.0"

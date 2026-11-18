@@ -79,6 +79,37 @@ Share of rounds ending each way (per round):
 *Interpretation:* ~2/3 of rounds end in a team wipe; spike detonation ~10%, defuse ~20%, timeout rare.
 A simulation that detonates or times out far more/less than this is mis-modelling post-plant play.
 
+## 6. Opening-duel win rate  (`combat_opening_duel.json`)
+Which side wins the first duel of the round (from `player_map` fk/fd aggregates). Attacker and
+defender rates sum to 1.
+| Scope | Attacker opening-duel win | Defender | Tolerance |
+|---|---|---|---|
+| All maps | **0.457** | 0.543 | ±0.03 |
+| **Ascent** | **0.437** | 0.563 | ±0.04 |
+
+*Interpretation:* defenders win the opening duel more often (they hold angles); Ascent is slightly
+more defender-sided on first blood. A simulation whose attacker opening-duel rate is ~0.50 is
+over-rewarding entries.
+
+### Mapping to PV-4 `CombatCalibration`
+PV-4's combat engine (`packages/combat-engine`, `CombatCalibration = { hitChanceScale?,
+headshotScale?, reactionScale? }`) has no direct "opening-duel" field — it is a *calibration target*,
+not a parameter. Use it in a loop: run the Monte-Carlo first-duel many times, measure the simulated
+attacker opening-duel rate, and nudge `reactionScale` / `hitChanceScale` until it lands inside the
+interval above (overall 0.450–0.463, Ascent 0.420–0.454). The validation harness
+(`tools/data-validator` sim mode) computes the simulated rate for you.
+
+### Combat data NOT available from VCT Reference (gaps)
+VCT Reference has **no per-round kill sequence, timestamps, or alive counts** (`kill_matrix` is a
+per-map player-pair aggregate; `rounds` carries no kills). So these have **no real baseline from this
+source** and need an authorized Layer-B source (GRID feed / self-captured VRF):
+- **Entry → round win** (does the first-kill team win the round) — not round-linked here.
+- **Man-advantage win rates** (5v4, 4v3, 2v1, …) — needs per-round alive transitions.
+- **Trade rate** (re-kill within N seconds) — needs kill timestamps.
+
+The harness still *computes* these from simulation logs (which do have the sequence), and reports them
+as "no real baseline (data gap)" rather than pass/fail.
+
 ---
 
 ## Caveats

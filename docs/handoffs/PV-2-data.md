@@ -353,3 +353,60 @@ packages/economy-engine: typecheck OK, build OK, vitest 15 passed (3 files)
 1. **(PV-3)** `evaluateEconomy`를 Action Generator의 Resource Cost / Expected Utility 입력으로 연결.
 2. **(게임룰)** game-rules 경제/궁극 상수 패치 검증 → provisional 플래그 해제.
 3. **(통합)** shared-mirror → `@pv/shared-types`, priors-fixture → `datasets/derived/priors/` 로더.
+
+---
+
+# PROJECT V — TASK HANDOFF · 4차 (Combat Prior + Validation Harness)
+
+**추가 작업일:** 2026-11-18 · **범위:** README §30–31, Handoff §22·§24.4. 소유: `datasets/derived/`,
+`tools/data-validator/`, docs.
+
+## 4A — 교전 prior & 데이터 공백 (중요한 음성 결과)
+VCT Reference의 킬 데이터 granularity를 실제 확인함:
+- `kill_matrix` = (match,game,선수쌍) **집계**(총 kills/deaths/op/fk). 라운드 번호·시각·순서 **없음**.
+- `rounds` = winner/side/outcome/economy만. 킬 없음.
+→ **다음은 VCT Reference로 계산 불가**(인가 Layer B 필요): 첫킬→라운드 승(라운드 연결 없음),
+  **인원 우위(5v4/4v3…) 전이 승률**(라운드별 alive 없음), **트레이드율**(킬 타임스탬프 없음).
+
+**계산 가능한 것 → 생성함:** `datasets/derived/priors/combat_opening_duel.json`.
+`player_map`의 `fk_atk/fd_atk/fk_def/fd_def` 집계로 **오프닝 듀얼(첫 교전) 승률**을 side·map별로.
+(맵당 fk+fd = 라운드 수라서 성립. 공/수 합 = 1.) 경기 단위 부트스트랩·Wilson·소표본 플래그.
+- 전맵: 공격 **0.457** / 수비 0.543. Ascent: 공격 **0.437** / 수비 0.563(수비가 첫 교전 우세).
+- **주의:** 이것은 "어느 쪽이 첫 듀얼을 이기나"지, "첫킬 낸 팀이 라운드를 이기나"가 아님(후자는 소스에 없음).
+
+**CombatCalibration 매핑**(`origin/claude/pv-spatial` `packages/combat-engine`,
+`CombatCalibration = { hitChanceScale?, headshotScale?, reactionScale? }`): 직접 필드 없음 →
+**보정 목표치**로 사용. 몬테카를로 첫 듀얼 반복 → 시뮬 공격 오프닝듀얼 승률을 측정 → 구간
+(전맵 0.450–0.463, Ascent 0.420–0.454)에 들도록 reactionScale/hitChanceScale 조정. 시뮬 승률은
+아래 하네스가 계산해 줌. (`docs/VALIDATION_BASELINES.md` §6에 수치·매핑·공백 기록.)
+
+## 4B — Validation Harness
+`tools/data-validator/`에 **시뮬레이션 결과 검증기**(`sim_harness.py` + `pv-validate-sim` CLI).
+- **입력:** 시뮬 라운드 로그 묶음(JSON). 이벤트 형식은 `origin/claude/pv-core`
+  `packages/simulation-core` **EventLog**(GameEvent: kind/seq/timeMs, kill{killer,victim}, roundEnd{winner,reason})에 맞춤. 라운드별 roster(선수→side), 선택적 buyTiers.
+- **기준:** `datasets/derived/priors/*.json`(머신리더블) + `VALIDATION_BASELINES.md` 허용 오차.
+- **지표:** 라운드 종료 분포, 공격 승률, 오프닝듀얼 승률, 경제 매치업(판정) + 인원우위 상태별 승률,
+  트레이드율, 평균 라운드 시간(기준 없음 → 보고만). 각 지표: 시뮬값·실측·Wilson CI·허용오차·통과/실패.
+- **출력:** Markdown + JSON 리포트.
+- **하네스 자체 테스트:** 합성 시뮬 로그 fixture(meta.synthetic=true) — 기준에 맞는 good run은
+  7/7 통과(exit 0), 일부러 틀린 bad run은 전부 실패(exit 1). 샘플 리포트 `examples/report_good.md`.
+- **실제 로그용 한 줄 명령**(통합 후): `pv-validate-sim --logs sim_run.json --priors datasets/derived/priors --scope ascent --out reports/sim_validation` (README에 입력 스키마 포함).
+
+## 4-테스트 결과 (실제 실행)
+```
+data-collector : 25 passed (opening_duel 포함)
+data-validator : 10 passed (sim harness good/bad 분리 검증 포함)
+economy-engine : 15 passed
+dataset 검증    : 29/29 files valid, 189 records
+```
+
+## 4-주의 / 미완료
+- 인원우위·트레이드·첫킬→라운드 승 실측 기준선은 **VCT Reference로 불가** → 인가 Layer B(GRID/VRF) 필요.
+  하네스는 이 지표들을 시뮬 로그에서 계산은 하되 "기준 없음(보고만)"으로 둔다.
+- 실제 5v5 시뮬레이터 미존재 → 하네스는 합성 fixture로만 검증됨. 통합 시 실제 EventLog 투입.
+- 라운드별 실측 소요시간 기준선 없음(소스는 맵 전체 duration만).
+
+## 4-다음 권장
+1. **(PV-4)** combat_opening_duel을 CombatCalibration 보정 루프의 목표치로 사용.
+2. **(PV-sim/통합)** 실제 라운드 EventLog 묶음을 `pv-validate-sim`에 투입해 회귀 검증 연결.
+3. **(Layer B 확보 시)** 인원우위·트레이드·첫킬 승률 실측 기준선 추가 → 하네스 판정 지표로 승격.

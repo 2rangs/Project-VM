@@ -134,6 +134,25 @@ def _estimate(dims: dict, rows: list[dict], boot_iters: int, boot_seed: int) -> 
     }
 
 
+def _estimate_counts(dims: dict, match_counts: dict[str, tuple[int, int]],
+                     boot_iters: int, boot_seed: int) -> dict:
+    """Build an estimate from pre-aggregated per-match (successes, n) counts.
+
+    Used where the source only gives aggregates (e.g. opening duels from player_map fk/fd),
+    so we never had individual rows — but match-clustered bootstrap still applies.
+    """
+    successes = sum(s for s, _ in match_counts.values())
+    n = sum(nn for _, nn in match_counts.values())
+    rate = successes / n if n else None
+    wlo, whi = wilson_interval(successes, n)
+    blo, bhi = cluster_bootstrap_rate(match_counts, iterations=boot_iters, seed=boot_seed)
+    return {
+        "dims": dims, "n": n, "successes": successes, "rate": rate,
+        "wilsonLow": wlo, "wilsonHigh": whi, "bootstrapLow": blo, "bootstrapHigh": bhi,
+        "matches": len(match_counts), "smallSample": n < SMALL_SAMPLE_N,
+    }
+
+
 def _wrap(prior_id, description, estimates, *, sha, build, filters, method_extra=None,
           grouping="match_id") -> dict:
     method = {"statistic": "binomial win/success rate", "wilsonZ": 1.959963984540054,
@@ -272,6 +291,57 @@ def save_eco_future_value(pt_rows, sha, build, filters, iters=2000):
                  est, sha=sha, build=build, filters=filters)
 
 
+def opening_duel(con, sha, build, filters, iters=2000):
+    """Opening-duel (first-kill) win rate by side and map, from player_map fk/fd aggregates.
+
+    VCT Reference has NO per-round kill sequence, so this is the aggregate 'which side wins the
+    opening duel', NOT 'does the first-kill team win the round' (that round-conditional stat needs
+    per-round kill events, absent here — see the data-gap note). Per map, summed attacker first
+    kills (fk_atk) and first deaths (fd_atk) partition the rounds: fk_atk+fd_atk = rounds.
+    """
+    rows = _rows(con, """
+        SELECT pm.match_id, pm.game_id, mp.map_name,
+               SUM(pm.fk_atk) AS fk_atk, SUM(pm.fd_atk) AS fd_atk,
+               SUM(pm.fk_def) AS fk_def, SUM(pm.fd_def) AS fd_def
+        FROM player_map pm
+        JOIN maps mp ON pm.game_id = mp.game_id
+        JOIN matches m ON pm.match_id = m.match_id
+        WHERE m.is_international AND mp.performance_available
+        GROUP BY pm.match_id, pm.game_id, mp.map_name
+    """)
+
+    def counts(scope_pred, numerator, denom_a, denom_b):
+        acc: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+        for r in rows:
+            if not scope_pred(r):
+                continue
+            num = r[numerator] or 0
+            den = (r[denom_a] or 0) + (r[denom_b] or 0)
+            g = acc[r["match_id"]]
+            g[0] += num
+            g[1] += den
+        return {k: (v[0], v[1]) for k, v in acc.items() if v[1] > 0}
+
+    est = []
+    for scope_name, pred in (("all_maps", lambda r: True),
+                             ("ascent", lambda r: r["map_name"] == "Ascent")):
+        # attacker opening-duel win rate = fk_atk / (fk_atk + fd_atk)
+        est.append(_estimate_counts({"scope": scope_name, "side": "attack"},
+                                    counts(pred, "fk_atk", "fk_atk", "fd_atk"), iters, 20310000 + len(est)))
+        # defender opening-duel win rate = fk_def / (fk_def + fd_def)
+        est.append(_estimate_counts({"scope": scope_name, "side": "defense"},
+                                    counts(pred, "fk_def", "fk_def", "fd_def"), iters, 20310000 + len(est)))
+    return _wrap("combat_opening_duel",
+                 "Opening-duel (first-blood) win rate by side and map, from player_map fk/fd "
+                 "aggregates. NOTE: this is which side wins the first duel, NOT the round-conditional "
+                 "'first-kill team wins the round' stat, which needs per-round kill events that VCT "
+                 "Reference does not provide.",
+                 est, sha=sha, build=build, filters=filters,
+                 method_extra={"statistic": "opening-duel win rate (aggregate fk/fd)",
+                               "notes": ["Per map, fk_atk+fd_atk = rounds. Attacker and defender rates "
+                                         "sum to 1 by construction."]})
+
+
 # --- orchestration ---------------------------------------------------------------------------
 def build_all(duckdb_path: str, iters: int = 2000) -> dict[str, dict]:
     import duckdb
@@ -303,6 +373,9 @@ def build_all(duckdb_path: str, iters: int = 2000) -> dict[str, dict]:
                                           "note": "economy not required; round results only"}, iters),
             "save_eco_future_value": save_eco_future_value(
                 pt_all, sha, build, {**base_filter, "scope": "international; same-half next round"}, iters),
+            "combat_opening_duel": opening_duel(
+                con, sha, build, {"international": True, "performanceAvailable": True,
+                                  "note": "aggregate fk/fd; no per-round kill sequence in source"}, iters),
         }
         return out
     finally:

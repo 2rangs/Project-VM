@@ -20,6 +20,7 @@ source `sha256`, dataset build, filters, buy thresholds, and per-cell `n` + Wils
 | `save_eco_future_value.json` | P(win next round \| buy this round) | eco→next **0.60** vs full→next **0.51** (economic snowball behind saving) |
 | `side_map_baselines.json` | attack/def win rate | all maps **0.50/0.50**; Ascent attack **0.51** overall, **0.58** first half / **0.41** second half |
 | `round_outcome_distribution.json` | how rounds end | all maps: elim **0.66**, defuse **0.20**, detonation **0.11**, time **0.03**; Ascent: elim **0.71** |
+| `combat_opening_duel.json` | opening-duel win rate by side | attacker **0.457** / defender 0.543 (all maps); Ascent attacker **0.437**. Sides sum to 1. |
 
 ## Method notes (read before trusting a number)
 - **Buy tiers** (team total loadout, credits): `pistol` = round 1/13; `eco` < 5000; `semi` 5000–20000

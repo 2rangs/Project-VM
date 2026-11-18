@@ -1,0 +1,115 @@
+{
+  "priorId": "combat_opening_duel",
+  "description": "Opening-duel (first-blood) win rate by side and map, from player_map fk/fd aggregates. NOTE: this is which side wins the first duel, NOT the round-conditional 'first-kill team wins the round' stat, which needs per-round kill events that VCT Reference does not provide.",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "performanceAvailable": true,
+      "note": "aggregate fk/fd; no per-round kill sequence in source"
+    }
+  },
+  "method": {
+    "statistic": "opening-duel win rate (aggregate fk/fd)",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": [
+      "Per map, fk_atk+fd_atk = rounds. Attacker and defender rates sum to 1 by construction."
+    ]
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-18T09:31:26+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "attack"
+      },
+      "n": 24274,
+      "successes": 11084,
+      "rate": 0.4566202521216116,
+      "wilsonLow": 0.4503613723748114,
+      "wilsonHigh": 0.46289285973753963,
+      "bootstrapLow": 0.4498169107856192,
+      "bootstrapHigh": 0.46337350388680953,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "defense"
+      },
+      "n": 24274,
+      "successes": 13190,
+      "rate": 0.5433797478783884,
+      "wilsonLow": 0.5371071402624603,
+      "wilsonHigh": 0.5496386276251886,
+      "bootstrapLow": 0.5367174707141957,
+      "bootstrapHigh": 0.5503178403368282,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "attack"
+      },
+      "n": 3106,
+      "successes": 1357,
+      "rate": 0.43689632968448167,
+      "wilsonLow": 0.41954149760582415,
+      "wilsonHigh": 0.4544070604828403,
+      "bootstrapLow": 0.4187362464633763,
+      "bootstrapHigh": 0.45483767277402765,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "defense"
+      },
+      "n": 3106,
+      "successes": 1749,
+      "rate": 0.5631036703155183,
+      "wilsonLow": 0.5455929395171598,
+      "wilsonHigh": 0.5804585023941758,
+      "bootstrapLow": 0.5456329735034348,
+      "bootstrapHigh": 0.5811417575368826,
+      "matches": 145,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T09:31:26+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}
