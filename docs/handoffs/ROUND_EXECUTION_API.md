@@ -144,6 +144,17 @@ attacker opening-duel win at ~0.45 (real 0.437, CI [0.420, 0.454]). The SAME cal
 to every policy — pass `combatCalibration: ASCENT_OPENING_DUEL_CALIBRATION`; `peekerAdvantageMs`
 is a default, overridable per run.
 
+## Target-zone abilities (`useAbility` + `targetZone`)
+
+A `useAbility` command may carry `targetZone`: a thrown/placed effect — smoke, molly/area-denial,
+remote recon, wall, slow — deploys at that zone's centre (not the caster) when within the
+catalog range (`rangeMeters`); beyond range it is rejected (`outOfRange`, no charge spent).
+Flash/concuss also honour `targetZone` (pop-flash: enemies near the target are blinded). Movement
+(dash) is self-displacement and always originates at the caster. **Assumption (manual-approx):**
+caster→target is treated as unobstructed — there is no throw-arc or LoS check between them yet;
+the effect's own zone then drives perception (a smoke at the target blocks sightlines through it).
+Policies set `targetZone` on `useAbility` to place utility on angles/chokes rather than on self.
+
 ## Minimal example
 
 ```ts

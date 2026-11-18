@@ -201,14 +201,34 @@ export class RoundSimulator {
         if (!avail.usable) { trace({ playerId: p.id, phase: "ability", abilityId, result: "unavailable" }, `ability:${p.id}:${abilityId}:unavailable`); continue; }
         const spec = this.abilitiesCatalog[abilityId];
         if (!spec) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSpec" }, `ability:${p.id}:${abilityId}:noSpec`); continue; }
-        // flash/concuss (blind) and suppress (ability-silence) both hit enemies in range + LoS.
+        // Where the effect lands. A thrown/placed ability (smoke, molly/area-denial, remote
+        // recon, wall, slow) deploys at the commanded targetZone's centre when within the
+        // catalog range; out of range it is rejected (no charge spent). Movement (dash) is
+        // self-displacement, handled below, so it always originates at the caster. Flash/concuss
+        // also honour targetZone (pop-flash: blind enemies near the target). ASSUMPTION
+        // (manual-approx): caster→target is treated as unobstructed — no throw-arc/LoS check yet.
+        const isMovement = spec.effectTypes.includes("movement");
+        let origin = p.position;
+        if (!isMovement && cmd.targetZone) {
+          const tz = this.spatial.getZone(cmd.targetZone);
+          if (tz) {
+            const rangeUnits = spec.rangeUnits ?? Infinity;
+            if (dist3(p.position, tz.position) > rangeUnits) {
+              trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
+              continue;
+            }
+            origin = { ...tz.position };
+          }
+        }
+        // flash/concuss (blind) and suppress (ability-silence) hit enemies in range + LoS of the
+        // effect origin (the throw target when one was given, else the caster).
         const isFlash = spec.effectTypes.includes("flash") || spec.effectTypes.includes("concuss");
         const isSuppress = spec.effectTypes.includes("suppress");
-        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500) : undefined;
+        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500, origin) : undefined;
         abilityEngine.use(spec, {
           instanceId: `${p.id}:${abilityId}:${state.tick}`,
           abilityId, ownerId: p.id, teamId: p.teamId,
-          origin: p.position, startedAtMs: state.elapsedMs,
+          origin, startedAtMs: state.elapsedMs,
         }, { affectedPlayerIds });
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
@@ -239,8 +259,9 @@ export class RoundSimulator {
       // 5. engagement detection (mutual or one-sided visibility → duel)
       this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null);
 
-      // 5b. molly / area-denial damage to anyone standing in a denied zone
-      for (const z of denied) {
+      // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
+      // overlapping mollies in the same zone do not double-dip the per-tick damage.
+      for (const z of new Set(denied)) {
         for (const p of state.players) {
           if (p.alive && p.zoneId === z) {
             p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
@@ -327,14 +348,18 @@ export class RoundSimulator {
     }
   }
 
-  /** Enemies of `caster` that a flash/concuss at `caster` blinds: alive, in range, with LoS. */
-  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number): string[] {
-    const flashZone = caster.zoneId;
+  /**
+   * Enemies of `caster` blinded/suppressed by an effect centred at `center` (the caster, or a
+   * thrown target point): alive, within `radiusUnits`, in the centre zone or with LoS to it.
+   */
+  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number, center?: { x: number; y: number; z: number }): string[] {
+    const centerPos = center ?? caster.position;
+    const centerZone = this.spatial.nearestZone(centerPos).id;
     const out: string[] = [];
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
-      if (dist3(caster.position, e.position) > radiusUnits) continue;
-      if (e.zoneId === flashZone || this.spatial.hasLineOfSight(flashZone, e.zoneId)) out.push(e.id);
+      if (dist3(centerPos, e.position) > radiusUnits) continue;
+      if (e.zoneId === centerZone || this.spatial.hasLineOfSight(centerZone, e.zoneId)) out.push(e.id);
     }
     return out;
   }
