@@ -68,11 +68,22 @@ export class ScriptedPolicy implements DecisionPolicy {
 
     if (planted) {
       const spikeZone = this.zoneOf(view.spike.position!);
+      // Retake: rotate onto the spike, but DEFUSE ONLY WHEN CLEAR. A defender standing on the
+      // spike with an attacker currently visible should hold the angle and win the fight first,
+      // not start a defuse that a held site interrupts (suicide-defuse). This is the behaviour
+      // that matched the PV-2 post-plant metrics; blind-defusing inflates the defuse rate.
+      const contested = view.observation.visibleEnemies.some((e) => e.currentlyVisible);
       for (const p of view.teammates) {
         if (!p.alive) continue;
         roles.push({ playerId: p.id, role: "rotator" });
         const zone = this.zoneOf(p.position);
-        commands.push(zone === spikeZone ? { playerId: p.id, kind: "defuse", targetZone: spikeZone } : { playerId: p.id, kind: "move", targetZone: spikeZone, moveMode: "run" });
+        if (zone !== spikeZone) {
+          commands.push({ playerId: p.id, kind: "move", targetZone: spikeZone, moveMode: "run" });
+        } else if (contested) {
+          commands.push({ playerId: p.id, kind: "hold" });
+        } else {
+          commands.push({ playerId: p.id, kind: "defuse", targetZone: spikeZone });
+        }
       }
       return { strategy: "retake", roles, commands };
     }
