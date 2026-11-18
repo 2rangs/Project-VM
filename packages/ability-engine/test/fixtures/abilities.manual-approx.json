@@ -1,0 +1,60 @@
+{
+  "_comment": "PROJECT V ability-engine test specs in PV-1 CATALOG SHAPE (claude/pv-research ability-effect.schema.json): effectTypes[] + params{} with distances in METRES. Loaded via abilitySpecFromCatalog() which converts metres->world-units (×100) in one place. These are MANUAL-APPROX hand-authored approximations of public wiki ability behaviour, NOT a copy of PV-1's dataset (whose exact values are often null). Per PV-1 LICENSE_AUDIT.md, no valorant-api-derived VALUES are committed. `facts` carries charges/cost/ultPoints (PV-1 ability_facts.json join). Recalibrate against PV-1's sourced values when filled.",
+  "provenance": { "sourceNote": "public VALORANT ability rules (approximate); PV-1 catalog shape", "evidenceType": "derived", "verified": false },
+  "abilities": [
+    { "abilityId": "omen:Ability2", "agentName": "Omen", "slot": "Ability2", "name": "Dark Cover",
+      "effectTypes": ["smoke"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 5, "durationMs": 15000, "blocksVision": true, "makesSound": true },
+      "facts": { "cost": 150, "charges": 1 } },
+
+    { "abilityId": "sage:Ability3", "agentName": "Sage", "slot": "Ability2", "name": "Barrier Orb",
+      "effectTypes": ["wall"], "provenance": "manual-approx",
+      "params": { "durationMs": 30000, "destructible": true, "destructibleHp": 800, "blocksVision": true, "makesSound": true },
+      "facts": { "cost": 400, "charges": 1 } },
+
+    { "abilityId": "sage:Ability1", "agentName": "Sage", "slot": "Ability1", "name": "Slow Orb",
+      "effectTypes": ["slow"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 4.5, "durationMs": 7000, "makesSound": true },
+      "facts": { "cost": 200, "charges": 1 } },
+
+    { "abilityId": "breach:Ability2", "agentName": "Breach", "slot": "Ability2", "name": "Flashpoint",
+      "effectTypes": ["flash"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 6, "durationMs": 2000, "makesSound": true },
+      "facts": { "cost": 250, "charges": 2 } },
+
+    { "abilityId": "breach:Ability1", "agentName": "Breach", "slot": "Ability1", "name": "Fault Line",
+      "effectTypes": ["concuss"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 5, "durationMs": 1200, "makesSound": true },
+      "facts": { "cost": 200, "charges": 2 } },
+
+    { "abilityId": "kayo:Grenade", "agentName": "KAYO", "slot": "Grenade", "name": "FLASH/drive",
+      "effectTypes": ["flash"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 6, "durationMs": 2000, "makesSound": true },
+      "facts": { "cost": 250, "charges": 2 } },
+
+    { "abilityId": "sova:Ability2", "agentName": "Sova", "slot": "Ability2", "name": "Recon Bolt",
+      "effectTypes": ["recon"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 25, "durationMs": 3000, "revealDurationMs": 3000, "makesSound": true },
+      "facts": { "cost": 400, "charges": 1 } },
+
+    { "abilityId": "brimstone:Ability1", "agentName": "Brimstone", "slot": "Ability1", "name": "Incendiary",
+      "effectTypes": ["molly"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 4, "durationMs": 7000, "damage": 60, "makesSound": true },
+      "facts": { "cost": 250, "charges": 1 } },
+
+    { "abilityId": "cypher:Ability1", "agentName": "Cypher", "slot": "Ability1", "name": "Trapwire",
+      "effectTypes": ["trap"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 3, "durationMs": null, "makesSound": false },
+      "facts": { "cost": 200, "charges": 2 } },
+
+    { "abilityId": "yoru:Ability1", "agentName": "Yoru", "slot": "Ability1", "name": "Fakeout",
+      "effectTypes": ["decoy"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 2, "durationMs": 4000, "makesSound": true },
+      "facts": { "cost": 100, "charges": 1 } },
+
+    { "abilityId": "sova:Ultimate", "agentName": "Sova", "slot": "Ultimate", "name": "Hunter's Fury",
+      "effectTypes": ["recon"], "provenance": "manual-approx",
+      "params": { "radiusMeters": 30, "durationMs": 3000, "revealDurationMs": 3000, "makesSound": true },
+      "facts": { "ultPoints": 7 } }
+  ]
+}
