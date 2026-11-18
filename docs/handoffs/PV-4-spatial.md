@@ -1,9 +1,14 @@
 # PROJECT V — TASK HANDOFF
 
 **Agent:** PV-4 Spatial → Agent Simulation
-**Version:** v1 (2026-11-18) — supersedes v0
+**Version:** v2 (2026-11-18) — adds perception-engine; supersedes v0/v1
 **Branch:** `claude/pv-spatial`
 **Map:** Ascent (per DECISION-009 — first and only implemented map)
+
+> **v2 changelog (this update):** added `packages/perception-engine` (3차 작업) — Vision/
+> Hearing/Memory/Communication producing per-player & per-team Observations from WorldState,
+> enforcing the ground-truth boundary (DECISION-004). 17 tests passing; `tsc` clean. Details
+> in **§A. Perception Engine** below. spatial-engine unchanged (still 21 tests).
 
 > **v1 changelog (this update):**
 > - Investigated real per-event player positions via vlr.gg 2D-replay logs. The data exists and is
@@ -146,6 +151,51 @@ npm test            # vitest run
   `datasets/spatial/ascent/ascent.navgraph.json`(데이터), `docs/research/spatial-sources.md`(소스 상태).
 - 먼저 실행: `cd packages/spatial-engine && npm install && npm test` (21 통과 확인),
   이어서 `node tools/map-processor/build-ascent.mjs`로 데이터 재생성 재현.
+
+---
+
+## §A. Perception Engine (3차 작업, `packages/perception-engine`)
+
+**목표 (Handoff §12.3, §17 Perception, DECISION-004):** 전지적 `WorldState`에서 선수별·팀별
+**Observation**을 생성하되, AI가 보거나 듣지 못한 적의 실제 위치를 알 수 없게 하는 경계를 타입 수준에서 강제.
+
+**PV-3(`claude/pv-core`)와의 정합 — 실제로 fetch해서 확인함(읽기 전용):**
+- `@pv/shared-types`에 `ObservationState`, `ObservedEnemy`, `SoundObservation`, `TeamReport`,
+  `WorldState`, `PlayerState`, branded id, `Vector3` 등이 이미 정의됨. 이 shapes를 `src/shared-mirror.ts`에
+  **필드 단위로 그대로 미러링**(다른 브랜치라 패키지 의존 불가). 모노레포 통합 시 이 파일 삭제하고
+  `@pv/shared-types` import로 교체하면 drop-in.
+- PV-3 `@pv/world-state`의 `observeWorld(world, id, { oracle })`가 받는 `VisibilityOracle`은
+  주석에 **"to be implemented by the spatial-engine (PV-4)"**라고 명시됨. 이걸 `SpatialPerceptionOracle`로
+  구현 → `engine.visibilityOracle`를 그대로 넘기면 됨.
+
+**구성 (`packages/perception-engine/src/`):**
+- `vision.ts` — FOV 콘 + 시야거리 + 구역 sightline(+연막 차단), 결정적. sightline 없으면 비가시(fail-safe).
+- `hearing.ts` — 달리기 발소리(걷기=무음), 총성, 스킬, 스파이크 설치·해체를 spatial `audibleZones`로 전파.
+  위치는 **소스 구역 중심(구역 단위)** + confidence로만 남김(정확 좌표 금지).
+- `memory.ts` — 마지막 목격 정보가 half-life 신뢰도 감쇠, 임계 미만 시 망각.
+- `communication.ts` — 팀원 콜아웃이 comms 지연 후 팀 관측으로 전파, 사망 선수 마지막 정보 유지(옵션).
+- `oracle.ts` — PV-3 `VisibilityOracle` 구현 + 연막 smokedPairs 유도.
+- `engine.ts` — `PerceptionEngine`(틱 단위 stateful): `perceive(world)→{players,teams}`, `observe(world,id)`.
+- `params.ts` — FOV/청취/감쇠/지연 등 **모든 튜닝값을 한 곳에**, 전부 `manual-approx`. 출처 있는 값 없음.
+- `rng.ts` — mulberry32 시드 RNG(확률적 발견 주입용, 기본은 비사용 → 완전 결정적).
+- 출력: `PlayerObservation`(= shared-types `ObservationState`), `TeamObservation`(로컬, shared-types 이전 후보).
+
+**전지적 정보 누출 차단:** `perceive/observe`는 Observation만 반환, `WorldState`(players/events/live position)
+통과 경로 없음 — 타입으로 불가능하게 만들고 `test/leak.test.ts`로 검증(미관측 적의 실제 좌표가 직렬화 결과에
+없음, 이동 후에도 lastSeenPosition만 남음).
+
+**테스트 (실제 실행, 17개 통과 / `tsc --noEmit` 통과):**
+- vision(4): sightline+FOV+거리 충족 시 가시 / LoS 없으면 비가시 / FOV 밖(등 뒤) 비가시 / 연막 차단.
+- hearing(3): 달리는 적 들림·걷는 적 안 들림 / 걷기·정지 무음 / 총성 인접 구역 전파 + 구역 중심 로컬화.
+- memory(2): `confidenceForAge` 단조 감소(half-life에서 0.5) / 목격→기억→망각, lastSeenPosition 유지.
+- leak(3): Observation 키만 존재(players/events 등 없음) / 미관측 적 좌표 비노출 / 이동 후 live 위치 비노출.
+- determinism(3): 기본 완전 결정적 / 동일 시드+입력 → 동일 출력(확률 발견 on) / missProb>0인데 rng 없으면 throw.
+- communication(2): 콜아웃이 지연 후 전파 / 팀 적 그림 dedup.
+
+**실행:** `cd packages/perception-engine && npm install && npm test` (spatial-engine는 `file:` 링크).
+
+**미완료/주의:** 모든 수치 `manual-approx`(실측 보정 전). 시야는 구역 단위 LoS(정밀 ray-cast 아님).
+연막 판정은 구역 incident smokeable sightline 차단(볼륨 교차 아님). `knownMapChanges`는 v0에서 빈 배열.
 
 ---
 
