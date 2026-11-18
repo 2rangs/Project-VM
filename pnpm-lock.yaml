@@ -117,6 +117,25 @@ importers:
       '@pv/shared-types':
         specifier: workspace:*
         version: link:../shared-types
+    devDependencies:
+      '@pv/decision-engine':
+        specifier: workspace:*
+        version: link:../decision-engine
+      '@pv/replay-engine':
+        specifier: workspace:*
+        version: link:../replay-engine
+      '@pv/round-simulator':
+        specifier: workspace:*
+        version: link:../round-simulator
+      '@pv/simulation-core':
+        specifier: workspace:*
+        version: link:../simulation-core
+      '@pv/team-engine':
+        specifier: workspace:*
+        version: link:../team-engine
+      '@pv/world-state':
+        specifier: workspace:*
+        version: link:../world-state
 
   packages/outcome-predictor:
     dependencies:

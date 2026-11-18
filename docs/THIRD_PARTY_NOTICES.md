@@ -1,4 +1,4 @@
-# PROJECT V — Third-Party Notices (draft)
+# PROJECT V — Third-Party Notices
 
 **작성:** PV-1 Research (8차 사전 통합 감사) · **기준일:** 2026-11-18
 
@@ -48,4 +48,57 @@ PROJECT V is not affiliated with, endorsed by, or sponsored by Riot Games. VALOR
 assets are trademarks/property of Riot Games, Inc.
 
 ---
-*이 문서는 PV-1이 전 브랜치를 읽기 전용으로 감사해 작성한 초안이다. 머지 담당(오케스트레이터)이 최종본으로 확정한다.*
+*Finalized at integration (PV-3 integration lead, 2026-11-18) from PV-1 PRE_MERGE_AUDIT; items [A]-[F] processed. License texts below.*
+
+---
+
+## 5. License texts
+
+### MIT License
+Applies to: ValorantWebReplayer (© Talha Kök and contributors), ValorantReplayParser
+(© Michel Giehl), recast-navigation-js, and the MIT-licensed npm runtime/dev dependencies
+listed above.
+
+```
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### zlib License
+Applies to: Recast & Detour (© 2009 Mikko Mononen memon@inside.org), the native library
+wrapped by recast-navigation-js.
+
+```
+This software is provided 'as-is', without any express or implied warranty.
+In no event will the authors be held liable for any damages arising from the
+use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
+subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not claim
+   that you wrote the original software. If you use this software in a product,
+   an acknowledgment in the product documentation would be appreciated but is
+   not required.
+2. Altered source versions must be plainly marked as such, and must not be
+   misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+```

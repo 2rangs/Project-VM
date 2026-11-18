@@ -1,6 +1,7 @@
 // PROJECT V — PV-6 Replay Parser: extract stage (Linux)
 //
-// Reimplementation of talhakoek/ValorantWebReplayer scripts/extract-stream.mjs,
+// Reimplementation of talhakoek/ValorantWebReplayer scripts/extract-stream.mjs (MIT;
+// see docs/THIRD_PARTY_NOTICES.md §1 and §5 for the MIT license text),
 // ported to run on Linux and refactored so the core parser is a pure function
 // that unit tests can call directly (no external binary, no filesystem).
 //

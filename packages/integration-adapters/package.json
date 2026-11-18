@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Adapters that bind PV-3's seams (SpatialQuery/ObservationProvider/CombatEstimator/EconomyEvaluator + ability checks) to the other branches' engines via structural mirrors — compiles now, swap imports at merge.",
+  "description": "Adapters that bind PV-3's seams (SpatialQuery/ObservationProvider/CombatEstimator/EconomyEvaluator + ability checks) to the other branches' engines via structural mirrors \u2014 compiles now, swap imports at merge.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -14,5 +14,13 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@pv/round-simulator": "workspace:*",
+    "@pv/team-engine": "workspace:*",
+    "@pv/decision-engine": "workspace:*",
+    "@pv/world-state": "workspace:*",
+    "@pv/simulation-core": "workspace:*",
+    "@pv/replay-engine": "workspace:*"
   }
 }
