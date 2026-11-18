@@ -1,0 +1,379 @@
+{
+  "note": "PV-5 measured edge distances/times for Ascent, applied to the navgraph for medium-confidence edges only. Source: origin/claude/pv-mapmesh datasets/spatial/ascent/mesh/replacement-proposal.json (aggregate values, no geometry). 2.5D walkable-grid geodesic @6.75 m/s. Low-confidence edges and all sightlines are NOT applied (kept manual-approx); their detour ratios are retained here as notes.",
+  "provenance": {
+    "sourceId": "pv5-mapmesh",
+    "sourceBranch": "claude/pv-mapmesh",
+    "retrievedAt": "2026-11-18",
+    "evidenceType": "derived",
+    "confidencePolicy": "apply medium only"
+  },
+  "edges": [
+    {
+      "from": "attacker-spawn",
+      "to": "a-lobby",
+      "distanceMeters": 63.06,
+      "runTimeMs": 9343,
+      "detourRatioVsStraightLine": 1.23,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "b-lobby",
+      "distanceMeters": 29.47,
+      "runTimeMs": 4366,
+      "detourRatioVsStraightLine": 1.12,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "mid-top",
+      "distanceMeters": 38.58,
+      "runTimeMs": 5715,
+      "detourRatioVsStraightLine": 1.21,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-main",
+      "distanceMeters": 35.73,
+      "runTimeMs": 5293,
+      "detourRatioVsStraightLine": 2.04,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-main",
+      "to": "a-tree",
+      "distanceMeters": 26.61,
+      "runTimeMs": 3943,
+      "detourRatioVsStraightLine": 1.08,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-main",
+      "to": "a-window",
+      "distanceMeters": 46.41,
+      "runTimeMs": 6875,
+      "detourRatioVsStraightLine": 1.11,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-main",
+      "to": "a-site",
+      "distanceMeters": 18.86,
+      "runTimeMs": 2793,
+      "detourRatioVsStraightLine": 1.1,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-tree",
+      "to": "a-site",
+      "distanceMeters": 27.79,
+      "runTimeMs": 4117,
+      "detourRatioVsStraightLine": 1.08,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-window",
+      "to": "a-site",
+      "distanceMeters": 41.66,
+      "runTimeMs": 6172,
+      "detourRatioVsStraightLine": 1.21,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-site",
+      "to": "a-wine",
+      "distanceMeters": 60.8,
+      "runTimeMs": 9008,
+      "detourRatioVsStraightLine": 2.19,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-site",
+      "to": "a-rafters",
+      "distanceMeters": 17.06,
+      "runTimeMs": 2527,
+      "detourRatioVsStraightLine": 1.09,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-site",
+      "to": "a-garden",
+      "distanceMeters": 44.01,
+      "runTimeMs": 6519,
+      "detourRatioVsStraightLine": 1.26,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-garden",
+      "to": "mid-cubby",
+      "distanceMeters": 27.08,
+      "runTimeMs": 4012,
+      "detourRatioVsStraightLine": 1.17,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-wine",
+      "to": "defender-spawn",
+      "distanceMeters": 129.39,
+      "runTimeMs": 19169,
+      "detourRatioVsStraightLine": 1.38,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "a-rafters",
+      "to": "defender-spawn",
+      "distanceMeters": 68.98,
+      "runTimeMs": 10220,
+      "detourRatioVsStraightLine": 1.19,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-top",
+      "to": "mid-courtyard",
+      "distanceMeters": 47.98,
+      "runTimeMs": 7107,
+      "detourRatioVsStraightLine": 1.37,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-catwalk",
+      "distanceMeters": 17,
+      "runTimeMs": 2518,
+      "detourRatioVsStraightLine": 1.13,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-cubby",
+      "distanceMeters": 27.39,
+      "runTimeMs": 4058,
+      "detourRatioVsStraightLine": 1.12,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-catwalk",
+      "to": "mid-bottom",
+      "distanceMeters": 27.98,
+      "runTimeMs": 4145,
+      "detourRatioVsStraightLine": 1.09,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-cubby",
+      "to": "mid-bottom",
+      "distanceMeters": 36.33,
+      "runTimeMs": 5382,
+      "detourRatioVsStraightLine": 1.18,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-market",
+      "distanceMeters": 24.31,
+      "runTimeMs": 3602,
+      "detourRatioVsStraightLine": 1.67,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-link",
+      "distanceMeters": 28.43,
+      "runTimeMs": 4212,
+      "detourRatioVsStraightLine": 1.4,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-link",
+      "to": "b-site",
+      "distanceMeters": 54.01,
+      "runTimeMs": 8001,
+      "detourRatioVsStraightLine": 1.22,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-link",
+      "to": "defender-spawn",
+      "distanceMeters": 61.16,
+      "runTimeMs": 9061,
+      "detourRatioVsStraightLine": 1.24,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-market",
+      "to": "mid-pizza",
+      "distanceMeters": 12.2,
+      "runTimeMs": 1807,
+      "detourRatioVsStraightLine": 1.26,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-market",
+      "to": "b-site",
+      "distanceMeters": 49.77,
+      "runTimeMs": 7374,
+      "detourRatioVsStraightLine": 1.18,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "mid-pizza",
+      "to": "b-main",
+      "distanceMeters": 52.49,
+      "runTimeMs": 7776,
+      "detourRatioVsStraightLine": 1.24,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "b-lobby",
+      "to": "b-main",
+      "distanceMeters": 68.05,
+      "runTimeMs": 10082,
+      "detourRatioVsStraightLine": 1.46,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "b-main",
+      "to": "b-site",
+      "distanceMeters": 19.17,
+      "runTimeMs": 2840,
+      "detourRatioVsStraightLine": 1.12,
+      "confidence": "medium",
+      "apply": true
+    },
+    {
+      "from": "b-site",
+      "to": "b-boathouse",
+      "distanceMeters": 31.86,
+      "runTimeMs": 4720,
+      "detourRatioVsStraightLine": 1.26,
+      "confidence": "low",
+      "apply": false
+    },
+    {
+      "from": "b-boathouse",
+      "to": "b-main",
+      "distanceMeters": 48.21,
+      "runTimeMs": 7142,
+      "detourRatioVsStraightLine": 1.22,
+      "confidence": "low",
+      "apply": false
+    },
+    {
+      "from": "b-site",
+      "to": "defender-spawn",
+      "distanceMeters": 55.13,
+      "runTimeMs": 8167,
+      "detourRatioVsStraightLine": 1.11,
+      "confidence": "medium",
+      "apply": true
+    }
+  ],
+  "sightlineNotes": [
+    {
+      "a": "a-main",
+      "b": "a-site",
+      "visibilityProbability": 0.61,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "a-window",
+      "b": "a-site",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "a-tree",
+      "b": "a-site",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "a-wine",
+      "b": "a-site",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-site",
+      "visibilityProbability": 0.17,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "mid-top",
+      "b": "mid-courtyard",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-bottom",
+      "visibilityProbability": 0.67,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "mid-link",
+      "b": "b-site",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "mid-market",
+      "b": "b-site",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "b-main",
+      "b": "b-site",
+      "visibilityProbability": 0.17,
+      "confidence": "low",
+      "applied": false
+    },
+    {
+      "a": "b-boathouse",
+      "b": "b-site",
+      "visibilityProbability": 0,
+      "confidence": "low",
+      "applied": false
+    }
+  ]
+}

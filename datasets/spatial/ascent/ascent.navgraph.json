@@ -376,11 +376,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 5390,
-      "distanceMeters": 53.9,
-      "runTimeMs": 7985,
-      "walkTimeMs": 15852,
-      "provenance": "manual-approx"
+      "distanceUnits": 6306,
+      "distanceMeters": 63.06,
+      "runTimeMs": 9343,
+      "walkTimeMs": 18549,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "attacker-spawn",
@@ -388,11 +388,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2116,
-      "distanceMeters": 21.16,
-      "runTimeMs": 3135,
-      "walkTimeMs": 6224,
-      "provenance": "manual-approx"
+      "distanceUnits": 2947,
+      "distanceMeters": 29.47,
+      "runTimeMs": 4366,
+      "walkTimeMs": 8668,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "attacker-spawn",
@@ -400,11 +400,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 3472,
-      "distanceMeters": 34.72,
-      "runTimeMs": 5143,
-      "walkTimeMs": 10211,
-      "provenance": "manual-approx"
+      "distanceUnits": 3858,
+      "distanceMeters": 38.58,
+      "runTimeMs": 5715,
+      "walkTimeMs": 11346,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-lobby",
@@ -412,11 +412,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1889,
-      "distanceMeters": 18.89,
-      "runTimeMs": 2799,
-      "walkTimeMs": 5557,
-      "provenance": "manual-approx"
+      "distanceUnits": 3573,
+      "distanceMeters": 35.73,
+      "runTimeMs": 5293,
+      "walkTimeMs": 10508,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-main",
@@ -424,11 +424,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1819,
-      "distanceMeters": 18.19,
-      "runTimeMs": 2694,
-      "walkTimeMs": 5349,
-      "provenance": "manual-approx"
+      "distanceUnits": 2661,
+      "distanceMeters": 26.61,
+      "runTimeMs": 3943,
+      "walkTimeMs": 7828,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-main",
@@ -436,11 +436,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 3727,
-      "distanceMeters": 37.27,
-      "runTimeMs": 5522,
-      "walkTimeMs": 10963,
-      "provenance": "manual-approx"
+      "distanceUnits": 4641,
+      "distanceMeters": 46.41,
+      "runTimeMs": 6875,
+      "walkTimeMs": 13649,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-main",
@@ -448,11 +448,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2091,
-      "distanceMeters": 20.91,
-      "runTimeMs": 3098,
-      "walkTimeMs": 6151,
-      "provenance": "manual-approx"
+      "distanceUnits": 1886,
+      "distanceMeters": 18.86,
+      "runTimeMs": 2793,
+      "walkTimeMs": 5545,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-tree",
@@ -460,11 +460,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2281,
-      "distanceMeters": 22.81,
-      "runTimeMs": 3379,
-      "walkTimeMs": 6709,
-      "provenance": "manual-approx"
+      "distanceUnits": 2779,
+      "distanceMeters": 27.79,
+      "runTimeMs": 4117,
+      "walkTimeMs": 8173,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-window",
@@ -472,11 +472,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2655,
-      "distanceMeters": 26.55,
-      "runTimeMs": 3933,
-      "walkTimeMs": 7808,
-      "provenance": "manual-approx"
+      "distanceUnits": 4166,
+      "distanceMeters": 41.66,
+      "runTimeMs": 6172,
+      "walkTimeMs": 12253,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-site",
@@ -484,11 +484,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2283,
-      "distanceMeters": 22.83,
-      "runTimeMs": 3383,
-      "walkTimeMs": 6716,
-      "provenance": "manual-approx"
+      "distanceUnits": 6080,
+      "distanceMeters": 60.8,
+      "runTimeMs": 9008,
+      "walkTimeMs": 17884,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-site",
@@ -496,11 +496,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1584,
-      "distanceMeters": 15.84,
-      "runTimeMs": 2347,
-      "walkTimeMs": 4659,
-      "provenance": "manual-approx"
+      "distanceUnits": 1706,
+      "distanceMeters": 17.06,
+      "runTimeMs": 2527,
+      "walkTimeMs": 5017,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-site",
@@ -512,11 +512,11 @@
         "destructibleSwitch": true
       },
       "destructible": null,
-      "distanceUnits": 2555,
-      "distanceMeters": 25.55,
-      "runTimeMs": 3786,
-      "walkTimeMs": 7516,
-      "provenance": "manual-approx"
+      "distanceUnits": 4401,
+      "distanceMeters": 44.01,
+      "runTimeMs": 6519,
+      "walkTimeMs": 12942,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-garden",
@@ -524,11 +524,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2454,
-      "distanceMeters": 24.54,
-      "runTimeMs": 3636,
-      "walkTimeMs": 7218,
-      "provenance": "manual-approx"
+      "distanceUnits": 2708,
+      "distanceMeters": 27.08,
+      "runTimeMs": 4012,
+      "walkTimeMs": 7965,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-wine",
@@ -536,11 +536,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 7377,
-      "distanceMeters": 73.77,
-      "runTimeMs": 10928,
-      "walkTimeMs": 21696,
-      "provenance": "manual-approx"
+      "distanceUnits": 12939,
+      "distanceMeters": 129.39,
+      "runTimeMs": 19169,
+      "walkTimeMs": 38056,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "a-rafters",
@@ -548,11 +548,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 4429,
-      "distanceMeters": 44.29,
-      "runTimeMs": 6561,
-      "walkTimeMs": 13025,
-      "provenance": "manual-approx"
+      "distanceUnits": 6898,
+      "distanceMeters": 68.98,
+      "runTimeMs": 10220,
+      "walkTimeMs": 20290,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-top",
@@ -560,11 +560,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2897,
-      "distanceMeters": 28.97,
-      "runTimeMs": 4292,
-      "walkTimeMs": 8520,
-      "provenance": "manual-approx"
+      "distanceUnits": 4798,
+      "distanceMeters": 47.98,
+      "runTimeMs": 7107,
+      "walkTimeMs": 14109,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-courtyard",
@@ -572,11 +572,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1186,
-      "distanceMeters": 11.86,
-      "runTimeMs": 1757,
-      "walkTimeMs": 3487,
-      "provenance": "manual-approx"
+      "distanceUnits": 1700,
+      "distanceMeters": 17,
+      "runTimeMs": 2518,
+      "walkTimeMs": 4999,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-courtyard",
@@ -584,11 +584,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2232,
-      "distanceMeters": 22.32,
-      "runTimeMs": 3306,
-      "walkTimeMs": 6564,
-      "provenance": "manual-approx"
+      "distanceUnits": 2739,
+      "distanceMeters": 27.39,
+      "runTimeMs": 4058,
+      "walkTimeMs": 8056,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-catwalk",
@@ -596,11 +596,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2182,
-      "distanceMeters": 21.82,
-      "runTimeMs": 3233,
-      "walkTimeMs": 6419,
-      "provenance": "manual-approx"
+      "distanceUnits": 2798,
+      "distanceMeters": 27.98,
+      "runTimeMs": 4145,
+      "walkTimeMs": 8229,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-cubby",
@@ -608,11 +608,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2412,
-      "distanceMeters": 24.12,
-      "runTimeMs": 3573,
-      "walkTimeMs": 7093,
-      "provenance": "manual-approx"
+      "distanceUnits": 3633,
+      "distanceMeters": 36.33,
+      "runTimeMs": 5382,
+      "walkTimeMs": 10685,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-bottom",
@@ -620,11 +620,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1415,
-      "distanceMeters": 14.15,
-      "runTimeMs": 2097,
-      "walkTimeMs": 4163,
-      "provenance": "manual-approx"
+      "distanceUnits": 2431,
+      "distanceMeters": 24.31,
+      "runTimeMs": 3602,
+      "walkTimeMs": 7151,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-bottom",
@@ -632,11 +632,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 2423,
-      "distanceMeters": 24.23,
-      "runTimeMs": 3590,
-      "walkTimeMs": 7127,
-      "provenance": "manual-approx"
+      "distanceUnits": 2843,
+      "distanceMeters": 28.43,
+      "runTimeMs": 4212,
+      "walkTimeMs": 8362,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-link",
@@ -648,11 +648,11 @@
         "destructibleSwitch": true
       },
       "destructible": null,
-      "distanceUnits": 3691,
-      "distanceMeters": 36.91,
-      "runTimeMs": 5468,
-      "walkTimeMs": 10855,
-      "provenance": "manual-approx"
+      "distanceUnits": 5401,
+      "distanceMeters": 54.01,
+      "runTimeMs": 8001,
+      "walkTimeMs": 15884,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-link",
@@ -660,11 +660,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 6064,
-      "distanceMeters": 60.64,
-      "runTimeMs": 8984,
-      "walkTimeMs": 17836,
-      "provenance": "manual-approx"
+      "distanceUnits": 6116,
+      "distanceMeters": 61.16,
+      "runTimeMs": 9061,
+      "walkTimeMs": 17989,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-market",
@@ -672,11 +672,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 720,
-      "distanceMeters": 7.2,
-      "runTimeMs": 1066,
-      "walkTimeMs": 2117,
-      "provenance": "manual-approx"
+      "distanceUnits": 1220,
+      "distanceMeters": 12.2,
+      "runTimeMs": 1807,
+      "walkTimeMs": 3587,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-market",
@@ -684,11 +684,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 3438,
-      "distanceMeters": 34.38,
-      "runTimeMs": 5094,
-      "walkTimeMs": 10112,
-      "provenance": "manual-approx"
+      "distanceUnits": 4977,
+      "distanceMeters": 49.77,
+      "runTimeMs": 7374,
+      "walkTimeMs": 14640,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "mid-pizza",
@@ -696,11 +696,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 4043,
-      "distanceMeters": 40.43,
-      "runTimeMs": 5990,
-      "walkTimeMs": 11892,
-      "provenance": "manual-approx"
+      "distanceUnits": 5249,
+      "distanceMeters": 52.49,
+      "runTimeMs": 7776,
+      "walkTimeMs": 15438,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "b-lobby",
@@ -708,11 +708,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 4479,
-      "distanceMeters": 44.79,
-      "runTimeMs": 6636,
-      "walkTimeMs": 13174,
-      "provenance": "manual-approx"
+      "distanceUnits": 6805,
+      "distanceMeters": 68.05,
+      "runTimeMs": 10082,
+      "walkTimeMs": 20016,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "b-main",
@@ -720,11 +720,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1745,
-      "distanceMeters": 17.45,
-      "runTimeMs": 2586,
-      "walkTimeMs": 5133,
-      "provenance": "manual-approx"
+      "distanceUnits": 1917,
+      "distanceMeters": 19.17,
+      "runTimeMs": 2840,
+      "walkTimeMs": 5638,
+      "provenance": "pv5-measured (medium)"
     },
     {
       "from": "b-site",
@@ -735,7 +735,7 @@
       "distanceUnits": 2151,
       "distanceMeters": 21.51,
       "runTimeMs": 3187,
-      "walkTimeMs": 6328,
+      "walkTimeMs": 6327,
       "provenance": "manual-approx"
     },
     {
@@ -747,7 +747,7 @@
       "distanceUnits": 3155,
       "distanceMeters": 31.55,
       "runTimeMs": 4674,
-      "walkTimeMs": 9278,
+      "walkTimeMs": 9279,
       "provenance": "manual-approx"
     },
     {
@@ -756,11 +756,11 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 4864,
-      "distanceMeters": 48.64,
-      "runTimeMs": 7205,
-      "walkTimeMs": 14304,
-      "provenance": "manual-approx"
+      "distanceUnits": 5513,
+      "distanceMeters": 55.13,
+      "runTimeMs": 8167,
+      "walkTimeMs": 16214,
+      "provenance": "pv5-measured (medium)"
     }
   ],
   "sightlines": [
@@ -865,5 +865,5 @@
     }
   ],
   "generatedBy": "tools/map-processor/build-ascent.mjs",
-  "generatedNote": "Edge distances/times computed from node centers; straight-line approximation."
+  "generatedNote": "Edge distances/times: PV-5 measured (medium confidence) where available, else straight-line manual-approx. 30/32 edges measured."
 }
