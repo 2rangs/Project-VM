@@ -1,0 +1,241 @@
+{
+  "generatedAt": "2026-11-18T09:53:29+00:00",
+  "source": {
+    "sourceId": "vct-reference",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "scope": "international",
+    "players": 402
+  },
+  "method": {
+    "shrinkage": "empirical Bayes toward league mean, weight n/(n+k)",
+    "minMapsQualify": 5,
+    "skillMapping": "percentile -> 0.35 + 0.5*pct (median~0.6)",
+    "roleRelative": [
+      "reaction",
+      "entryAggression"
+    ],
+    "shrinkStats": {
+      "acs": {
+        "leagueMean": 189.65864178141373,
+        "k": 3.6604595507449553
+      },
+      "adr": {
+        "leagueMean": 124.47716807119672,
+        "k": 3.5731477909498577
+      },
+      "kast": {
+        "leagueMean": 69.22335468292381,
+        "k": 5.027934199802278
+      },
+      "hsPct": {
+        "leagueMean": 27.348441429491537,
+        "k": 2.3048518322241236
+      },
+      "rating": {
+        "leagueMean": 0.9404289356411385,
+        "k": 4.632644701327128
+      },
+      "openingWinRate": {
+        "leagueMean": 0.4725511134379314,
+        "k": 1.0
+      },
+      "fkPerMap": {
+        "leagueMean": 1.971704668341404,
+        "k": 2.30451699568479
+      },
+      "clutchPerMap": {
+        "leagueMean": 0.0,
+        "k": 1000000000.0
+      }
+    }
+  },
+  "disclaimer": "Attributes are statistical ESTIMATES derived from public professional match box scores, not assessments of real players' ability. Positional/utility/comms attributes are left null because the data cannot support them. Using real names in a distributed game raises name/likeness questions — see docs/research/PLAYER_RATINGS.md.",
+  "unestimableAttributes": {
+    "movement": "needs positional/replay data (no movement traces in VCT Reference)",
+    "weaponControl": "needs per-spray data (not in box scores)",
+    "positioning": "needs player positions (Layer B not available)",
+    "utilityUsage": "needs ability-usage/outcome data (not in VCT Reference)",
+    "mapAwareness": "needs positional/timing data",
+    "rotations": "needs positional/timing data",
+    "communication": "no comms data exists",
+    "teamworkDiscipline": "no setup/execution-timing data",
+    "lurking": "needs positional data",
+    "anchoring": "needs positional data",
+    "weaponPreference": "weapon-choice per round not in VCT Reference box scores",
+    "agentMastery": "needs per-agent skill baselines; only agent pool is observed"
+  },
+  "validation": {
+    "shrinkageGain": {
+      "rating": {
+        "players": 189,
+        "k": 7.513591833256184,
+        "rawMSE": 0.029206857689251214,
+        "shrunkMSE": 0.0273355853817036,
+        "shrinkageHelps": true
+      },
+      "acs": {
+        "players": 195,
+        "k": 4.572618073173238,
+        "rawMSE": 1105.9492105055358,
+        "shrunkMSE": 1001.7790464426656,
+        "shrinkageHelps": true
+      }
+    },
+    "attributeCorrelations": {
+      "n": 395,
+      "correlations": {
+        "aim~crosshairPlacement": -0.007,
+        "aim~firstBulletAccuracy": 0.411,
+        "aim~reaction": 0.497,
+        "aim~tracking": 0.994,
+        "aim~impact": 0.791,
+        "aim~entryAggression": 0.496,
+        "aim~trading": 0.349,
+        "aim~consistency": -0.346,
+        "crosshairPlacement~firstBulletAccuracy": 0.736,
+        "crosshairPlacement~reaction": 0.084,
+        "crosshairPlacement~tracking": 0.002,
+        "crosshairPlacement~impact": 0.02,
+        "crosshairPlacement~entryAggression": -0.006,
+        "crosshairPlacement~trading": 0.009,
+        "crosshairPlacement~consistency": -0.005,
+        "firstBulletAccuracy~reaction": 0.703,
+        "firstBulletAccuracy~tracking": 0.414,
+        "firstBulletAccuracy~impact": 0.43,
+        "firstBulletAccuracy~entryAggression": 0.332,
+        "firstBulletAccuracy~trading": 0.291,
+        "firstBulletAccuracy~consistency": -0.138,
+        "reaction~tracking": 0.496,
+        "reaction~impact": 0.591,
+        "reaction~entryAggression": 0.513,
+        "reaction~trading": 0.47,
+        "reaction~consistency": -0.165,
+        "tracking~impact": 0.788,
+        "tracking~entryAggression": 0.475,
+        "tracking~trading": 0.354,
+        "tracking~consistency": -0.334,
+        "impact~entryAggression": 0.338,
+        "impact~trading": 0.711,
+        "impact~consistency": -0.367,
+        "entryAggression~trading": 0.136,
+        "entryAggression~consistency": -0.169,
+        "trading~consistency": -0.154
+      },
+      "redundantPairs": [
+        "aim~tracking"
+      ]
+    }
+  },
+  "attributeDistribution": {
+    "aim": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "crosshairPlacement": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "firstBulletAccuracy": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "reaction": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "tracking": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "impact": {
+      "estimated": 398,
+      "null": 4,
+      "mean": 0.6
+    },
+    "entryAggression": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "trading": {
+      "estimated": 398,
+      "null": 4,
+      "mean": 0.6
+    },
+    "clutch": {
+      "estimated": 402,
+      "null": 0,
+      "mean": 0.6
+    },
+    "consistency": {
+      "estimated": 395,
+      "null": 7,
+      "mean": 0.6
+    },
+    "movement": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "weaponControl": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "positioning": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "utilityUsage": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "mapAwareness": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "rotations": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "communication": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "teamworkDiscipline": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "lurking": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "anchoring": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "weaponPreference": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    },
+    "agentMastery": {
+      "estimated": 0,
+      "null": 402,
+      "mean": null
+    }
+  }
+}

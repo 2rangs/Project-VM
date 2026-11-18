@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import priors, synthetic_ascent, vct_reference
+from . import priors, ratings, synthetic_ascent, vct_reference
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,6 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True, help="Output dir (datasets/derived/priors)")
     p.add_argument("--iters", type=int, default=2000, help="Bootstrap iterations (default 2000)")
 
+    p = sub.add_parser("gen-ratings", help="Estimate player attributes (with uncertainty) from VCT Reference.")
+    p.add_argument("--db", required=True, help="Path to vct.duckdb")
+    p.add_argument("--out", required=True, help="Output dir (datasets/derived/ratings)")
+
     args = ap.parse_args(argv)
 
     if args.cmd == "normalize-vct":
@@ -51,6 +55,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"wrote {path}")
     elif args.cmd == "gen-priors":
         for name, path in priors.write_all(args.db, args.out, args.iters).items():
+            print(f"wrote {path}")
+    elif args.cmd == "gen-ratings":
+        for name, path in ratings.write_ratings(args.db, args.out).items():
             print(f"wrote {path}")
     else:  # pragma: no cover
         ap.error(f"unknown command {args.cmd}")

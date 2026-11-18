@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "player-rating.schema.json",
+  "title": "Player Rating (estimated attributes)",
+  "description": "Estimated player attributes derived from VCT Reference box-score stats, WITH uncertainty and shrinkage (README §23). Keyed by playerId only (no names). Attributes the data cannot support are null with a reason. These are ESTIMATES from public match stats, not assessments of real players — see docs/research/PLAYER_RATINGS.md. Real/derived (provenance.synthetic=false).",
+  "type": "object",
+  "required": ["playerId", "maps", "role", "attributes", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "playerId": { "type": "string", "description": "VCT Reference players.player_id (stringified). No name is stored." },
+    "maps": { "type": "integer", "minimum": 1, "description": "International maps the estimate is based on (sample size)." },
+    "seasons": { "type": "array", "items": { "type": ["integer", "null"] } },
+    "role": { "type": "string", "enum": ["duelist", "initiator", "controller", "sentinel", "unknown"], "description": "Dominant role from agents played." },
+    "agentPool": { "type": "array", "items": { "type": "string" } },
+    "lowSample": { "type": "boolean", "description": "True when maps < the qualifying threshold; estimate is shrunk hard toward the mean." },
+    "attributes": {
+      "type": "object",
+      "description": "Attribute name -> estimate. Mechanical names (aim, reaction, tracking, firstBulletAccuracy, crosshairPlacement, movement, weaponControl) map to PV-4 CombatSkills [0,1].",
+      "additionalProperties": { "$ref": "#/$defs/attribute" }
+    },
+    "provenance": { "$ref": "provenance.schema.json" }
+  },
+  "$defs": {
+    "attribute": {
+      "type": "object",
+      "required": ["value"],
+      "additionalProperties": false,
+      "properties": {
+        "value": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "Attribute on [0,1] (CombatSkills scale, median ~0.6). null when not estimable." },
+        "uncertainty": { "type": "number", "minimum": 0, "maximum": 1, "description": "Heuristic half-width on [0,1]; larger for low-sample / weak-proxy attributes." },
+        "nMaps": { "type": "integer", "minimum": 0 },
+        "proxyConfidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "How direct the stat->attribute mapping is (1 = direct, lower = weaker proxy)." },
+        "shrunkToward": { "type": "string", "enum": ["league", "role"] },
+        "reason": { "type": "string", "description": "Why the attribute is null (data gap)." }
+      }
+    }
+  }
+}

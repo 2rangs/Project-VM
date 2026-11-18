@@ -464,3 +464,65 @@ economy-engine       : 20 passed (ONNX↔Python 파리티 포함; onnxruntime-no
 1. **(PV-3/economy)** RoundValueModel을 Future Round Value 입력으로 연결하되 **priors 폴백을 기본**으로.
 2. **(Layer B 확보 후)** 위치·컴포지션 피처 추가해 재평가.
 3. **(선택)** era별 모델.
+
+---
+
+# PROJECT V — TASK HANDOFF · 6차 (Player Ratings 추정)
+
+**추가 작업일:** 2026-11-18 · **범위:** README §23(선수 AI), §07. 소유: `datasets/derived/ratings/`,
+`docs/research/PLAYER_RATINGS.md`, `tools/data-collector` ratings 모듈.
+
+## 6-1. 목표
+VCT Reference 선수 통계로 엔진 선수 능력치를 **불확실성과 함께** 추정. PV-4 combat-engine `CombatSkills`와
+PV-3 player policy 성향 입력으로 사용.
+
+## 6-2. 완료한 작업
+- **ratings 모듈** `tools/data-collector/src/pv_data_collector/ratings.py` + CLI `gen-ratings`.
+  통계→능력치 **설명 가능한 규칙**, **경험적 베이즈 축소**(n/(n+k), k=맵내분산/선수간분산),
+  **역할 상대화**(reaction·entry는 역할 내 퍼센타일), 퍼센타일→`0.35+0.5·p`(중앙값 0.6).
+- **데이터** `datasets/derived/ratings/`: `player_ratings.json`(402명, **playerId만, 이름 미저장**) +
+  `ratings_meta.json`(축소 파라미터·검증·분포·고지). 스키마 `datasets/schema/player-rating.schema.json`.
+- **문서** `docs/research/PLAYER_RATINGS.md` (방법·CombatSkills 매핑표·윤리).
+- **검증기 연동**: `player_ratings.json` → player-rating 스키마 (30/30 파일 유효).
+- **테스트** 8개(역할·축소·null+이유·검증·결정성).
+
+## 6-3. 추정 vs null (정직성)
+- 추정(축소·[0,1]): aim, crosshairPlacement, firstBulletAccuracy, reaction, tracking, impact,
+  entryAggression, trading, clutch, consistency.
+- **null+이유**(박스스코어로 불가): movement, weaponControl, positioning, utilityUsage, mapAwareness,
+  rotations, communication, teamworkDiscipline, lurking, anchoring, weaponPreference, agentMastery.
+  → 지어내지 않음. 12개 전부 null.
+
+## 6-4. 검증 결과
+- **축소가 예측 오차를 줄임**(시간 분할, 다음 시즌 예측): rating MSE 0.0292→0.0273, ACS 1106→1002
+  (둘 다 shrinkageHelps=true).
+- **중복 탐지**: `aim~tracking` **r=0.99** → tracking은 aim의 저신뢰 중복으로 보고(별도 스킬로 쓰지 말 것).
+  파이프라인이 자동 플래그.
+
+## 6-5. CombatSkills/PV-3 매핑 (읽기 전용 참조)
+- PV-4 `CombatSkills`(aim/crosshairPlacement/firstBulletAccuracy/reaction/tracking) ← 동명 attribute 직결.
+  movement·weaponControl은 **null → AVERAGE_SKILLS(0.6) 사용**(Layer B 전까지). 포지셔닝은 스킬이 아니라
+  combat-engine `EngagePosture`로 모델(README §29: 레이팅이 정보 열위를 못 덮음).
+- PV-3 player policy: entryAggression→진입성향, trading→트레이드 규율, clutch/consistency→멘탈. uncertainty를
+  함께 넘겨 저표본 선수는 행동 분산을 넓힘.
+
+## 6-6. 윤리 / 실명 — **사용자 판단 필요**
+- 저장은 **player_id 기반**, 이름 미커밋(로컬 DB 조인으로 재생성). 추정치는 공개 통계 기반·실제 평가 아님을
+  데이터(provenance.notes)·meta(disclaimer)·문서에 명시.
+- 배포 게임에 실명/능력치 사용은 초상권·데이터 권리 이슈 → **사용자/법무 결정**으로 `PLAYER_RATINGS.md`에 기록
+  (익명/가상 로스터, 옵트인, 라이선싱 등 옵션 제시).
+
+## 6-7. 테스트 결과 (실제 실행)
+```
+data-collector : 33 passed (ratings 8 포함)
+dataset 검증    : 30/30 files valid, 591 records (player_ratings 402 포함)
+```
+
+## 6-8. 미완료 / 주의
+- 박스스코어 한계 → 전술/포지셔널 능력치 추정 불가(Layer B 필요). clutch는 시도 분모 없음(약함), tracking 중복.
+- 2021–2026 패치/메타 pooled. era·역할별 재추정 권장.
+
+## 6-9. 다음 권장
+1. **(PV-4)** CombatSkills에 ratings 연결, movement/weaponControl은 0.6 폴백.
+2. **(PV-3)** player policy 성향 필드 확정 후 entry/trading/clutch 연결(uncertainty 포함).
+3. **(Layer B 확보 후)** 포지셔닝·유틸 능력치 추정 추가.
