@@ -1,4 +1,4 @@
-import type { CombatCalibration } from "@project-v/combat-engine";
+import type { CombatCalibration } from "@pv/combat-engine";
 
 /**
  * Ascent opening-duel calibration (PV-2 `combat_opening_duel.json`, Ascent attack

@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { monteCarloDuel, AVERAGE_SKILLS, OPEN_POSTURE, type Combatant } from "@project-v/combat-engine";
+import { monteCarloDuel, AVERAGE_SKILLS, OPEN_POSTURE, type Combatant } from "@pv/combat-engine";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { buildCatalog, requireWeapon } from "@project-v/combat-engine";
+import { buildCatalog, requireWeapon } from "@pv/combat-engine";
 import { AbilityEngine, combatFlashBlindMs } from "../src/index.js";
 import { loadSpatial, zonePos, ability } from "./fixtures/abilities.js";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@project-v/combat-engine",
+  "name": "@pv/combat-engine",
   "version": "0.1.0",
   "private": true,
   "description": "PROJECT V combat engine: deterministic timeline-based duel resolution from weapons, distance, info/positioning and player skills.",

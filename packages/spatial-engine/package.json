@@ -1,5 +1,5 @@
 {
-  "name": "@project-v/spatial-engine",
+  "name": "@pv/spatial-engine",
   "version": "0.1.0",
   "private": true,
   "description": "PROJECT V spatial engine: Ascent tactical zone graph, A* pathfinding, plant-area and line-of-sight queries, coordinate transform.",

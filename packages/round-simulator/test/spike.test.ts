@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { RoundSimulator, ScriptedPolicy, type SimPlayer, type SimState } from "../src/index.js";
-import { AVERAGE_SKILLS } from "@project-v/combat-engine";
+import { AVERAGE_SKILLS } from "@pv/combat-engine";
 import { loadSpatial, loadWeapons, NO_ABILITIES, spatialQuery } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();

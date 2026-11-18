@@ -1,6 +1,6 @@
-import type { SpatialEngine } from "@project-v/spatial-engine";
-import type { ObservationState, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@project-v/perception-engine";
-import type { PerceptionEngine } from "@project-v/perception-engine";
+import type { SpatialEngine } from "@pv/spatial-engine";
+import type { ObservationState, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
+import type { PerceptionEngine } from "@pv/perception-engine";
 import { mulberry32, type Rng } from "./rng.js";
 import type {
   AudibleZoneResult,

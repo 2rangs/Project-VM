@@ -25,7 +25,7 @@ import type {
   TeamId,
   Vector2,
   Vector3,
-} from "@project-v/perception-engine";
+} from "@pv/perception-engine";
 
 // ---- SpatialQuery (mirror of spatial-query.ts) ----
 

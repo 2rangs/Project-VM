@@ -1,18 +1,27 @@
 import { defineConfig } from "vitest/config";
 
-// Single root Vitest config. Workspace packages (@pv/*) resolve through pnpm
-// symlinks to each package's `exports` entry (its src/index.ts), and Vitest
-// transforms the TypeScript on the fly — so there is no build step before tests.
+// Root Vitest runs the PV-core (simulation/decision) packages, which share this config and
+// the vitest runner. Sibling-branch packages (spatial/combat/perception/ability/round-
+// simulator/economy/replay) bring their own test runners (vitest or node:test) and are run
+// via `pnpm -r test` — a single root vitest cannot run node:test files (see
+// docs/INTEGRATION_PLAN.md F5). Hence the explicit per-package include below.
+const PV_CORE = [
+  "simulation-core",
+  "game-rules",
+  "world-state",
+  "decision-engine",
+  "action-generator",
+  "decision-debugger",
+  "team-engine",
+  "outcome-predictor",
+  "integration-adapters",
+];
+
 export default defineConfig({
   test: {
     globals: false,
     environment: "node",
-    include: ["packages/*/test/**/*.test.ts"],
+    include: PV_CORE.map((p) => `packages/${p}/test/**/*.test.ts`),
     reporters: ["default"],
-    coverage: {
-      provider: "v8",
-      include: ["packages/*/src/**/*.ts"],
-      exclude: ["packages/*/src/**/index.ts"],
-    },
   },
 });

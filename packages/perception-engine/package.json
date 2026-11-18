@@ -1,5 +1,5 @@
 {
-  "name": "@project-v/perception-engine",
+  "name": "@pv/perception-engine",
   "version": "0.1.0",
   "private": true,
   "description": "PROJECT V perception engine: vision (FOV/LoS/smoke), hearing, memory decay and team communication producing per-player/per-team Observations from WorldState while enforcing the ground-truth boundary.",
@@ -15,7 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@project-v/spatial-engine": "file:../spatial-engine"
+    "@pv/spatial-engine": "file:../spatial-engine"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

@@ -1,4 +1,4 @@
-import type { AbilityState } from "@project-v/perception-engine";
+import type { AbilityState } from "@pv/perception-engine";
 import type { AbilityEngine } from "./engine.js";
 import type { RevealSnapshot } from "./types.js";
 

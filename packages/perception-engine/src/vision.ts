@@ -1,4 +1,4 @@
-import type { SpatialEngine } from "@project-v/spatial-engine";
+import type { SpatialEngine } from "@pv/spatial-engine";
 import type { PlayerState, Vector2, Vector3 } from "./shared-mirror.js";
 import type { PerceptionParams } from "./params.js";
 

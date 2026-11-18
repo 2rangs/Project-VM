@@ -8,8 +8,8 @@
 // action-schema DecisionContext: self + observation + public round facts only — NEVER
 // the omniscient world (DECISION-004).
 
-import type { CombatSkills, CombatCalibration } from "@project-v/combat-engine";
-import type { Vector3 } from "@project-v/perception-engine";
+import type { CombatSkills, CombatCalibration } from "@pv/combat-engine";
+import type { Vector3 } from "@pv/perception-engine";
 import type { MoveMode } from "./policy-contract.js";
 
 export type PlayerId = string;

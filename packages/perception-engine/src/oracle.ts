@@ -1,4 +1,4 @@
-import type { SpatialEngine } from "@project-v/spatial-engine";
+import type { SpatialEngine } from "@pv/spatial-engine";
 import type {
   AbilityState,
   HealthBand,

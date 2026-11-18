@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { createEngine, type SpatialEngine } from "@project-v/spatial-engine";
-import { buildCatalog, type WeaponSpec } from "@project-v/combat-engine";
-import type { AbilityCatalog } from "@project-v/ability-engine";
+import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
+import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
+import type { AbilityCatalog } from "@pv/ability-engine";
 import { SpatialQueryAdapter } from "../../src/view.js";
 import type { SpatialQuery } from "../../src/policy-contract.js";
 
@@ -23,7 +23,7 @@ export function spatialQuery(engine: SpatialEngine): SpatialQuery {
 
 /**
  * Local copy of the manual-approx weapons fixture (same values as combat-engine's). Loaded
- * by a path RELATIVE TO THIS FILE — no hard-coded "@project-v" path fragment — so a later
+ * by a path RELATIVE TO THIS FILE — no hard-coded "@pv" path fragment — so a later
  * "@pv/*" scope rename needs no change here (F6).
  */
 export function loadWeapons(): Record<string, WeaponSpec> {

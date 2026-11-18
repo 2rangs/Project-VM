@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { createEngine, type SpatialEngine } from "@project-v/spatial-engine";
+import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
 import type {
   AbilityState,
   GameEvent,

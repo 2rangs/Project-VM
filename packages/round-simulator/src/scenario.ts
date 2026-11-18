@@ -1,5 +1,5 @@
-import type { SpatialEngine } from "@project-v/spatial-engine";
-import { AVERAGE_SKILLS, type CombatSkills } from "@project-v/combat-engine";
+import type { SpatialEngine } from "@pv/spatial-engine";
+import { AVERAGE_SKILLS, type CombatSkills } from "@pv/combat-engine";
 import type { SimPlayer, SimState } from "./types.js";
 
 export interface SyntheticRoundOptions {

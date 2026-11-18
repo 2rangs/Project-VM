@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PerceptionEngine, type PlayerState, type WorldState } from "@project-v/perception-engine";
+import { PerceptionEngine, type PlayerState, type WorldState } from "@pv/perception-engine";
 import { AbilityEngine, toPerceptionAbilityStates, visionBlockerIsSmoke } from "../src/index.js";
 import { loadSpatial, zonePos, ability } from "./fixtures/abilities.js";
 

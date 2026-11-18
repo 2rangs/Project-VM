@@ -1,5 +1,5 @@
 {
-  "name": "@project-v/ability-engine",
+  "name": "@pv/ability-engine",
   "version": "0.1.0",
   "private": true,
   "description": "PROJECT V ability engine: deploys abilities as live effect objects (smoke/wall/flash/recon/molly/slow/trap/decoy) bridging into spatial, perception and combat engines.",
@@ -13,9 +13,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@project-v/spatial-engine": "file:../spatial-engine",
-    "@project-v/perception-engine": "file:../perception-engine",
-    "@project-v/combat-engine": "file:../combat-engine"
+    "@pv/spatial-engine": "file:../spatial-engine",
+    "@pv/perception-engine": "file:../perception-engine",
+    "@pv/combat-engine": "file:../combat-engine"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

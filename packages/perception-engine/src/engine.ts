@@ -1,4 +1,4 @@
-import type { SpatialEngine } from "@project-v/spatial-engine";
+import type { SpatialEngine } from "@pv/spatial-engine";
 import type { ObservedEnemy, PlayerId, PlayerState, TeamId, TeamReport, WorldState } from "./shared-mirror.js";
 import { DEFAULT_PARAMS, type PerceptionParams } from "./params.js";
 import { SpatialPerceptionOracle, observedEnemyFromVisible, type OracleOptions } from "./oracle.js";

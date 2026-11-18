@@ -14,7 +14,7 @@ describe("ground-truth boundary (no omniscience leak)", () => {
     );
     // explicitly assert the omniscient containers are absent
     for (const forbidden of ["players", "events", "economy", "activeAbilities", "spike"]) {
-      expect(obs as Record<string, unknown>).not.toHaveProperty(forbidden);
+      expect(obs as unknown as Record<string, unknown>).not.toHaveProperty(forbidden);
     }
   });
 

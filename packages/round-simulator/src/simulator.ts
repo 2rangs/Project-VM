@@ -1,16 +1,16 @@
-import type { SpatialEngine } from "@project-v/spatial-engine";
+import type { SpatialEngine } from "@pv/spatial-engine";
 import {
   PerceptionEngine,
   type PlayerState as PPlayerState,
   type WorldState as PWorldState,
-} from "@project-v/perception-engine";
+} from "@pv/perception-engine";
 import {
   resolveDuel,
   OPEN_POSTURE,
   type Combatant,
   type WeaponSpec,
-} from "@project-v/combat-engine";
-import { AbilityEngine, type AbilityCatalog, checkAvailability } from "@project-v/ability-engine";
+} from "@pv/combat-engine";
+import { AbilityEngine, type AbilityCatalog, checkAvailability } from "@pv/ability-engine";
 import type {
   RoundEndReason,
   RoundResult,
