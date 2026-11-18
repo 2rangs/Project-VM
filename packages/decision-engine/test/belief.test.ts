@@ -5,7 +5,9 @@ import {
   observeTeamBelief,
   spreadFromZone,
   enemyPressureOnZone,
+  buildBeliefState,
 } from "@pv/decision-engine";
+import type { BeliefState } from "@pv/shared-types";
 import { asPlayerId, asTeamId, asZoneId, type ObservationState } from "@pv/shared-types";
 import { AscentSpatialStub } from "./fixtures/ascent-stub.js";
 
@@ -89,6 +91,26 @@ describe("Belief State v0 (Handoff §12.4, README §17.3)", () => {
     const model = buildTeamBelief(obsWithEnemy(0), spatial);
     expect(enemyPressureOnZone(model, asZoneId("a-site"))).toBeGreaterThan(0);
     expect(enemyPressureOnZone(model, asZoneId("b-site"))).toBe(0);
+  });
+
+  it("buildBeliefState produces the shared BeliefState the PolicyView contract requires", () => {
+    const obs = obsWithEnemy(0);
+    const belief: BeliefState = buildBeliefState(null, obs, spatial, 0);
+    expect(belief.playerId).toBe(obs.observerId);
+    expect(belief.enemyPositionBeliefs).toHaveLength(1);
+    expect(belief.enemyPositionBeliefs[0]!.enemyId).toBe(asPlayerId("def1"));
+    expect(belief.threatZones.length).toBeGreaterThan(0);
+    expect(belief.confidence).toBeGreaterThan(0);
+  });
+
+  it("buildBeliefState carries unobserved enemies forward, aged by dtMs", () => {
+    const seen = buildBeliefState(null, obsWithEnemy(0), spatial, 0);
+    // Next tick: no enemies observed → the prior belief is carried and aged.
+    const emptyObs = { ...obsWithEnemy(0), visibleEnemies: [] };
+    const next = buildBeliefState(seen, emptyObs, spatial, 3000);
+    const carried = next.enemyPositionBeliefs.find((b) => b.enemyId === asPlayerId("def1"));
+    expect(carried).toBeDefined();
+    expect(carried!.staleness).toBe(3000);
   });
 
   it("is deterministic for the same observation", () => {

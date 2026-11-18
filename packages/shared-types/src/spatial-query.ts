@@ -9,10 +9,12 @@
  * hasLineOfSight, visibleZonesFrom, isPlantableZone, audibleZones, nearestZone — this
  * interface mirrors).
  *
- * Coordinate frame: positions are **minimapUnits** (`Vector2`), the frame PV-2's
- * DecisionContext scenarios use (origin top-left, x right, y down, ~0..1000). The real
- * adapter converts minimap↔game-world via the engine's CoordinateTransform before
- * delegating; the stub works directly in minimapUnits. Travel times are milliseconds.
+ * Coordinate frame (DECIDED phase-5, with PV-4): SpatialQuery operates in **game world
+ * units** (`Vector2`, Unreal uu, unitsPerMeter 100) — the single internal frame shared with
+ * the engines. minimapUnits (PV-2's VLR-pixel scenario frame / UI) are converted to world
+ * units ONLY at the data-load boundary: the scenario loader and the UI, via the injected
+ * transform (see @pv/integration-adapters `MinimapUnitsConverter`/`minimapToGame`). Test
+ * stubs may pick any self-consistent frame. Travel times are milliseconds.
  */
 import type { Vector2 } from "./vector.js";
 

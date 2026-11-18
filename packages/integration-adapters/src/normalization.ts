@@ -79,9 +79,10 @@ export const BRANCH_NOTATION_SURVEY: readonly BranchNotation[] = [
  * 3. Agent slug kay-o vs kayo: use normalizeAgentSlug everywhere ids cross a boundary.
  */
 export const KNOWN_MISMATCHES = [
-  "COORDINATE (confirmed phase-5): PV-2 minimapUnits are VLR pixels, NOT normalized×1000. " +
-    "The spatial-adapter default scale path is wrong (mapped attacker-spawn→b-main). Inject " +
-    "PV-6's verified vlr-pixel↔game transform via SpatialAdapterOptions.minimapToGame.",
+  "COORDINATE (DECIDED phase-5 with PV-4): SpatialQuery + engines use game WORLD UNITS " +
+    "internally; minimapUnits (PV-2 VLR pixels) convert ONLY at the data-load boundary " +
+    "(scenario loader, UI) via the injected transform. The ×1000 scale path is wrong " +
+    "(mapped attacker-spawn→b-main); supply PV-6's vlr-pixel↔game via minimapToGame.",
   "CONTRACT GRANULARITY: PV-4 round-simulator (94fa92f) DecisionPolicy is per-player/tick " +
     "(decide(ctx)→ActionCommand) with no teammates in ctx; PV-3 TeamDecisionPolicy is team/" +
     "round (decide(view,rng)→PolicyDecision). Reconcile (PV-4 aligning per orchestrator).",

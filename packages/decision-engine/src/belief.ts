@@ -15,11 +15,15 @@
  */
 import type {
   AudibleZoneResult,
+  BeliefState,
+  EnemyPositionBelief,
   ObservationState,
   PlayerId,
   SoundObservation,
   SpatialQuery,
+  TacticalHypothesis,
   TeamId,
+  ThreatEstimate,
   Vector2,
   Vector3,
   ZoneId,
@@ -189,6 +193,61 @@ export function enemyPressureOnZone(model: TeamBeliefModel, zone: ZoneId): numbe
   p += model.contactZones.get(zone) ?? 0;
   return p;
 }
+
+/**
+ * Build the shared {@link BeliefState} for the deciding team (contract field in PolicyView).
+ *
+ * Belief is PV-3's domain (perception-engine produces ObservationState only). The round-
+ * simulator calls this each tick: `buildBelief(prevBelief, teamObservation, spatial, dtMs)`.
+ * Enemy position beliefs come from the observation's last-seen snapshots; enemies NOT
+ * re-observed are carried from `prev` and aged by `dtMs` (README §17.3). Threat zones come
+ * from the zone-pressure model. Pure; never reads WorldState (DECISION-004).
+ */
+export function buildBeliefState(
+  prev: BeliefState | null,
+  observation: ObservationState,
+  spatial: SpatialQuery,
+  dtMs = 0,
+): BeliefState {
+  const now = observation.timestampMs;
+  const observedIds = new Set(observation.visibleEnemies.map((e) => String(e.playerId)));
+
+  const enemyPositionBeliefs: EnemyPositionBelief[] = observation.visibleEnemies.map((e) => ({
+    enemyId: e.playerId,
+    agentId: e.agentId,
+    hypotheses: [{ position: e.lastSeenPosition, weight: 1 }],
+    staleness: Math.max(0, now - e.lastSeenAtMs),
+  }));
+  if (prev) {
+    for (const b of prev.enemyPositionBeliefs) {
+      if (!observedIds.has(String(b.enemyId))) {
+        enemyPositionBeliefs.push({ ...b, staleness: b.staleness + dtMs });
+      }
+    }
+  }
+
+  const model = buildTeamBelief(observation, spatial);
+  const threatByZone = new Map<ZoneId, number>();
+  for (const eb of model.enemyBeliefs) for (const [z, p] of eb.distribution) threatByZone.set(z, (threatByZone.get(z) ?? 0) + p);
+  for (const [z, w] of model.contactZones) threatByZone.set(z, (threatByZone.get(z) ?? 0) + w);
+  const threatZones: ThreatEstimate[] = [...threatByZone.entries()]
+    .map(([zoneId, level]) => ({ zoneId: String(zoneId), threatLevel: Math.min(1, level) }))
+    .sort((a, b) => b.threatLevel - a.threatLevel)
+    .slice(0, 8);
+
+  const tacticalHypotheses: readonly TacticalHypothesis[] = prev?.tacticalHypotheses ?? [];
+  return {
+    playerId: observation.observerId,
+    timestampMs: now,
+    enemyPositionBeliefs,
+    tacticalHypotheses,
+    threatZones,
+    confidence: observation.visibleEnemies.length > 0 ? 0.6 : 0.3,
+  };
+}
+
+/** Alias matching the contract name used by the round-simulator. */
+export const buildBelief = buildBeliefState;
 
 /** Convenience: the audible zones a SpatialQuery reports, re-exported shape for callers. */
 export type { AudibleZoneResult };

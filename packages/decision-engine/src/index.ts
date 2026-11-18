@@ -11,6 +11,8 @@ export {
   observeTeamBelief,
   spreadFromZone,
   enemyPressureOnZone,
+  buildBeliefState,
+  buildBelief,
 } from "./belief.js";
 export type { ZoneBelief, TeamBeliefModel, BuildBeliefOptions } from "./belief.js";
 export {

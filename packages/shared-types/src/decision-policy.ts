@@ -57,9 +57,29 @@ export interface PolicyView {
   readonly mapId: MapId;
   readonly patchVersion: PatchVersion;
   readonly spike: SpikeState; // public spike state
-  /** Own team's players — fully known (they are yours). */
+  /**
+   * Own team's players — fully known (they are yours). The producer (round-simulator) MUST
+   * populate these fields, which the policy reads for buy/ability/positioning decisions:
+   * `id, teamId, side, agentId, position, facing, health, armor, alive, weapon, inventory`
+   * (weapon + shield), `abilities` (charges/cooldown/ultimate points), `credits`,
+   * `ultimatePoints`. The player's zone is derived via `SpatialQuery.nearestZone`; the
+   * per-round tactical role is assigned by the IGL (output, not input).
+   */
   readonly teammates: readonly PlayerState[];
+  /** Team-aggregate observation (merged last-seen picture). */
   readonly observation: ObservationState;
+  /**
+   * Per-player observations keyed by PlayerId — each player's own line of sight / hearing,
+   * for individual-vision decisions (peek, reaction). The round-simulator fills this from
+   * the perception engine; may be empty if only the team aggregate is available.
+   */
+  readonly perPlayerObservation?: Readonly<Record<string, ObservationState>>;
+  /**
+   * The deciding team's belief (enemy position distributions, threat zones). REQUIRED and
+   * non-empty: built by PV-3's `buildBelief(prev, teamObservation, spatial, dtMs)` in
+   * @pv/decision-engine and called each tick by the round-simulator. An empty belief makes
+   * information warfare meaningless, so producers must not pass a blank belief.
+   */
   readonly belief: BeliefState;
   readonly economy: TeamEconomyState;
   readonly knownEnemyAliveCount: number | null;
