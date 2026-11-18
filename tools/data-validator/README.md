@@ -74,6 +74,24 @@ The Match Runner can also pipe the bundle: `… | node …/sim-validate.mjs --lo
 ```
 then: `pnpm sim:validate -- --logs reports/last_match.json` (era override: `pnpm sim:validate -- --era 'patch>=9' --logs …`).
 
+### `sim:batch` runner (N matches → validate)
+`scripts/sim-batch.mts` runs **N full matches** through `@pv/match-runner` `runMatch`, bundles every
+round into the SimRun contract, and pipes it into `sim:validate` — the end-to-end "how close is the
+simulator to real VCT?" check and the way PV-3/PV-4 measure improvements against a fixed baseline.
+
+```bash
+npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20            # writes reports/sim-batch.{json,md}
+#   options: --matches N  --seed-start S  --map NAME  --max-rounds R  --era all|patch>=9
+#            --out FILE (SimRun bundle)  --report PREFIX  --no-validate (bundle + summary only)
+```
+It prints a summary (attack win rate, pistol win rate, round-end reason distribution) to stderr and
+writes the SimRun bundle + the `sim:validate` report. Deterministic per seed. A recorded baseline is
+in `docs/research/SIM_BASELINE_<date>.md`. **Root wiring** (root owner):
+`"sim:batch": "tsx tools/data-validator/scripts/sim-batch.mts"` → `pnpm sim:batch -- --matches 20`.
+
+> Needs the pnpm workspace installed (`pnpm install`) so tsx can resolve the engine packages. The
+> pytest smoke test skips cleanly when it isn't.
+
 ## Tests
 ```bash
 cd tools/data-validator && python3 -m pytest -q
