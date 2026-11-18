@@ -36,8 +36,10 @@ describe("PV-3 contract supplement", () => {
     const t = view.teammates[0];
     expect(t.id).toBe("atk");
     expect(t.weapon?.weaponId).toBe("Vandal");
-    expect(t.abilities[0].abilityId).toBe("omen:Ability2");
-    expect(t.abilities[0].chargesRemaining).toBe(1);
+    expect(t.abilities.basic[0].abilityId).toBe("omen:Ability2");
+    expect(t.abilities.basic[0].charges).toBe(1);
+    expect(t.abilities.ultimate.required).toBe(7);
+    expect(t.abilities.ultimate.ready).toBe(false); // 3 banked < 7 required
     expect(t.ultimatePoints).toBe(3);
     expect(typeof t.credits).toBe("number");
 

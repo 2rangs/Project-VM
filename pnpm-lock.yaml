@@ -157,6 +157,9 @@ importers:
       '@pv/decision-engine':
         specifier: workspace:*
         version: link:../decision-engine
+      '@pv/game-data':
+        specifier: workspace:*
+        version: link:../game-data
       '@pv/game-rules':
         specifier: workspace:*
         version: link:../game-rules
@@ -241,6 +244,9 @@ importers:
       '@pv/decision-engine':
         specifier: file:../decision-engine
         version: file:packages/decision-engine
+      '@pv/game-rules':
+        specifier: file:../game-rules
+        version: file:packages/game-rules
       '@pv/perception-engine':
         specifier: file:../perception-engine
         version: link:../perception-engine
@@ -614,6 +620,9 @@ packages:
 
   '@pv/decision-engine@file:packages/decision-engine':
     resolution: {directory: packages/decision-engine, type: directory}
+
+  '@pv/game-rules@file:packages/game-rules':
+    resolution: {directory: packages/game-rules, type: directory}
 
   '@rollup/rollup-android-arm-eabi@4.68.6':
     resolution: {integrity: sha512-TDFizbE5Ic3YCZrFF2zfodXsmRRbcwkc0PvCjo9gi+i9NVtSYdH52imwXUDCUeNTuc56p0KI+Jp8FA3QMRGdZw==}
@@ -1228,6 +1237,10 @@ snapshots:
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
   '@pv/decision-engine@file:packages/decision-engine':
+    dependencies:
+      '@pv/shared-types': link:packages/shared-types
+
+  '@pv/game-rules@file:packages/game-rules':
     dependencies:
       '@pv/shared-types': link:packages/shared-types
 

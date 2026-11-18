@@ -82,6 +82,56 @@ def _provenances(rec):
             yield rec["provenance"]
 
 
+# --- zone / coordinate checks (synthetic Ascent, game-world frame) ---------------------------
+_ZONE_TOLERANCE_UU = 800.0  # 2D distance a position may sit from its zone representative point
+
+
+def _find_zone_ref(path: str) -> dict | None:
+    """Walk up from `path` to find datasets/synthetic/ascent/ascent_zones_ref.json."""
+    d = os.path.dirname(os.path.abspath(path))
+    for _ in range(8):
+        cand = os.path.join(d, "datasets", "synthetic", "ascent", "ascent_zones_ref.json")
+        if os.path.exists(cand):
+            return json.load(open(cand, encoding="utf-8"))
+        nd = os.path.dirname(d)
+        if nd == d:
+            break
+        d = nd
+    return None
+
+
+def _zone_points(zone_ref: dict) -> dict[str, tuple[float, float]]:
+    return {z["id"]: (z["position"]["x"], z["position"]["y"]) for z in zone_ref.get("zones", [])}
+
+
+def _zone_errors(obj, zones: dict, trail: str = "") -> list[str]:
+    """Recursively check every {zoneId|lastKnownZoneId + coords} object against the navgraph."""
+    errs: list[str] = []
+    if isinstance(obj, dict):
+        for zkey, poskey in (("zoneId", "position"), ("lastKnownZoneId", "lastKnownPos")):
+            zid = obj.get(zkey)
+            if isinstance(zid, str):
+                if zid not in zones:
+                    errs.append(f"{trail}.{zkey}={zid!r} not in navgraph zones")
+                else:
+                    pos = obj.get(poskey)
+                    # position may be a sibling object, or this same object carries x/y (snapshot)
+                    if not isinstance(pos, dict):
+                        pos = obj if ("x" in obj and "y" in obj) else None
+                    if isinstance(pos, dict) and "x" in pos and "y" in pos:
+                        zx, zy = zones[zid]
+                        dist = ((pos["x"] - zx) ** 2 + (pos["y"] - zy) ** 2) ** 0.5
+                        if dist > _ZONE_TOLERANCE_UU:
+                            errs.append(f"{trail}.{poskey} is {dist:.0f}uu from zone {zid} "
+                                        f"(> {_ZONE_TOLERANCE_UU:.0f}uu)")
+        for k, v in obj.items():
+            errs += _zone_errors(v, zones, f"{trail}/{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            errs += _zone_errors(v, zones, f"{trail}[{i}]")
+    return errs
+
+
 def validate_file(path: str, registry: Registry) -> ValidationResult:
     spec = _schema_for(path)
     if spec is None:
@@ -112,6 +162,16 @@ def validate_file(path: str, registry: Registry) -> ValidationResult:
                     errors.append(
                         f"[rec {i}] provenance.synthetic={got!r} but path implies {want!r} "
                         f"(real/synthetic separation violated)")
+
+    # Zone / coordinate checks for synthetic Ascent data (game-world frame, v2).
+    norm = path.replace("\\", "/")
+    if "/datasets/synthetic/" in norm or norm.startswith("datasets/synthetic/"):
+        zone_ref = _find_zone_ref(path)
+        if zone_ref:
+            zones = _zone_points(zone_ref)
+            for i, rec in enumerate(records):
+                for e in _zone_errors(rec, zones, f"[rec {i}]"):
+                    errors.append(e)
 
     return ValidationResult(path, schema_id, not errors, len(records), errors)
 

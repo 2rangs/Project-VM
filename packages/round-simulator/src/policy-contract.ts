@@ -26,6 +26,9 @@ import type {
   Vector2,
   Vector3,
 } from "@pv/perception-engine";
+// R2-B: teammate abilities use PV-3's REAL ability-inventory type (charges + ultimate points),
+// imported from @pv/shared-types so a shape drift is a typecheck error, not a silent mismatch.
+import type { AbilityInventory } from "@pv/shared-types";
 
 // ---- SpatialQuery (mirror of spatial-query.ts) ----
 
@@ -144,16 +147,11 @@ export interface TeamEconomyState {
 
 // ---- PolicyView / policy ----
 
-/** Per-ability resource state a teammate exposes (PV-3 contract: charges/cooldown/ult). */
-export interface TeammateAbility {
-  readonly abilityId: AbilityId;
-  readonly chargesRemaining: number;
-  readonly cooldownRemainingMs: number;
-}
-
 /**
  * Own-team player state the policy reads (PV-3 required fields). Mirrors the subset of
  * @pv/shared-types PlayerState a policy needs; the real (richer) PlayerState is a superset.
+ * `abilities` is the REAL @pv/shared-types AbilityInventory (basic/signature/ultimate with
+ * charges + banked ultimate points) — R2-B contract alignment.
  */
 export interface PolicyTeammate {
   readonly id: PlayerId;
@@ -166,7 +164,7 @@ export interface PolicyTeammate {
   readonly armor: number;
   readonly alive: boolean;
   readonly weapon: { readonly weaponId: string } | null;
-  readonly abilities: readonly TeammateAbility[];
+  readonly abilities: AbilityInventory;
   readonly credits: number;
   readonly ultimatePoints: number;
   readonly ultimateCost: number;

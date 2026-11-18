@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
-import { runMatch, attackerFor, type MatchConfig, type MatchResult } from "../src/index.js";
+import { runMatch, attackerFor, resolveTeamRef, teamSkills, type MatchConfig, type MatchResult, type RoundRecord } from "../src/index.js";
 import { newTeamEconomy, decideBuy, applyRoundOutcome } from "../src/economy.js";
 import { ECONOMY_RULES, ROUND_RULES } from "@pv/game-rules";
 
@@ -96,6 +96,24 @@ describe("Match Runner", () => {
         expect(r.economy[slot].credits).toBeLessThanOrEqual(ECONOMY_RULES.maxCredits.value);
       }
     }
+  });
+
+  it("game-data: unknown team ids fall back; teamSkills returns a valid [0,1] profile", () => {
+    const unknown = resolveTeamRef("___no_such_team___");
+    expect(unknown.name).toBe("___no_such_team___"); // falls back to the id
+    const sk = teamSkills("___no_such_team___"); // AVERAGE_SKILLS fallback
+    for (const v of Object.values(sk)) {
+      expect(typeof v).toBe("number");
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("onRound progress callback fires once per round, in order", () => {
+    const seen: number[] = [];
+    const m = runMatch(cfg(5), { onRound: (r: RoundRecord) => seen.push(r.roundNumber) });
+    expect(seen).toEqual(m.rounds.map((r) => r.roundNumber));
+    expect(seen).toEqual([...seen].sort((a, b) => a - b));
   });
 
   it("each round produces an EventLog bracketed by roundStart/roundEnd and a replay", () => {

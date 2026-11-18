@@ -1,0 +1,251 @@
+{
+  "mapId": "ascent",
+  "schemaVersion": "1.0.0",
+  "frame": "game-world-uu",
+  "provenance": {
+    "sourceId": "pv-spatial-navgraph",
+    "sourceRef": "origin/claude/pv-spatial:datasets/spatial/ascent/ascent.navgraph.json",
+    "sourceCommit": "f9f274f68c32371965ca1c1cf5b6fcc82f1ba393",
+    "coordinateSystem": "origin/claude/pv-spatial:datasets/spatial/ascent/coordinate-system.json (valorant-api, verified by PV-6 on 3001 real samples)",
+    "retrievedAt": "2026-11-18T14:27:51+00:00",
+    "note": "Snapshot of PV-4 Ascent zone representative points in game-world Unreal units (uu). Used so synthetic scenarios and the validator share one authoritative frame. Replace with a direct read of the navgraph at monorepo integration."
+  },
+  "units": {
+    "gameUnit": "Unreal unit (uu)",
+    "unitsPerMeter": 100
+  },
+  "zones": [
+    {
+      "id": "attacker-spawn",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 60,
+        "y": 50,
+        "z": 190
+      }
+    },
+    {
+      "id": "defender-spawn",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 1995.2,
+        "y": -9744.9,
+        "z": 100
+      }
+    },
+    {
+      "id": "a-lobby",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": 4489,
+        "y": -3014.1,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-main",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": 5321.6,
+        "y": -4710.1,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-window",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 4023,
+        "y": -8180.7,
+        "z": 803
+      }
+    },
+    {
+      "id": "a-tree",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 3980.9,
+        "y": -5938.8,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-site",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": 6153.6,
+        "y": -6626.2,
+        "z": 500
+      }
+    },
+    {
+      "id": "a-garden",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 3773.7,
+        "y": -7551.4,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-wine",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 7358.7,
+        "y": -4689.3,
+        "z": 400
+      }
+    },
+    {
+      "id": "a-rafters",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 6129.9,
+        "y": -8210,
+        "z": 500
+      }
+    },
+    {
+      "id": "b-lobby",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": -1490.6,
+        "y": -1390,
+        "z": 200
+      }
+    },
+    {
+      "id": "b-main",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": -1983.7,
+        "y": -5840.8,
+        "z": 100
+      }
+    },
+    {
+      "id": "b-site",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": -2344.1,
+        "y": -7548.5,
+        "z": 100
+      }
+    },
+    {
+      "id": "b-boathouse",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -4484.8,
+        "y": -7763.4,
+        "z": 100
+      }
+    },
+    {
+      "id": "mid-top",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 2753.9,
+        "y": -2129.6,
+        "z": 400
+      }
+    },
+    {
+      "id": "mid-courtyard",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 1222.7,
+        "y": -4586.6,
+        "z": 300
+      }
+    },
+    {
+      "id": "mid-catwalk",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 2315.8,
+        "y": -4127.3,
+        "z": 300
+      }
+    },
+    {
+      "id": "mid-cubby",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 3387.3,
+        "y": -5129.8,
+        "z": 300
+      }
+    },
+    {
+      "id": "mid-bottom",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 1122.2,
+        "y": -5951.7,
+        "z": 200
+      }
+    },
+    {
+      "id": "mid-link",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": -632.1,
+        "y": -4280.3,
+        "z": 200
+      }
+    },
+    {
+      "id": "mid-market",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": 1089.1,
+        "y": -7363.2,
+        "z": 100
+      }
+    },
+    {
+      "id": "mid-pizza",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 1801.6,
+        "y": -7262.2,
+        "z": 100
+      }
+    }
+  ],
+  "plantZones": [
+    {
+      "id": "plant-a",
+      "site": "A",
+      "zoneId": "a-site"
+    },
+    {
+      "id": "plant-b",
+      "site": "B",
+      "zoneId": "b-site"
+    }
+  ]
+}

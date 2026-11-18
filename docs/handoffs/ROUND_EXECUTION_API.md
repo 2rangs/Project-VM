@@ -1,0 +1,92 @@
+# Round-Execution API — `@pv/round-simulator` → PV-3 Match Runner
+
+Status: v0 · 2026-11-18 · owner PV-4 (Spatial/Simulation) · consumer PV-3 (`pnpm sim:match`)
+
+The Match Runner owns the **match** loop (score, side swap, economy / buy phases). The
+round-simulator owns **one round**. `runMatchRound(input)` is the single, documented seam
+between them: give it both teams for one round, get back the result plus everything needed to
+set up the next round.
+
+```ts
+import { runMatchRound } from "@pv/round-simulator";
+const out = runMatchRound(input);
+```
+
+## Input (`MatchRoundInput`)
+
+| field | meaning |
+| --- | --- |
+| `spatial`, `weapons`, `abilities` | the engines/catalogs, built once per match and reused each round |
+| `policies` | `{ attack, defense }` — each a PV-3 `DecisionPolicy` (team-level `decide(view, rng)`) |
+| `attackers`, `defenders` | `MatchRoundTeam` — the roster **with loadouts** (see below) |
+| `seed` | the one source of this round's determinism |
+| `spikeCarrierId?` | which attacker holds the spike (default: first attacker) |
+| `mapId? matchId? roundId? roundNumber?` | labels for the event log / replay |
+| `config?` | round-loop tuning (`tickMs`, `roundTimeMs`, timers, `combatCalibration`, `recordTracks`); `seed` is taken from the top-level `seed` |
+
+Each `MatchRoundPlayer` carries `{ id, agentId, skills?, spawnZoneId?, loadout }`.
+`PlayerLoadout` = `{ weaponId, armor?, abilities?, ultimatePoints?, ultimateCost? }`, and each
+`RoundAbilityLoadout` = `{ abilityId, slot?, charges }` where `slot` is `"basic" | "signature"
+| "ultimate"`. Mark the ult with `slot: "ultimate"` so its cast is tracked for ult-point
+accounting. Economy is passed per team as `MatchRoundTeam.economy` (a `TeamEconomyState`) and
+is surfaced to the policy via `PolicyView.economy`.
+
+So the input is exactly: **both teams' rosters · loadouts · economy state · policies · seed.**
+
+## Output (`MatchRoundOutput`)
+
+| field | meaning |
+| --- | --- |
+| `winner`, `reason` | `"attack"`/`"defense"`, and `elimination`/`spikeDetonation`/`spikeDefused`/`timeExpired` |
+| `events` | the full ordered **EventLog** (`SimEvent[]`): the replay/validation source |
+| `survivors` | `{ attack: PlayerId[], defense: PlayerId[] }` |
+| `players` | per-player `PlayerRoundOutcome[]` (all 10) |
+| `round` | the raw low-level `RoundResult` (roster, optional position `tracks`) |
+| `endedAtTick`, `endedAtElapsedMs` | when the round ended |
+
+`PlayerRoundOutcome` gives the Match Runner what it needs for the **next** round:
+
+- **survival** — `alive`, `died`, `kills`.
+- **equipment preservation** — `weaponRetained` (a survivor keeps their weapon; a dead player's
+  is `null`, i.e. dropped), `armorRetained` (remaining shield; 0 if dead), `abilitiesRemaining`
+  (`{ abilityId, charges }[]`, survivors only).
+- **ultimate-point changes** — `ultimatePointsStart`, `ultimatePointsEarned`,
+  `ultimatePointsSpent`, `ultimatePointsEnd`, `ultimateUsed`.
+
+So the output is exactly: **round result · EventLog · survival + equipment-preservation ·
+ultimate-point changes.**
+
+## Rules & boundaries
+
+- **Determinism (DECISION-010).** Identical input (same rosters, loadouts, seed, policies) ⇒
+  byte-identical output. Covered by `test/match-round.test.ts`.
+- **Ultimate-point awards come from PV-1**, not from this package: the values are
+  `@pv/game-rules` `ULTIMATE_POINT_RULES` (`pointForKill/Death/SpikePlant/SpikeDefuse`). Orbs
+  are not modelled by the sim, so orb points are 0. Points are capped at `ultimateCost`; a cast
+  consumes `cost` points. If the real award rules change, they change in `@pv/game-rules`.
+- **Economy rules are the Match Runner's job.** This API reads `economy` and reports
+  preservation/survival; it does **not** compute buys, loss bonus, or refunds. Apply those
+  between rounds.
+- **Non-lethal damage is not modelled.** Duels are lethal-or-nothing, so a survivor took no
+  damage and keeps full armor. When the combat engine models chip damage, `armorRetained` will
+  reflect it with no API change.
+- **What this does internally:** assembles a `SimState` (spawn placement, spike carrier), runs
+  the deterministic tick loop (`RoundSimulator.runRound`), then reads final player state + the
+  event log back out. No global state; safe to call in a loop across a match.
+
+## Minimal example
+
+```ts
+const out = runMatchRound({
+  spatial, weapons, abilities,
+  policies: { attack: attackPolicy, defense: defensePolicy },
+  attackers: { players: atkRoster, economy: atkEcon },  // atkRoster: MatchRoundPlayer[]
+  defenders: { players: defRoster, economy: defEcon },
+  seed: matchSeed ^ roundNumber,
+  roundNumber,
+});
+// feed out.players into the next buy phase; append out.events to the match replay
+```
+
+Lower-level access (`RoundSimulator`, `buildPolicyView`, `makeSyntheticRound`) remains exported
+for tests and single-round experiments; `runMatchRound` is the recommended match-loop entry.

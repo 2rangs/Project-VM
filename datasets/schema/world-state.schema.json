@@ -8,6 +8,7 @@
   "additionalProperties": false,
   "properties": {
     "contextId": { "type": "string", "description": "Stable id for this decision context / scenario." },
+    "formatVersion": { "type": "integer", "description": "DecisionContext format version. v2 = game-world-uu coordinates + zoneId (v1 used deprecated minimapUnits)." },
     "scenarioRef": { "type": ["string", "null"], "description": "Which Handoff SS20 scenario (e.g. 'scenario-07-operator-save') this illustrates, if any." },
     "worldState": { "$ref": "#/$defs/worldState" },
     "decidingTeamIdx": { "type": "integer", "enum": [0, 1], "description": "Which team's decision this context is framed for." },
@@ -24,7 +25,8 @@
         "status": { "type": "string", "enum": ["carried", "dropped", "planted", "defused", "detonated"] },
         "carrierPlayerId": { "type": ["string", "null"], "description": "Who holds the spike (status=carried)." },
         "site": { "type": ["string", "null"], "enum": ["A", "B", "C", null] },
-        "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "Spike location (dropped/planted), minimapUnits." },
+        "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/anyPosition" }, { "type": "null" } ], "description": "Spike location (dropped/planted), game-world uu." },
+        "zoneId": { "type": ["string", "null"], "description": "Ascent navgraph zone id of the spike location." },
         "timeUntilDetonationMs": { "type": ["integer", "null"], "minimum": 0, "description": "ms remaining on the spike timer when planted (SPIKE_SECONDS=45000 at plant)." }
       }
     },
@@ -37,7 +39,8 @@
         "playerId": { "type": "string" },
         "teamIdx": { "type": "integer", "enum": [0, 1] },
         "agentId": { "type": ["string", "null"], "description": "Agent played (lowercase name or uuid)." },
-        "position": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "minimapUnits." },
+        "position": { "oneOf": [ { "$ref": "common.schema.json#/$defs/anyPosition" }, { "type": "null" } ], "description": "Player position in game-world uu (zone representative point for synthetic scenarios)." },
+        "zoneId": { "type": ["string", "null"], "description": "Ascent navgraph zone id the player is in." },
         "facingDeg": { "type": ["number", "null"], "minimum": 0, "maximum": 360 },
         "health": { "type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Hit points 0..100." },
         "armor": { "type": ["number", "null"], "minimum": 0, "description": "Armor hit points remaining." },
@@ -67,7 +70,7 @@
         "plantZones": {
           "type": ["object", "null"],
           "description": "Optional convenience hint: valid spike-plant areas keyed by site letter, as a representative point in minimapUnits. Used to test plant feasibility (Handoff SS20.05). The authoritative plant-zone geometry is owned by the Spatial agent (datasets/spatial/); this is a synthetic placeholder.",
-          "additionalProperties": { "$ref": "common.schema.json#/$defs/vector2" }
+          "additionalProperties": { "$ref": "common.schema.json#/$defs/anyPosition" }
         }
       }
     },
@@ -78,7 +81,8 @@
       "additionalProperties": false,
       "properties": {
         "playerId": { "type": "string" },
-        "lastKnownPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ] },
+        "lastKnownPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/anyPosition" }, { "type": "null" } ] },
+        "lastKnownZoneId": { "type": ["string", "null"], "description": "Ascent navgraph zone id last observed." },
         "lastSeenMsAgo": { "type": ["integer", "null"], "minimum": 0, "description": "ms since last observed; information decays (README SS17.3)." },
         "evidence": { "$ref": "common.schema.json#/$defs/evidenceType" },
         "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
@@ -96,7 +100,7 @@
             "type": "object", "additionalProperties": false,
             "properties": {
               "kind": { "type": "string", "enum": ["footsteps", "gunfire", "ability", "plant", "defuse"] },
-              "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ] },
+              "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/anyPosition" }, { "type": "null" } ] },
               "atMsAgo": { "type": ["integer", "null"], "minimum": 0 }
             }
           }

@@ -38,6 +38,7 @@ import {
   type TeamEconomy,
   type BuyDecision,
 } from "./economy.js";
+import { teamSkills } from "./teams.js";
 
 export type TeamSlot = "A" | "B";
 export type Side = "attack" | "defense";
@@ -94,6 +95,11 @@ export interface MatchResult {
   readonly wentToOvertime: boolean;
 }
 
+export interface RunMatchOptions {
+  /** Progress callback invoked after each round resolves (PV-6 desktop drives the UI from this). */
+  readonly onRound?: (record: RoundRecord, score: Readonly<Record<TeamSlot, number>>) => void;
+}
+
 const ROUNDS_PER_HALF = ROUND_RULES.roundsPerHalf.value; // 12
 const ROUNDS_TO_WIN = ROUND_RULES.roundsToWinRegulation.value; // 13
 const OT_MARGIN = ROUND_RULES.overtimeWinMargin.value; // 2
@@ -132,11 +138,17 @@ function emptyMemory(): OpponentMemory {
 /**
  * Run a full match. Pure given its config: no I/O, no clock — only the seeded RNG.
  */
-export function runMatch(config: MatchConfig): MatchResult {
+export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): MatchResult {
   const spatial = loadSpatial();
   const weapons = loadWeapons();
   const sq = makeSpatialQuery(spatial);
   const maxRounds = config.maxRounds ?? 60;
+
+  // Real per-team combat skills from game-data ratings (team-aggregate; AVERAGE fallback).
+  const skillsBySlot: Record<TeamSlot, ReturnType<typeof teamSkills>> = {
+    A: teamSkills(config.teamA.id),
+    B: teamSkills(config.teamB.id),
+  };
 
   const economy: Record<TeamSlot, TeamEconomy> = { A: newTeamEconomy(), B: newTeamEconomy() };
   const score: Record<TeamSlot, number> = { A: 0, B: 0 };
@@ -169,12 +181,21 @@ export function runMatch(config: MatchConfig): MatchResult {
 
     // --- Run the round through the round-simulator, PV-3 policy both sides ---
     const seed = deriveSeed(config.seed, `${config.teamA.id}:${config.teamB.id}:round:${roundNumber}`);
-    const state = makeSyntheticRound(spatial, {
+    const base = makeSyntheticRound(spatial, {
       matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
       roundId: `r${roundNumber}`,
       attackerWeapon: buys[attacker].weapon,
       defenderWeapon: buys[defender].weapon,
     });
+    // Override each player's skills with their real team's aggregate profile (makeSyntheticRound
+    // applies one skill set to all; we re-key by side so both teams play to their own ratings).
+    const state = {
+      ...base,
+      players: base.players.map((p) => ({
+        ...p,
+        skills: p.side === "attack" ? skillsBySlot[attacker] : skillsBySlot[defender],
+      })),
+    };
     const result: RoundResult = new RoundSimulator({
       spatial,
       weapons,
@@ -194,15 +215,19 @@ export function runMatch(config: MatchConfig): MatchResult {
       [defender]: defenderKills,
     } as Record<TeamSlot, number>;
 
+    // Between-round economy (mirror of economy-engine's advanceMatchEconomy; SWAP TARGET in
+    // economy.ts). leftoverCredits = post-buy credits; plant award goes to the attacking team.
     economy[attacker] = applyRoundOutcome(economy[attacker], {
       won: winner === attacker,
       kills: kills[attacker],
-      planted, // plant bonus goes to attackers
+      planted,
+      leftoverCredits: economy[attacker].credits,
     });
     economy[defender] = applyRoundOutcome(economy[defender], {
       won: winner === defender,
       kills: kills[defender],
       planted: false,
+      leftoverCredits: economy[defender].credits,
     });
 
     score[winner] += 1;
@@ -216,7 +241,7 @@ export function runMatch(config: MatchConfig): MatchResult {
       else memory[slot].roundsLost += 1;
     }
 
-    rounds.push({
+    const record: RoundRecord = {
       roundNumber,
       phase: pistol ? "pistol" : isOvertime(roundNumber) ? "overtime" : "regulation",
       attacker,
@@ -235,7 +260,9 @@ export function runMatch(config: MatchConfig): MatchResult {
         seed,
         matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
       }),
-    });
+    };
+    rounds.push(record);
+    options.onRound?.(record, { ...score });
 
     const won = matchWinner(score);
     if (won) {

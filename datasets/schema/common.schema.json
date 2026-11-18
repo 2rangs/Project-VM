@@ -4,15 +4,35 @@
   "title": "PROJECT V — Common definitions",
   "description": "Shared value types used across PROJECT V normalized data schemas. All field names are camelCase. Units are stated explicitly in each description so that the Simulation agent (PV-3) TypeScript types can mirror them without ambiguity.",
   "$defs": {
+    "gameWorldPosition": {
+      "type": "object",
+      "description": "A point in VALORANT game-world Unreal units (uu; 1 uu = 1 cm). This is the canonical cross-engine frame, owned by the Spatial agent (origin/claude/pv-spatial: datasets/spatial/ascent/coordinate-system.json, valorant-api transform verified by PV-6 on 3001 real samples). Synthetic scenario positions use zone representative points from the Ascent navgraph.",
+      "required": ["x", "y", "frame"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "description": "X in game units (uu)." },
+        "y": { "type": "number", "description": "Y in game units (uu)." },
+        "z": { "type": "number", "description": "Z (elevation) in game units (uu)." },
+        "frame": { "const": "game-world-uu", "description": "Coordinate frame tag; always 'game-world-uu'." }
+      }
+    },
     "vector2": {
       "type": "object",
-      "description": "2D point. Default frame is the VLR 2D-replay minimap frame (origin top-left, x right, y down), the same frame real `locs` positions use. Units: minimapUnits (floating point, typically 0..1000). The authoritative minimap<->game-world transform is owned by the Spatial agent (datasets/spatial/, not written here).",
+      "deprecated": true,
+      "description": "DEPRECATED (to be removed). 2D point in minimapUnits (VLR 2D-replay minimap frame). The vlr.gg frame is no longer used (its ToS bars the source and the ×1000 normalization caused an adapter mis-map in PV-3's F1). Use gameWorldPosition instead. Kept only for legacy event/position Layer-B stubs.",
       "required": ["x", "y"],
       "additionalProperties": false,
       "properties": {
         "x": { "type": "number", "description": "X in minimapUnits." },
         "y": { "type": "number", "description": "Y in minimapUnits." }
       }
+    },
+    "anyPosition": {
+      "description": "A position in EITHER the canonical game-world uu frame (v2, gameWorldPosition, which carries frame='game-world-uu') OR the deprecated minimapUnits frame (v1, vector2, {x,y} only). Accepts both so a loader can validate v1 and v2 DecisionContext/event documents during the v1→v2 transition (formatVersion distinguishes them). The two branches are mutually exclusive: gameWorldPosition requires `frame`, vector2 forbids extra properties.",
+      "anyOf": [
+        { "$ref": "#/$defs/gameWorldPosition" },
+        { "$ref": "#/$defs/vector2" }
+      ]
     },
     "vector3": {
       "type": "object",
