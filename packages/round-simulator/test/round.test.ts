@@ -1,16 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { RoundSimulator, ScriptedPolicy, makeSyntheticRound, SYNTHETIC_DEFENSE_ANCHORS } from "../src/index.js";
-import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, NO_ABILITIES, spatialQuery } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
+const sq = spatialQuery(spatial);
 const weapons = loadWeapons();
 
 function sim(seed: number, attackSite = "a-site") {
   return new RoundSimulator({
     spatial, weapons, abilities: NO_ABILITIES,
     policies: {
-      attack: new ScriptedPolicy({ attackSite }),
-      defense: new ScriptedPolicy({ defenseAnchors: SYNTHETIC_DEFENSE_ANCHORS }),
+      attack: new ScriptedPolicy(sq, { attackSite }),
+      defense: new ScriptedPolicy(sq, { defenseAnchors: SYNTHETIC_DEFENSE_ANCHORS }),
     },
     config: { seed },
   });

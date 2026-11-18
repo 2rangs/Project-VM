@@ -4,6 +4,8 @@ import { dirname, resolve } from "node:path";
 import { createEngine, type SpatialEngine } from "@project-v/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@project-v/combat-engine";
 import type { AbilityCatalog } from "@project-v/ability-engine";
+import { SpatialQueryAdapter } from "../../src/view.js";
+import type { SpatialQuery } from "../../src/policy-contract.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..", "..");
@@ -13,6 +15,10 @@ export function loadSpatial(): SpatialEngine {
   const nav = JSON.parse(readFileSync(resolve(spatialDir, "ascent.navgraph.json"), "utf8"));
   const cs = JSON.parse(readFileSync(resolve(spatialDir, "coordinate-system.json"), "utf8"));
   return createEngine(nav, cs.transform);
+}
+
+export function spatialQuery(engine: SpatialEngine): SpatialQuery {
+  return new SpatialQueryAdapter(engine);
 }
 
 /** Reuse combat-engine's committed manual-approx weapons fixture (via the file: link). */

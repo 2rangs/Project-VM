@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { RoundSimulator, ScriptedPolicy, type SimPlayer, type SimState } from "../src/index.js";
 import { AVERAGE_SKILLS } from "@project-v/combat-engine";
-import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, NO_ABILITIES, spatialQuery } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
+const sq = spatialQuery(spatial);
 const weapons = loadWeapons();
 
 function mkPlayer(id: string, side: "attack" | "defense", zoneId: string, weaponId: string, skill: number, facing: { x: number; y: number }, armor = 0): SimPlayer {
@@ -35,7 +36,7 @@ describe("defuse interruption", () => {
   it("killing the defuser mid-defuse interrupts the defuse", () => {
     const sim = new RoundSimulator({
       spatial, weapons, abilities: NO_ABILITIES,
-      policies: { attack: new ScriptedPolicy({ attackSite: "a-site" }), defense: new ScriptedPolicy() },
+      policies: { attack: new ScriptedPolicy(sq, { attackSite: "a-site" }), defense: new ScriptedPolicy(sq) },
       // long defuse so the attacker reliably arrives and kills the defuser mid-defuse
       config: { seed: 3, defuseDurationMs: 15000 },
     });

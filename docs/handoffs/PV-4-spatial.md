@@ -9,7 +9,7 @@
 > `ability-effect.schema.json` (see §C). (B) added `packages/round-simulator` — a
 > deterministic fixed-tick 5v5 round loop wiring spatial+perception+combat+ability behind a
 > `DecisionPolicy` interface (observation-only; no WorldState). 9 tests passing; `tsc` clean.
-> Details in **§D. Round Simulator**. All 5 packages green: 21+17+15+18+9 = **80 tests**.
+> Details in **§D. Round Simulator**. All 5 packages green: 21+17+15+18+10 = **81 tests**.
 
 > **v4 changelog (this update):** added `packages/ability-engine` (5차 작업) — abilities as
 > live effect objects (smoke/wall/flash/concuss/recon/molly/slow/trap/decoy) bridged into
@@ -323,10 +323,19 @@ shape(m)으로 재구성 후 normalizer 경유 로드. 미소싱 수치는 null 
 지각 갱신 → 교전 감지(상호/일방 시야 → combat `resolveDuel`, tick당 선수 1교전으로 트레이드 성립) →
 스파이크(설치·해체 진행/중단/폭발) → 종료(전멸/폭발/해체/시간초과) → tick 진행.
 
-**`DecisionPolicy` (DECISION-004 경계):** `decide(ctx: DecisionContext): ActionCommand`.
-`DecisionContext`는 pv-core action-schema의 DecisionContext를 미러 — **self + 공개 라운드 정보 + Observation만**,
-WorldState·적 실제 상태 없음. 타입으로 막고 `test/leak.test.ts`로 런타임 검증(정책에 넘어온 ctx에 players/spike/world 키 없음).
-`ScriptedPolicy`는 **임시 스크립트 정책(최종 AI 아님)**: 공격은 사이트 진입 후 설치, 수비는 앵커 홀드·로테이트·해체.
+**`DecisionPolicy` — PV-3 팀 계약 채택 (6차-C, PV-3 `9d7ba29`):** PV-3가 `@pv/shared-types/decision-policy.ts`에
+팀 단위 계약을 정의 → 그대로 맞춤. `src/policy-contract.ts`에 구조적 미러(브랜치 의존·머지 없음).
+- `decide(view: PolicyView, rng: RandomSource): PolicyDecision`. `PolicyView`는 **관측 가능 상태만**:
+  teammates(자기 팀 PlayerState만), observation, belief, economy, 공개 spike, 라운드 정보. **WorldState·적 실제 상태 없음**(DECISION-004).
+  `buildPolicyView()`가 조립, `test/leak.test.ts`로 누출 없음 검증(미관측 적 좌표 view에 없음, teammates 자기 팀만).
+- 출력 `PolicyDecision{strategy, roles, commands}`, `ActionCommand.kind`=move/hold/peek/useAbility/plant/defuse/save(+playerId/targetZone/moveMode/abilityId/executeAtMs).
+- 맵은 생성자 의존성 `SpatialQuery`(`SpatialQueryAdapter`가 SpatialEngine 래핑). RNG `RandomSource`(`SeededRandomSource`, mulberry32).
+- `ScriptedPolicy(spatial, opts)` 임시 팀 정책(최종 AI 아님). PV-3 `TeamDecisionPolicy`가 동일 인터페이스로 교체.
+
+**PV-3 계약에 보고한 미세 불일치(PV-3가 자기 쪽 맞추기로 함):** ① `teammates`는 perception PlayerState 미러(부분집합:
+credits/inventory/abilities/ultimatePoints 없음) — 정책 읽기 쪽은 상위집합이라 호환. ② ZoneId plain string(PV-3 branded).
+③ belief 현재 거의 빈 상태(perception belief 미산출). ④ SpatialQuery를 PV-3는 minimapUnits로 문서화했으나 어댑터는 게임
+world units로 동작(zone-id 질의는 프레임 무관) — PV-2 포함 좌표 프레임 합의 필요.
 
 **PV-3/PV-2/PV-6 정합 (fetch, 읽기만):**
 - pv-core `action-schema.ts`의 DecisionContext/ActionSchema 구조에 맞춰 입력 경계 설계.
@@ -338,14 +347,14 @@ WorldState·적 실제 상태 없음. 타입으로 막고 `test/leak.test.ts`로
 
 **결정론 (DECISION-010):** 동일 초기상태+시드 → 바이트 동일 로그. 교전별 시드 분리(`deriveSeed(seed, tick+pair)`).
 
-**테스트 (실제 실행, 9개 통과 / `tsc` 통과):**
+**테스트 (실제 실행, 10개 통과 / `tsc` 통과):**
 - 5v5 라운드가 종료 사유까지 완주 / 교전·킬 발생.
 - 동일 시드 → 바이트 동일 로그, 전체 결과 deep-equal.
 - 다른 시드 → 다른 로그(승자·킬 수 상이).
 - 설치 후 해체 중 defuser 사망 → `defuseInterrupted`, 해체 미완료.
 - 아무도 설치/교전 안 하면 `timeExpired` 수비 승.
-- 정책이 WorldState 접근 불가(ctx 키 = self/round/observation/abilities만).
-- **고속 실행:** 1,000 라운드 측정·기록 — **~19.5 ms/round(합계 ~19.5s), 공격 승률 0.309**(로그 출력).
+- `buildPolicyView` 누출 없음: teammates 자기 팀만, 미관측 적 좌표 view 미포함 / 정책에 넘어온 PolicyView에 players 키 없음.
+- **고속 실행:** 1,000 라운드 측정·기록 — **~22.6 ms/round(합계 ~22.6s), 공격 승률 0.309**(로그 출력).
 
 **실행:** `cd packages/round-simulator && npm install && npm test`.
 

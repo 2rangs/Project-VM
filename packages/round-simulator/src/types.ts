@@ -9,12 +9,12 @@
 // the omniscient world (DECISION-004).
 
 import type { CombatSkills } from "@project-v/combat-engine";
-import type { ObservationState, Vector3 } from "@project-v/perception-engine";
+import type { Vector3 } from "@project-v/perception-engine";
+import type { MoveMode } from "./policy-contract.js";
 
 export type PlayerId = string;
 export type TeamId = string;
 export type Side = "attack" | "defense";
-export type MoveMode = "run" | "walk";
 
 export interface AbilityLoadoutSlot {
   readonly abilityId: string;
@@ -71,45 +71,8 @@ export interface SimState {
   spike: SpikeState;
 }
 
-// ---- Decision layer ----
-
-/** Public, non-omniscient round facts (mirror of pv-core PublicRoundContext). */
-export interface PublicRoundContext {
-  readonly mapId: string;
-  readonly roundNumber: number;
-  readonly timeRemainingMs: number;
-  readonly spikePhase: SpikePhase;
-  /** Zone the spike is planted in (observable once planted); null otherwise. */
-  readonly spikeZoneId: string | null;
-  readonly aliveCountSelfTeam: number;
-  readonly aliveCountEnemyTeam: number;
-}
-
-/** Everything a decision maker may legitimately read. NO WorldState / enemy ground truth. */
-export interface DecisionContext {
-  readonly selfId: PlayerId;
-  readonly teamId: TeamId;
-  readonly side: Side;
-  readonly selfZoneId: string;
-  readonly selfPosition: Vector3;
-  readonly selfAlive: boolean;
-  readonly hasSpike: boolean;
-  readonly abilities: readonly AbilityLoadoutSlot[];
-  readonly round: PublicRoundContext;
-  readonly observation: ObservationState;
-}
-
-export type ActionCommand =
-  | { readonly kind: "move"; readonly targetZone: string; readonly mode: MoveMode }
-  | { readonly kind: "useAbility"; readonly abilityId: string }
-  | { readonly kind: "plant" }
-  | { readonly kind: "defuse" }
-  | { readonly kind: "hold" };
-
-export interface DecisionPolicy {
-  /** Decide one player's command from its DecisionContext (observation-only). */
-  decide(ctx: DecisionContext): ActionCommand;
-}
+// The decision layer (DecisionPolicy / PolicyView / ActionCommand) follows PV-3's contract,
+// mirrored in ./policy-contract.ts. The simulator consumes ActionCommand from there.
 
 // ---- Output ----
 

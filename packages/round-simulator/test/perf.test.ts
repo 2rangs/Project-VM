@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { RoundSimulator, ScriptedPolicy, makeSyntheticRound, SYNTHETIC_DEFENSE_ANCHORS } from "../src/index.js";
-import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, NO_ABILITIES, spatialQuery } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
+const sq = spatialQuery(spatial);
 const weapons = loadWeapons();
 
 describe("fast simulation (Handoff §30-P)", () => {
@@ -13,7 +14,7 @@ describe("fast simulation (Handoff §30-P)", () => {
     for (let i = 0; i < N; i++) {
       const sim = new RoundSimulator({
         spatial, weapons, abilities: NO_ABILITIES,
-        policies: { attack: new ScriptedPolicy({ attackSite: i % 2 === 0 ? "a-site" : "b-site" }), defense: new ScriptedPolicy({ defenseAnchors: SYNTHETIC_DEFENSE_ANCHORS }) },
+        policies: { attack: new ScriptedPolicy(sq, { attackSite: i % 2 === 0 ? "a-site" : "b-site" }), defense: new ScriptedPolicy(sq, { defenseAnchors: SYNTHETIC_DEFENSE_ANCHORS }) },
         config: { seed: 1000 + i },
       });
       const r = sim.runRound(makeSyntheticRound(spatial));

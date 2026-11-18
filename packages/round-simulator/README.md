@@ -18,14 +18,29 @@ Standalone package; uses the four engines via `file:` links.
 6. **spike** — plant / defuse progress, interruption, detonation timer.
 7. **end conditions** — elimination / detonation / defuse / time expired.
 
-## DecisionPolicy — the ground-truth boundary
+## DecisionPolicy — PV-3's contract (the ground-truth boundary)
 
-`decide(ctx: DecisionContext): ActionCommand`. `DecisionContext` mirrors pv-core's
-action-schema context: **self + public round facts + observation only** — never `WorldState`
-or enemy ground truth (DECISION-004). Enforced by type and asserted in `test/leak.test.ts`.
+Implements PV-3's **team-level** contract (`@pv/shared-types` `decision-policy.ts`, mirrored
+in `src/policy-contract.ts`):
 
-`ScriptedPolicy` is a **simple stand-in, NOT the final AI**: attackers push a site and plant;
-defenders hold an anchor and rotate/defuse. It exists only to drive the loop for tests.
+```ts
+decide(view: PolicyView, rng: RandomSource): PolicyDecision
+```
+
+- **`PolicyView`** — the deciding team's observable state: `teammates` (own-team `PlayerState`
+  only), `observation`, `belief`, `economy`, public `spike` and round facts. **No `WorldState`
+  and no enemy ground truth** — enemies come only through `observation`/`belief` (DECISION-004).
+  Built by `buildPolicyView()`; asserted leak-free in `test/leak.test.ts`.
+- **`PolicyDecision { strategy, roles, commands: ActionCommand[] }`** — commands carry
+  `playerId`, `kind` (move/hold/peek/useAbility/plant/defuse/save), `targetZone`, `moveMode`,
+  `abilityId`, `executeAtMs`.
+- The map is a **construction dependency** (`SpatialQuery`, provided by `SpatialQueryAdapter`
+  over PV-4's `SpatialEngine`), not per-decision input.
+- `RandomSource` is PV-3's seedable interface (`SeededRandomSource`, mulberry32-backed).
+
+`ScriptedPolicy(spatial, opts)` is a **simple stand-in, NOT the final AI**: attackers push a
+site and plant; defenders hold an anchor and rotate/defuse. PV-3's `TeamDecisionPolicy` drops
+in via the same interface.
 
 ## Determinism (DECISION-010)
 

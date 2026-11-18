@@ -1,7 +1,6 @@
 import type { SpatialEngine } from "@project-v/spatial-engine";
 import {
   PerceptionEngine,
-  type ObservationState,
   type PlayerState as PPlayerState,
   type WorldState as PWorldState,
 } from "@project-v/perception-engine";
@@ -13,10 +12,6 @@ import {
 } from "@project-v/combat-engine";
 import { AbilityEngine, type AbilityCatalog, checkAvailability } from "@project-v/ability-engine";
 import type {
-  ActionCommand,
-  DecisionContext,
-  DecisionPolicy,
-  PublicRoundContext,
   RoundEndReason,
   RoundResult,
   Side,
@@ -27,6 +22,8 @@ import type {
   TrackFrame,
 } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
+import type { ActionCommand, DecisionPolicy } from "./policy-contract.js";
+import { buildPolicyView, SeededRandomSource } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
 export interface RoundSimulatorDeps {
@@ -74,6 +71,11 @@ export class RoundSimulator {
     const tracks: TrackFrame[] = [];
     const commands = new Map<string, ActionCommand>();
     const engaged = new Set<string>(); // pair keys already resolved
+    // one persistent RNG stream per side (deterministic, independent)
+    const rngOf = {
+      attack: new SeededRandomSource(deriveSeed(this.cfg.seed, "policy:attack")),
+      defense: new SeededRandomSource(deriveSeed(this.cfg.seed, "policy:defense")),
+    } as const;
 
     const push = (e: SimEvent) => events.push(e);
     push({ kind: "roundStart", tick: 0, elapsedMs: 0 });
@@ -84,15 +86,12 @@ export class RoundSimulator {
     for (let guard = 0; guard < maxTicks && !ended; guard++) {
       const dt = this.cfg.tickMs;
 
-      // 1. decisions (every N ticks)
+      // 1. decisions (every N ticks): one TEAM decision per side (PV-3 contract).
       if (state.tick % this.cfg.decisionIntervalTicks === 0) {
-        const obs = perception.perceive(this.toPerceptionWorld(state));
-        for (const p of state.players) {
-          if (!p.alive) continue;
-          const o = obs.players.get(p.id);
-          if (!o) continue;
-          const ctx = this.buildContext(state, p, o);
-          commands.set(p.id, this.policies[p.side].decide(ctx));
+        for (const side of ["attack", "defense"] as const) {
+          const view = buildPolicyView(side, state, perception);
+          const decision = this.policies[side].decide(view, rngOf[side]);
+          for (const c of decision.commands) commands.set(c.playerId, c);
         }
       }
 
@@ -100,7 +99,7 @@ export class RoundSimulator {
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = commands.get(p.id);
-        if (cmd?.kind === "move") this.ensurePath(p, cmd.targetZone, cmd.mode);
+        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run");
         this.stepMovement(p, dt);
       }
 
@@ -108,20 +107,22 @@ export class RoundSimulator {
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = commands.get(p.id);
-        if (cmd?.kind !== "useAbility") continue;
-        const slot = p.abilities.find((a) => a.abilityId === cmd.abilityId);
+        if (cmd?.kind !== "useAbility" || !cmd.abilityId) continue;
+        const abilityId = cmd.abilityId;
+        const slot = p.abilities.find((a) => a.abilityId === abilityId);
         if (!slot) continue;
         const avail = checkAvailability(this.abilitiesCatalog, slot, state.elapsedMs, { points: p.ultimatePoints, required: p.ultimateCost });
         if (!avail.usable) continue;
-        const spec = this.abilitiesCatalog[cmd.abilityId];
+        const spec = this.abilitiesCatalog[abilityId];
+        if (!spec) continue;
         abilityEngine.use(spec, {
-          instanceId: `${p.id}:${cmd.abilityId}:${state.tick}`,
-          abilityId: cmd.abilityId, ownerId: p.id, teamId: p.teamId,
+          instanceId: `${p.id}:${abilityId}:${state.tick}`,
+          abilityId, ownerId: p.id, teamId: p.teamId,
           origin: p.position, startedAtMs: state.elapsedMs,
         });
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
-        push({ kind: "abilityUsed", tick: state.tick, elapsedMs: state.elapsedMs, actor: p.id, detail: cmd.abilityId });
+        push({ kind: "abilityUsed", tick: state.tick, elapsedMs: state.elapsedMs, actor: p.id, detail: abilityId });
       }
       abilityEngine.advance(state.elapsedMs);
 
@@ -339,23 +340,6 @@ export class RoundSimulator {
     if (!atkAlive && !planted) return { winner: "defense", reason: "elimination" };
     if (state.timeRemainingMs <= 0 && !planted) return { winner: "defense", reason: "timeExpired" };
     return null;
-  }
-
-  private buildContext(state: SimState, p: SimPlayer, observation: ObservationState): DecisionContext {
-    const round: PublicRoundContext = {
-      mapId: state.mapId,
-      roundNumber: 1,
-      timeRemainingMs: state.timeRemainingMs,
-      spikePhase: state.spike.phase,
-      spikeZoneId: state.spike.phase === "planted" || state.spike.phase === "defusing" ? state.spike.zoneId : null,
-      aliveCountSelfTeam: state.players.filter((q) => q.side === p.side && q.alive).length,
-      aliveCountEnemyTeam: state.players.filter((q) => q.side !== p.side && q.alive).length,
-    };
-    return {
-      selfId: p.id, teamId: p.teamId, side: p.side, selfZoneId: p.zoneId, selfPosition: p.position,
-      selfAlive: p.alive, hasSpike: state.spike.carrierId === p.id,
-      abilities: p.abilities, round, observation,
-    };
   }
 
   private toPerceptionWorld(state: SimState): PWorldState {
