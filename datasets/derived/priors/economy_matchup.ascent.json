@@ -1,0 +1,191 @@
+{
+  "priorId": "economy_matchup.ascent",
+  "description": "Round win rate by own vs opponent buy tier (OT excluded). Diagonal ~50% is a sanity check.",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "economyAvailable": true,
+      "winnerKnown": true,
+      "scope": "international Ascent only"
+    }
+  },
+  "method": {
+    "statistic": "binomial win/success rate",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": [
+      "Per-team perspective: each round contributes two rows (team0 and team1). Pistol rounds form the (pistol,pistol) cell."
+    ]
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-18T09:10:21+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "ownBuy": "pistol",
+        "oppBuy": "pistol"
+      },
+      "n": 572,
+      "successes": 286,
+      "rate": 0.5,
+      "wilsonLow": 0.45916179634417353,
+      "wilsonHigh": 0.5408382036558265,
+      "bootstrapLow": 0.5,
+      "bootstrapHigh": 0.5,
+      "matches": 143,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "ownBuy": "eco",
+        "oppBuy": "semi"
+      },
+      "n": 263,
+      "successes": 19,
+      "rate": 0.07224334600760456,
+      "wilsonLow": 0.0467342601707364,
+      "wilsonHigh": 0.11006843085640927,
+      "bootstrapLow": 0.0449438202247191,
+      "bootstrapHigh": 0.1044776119402985,
+      "matches": 142,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "ownBuy": "eco",
+        "oppBuy": "full"
+      },
+      "n": 25,
+      "successes": 1,
+      "rate": 0.04,
+      "wilsonLow": 0.007096233501987265,
+      "wilsonHigh": 0.19544063736193734,
+      "bootstrapLow": 0.0,
+      "bootstrapHigh": 0.12,
+      "matches": 25,
+      "smallSample": true
+    },
+    {
+      "dims": {
+        "ownBuy": "semi",
+        "oppBuy": "eco"
+      },
+      "n": 263,
+      "successes": 244,
+      "rate": 0.9277566539923955,
+      "wilsonLow": 0.8899315691435907,
+      "wilsonHigh": 0.9532657398292637,
+      "bootstrapLow": 0.8976377952755905,
+      "bootstrapHigh": 0.9568627450980393,
+      "matches": 142,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "ownBuy": "semi",
+        "oppBuy": "semi"
+      },
+      "n": 278,
+      "successes": 139,
+      "rate": 0.5,
+      "wilsonLow": 0.44162651042001944,
+      "wilsonHigh": 0.5583734895799806,
+      "bootstrapLow": 0.5,
+      "bootstrapHigh": 0.5,
+      "matches": 76,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "ownBuy": "semi",
+        "oppBuy": "full"
+      },
+      "n": 1217,
+      "successes": 388,
+      "rate": 0.3188167625308135,
+      "wilsonLow": 0.29323972336553766,
+      "wilsonHigh": 0.34553401190227,
+      "bootstrapLow": 0.29207920792079206,
+      "bootstrapHigh": 0.34726688102893893,
+      "matches": 143,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "ownBuy": "full",
+        "oppBuy": "eco"
+      },
+      "n": 25,
+      "successes": 24,
+      "rate": 0.96,
+      "wilsonLow": 0.8045593626380625,
+      "wilsonHigh": 0.9929037664980127,
+      "bootstrapLow": 0.88,
+      "bootstrapHigh": 1.0,
+      "matches": 25,
+      "smallSample": true
+    },
+    {
+      "dims": {
+        "ownBuy": "full",
+        "oppBuy": "semi"
+      },
+      "n": 1217,
+      "successes": 829,
+      "rate": 0.6811832374691865,
+      "wilsonLow": 0.65446598809773,
+      "wilsonHigh": 0.7067602766344624,
+      "bootstrapLow": 0.6547619047619048,
+      "bootstrapHigh": 0.7079419299743809,
+      "matches": 143,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "ownBuy": "full",
+        "oppBuy": "full"
+      },
+      "n": 2130,
+      "successes": 1065,
+      "rate": 0.5,
+      "wilsonLow": 0.4787852938355474,
+      "wilsonHigh": 0.5212147061644526,
+      "bootstrapLow": 0.5,
+      "bootstrapHigh": 0.5,
+      "matches": 143,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T09:10:21+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

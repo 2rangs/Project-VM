@@ -230,3 +230,68 @@ tools/data-validator   : 4 passed
   seen = [e["playerId"] for e in ctx["belief"]["visibleEnemies"]]                 # 관측된 적만
   # -> Action Generator 입력: 가능한 SAVE_OPERATOR / RETAKE / EXIT_KILL 후보 생성
   ```
+
+---
+
+# PROJECT V — TASK HANDOFF · 2차 (Priors & Validation Baselines)
+
+**추가 작업일:** 2026-11-18 · **커밋:** phase-2 (아래) · **범위:** README §31, Handoff §22 — 실제 VCT
+데이터로 의사결정 사전확률(prior) + 시뮬레이션 검증 기준선 생성.
+
+## 2-1. 작업 목표
+VCT Reference는 위치는 없지만 **라운드 결과 + 경제 스냅샷**이 있다. 이것으로 Action Generator/Outcome
+Predictor가 쓸 **실측 통계**와 5v5 시뮬레이션이 맞춰야 할 **검증 목표치**를 만든다.
+
+## 2-2. 완료한 작업
+- **priors ETL** `tools/data-collector/src/pv_data_collector/priors.py` + 통계 헬퍼 `stats.py`
+  (Wilson 구간, **경기 단위 클러스터 부트스트랩**). CLI `gen-priors` 추가.
+- **머신 스키마** `datasets/schema/prior.schema.json` (검증기 라우팅: `datasets/derived/priors/*` → prior).
+- **산출물** `datasets/derived/priors/*.json` 6종 + README. 각 파일에 source sha256·빌드일·필터·
+  buy 임계값·셀별 n·Wilson·부트스트랩 수록. 전부 실데이터(synthetic=false).
+- **검증 기준선 문서** `docs/VALIDATION_BASELINES.md` (목표 분포 + 허용 오차 제안).
+- **테스트**: `test_stats.py`(Wilson 손계산 대조), `test_priors.py`(소형 DuckDB fixture 손계산 대조).
+
+## 2-3. 핵심 산출 수치 (국제전, 빌드 2026-11-12)
+| prior | 대표 수치 |
+|---|---|
+| economy_matchup (intl) | full>semi **0.66**, semi>eco **0.91**, eco>full **0.12**; 동일 tier 대각 **0.50**(sanity) |
+| economy_matchup (Ascent) | full>semi **0.68**(n=1217), semi>eco **0.93** |
+| pistol_conversion | 피스톨 승자 다음 라운드 승 **0.88**, 2연승 **0.37** |
+| save_eco_future_value | eco→다음 라운드 승 **0.60** vs full→**0.51** (세이브 미래가치 근거) |
+| side_map_baselines | 전맵 공수 **0.50/0.50**; Ascent 공격 전반 **0.58**/후반 **0.41** |
+| round_outcome_distribution | 전맵 전멸 **0.66**/해체 **0.20**/폭발 **0.11**/시간초과 **0.03**; Ascent 전멸 **0.71** |
+
+## 2-4. buy 분류 · 누출 방지 (중요)
+- buy tier(팀 총 loadout, credits): pistol=라운드 1/13, eco<5000, semi 5000–20000(half+force 통합),
+  full≥20000. 실제 bimodal 분포 기반. 임계값은 `priors.py`에서 조정 가능.
+- per-team 행(라운드당 team0/team1 2행) → `n`은 team-round 수. 동일 tier 대각이 정확히 0.50인 것이
+  내장 sanity check.
+- **누출 방지(Handoff §22.3–22.4):** 경기 내 라운드 상관 → 부트스트랩은 **경기 단위**로 재표집
+  (`groupingUnit=match_id`). 피스톨/eco prior는 *다음* 라운드를 **측정 대상**으로만 쓰고 결정 입력
+  feature로는 쓰지 않음. season/patch/map 필터를 기록해 era별 재계산 가능.
+
+## 2-5. Riot API 확인 (Layer B 대안 점검)
+사용자 Riot 개발 키로 `kr.api.riotgames.com` 프록시 경유 실제 호출 결과:
+- `/val/status/v1/platform-data` → **200**
+- `/val/content/v1/contents` → **200** (요원/맵/무기 UUID 등 **콘텐츠 메타데이터** 확보 가능 — README §11 참고자료)
+- `/val/match/v1/matches/{id}` → **403** (개발 키 권한 없음)
+→ **결론:** Riot 개발 키는 **경기/위치 데이터(Layer B) 소스가 아님.** 콘텐츠 메타데이터용으로만 유효.
+Layer B는 여전히 (a) GRID/프로덕션 Riot 피드(별도 권한) 또는 (b) 자가 캡처 VRF(vrfkit)만 인가 경로.
+
+## 2-6. 테스트 결과 (실제 실행)
+```
+collector : 24 passed  (provenance2 + synthetic7 + vct_reference4 + stats6 + priors5... 신규 stats/priors 포함)
+validator : 4 passed
+검증 CLI  : 28/28 files valid; 188 records checked (priors 6종 포함)
+```
+
+## 2-7. 미완료 / 주의
+- priors는 2021–2026 패치 혼합 pooled. era별 분리 기준선은 필터로 재생성 필요(컬럼은 남김).
+- 위치 기반 검증(교전/시야)은 Layer B 미확보로 불가 — 현 기준선은 **결과·경제** 검증용.
+- Ascent full-vs-eco 등 일부 셀은 소표본(n<100, `smallSample=true`) — 튜닝 금지.
+
+## 2-8. 다음 권장
+1. **(PV-3/Outcome Predictor)** `economy_matchup`·`save_eco_future_value`를 사전확률로 로드.
+   `docs/VALIDATION_BASELINES.md`의 허용 오차로 시뮬레이션 출력 검증.
+2. **(게임룰)** `/val/content`로 요원/무기/맵 UUID 레퍼런스 데이터셋 생성(선택) — README §11.
+3. **(PV-2 후속)** Layer B 실데이터는 GRID 권한 또는 자가 VRF로만. era별 기준선 분리.

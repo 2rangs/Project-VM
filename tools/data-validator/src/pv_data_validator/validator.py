@@ -43,7 +43,13 @@ def load_registry(schema_dir: str) -> Registry:
 
 
 def _schema_for(path: str) -> tuple[str, str] | None:
+    norm = path.replace("\\", "/")
     name = os.path.basename(path)
+    # Derived priors: any JSON under datasets/derived/priors/ is a prior document.
+    if "/datasets/derived/priors/" in norm or norm.startswith("datasets/derived/priors/"):
+        if name == "README.json":
+            return None
+        return ("prior.schema.json", "object")
     if name in FILE_SCHEMA_MAP:
         return FILE_SCHEMA_MAP[name]
     for prefix, spec in PREFIX_SCHEMA_MAP.items():
@@ -62,6 +68,8 @@ def _expected_synthetic(path: str) -> bool | None:
         return True
     if "/datasets/normalized/" in norm or norm.startswith("datasets/normalized/"):
         return False
+    if "/datasets/derived/" in norm or norm.startswith("datasets/derived/"):
+        return False  # derived priors are real aggregates
     return None
 
 

@@ -20,6 +20,7 @@ pv-data normalize-vct --db datasets/raw/vct-reference/vct.duckdb --match 754737 
         --out datasets/normalized/vct-reference
 pv-data gen-scenarios --out datasets/synthetic/scenarios
 pv-data gen-map       --out datasets/synthetic/ascent
+pv-data gen-priors    --db datasets/raw/vct-reference/vct.duckdb --out datasets/derived/priors
 ```
 
 ## Tests
@@ -35,5 +36,11 @@ src/pv_data_collector/
   provenance.py        real()/synthetic() — the only place the synthetic flag is set
   vct_reference.py     DuckDB -> normalized JSON (read-only, no imputation)
   synthetic_ascent.py  scenarios + synthetic map (seeded, deterministic)
+  stats.py             Wilson interval + match-clustered bootstrap (pure, tested)
+  priors.py            DuckDB -> empirical decision priors / validation baselines
   cli.py
 ```
+
+The priors ETL turns the real round + economy data into
+[`datasets/derived/priors/`](../../datasets/derived/priors/) (see that README and
+[`docs/VALIDATION_BASELINES.md`](../../docs/VALIDATION_BASELINES.md)).

@@ -1,0 +1,128 @@
+{
+  "priorId": "pistol_conversion",
+  "description": "P(the pistol-round winner wins the following round / following two rounds). The following round is the measured outcome, not an input feature (no leakage).",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "winnerKnown": true,
+      "note": "economy not required; round results only"
+    }
+  },
+  "method": {
+    "statistic": "binomial win/success rate",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": []
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-18T09:10:25+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "half": "combined",
+        "step": "win_next_round"
+      },
+      "n": 2414,
+      "successes": 2122,
+      "rate": 0.8790389395194698,
+      "wilsonLow": 0.8654252438293977,
+      "wilsonHigh": 0.8914482034861204,
+      "bootstrapLow": 0.8666384419983065,
+      "bootstrapHigh": 0.8915310805173133,
+      "matches": 474,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "half": "first",
+        "step": "win_next_round"
+      },
+      "n": 1208,
+      "successes": 1085,
+      "rate": 0.8981788079470199,
+      "wilsonLow": 0.879843375027954,
+      "wilsonHigh": 0.9139898388779082,
+      "bootstrapLow": 0.8797364085667215,
+      "bootstrapHigh": 0.9152263374485596,
+      "matches": 474,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "half": "first",
+        "step": "win_next_two_rounds"
+      },
+      "n": 1208,
+      "successes": 449,
+      "rate": 0.3716887417218543,
+      "wilsonLow": 0.34488408341691784,
+      "wilsonHigh": 0.39930687675894777,
+      "bootstrapLow": 0.34338358458961477,
+      "bootstrapHigh": 0.39869812855980474,
+      "matches": 474,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "half": "second",
+        "step": "win_next_round"
+      },
+      "n": 1206,
+      "successes": 1037,
+      "rate": 0.8598673300165838,
+      "wilsonLow": 0.8391313221239418,
+      "wilsonHigh": 0.8783180541324251,
+      "bootstrapLow": 0.8396694214876033,
+      "bootstrapHigh": 0.8784810126582279,
+      "matches": 474,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "half": "second",
+        "step": "win_next_two_rounds"
+      },
+      "n": 1188,
+      "successes": 450,
+      "rate": 0.3787878787878788,
+      "wilsonLow": 0.3516362398043992,
+      "wilsonHigh": 0.4067208823878671,
+      "bootstrapLow": 0.3523969722455845,
+      "bootstrapHigh": 0.4055459272097054,
+      "matches": 473,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T09:10:25+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

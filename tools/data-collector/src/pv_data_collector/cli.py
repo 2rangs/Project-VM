@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import synthetic_ascent, vct_reference
+from . import priors, synthetic_ascent, vct_reference
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,6 +32,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True)
     p.add_argument("--seed", type=int, default=20260101)
 
+    p = sub.add_parser("gen-priors", help="Derive empirical priors/baselines from the VCT Reference DuckDB.")
+    p.add_argument("--db", required=True, help="Path to vct.duckdb")
+    p.add_argument("--out", required=True, help="Output dir (datasets/derived/priors)")
+    p.add_argument("--iters", type=int, default=2000, help="Bootstrap iterations (default 2000)")
+
     args = ap.parse_args(argv)
 
     if args.cmd == "normalize-vct":
@@ -43,6 +48,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"wrote {path}")
     elif args.cmd == "gen-map":
         for name, path in synthetic_ascent.write_map(args.out, args.seed).items():
+            print(f"wrote {path}")
+    elif args.cmd == "gen-priors":
+        for name, path in priors.write_all(args.db, args.out, args.iters).items():
             print(f"wrote {path}")
     else:  # pragma: no cover
         ap.error(f"unknown command {args.cmd}")
