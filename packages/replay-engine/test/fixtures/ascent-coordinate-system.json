@@ -1,0 +1,24 @@
+{
+  "_note": "COPIED from PV-4 origin/claude/pv-spatial:datasets/spatial/ascent/coordinate-system.json (2026-11-18) as a replay-engine fixture. Source of truth is PV-4; do not edit here.",
+  "mapId": "ascent",
+  "mapUuid": "7eaecc1b-4337-bbf6-6ab9-04b8f06b3319",
+  "transform": {
+    "xMultiplier": 0.00007,
+    "yMultiplier": -0.00007,
+    "xScalarToAdd": 0.813895,
+    "yScalarToAdd": 0.573242
+  },
+  "sourceProvenance": {
+    "sourceId": "valorant-api-maps",
+    "sourceUrl": "https://valorant-api.com/v1/maps",
+    "retrievedAt": "2026-11-18",
+    "evidenceType": "decoded",
+    "confidence": 0.95,
+    "verified": true,
+    "notes": [
+      "xMultiplier/yMultiplier/xScalarToAdd/yScalarToAdd are returned verbatim by valorant-api.",
+      "The axis-swapped orientation (minimapX uses gameY) was determined empirically by checking that all callouts land in [0,1]; it matches the widely used valorant-api minimap convention.",
+      "patchVersion unknown: valorant-api does not stamp the map geometry with a game patch."
+    ]
+  }
+}
