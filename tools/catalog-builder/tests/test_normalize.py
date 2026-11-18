@@ -156,6 +156,20 @@ def test_ability_facts_have_keybinds():
             assert v.get("defaultKeybind") == KEY[slot], k
 
 
+def test_ascent_comps_committed_valid():
+    """The committed derived comp stats validate against their schema."""
+    comps_dir = REPO / "datasets" / "derived" / "comps"
+    data = json.loads((comps_dir / "ascent-comps.json").read_text())
+    schema = json.loads((comps_dir / "ascent-comps.schema.json").read_text())
+    import jsonschema
+    jsonschema.Draft7Validator(schema).validate(data)
+    assert data["overall"]["teamMaps"] > 0
+    assert data["provenance"]["verified"] is True and data["provenance"]["sha256"]
+    # pick rates are a proper rate in [0,1]
+    for row in data["pickRate"]:
+        assert 0.0 <= row["pickRate"] <= 1.0
+
+
 def test_riot_crosscheck_uuids_pure():
     import riot_content
     content = {"version": "release-13.10",

@@ -139,6 +139,20 @@ Ability Engine/perception/action용 **스킬 효과 명세**. 스키마 `dataset
 
 PV-4 vision은 **존-레벨 smokedPairs**(기하 반경 아님)로 연막을 처리하므로, 연막 반경→존-쌍 변환은 spatial-engine zone 정의(PV-4/PV-spatial)에서 수행. 카탈로그는 반경·지속만 제공.
 
+## 3.10 실제 Ascent 조합 통계 (5차) — `datasets/derived/comps/ascent-comps.json`
+**VCT Reference DuckDB**(PV-2 Level 2 검증 소스; free to use incl. commercial)에서 국제전 Ascent를 직접 집계.
+재생성: `python tools/catalog-builder/build_ascent_comps.py --db /tmp/vct.duckdb`. 원시 DB는 미커밋.
+
+- **표본:** 306 team-maps(153 maps), 패치 2.09–13.05 혼합(단일 빌드 기준 아님), Wilson 95% CI.
+- **픽률 상위(국제전 Ascent, 맵단위):** Sova 81.4%(Init) · Omen 72.2%(Ctrl) · Jett 69.9%(Duel) · KAY/O 55.2%(Init) · Killjoy 49.7%(Sent) · Astra 26.5%(Ctrl) · Fade 19.6%(Init) · Chamber 18.0%(Sent) · Cypher …
+- **최빈 조합:** jett·kayo·killjoy·omen·sova (85 maps, map WR 57.6%, atk 50.0%, def 53.5%).
+- **역할 템플릿:** 1 Ctrl / 1 Duel / **2 Init** / 1 Sent = **52.6%**(Ascent 정석), 다음 1/1/1/2(Sent 더블) 17.0%.
+- **공수 균형:** 전체 atk round WR **47.2%** / def **52.8%**(수비 우세, 3288라운드씩).
+
+**효과 명세 10요원 우선순위 재검증(task 1):** 4차 선정 10요원 중 6요원(Sova·Omen·Jett·KAY/O·Killjoy·Astra)이 실측 상위 8위 내로 적절. 단 **Fade·Chamber가 Cypher/Gekko/Breach/Viper보다 픽률 상위** → 효과 명세 확장(5차 task 2)은 픽률 순서로 Fade·Chamber 우선.
+
+**소비자:** PV-3 팀/전술 AI의 조합 prior, 세이브/경제 엔진의 메타 기준선, 검증(README §31 맵별 승률·조합)으로 사용. priors는 PV-2 소유(`datasets/derived/priors/`)와 구분.
+
 ## 4. 소싱 출처 (게임플레이 수치 채울 때)
 - 공식 패치노트 색인: https://playvalorant.com/en-us/news/game-updates/
 - 스킬 규칙: https://wiki.playvalorant.com/en-us/Abilities
