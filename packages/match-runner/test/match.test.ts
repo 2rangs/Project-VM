@@ -98,6 +98,18 @@ describe("Match Runner", () => {
     }
   });
 
+  it("round-end distribution is realistic — attackers execute/plant, timeExpired is a minority", () => {
+    // Regression for the carrier-commit fix: before it, ~79% of rounds ended timeExpired
+    // because the spike carrier's plant was interrupted every decision and never completed.
+    const m = runMatch(cfg(42));
+    const reasons: Record<string, number> = {};
+    for (const r of m.rounds) reasons[r.reason] = (reasons[r.reason] ?? 0) + 1;
+    const timeExpired = reasons.timeExpired ?? 0;
+    const decisive = (reasons.elimination ?? 0) + (reasons.spikeDetonation ?? 0) + (reasons.spikeDefused ?? 0);
+    expect(decisive).toBeGreaterThan(timeExpired); // most rounds end decisively
+    expect(timeExpired).toBeLessThan(m.rounds.length * 0.4); // timeExpired is a clear minority
+  });
+
   it("game-data: unknown team ids fall back; teamSkills returns a valid [0,1] profile", () => {
     const unknown = resolveTeamRef("___no_such_team___");
     expect(unknown.name).toBe("___no_such_team___"); // falls back to the id
