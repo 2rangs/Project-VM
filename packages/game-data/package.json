@@ -1,0 +1,12 @@
+{
+  "name": "@pv/game-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": { "typescript": "^5.4.0", "@types/node": "^20.0.0" }
+}

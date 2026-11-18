@@ -1,0 +1,1029 @@
+[
+ {
+  "teamId": "1001",
+  "name": "Team Heretics",
+  "country": "eu",
+  "mapPool": {
+   "Lotus": 15,
+   "Sunset": 7,
+   "Abyss": 7,
+   "Bind": 6,
+   "Icebox": 5,
+   "Ascent": 4,
+   "Pearl": 3,
+   "Split": 2,
+   "Haven": 2,
+   "Corrode": 2,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "1034",
+  "name": "NRG",
+  "country": "us",
+  "mapPool": {
+   "Haven": 14,
+   "Lotus": 13,
+   "Pearl": 10,
+   "Split": 8,
+   "Abyss": 8,
+   "Ascent": 7,
+   "Bind": 6,
+   "Corrode": 5,
+   "Fracture": 3,
+   "Sunset": 3,
+   "Summit": 3,
+   "Icebox": 2,
+   "Breeze": 2
+  }
+ },
+ {
+  "teamId": "11058",
+  "name": "G2 Esports",
+  "country": "us",
+  "mapPool": {
+   "Lotus": 19,
+   "Abyss": 12,
+   "Haven": 11,
+   "Split": 11,
+   "Corrode": 6,
+   "Icebox": 5,
+   "Bind": 5,
+   "Ascent": 5,
+   "Breeze": 3,
+   "Pearl": 2,
+   "Fracture": 1,
+   "Sunset": 1
+  }
+ },
+ {
+  "teamId": "11060",
+  "name": "Nongshim RedForce",
+  "country": "kr",
+  "mapPool": {
+   "Split": 4,
+   "Abyss": 4,
+   "Haven": 3,
+   "Corrode": 3,
+   "Summit": 3,
+   "Sunset": 3,
+   "Bind": 1,
+   "Lotus": 1,
+   "Ascent": 1
+  }
+ },
+ {
+  "teamId": "1119",
+  "name": "All Gamers",
+  "country": "cn",
+  "mapPool": {
+   "Split": 3,
+   "Pearl": 2,
+   "Abyss": 1,
+   "Bind": 1,
+   "Corrode": 1
+  }
+ },
+ {
+  "teamId": "1120",
+  "name": "EDward Gaming",
+  "country": "cn",
+  "mapPool": {
+   "Bind": 15,
+   "Split": 15,
+   "Haven": 14,
+   "Pearl": 12,
+   "Lotus": 12,
+   "Fracture": 10,
+   "Sunset": 8,
+   "Icebox": 7,
+   "Breeze": 4,
+   "Abyss": 4,
+   "Ascent": 3,
+   "Summit": 2,
+   "Corrode": 1
+  }
+ },
+ {
+  "teamId": "11328",
+  "name": "FunPlus Phoenix",
+  "country": "cn",
+  "mapPool": {
+   "Lotus": 5,
+   "Bind": 3,
+   "Pearl": 2,
+   "Haven": 1,
+   "Ascent": 1,
+   "Icebox": 1,
+   "Sunset": 1,
+   "Breeze": 1,
+   "Abyss": 1
+  }
+ },
+ {
+  "teamId": "1184",
+  "name": "FUT Esports",
+  "country": "tr",
+  "mapPool": {
+   "Lotus": 9,
+   "Haven": 9,
+   "Pearl": 7,
+   "Ascent": 6,
+   "Bind": 5,
+   "Fracture": 5,
+   "Split": 3,
+   "Sunset": 2,
+   "Icebox": 1,
+   "Summit": 1
+  }
+ },
+ {
+  "teamId": "11981",
+  "name": "Dragon Ranger Gaming",
+  "country": "cn",
+  "mapPool": {
+   "Lotus": 3,
+   "Sunset": 1,
+   "Abyss": 1,
+   "Breeze": 1,
+   "Haven": 1,
+   "Fracture": 1,
+   "Split": 1
+  }
+ },
+ {
+  "teamId": "120",
+  "name": "100 Thieves",
+  "country": "us",
+  "mapPool": {
+   "Ascent": 8,
+   "Icebox": 5,
+   "Haven": 5,
+   "Lotus": 3,
+   "Split": 2,
+   "Breeze": 2,
+   "Pearl": 2,
+   "Bind": 2,
+   "Fracture": 2,
+   "Summit": 2,
+   "Sunset": 2,
+   "Abyss": 1
+  }
+ },
+ {
+  "teamId": "12010",
+  "name": "Guangzhou Huadu Bilibili Gaming",
+  "country": "cn",
+  "mapPool": {
+   "Lotus": 7,
+   "Haven": 5,
+   "Split": 3,
+   "Bind": 3,
+   "Icebox": 3,
+   "Sunset": 3,
+   "Ascent": 2,
+   "Corrode": 1,
+   "Abyss": 1
+  }
+ },
+ {
+  "teamId": "1209",
+  "name": "Guild Esports",
+  "country": "se",
+  "mapPool": {
+   "Icebox": 2,
+   "Bind": 2,
+   "Fracture": 2,
+   "Ascent": 2,
+   "Split": 1,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "12685",
+  "name": "Trace Esports",
+  "country": "cn",
+  "mapPool": {
+   "Sunset": 3,
+   "Bind": 3,
+   "Lotus": 3,
+   "Ascent": 2,
+   "Abyss": 2,
+   "Haven": 1
+  }
+ },
+ {
+  "teamId": "12694",
+  "name": "Gentle Mates",
+  "country": "eu",
+  "mapPool": {
+   "Pearl": 3,
+   "Haven": 2,
+   "Bind": 2,
+   "Corrode": 1,
+   "Split": 1
+  }
+ },
+ {
+  "teamId": "13576",
+  "name": "JD Gaming",
+  "country": "cn",
+  "mapPool": {
+   "Ascent": 1,
+   "Summit": 1,
+   "Lotus": 1,
+   "Abyss": 1,
+   "Haven": 1
+  }
+ },
+ {
+  "teamId": "13581",
+  "name": "Xi Lai Gaming",
+  "country": "cn",
+  "mapPool": {
+   "Lotus": 7,
+   "Haven": 7,
+   "Sunset": 4,
+   "Abyss": 4,
+   "Split": 3,
+   "Bind": 2,
+   "Ascent": 2,
+   "Breeze": 2,
+   "Icebox": 1,
+   "Pearl": 1,
+   "Fracture": 1,
+   "Summit": 1
+  }
+ },
+ {
+  "teamId": "13790",
+  "name": "Wolves Esports",
+  "country": "cn",
+  "mapPool": {
+   "Split": 4,
+   "Lotus": 4,
+   "Ascent": 4,
+   "Icebox": 2,
+   "Pearl": 1,
+   "Sunset": 1
+  }
+ },
+ {
+  "teamId": "14",
+  "name": "T1",
+  "country": "kr",
+  "mapPool": {
+   "Lotus": 12,
+   "Haven": 10,
+   "Pearl": 8,
+   "Bind": 7,
+   "Fracture": 5,
+   "Split": 5,
+   "Ascent": 4,
+   "Abyss": 3,
+   "Sunset": 3,
+   "Summit": 3,
+   "Breeze": 2,
+   "Corrode": 1
+  }
+ },
+ {
+  "teamId": "14419",
+  "name": "GIANTX",
+  "country": "eu",
+  "mapPool": {
+   "Ascent": 3,
+   "Lotus": 3,
+   "Sunset": 2,
+   "Haven": 2,
+   "Bind": 2,
+   "Corrode": 1
+  }
+ },
+ {
+  "teamId": "1670",
+  "name": "F4Q",
+  "country": "kr",
+  "mapPool": {
+   "Ascent": 2,
+   "Bind": 2,
+   "Haven": 2,
+   "Split": 2,
+   "Breeze": 2
+  }
+ },
+ {
+  "teamId": "17",
+  "name": "Gen.G",
+  "country": "kr",
+  "mapPool": {
+   "Icebox": 6,
+   "Split": 6,
+   "Lotus": 5,
+   "Breeze": 4,
+   "Ascent": 4,
+   "Haven": 4,
+   "Sunset": 3,
+   "Bind": 2,
+   "Pearl": 1,
+   "Fracture": 1,
+   "Abyss": 1
+  }
+ },
+ {
+  "teamId": "1837",
+  "name": "Attacking Soul Esports",
+  "country": "cn",
+  "mapPool": {
+   "Fracture": 1,
+   "Pearl": 1,
+   "Haven": 1,
+   "Ascent": 1,
+   "Lotus": 1
+  }
+ },
+ {
+  "teamId": "188",
+  "name": "Cloud9",
+  "country": "us",
+  "mapPool": {
+   "Split": 3,
+   "Icebox": 2,
+   "Breeze": 2,
+   "Ascent": 2,
+   "Pearl": 2,
+   "Fracture": 1,
+   "Bind": 1,
+   "Lotus": 1,
+   "Haven": 1
+  }
+ },
+ {
+  "teamId": "198",
+  "name": "Vision Strikers",
+  "country": "kr",
+  "mapPool": {
+   "Haven": 4,
+   "Icebox": 4,
+   "Split": 2,
+   "Breeze": 2,
+   "Bind": 1,
+   "Fracture": 1,
+   "Ascent": 1
+  }
+ },
+ {
+  "teamId": "2",
+  "name": "Sentinels",
+  "country": "us",
+  "mapPool": {
+   "Haven": 17,
+   "Split": 16,
+   "Lotus": 14,
+   "Sunset": 11,
+   "Icebox": 10,
+   "Bind": 8,
+   "Breeze": 6,
+   "Ascent": 5,
+   "Abyss": 3,
+   "Fracture": 1,
+   "Corrode": 1
+  }
+ },
+ {
+  "teamId": "2059",
+  "name": "Team Vitality",
+  "country": "eu",
+  "mapPool": {
+   "Lotus": 8,
+   "Split": 7,
+   "Haven": 4,
+   "Ascent": 4,
+   "Bind": 4,
+   "Abyss": 4,
+   "Pearl": 3,
+   "Sunset": 3,
+   "Fracture": 3,
+   "Breeze": 3,
+   "Summit": 2,
+   "Icebox": 1
+  }
+ },
+ {
+  "teamId": "2112",
+  "name": "X10 Esports",
+  "country": "sg",
+  "mapPool": {
+   "Haven": 4,
+   "Icebox": 4,
+   "Ascent": 3,
+   "Breeze": 2,
+   "Split": 1,
+   "Fracture": 1
+  }
+ },
+ {
+  "teamId": "2304",
+  "name": "Giants Gaming",
+  "country": "eu",
+  "mapPool": {
+   "Haven": 2,
+   "Icebox": 2,
+   "Lotus": 2,
+   "Split": 2,
+   "Bind": 1,
+   "Ascent": 1,
+   "Pearl": 1,
+   "Fracture": 1
+  }
+ },
+ {
+  "teamId": "2328",
+  "name": "NUTURN",
+  "country": "kr",
+  "mapPool": {
+   "Haven": 4,
+   "Bind": 3,
+   "Ascent": 3,
+   "Split": 1
+  }
+ },
+ {
+  "teamId": "2355",
+  "name": "KRÜ Esports",
+  "country": "ar",
+  "mapPool": {
+   "Haven": 12,
+   "Icebox": 11,
+   "Ascent": 11,
+   "Bind": 7,
+   "Split": 7,
+   "Fracture": 5,
+   "Lotus": 4,
+   "Pearl": 2,
+   "Breeze": 1,
+   "Abyss": 1,
+   "Sunset": 1
+  }
+ },
+ {
+  "teamId": "2359",
+  "name": "LEVIATÁN",
+  "country": "ar",
+  "mapPool": {
+   "Ascent": 13,
+   "Lotus": 9,
+   "Haven": 8,
+   "Icebox": 7,
+   "Split": 6,
+   "Pearl": 5,
+   "Fracture": 4,
+   "Bind": 4,
+   "Sunset": 3,
+   "Abyss": 3,
+   "Breeze": 2
+  }
+ },
+ {
+  "teamId": "2406",
+  "name": "FURIA",
+  "country": "br",
+  "mapPool": {
+   "Haven": 7,
+   "Ascent": 4,
+   "Breeze": 4,
+   "Fracture": 1,
+   "Icebox": 1,
+   "Pearl": 1,
+   "Split": 1,
+   "Abyss": 1
+  }
+ },
+ {
+  "teamId": "257",
+  "name": "G2 Esports",
+  "country": "eu",
+  "mapPool": {
+   "Bind": 4,
+   "Split": 4,
+   "Icebox": 4,
+   "Ascent": 3,
+   "Haven": 3,
+   "Breeze": 2
+  }
+ },
+ {
+  "teamId": "2593",
+  "name": "FNATIC",
+  "country": "eu",
+  "mapPool": {
+   "Haven": 27,
+   "Ascent": 19,
+   "Bind": 19,
+   "Lotus": 19,
+   "Icebox": 16,
+   "Split": 15,
+   "Fracture": 13,
+   "Sunset": 7,
+   "Abyss": 6,
+   "Pearl": 3,
+   "Corrode": 2,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "277",
+  "name": "Crazy Raccoon",
+  "country": "jp",
+  "mapPool": {
+   "Icebox": 5,
+   "Haven": 4,
+   "Ascent": 2,
+   "Split": 2,
+   "Bind": 1
+  }
+ },
+ {
+  "teamId": "278",
+  "name": "DetonatioN FocusMe",
+  "country": "jp",
+  "mapPool": {
+   "Haven": 1,
+   "Icebox": 1
+  }
+ },
+ {
+  "teamId": "2815",
+  "name": "Version1",
+  "country": "ca",
+  "mapPool": {
+   "Ascent": 4,
+   "Icebox": 2,
+   "Split": 2,
+   "Haven": 2
+  }
+ },
+ {
+  "teamId": "2988",
+  "name": "NORTHEPTION",
+  "country": "jp",
+  "mapPool": {
+   "Ascent": 2,
+   "Bind": 2,
+   "Split": 1,
+   "Haven": 1,
+   "Fracture": 1
+  }
+ },
+ {
+  "teamId": "3512",
+  "name": "Sharks Esports",
+  "country": "br",
+  "mapPool": {
+   "Bind": 2,
+   "Haven": 1,
+   "Ascent": 1,
+   "Icebox": 1
+  }
+ },
+ {
+  "teamId": "3531",
+  "name": "Acend",
+  "country": "eu",
+  "mapPool": {
+   "Ascent": 5,
+   "Bind": 5,
+   "Icebox": 4,
+   "Split": 3,
+   "Breeze": 3,
+   "Haven": 2,
+   "Fracture": 1
+  }
+ },
+ {
+  "teamId": "397",
+  "name": "BBL Esports",
+  "country": "tr",
+  "mapPool": {
+   "Haven": 3,
+   "Pearl": 2,
+   "Abyss": 2,
+   "Breeze": 2,
+   "Ascent": 1,
+   "Split": 1
+  }
+ },
+ {
+  "teamId": "4050",
+  "name": "FULL SENSE",
+  "country": "th",
+  "mapPool": {
+   "Breeze": 3,
+   "Haven": 2,
+   "Split": 2,
+   "Fracture": 1,
+   "Pearl": 1
+  }
+ },
+ {
+  "teamId": "420",
+  "name": "Team Vikings",
+  "country": "br",
+  "mapPool": {
+   "Icebox": 4,
+   "Haven": 4,
+   "Ascent": 2,
+   "Split": 1,
+   "Bind": 1
+  }
+ },
+ {
+  "teamId": "427",
+  "name": "ENVY",
+  "country": "us",
+  "mapPool": {
+   "Ascent": 4,
+   "Haven": 4,
+   "Icebox": 3,
+   "Bind": 3,
+   "Split": 3,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "4567",
+  "name": "Papara SuperMassive",
+  "country": "tr",
+  "mapPool": {
+   "Ascent": 2,
+   "Bind": 2,
+   "Split": 2,
+   "Haven": 1,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "466",
+  "name": "BOOM Esports",
+  "country": "id",
+  "mapPool": {
+   "Fracture": 2,
+   "Breeze": 1,
+   "Bind": 1,
+   "Haven": 1,
+   "Pearl": 1
+  }
+ },
+ {
+  "teamId": "474",
+  "name": "Team Liquid",
+  "country": "eu",
+  "mapPool": {
+   "Haven": 15,
+   "Split": 14,
+   "Ascent": 14,
+   "Bind": 12,
+   "Lotus": 6,
+   "Abyss": 6,
+   "Breeze": 5,
+   "Fracture": 5,
+   "Icebox": 5,
+   "Sunset": 4,
+   "Pearl": 3,
+   "Corrode": 1,
+   "Summit": 1
+  }
+ },
+ {
+  "teamId": "4894",
+  "name": "Keyd Stars",
+  "country": "br",
+  "mapPool": {
+   "Icebox": 3,
+   "Bind": 2,
+   "Split": 2,
+   "Haven": 2,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "4915",
+  "name": "Natus Vincere",
+  "country": "eu",
+  "mapPool": {
+   "Ascent": 4,
+   "Lotus": 4,
+   "Bind": 4,
+   "Pearl": 3,
+   "Fracture": 3,
+   "Split": 2,
+   "Icebox": 1,
+   "Haven": 1
+  }
+ },
+ {
+  "teamId": "5248",
+  "name": "Evil Geniuses",
+  "country": "us",
+  "mapPool": {
+   "Ascent": 9,
+   "Split": 8,
+   "Pearl": 7,
+   "Lotus": 7,
+   "Fracture": 6,
+   "Bind": 5,
+   "Haven": 2
+  }
+ },
+ {
+  "teamId": "533",
+  "name": "XSET",
+  "country": "us",
+  "mapPool": {
+   "Pearl": 4,
+   "Haven": 3,
+   "Fracture": 3,
+   "Bind": 2,
+   "Ascent": 2,
+   "Split": 1,
+   "Icebox": 1,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "5448",
+  "name": "ZETA DIVISION",
+  "country": "jp",
+  "mapPool": {
+   "Split": 7,
+   "Haven": 7,
+   "Fracture": 7,
+   "Ascent": 5,
+   "Icebox": 5,
+   "Bind": 4,
+   "Pearl": 2,
+   "Breeze": 1
+  }
+ },
+ {
+  "teamId": "581",
+  "name": "Liberty",
+  "country": "br",
+  "mapPool": {
+   "Ascent": 1,
+   "Icebox": 1,
+   "Haven": 1,
+   "Split": 1
+  }
+ },
+ {
+  "teamId": "6199",
+  "name": "Team Secret",
+  "country": "ph",
+  "mapPool": {
+   "Icebox": 5,
+   "Breeze": 2,
+   "Haven": 2,
+   "Bind": 1,
+   "Split": 1,
+   "Fracture": 1,
+   "Pearl": 1
+  }
+ },
+ {
+  "teamId": "624",
+  "name": "Paper Rex",
+  "country": "sg",
+  "mapPool": {
+   "Split": 28,
+   "Lotus": 27,
+   "Ascent": 21,
+   "Bind": 18,
+   "Haven": 16,
+   "Pearl": 16,
+   "Sunset": 12,
+   "Icebox": 9,
+   "Fracture": 9,
+   "Breeze": 8,
+   "Corrode": 6,
+   "Abyss": 1,
+   "Summit": 1
+  }
+ },
+ {
+  "teamId": "628",
+  "name": "FunPlus Phoenix",
+  "country": "eu",
+  "mapPool": {
+   "Bind": 7,
+   "Ascent": 7,
+   "Fracture": 7,
+   "Icebox": 7,
+   "Haven": 5,
+   "Breeze": 5,
+   "Split": 2,
+   "Pearl": 2
+  }
+ },
+ {
+  "teamId": "6675",
+  "name": "The Guard",
+  "country": "us",
+  "mapPool": {
+   "Haven": 2,
+   "Icebox": 1,
+   "Fracture": 1,
+   "Split": 1
+  }
+ },
+ {
+  "teamId": "682",
+  "name": "Gambit Esports",
+  "country": "ru",
+  "mapPool": {
+   "Icebox": 8,
+   "Bind": 6,
+   "Ascent": 5,
+   "Split": 5,
+   "Breeze": 5,
+   "Fracture": 2,
+   "Haven": 1
+  }
+ },
+ {
+  "teamId": "6961",
+  "name": "LOUD",
+  "country": "br",
+  "mapPool": {
+   "Ascent": 21,
+   "Split": 13,
+   "Fracture": 11,
+   "Icebox": 9,
+   "Haven": 9,
+   "Pearl": 8,
+   "Breeze": 7,
+   "Bind": 7,
+   "Lotus": 7,
+   "Sunset": 7,
+   "Summit": 3
+  }
+ },
+ {
+  "teamId": "7035",
+  "name": "Movistar KOI",
+  "country": "eu",
+  "mapPool": {
+   "Icebox": 1,
+   "Haven": 1
+  }
+ },
+ {
+  "teamId": "731",
+  "name": "TYLOO",
+  "country": "cn",
+  "mapPool": {
+   "Lotus": 2,
+   "Sunset": 1,
+   "Split": 1,
+   "Summit": 1
+  }
+ },
+ {
+  "teamId": "7386",
+  "name": "MIBR",
+  "country": "br",
+  "mapPool": {
+   "Haven": 5,
+   "Sunset": 4,
+   "Corrode": 4,
+   "Abyss": 3,
+   "Bind": 2,
+   "Fracture": 1,
+   "Icebox": 1,
+   "Ascent": 1
+  }
+ },
+ {
+  "teamId": "7391",
+  "name": "Ninjas In Pyjamas",
+  "country": "br",
+  "mapPool": {
+   "Split": 2,
+   "Icebox": 2,
+   "Ascent": 1,
+   "Breeze": 1,
+   "Fracture": 1
+  }
+ },
+ {
+  "teamId": "7397",
+  "name": "XERXIA Esports",
+  "country": "th",
+  "mapPool": {
+   "Icebox": 4,
+   "Ascent": 4,
+   "Haven": 4,
+   "Split": 2,
+   "Fracture": 2,
+   "Bind": 2
+  }
+ },
+ {
+  "teamId": "8127",
+  "name": "OpTic Gaming",
+  "country": "us",
+  "mapPool": {
+   "Bind": 12,
+   "Ascent": 11,
+   "Fracture": 11,
+   "Haven": 9,
+   "Breeze": 7,
+   "Icebox": 6,
+   "Split": 5,
+   "Pearl": 2
+  }
+ },
+ {
+  "teamId": "8185",
+  "name": "KIWOOM DRX",
+  "country": "kr",
+  "mapPool": {
+   "Haven": 20,
+   "Ascent": 18,
+   "Bind": 14,
+   "Fracture": 13,
+   "Lotus": 11,
+   "Icebox": 10,
+   "Breeze": 8,
+   "Split": 8,
+   "Abyss": 8,
+   "Pearl": 6,
+   "Sunset": 4,
+   "Corrode": 3
+  }
+ },
+ {
+  "teamId": "8304",
+  "name": "TALON",
+  "country": "th",
+  "mapPool": {
+   "Haven": 2,
+   "Fracture": 2,
+   "Ascent": 2,
+   "Split": 1,
+   "Icebox": 1,
+   "Bind": 1,
+   "Lotus": 1,
+   "Sunset": 1
+  }
+ },
+ {
+  "teamId": "878",
+  "name": "Rex Regum Qeon",
+  "country": "id",
+  "mapPool": {
+   "Lotus": 3,
+   "Ascent": 3,
+   "Abyss": 3,
+   "Pearl": 1,
+   "Icebox": 1,
+   "Haven": 1,
+   "Sunset": 1,
+   "Corrode": 1
+  }
+ },
+ {
+  "teamId": "8877",
+  "name": "Karmine Corp",
+  "country": "eu",
+  "mapPool": {
+   "Lotus": 4,
+   "Haven": 3,
+   "Pearl": 2,
+   "Split": 2,
+   "Ascent": 2,
+   "Sunset": 2,
+   "Summit": 2,
+   "Icebox": 1,
+   "Bind": 1,
+   "Abyss": 1
+  }
+ },
+ {
+  "teamId": "918",
+  "name": "Global Esports",
+  "country": "in",
+  "mapPool": {
+   "Split": 4,
+   "Pearl": 3,
+   "Lotus": 2,
+   "Breeze": 2,
+   "Summit": 2,
+   "Sunset": 2,
+   "Fracture": 1,
+   "Haven": 1,
+   "Abyss": 1,
+   "Ascent": 1
+  }
+ }
+]

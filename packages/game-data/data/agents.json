@@ -1,0 +1,1047 @@
+[
+ {
+  "slug": "gekko",
+  "name": "Gekko",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Wingman",
+    "effectTypes": [
+     "concuss",
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Dizzy",
+    "effectTypes": [
+     "recon",
+     "flash"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Mosh Pit",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Thrash",
+    "effectTypes": [
+     "suppress"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "breach",
+  "name": "Breach",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Flashpoint",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Fault Line",
+    "effectTypes": [
+     "concuss"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Aftershock",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Rolling Thunder",
+    "effectTypes": [
+     "concuss",
+     "movement"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "kay-o",
+  "name": "KAY/O",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "FRAG/ment",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "FLASH/drive",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "ZERO/point",
+    "effectTypes": [
+     "recon",
+     "suppress"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "NULL/cmd",
+    "effectTypes": [
+     "suppress"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "cypher",
+  "name": "Cypher",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Cyber Cage",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ability2",
+    "name": "Spycam",
+    "effectTypes": [
+     "recon"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Trapwire",
+    "effectTypes": [
+     "recon",
+     "slow"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Neural Theft",
+    "effectTypes": [
+     "recon"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "sova",
+  "name": "Sova",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Shock Bolt",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Recon Bolt",
+    "effectTypes": [
+     "recon"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Owl Drone",
+    "effectTypes": [
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Hunter's Fury",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "killjoy",
+  "name": "Killjoy",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "Nanoswarm",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "ALARMBOT",
+    "effectTypes": [
+     "slow",
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "TURRET",
+    "effectTypes": [
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Lockdown",
+    "effectTypes": [
+     "suppress"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "viper",
+  "name": "Viper",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Poison Cloud",
+    "effectTypes": [
+     "slow",
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Toxic Screen",
+    "effectTypes": [
+     "slow",
+     "wall"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Snake Bite",
+    "effectTypes": [
+     "slow",
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Viper's Pit",
+    "effectTypes": [
+     "slow"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "astra",
+  "name": "Astra",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Nova Pulse",
+    "effectTypes": [
+     "concuss"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Nebula",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Gravity Well",
+    "effectTypes": [
+     "slow",
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Cosmic Divide",
+    "effectTypes": [
+     "wall"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "omen",
+  "name": "Omen",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Paranoia",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Dark Cover",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Shrouded Step",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "From the Shadows",
+    "effectTypes": [
+     "movement"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "jett",
+  "name": "Jett",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Updraft",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Tailwind",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Cloudburst",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Blade Storm",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "fade",
+  "name": "Fade",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Seize",
+    "effectTypes": [
+     "slow"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Haunt",
+    "effectTypes": [
+     "recon"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Prowler",
+    "effectTypes": [
+     "recon",
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Nightfall",
+    "effectTypes": [
+     "slow",
+     "recon"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "chamber",
+  "name": "Chamber",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Ability2",
+    "name": "Rendezvous",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Trademark",
+    "effectTypes": [
+     "recon",
+     "slow"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "Headhunter",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Tour De Force",
+    "effectTypes": [
+     "slow"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "sage",
+  "name": "Sage",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Slow Orb",
+    "effectTypes": [
+     "slow"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Healing Orb",
+    "effectTypes": [
+     "heal"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Barrier Orb",
+    "effectTypes": [
+     "wall"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Resurrection",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "skye",
+  "name": "Skye",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Trailblazer",
+    "effectTypes": [
+     "concuss",
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Guiding Light",
+    "effectTypes": [
+     "flash",
+     "recon"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Regrowth",
+    "effectTypes": [
+     "heal"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Seekers",
+    "effectTypes": [
+     "flash",
+     "slow"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "yoru",
+  "name": "Yoru",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "FAKEOUT",
+    "effectTypes": [
+     "decoy",
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "BLINDSIDE",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "GATECRASH",
+    "effectTypes": [
+     "decoy",
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "DIMENSIONAL DRIFT",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "phoenix",
+  "name": "Phoenix",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "Blaze",
+    "effectTypes": [
+     "wall"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "Hot Hands",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Curveball",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Run it Back",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "vyse",
+  "name": "Vyse",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Shear",
+    "effectTypes": [
+     "recon",
+     "wall"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Arc Rose",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Razorvine",
+    "effectTypes": [
+     "slow"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Steel Garden",
+    "effectTypes": [
+     "suppress"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "raze",
+  "name": "Raze",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Blast Pack",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Paint Shells",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Boom Bot",
+    "effectTypes": [
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Showstopper",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "neon",
+  "name": "Neon",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability2",
+    "name": "High Gear",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "Relay Bolt",
+    "effectTypes": [
+     "concuss"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Fast Lane",
+    "effectTypes": [
+     "wall"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Overdrive",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "reyna",
+  "name": "Reyna",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Devour",
+    "effectTypes": [
+     "heal"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Dismiss",
+    "effectTypes": []
+   },
+   {
+    "slot": "Grenade",
+    "name": "Leer",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Empress",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "deadlock",
+  "name": "Deadlock",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Sonic Sensor",
+    "effectTypes": [
+     "concuss",
+     "recon"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Barrier Mesh",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ability2",
+    "name": "GravNet",
+    "effectTypes": [
+     "slow"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Annihilation",
+    "effectTypes": [
+     "suppress",
+     "movement"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "waylay",
+  "name": "Waylay",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability2",
+    "name": "Refract",
+    "effectTypes": []
+   },
+   {
+    "slot": "Grenade",
+    "name": "Saturate",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ability1",
+    "name": "Lightspeed",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Convergent Paths",
+    "effectTypes": []
+   }
+  ]
+ },
+ {
+  "slug": "harbor",
+  "name": "Harbor",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "High Tide",
+    "effectTypes": [
+     "slow",
+     "wall"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Storm Surge",
+    "effectTypes": [
+     "flash",
+     "slow",
+     "recon"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Cove",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Reckoning",
+    "effectTypes": [
+     "flash",
+     "slow",
+     "wall",
+     "recon"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "tejo",
+  "name": "Tejo",
+  "role": "Initiator",
+  "abilities": [
+   {
+    "slot": "Ability2",
+    "name": "Guided Salvo",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "Special Delivery",
+    "effectTypes": [
+     "concuss"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Armageddon",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Stealth Drone",
+    "effectTypes": [
+     "suppress",
+     "recon"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "brimstone",
+  "name": "Brimstone",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "Stim Beacon",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ability1",
+    "name": "Incendiary",
+    "effectTypes": [
+     "molly"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Sky Smoke",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Orbital Strike",
+    "effectTypes": [
+     "molly"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "clove",
+  "name": "Clove",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "Pick-me-up",
+    "effectTypes": [
+     "heal"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Ruse",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Not Dead Yet",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ability1",
+    "name": "Meddle",
+    "effectTypes": [
+     "slow"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "miks",
+  "name": "Miks",
+  "role": "Controller",
+  "abilities": [
+   {
+    "slot": "Grenade",
+    "name": "M-pulse",
+    "effectTypes": [
+     "concuss",
+     "heal"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Waveform",
+    "effectTypes": [
+     "smoke"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "Harmonize",
+    "effectTypes": []
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Bassquake",
+    "effectTypes": [
+     "movement",
+     "slow"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "hush",
+  "name": "Hush",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Flashbulb",
+    "effectTypes": [
+     "flash"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Displacement",
+    "effectTypes": [
+     "movement",
+     "concuss"
+    ]
+   },
+   {
+    "slot": "Grenade",
+    "name": "Flow",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Suspension",
+    "effectTypes": [
+     "suppress",
+     "movement",
+     "recon"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "veto",
+  "name": "Veto",
+  "role": "Sentinel",
+  "abilities": [
+   {
+    "slot": "Ability2",
+    "name": "Interceptor",
+    "effectTypes": []
+   },
+   {
+    "slot": "Grenade",
+    "name": "Crosscut",
+    "effectTypes": [
+     "movement"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Evolution",
+    "effectTypes": [
+     "heal"
+    ]
+   },
+   {
+    "slot": "Ability1",
+    "name": "Chokehold",
+    "effectTypes": [
+     "slow",
+     "recon"
+    ]
+   }
+  ]
+ },
+ {
+  "slug": "iso",
+  "name": "Iso",
+  "role": "Duelist",
+  "abilities": [
+   {
+    "slot": "Ability1",
+    "name": "Undercut",
+    "effectTypes": [
+     "slow",
+     "suppress"
+    ]
+   },
+   {
+    "slot": "Ultimate",
+    "name": "Kill Contract",
+    "effectTypes": [
+     "suppress"
+    ]
+   },
+   {
+    "slot": "Ability2",
+    "name": "Double Tap",
+    "effectTypes": []
+   },
+   {
+    "slot": "Grenade",
+    "name": "Contingency",
+    "effectTypes": [
+     "wall"
+    ]
+   }
+  ]
+ }
+]
