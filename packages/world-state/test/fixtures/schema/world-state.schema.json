@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "world-state.schema.json",
+  "title": "WorldState / DecisionContext",
+  "description": "A reconstructed match state at one instant (README SS14, Handoff SS12) plus the deciding team's limited observation/belief (DECISION-004: the AI must not read enemy positions it cannot observe). The top-level object is a DecisionContext: ground-truth WorldState + which team is deciding + that team's BeliefState. This is the exact input shape consumed by the Action Generator / Decision Debugger (PV-3/PV-4). For real matches, tick-accurate WorldState is FUTURE; the scenario samples here are SYNTHETIC (provenance.synthetic=true).",
+  "type": "object",
+  "required": ["contextId", "worldState", "decidingTeamIdx", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "contextId": { "type": "string", "description": "Stable id for this decision context / scenario." },
+    "scenarioRef": { "type": ["string", "null"], "description": "Which Handoff SS20 scenario (e.g. 'scenario-07-operator-save') this illustrates, if any." },
+    "worldState": { "$ref": "#/$defs/worldState" },
+    "decidingTeamIdx": { "type": "integer", "enum": [0, 1], "description": "Which team's decision this context is framed for." },
+    "belief": { "$ref": "#/$defs/beliefState", "description": "The deciding team's observation-derived knowledge. Enemy positions here are observed/inferred only, never copied from worldState truth." },
+    "provenance": { "$ref": "provenance.schema.json" }
+  },
+  "$defs": {
+    "spikeState": {
+      "type": "object",
+      "description": "Spike status. Times in ms.",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string", "enum": ["carried", "dropped", "planted", "defused", "detonated"] },
+        "carrierPlayerId": { "type": ["string", "null"], "description": "Who holds the spike (status=carried)." },
+        "site": { "type": ["string", "null"], "enum": ["A", "B", "C", null] },
+        "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "Spike location (dropped/planted), minimapUnits." },
+        "timeUntilDetonationMs": { "type": ["integer", "null"], "minimum": 0, "description": "ms remaining on the spike timer when planted (SPIKE_SECONDS=45000 at plant)." }
+      }
+    },
+    "playerState": {
+      "type": "object",
+      "description": "One player's full true state (Handoff SS12.2 / README SS14.1 PlayerState).",
+      "required": ["playerId", "teamIdx", "alive"],
+      "additionalProperties": false,
+      "properties": {
+        "playerId": { "type": "string" },
+        "teamIdx": { "type": "integer", "enum": [0, 1] },
+        "agentId": { "type": ["string", "null"], "description": "Agent played (lowercase name or uuid)." },
+        "position": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "minimapUnits." },
+        "facingDeg": { "type": ["number", "null"], "minimum": 0, "maximum": 360 },
+        "health": { "type": ["number", "null"], "minimum": 0, "maximum": 100, "description": "Hit points 0..100." },
+        "armor": { "type": ["number", "null"], "minimum": 0, "description": "Armor hit points remaining." },
+        "alive": { "type": "boolean" },
+        "loadout": { "$ref": "economy.schema.json#/$defs/playerLoadout" }
+      }
+    },
+    "worldState": {
+      "type": "object",
+      "description": "Ground-truth match state at an instant.",
+      "required": ["matchId", "roundId", "mapName", "timeRemainingMs", "roundPhase", "players", "spike"],
+      "additionalProperties": false,
+      "properties": {
+        "matchId": { "type": "string", "description": "May be a synthetic id; check provenance.synthetic." },
+        "roundId": { "type": "string" },
+        "roundNum": { "type": ["integer", "null"], "minimum": 1 },
+        "mapName": { "$ref": "common.schema.json#/$defs/mapName" },
+        "patch": { "type": ["string", "null"] },
+        "tick": { "type": ["integer", "null"], "minimum": 0, "description": "Simulation tick index (optional)." },
+        "timeRemainingMs": { "type": "integer", "minimum": 0, "description": "ms remaining in the current phase. In the combat phase this counts down from 100000; after plant the spike timer governs." },
+        "roundPhase": { "type": "string", "enum": ["buy", "round", "post_plant"], "description": "buy=barriers up; round=combat pre-plant; post_plant=spike planted." },
+        "attackingTeamIdx": { "type": ["integer", "null"], "enum": [0, 1, null] },
+        "players": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/$defs/playerState" } },
+        "spike": { "$ref": "#/$defs/spikeState" },
+        "teamEconomy": { "type": "array", "items": { "$ref": "economy.schema.json#/$defs/teamEconomy" }, "description": "Per-team economy snapshot." },
+        "matchScore": { "type": ["array", "null"], "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": 0 }, "description": "Rounds won so far [team0, team1]. Needed for save/matchpoint reasoning (Handoff SS20.9)." },
+        "plantZones": {
+          "type": ["object", "null"],
+          "description": "Optional convenience hint: valid spike-plant areas keyed by site letter, as a representative point in minimapUnits. Used to test plant feasibility (Handoff SS20.05). The authoritative plant-zone geometry is owned by the Spatial agent (datasets/spatial/); this is a synthetic placeholder.",
+          "additionalProperties": { "$ref": "common.schema.json#/$defs/vector2" }
+        }
+      }
+    },
+    "observedEnemy": {
+      "type": "object",
+      "description": "An enemy the deciding team currently sees or recently saw.",
+      "required": ["playerId", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "playerId": { "type": "string" },
+        "lastKnownPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ] },
+        "lastSeenMsAgo": { "type": ["integer", "null"], "minimum": 0, "description": "ms since last observed; information decays (README SS17.3)." },
+        "evidence": { "$ref": "common.schema.json#/$defs/evidenceType" },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "beliefState": {
+      "type": "object",
+      "description": "Deciding team's knowledge (README SS14.2 / Handoff SS12.4). Separate from worldState truth so action generation can be tested under partial observation.",
+      "additionalProperties": false,
+      "properties": {
+        "visibleEnemies": { "type": "array", "items": { "$ref": "#/$defs/observedEnemy" } },
+        "heardSounds": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "properties": {
+              "kind": { "type": "string", "enum": ["footsteps", "gunfire", "ability", "plant", "defuse"] },
+              "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ] },
+              "atMsAgo": { "type": ["integer", "null"], "minimum": 0 }
+            }
+          }
+        },
+        "knownEnemyAliveCount": { "type": ["integer", "null"], "minimum": 0, "maximum": 5, "description": "How many enemies the team believes are alive (may be certain from kill feed)." },
+        "tacticalHypotheses": {
+          "type": "array",
+          "description": "Inferred enemy intents with uncertainty (Handoff SS22.2 — intent is not observable).",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "properties": {
+              "hypothesis": { "type": "string" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -24,3 +24,10 @@ export {
 export type { SerializedWorld } from "./serialize.js";
 export { observeWorld, healthBand, BLIND_ORACLE } from "./observation.js";
 export type { VisibilityOracle, ObserveOptions } from "./observation.js";
+export {
+  loadDecisionContext,
+  validateDecisionContext,
+  ScenarioValidationError,
+  SCENARIO_ENUMS,
+} from "./scenario.js";
+export type { LoadOptions } from "./scenario.js";
