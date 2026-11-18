@@ -1,0 +1,7 @@
+node_modules/
+out/
+dist/
+# generated screenshots land in docs/ (committed) via the e2e/screenshot script;
+# nothing else here is generated
+*.vrf
+real-*.json

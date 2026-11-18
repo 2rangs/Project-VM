@@ -1,0 +1,32 @@
+{
+  "name": "@pv/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PROJECT V — Electron desktop shell (Replay Viewer, Decision Debugger, Simulation Runner).",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "test:unit": "node --experimental-strip-types --test test/ipc-contract.test.ts test/trace-parser.test.ts",
+    "test:e2e": "node test/e2e.electron.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pixi.js": "8.6.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.9.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "electron": "33.2.1",
+    "electron-vite": "2.3.0",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  }
+}

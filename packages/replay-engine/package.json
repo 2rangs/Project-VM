@@ -1,0 +1,22 @@
+{
+  "name": "@pv/replay-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PROJECT V — unified replay format + engine (load, interpolate, seek) and converters for decoded .vrf and simulation logs.",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/engine.test.ts test/convert.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  }
+}

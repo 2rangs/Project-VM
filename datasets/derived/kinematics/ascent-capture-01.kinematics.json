@@ -1,0 +1,223 @@
+{
+  "schema": "project-v/replay-kinematics@1",
+  "generatedAt": "2026-11-18T09:24:53.948Z",
+  "provenance": {
+    "sourceId": "valorant-vrf",
+    "evidenceType": "derived",
+    "verified": true,
+    "verificationLevel": 3,
+    "synthetic": false,
+    "notes": [
+      "Aggregated from ONE short replay capture; NOT generalizable. Sample counts are included on every metric.",
+      "ProfileNames removed; players are anonymous player_N.",
+      "Map identity from decoded parser class-path hint (raw.meta.mapHints), corroborated by transform [0,1] containment.",
+      "world->minimap transform values are from valorant-api (same as PV-4 coordinate-system.json).",
+      "alive/health not in .vrf; kinematics use position + yaw only."
+    ]
+  },
+  "capture": {
+    "sampleCount": 3001,
+    "uniqueActors": 1,
+    "players": [
+      {
+        "anonId": "player_1",
+        "teamIdx": 1,
+        "playerId": "256"
+      }
+    ],
+    "mapHints": {
+      "Ascent": 1
+    }
+  },
+  "mapIdentification": {
+    "identified": "Ascent",
+    "basis": "decoded parser class-path hint",
+    "decodedHint": "Ascent",
+    "transformRanking": [
+      {
+        "map": "Ascent",
+        "fractionInUnit": 1,
+        "minimapBBox": {
+          "minX": 0.0706,
+          "maxX": 0.1028,
+          "minY": 0.4065,
+          "maxY": 0.4765
+        },
+        "bboxArea": 0.002249
+      },
+      {
+        "map": "Haven",
+        "fractionInUnit": 1,
+        "minimapBBox": {
+          "minX": 0.2971,
+          "maxX": 0.3315,
+          "minY": 0.4641,
+          "maxY": 0.5391
+        },
+        "bboxArea": 0.002581
+      },
+      {
+        "map": "Split",
+        "fractionInUnit": 1,
+        "minimapBBox": {
+          "minX": 0.014,
+          "maxX": 0.0498,
+          "minY": 0.5118,
+          "maxY": 0.5898
+        },
+        "bboxArea": 0.002792
+      },
+      {
+        "map": "Bind",
+        "fractionInUnit": 0,
+        "minimapBBox": {
+          "minX": -0.0495,
+          "maxX": -0.0224,
+          "minY": 0.827,
+          "maxY": 0.886
+        },
+        "bboxArea": 0.001597
+      },
+      {
+        "map": "Breeze",
+        "fractionInUnit": 0,
+        "minimapBBox": {
+          "minX": -0.2781,
+          "maxX": -0.246,
+          "minY": 0.6663,
+          "maxY": 0.7363
+        },
+        "bboxArea": 0.002249
+      }
+    ],
+    "caveat": "A spatially small sample fits many maps' [0,1] box, so containment alone is weak; the decoded hint is the primary signal."
+  },
+  "projection": {
+    "map": "Ascent",
+    "transform": {
+      "xMultiplier": 0.00007,
+      "yMultiplier": -0.00007,
+      "xScalarToAdd": 0.813895,
+      "yScalarToAdd": 0.573242
+    },
+    "minimapBBox": {
+      "minX": 0.0706,
+      "maxX": 0.1028,
+      "minY": 0.4065,
+      "maxY": 0.4765
+    },
+    "fractionInUnit": 1,
+    "minimapImage": "https://media.valorant-api.com/maps/7eaecc1b-4337-bbf6-6ab9-04b8f06b3319/displayicon.png"
+  },
+  "callouts": {
+    "occupiedZones": [
+      {
+        "zoneId": "defender-spawn",
+        "name": "Defender Spawn",
+        "samples": 3001
+      }
+    ],
+    "nearestZoneDistUU": {
+      "p50": 458.3,
+      "p90": 795.3,
+      "max": 910.3
+    }
+  },
+  "kinematics": {
+    "version": "1.0.0",
+    "config": {
+      "sampleHz": 128,
+      "unitsPerMeter": 100,
+      "thresholdsMps": {
+        "idleMax": 0.3,
+        "walkMax": 4,
+        "runMax": 7.5
+      },
+      "thresholdBasis": "VALORANT base run 6.75 m/s, shift-walk ~3.4 m/s (crouch slower); bands are speed-only, input state not decodable from .vrf"
+    },
+    "counts": {
+      "actors": 1,
+      "totalSamples": 3001,
+      "stepPairs": 2995,
+      "moveSegments": 6,
+      "idleSegments": 12
+    },
+    "speed": {
+      "unit": "uu/s (and m/s)",
+      "percentilesUU": {
+        "p50": 0,
+        "p75": 0,
+        "p90": 233.5780811634593,
+        "p95": 473.77294139704384,
+        "p99": 577.562325641121,
+        "p100": 683.6925624869403
+      },
+      "percentilesMps": {
+        "p50": 0,
+        "p75": 0,
+        "p90": 2.336,
+        "p95": 4.738,
+        "p99": 5.776,
+        "p100": 6.837
+      },
+      "topSpeedUU": 683.7,
+      "topSpeedMps": 6.837,
+      "meanMovingMps": 3.848,
+      "stateFractions": {
+        "idle": 0.8681,
+        "walkOrCrouch": 0.0591,
+        "run": 0.0728,
+        "anomalous": 0
+      },
+      "stateCounts": {
+        "idle": 2600,
+        "walkOrCrouch": 177,
+        "run": 218,
+        "anomalous": 0
+      }
+    },
+    "yawRate": {
+      "unit": "deg/s",
+      "n": 2995,
+      "percentiles": {
+        "p50": 0,
+        "p90": 2.5599999999994907,
+        "p99": 85.7599999999984,
+        "p100": 230.40000000000146
+      },
+      "meanDegPerSec": 2.9
+    },
+    "acceleration": {
+      "note": "per move-segment: time from segment start to its peak speed (accel) and peak to end (decel), seconds",
+      "n": 6,
+      "accelSecMean": 0.388,
+      "decelSecMean": 0.118,
+      "segPeakMpsPercentiles": {
+        "p50": 5.761,
+        "p90": 5.776,
+        "p100": 6.837
+      }
+    },
+    "segments": {
+      "unit": "seconds",
+      "moveSecPercentiles": {
+        "p50": 0.5234375,
+        "p90": 0.640625,
+        "p100": 0.8125
+      },
+      "idleSecPercentiles": {
+        "p50": 0.4375,
+        "p90": 2.1015625,
+        "p100": 9.0078125
+      },
+      "moveSecMean": 0.514,
+      "idleSecMean": 1.693
+    },
+    "firstMove": {
+      "unit": "ms since round start",
+      "n": 0,
+      "values": [],
+      "meanMs": null
+    }
+  }
+}
