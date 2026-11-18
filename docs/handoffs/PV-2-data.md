@@ -295,3 +295,61 @@ validator : 4 passed
    `docs/VALIDATION_BASELINES.md`의 허용 오차로 시뮬레이션 출력 검증.
 2. **(게임룰)** `/val/content`로 요원/무기/맵 UUID 레퍼런스 데이터셋 생성(선택) — README §11.
 3. **(PV-2 후속)** Layer B 실데이터는 GRID 권한 또는 자가 VRF로만. era별 기준선 분리.
+
+---
+
+# PROJECT V — TASK HANDOFF · 3차 (Economy & Ultimate Engine v0)
+
+**추가 작업일:** 2026-11-18 · **범위:** Handoff §15–16, §20.7–20.10, §29; README §19–22, P3.
+**추가 소유:** `packages/economy-engine/`, `docs/ECONOMY_MODEL.md` (오케스트레이터가 범위 확장 지시).
+
+## 3-1. 작업 목표
+PV-2 priors를 소비하는 **경제 판단 엔진**(독립 TypeScript 패키지)을 만든다. 구매·세이브·미래가치·
+궁극기 경제·출구킬을 각각 평가해 PV-3 Action Generator가 쓸 선택지를 낸다.
+
+## 3-2. 완료한 작업
+- **`packages/economy-engine`** 독립 패키지(package.json/tsconfig/vitest, 런타임 의존성 0).
+  - `shared-mirror.ts`: `@pv/shared-types` 필드 미러(통합 시 import로 교체).
+  - `rules.ts`: `@pv/game-rules` 수치 미러(provisional) + **PV-1 카탈로그 궁극 포인트(공식값)**.
+  - `priors-fixture.ts`: PV-2 `datasets/derived/priors/` 실수치 스냅샷(출처·sha 기록).
+  - 엔진 5종: `buy-strategy`, `future-value`, `save-decision`, `ultimate-economy`, `exit-kill`
+    + `round-boundaries` + 통합 `evaluateEconomy()`.
+- **출력 계약** `EconomyOption { action, currentRoundValue, futureValue, economicDelta, ultDelta, explanation }`.
+- **문서** `docs/ECONOMY_MODEL.md` (인터페이스·수치 출처·설계 결정·빌드/테스트).
+- **테스트** vitest 15개(규칙, 시나리오 07/08/09, 구매, 미래가치, 출구킬, 결정성).
+
+## 3-3. 수치 출처 (중요)
+- 경제 규칙(가격/방어구/로스보너스 `[1900,2400,2900]`/보상/궁극 포인트 획득): **@pv/game-rules 미러,
+  전부 provisional(verified:false)** — 패치 소스 검증 전까지 사실로 취급 금지(README §29).
+- **궁극 포인트 요구치: PV-1 카탈로그가 공식 현재값**(`pv-research:.../ability_facts.json` `ultPoints`,
+  build release-13.10, gameplayVerified). PV-3 샘플과 4건 불일치 → **카탈로그 채택**:
+  jett 8(≠7), sage 7(≠8), killjoy 9(≠8), brimstone 8(≠7).
+- 승률 prior: PV-2 실데이터(`datasets/derived/priors/`, 빌드 2026-11-12) 스냅샷.
+
+## 3-4. 핵심 설계 (사양 준수)
+- **세이브는 단순 임계값 금지(Handoff §29).** SAVE_WEAPON vs PLAY_FOR_ROUND를 무기 보존가치 +
+  궁극 포인트 차단 + 탈출 위험 + 현재 라운드 승률의 **가중 결합**으로 비교. 승률만 낮다고 세이브
+  강제 안 함(Classic + 차단할 궁극 없음 → PLAY가 동점 이상).
+- **경계에서 미래가치 0.** 하프/연장 리셋 직전(라운드 12·24·OT) 및 **매치포인트**(맵 종료 가능 →
+  보존할 다음 라운드 없음)에서 `weaponFutureValue=0` → 매치포인트엔 세이브 대신 플레이 선호(§20.9).
+- **궁극 포인트 차단(§15.2, §21.3):** 적이 정확히 1포인트 부족일 때 차단가치 최대, 이미 충전 시 0.
+  생존=SAVE의 ultDelta 가산, 교전 사망=PLAY의 ultDelta 차감.
+- **출구킬(§22):** 도주 적 고가 무기 파괴 EV vs 자기 라이플·적 궁극 급전 위험 비교.
+
+## 3-5. 테스트 결과 (실제 실행)
+```
+packages/economy-engine: typecheck OK, build OK, vitest 15 passed (3 files)
+  - rules(로스보너스·카탈로그 궁극포인트·무기가), scenarios 07/08/09, buy·future·exit-kill, determinism
+런타임 스모크: evaluateEconomy(operator save) -> SAVE futureValue 0.4, economicDelta 1880
+```
+
+## 3-6. 미완료 / 주의
+- 모든 경제 상수 provisional — 패치 소스 검증 패스 필요(게임룰 담당). `Rule<T>`로 노출해 교체 용이.
+- `shared-mirror.ts`·`priors-fixture.ts`는 통합 시 실제 import/파일 로드로 교체.
+- 패키지 그래프(워크스페이스)에 아직 미연결 — 독립 빌드. PV-3가 `evaluateEconomy` 직접 import 가능.
+- node_modules/dist는 커밋 안 함(.gitignore).
+
+## 3-7. 다음 권장
+1. **(PV-3)** `evaluateEconomy`를 Action Generator의 Resource Cost / Expected Utility 입력으로 연결.
+2. **(게임룰)** game-rules 경제/궁극 상수 패치 검증 → provisional 플래그 해제.
+3. **(통합)** shared-mirror → `@pv/shared-types`, priors-fixture → `datasets/derived/priors/` 로더.
