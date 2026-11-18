@@ -1,11 +1,18 @@
 # PROJECT V — TASK HANDOFF
 
 **Agent:** PV-4 Spatial → Agent Simulation
-**Version:** v3 (2026-11-18) — adds combat-engine; supersedes v0/v1/v2
+**Version:** v4 (2026-11-18) — adds ability-engine; supersedes v0–v3
 **Branch:** `claude/pv-spatial`
 **Map:** Ascent (per DECISION-009 — first and only implemented map)
 
-> **v3 changelog (this update):** added `packages/combat-engine` (4차 작업) — deterministic
+> **v4 changelog (this update):** added `packages/ability-engine` (5차 작업) — abilities as
+> live effect objects (smoke/wall/flash/concuss/recon/molly/slow/trap/decoy) bridged into
+> spatial (LoS/path), perception (smoke/reveal) and combat (flash). Reveals are frozen
+> snapshots (no leak). Availability API for PV-3 Constraint Validation. 13 tests passing.
+> Additive change to spatial-engine: `PathOptions.blockedZones` (molly area denial) — spatial
+> still 21 tests. Details in **§C. Ability Engine** below.
+>
+> **v3:** added `packages/combat-engine` (4차 작업) — deterministic
 > timeline-based duel resolution from weapons/distance/info/skills; winner & TTK emergent
 > (DECISION-002), OVR cannot beat an info deficit (README §29). 15 tests passing; `tsc`
 > clean. Weapon values NOT committed (PV-1 LICENSE_AUDIT) — manual-approx fixture + local
@@ -243,6 +250,54 @@ Riot 파생 카탈로그 **값은 커밋 안 함**(스키마·픽스처만). 따
 
 **미완료/주의:** 전부 `manual-approx`. 1v1 중심(다대다 트레이드/크로스파이어 미구현). 엄폐·높이우위는 구역 근사
 파라미터(`behindCover`)로만. 스킬→확률 매핑은 PV-2 실측으로 보정 필요(`CombatCalibration` 사용).
+
+---
+
+## §C. Ability Engine (5차 작업, `packages/ability-engine`)
+
+**목표 (Handoff §14.1·14.2, README §11.2, P2):** 스킬 사용을 월드 효과 객체로 남기고, 그 효과가
+spatial·perception·combat 엔진에 실제로 반영되게 함.
+
+**PV-1 정합 (claude/pv-research fetch, 읽기만):** `ability-effect.schema.json`은 **아직 미published**.
+`ability.schema.json` + `tools/catalog-builder/data/ability_facts.json`의 `abilityId`(`<agent>:<slot>`)·
+`slot`·`gameplay.typeTags`(smoke|flash|recon|molly|wall|concuss…) 어휘를 따라 **로컬 효과 스키마**를 정의.
+PV-1 런타임 스펙 published 시 맞출 필드(아래) handoff에 기록.
+
+**효과 유형별 런타임 (`AbilityEngine`, 증가하는 ms 클럭):**
+- smoke / wall — 구역 LoS 차단(wall은 파괴 가능 HP). perception에 주입.
+- flash / concuss — 대상 블라인드 ms 기록 → combat posture.flashBlindMs 입력.
+- recon / trap — 범위 내 적 **공개 시점 스냅샷**(freeze)만 저장 → 이후 이동 미반영(누출 금지).
+- molly / slow — 구역 area-denial → spatial `blockedZones`.
+- decoy — 페이크용 가짜 정보(효과 객체로만, v0은 상태 보유).
+- 이벤트: `effectStart/effectExpire/effectDestroyed/flashApplied/reveal/trapTriggered`.
+
+**연동 어댑터 (`adapters.ts`):**
+- `toPerceptionAbilityStates` + `visionBlockerIsSmoke` → perception `SpatialPerceptionOracle({isSmoke})`.
+- `combatFlashBlindMs(engine, playerId, nowMs)` → combat `EngagePosture.flashBlindMs`.
+- `revealedEnemies(engine)` → 팀 관측용 frozen `RevealSnapshot[]`(위치 고정).
+- `deniedZoneIds(engine)` → spatial `PathOptions.blockedZones`.
+
+**사용 가능 여부 API (PV-3 Action Generator Constraint Validation용):**
+`checkAvailability(catalog, loadoutEntry, nowMs, ult?)` → `{usable, reason}`(no-charges / on-cooldown /
+ult-not-ready / unknown-ability / ok, +cooldownRemainingMs). PV-3가 후보 제외 사유로 사용.
+
+**spatial-engine 변경(내 소유, additive):** `PathOptions.blockedZones` 추가(중간 경유 불가, 출발/도착은 허용).
+기존 21개 테스트 그대로 통과.
+
+**테스트 (실제 실행, 13개 통과 / `tsc` 통과):**
+- smoke: 연막 뒤 적 비가시 → 만료 후 다시 가시(perception 연동).
+- flash: 플래시 피격측 combat 승률 0.25 미만(몬테카를로 고정시드) + 블라인드 시간 감쇠.
+- recon: 공개 적이 팀 관측에 들어오나 **공개 이후 이동 미반영**(frozen, 좌표 누출 없음) + 만료 후 사라짐.
+- molly: denied 구역 우회 경로(비용 증가, 해당 구역 미경유) + 만료 후 해제.
+- wall: 부분 피해 생존 → HP 초과 피해 시 파괴 이벤트 + 시야 차단 해제.
+- availability: 충전/쿨다운/궁극기 포인트/미지 스킬.
+- determinism: 동일 스크립트 → 동일 이벤트·공개.
+
+**실행:** `cd packages/ability-engine && npm install && npm test` (spatial/perception/combat `file:` 링크).
+
+**PV-1에 맞출 필드(미정, handoff 기록):** 런타임 효과의 `radiusUnits`/`durationMs`/`flashDurationMs`/`wallHp`는
+현재 manual-approx. PV-1 `ability-effect.schema.json` published 시 필드명·단위 재정합 필요. `decoy`의 가짜
+소리·시야 주입은 v0에서 효과 객체까지만(perception 소리 주입 경로는 다음 단계).
 
 ---
 

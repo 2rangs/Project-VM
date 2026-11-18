@@ -1,0 +1,49 @@
+{
+  "_comment": "PROJECT V ability-engine test specs. MANUAL-APPROX, hand-authored approximations of publicly-documented VALORANT ability behaviour, NOT a copy of any dataset. abilityId/slot/typeTags follow PV-1's datasets/catalog/schema/ability.schema.json (claude/pv-research). charges/cost/ultPoints reflect public values; durationMs/radiusUnits/flashDurationMs/wallHp are manual-approx (not in valorant-api; PV-1's facts leave durations null). Recalibrate against PV-1's ability-effect spec when published. Distances in world units (100 uu = 1 m), times in ms.",
+  "provenance": { "sourceNote": "public VALORANT ability rules (approximate)", "evidenceType": "derived", "verified": false },
+  "abilities": [
+    { "abilityId": "omen:Ability2", "agentId": "omen", "name": "Dark Cover", "slot": "Ability2", "effectType": "smoke",
+      "cost": 150, "charges": 1, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 15000, "radiusUnits": 500, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "sage:Ability3", "agentId": "sage", "name": "Barrier Orb", "slot": "Ability2", "effectType": "wall",
+      "cost": 400, "charges": 1, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 30000, "radiusUnits": 400, "wallHp": 800, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "sage:Ability1", "agentId": "sage", "name": "Slow Orb", "slot": "Ability1", "effectType": "slow",
+      "cost": 200, "charges": 1, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 7000, "radiusUnits": 450, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "breach:Ability2", "agentId": "breach", "name": "Flashpoint", "slot": "Ability2", "effectType": "flash",
+      "cost": 250, "charges": 2, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 2000, "radiusUnits": 600, "wallHp": null, "flashDurationMs": 2000, "provenance": "manual-approx" },
+
+    { "abilityId": "breach:Ability1", "agentId": "breach", "name": "Fault Line", "slot": "Ability1", "effectType": "concuss",
+      "cost": 200, "charges": 2, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 5000, "radiusUnits": 500, "wallHp": null, "flashDurationMs": 1200, "provenance": "manual-approx" },
+
+    { "abilityId": "kayo:Grenade", "agentId": "kayo", "name": "FLASH/drive", "slot": "Grenade", "effectType": "flash",
+      "cost": 250, "charges": 2, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 2000, "radiusUnits": 600, "wallHp": null, "flashDurationMs": 2000, "provenance": "manual-approx" },
+
+    { "abilityId": "sova:Ability2", "agentId": "sova", "name": "Recon Bolt", "slot": "Ability2", "effectType": "recon",
+      "cost": 400, "charges": 1, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 3000, "radiusUnits": 2500, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "brimstone:Ability1", "agentId": "brimstone", "name": "Incendiary", "slot": "Ability1", "effectType": "molly",
+      "cost": 250, "charges": 1, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 7000, "radiusUnits": 400, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "cypher:Ability1", "agentId": "cypher", "name": "Trapwire", "slot": "Ability1", "effectType": "trap",
+      "cost": 200, "charges": 2, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": null, "radiusUnits": 300, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "yoru:Ability1", "agentId": "yoru", "name": "Fakeout", "slot": "Ability1", "effectType": "decoy",
+      "cost": 100, "charges": 1, "cooldownMs": null, "killRecharge": false, "ultPoints": null,
+      "durationMs": 4000, "radiusUnits": 200, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" },
+
+    { "abilityId": "sova:Ultimate", "agentId": "sova", "name": "Hunter's Fury", "slot": "Ultimate", "effectType": "recon",
+      "cost": null, "charges": null, "cooldownMs": null, "killRecharge": false, "ultPoints": 7,
+      "durationMs": 3000, "radiusUnits": 3000, "wallHp": null, "flashDurationMs": null, "provenance": "manual-approx" }
+  ]
+}

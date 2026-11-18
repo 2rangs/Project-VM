@@ -20,6 +20,12 @@ export interface PathOptions {
    * intermediate waypoints. Default false — such zones may only be start/goal.
    */
   allowNonTransitWaypoints?: boolean;
+  /**
+   * Zones that are temporarily impassable as intermediate waypoints (e.g. a molly /
+   * area-denial or a standing wall). They may still be the start or goal. Used by the
+   * ability-engine for dynamic area denial.
+   */
+  blockedZones?: readonly string[];
 }
 
 export class ZoneGraph {
@@ -78,10 +84,14 @@ export class ZoneGraph {
     if (!this.zones.has(goalId)) throw new Error(`unknown goal zone: ${goalId}`);
     if (startId === goalId) return { path: [startId], timeMs: 0, distanceUnits: 0 };
     const allowNonTransit = opts.allowNonTransitWaypoints === true;
+    const blocked = opts.blockedZones && opts.blockedZones.length > 0 ? new Set(opts.blockedZones) : null;
     // A neighbor may be expanded only if it is a transit zone or it is the goal
     // (start is never reached as a neighbor since g-scores only decrease from 0).
-    const passable = (id: string): boolean =>
-      allowNonTransit || id === goalId || id === startId || this.transit.get(id) === true;
+    const passable = (id: string): boolean => {
+      if (id === startId || id === goalId) return true;
+      if (blocked && blocked.has(id)) return false;
+      return allowNonTransit || this.transit.get(id) === true;
+    };
 
     const gScore = new Map<string, number>([[startId, 0]]);
     const gDist = new Map<string, number>([[startId, 0]]);
