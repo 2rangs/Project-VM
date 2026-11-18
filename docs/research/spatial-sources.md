@@ -78,14 +78,61 @@ scope includes public repos, or mirror the needed data manually.
 
 ---
 
+## 3b. vlr.gg 2D replay position data ⛔ reachable but license-barred (v1 investigation)
+
+| Field | Value |
+|---|---|
+| Source Name | VLR.gg match 2D-replay logs |
+| Source URL | https://www.vlr.gg/754730/?game=283266&tab=logs (100 Thieves vs G2, Champions 2026, Ascent) |
+| Data Category | Per-event player position snapshots on vlr's minimap |
+| Data Format | HTML with embedded JSON events: `{"t":"m:ss","type":"kill\|plant\|defuse","by":id,"locs":[[playerId,x,y,angleDeg],...],"pos":[x,y],"team":n}` |
+| Access Method | HTTPS GET of the match page |
+| robots.txt | Allows match pages (only `/search/auto` and `/rr/` disallowed) |
+| **Terms of Service** | **PROHIBITS automated access and redistribution** |
+| Download Status | Reachable (HTTP 200); **NOT usable** under ToS |
+| Verification Level | L2 structure confirmed in this session (one page inspected to assess feasibility/license) |
+
+**What the data contains (confirmed this session):** game 283266 is Ascent; the logs page carried
+193 events (173 kills / 16 plants / 4 defuses) with 1,089 position samples in vlr minimap space
+(x≈92–973, y≈117–844). Coordinates are vlr's own minimap pixels — a different space from this
+project's normalized `[0,1]` transform, so they would need an affine calibration before use.
+
+**Why it is not used.** VLR.gg's Terms of Service (https://www.vlr.gg/terms) state:
+- "...any spider, robot, cheat utility, scraper, or offline reader that accesses the Services... [prohibited]"
+- "you will not access the Services through automated or non-human means, whether through a bot, script or otherwise"
+- "no Content... may be copied, reproduced, aggregated, republished... distributed, sold, licensed..."
+- content is provided for "personal, non-commercial use or internal business purpose only."
+
+That forbids both the systematic scraping that a collector would do and committing/redistributing
+the extracted positions. Per README §3 (collection-policy compliance) and §35 (honest reporting),
+this project therefore:
+- **does NOT commit** any vlr-derived observation data, and
+- **does NOT commit** a vlr scraper into `tools/map-processor/`.
+
+The brief inspection above was a one-off feasibility/license check, not a dataset build.
+
+**Consequence for the model.** The Ascent graph stays `manual-approx`; no `derived-real` values
+were produced. The v1 refinement used only license-independent, map-knowledge-based changes
+(spawn pass-through constraint + tests).
+
+**Authorized alternatives to pursue for real positions (not vlr):**
+- VCT Reference DuckDB (its own `/terms`) — PV-2 is verifying; check its redistribution clause.
+- Riot official APIs / Riot × GRID Open Access (auth required; user must supply keys).
+- vrfkit / ValorantReplayParser on self-captured VRF replay files (no third-party ToS on your own replays).
+
+---
+
 ## 4. Summary
 
-| Source | Status | Level | Used in v0 |
+| Source | Status | Level | Used |
 |---|---|---|---|
 | valorant-api maps | VERIFIED_API | L2 | ✅ transform + callouts |
+| vlr.gg 2D replay logs | reachable, **LICENSE_RESTRICTED** (ToS bars automated use + redistribution) | L2 | ❌ not usable |
 | Google Drive Blender (Ascent) | not obtained (scan interstitial) | L1 | ❌ |
 | Map reference repos | INACCESSIBLE (403) | L0 | ❌ |
 
-**Bottom line:** exactly one source was verified end-to-end (valorant-api). The Ascent v0 spatial
-model is built from real callout positions + a manual-approx tactical graph, and every approximated
+**Bottom line:** exactly one source is verified AND license-usable end-to-end (valorant-api). vlr.gg
+holds the real per-event position data this project wants, but its ToS prohibits automated access and
+redistribution, so it cannot be used without permission or an authorized feed. The Ascent spatial
+model remains built from real callout positions + a `manual-approx` tactical graph; every approximated
 field is tagged so the next agent never mistakes it for measured data.

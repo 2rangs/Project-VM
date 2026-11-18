@@ -53,4 +53,28 @@ describe("pathfinding", () => {
   it("throws on unknown zone ids", () => {
     expect(() => engine.findPath("nope", "a-site")).toThrow();
   });
+
+  it("does not route through a spawn zone by default (no spawn pass-through)", () => {
+    const r = engine.findPath("a-site", "b-site", "run")!;
+    expect(r).not.toBeNull();
+    // interior waypoints must exclude spawn zones
+    const interior = r.path.slice(1, -1);
+    expect(interior).not.toContain("defender-spawn");
+    expect(interior).not.toContain("attacker-spawn");
+    // the realistic route goes through mid
+    expect(r.path).toContain("mid-bottom");
+  });
+
+  it("allows a spawn waypoint only when explicitly opted in", () => {
+    const strict = engine.findPath("a-site", "b-site", "run")!;
+    const loose = engine.findPath("a-site", "b-site", "run", { allowNonTransitWaypoints: true })!;
+    // the spawn-cutting route is shorter (straight-line) but disallowed by default
+    expect(loose.distanceUnits).toBeLessThan(strict.distanceUnits);
+    expect(loose.path).toContain("defender-spawn");
+  });
+
+  it("still allows a spawn as the start or goal of a path", () => {
+    expect(engine.findPath("attacker-spawn", "a-site")).not.toBeNull();
+    expect(engine.findPath("a-site", "defender-spawn")).not.toBeNull();
+  });
 });

@@ -14,14 +14,24 @@ interface AdjEntry {
  * admissible because edge distances are straight-line between node centers
  * (actual graph cost >= heuristic).
  */
+export interface PathOptions {
+  /**
+   * Allow paths to pass through zones marked `transit: false` (e.g. spawns) as
+   * intermediate waypoints. Default false — such zones may only be start/goal.
+   */
+  allowNonTransitWaypoints?: boolean;
+}
+
 export class ZoneGraph {
   private readonly adj = new Map<string, AdjEntry[]>();
   private readonly zones = new Map<string, Zone>();
+  private readonly transit = new Map<string, boolean>();
   private readonly speeds: { run: number; walk: number }; // units per ms
 
   constructor(zones: Zone[], edges: NavEdge[], unitsPerMeter: number, runMps: number, walkMps: number) {
     for (const z of zones) {
       this.zones.set(z.id, z);
+      this.transit.set(z.id, z.transit !== false);
       this.adj.set(z.id, []);
     }
     this.speeds = {
@@ -62,10 +72,16 @@ export class ZoneGraph {
     startId: string,
     goalId: string,
     mode: TravelMode,
+    opts: PathOptions = {},
   ): { path: string[]; timeMs: number; distanceUnits: number } | null {
     if (!this.zones.has(startId)) throw new Error(`unknown start zone: ${startId}`);
     if (!this.zones.has(goalId)) throw new Error(`unknown goal zone: ${goalId}`);
     if (startId === goalId) return { path: [startId], timeMs: 0, distanceUnits: 0 };
+    const allowNonTransit = opts.allowNonTransitWaypoints === true;
+    // A neighbor may be expanded only if it is a transit zone or it is the goal
+    // (start is never reached as a neighbor since g-scores only decrease from 0).
+    const passable = (id: string): boolean =>
+      allowNonTransit || id === goalId || id === startId || this.transit.get(id) === true;
 
     const gScore = new Map<string, number>([[startId, 0]]);
     const gDist = new Map<string, number>([[startId, 0]]);
@@ -92,6 +108,7 @@ export class ZoneGraph {
       const g = gScore.get(current)!;
       const d = gDist.get(current)!;
       for (const e of this.adj.get(current)!) {
+        if (!passable(e.to)) continue;
         const tentative = g + this.edgeTimeMs(e, mode);
         if (tentative < (gScore.get(e.to) ?? Infinity)) {
           cameFrom.set(e.to, current);

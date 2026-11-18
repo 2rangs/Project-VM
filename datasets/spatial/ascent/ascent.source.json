@@ -28,8 +28,8 @@
     "note": "run 6.75 m/s is the documented VALORANT base move speed; walk (shift) ~3.4 m/s is approximate. Both are provenance: manual-approx for travel-time purposes."
   },
   "zones": [
-    { "id": "attacker-spawn", "name": "Attacker Spawn", "callout": "Attacker Side Spawn", "superRegion": "Attacker Side", "zoneType": "spawn", "plantable": false, "position": { "x": 60.0, "y": 50.0, "z": 190.0 } },
-    { "id": "defender-spawn", "name": "Defender Spawn", "callout": "Defender Side Spawn", "superRegion": "Defender Side", "zoneType": "spawn", "plantable": false, "position": { "x": 1995.2, "y": -9744.9, "z": 100.0 } },
+    { "id": "attacker-spawn", "name": "Attacker Spawn", "callout": "Attacker Side Spawn", "superRegion": "Attacker Side", "zoneType": "spawn", "plantable": false, "transit": false, "position": { "x": 60.0, "y": 50.0, "z": 190.0 } },
+    { "id": "defender-spawn", "name": "Defender Spawn", "callout": "Defender Side Spawn", "superRegion": "Defender Side", "zoneType": "spawn", "plantable": false, "transit": false, "position": { "x": 1995.2, "y": -9744.9, "z": 100.0 } },
 
     { "id": "a-lobby", "name": "A Lobby", "callout": "A Lobby", "superRegion": "A", "zoneType": "lobby", "plantable": false, "position": { "x": 4489.0, "y": -3014.1, "z": 400.0 } },
     { "id": "a-main", "name": "A Main", "callout": "A Main", "superRegion": "A", "zoneType": "main", "plantable": false, "position": { "x": 5321.6, "y": -4710.1, "z": 400.0 } },

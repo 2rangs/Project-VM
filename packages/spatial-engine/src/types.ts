@@ -39,6 +39,13 @@ export interface Zone {
   zoneType: ZoneType;
   plantable: boolean;
   position: Vec3;
+  /**
+   * Whether a shortest path may pass *through* this zone as an intermediate
+   * waypoint. Defaults to true. Spawn zones are `transit: false`: a generic
+   * (attacker-style) route must not cut through a spawn, so a spawn can only be
+   * the start or goal of a path, never a mid-point. See pathfinding options.
+   */
+  transit?: boolean;
 }
 
 /** Raw edge as authored in ascent.source.json (no computed geometry). */

@@ -1,9 +1,19 @@
 # PROJECT V — TASK HANDOFF
 
 **Agent:** PV-4 Spatial → Agent Simulation
-**Date:** 2026-11-18
+**Version:** v1 (2026-11-18) — supersedes v0
 **Branch:** `claude/pv-spatial`
 **Map:** Ascent (per DECISION-009 — first and only implemented map)
+
+> **v1 changelog (this update):**
+> - Investigated real per-event player positions via vlr.gg 2D-replay logs. The data exists and is
+>   reachable (Ascent game 283266: 193 events / 1,089 position samples), **but vlr.gg's ToS prohibits
+>   automated access and redistribution** → not used; **no data or scraper committed**. See
+>   `docs/research/spatial-sources.md` §3b. No `derived-real` values were produced.
+> - Added a **spawn pass-through path constraint** (`transit: false` on spawn zones). This fixes the
+>   v0 problem where `a-site → b-site` routed through `defender-spawn`; it now routes through mid.
+> - Tests: **21 passing** (was 18); `tsc --noEmit` clean.
+> - The model remains entirely `manual-approx` (node positions real from valorant-api).
 
 ---
 
@@ -73,9 +83,10 @@ npm test            # vitest run
 
 - `verify-transform.mjs` → `PASS: all zones within [0,1]`, 왕복 오차 9.095e-13.
 - `build-ascent.mjs` → zones 22 / edges 32 / plantZones 2, 총 간선 길이 952.2 m.
-- `vitest run` → **Test Files 3 passed, Tests 18 passed.**
+- `vitest run` → **Test Files 3 passed, Tests 21 passed.**
   - 좌표 변환: 전 구역 [0,1] 매핑 + 왕복 복원(2건)
   - 경로: 존재/도달 가능(전 구역 도달), 동일 노드 0비용, 걷기>달리기 시간, **이동시간 단조 증가**, 미지 노드 throw
+  - **(v1) spawn 통과 금지**: 기본 경로가 defender/attacker-spawn을 경유하지 않음, 옵트인 시에만 허용, spawn은 출발/도착점으로는 허용
   - 구역/설치/시야/소리: 타입별 조회, nearestZone, `isPlantableZone`, 폴리곤 내부/외부 판정, LoS 대칭·연막 차단, 소리 감쇠
 - 실제 경로 예시(달리기, 직선근사):
   - `attacker-spawn → a-site` 93.7 m / 13.9 s, `[spawn > a-lobby > a-main > a-site]`
@@ -92,9 +103,10 @@ npm test            # vitest run
 
 ## 9. 알려진 문제
 
-- 간선 거리는 **노드 중심 간 직선거리**라 실제 보행 경로보다 짧다(하한값). 일부 경로가
-  기하적으로는 그럴듯하지만 전술적으로 어색할 수 있음(예: `a-site→b-site`가 defender-spawn 경유).
-  → 실측 navmesh 확보 시 교체.
+- 간선 거리는 **노드 중심 간 직선거리**라 실제 보행 경로보다 짧다(하한값). → 실측 navmesh 확보 시 교체.
+- ~~`a-site→b-site`가 defender-spawn 경유~~ → **v1에서 수정**(spawn `transit:false`). 이제 mid 경유
+  `a-site > a-garden > mid-cubby > mid-bottom > mid-market > b-site`로 라우팅.
+- 실측 위치 데이터 미반영: 이동 시간/구역 경계가 실제 경기로 보정되지 않음(vlr ToS 제약, §11 참고).
 - `pointInPolygon`은 모서리 위 점 처리를 보장하지 않음(경계 민감 로직에 의존 금지).
 
 ## 10. 설계 결정
@@ -111,12 +123,18 @@ npm test            # vitest run
 
 - valorant-api 데이터는 Riot 게임 파일 파생. 상업적/재배포 조건 **UNVERIFIED** — 배포 전 확인 필요.
 - Blender 맵은 사용자 제공 자료이나 원 저작권·배포 조건 미확인.
+- **vlr.gg (중요):** 2D 리플레이 위치 데이터는 실재·접근 가능하나 **ToS가 자동 접근(봇/스크립트)과
+  재배포를 금지**(개인·비상업 용도 한정). 따라서 vlr 데이터와 수집 스크립트 **모두 커밋하지 않음**.
+  실측 위치가 필요하면 VCT Reference(자체 약관 확인), Riot/GRID 공식 피드(키 필요), 또는 자가 캡처
+  VRF 리플레이(vrfkit) 같은 **허가된 소스**를 사용할 것.
 
 ## 12. 다음 권장 작업 (우선순위)
 
 1. **(P1)** Simulation 에이전트: 이 패키지의 `SpatialEngine`로 이동/경로/설치 판정 연결.
    입력은 `ascent.navgraph.json` + `coordinate-system.json`.
-2. **(P1)** Google Drive Ascent `.blend` 실제 확보(confirm-token 흐름) → `tools/map-processor`에서
+2. **(P1)** 실측 위치는 **허가된 소스로만**: VCT Reference DuckDB 약관 확인(PV-2 협업), 안 되면
+   Riot/GRID 공식 피드(키) 또는 자가 캡처 VRF. vlr.gg는 ToS상 사용 금지 — 재시도 금지.
+3. **(P1)** Google Drive Ascent `.blend` 실제 확보(confirm-token 흐름) → `tools/map-processor`에서
    Blender로 충돌 메시 추출 → 실측 navmesh로 그래프 거리/도달성 교체.
 3. **(P2)** 실측 기반 Ray-cast 시야 + 연막 볼륨, 동적 문 상태를 경로/시야에 반영.
 4. **(P2)** 설치 폴리곤을 실제 사이트 경계로 교체, 패치 버전 스탬프.
@@ -126,7 +144,7 @@ npm test            # vitest run
 
 - 먼저 열 파일: `packages/spatial-engine/src/engine.ts`(공개 API),
   `datasets/spatial/ascent/ascent.navgraph.json`(데이터), `docs/research/spatial-sources.md`(소스 상태).
-- 먼저 실행: `cd packages/spatial-engine && npm install && npm test` (18 통과 확인),
+- 먼저 실행: `cd packages/spatial-engine && npm install && npm test` (21 통과 확인),
   이어서 `node tools/map-processor/build-ascent.mjs`로 데이터 재생성 재현.
 
 ---

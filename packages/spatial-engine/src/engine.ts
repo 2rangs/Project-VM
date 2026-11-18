@@ -13,7 +13,7 @@ import type {
   ZoneType,
 } from "./types.js";
 import { MapCoordinateSystem } from "./coordinate.js";
-import { ZoneGraph } from "./pathfinding.js";
+import { ZoneGraph, type PathOptions } from "./pathfinding.js";
 import { distance3, pointInPolygon } from "./geometry.js";
 
 export interface SpatialEngineOptions {
@@ -118,8 +118,8 @@ export class SpatialEngine {
 
   // ---- Pathfinding ----
 
-  findPath(fromId: string, toId: string, mode: TravelMode = "run"): PathResult | null {
-    const r = this.graph.findPath(fromId, toId, mode);
+  findPath(fromId: string, toId: string, mode: TravelMode = "run", opts: PathOptions = {}): PathResult | null {
+    const r = this.graph.findPath(fromId, toId, mode, opts);
     if (!r) return null;
     return {
       path: r.path,
@@ -131,13 +131,13 @@ export class SpatialEngine {
   }
 
   /** Shortest travel time in ms, or null if unreachable. */
-  shortestTravelTimeMs(fromId: string, toId: string, mode: TravelMode = "run"): number | null {
-    const r = this.graph.findPath(fromId, toId, mode);
+  shortestTravelTimeMs(fromId: string, toId: string, mode: TravelMode = "run", opts: PathOptions = {}): number | null {
+    const r = this.graph.findPath(fromId, toId, mode, opts);
     return r ? r.timeMs : null;
   }
 
-  isReachable(fromId: string, toId: string): boolean {
-    return this.graph.findPath(fromId, toId, "run") !== null;
+  isReachable(fromId: string, toId: string, opts: PathOptions = {}): boolean {
+    return this.graph.findPath(fromId, toId, "run", opts) !== null;
   }
 
   // ---- Plant judgment ----
