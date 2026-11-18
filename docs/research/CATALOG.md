@@ -10,9 +10,10 @@
 python tools/catalog-builder/build_catalog.py           # 라이브 수집·정규화·검증
 pytest tools/catalog-builder -q                         # 단위 테스트 + 스키마 검증
 ```
-**실행 결과(2026-11-18, 4차 반영):** pytest **14 passed**. 빌더 산출/검증:
-weapons **21** · agents **30** · abilities **130** · equipment **4** · ability-effects **40** — 전부 JSON Schema 통과.
-ability 게임플레이 수치 소싱 **120/130**, equipment **4/4**, ability-effects **39/40** 소싱, defaultKeybind 120/120.
+**실행 결과(2026-11-18, 5차 반영):** pytest **15 passed**. 빌더 산출/검증:
+weapons **21** · agents **30** · abilities **130** · equipment **4** · ability-effects **120** — 전부 JSON Schema 통과.
+ability 수치 소싱 120/130, equipment 4/4, **ability-effects 119/120(전 30요원)**, defaultKeybind 120/120.
+추가: 실제 Ascent 조합 통계(`datasets/derived/comps/ascent-comps.json`, VCT Reference DuckDB), GRID 접근 조사(`docs/research/GRID_ACCESS.md`).
 
 ## 2. 규칙
 - 필드명 **camelCase**, 시간 **ms**, 거리 **m**.
@@ -111,8 +112,8 @@ valorant-api 요원(raw)과 **스킬 이름으로 조인**해 슬롯에 매핑. 
 Ability Engine/perception/action용 **스킬 효과 명세**. 스키마 `datasets/catalog/schema/ability-effect.schema.json`,
 소싱 데이터 `tools/catalog-builder/data/ability_effects.json`(커밋).
 
-- **대상:** VCT Reference의 Ascent 픽 데이터는 PV-2(`origin/claude/pv-data`)에 **합성 데이터만** 있고 실제 픽률은 없어, 공식 위키 기준 Ascent 대표 요원 **10명**으로 진행: Omen, Sova, KAY/O, Killjoy, Jett, Cypher, Astra, Gekko, Breach, Viper (40 스킬).
-- **출처:** 각 스킬의 **공식 위키 페이지**(`wiki.playvalorant.com`)의 `Stat/Value/Confirmed value?` 표 + 인포박스. 패치 버전 표기 포함. **40개 중 39개 소싱**(Astra Nebula는 서브페이지 404 → null+verified:false).
+- **대상:** **전체 30요원 120스킬**(4차 10요원 + 5차 20요원 확장, 실측 픽률 순). 5차 확장은 §3.10 픽률 순서(Fade·Chamber 우선).
+- **출처:** 각 스킬의 **공식 위키 페이지**(`wiki.playvalorant.com`)의 `Stat/Value/Confirmed value?` 표 + 인포박스. 패치 버전 표기 포함. **120개 중 119개 소싱**(Astra Nebula만 서브페이지 404 → null+verified:false).
 - **필드:** effectTypes(smoke/flash/concuss/recon/molly/wall/slow/heal/trap/decoy/movement/suppress), windupMs·deployTimeMs·rangeMeters·radiusMeters·durationMs·cooldownMs·killRecharge·revealDurationMs·damage·destructible·destructibleHp·blocksVision·affectsAllies·makesSound·defaultKeybind. 값마다 `fieldSources{raw, confirmed}`.
 - **예(공식):** Dark Cover(Omen) smoke, radius 4.1m, duration 15000ms, range 80m, cooldown 40000ms, key E, blocksVision. Recon Bolt(Sova) recon, radius 30m, cooldown 50000ms, key E. Nanoswarm(Killjoy) molly, radius 5.25m, duration 5000ms, key C. Flashpoint(Breach) flash, duration 2250ms, range 35m, key Q.
 - **미확인 → null:** 공식 페이지에 없거나 fetch 실패 값. `makesSound=true`는 스킬 시전음 존재(PV-4 abilityCast) 일반 사실, `blocksVision=true`는 smoke 정의상 사실로 표기(note 기록). 추정 미기입.
@@ -171,7 +172,10 @@ PV-4 vision은 **존-레벨 smokedPairs**(기하 반경 아님)로 연막을 처
 - [x] defaultKeybind 매핑 확정(Ability1→Q/Ability2→E/Grenade→C/Ultimate→X, 120/120) — 4차(§3.8)
 - [x] spike detonateTimeMs 공식 확인(45000ms, wiki Spike) — 4차
 - [x] 소비자(PV-4/PV-3) 필드 매핑표 — 4차(§3.9)
-- [ ] Ability Effect Spec를 나머지 20요원으로 확장(동일 공식 위키 페이지 소싱)
-- [ ] Astra Nebula(서브페이지 404) 효과 재소싱
+- [x] Ability Effect Spec 전체 30요원 확장(119/120 소싱) — 5차
+- [x] 실제 Ascent 조합 통계(VCT Reference DuckDB) — 5차(§3.10)
+- [x] GRID 접근 조사 — 5차(`docs/research/GRID_ACCESS.md`)
+- [ ] Astra Nebula(서브페이지 404) 효과 재소싱 — Astra 페이지 본문에서 추출 시도
+- [ ] 일부 스킬 damage/affectsAllies 등 공식 페이지 미명시 값 null
 - [ ] (권고) PV-3가 ultimate.ts 궁극 포인트를 카탈로그로 교체(§3.6 불일치 4건)
 - [ ] 패치 갱신 시 `--patch`로 재빌드, 과거 패치 보존

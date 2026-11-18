@@ -1366,9 +1366,14 @@
    "blocksVision": null,
    "affectsAllies": null,
    "makesSound": true,
-   "defaultKeybind": null
+   "defaultKeybind": "E"
   },
-  "fieldSources": {},
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "slot Ability2->E",
+    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+   }
+  },
   "sourcePage": null,
   "verified": false,
   "notes": "official wiki page not fetched (404/subpage); effectTypes from wiki Functions tags only"
@@ -1823,6 +1828,3553 @@
    }
   },
   "sourcePage": "https://wiki.playvalorant.com/en-us/Blade_Storm",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "fade:Ability1",
+  "agentName": "Fade",
+  "slot": "Ability1",
+  "name": "Seize",
+  "effectTypes": [
+   "slow"
+  ],
+  "params": {
+   "windupMs": 700.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.58,
+   "durationMs": 4500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.7 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "6.58 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "4.5 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Seize",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "fade:Ability2",
+  "agentName": "Fade",
+  "slot": "Ability2",
+  "name": "Haunt",
+  "effectTypes": [
+   "recon"
+  ],
+  "params": {
+   "windupMs": 825.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 30.0,
+   "durationMs": 1500.0,
+   "cooldownMs": 50000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.825 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "30 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "1.5 seconds",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 50 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Haunt",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "fade:Grenade",
+  "agentName": "Fade",
+  "slot": "Grenade",
+  "name": "Prowler",
+  "effectTypes": [
+   "recon",
+   "flash"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 7.0,
+   "durationMs": 2500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "2.5 seconds",
+    "confirmed": "v5.10"
+   },
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "v5.10"
+   },
+   "radiusMeters": {
+    "raw": "7 meters",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Prowler",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "fade:Ultimate",
+  "agentName": "Fade",
+  "slot": "Ultimate",
+  "name": "Nightfall",
+  "effectTypes": [
+   "slow",
+   "recon"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 8000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "8 seconds",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Nightfall",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "chamber:Ability2",
+  "agentName": "Chamber",
+  "slot": "Ability2",
+  "name": "Rendezvous",
+  "effectTypes": [
+   "movement"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 18.0,
+   "durationMs": 1300.0,
+   "cooldownMs": 30000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "18 meters",
+    "confirmed": "v9.05"
+   },
+   "durationMs": {
+    "raw": "Total duration: 1.3 seconds 0.1-second windup 1.2-second arrival at anchor",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 30 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Rendezvous",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "chamber:Grenade",
+  "agentName": "Chamber",
+  "slot": "Grenade",
+  "name": "Trademark",
+  "effectTypes": [
+   "recon",
+   "slow"
+  ],
+  "params": {
+   "windupMs": 900.0,
+   "deployTimeMs": 2000.0,
+   "rangeMeters": null,
+   "radiusMeters": 12.0,
+   "durationMs": 750.0,
+   "cooldownMs": 30000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "12 meters",
+    "confirmed": "Game files"
+   },
+   "deployTimeMs": {
+    "raw": "2 seconds",
+    "confirmed": "v6.11"
+   },
+   "durationMs": {
+    "raw": "0.75 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.9 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 30 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Trademark",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "chamber:Ability1",
+  "agentName": "Chamber",
+  "slot": "Ability1",
+  "name": "Headhunter",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Headhunter",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "chamber:Ultimate",
+  "agentName": "Chamber",
+  "slot": "Ultimate",
+  "name": "Tour De Force",
+  "effectTypes": [
+   "slow"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.0,
+   "durationMs": 4000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "6 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "4 seconds",
+    "confirmed": "v5.12"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Tour_De_Force",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "sage:Ability1",
+  "agentName": "Sage",
+  "slot": "Ability1",
+  "name": "Slow Orb",
+  "effectTypes": [
+   "slow"
+  ],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 7000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "7 seconds",
+    "confirmed": "v0.50"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Slow_Orb",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "sage:Ability2",
+  "agentName": "Sage",
+  "slot": "Ability2",
+  "name": "Healing Orb",
+  "effectTypes": [
+   "heal"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 5000.0,
+   "cooldownMs": 45000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "5 seconds",
+    "confirmed": "v9.10"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 45 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Healing_Orb",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "sage:Grenade",
+  "agentName": "Sage",
+  "slot": "Grenade",
+  "name": "Barrier Orb",
+  "effectTypes": [
+   "wall"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": 1350.0,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 40000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "1.35 seconds",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "Total 40 seconds (Includes deploy time) Begins to decay after 35 seconds",
+    "confirmed": "Game files (~ v1.07 )"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Barrier_Orb",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "sage:Ultimate",
+  "agentName": "Sage",
+  "slot": "Ultimate",
+  "name": "Resurrection",
+  "effectTypes": [],
+  "params": {
+   "windupMs": 2000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 1300.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "2 seconds",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "1.3 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Resurrection",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "skye:Ability1",
+  "agentName": "Skye",
+  "slot": "Ability1",
+  "name": "Trailblazer",
+  "effectTypes": [
+   "concuss",
+   "recon"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": 180.0,
+   "rangeMeters": null,
+   "radiusMeters": 22.5,
+   "durationMs": 6000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "0.18 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "22.5 meters",
+    "confirmed": "v3.0"
+   },
+   "durationMs": {
+    "raw": "6 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Trailblazer",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "skye:Ability2",
+  "agentName": "Skye",
+  "slot": "Ability2",
+  "name": "Guiding Light",
+  "effectTypes": [
+   "flash",
+   "recon"
+  ],
+  "params": {
+   "windupMs": 750.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 2000.0,
+   "cooldownMs": 60000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "2 seconds",
+    "confirmed": "v7.04"
+   },
+   "windupMs": {
+    "raw": "0.75 seconds",
+    "confirmed": "v5.07"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 60 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Guiding_Light",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "skye:Grenade",
+  "agentName": "Skye",
+  "slot": "Grenade",
+  "name": "Regrowth",
+  "effectTypes": [
+   "heal"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 18.0,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "18 meters",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Regrowth",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "skye:Ultimate",
+  "agentName": "Skye",
+  "slot": "Ultimate",
+  "name": "Seekers",
+  "effectTypes": [
+   "flash",
+   "slow"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 7.5,
+   "durationMs": 3000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "3 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "7.5 meters",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Seekers",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "yoru:Grenade",
+  "agentName": "Yoru",
+  "slot": "Grenade",
+  "name": "FAKEOUT",
+  "effectTypes": [
+   "decoy",
+   "flash"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 10000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "10 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/FAKEOUT",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "yoru:Ability1",
+  "agentName": "Yoru",
+  "slot": "Ability1",
+  "name": "BLINDSIDE",
+  "effectTypes": [
+   "flash"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 1500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "v2.06"
+   },
+   "durationMs": {
+    "raw": "1.5 seconds",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/BLINDSIDE",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "yoru:Ability2",
+  "agentName": "Yoru",
+  "slot": "Ability2",
+  "name": "GATECRASH",
+  "effectTypes": [
+   "decoy",
+   "movement"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 4.0,
+   "durationMs": 20000.0,
+   "cooldownMs": null,
+   "killRecharge": true,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "20 seconds",
+    "confirmed": "v13.01"
+   },
+   "radiusMeters": {
+    "raw": "4 meters",
+    "confirmed": "v2.06"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "killRecharge": {
+    "raw": "Cooldown N kills",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/GATECRASH",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "yoru:Ultimate",
+  "agentName": "Yoru",
+  "slot": "Ultimate",
+  "name": "DIMENSIONAL DRIFT",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 15.0,
+   "durationMs": 10000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "10 seconds",
+    "confirmed": "v10.08"
+   },
+   "radiusMeters": {
+    "raw": "15 meters (footstep audio only)",
+    "confirmed": "v4.04"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/DIMENSIONAL_DRIFT",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "phoenix:Grenade",
+  "agentName": "Phoenix",
+  "slot": "Grenade",
+  "name": "Blaze",
+  "effectTypes": [
+   "wall"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": 125.0,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 8000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "0.125-0.75 seconds (Depending on distance)",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "8 seconds",
+    "confirmed": "v1.0"
+   },
+   "defaultKeybind": {
+    "raw": "slot Grenade->C",
+    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Blaze",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "phoenix:Ability1",
+  "agentName": "Phoenix",
+  "slot": "Ability1",
+  "name": "Hot Hands",
+  "effectTypes": [
+   "molly"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 4.5,
+   "durationMs": 4000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "4.5 meters",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "4 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "slot Ability1->Q",
+    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Hot_Hands",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "phoenix:Ability2",
+  "agentName": "Phoenix",
+  "slot": "Ability2",
+  "name": "Curveball",
+  "effectTypes": [
+   "flash"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 1500.0,
+   "cooldownMs": null,
+   "killRecharge": true,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "v11.00"
+   },
+   "durationMs": {
+    "raw": "1.5 seconds",
+    "confirmed": "v5.01"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "killRecharge": {
+    "raw": "Cooldown N kills",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Curveball",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "phoenix:Ultimate",
+  "agentName": "Phoenix",
+  "slot": "Ultimate",
+  "name": "Run it Back",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 10000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "10 seconds (Includes 1-second activation animation)",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Run_it_Back",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "vyse:Ability1",
+  "agentName": "Vyse",
+  "slot": "Ability1",
+  "name": "Shear",
+  "effectTypes": [
+   "recon",
+   "wall"
+  ],
+  "params": {
+   "windupMs": 800.0,
+   "deployTimeMs": 2000.0,
+   "rangeMeters": 15.0,
+   "radiusMeters": null,
+   "durationMs": 6000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "15 meters",
+    "confirmed": "Game files"
+   },
+   "deployTimeMs": {
+    "raw": "2 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.8 seconds",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "Total 6 seconds",
+    "confirmed": "v10.06"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Shear",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "vyse:Ability2",
+  "agentName": "Vyse",
+  "slot": "Ability2",
+  "name": "Arc Rose",
+  "effectTypes": [
+   "flash"
+  ],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": 800.0,
+   "rangeMeters": null,
+   "radiusMeters": 10.0,
+   "durationMs": 2000.0,
+   "cooldownMs": 20000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "10 meters",
+    "confirmed": "Game files"
+   },
+   "deployTimeMs": {
+    "raw": "0.8 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "2 seconds",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 20 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Arc_Rose",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "vyse:Grenade",
+  "agentName": "Vyse",
+  "slot": "Grenade",
+  "name": "Razorvine",
+  "effectTypes": [
+   "slow"
+  ],
+  "params": {
+   "windupMs": 200.0,
+   "deployTimeMs": 750.0,
+   "rangeMeters": null,
+   "radiusMeters": 3.5,
+   "durationMs": 6000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "0.75 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "3.5 meters",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.2 seconds",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "Total 6 seconds (Includes Windup)",
+    "confirmed": "v10.06"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Razorvine",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "vyse:Ultimate",
+  "agentName": "Vyse",
+  "slot": "Ultimate",
+  "name": "Steel Garden",
+  "effectTypes": [
+   "suppress"
+  ],
+  "params": {
+   "windupMs": 4400.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 28.0,
+   "durationMs": 8000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "28 meters",
+    "confirmed": "v12.00"
+   },
+   "windupMs": {
+    "raw": "4.4 seconds",
+    "confirmed": "v11.08"
+   },
+   "durationMs": {
+    "raw": "8 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Steel_Garden",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "raze:Ability1",
+  "agentName": "Raze",
+  "slot": "Ability1",
+  "name": "Blast Pack",
+  "effectTypes": [
+   "movement"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Blast_Pack",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "raze:Ability2",
+  "agentName": "Raze",
+  "slot": "Ability2",
+  "name": "Paint Shells",
+  "effectTypes": [
+   "molly"
+  ],
+  "params": {
+   "windupMs": 2250.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": true,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "2.25 seconds (Initial grenade) 0.667 seconds (Sub-munitions)",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "killRecharge": {
+    "raw": "Cooldown N kills",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Paint_Shells",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "raze:Grenade",
+  "agentName": "Raze",
+  "slot": "Grenade",
+  "name": "Boom Bot",
+  "effectTypes": [
+   "recon"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": 700.0,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 5000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "0.7 seconds",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "5 seconds (Includes Deploy time)",
+    "confirmed": "v6.03"
+   },
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Boom_Bot",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "raze:Ultimate",
+  "agentName": "Raze",
+  "slot": "Ultimate",
+  "name": "Showstopper",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 10000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "10 seconds (including Equip time)",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Showstopper",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "neon:Ability2",
+  "agentName": "Neon",
+  "slot": "Ability2",
+  "name": "High Gear",
+  "effectTypes": [
+   "movement"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": true,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "killRecharge": {
+    "raw": "Cooldown N kills",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/High_Gear",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "neon:Ability1",
+  "agentName": "Neon",
+  "slot": "Ability1",
+  "name": "Relay Bolt",
+  "effectTypes": [
+   "concuss"
+  ],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 5.0,
+   "durationMs": 5000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "5 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "5 meters",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "1 second",
+    "confirmed": "v11.00"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Relay_Bolt",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "neon:Grenade",
+  "agentName": "Neon",
+  "slot": "Grenade",
+  "name": "Fast Lane",
+  "effectTypes": [
+   "wall"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": 400.0,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 4000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "0.4 seconds",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "4 seconds",
+    "confirmed": "v8.11"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Fast_Lane",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "neon:Ultimate",
+  "agentName": "Neon",
+  "slot": "Ultimate",
+  "name": "Overdrive",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Overdrive",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "reyna:Ability1",
+  "agentName": "Reyna",
+  "slot": "Ability1",
+  "name": "Devour",
+  "effectTypes": [
+   "heal"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Devour",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "reyna:Ability2",
+  "agentName": "Reyna",
+  "slot": "Ability2",
+  "name": "Dismiss",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 1500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "1.5 seconds",
+    "confirmed": "v8.11"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Dismiss",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "reyna:Grenade",
+  "agentName": "Reyna",
+  "slot": "Grenade",
+  "name": "Leer",
+  "effectTypes": [
+   "flash"
+  ],
+  "params": {
+   "windupMs": 550.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.0,
+   "durationMs": 1600.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.55 seconds to travel to target location at max deployment distance",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "1.6 seconds",
+    "confirmed": "[ s 1 ]"
+   },
+   "radiusMeters": {
+    "raw": "6 meters",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Leer",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "reyna:Ultimate",
+  "agentName": "Reyna",
+  "slot": "Ultimate",
+  "name": "Empress",
+  "effectTypes": [],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Empress",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "deadlock:Ability1",
+  "agentName": "Deadlock",
+  "slot": "Ability1",
+  "name": "Sonic Sensor",
+  "effectTypes": [
+   "concuss",
+   "recon"
+  ],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": 1750.0,
+   "rangeMeters": 14.0,
+   "radiusMeters": null,
+   "durationMs": 2500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "14 meters",
+    "confirmed": "Game files"
+   },
+   "deployTimeMs": {
+    "raw": "1.75 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": "v8.0"
+   },
+   "durationMs": {
+    "raw": "2.5 seconds",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Sonic_Sensor",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "deadlock:Grenade",
+  "agentName": "Deadlock",
+  "slot": "Grenade",
+  "name": "Barrier Mesh",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": 1000.0,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 30000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "Total 30 seconds (Includes deploy time) Begins to decay after 25 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Barrier_Mesh",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "deadlock:Ability2",
+  "agentName": "Deadlock",
+  "slot": "Ability2",
+  "name": "GravNet",
+  "effectTypes": [
+   "slow"
+  ],
+  "params": {
+   "windupMs": 400.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.5,
+   "durationMs": null,
+   "cooldownMs": 50000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.4 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "6.5 meters",
+    "confirmed": "v10.04"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 50 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/GravNet",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "deadlock:Ultimate",
+  "agentName": "Deadlock",
+  "slot": "Ultimate",
+  "name": "Annihilation",
+  "effectTypes": [
+   "suppress",
+   "movement"
+  ],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 3.0,
+   "durationMs": 10000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "10 seconds (including Equip time)",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "3 meters",
+    "confirmed": ""
+   },
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Annihilation",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "waylay:Ability2",
+  "agentName": "Waylay",
+  "slot": "Ability2",
+  "name": "Refract",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": true,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "killRecharge": {
+    "raw": "Cooldown N kills",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Refract",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "waylay:Grenade",
+  "agentName": "Waylay",
+  "slot": "Grenade",
+  "name": "Saturate",
+  "effectTypes": [],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.0,
+   "durationMs": 3000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "v11.00"
+   },
+   "radiusMeters": {
+    "raw": "6 meters",
+    "confirmed": "v11.00"
+   },
+   "durationMs": {
+    "raw": "3 seconds",
+    "confirmed": "v11.08"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Saturate",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "waylay:Ability1",
+  "agentName": "Waylay",
+  "slot": "Ability1",
+  "name": "Lightspeed",
+  "effectTypes": [
+   "movement"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 450.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "0.45 seconds per dash",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Lightspeed",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "waylay:Ultimate",
+  "agentName": "Waylay",
+  "slot": "Ultimate",
+  "name": "Convergent Paths",
+  "effectTypes": [],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 7000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "1 seconds",
+    "confirmed": "v11.08"
+   },
+   "durationMs": {
+    "raw": "7 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Convergent_Paths",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "harbor:Ability1",
+  "agentName": "Harbor",
+  "slot": "Ability1",
+  "name": "High Tide",
+  "effectTypes": [
+   "slow",
+   "wall"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 15000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "15 seconds",
+    "confirmed": "v5.12"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/High_Tide",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "harbor:Grenade",
+  "agentName": "Harbor",
+  "slot": "Grenade",
+  "name": "Storm Surge",
+  "effectTypes": [
+   "flash",
+   "slow",
+   "recon"
+  ],
+  "params": {
+   "windupMs": 600.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.0,
+   "durationMs": 2000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "6 meters",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.6 seconds",
+    "confirmed": "v12.00"
+   },
+   "durationMs": {
+    "raw": "2 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Storm_Surge",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "harbor:Ability2",
+  "agentName": "Harbor",
+  "slot": "Ability2",
+  "name": "Cove",
+  "effectTypes": [
+   "smoke"
+  ],
+  "params": {
+   "windupMs": 800.0,
+   "deployTimeMs": 1000.0,
+   "rangeMeters": 80.0,
+   "radiusMeters": 4.6,
+   "durationMs": 19250.0,
+   "cooldownMs": 30000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": true,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "80 meters",
+    "confirmed": "Game files"
+   },
+   "deployTimeMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "4.6 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "19.25 seconds",
+    "confirmed": "v12.02"
+   },
+   "windupMs": {
+    "raw": "0.8 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 30 seconds",
+    "confirmed": "infobox"
+   },
+   "blocksVision": {
+    "raw": "definitional (smoke occludes sightlines)",
+    "confirmed": "definition"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Cove",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "harbor:Ultimate",
+  "agentName": "Harbor",
+  "slot": "Ultimate",
+  "name": "Reckoning",
+  "effectTypes": [
+   "flash",
+   "slow",
+   "wall",
+   "recon"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 7000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "7 seconds",
+    "confirmed": "v12.02"
+   },
+   "defaultKeybind": {
+    "raw": "slot Ultimate->X",
+    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Reckoning",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "tejo:Ability2",
+  "agentName": "Tejo",
+  "slot": "Ability2",
+  "name": "Guided Salvo",
+  "effectTypes": [
+   "molly"
+  ],
+  "params": {
+   "windupMs": 1250.0,
+   "deployTimeMs": null,
+   "rangeMeters": 45.0,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "45 meters",
+    "confirmed": "v10.09"
+   },
+   "windupMs": {
+    "raw": "1.25 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Guided_Salvo",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "tejo:Ability1",
+  "agentName": "Tejo",
+  "slot": "Ability1",
+  "name": "Special Delivery",
+  "effectTypes": [
+   "concuss"
+  ],
+  "params": {
+   "windupMs": 900.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 3000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "3 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.9 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Special_Delivery",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "tejo:Ultimate",
+  "agentName": "Tejo",
+  "slot": "Ultimate",
+  "name": "Armageddon",
+  "effectTypes": [
+   "molly"
+  ],
+  "params": {
+   "windupMs": 3080.0,
+   "deployTimeMs": null,
+   "rangeMeters": 52.5,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "52.5 meters",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "Total 3.08 seconds",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "slot Ultimate->X",
+    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Armageddon",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "tejo:Grenade",
+  "agentName": "Tejo",
+  "slot": "Grenade",
+  "name": "Stealth Drone",
+  "effectTypes": [
+   "suppress",
+   "recon"
+  ],
+  "params": {
+   "windupMs": 400.0,
+   "deployTimeMs": 300.0,
+   "rangeMeters": null,
+   "radiusMeters": 18.0,
+   "durationMs": 6000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "deployTimeMs": {
+    "raw": "0.3 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "18 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "6 seconds",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "0.4 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "slot Grenade->C",
+    "confirmed": "verified slot->key map (100% consistent, 30 agents)"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Stealth_Drone",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "brimstone:Grenade",
+  "agentName": "Brimstone",
+  "slot": "Grenade",
+  "name": "Stim Beacon",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.0,
+   "durationMs": 4000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "6 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "4 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Stim_Beacon",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "brimstone:Ability1",
+  "agentName": "Brimstone",
+  "slot": "Ability1",
+  "name": "Incendiary",
+  "effectTypes": [
+   "molly"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 4.5,
+   "durationMs": 8000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "4.5 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "Total 8 seconds 0.25-second explosion time 0.75-second spread time 7 seconds at full size",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Incendiary",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "brimstone:Ability2",
+  "agentName": "Brimstone",
+  "slot": "Ability2",
+  "name": "Sky Smoke",
+  "effectTypes": [
+   "smoke"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": 1000.0,
+   "rangeMeters": 55.0,
+   "radiusMeters": 4.15,
+   "durationMs": 19250.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": true,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "55 meters",
+    "confirmed": "v4.04"
+   },
+   "deployTimeMs": {
+    "raw": "1 seconds",
+    "confirmed": "v4.04"
+   },
+   "radiusMeters": {
+    "raw": "4.15 meters",
+    "confirmed": "v8.09"
+   },
+   "durationMs": {
+    "raw": "19.25 seconds",
+    "confirmed": "v2.0"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "blocksVision": {
+    "raw": "definitional (smoke occludes sightlines)",
+    "confirmed": "definition"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Sky_Smoke",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "brimstone:Ultimate",
+  "agentName": "Brimstone",
+  "slot": "Ultimate",
+  "name": "Orbital Strike",
+  "effectTypes": [
+   "molly"
+  ],
+  "params": {
+   "windupMs": 2000.0,
+   "deployTimeMs": null,
+   "rangeMeters": 60.0,
+   "radiusMeters": 9.0,
+   "durationMs": 3000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "60 meters",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "2 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "9 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "3 seconds at full size 0.75-second fadeaway time",
+    "confirmed": "[ s 1 ]"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Orbital_Strike",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "clove:Grenade",
+  "agentName": "Clove",
+  "slot": "Grenade",
+  "name": "Pick-me-up",
+  "effectTypes": [
+   "heal"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Pick-me-up",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "clove:Ability2",
+  "agentName": "Clove",
+  "slot": "Ability2",
+  "name": "Ruse",
+  "effectTypes": [
+   "smoke"
+  ],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": 60.0,
+   "radiusMeters": 4.0,
+   "durationMs": 14000.0,
+   "cooldownMs": 40000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": true,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "60 meters (Alive) 42.5 meters (Dead)",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "4 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "Alive: 14 seconds (includes 0.5-second formation time and 0.5-second expiration time) Expiration warning at 12 seconds",
+    "confirmed": "v12.05"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 40 seconds",
+    "confirmed": "infobox"
+   },
+   "blocksVision": {
+    "raw": "definitional (smoke occludes sightlines)",
+    "confirmed": "definition"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Ruse",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "clove:Ultimate",
+  "agentName": "Clove",
+  "slot": "Ultimate",
+  "name": "Not Dead Yet",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Not_Dead_Yet",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "clove:Ability1",
+  "agentName": "Clove",
+  "slot": "Ability1",
+  "name": "Meddle",
+  "effectTypes": [
+   "slow"
+  ],
+  "params": {
+   "windupMs": 750.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 4.0,
+   "durationMs": 5000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": true,
+   "destructibleHp": 90,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.75 seconds after in contact with ground",
+    "confirmed": "v10.04"
+   },
+   "radiusMeters": {
+    "raw": "4 meters",
+    "confirmed": "v12.05"
+   },
+   "destructibleHp": {
+    "raw": "90 HP",
+    "confirmed": "In-game"
+   },
+   "durationMs": {
+    "raw": "5 seconds (Includes decaying and restoration times)",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Meddle",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "miks:Grenade",
+  "agentName": "Miks",
+  "slot": "Grenade",
+  "name": "M-pulse",
+  "effectTypes": [
+   "concuss",
+   "heal"
+  ],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 5.5,
+   "durationMs": 2000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "5.5 meters",
+    "confirmed": "Game files"
+   },
+   "windupMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "2 seconds",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/M-pulse",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "miks:Ability2",
+  "agentName": "Miks",
+  "slot": "Ability2",
+  "name": "Waveform",
+  "effectTypes": [
+   "smoke"
+  ],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": 55.5,
+   "radiusMeters": 4.72,
+   "durationMs": 16750.0,
+   "cooldownMs": 40000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": true,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "rangeMeters": {
+    "raw": "55.5 meters",
+    "confirmed": ""
+   },
+   "windupMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "4.72 meters",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "16.75 seconds (includes 0.5-second formation time and 0.5-second expiration time) Expiration warning at 14.75 seconds",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 40 seconds",
+    "confirmed": "infobox"
+   },
+   "blocksVision": {
+    "raw": "definitional (smoke occludes sightlines)",
+    "confirmed": "definition"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Waveform",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "miks:Ability1",
+  "agentName": "Miks",
+  "slot": "Ability1",
+  "name": "Harmonize",
+  "effectTypes": [],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 8000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "8 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Harmonize",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "miks:Ultimate",
+  "agentName": "Miks",
+  "slot": "Ultimate",
+  "name": "Bassquake",
+  "effectTypes": [
+   "movement",
+   "slow"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 40.0,
+   "durationMs": 8000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "40 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "8 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Bassquake",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "hush:Ability1",
+  "agentName": "Hush",
+  "slot": "Ability1",
+  "name": "Flashbulb",
+  "effectTypes": [
+   "flash"
+  ],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 3000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "3 seconds (Primary fire) 8 seconds (Alt fire)",
+    "confirmed": ""
+   },
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Flashbulb",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "hush:Ability2",
+  "agentName": "Hush",
+  "slot": "Ability2",
+  "name": "Displacement",
+  "effectTypes": [
+   "movement",
+   "concuss"
+  ],
+  "params": {
+   "windupMs": 800.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 3000.0,
+   "cooldownMs": null,
+   "killRecharge": true,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "3 seconds (Primary fire) 8 seconds (Alt fire)",
+    "confirmed": ""
+   },
+   "windupMs": {
+    "raw": "0.8 seconds",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "killRecharge": {
+    "raw": "Cooldown N kills",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Displacement",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "hush:Grenade",
+  "agentName": "Hush",
+  "slot": "Grenade",
+  "name": "Flow",
+  "effectTypes": [
+   "movement"
+  ],
+  "params": {
+   "windupMs": 750.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.75 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Flow",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "hush:Ultimate",
+  "agentName": "Hush",
+  "slot": "Ultimate",
+  "name": "Suspension",
+  "effectTypes": [
+   "suppress",
+   "movement",
+   "recon"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 7.0,
+   "durationMs": 6000.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "6 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "7 meters",
+    "confirmed": ""
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Suspension",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "veto:Ability2",
+  "agentName": "Veto",
+  "slot": "Ability2",
+  "name": "Interceptor",
+  "effectTypes": [],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 18.0,
+   "durationMs": 9000.0,
+   "cooldownMs": 45000.0,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "9 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "18 meters",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   },
+   "cooldownMs": {
+    "raw": "Cooldown 45 seconds",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Interceptor",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "veto:Grenade",
+  "agentName": "Veto",
+  "slot": "Grenade",
+  "name": "Crosscut",
+  "effectTypes": [
+   "movement"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 30.0,
+   "durationMs": 1600.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "radiusMeters": {
+    "raw": "30 meters",
+    "confirmed": "v13.00"
+   },
+   "durationMs": {
+    "raw": "Total duration: 1.6 seconds",
+    "confirmed": "[ s 1 ]"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Crosscut",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "veto:Ultimate",
+  "agentName": "Veto",
+  "slot": "Ultimate",
+  "name": "Evolution",
+  "effectTypes": [
+   "heal"
+  ],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "1 second",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Evolution",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "veto:Ability1",
+  "agentName": "Veto",
+  "slot": "Ability1",
+  "name": "Chokehold",
+  "effectTypes": [
+   "slow",
+   "recon"
+  ],
+  "params": {
+   "windupMs": 500.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 6.58,
+   "durationMs": 4500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.5 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "6.58 meters",
+    "confirmed": "Game files"
+   },
+   "durationMs": {
+    "raw": "4.5 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Chokehold",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "iso:Ability1",
+  "agentName": "Iso",
+  "slot": "Ability1",
+  "name": "Undercut",
+  "effectTypes": [
+   "slow",
+   "suppress"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": 3.0,
+   "durationMs": 1550.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "Q"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "1.55 seconds",
+    "confirmed": "Game files"
+   },
+   "radiusMeters": {
+    "raw": "3 meters",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key Q",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Undercut",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "iso:Ultimate",
+  "agentName": "Iso",
+  "slot": "Ultimate",
+  "name": "Kill Contract",
+  "effectTypes": [
+   "suppress"
+  ],
+  "params": {
+   "windupMs": 900.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 500.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "X"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "0.9 seconds",
+    "confirmed": ""
+   },
+   "durationMs": {
+    "raw": "0.5 seconds",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key X",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Kill_Contract",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "iso:Ability2",
+  "agentName": "Iso",
+  "slot": "Ability2",
+  "name": "Double Tap",
+  "effectTypes": [],
+  "params": {
+   "windupMs": 1000.0,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": null,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "E"
+  },
+  "fieldSources": {
+   "windupMs": {
+    "raw": "1 seconds",
+    "confirmed": "v8.11"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key E",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Double_Tap",
+  "verified": true,
+  "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
+ },
+ {
+  "abilityId": "iso:Grenade",
+  "agentName": "Iso",
+  "slot": "Grenade",
+  "name": "Contingency",
+  "effectTypes": [
+   "wall"
+  ],
+  "params": {
+   "windupMs": null,
+   "deployTimeMs": null,
+   "rangeMeters": null,
+   "radiusMeters": null,
+   "durationMs": 5400.0,
+   "cooldownMs": null,
+   "killRecharge": null,
+   "revealDurationMs": null,
+   "damage": null,
+   "destructible": null,
+   "destructibleHp": null,
+   "blocksVision": null,
+   "affectsAllies": null,
+   "makesSound": true,
+   "defaultKeybind": "C"
+  },
+  "fieldSources": {
+   "durationMs": {
+    "raw": "5.4 seconds total 4.6 seconds at full size",
+    "confirmed": "Game files"
+   },
+   "defaultKeybind": {
+    "raw": "Default Key C",
+    "confirmed": "infobox"
+   }
+  },
+  "sourcePage": "https://wiki.playvalorant.com/en-us/Contingency",
   "verified": true,
   "notes": "Params from official wiki ability page (Stat/Value table + infobox), patch-versioned; build release-13.10. effectTypes from wiki Functions. makesSound=true (cast audio; PV-4 abilityCast). blocksVision for smoke is definitional."
  }

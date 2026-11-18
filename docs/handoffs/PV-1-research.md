@@ -262,4 +262,51 @@ Ability Engine용 스킬 효과 명세(cooldown/duration/radius 등)를 공식 �
 - `pytest tools/catalog-builder -q` → `python tools/catalog-builder/build_catalog.py`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 5차: Ascent 조합 통계 + 효과 확장 + GRID)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research`
+
+## 1. 작업 목표
+(1) VCT Reference 원본 DuckDB에서 실제 Ascent 조합 통계, (2) 효과 명세 전 30요원 확장, (3) GRID Open Access 접근 조사.
+
+## 2. 완료한 작업 (실제 수행·검증)
+- **Ascent 조합 통계:** VCT Reference DuckDB(13MB, SHA 일치) 다운로드(미커밋) → `build_ascent_comps.py`로 국제전 Ascent 집계. 306 team-maps, Wilson 95% CI. 픽률(Sova 81%/Omen 72%/Jett 70%/KAY/O 55%/Killjoy 50%...), 최빈 조합(jett·kayo·killjoy·omen·sova 85maps 57.6%WR), 역할 템플릿(1C/1D/2I/1S 52.6%), 공수(atk 47.2%/def 52.8%). → `datasets/derived/comps/ascent-comps.json`(+스키마).
+- **효과 명세 확장:** 나머지 20요원 80스킬을 공식 위키에서 소싱(픽률 순, Fade·Chamber 우선) → **전 30요원 120스킬, 119 소싱**(Astra Nebula만 404). defaultKeybind는 검증된 slot↔key 맵(Q/E/C/X)으로 120 전부 일관.
+- **GRID 조사:** Riot Open Access(2026-11-12 출시) 공식 문서 정리 → `docs/research/GRID_ACCESS.md` + 레지스트리 갱신. **핵심:** 무료·비상업·지연, VALORANT는 경제/스킬/스파이크/로드아웃/클러치 제공하나 **per-tick 위치는 공개 설명에 없음**(Layer B는 `.vrf` 우선). 신청은 안 함(사용자 판단).
+- **우선순위 재검증:** 4차 10요원 중 6요원이 실측 상위 8위, Fade·Chamber 추가 필요 확인 → 확장에 반영.
+- **테스트:** `pytest -q` **15 passed**(comps·effects·keybind 검증 포함). 빌더 전 레코드 스키마 통과.
+
+## 3. 변경한 파일
+- `datasets/derived/comps/`(신규 소유): ascent-comps.json/.schema.json/README.md
+- `tools/catalog-builder/`: build_ascent_comps.py(신규), data/ability_effects.json(10→120), tests
+- `docs/research/GRID_ACCESS.md`(신규), `docs/research/CATALOG.md`(§3.7·3.10·§1·§5), 레지스트리(grid), handoff
+- **미커밋:** `/tmp/pv-vct/vct.duckdb`(원시 DB, 매일 재빌드+용량), 대량 catalog 생성물
+
+## 4. 데이터 출처
+VCT Reference DuckDB(vct-reference.com/dataset/vct.duckdb, free incl. commercial), 공식 위키 스킬 페이지, grid.gg Open Access/데이터 페이지.
+
+## 5~7. 실행/검증/결과
+`curl …/vct.duckdb` → `python tools/catalog-builder/build_ascent_comps.py --db /tmp/vct.duckdb` → `pytest -q`(15 passed). 효과 119/120, 조합 schema OK.
+
+## 8. 현재 미완료
+- Astra Nebula 효과(서브페이지), 일부 스킬 damage/affectsAllies. GRID 무료 티어 좌표 제공 여부 실측(사용자 키 필요).
+
+## 9. 알려진 문제
+- Ascent 통계는 패치 2.09–13.05 혼합(단일 빌드 아님) — CI·caveat 기록. 효과 keybind 2건 regex 오탐 → 검증된 slot맵으로 교정.
+
+## 10. 설계 결정
+- 원시 DuckDB 미커밋(PV-2 정책 일치), 소형 집계·출처만 커밋. 효과 keybind는 per-page regex보다 검증된 slot↔key 맵 우선.
+
+## 11. 라이선스
+VCT Reference: free incl. commercial, 출처표기 권장(집계 derivative 커밋). GRID: Open Access 무료·비상업. 위키: Riot 소유 사실, 소싱만 커밋.
+
+## 12. 다음 권장 작업
+1. PV-2: GRID 무료 키로 좌표 제공 여부 실측. 2. 효과 Astra Nebula·damage 보강. 3. PV-3: comps를 팀 AI prior로, 효과를 Ability Engine으로 연결.
+
+## 13. 작업 재개 지점
+- `datasets/derived/comps/ascent-comps.json`, `docs/research/GRID_ACCESS.md`, `tools/catalog-builder/data/ability_effects.json`.
+- `pytest tools/catalog-builder -q`.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**

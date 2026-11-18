@@ -130,9 +130,13 @@ def test_equipment_validate_and_sourced():
 def test_ability_effects_validate_and_sourced():
     import effects as effects_mod
     recs = effects_mod.load_effects()
-    assert len(recs) >= 30
+    assert len(recs) == 120  # all 30 agents x 4 non-passive abilities
     ok, errs = validate_mod.validate_records(recs, SCHEMA_DIR, "ability-effect.schema.json")
     assert ok, errs
+    # keybinds are consistent with the verified slot->key map
+    KEY = {"Ability1": "Q", "Ability2": "E", "Grenade": "C", "Ultimate": "X"}
+    for r in recs:
+        assert r["params"]["defaultKeybind"] == KEY[r["slot"]], r["abilityId"]
     by_id = {r["abilityId"]: r for r in recs}
     # spot-check officially-sourced values
     dark = by_id["omen:Ability2"]  # Dark Cover (smoke)
