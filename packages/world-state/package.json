@@ -1,0 +1,19 @@
+{
+  "name": "@pv/world-state",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "World State construction, immutable updates, serialization, and the World->Observation boundary for PROJECT V.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@pv/shared-types": "workspace:*",
+    "@pv/simulation-core": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

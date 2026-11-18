@@ -1,0 +1,305 @@
+{
+  "contextId": "scenario-06-post-plant",
+  "scenarioRef": "scenario-06",
+  "worldState": {
+    "matchId": "synthetic-ascent-s06",
+    "roundId": "synthetic-ascent-s06:1",
+    "roundNum": 1,
+    "mapName": "Ascent",
+    "patch": "synthetic-approx",
+    "tick": 0,
+    "timeRemainingMs": 24000,
+    "roundPhase": "post_plant",
+    "attackingTeamIdx": 0,
+    "players": [
+      {
+        "playerId": "atk1",
+        "teamIdx": 0,
+        "agentId": "jett",
+        "position": {
+          "x": 720,
+          "y": 330
+        },
+        "facingDeg": 180.0,
+        "health": 80,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "atk1",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "light",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 7
+        }
+      },
+      {
+        "playerId": "atk2",
+        "teamIdx": 0,
+        "agentId": "sova",
+        "position": {
+          "x": 760,
+          "y": 450
+        },
+        "facingDeg": 180.0,
+        "health": 80,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "atk2",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "light",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 8
+        }
+      },
+      {
+        "playerId": "atk3",
+        "teamIdx": 0,
+        "agentId": "omen",
+        "position": {
+          "x": 825,
+          "y": 300
+        },
+        "facingDeg": 180.0,
+        "health": 80,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "atk3",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "light",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 7
+        }
+      },
+      {
+        "playerId": "atk4",
+        "teamIdx": 0,
+        "agentId": "kayo",
+        "position": {
+          "x": 720,
+          "y": 615
+        },
+        "facingDeg": 180.0,
+        "health": 80,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "atk4",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "light",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 8
+        }
+      },
+      {
+        "playerId": "atk5",
+        "teamIdx": 0,
+        "agentId": "killjoy",
+        "position": {
+          "x": 780,
+          "y": 360
+        },
+        "facingDeg": 180.0,
+        "health": 0,
+        "armor": 50,
+        "alive": false,
+        "loadout": {
+          "playerId": "atk5",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "light",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 8
+        }
+      },
+      {
+        "playerId": "def1",
+        "teamIdx": 1,
+        "agentId": "chamber",
+        "position": {
+          "x": 780,
+          "y": 360
+        },
+        "facingDeg": 180.0,
+        "health": 0,
+        "armor": 50,
+        "alive": false,
+        "loadout": {
+          "playerId": "def1",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "heavy",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 8
+        }
+      },
+      {
+        "playerId": "def2",
+        "teamIdx": 1,
+        "agentId": "cypher",
+        "position": {
+          "x": 280,
+          "y": 615
+        },
+        "facingDeg": 180.0,
+        "health": 100,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "def2",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "heavy",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 7
+        }
+      },
+      {
+        "playerId": "def3",
+        "teamIdx": 1,
+        "agentId": "viper",
+        "position": {
+          "x": 500,
+          "y": 505
+        },
+        "facingDeg": 180.0,
+        "health": 100,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "def3",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "heavy",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 8
+        }
+      },
+      {
+        "playerId": "def4",
+        "teamIdx": 1,
+        "agentId": "neon",
+        "position": {
+          "x": 825,
+          "y": 300
+        },
+        "facingDeg": 180.0,
+        "health": 0,
+        "armor": 50,
+        "alive": false,
+        "loadout": {
+          "playerId": "def4",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "heavy",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 7
+        }
+      },
+      {
+        "playerId": "def5",
+        "teamIdx": 1,
+        "agentId": "fade",
+        "position": {
+          "x": 500,
+          "y": 120
+        },
+        "facingDeg": 180.0,
+        "health": 100,
+        "armor": 50,
+        "alive": true,
+        "loadout": {
+          "playerId": "def5",
+          "credits": 0,
+          "weaponId": "vandal",
+          "armor": "heavy",
+          "abilityCharges": {},
+          "ultimatePoints": 6,
+          "ultimateCost": 7
+        }
+      }
+    ],
+    "spike": {
+      "status": "planted",
+      "carrierPlayerId": null,
+      "site": "A",
+      "pos": {
+        "x": 780,
+        "y": 360
+      },
+      "timeUntilDetonationMs": 24000
+    },
+    "teamEconomy": [
+      {
+        "teamIdx": 0,
+        "bank": 1000,
+        "loadoutValue": 14000,
+        "lossBonusTier": null,
+        "buyType": null
+      },
+      {
+        "teamIdx": 1,
+        "bank": 1500,
+        "loadoutValue": 14000,
+        "lossBonusTier": null,
+        "buyType": null
+      }
+    ],
+    "matchScore": [
+      0,
+      0
+    ]
+  },
+  "decidingTeamIdx": 0,
+  "belief": {
+    "visibleEnemies": [],
+    "knownEnemyAliveCount": 3,
+    "heardSounds": [
+      {
+        "kind": "footsteps",
+        "pos": {
+          "x": 280,
+          "y": 615
+        },
+        "atMsAgo": 1000
+      }
+    ],
+    "tacticalHypotheses": [
+      {
+        "hypothesis": "retake grouping through B main/CT",
+        "confidence": 0.5
+      }
+    ]
+  },
+  "provenance": {
+    "sourceId": "pv-synthetic-ascent",
+    "sourceUrl": null,
+    "sourceVersion": "0.1.0",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-18T08:55:15+00:00",
+    "evidenceType": "simulated",
+    "confidence": null,
+    "verified": false,
+    "verificationLevel": 0,
+    "synthetic": true,
+    "sha256": null,
+    "notes": [
+      "SYNTHETIC — not a real VCT match; do not present as real pro data.",
+      "3v3 post-plant A default; defender hold angles depend on the exact plant position."
+    ]
+  }
+}

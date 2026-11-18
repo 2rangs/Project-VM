@@ -1,0 +1,4 @@
+packages:
+  - "packages/*"
+  # apps/* and tools/* are reserved for later agents (Electron app: PV-?, tools: Data agent).
+  # They are intentionally NOT listed yet so this core scaffold stays minimal (Handoff §29).
