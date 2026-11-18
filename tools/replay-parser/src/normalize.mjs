@@ -5,10 +5,10 @@
 // coordinates, and provenance on every record (README §08.3, §08.4; Handoff
 // §22.3, §24.2; PV-2 datasets/schema provenance.schema.json).
 //
-// COORDINATE FRAME — important boundary with the Spatial agent (PV-3):
+// COORDINATE FRAME — important boundary with the Spatial agent (PV-4):
 //   .vrf positions are game-world Unreal units (uu ≈ cm), Z-up. We emit them as
 //   `worldPos {x,y,z}` verbatim. We DELIBERATELY DO NOT fabricate minimap
-//   (0..1000) x/y: the authoritative world→minimap transform is owned by PV-3
+//   (0..1000) x/y: the authoritative world→minimap transform is owned by PV-4
 //   (datasets/spatial/). Downstream code that needs the PV-2 Position shape
 //   (minimapUnits x/y) must apply that transform; here, worldPos is the truth.
 //
@@ -147,7 +147,7 @@ export function normalize(raw, opts = {}) {
         ? ['SYNTHETIC FIXTURE — fabricated to exercise the pipeline; NOT a real pro match. Must live under test/fixtures or datasets/synthetic/.']
         : []),
       'Positions decoded from a .vrf via ValorantReplayParser (channel-hooks) + PV-6 extract/normalize.',
-      'worldPos is game-world Unreal units (uu ≈ cm), Z-up; minimap projection is PV-3 (spatial) territory.',
+      'worldPos is game-world Unreal units (uu ≈ cm), Z-up; minimap projection is PV-4 (spatial) territory.',
       'alive/health/armor/weapon/KDA/kill-attribution are NOT in .vrf (anonymous mode); treat as absent, not false.',
       'facingDeg is the decoded per-move Yaw in degrees.',
       'sourceTimestamp is a 128Hz round-reset tick; matchTimeMs/roundTimeMs derive from the BombGameState wall clock.',

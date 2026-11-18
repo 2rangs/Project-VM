@@ -31,6 +31,10 @@ export const EXTRACT_VERSION = '1.0.0';
 
 const LINE_RE = /^Chindex=(\d+)\tType=([^\t]+)\tFields=(\[.*\])$/;
 const MAPURL_RE = /^MapUrl=(.+)$/;
+// Map identity leaks into the parser's verbose log as an actor class path, e.g.
+// "Not reading type /Game/Maps/Ascent/Ascent.Ascent_C". We capture it as a
+// decoded (if informal) map hint since the parser genuinely saw that actor.
+const MAPPATH_RE = /\/Game\/Maps\/([A-Za-z0-9_]+)\//;
 
 // Shape of the accumulator so extractRaw (streaming) and parseLines (array) share logic.
 function newAccumulator() {
@@ -42,6 +46,7 @@ function newAccumulator() {
     bombStates: [],         // {t (wall seconds), sampleIdx}
     guidsSeen: new Set(),
     mapUrl: '',
+    mapHints: {}, // mapFolder -> count of log lines mentioning /Game/Maps/<folder>/
     movementLines: 0,
     movementMoves: 0,
   };
@@ -53,6 +58,8 @@ export function consumeLine(acc, line) {
   if (!m) {
     const mu = line.match(MAPURL_RE);
     if (mu) acc.mapUrl = mu[1].trim();
+    const mp = line.match(MAPPATH_RE);
+    if (mp) acc.mapHints[mp[1]] = (acc.mapHints[mp[1]] || 0) + 1;
     return;
   }
   const ch = +m[1];
@@ -123,6 +130,7 @@ function finalize(acc) {
     meta: {
       extractVersion: EXTRACT_VERSION,
       mapUrl: acc.mapUrl,
+      mapHints: acc.mapHints,
       movementLines: acc.movementLines,
       movementMoves: acc.movementMoves,
       uniqueGuids: [...acc.guidsSeen],

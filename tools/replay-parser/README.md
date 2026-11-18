@@ -70,7 +70,7 @@ const data = normalize(raw, { mapName: 'Ascent', redactProfileNames: true });
 
 **Coordinate boundary:** positions are game-world units. The authoritative
 world→minimap (0..1000) transform that the PV-2 `position.schema.json` expects
-is owned by the Spatial agent (PV-3, `datasets/spatial/`); this pipeline does
+is owned by the Spatial agent (PV-4, `datasets/spatial/`); this pipeline does
 **not** fabricate minimap x/y.
 
 ## What `.vrf` does NOT contain

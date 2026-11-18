@@ -6,7 +6,7 @@
   "description": "PROJECT V PV-6 — Linux replay pipeline: decode-full.txt -> normalized Layer-B position/round data.",
   "engines": { "node": ">=20" },
   "scripts": {
-    "test": "node --test test/pipeline.test.mjs",
+    "test": "node --test test/pipeline.test.mjs test/analysis.test.mjs",
     "extract": "node src/extract.mjs",
     "fixture": "node test/fixtures/make-fixture.mjs"
   }
