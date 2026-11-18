@@ -19,6 +19,8 @@ import {
   deniedZoneIds,
 } from "@pv/ability-engine";
 import type {
+  PerceptionSnapshot,
+  PerceptionTrack,
   RoundEndReason,
   RoundResult,
   Side,
@@ -30,7 +32,7 @@ import type {
 } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
 import type { ActionCommand, BeliefState, DecisionPolicy } from "./policy-contract.js";
-import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter } from "./view.js";
+import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
 export interface RoundSimulatorDeps {
@@ -89,6 +91,8 @@ export class RoundSimulator {
     const decisionDtMs = this.cfg.decisionIntervalTicks * this.cfg.tickMs;
     const events: SimEvent[] = [];
     const tracks: TrackFrame[] = [];
+    const perceptionSnaps: Record<Side, PerceptionSnapshot[]> = { attack: [], defense: [] };
+    const perceptionInterval = this.cfg.perceptionIntervalTicks ?? this.cfg.decisionIntervalTicks;
     const commands = new Map<string, ActionCommand>();
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
@@ -113,6 +117,10 @@ export class RoundSimulator {
           const dt = prevBelief[side] ? decisionDtMs : 0;
           const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, { activeAbilities, abilityEngine });
           prevBelief[side] = view.belief;
+          // PV-6 fog-of-war / belief heatmap: sample per-team observation+belief (opt-in).
+          if (this.cfg.recordPerception && state.tick % perceptionInterval === 0) {
+            perceptionSnaps[side].push(toPerceptionSnapshot(view, spatialQuery, state.elapsedMs));
+          }
           const decision = this.policies[side].decide(view, rngOf[side]);
           for (const c of decision.commands) commands.set(c.playerId, c);
         }
@@ -220,6 +228,12 @@ export class RoundSimulator {
       },
       roster: Object.fromEntries(state.players.map((p) => [p.id, p.side])),
       tracks: this.cfg.recordTracks ? tracks : undefined,
+      perception: this.cfg.recordPerception
+        ? ([
+            { teamIdx: 0, side: "attack", intervalTicks: perceptionInterval, snapshots: perceptionSnaps.attack },
+            { teamIdx: 1, side: "defense", intervalTicks: perceptionInterval, snapshots: perceptionSnaps.defense },
+          ] satisfies PerceptionTrack[])
+        : undefined,
     };
   }
 

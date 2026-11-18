@@ -83,7 +83,14 @@ simulator to real VCT?" check and the way PV-3/PV-4 measure improvements against
 npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20            # writes reports/sim-batch.{json,md}
 #   options: --matches N  --seed-start S  --map NAME  --max-rounds R  --era all|patch>=9
 #            --out FILE (SimRun bundle)  --report PREFIX  --no-validate (bundle + summary only)
+#   --compare FILE : diff against a prior report JSON — report gains Base / Δ / Move (↑ better /
+#                    ↓ worse) columns and an "N improved, N worsened" summary. Use this after each
+#                    PV-3/PV-4 fix to judge it against the committed baseline:
+npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20 \
+  --compare docs/research/SIM_BASELINE_2026-11-18.json
 ```
+"improved" = the sim value moved **closer to the real VCT target** than the baseline was. A metric
+absent from the baseline is `＋ new`; reported-only metrics show Δ but no direction.
 It prints a summary (attack win rate, pistol win rate, round-end reason distribution) to stderr and
 writes the SimRun bundle + the `sim:validate` report. Deterministic per seed. A recorded baseline is
 in `docs/research/SIM_BASELINE_<date>.md`. **Root wiring** (root owner):

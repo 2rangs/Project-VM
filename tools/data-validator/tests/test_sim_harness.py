@@ -70,3 +70,52 @@ def test_economy_matchup_full_vs_full_is_judged():
     rep = sim_harness.evaluate_sim_run(sim_fixtures.good_run(), PRIORS, scope="ascent")
     cell = _by(rep, "economy_matchup", ownBuy="full", oppBuy="full")
     assert cell is not None and cell["passed"] is True  # 0.50 vs 0.50
+
+
+def test_attach_comparison_marks_toward_and_away_from_real():
+    # baseline sim=0.40, real=0.50; new sim=0.45 -> closer => improved. new sim=0.30 -> farther => worsened.
+    def rep(sim):
+        return {"metrics": [
+            {"metric": "side_winrate", "scope": "ascent", "dims": {"side": "attack"},
+             "simValue": sim, "realRate": 0.50, "passed": sim >= 0.46},
+            {"metric": "trade_rate", "scope": "sim_only", "dims": {},
+             "simValue": 0.2, "realRate": None, "passed": None},
+        ]}
+    base = rep(0.40)
+    better = sim_harness.attach_comparison(rep(0.45), base)
+    m = next(x for x in better["metrics"] if x["metric"] == "side_winrate")
+    assert m["baselineSimValue"] == 0.40 and abs(m["delta"] - 0.05) < 1e-9
+    assert m["movedToward"] == "improved"
+    assert better["comparison"]["improved"] == 1 and better["comparison"]["worsened"] == 0
+
+    worse = sim_harness.attach_comparison(rep(0.30), base)
+    assert next(x for x in worse["metrics"] if x["metric"] == "side_winrate")["movedToward"] == "worsened"
+    assert worse["comparison"]["worsened"] == 1
+    # reported-only metric (no realRate) gets a delta but movedToward = n/a
+    tr = next(x for x in worse["metrics"] if x["metric"] == "trade_rate")
+    assert tr["movedToward"] == "n/a" and tr["delta"] == 0.0
+
+
+def test_attach_comparison_tracks_pass_transitions_and_new_metrics():
+    base = {"metrics": [{"metric": "side_winrate", "scope": "ascent", "dims": {"side": "attack"},
+                         "simValue": 0.20, "realRate": 0.50, "passed": False}]}
+    new = {"metrics": [
+        {"metric": "side_winrate", "scope": "ascent", "dims": {"side": "attack"},
+         "simValue": 0.49, "realRate": 0.50, "passed": True},  # newly passes
+        {"metric": "opening_duel", "scope": "ascent", "dims": {"side": "attack"},
+         "simValue": 0.44, "realRate": 0.44, "passed": True},  # absent from baseline => new
+    ]}
+    out = sim_harness.attach_comparison(new, base)
+    assert out["comparison"]["newlyPassed"] == 1
+    assert next(x for x in out["metrics"] if x["metric"] == "opening_duel")["movedToward"] == "new"
+
+
+def test_evaluate_sim_run_compare_path_round_trips(tmp_path):
+    base = sim_harness.evaluate_sim_run(sim_fixtures.good_run(), PRIORS, scope="ascent")
+    bp = tmp_path / "baseline.json"
+    bp.write_text(__import__("json").dumps(base))
+    rep = sim_harness.evaluate_sim_run(sim_fixtures.bad_run(), PRIORS, scope="ascent", compare_path=str(bp))
+    assert "comparison" in rep
+    # bad run is worse than the good baseline on judged metrics
+    assert rep["comparison"]["worsened"] >= 1
+    assert "Compared to baseline" in sim_harness.report_markdown(rep)
