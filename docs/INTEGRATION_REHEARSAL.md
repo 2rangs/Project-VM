@@ -101,3 +101,47 @@ PV-2's `tools/data-validator/.../sim_harness.py` + `docs/VALIDATION_BASELINES.md
 outcomes to that harness is a post-integration step (needs the EventLog→harness feed and the
 F2 fix so the real policy, not the scripted stand-in, produces the numbers compared to the
 baselines).
+
+---
+
+# Round 2 — PV-3 TeamDecisionPolicy ↔ aligned round-simulator (phase 6)
+
+Second local dry-run (detached worktree `/tmp/pv-rehearsal2`, **never pushed**, discarded).
+Merged pv-core `4727805` + pv-spatial `f9f274f` + pv-data `5b390ac` + pv-replay `06b46d66`.
+Harness saved re-runnably at `tools/integration-rehearsal/`.
+
+## Headline: F2 is RESOLVED — the real PV-3 policy now drives the sim
+`round-simulator@f9f274f` builds a `PolicyView` per side and calls `policy.decide(view, rng)`
+(simulator.ts L92–93) — exactly PV-3's `DecisionPolicy` contract. PV-3's **`TeamDecisionPolicy`
+plugged in directly** and ran full, deterministic rounds (same seed → identical EventLog).
+PV-3's policy is self-sufficient on belief (it rebuilds from `view.observation`), so it works
+even while the sim still passes an empty `view.belief`.
+
+## Comparison (20 seeds, `makeSyntheticRound`, NO_ABILITIES)
+| Policy | Attack win | Round-end reasons |
+|---|---|---|
+| `ScriptedPolicy` (PV-4 baseline) | 5/20 (25%) | timeExpired 11, elimination 9 |
+| **`TeamDecisionPolicy` (PV-3)** | **7/20 (35%)** | elimination 11, timeExpired 9 |
+
+PV-3's policy is more proactive (more eliminations, fewer timeouts, +10pp attack win) — a
+plausible, directionally-sensible difference, not a correctness claim. Full acceptance vs
+PV-2 baselines is still pending scenario v2 + the harness feed (below).
+
+## New findings (round 2)
+- **R2-A (resolved, was F2):** contract granularity fixed — sim is team-level now.
+- **R2-B (owner: PV-4) — teammate subset still in effect:** `PolicyView.teammates` from
+  `buildPolicyView` is a perception PlayerState SUBSET (no credits/inventory/abilities/ult).
+  The harness `normalizeView()` backfills defaults so PV-3's policy runs; **PV-4 must populate
+  the contract's teammate fields** (decision #3) for real buy/ability decisions — remove the
+  backfill then.
+- **R2-C (info):** `ScriptedPolicy` constructor changed to `(spatial, opts)` at f9f274f —
+  harnesses must pass a SpatialQuery.
+- **R2-D (still pending):** `fromPv2Scenario` still drops positions, and PV-2 scenario v2
+  (game world units + zone ids) is **not yet pushed** (scenario_01 still minimapUnits
+  {x:500,y:905}). So positions do not yet flow; the scripted-vs-team comparison uses the
+  synthetic round. Re-run with v2 + `pv-validate-sim` for the acceptance metric.
+
+## Status
+- ✅ PV-3 policy ↔ sim integration proven (deterministic, terminates, EventLog produced).
+- ⏳ Blocked for the acceptance metric: PV-2 scenario v2 (world units) + wiring EventLog →
+  `pv-validate-sim`. Re-run (round-2 proper) when those land.
