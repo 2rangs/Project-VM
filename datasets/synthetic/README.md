@@ -23,16 +23,27 @@ the AI must not read enemy positions it cannot observe).
 | 02 | Observed info | one A defender seen; belief ≠ full truth |
 | 03 | Fake | defenders decide on observed A pressure while spike lurks B |
 | 04 | Time pressure | 8 s left at A → B rotation+plant is infeasible |
-| 05 | Plant | plant only inside the A plant zone (`worldState.plantZones`) |
+| 05 | Plant | plant only inside the A plant zone (`worldState.plantZones`, game-world uu) |
 | 06 | Post-plant | 3v3, hold angles depend on the plant position |
 | 07 | Operator save | 1v4, Operator preservation value |
 | 08 | Ult denial | enemy neon at 6/7 ult; avoid feeding the point |
 | 09 | Match point | a loss ends the map → no future-round save value |
 | 10 | Exit kill | chase the saver's Operator vs keep 3 rifles |
 
-## `ascent/` — one synthetic Ascent map
+## Coordinate frame — **v2, game-world uu**
+Scenarios are `formatVersion: 2`: every position is a `gameWorldPosition`
+(`{x, y, z, frame: "game-world-uu"}`) in game-world **Unreal units**, the same frame PV-4's navgraph
+and `datasets/spatial/` use, and each player/spike carries a navgraph `zoneId`. The legacy v1
+`minimapUnits` frame (VLR minimap, ≈ 0..1000) is **deprecated** — it caused a coordinate-mismatch bug
+in PV-3. The validator checks each `zoneId` against `ascent/ascent_zones_ref.json` (a committed
+snapshot of the PV-4 navgraph) and that its position is within 800 uu of the zone's representative
+point.
+
+## `ascent/` — one synthetic Ascent map + navgraph zone reference
 `map.json`, `rounds.json`, `events.json`: a short, **deterministic** (seeded) map that exercises the
 Round / Event / Position schemas, including per-event position snapshots in the `locs`-style shape.
+`ascent_zones_ref.json`: a snapshot of the PV-4 Ascent navgraph zones (id, type, plantable,
+game-world position) used by the validator's zone/coordinate check.
 
 ## Regenerate (deterministic)
 ```bash
@@ -41,7 +52,7 @@ PYTHONPATH=tools/data-collector/src python3 -m pv_data_collector.cli gen-map    
 ```
 
 ## Coordinate / economy caveats
-- Positions are **illustrative** minimapUnits (0..1000 Ascent frame), plausible but not surveyed;
-  the authoritative transform belongs to the Spatial agent (`datasets/spatial/`).
+- Positions are **illustrative** game-world uu set to each zone's representative point (v2), plausible
+  but not surveyed; the authoritative navgraph geometry belongs to the Spatial agent (`datasets/spatial/`).
 - Economy / ultimate constants are **approximate, patch-dependent placeholders** (`patch` is set to
   `synthetic-approx`). Verify against the real patch before using them in the engine.
