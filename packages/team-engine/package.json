@@ -1,0 +1,24 @@
+{
+  "name": "@pv/team-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Team Engine: IGL strategy + role assignment, player policy, and teamwork, implementing the DecisionPolicy the round-simulator drives (Handoff §17, README §23–24).",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@pv/shared-types": "workspace:*",
+    "@pv/world-state": "workspace:*",
+    "@pv/decision-engine": "workspace:*",
+    "@pv/action-generator": "workspace:*"
+  },
+  "devDependencies": {
+    "@pv/simulation-core": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

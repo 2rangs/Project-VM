@@ -73,6 +73,25 @@ importers:
         specifier: workspace:*
         version: link:../shared-types
 
+  packages/team-engine:
+    dependencies:
+      '@pv/action-generator':
+        specifier: workspace:*
+        version: link:../action-generator
+      '@pv/decision-engine':
+        specifier: workspace:*
+        version: link:../decision-engine
+      '@pv/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@pv/world-state':
+        specifier: workspace:*
+        version: link:../world-state
+    devDependencies:
+      '@pv/simulation-core':
+        specifier: workspace:*
+        version: link:../simulation-core
+
   packages/world-state:
     dependencies:
       '@pv/shared-types':
