@@ -49,8 +49,8 @@ EQUIPMENT: list[dict[str, Any]] = [
     },
     {
         "id": "spike", "name": "Spike", "type": "objective",
-        "plantTimeMs": 4000, "defuseTimeMs": 7000, "defuseHalfMs": 3500, "detonateTimeMs": None,
+        "plantTimeMs": 4000, "defuseTimeMs": 7000, "defuseHalfMs": 3500, "detonateTimeMs": 45000,
         "verified": True, "source": WIKI_SPIKE, "needsCrossCheckPV3": True,
-        "note": "Official wiki Spike (current): plant 4s, defuse 7s, half-defuse checkpoint 3.5s. Matches PV-3 spike.ts. detonateTimeMs left null (not captured this fetch; PV-3 uses 45000 ms).",
+        "note": "Official wiki Spike (current): plant 4s, defuse 7s, half-defuse checkpoint 3.5s, '45 second detonation' timer. All match PV-3 spike.ts.",
     },
 ]

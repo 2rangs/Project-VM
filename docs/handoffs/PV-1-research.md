@@ -213,4 +213,53 @@ weapons/agents/abilities 데이터는 Riot 파생 → 재배포 보수적(생성
 - 첫 명령: `pytest tools/catalog-builder -q` → `python tools/catalog-builder/build_catalog.py`.
 
 ---
+
+# PROJECT V — TASK HANDOFF (PV-1 4차: Ability Effect Spec + 소비자 정합)
+
+**기준일:** 2026-11-18 · **브랜치:** `claude/pv-research`
+
+## 1. 작업 목표
+Ability Engine용 스킬 효과 명세(cooldown/duration/radius 등)를 공식 위키에서 소싱하고, PV-4/PV-3 소비자와 정합. spike detonate·defaultKeybind 마무리.
+
+## 2. 완료한 작업 (실제 수행·검증)
+- **Ability Effect Spec:** Ascent 대표 10요원(Omen/Sova/KAY/O/Killjoy/Jett/Cypher/Astra/Gekko/Breach/Viper)의 40스킬. 각 스킬 **공식 위키 페이지**(Stat/Value 표 + 인포박스, 패치 버전 포함) fetch·파싱 → effectTypes·windup·range·radius·duration·cooldown·killRecharge·reveal·HP·blocksVision·makesSound·keybind. **39/40 소싱**(Astra Nebula 서브페이지 404 → null).
+- **defaultKeybind:** 인포박스에서 추출, slot↔key 100% 일관(Ability1→Q/Ability2→E/Grenade→C/Ultimate→X) 확인 → `ability_facts.json` 120/120 채움.
+- **spike detonate:** 공식 wiki Spike "45 second detonation" 확인 → equipment_facts 45000ms(verified).
+- **소비자 정합(읽기전용):** PV-4 perception-engine(vision smokedPairs=존쌍, hearing abilityCast, **world units=×100**)·PV-3 action-schema(missingAbility feasibility) 확인 → CATALOG.md §3.9 필드 매핑표 작성.
+- **PV-2 Ascent 데이터:** `origin/claude/pv-data`는 합성 데이터만 존재(실제 픽률 없음) → 공식 대표 요원으로 진행(기록함).
+- **테스트:** `pytest -q` **14 passed**. 빌더: ability-effects 40(39 소싱), 전 레코드 스키마 통과.
+
+## 3. 변경한 파일
+- `datasets/catalog/schema/ability-effect.schema.json`(신규)
+- `tools/catalog-builder/`: `effects.py`(신규), `data/ability_effects.json`(신규, 40), `data/ability_facts.json`(keybind 추가), `equipment_facts.py`(spike detonate), `build_catalog.py`(효과 emit+검증), `tests/test_normalize.py`
+- `docs/research/CATALOG.md`(§3.7~3.9, §1·§5), `docs/handoffs/PV-1-research.md`
+
+## 4. 데이터 출처
+공식 위키 스킬별 페이지(wiki.playvalorant.com/en-us/<Ability>) + Spike/Armor 페이지. 빌드 release-13.10.
+
+## 5~7. 실행/검증/결과
+`pytest tools/catalog-builder -q` → 14 passed. `build_catalog.py` → weapons21/agents30/abilities130/equipment4/ability-effects40 전부 스키마 통과; 효과 39/40·keybind 120/120 소싱.
+
+## 8. 현재 미완료
+- Effect Spec를 나머지 20요원으로 확장. Astra Nebula 효과 재소싱(서브페이지). 일부 스킬 damage/affectsAllies 등 미채움(공식 페이지에 명시 안 된 값은 null).
+
+## 9. 알려진 문제
+- PV-4는 연막을 **존-레벨 smokedPairs**로 처리 → 반경→존쌍 변환은 spatial zone 정의에서 수행(카탈로그는 반경·지속만 제공).
+- 단위 불일치 주의: 카탈로그 m ↔ PV-4/spatial world units(×100).
+
+## 10. 설계 결정
+- 효과 수치는 공식 스킬 페이지의 Stat/Value 표 + 인포박스에서만 추출, `fieldSources{raw,confirmed}`로 값별 출처 기록. 미확인 null(추정 금지).
+- effectTypes는 위키 Functions 기반. makesSound/blocksVision은 일반/정의상 사실로 note와 함께 표기.
+
+## 11. 라이선스
+공식 위키 값은 Riot 소유 사실. 소싱 테이블(출처 포함)만 커밋, 대량 생성물 미커밋(기존 결정 유지).
+
+## 12. 다음 권장 작업
+1. Effect Spec 20요원 확장(동일 파이프라인). 2. PV-4와 연막 반경→존쌍 변환 규칙 합의. 3. PV-3: 궁극 포인트 카탈로그로 교체.
+
+## 13. 작업 재개 지점
+- `docs/research/CATALOG.md` §3.7~3.9 → `tools/catalog-builder/data/ability_effects.json` / `effects.py`.
+- `pytest tools/catalog-builder -q` → `python tools/catalog-builder/build_catalog.py`.
+
+---
 **실행한 테스트만 보고함. 미실행 테스트를 통과로 기록하지 않음. 받지 못한/확인하지 못한 값을 사실로 기록하지 않음.**

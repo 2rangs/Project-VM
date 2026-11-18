@@ -10,9 +10,9 @@
 python tools/catalog-builder/build_catalog.py           # 라이브 수집·정규화·검증
 pytest tools/catalog-builder -q                         # 단위 테스트 + 스키마 검증
 ```
-**실행 결과(2026-11-18, 3차 반영):** pytest **10 passed**. 빌더 산출/검증:
-weapons **21** · agents **30** · abilities **130** · equipment **4** — 전부 JSON Schema 통과.
-ability 게임플레이 수치 소싱 **120/130**(비패시브 120 전부 공식 위키 소싱; 패시브 10은 null), equipment **4/4** 소싱.
+**실행 결과(2026-11-18, 4차 반영):** pytest **14 passed**. 빌더 산출/검증:
+weapons **21** · agents **30** · abilities **130** · equipment **4** · ability-effects **40** — 전부 JSON Schema 통과.
+ability 게임플레이 수치 소싱 **120/130**, equipment **4/4**, ability-effects **39/40** 소싱, defaultKeybind 120/120.
 
 ## 2. 규칙
 - 필드명 **camelCase**, 시간 **ms**, 거리 **m**.
@@ -107,6 +107,38 @@ valorant-api 요원(raw)과 **스킬 이름으로 조인**해 슬롯에 매핑. 
 
 → **권고:** PV-3는 `ultimate.ts`의 ULTIMATE_COSTS 표본을 카탈로그(`abilities.json`의 `ultPoints`, 30요원 완비)로 교체. PV-1은 PV-3 파일을 수정하지 않았다.
 
+## 3.7 Ability Effect Spec (4차, Ascent 메타 요원) — `ability-effects.json`
+Ability Engine/perception/action용 **스킬 효과 명세**. 스키마 `datasets/catalog/schema/ability-effect.schema.json`,
+소싱 데이터 `tools/catalog-builder/data/ability_effects.json`(커밋).
+
+- **대상:** VCT Reference의 Ascent 픽 데이터는 PV-2(`origin/claude/pv-data`)에 **합성 데이터만** 있고 실제 픽률은 없어, 공식 위키 기준 Ascent 대표 요원 **10명**으로 진행: Omen, Sova, KAY/O, Killjoy, Jett, Cypher, Astra, Gekko, Breach, Viper (40 스킬).
+- **출처:** 각 스킬의 **공식 위키 페이지**(`wiki.playvalorant.com`)의 `Stat/Value/Confirmed value?` 표 + 인포박스. 패치 버전 표기 포함. **40개 중 39개 소싱**(Astra Nebula는 서브페이지 404 → null+verified:false).
+- **필드:** effectTypes(smoke/flash/concuss/recon/molly/wall/slow/heal/trap/decoy/movement/suppress), windupMs·deployTimeMs·rangeMeters·radiusMeters·durationMs·cooldownMs·killRecharge·revealDurationMs·damage·destructible·destructibleHp·blocksVision·affectsAllies·makesSound·defaultKeybind. 값마다 `fieldSources{raw, confirmed}`.
+- **예(공식):** Dark Cover(Omen) smoke, radius 4.1m, duration 15000ms, range 80m, cooldown 40000ms, key E, blocksVision. Recon Bolt(Sova) recon, radius 30m, cooldown 50000ms, key E. Nanoswarm(Killjoy) molly, radius 5.25m, duration 5000ms, key C. Flashpoint(Breach) flash, duration 2250ms, range 35m, key Q.
+- **미확인 → null:** 공식 페이지에 없거나 fetch 실패 값. `makesSound=true`는 스킬 시전음 존재(PV-4 abilityCast) 일반 사실, `blocksVision=true`는 smoke 정의상 사실로 표기(note 기록). 추정 미기입.
+
+## 3.8 defaultKeybind 매핑 (4차 완료)
+공식 위키 인포박스의 "Default Key"를 10요원 39스킬에서 추출 → **slot↔key가 100% 일관**:
+**Ability1→Q, Ability2→E, Grenade→C, Ultimate→X**. (주의: valorant-api 슬롯 라벨은 키와 직결되지 않는 것처럼 보이지만 — 예: Sova Recon Bolt는 slot `Ability2`인데 key `E` — 위 매핑이 전 요원 일관.)
+→ 이 검증된 매핑으로 `ability_facts.json`의 **defaultKeybind를 30요원 120스킬 전부**에 채움(패시브 제외). 각 레코드 note에 근거 기록.
+
+## 3.9 소비자 정합 — 필드 매핑표 (PV-4 perception, PV-3 action)
+읽기 전용으로 소비자 인터페이스를 확인하고 정리(수정 안 함).
+
+**단위 주의:** 카탈로그는 **거리 m**, PV-4 perception-engine/spatial-engine은 **world units(100 units = 1 m)** → **×100 변환 필요**. 시간은 양쪽 ms.
+
+| 카탈로그 효과 필드 | 소비자 | 소비자 형식 | 매핑 |
+|---|---|---|---|
+| effectTypes `smoke`, `blocksVision`, radiusMeters, durationMs | PV-4 `vision.ts` `VisionContext.smokedPairs` | 존-쌍 시야 차단 | 연막 활성 구간(duration) 동안 반경 내 존-쌍을 smokedPairs로. 반경은 ×100(units) |
+| makesSound=true | PV-4 `hearing.ts` `SoundKind.abilityCast` | 소리원(loudness) | 스킬 시전 시 abilityCast 사운드 발생 |
+| effectTypes `recon`, revealDurationMs, radiusMeters | PV-4 vision/memory | 적 공개 | 리콘은 반경 내 적을 revealDuration 동안 관측으로 노출 |
+| cost/charges/cooldownMs/killRecharge (ability_facts) | PV-3 `action-schema.ts` `InfeasibilityReason:"missingAbility"` | 행동 가용성 | 충전/쿨다운으로 Use Ability 액션 feasibility 판정 |
+| effectTypes, rangeMeters, radiusMeters | PV-3 Action Generator `ParameterDefinition`(position/direction/timing) | 액션 파라미터 | 스킬 시전 좌표/범위 생성에 사용 |
+| destructible/destructibleHp | 교전/시뮬레이션 | 파괴 가능 설치물 | 트랩/드론/큐브 HP |
+| defaultKeybind | UI/디버거 | C/Q/E/X | 표시용 |
+
+PV-4 vision은 **존-레벨 smokedPairs**(기하 반경 아님)로 연막을 처리하므로, 연막 반경→존-쌍 변환은 spatial-engine zone 정의(PV-4/PV-spatial)에서 수행. 카탈로그는 반경·지속만 제공.
+
 ## 4. 소싱 출처 (게임플레이 수치 채울 때)
 - 공식 패치노트 색인: https://playvalorant.com/en-us/news/game-updates/
 - 스킬 규칙: https://wiki.playvalorant.com/en-us/Abilities
@@ -121,8 +153,11 @@ valorant-api 요원(raw)과 **스킬 이름으로 조인**해 슬롯에 매핑. 
 - [x] 실드·스파이크 공식 위키 소싱(4/4) — 3차 완료
 - [x] PV-3 `packages/game-rules` 대조(§3.6) — 3차 완료
 - [x] Riot content API UUID 교차검증(§3.5) — 3차 완료
-- [ ] 스킬 **cooldownMs / durationMs** 소싱(공식 집계표에 없음 → 요원별 페이지/패치노트)
-- [ ] defaultKeybind(C/Q/E/X) 매핑 확정(요원별 UI 순서)
-- [ ] spike detonateTimeMs 공식 확인(PV-3 45000ms 대조)
+- [x] 스킬 cooldown/duration/radius/range/windup 소싱(Ascent 10요원, 39/40) — 4차(§3.7)
+- [x] defaultKeybind 매핑 확정(Ability1→Q/Ability2→E/Grenade→C/Ultimate→X, 120/120) — 4차(§3.8)
+- [x] spike detonateTimeMs 공식 확인(45000ms, wiki Spike) — 4차
+- [x] 소비자(PV-4/PV-3) 필드 매핑표 — 4차(§3.9)
+- [ ] Ability Effect Spec를 나머지 20요원으로 확장(동일 공식 위키 페이지 소싱)
+- [ ] Astra Nebula(서브페이지 404) 효과 재소싱
 - [ ] (권고) PV-3가 ultimate.ts 궁극 포인트를 카탈로그로 교체(§3.6 불일치 4건)
 - [ ] 패치 갱신 시 `--patch`로 재빌드, 과거 패치 보존

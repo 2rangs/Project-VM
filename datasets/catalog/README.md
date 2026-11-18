@@ -11,12 +11,15 @@ datasets/catalog/
 │   ├── agent.schema.json
 │   ├── ability.schema.json
 │   ├── equipment.schema.json
+│   ├── ability-effect.schema.json
 │   └── provenance.schema.json
 ├── .gitignore                  # release-*/ (생성 데이터) 커밋 제외
 └── release-13.10/              # 생성 데이터 (커밋 안 함, 로컬 재생성)
     ├── raw/{version,weapons,agents}.json   # provenance용 원본 API 응답
     ├── weapons.json   agents.json
     ├── abilities.json equipment.json
+    ├── ability-effects.json
+    └── riot_uuid_crosscheck.json
 ```
 
 ## 왜 데이터는 커밋하지 않는가

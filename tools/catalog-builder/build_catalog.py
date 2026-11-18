@@ -25,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent  # tools/catalog-builder -> repo root
 sys.path.insert(0, str(HERE))
 
+import effects as effects_mod  # noqa: E402
 import fetch  # noqa: E402
 import normalize  # noqa: E402
 import riot_content  # noqa: E402
@@ -65,16 +66,19 @@ def build(patch: str, offline: bool) -> int:
         abilities.extend(normalize.normalize_abilities(
             a, patch=patch, retrieved_at=retrieved_at, facts=ABILITY_FACTS))
     equipment = [dict(e) for e in EQUIPMENT]
+    ability_effects = effects_mod.load_effects()
 
     _write(out_dir / "weapons.json", weapons)
     _write(out_dir / "agents.json", agents)
     _write(out_dir / "abilities.json", abilities)
     _write(out_dir / "equipment.json", equipment)
+    _write(out_dir / "ability-effects.json", ability_effects)
 
     # validate against schema
     ok_all = True
     for recs, schema in [(weapons, "weapon.schema.json"), (agents, "agent.schema.json"),
-                         (abilities, "ability.schema.json"), (equipment, "equipment.schema.json")]:
+                         (abilities, "ability.schema.json"), (equipment, "equipment.schema.json"),
+                         (ability_effects, "ability-effect.schema.json")]:
         ok, errs = validate_mod.validate_records(recs, SCHEMA_DIR, schema)
         ok_all = ok_all and ok
         status = "OK" if ok else f"FAIL ({len(errs)} errors)"
@@ -99,10 +103,12 @@ def build(patch: str, offline: bool) -> int:
     # coverage report
     ab_verified = sum(1 for a in abilities if a["gameplay"]["gameplayVerified"])
     eq_verified = sum(1 for e in equipment if e["verified"])
+    eff_sourced = sum(1 for e in ability_effects if e.get("verified"))
     print(f"\nSummary (patch {patch}):")
-    print(f"  weapons={len(weapons)} agents={len(agents)} abilities={len(abilities)} equipment={len(equipment)}")
+    print(f"  weapons={len(weapons)} agents={len(agents)} abilities={len(abilities)} equipment={len(equipment)} ability_effects={len(ability_effects)}")
     print(f"  ability gameplay verified: {ab_verified}/{len(abilities)} (rest null+unverified by design)")
     print(f"  equipment verified: {eq_verified}/{len(equipment)}")
+    print(f"  ability effects sourced: {eff_sourced}/{len(ability_effects)}")
     print(f"  output: {out_dir}  (gitignored)")
     return 0 if ok_all else 1
 

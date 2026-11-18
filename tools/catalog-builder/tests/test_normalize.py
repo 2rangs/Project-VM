@@ -127,6 +127,35 @@ def test_equipment_validate_and_sourced():
         assert e["needsCrossCheckPV3"] is True
 
 
+def test_ability_effects_validate_and_sourced():
+    import effects as effects_mod
+    recs = effects_mod.load_effects()
+    assert len(recs) >= 30
+    ok, errs = validate_mod.validate_records(recs, SCHEMA_DIR, "ability-effect.schema.json")
+    assert ok, errs
+    by_id = {r["abilityId"]: r for r in recs}
+    # spot-check officially-sourced values
+    dark = by_id["omen:Ability2"]  # Dark Cover (smoke)
+    assert "smoke" in dark["effectTypes"]
+    assert dark["params"]["blocksVision"] is True
+    assert dark["params"]["radiusMeters"] == 4.1 and dark["params"]["durationMs"] == 15000.0
+    assert dark["params"]["defaultKeybind"] == "E"
+    assert dark["sourcePage"].startswith("https://")
+    # sourced records carry field provenance
+    for r in recs:
+        if r["verified"]:
+            assert r["sourcePage"] and r["fieldSources"]
+
+
+def test_ability_facts_have_keybinds():
+    from ability_facts import ABILITY_FACTS
+    KEY = {"Ability1": "Q", "Ability2": "E", "Grenade": "C", "Ultimate": "X"}
+    for k, v in ABILITY_FACTS.items():
+        slot = k.rsplit(":", 1)[1]
+        if slot in KEY:
+            assert v.get("defaultKeybind") == KEY[slot], k
+
+
 def test_riot_crosscheck_uuids_pure():
     import riot_content
     content = {"version": "release-13.10",
