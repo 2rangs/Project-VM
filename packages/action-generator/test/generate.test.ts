@@ -84,9 +84,13 @@ describe("Action Generator (TASK 007)", () => {
     const spatial = new AscentSpatialStub();
     const belief = buildTeamBelief(team.observation, spatial, { knownEnemyAliveCount: team.knownEnemyAliveCount });
     const economy = {
-      saveValue: () => 0.95,
-      exitKillValue: () => 0.1,
-      hasFutureRounds: () => true,
+      saveOptions: () => [
+        { action: "SAVE_WEAPON", currentRoundValue: -0.2, futureValue: 0.9, economicDelta: 2000, ultDelta: 1, explanation: "preserve Operator for next round" },
+        { action: "PLAY_FOR_ROUND", currentRoundValue: 0.1, futureValue: -0.3, economicDelta: -500, ultDelta: 0, explanation: "low win chance" },
+      ],
+      exitKillOptions: () => [
+        { action: "EXIT_KILL", currentRoundValue: 0.1, futureValue: 0.2, economicDelta: 1500, ultDelta: 0, explanation: "destroy fleeing Operator" },
+      ],
     };
     const r = generateActions({ team, spatial, enemyPressure: (z) => enemyPressureOnZone(belief, z), economy });
     const save = r.feasible.find((a) => a.id === "SAVE")!;

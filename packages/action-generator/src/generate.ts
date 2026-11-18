@@ -24,7 +24,10 @@ import type {
   TeamDecisionContext,
   ZoneId,
 } from "@pv/shared-types";
-import type { EconomyContext } from "@pv/shared-types";
+import { economyOptionValue, pickEconomyOption, type EconomyContext } from "@pv/shared-types";
+
+/** Map an economy option's combined round value ([-2,2]) to a base utility (~0..1.1). */
+const economyBase = (combined: number): number => Math.max(0, Math.min(1.1, 0.5 + 0.25 * combined));
 import {
   type ActionEvaluation,
   type EnemyPressureFn,
@@ -241,7 +244,11 @@ export function generateActions(input: GeneratorInput): GenerationResult {
       add({
         candidate: mkCandidate(`EXIT_KILL_${e.playerId}`, "strategic.exitKill", "strategic", [chaser],
           { targetEnemy: e.playerId, targetZone: ez }, (t ?? 0) + 1000, 0, feas),
-        baseValue: economy ? economy.exitKillValue(econCtx) : BASE.exitKill, riskZone: ez, strategic: true,
+        baseValue: (() => {
+          const opt = economy ? pickEconomyOption(economy.exitKillOptions(econCtx), /exit/i) : null;
+          return opt ? economyBase(economyOptionValue(opt)) : BASE.exitKill;
+        })(),
+        riskZone: ez, strategic: true,
         explanation: t === null ? "cannot reach the saver" : "",
         extraRationale: [economy ? "exit-kill value from economy-engine (PV-2)" : "exit-kill value vs. keeping rifles delegated to economy-engine (PV-2) — provisional"],
       });
@@ -307,9 +314,10 @@ export function generateActions(input: GeneratorInput): GenerationResult {
   {
     const disadvantaged = aliveEnemy > aliveSelf;
     const saveBonus = disadvantaged ? WEIGHTS.disadvantageRisk * (aliveEnemy - aliveSelf) : 0;
-    const baseValue = economy ? economy.saveValue(econCtx) : BASE.save + saveBonus;
-    const rationale = economy
-      ? ["save value from economy-engine (PV-2)", ...(economy.hasFutureRounds(econCtx) ? [] : ["no future round — match point"])]
+    const saveOpt = economy ? pickEconomyOption(economy.saveOptions(econCtx), /save/i) : null;
+    const baseValue = saveOpt ? economyBase(economyOptionValue(saveOpt)) : BASE.save + saveBonus;
+    const rationale = saveOpt
+      ? [`save value from economy-engine (PV-2): ${saveOpt.explanation}`, `ultDelta ${saveOpt.ultDelta}`]
       : ["save value (equipment/next-round/ult denial) delegated to economy-engine (PV-2) — provisional heuristic"];
     add({
       candidate: mkCandidate("SAVE", "strategic.save", "strategic", alive, { reason: "preserve equipment" }, 2000, 0, feasible),
@@ -442,8 +450,11 @@ export function generateActions(input: GeneratorInput): GenerationResult {
       });
       continue;
     }
-    const risk = r.riskZone ? estimateRisk(r.riskZone, spatial, pressure, aliveSelf, aliveEnemy)
-      : Math.max(0, Math.min(1, aliveEnemy > aliveSelf ? WEIGHTS.disadvantageRisk * (aliveEnemy - aliveSelf) : 0.05));
+    // Zone-targeted actions carry positional risk; retreat/save actions (no target zone)
+    // are deliberately low-risk — the point of saving is to avoid the engagement.
+    const risk = r.riskZone
+      ? estimateRisk(r.riskZone, spatial, pressure, aliveSelf, aliveEnemy)
+      : 0.1;
     const requiredTimeMs = r.candidate.estimatedDurationMs;
     const util = expectedUtility(r.baseValue, risk, requiredTimeMs, timeRemaining);
     const rationale: string[] = [
