@@ -10,7 +10,14 @@ import {
   type Combatant,
   type WeaponSpec,
 } from "@pv/combat-engine";
-import { AbilityEngine, type AbilityCatalog, checkAvailability } from "@pv/ability-engine";
+import {
+  AbilityEngine,
+  type AbilityCatalog,
+  checkAvailability,
+  toPerceptionAbilityStates,
+  visionBlockerIsSmoke,
+  deniedZoneIds,
+} from "@pv/ability-engine";
 import type {
   RoundEndReason,
   RoundResult,
@@ -22,8 +29,8 @@ import type {
   TrackFrame,
 } from "./types.js";
 import { DEFAULT_CONFIG } from "./types.js";
-import type { ActionCommand, DecisionPolicy } from "./policy-contract.js";
-import { buildPolicyView, SeededRandomSource } from "./view.js";
+import type { ActionCommand, BeliefState, DecisionPolicy } from "./policy-contract.js";
+import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
 export interface RoundSimulatorDeps {
@@ -72,8 +79,14 @@ export class RoundSimulator {
 
   runRound(initial: SimState): RoundResult {
     const state = initial;
-    const perception = new PerceptionEngine(this.spatial);
+    // perception is smoke/wall aware so deployed abilities actually block line of sight
+    const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke });
     const abilityEngine = new AbilityEngine(this.spatial);
+    const spatialQuery = new SpatialQueryAdapter(this.spatial);
+    // Previous-tick belief per side, threaded into buildBelief so unseen enemies age
+    // across decisions (real @pv/decision-engine diffusion, not a per-tick reset).
+    const prevBelief: Record<Side, BeliefState | null> = { attack: null, defense: null };
+    const decisionDtMs = this.cfg.decisionIntervalTicks * this.cfg.tickMs;
     const events: SimEvent[] = [];
     const tracks: TrackFrame[] = [];
     const commands = new Map<string, ActionCommand>();
@@ -95,18 +108,22 @@ export class RoundSimulator {
 
       // 1. decisions (every N ticks): one TEAM decision per side (PV-3 contract).
       if (state.tick % this.cfg.decisionIntervalTicks === 0) {
+        const activeAbilities = toPerceptionAbilityStates(abilityEngine);
         for (const side of ["attack", "defense"] as const) {
-          const view = buildPolicyView(side, state, perception);
+          const dt = prevBelief[side] ? decisionDtMs : 0;
+          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, { activeAbilities, abilityEngine });
+          prevBelief[side] = view.belief;
           const decision = this.policies[side].decide(view, rngOf[side]);
           for (const c of decision.commands) commands.set(c.playerId, c);
         }
       }
 
-      // 2. movement
+      // 2. movement (paths route around active molly / area-denial zones)
+      const denied = deniedZoneIds(abilityEngine);
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
-        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run");
+        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", denied);
         this.stepMovement(p, dt);
       }
 
@@ -122,11 +139,14 @@ export class RoundSimulator {
         if (!avail.usable) continue;
         const spec = this.abilitiesCatalog[abilityId];
         if (!spec) continue;
+        // flash/concuss: resolve which enemies are blinded (in range + line of sight).
+        const isFlash = spec.effectTypes.includes("flash") || spec.effectTypes.includes("concuss");
+        const affectedPlayerIds = isFlash ? this.flashTargets(state, p, spec.radiusUnits ?? 1500) : undefined;
         abilityEngine.use(spec, {
           instanceId: `${p.id}:${abilityId}:${state.tick}`,
           abilityId, ownerId: p.id, teamId: p.teamId,
           origin: p.position, startedAtMs: state.elapsedMs,
-        });
+        }, { affectedPlayerIds });
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
         push({ kind: "abilityUsed", tick: state.tick, elapsedMs: state.elapsedMs, actor: p.id, detail: abilityId });
@@ -134,10 +154,34 @@ export class RoundSimulator {
       abilityEngine.advance(state.elapsedMs);
 
       // 4. perception snapshot for engagement
-      const sight = perception.perceive(this.toPerceptionWorld(state));
+      const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
       this.resolveEngagements(state, sight, abilityEngine, engaged, events);
+
+      // 5b. molly / area-denial damage to anyone standing in a denied zone
+      for (const z of denied) {
+        for (const p of state.players) {
+          if (p.alive && p.zoneId === z) {
+            p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
+            if (p.health <= 0) {
+              p.alive = false;
+              push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: undefined, target: p.id, zoneId: z, detail: "molly" });
+            }
+          }
+        }
+      }
+
+      // 5c. spike pickup: an attacker standing on a dropped spike picks it up
+      if (state.spike.phase === "carried" && !state.spike.carrierId && state.spike.zoneId) {
+        const picker = state.players.find((p) => p.alive && p.side === "attack" && p.zoneId === state.spike.zoneId);
+        if (picker) {
+          state.spike.carrierId = picker.id;
+          state.spike.position = null;
+          state.spike.zoneId = null;
+          push({ kind: "spikePickup", tick: state.tick, elapsedMs: state.elapsedMs, actor: picker.id, zoneId: picker.zoneId });
+        }
+      }
 
       // 6. spike progression
       this.stepSpike(state, commands, dt, events);
@@ -181,15 +225,30 @@ export class RoundSimulator {
 
   // ---- helpers ----
 
-  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk"): void {
+  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", blockedZones: readonly string[] = []): void {
     p.moveMode = mode;
-    if (p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length) return;
-    const r = this.spatial.findPath(p.zoneId, targetZone, mode);
+    // keep the cached path unless the goal changed or it now runs through a denied zone
+    const sameGoal = p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length;
+    const crossesDenied = blockedZones.length > 0 && p.path.slice(p.pathIndex).some((z) => blockedZones.includes(z));
+    if (sameGoal && !crossesDenied) return;
+    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { blockedZones });
     if (r) {
       p.path = r.path;
       p.pathIndex = p.path[0] === p.zoneId ? 1 : 0;
       p.edgeProgressMs = 0;
     }
+  }
+
+  /** Enemies of `caster` that a flash/concuss at `caster` blinds: alive, in range, with LoS. */
+  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number): string[] {
+    const flashZone = caster.zoneId;
+    const out: string[] = [];
+    for (const e of state.players) {
+      if (!e.alive || e.teamId === caster.teamId) continue;
+      if (dist3(caster.position, e.position) > radiusUnits) continue;
+      if (e.zoneId === flashZone || this.spatial.hasLineOfSight(flashZone, e.zoneId)) out.push(e.id);
+    }
+    return out;
   }
 
   /**
@@ -350,18 +409,20 @@ export class RoundSimulator {
     return null;
   }
 
-  private toPerceptionWorld(state: SimState): PWorldState {
+  private toPerceptionWorld(state: SimState, abilityEngine?: AbilityEngine): PWorldState {
     const players: PPlayerState[] = state.players.map((p) => ({
       id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
       position: p.position, velocity: { x: 0, y: 0, z: 0 }, facing: p.facing,
       health: p.health, armor: p.armor, alive: p.alive, weapon: null,
       behaviorState: this.isMoving(p) ? (p.moveMode === "run" ? "running" : "walking") : "still",
     }));
+    // deployed smokes/walls block LoS; cast this via the smoke-aware oracle (runRound config).
+    const activeAbilities = abilityEngine ? toPerceptionAbilityStates(abilityEngine) : [];
     return {
       matchId: state.matchId, roundId: state.roundId, roundNumber: 1, tick: state.tick,
       timeRemainingMs: state.timeRemainingMs, mapId: state.mapId, patchVersion: "synthetic",
       players, spike: { phase: "carried", position: null, holderId: null, detonationInMs: null },
-      activeAbilities: [], events: [],
+      activeAbilities, events: [],
     };
   }
 }

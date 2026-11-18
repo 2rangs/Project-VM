@@ -1,4 +1,4 @@
-# @project-v/combat-engine
+# @pv/combat-engine
 
 PROJECT V combat resolution (v0). Resolves a duel as a **deterministic timeline of shots**
 from physical and informational inputs — weapon stats, distance, cover/flash, who saw first
@@ -42,7 +42,7 @@ Per PV-1 `docs/LICENSE_AUDIT.md`, valorant-api-derived catalog **values are not 
 ## Usage
 
 ```ts
-import { resolveDuel, monteCarloDuel, buildCatalog } from "@project-v/combat-engine";
+import { resolveDuel, monteCarloDuel, buildCatalog } from "@pv/combat-engine";
 
 const result = resolveDuel({ a, b, distanceMeters: 20 }, /*seed*/ 42);
 // result.events: shot/hit/damage/kill log; result.winner / timeToKillMs / outcomes

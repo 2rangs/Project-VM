@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PerceptionEngine } from "@pv/perception-engine";
 import { AVERAGE_SKILLS } from "@pv/combat-engine";
 import {
-  RoundSimulator, buildPolicyView, makeSyntheticRound,
+  RoundSimulator, buildPolicyView, makeSyntheticRound, SpatialQueryAdapter,
   type ActionCommand, type DecisionPolicy, type PolicyDecision, type PolicyView, type SimPlayer, type SimState,
 } from "../src/index.js";
 import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
@@ -31,13 +31,15 @@ describe("PV-3 contract supplement", () => {
       players: [atk, def],
       spike: { phase: "carried", carrierId: "atk", zoneId: null, position: null, plantProgressMs: 0, defuseProgressMs: 0, defuserId: null, detonateAtElapsedMs: null },
     };
-    const view = buildPolicyView("attack", state, new PerceptionEngine(spatial));
+    const view = buildPolicyView("attack", state, new PerceptionEngine(spatial), new SpatialQueryAdapter(spatial));
 
     const t = view.teammates[0];
     expect(t.id).toBe("atk");
     expect(t.weapon?.weaponId).toBe("Vandal");
-    expect(t.abilities[0].abilityId).toBe("omen:Ability2");
-    expect(t.abilities[0].chargesRemaining).toBe(1);
+    expect(t.abilities.basic[0].abilityId).toBe("omen:Ability2");
+    expect(t.abilities.basic[0].charges).toBe(1);
+    expect(t.abilities.ultimate.required).toBe(7);
+    expect(t.abilities.ultimate.ready).toBe(false); // 3 banked < 7 required
     expect(t.ultimatePoints).toBe(3);
     expect(typeof t.credits).toBe("number");
 

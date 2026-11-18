@@ -379,18 +379,54 @@ world units로 동작(zone-id 질의는 프레임 무관) — PV-2 포함 좌표
   F6: fixture를 패키지 상대 경로로 로드(하드코딩 `@project-v` 경로 제거). F3: `fromPv2Scenario`가 worldPos/zoneId 있으면 사용,
   없으면 스폰 배치(TODO).
 
-## §F. 동결 시점 (FREEZE, 2026-11-18)
+## §F. 라운드 엔진 완성 (시뮬레이션 품질, 동결 해제 후)
 
-**사용자 지시로 작업 동결, 오케스트레이터가 main 통합.** 최종 상태:
-- **5개 패키지 전부 green: spatial 21 + perception 17 + combat 15 + ability 18 + round-sim 16 = 87 테스트**, 전부 `tsc` 통과.
-- 완료(커밋됨): spatial/perception/combat/ability 엔진, round-simulator(결정론 5v5 루프 + PV-3 DecisionPolicy 팀 계약),
-  첫 검증 실행 + 오프닝 듀얼 보정, PV-6 리플레이 브리지, 계약 보완(teammate 필드/perPlayerObservation/비어있지 않은 belief/executeAtMs/F6).
-- **미완(TODO, 통합 브랜치에서):**
-  - `belief`: 로컬 placeholder 빌더 → PV-3 `@pv/decision-engine` `buildBelief` 실제 import로 교체(크로스브랜치라 지금은 미연결).
-  - `fromPv2Scenario`: PV-2 v2(게임 좌표+zoneId) push되면 position 직접 사용. 현재 v1 좌표(일루스트레이티브 0..1000)는 폐기 결정.
-  - 패키지 스코프 `@pv/*` 리네임은 통합 시 일괄(현재 `@project-v/*`).
-  - round-simulator: 스파이크 줍기·포스트플랜트·유틸 활용 정책은 PV-3 실제 AI 통합 후.
-  - 검증 재실행은 PV-3 실제 TeamDecisionPolicy로 통합 브랜치에서.
+사용자 지시로 동결 해제 → "시뮬레이션 가능한 초안"까지 라운드 엔진을 완성. `claude/pv-spatial`에서 진행(통합 브랜치에 가져갈 예정).
+
+- **PV-5 실측 반영:** `origin/claude/pv-mapmesh` replacement-proposal의 32 간선 중 **medium 신뢰도 30개**를 navgraph에
+  반영(2.5D walkable-grid geodesic @6.75 m/s). low 2개(b-boathouse 주변)·sightline 11개는 manual-approx 유지(저신뢰),
+  우회비율은 노트로 보존. `datasets/spatial/ascent/pv5-measured-edges.json` + provenance. 총 간선 952m→1310m.
+- **스킬 실제 작동:** ability-engine 효과를 루프에 연결 — 연막/벽이 perception LoS 차단(decision·engagement 양쪽),
+  플래시가 시야 내 적을 블라인드→combat posture, 몰리가 경로 우회(blockedZones)+틱 피해, 정찰 공개가 팀 관측에
+  주입(frozen 스냅샷, 누출 없음). `makeSyntheticRound{withAbilities}` 로드아웃 + `ScriptedPolicy{useUtility}` 전개(옵트인).
+- **스파이크 운영:** 캐리어 사망 시 **스파이크 줍기**(드롭 지점의 공격수가 회수) + **클리어 후 해체**(수비는 사이트의
+  가시 공격수를 정리한 뒤 해체). → 검증 결과 대폭 개선.
+- **첫 검증 재실행 (`FIRST_VALIDATION_RUN.md`):** PV-2 `pv-validate-sim` 1,000 라운드. **판정 지표 1/7 → 4/7 통과:**
+  side_winrate 공격 **0.509 = 실측 0.509(정확)**, opening_duel 0.453, elimination 0.685, economy 0.509 PASS.
+  남은 3개(defuse 과다·bomb_detonated 0·time_expired 0)는 **포스트플랜트 홀드/세이브 판단** 1개 행동 미구현 때문(문서화).
+  공격 승률 일치는 **메커닉/정책(줍기)** 효과이지 교전 왜곡 아님(오프닝 듀얼 보정은 별도·불변).
+- **성능:** 1,000 라운드 ~24 ms/round.
+
+**현재 상태: 5개 패키지 green — spatial 21 + perception 17 + combat 15 + ability 18 + round-sim 21 = 92 테스트, 전부 `tsc` 통과.**
+
+**미완(TODO, 통합 브랜치에서):**
+- `belief`: 로컬 placeholder → PV-3 `@pv/decision-engine` `buildBelief` 실제 import로 교체(크로스브랜치라 미연결).
+- **포스트플랜트 홀드/세이브**(detonation 생성, defuse 비율 보정) — 세이브 휴리스틱은 elimination 지표를 깨서 보류, 더 정교한
+  리테이크 성공확률 모델 필요.
+- `fromPv2Scenario`: PV-2 v2(게임좌표+zoneId) push되면 worldPos/zoneId 직접 사용(이미 그 경로 구현, v1 좌표는 폐기).
+- 패키지 스코프 `@pv/*` 일괄 리네임(현재 `@project-v/*`).
+- PV-3 실제 TeamDecisionPolicy로 검증 재실행(통합 브랜치).
+
+## §G. 통합 브랜치 작업 (claude/pv-integration, 2026-11-18)
+
+통합 브랜치에서 `@pv/*` 스코프로 PV-1/PV-3 패키지와 실제 연결. §F의 TODO를 해소:
+
+- **Match Runner 라운드 실행 API (최우선, `runMatchRound`)**: PV-3의 `pnpm sim:match`용 상위 진입점.
+  입력 = 양 팀 로스터·로드아웃(무기/방어구/어빌리티/궁극기 포인트)·팀 경제·정책·시드. 출력 = winner/reason·EventLog·
+  survivors·플레이어별 `PlayerRoundOutcome`{생존·장비 보존(weaponRetained/armorRetained/abilitiesRemaining)·
+  궁극기 포인트 변화(start/earned/spent/end/ultimateUsed)}·원본 RoundResult. 결정론 보장.
+  궁극기 적립값은 `@pv/game-rules` `ULTIMATE_POINT_RULES`(PV-1) 사용. 문서: `docs/handoffs/ROUND_EXECUTION_API.md`.
+- **belief 실제 구현 교체(#1)**: 로컬 placeholder 제거 → PV-3 `@pv/decision-engine` `buildBelief(prev, obs, spatial, dtMs)`.
+  simulator가 side별 직전 belief + 결정 dt 스레딩(미관측 적 staleness 반영). mirror(string id)↔shared-types(branded id)
+  임피던스는 `buildBelief` 호출 한 지점의 문서화된 캐스트로 브리지.
+- **R2-B teammate abilities 실타입**: `PolicyTeammate.abilities`를 커스텀 `TeammateAbility[]` → PV-3 실제
+  `@pv/shared-types` `AbilityInventory`(basic/signature/ultimate + 궁극기 포인트/required/ready)로 교체.
+  타입 임포트라 PV-3 계약 드리프트가 typecheck 에러로 잡힘. SimPlayer 로드아웃 슬롯에 `slot` 추가.
+- **스파이크 포스트플랜트 운영**: 스크립트 수비 정책 리테이크를 "clear일 때만 해체"로 개선(설치 지점에서 적이 보이면
+  홀드 후 교전, 자살 해체 금지). `fromPv2Scenario` v2(worldPos→nearestZone)는 이 브랜치에 이미 반영돼 있었음.
+- **의존성 추가**: round-simulator deps에 `@pv/decision-engine`, `@pv/shared-types`, `@pv/game-rules`.
+- **테스트**: round-simulator 20개(match-round 4 신규) green, 전 워크스페이스 `pnpm -r test` green, perf ~24ms/round.
+- 커밋: belief `c6d8c61`, Match Runner API `eec2bf7`, R2-B `11fb43d`, 스파이크 운영 `94421a3`.
 
 ---
 

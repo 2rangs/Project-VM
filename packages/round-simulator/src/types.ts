@@ -16,8 +16,13 @@ export type PlayerId = string;
 export type TeamId = string;
 export type Side = "attack" | "defense";
 
+/** Which inventory slot an ability occupies (maps to @pv/shared-types AbilityInventory). */
+export type AbilitySlotKind = "basic" | "signature" | "ultimate";
+
 export interface AbilityLoadoutSlot {
   readonly abilityId: string;
+  /** Inventory slot; absent is treated as "basic". The "ultimate" slot is the player's ult. */
+  readonly slot?: AbilitySlotKind;
   chargesRemaining: number;
   lastUsedAtMs: number | null;
 }
@@ -82,6 +87,7 @@ export type SimEventKind =
   | "abilityUsed"
   | "engage"
   | "kill"
+  | "spikePickup"
   | "plantStart"
   | "planted"
   | "defuseStart"
@@ -138,6 +144,8 @@ export interface SimConfig {
   readonly spikeTimerMs: number;
   readonly seed: number;
   readonly recordTracks: boolean;
+  /** HP lost per tick while standing in a molly / area-denial zone. */
+  readonly mollyDamagePerTick: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
   readonly combatCalibration?: CombatCalibration;
 }
@@ -151,4 +159,5 @@ export const DEFAULT_CONFIG: SimConfig = {
   spikeTimerMs: 45000,
   seed: 1,
   recordTracks: false,
+  mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
 };

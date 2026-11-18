@@ -9,6 +9,18 @@ export * from "./types.js";
 export * from "./policy-contract.js";
 export { RoundSimulator } from "./simulator.js";
 export type { RoundSimulatorDeps } from "./simulator.js";
+// Match-level round-execution API (PV-3 Match Runner entry point).
+export { runMatchRound } from "./match-round.js";
+export type {
+  MatchRoundInput,
+  MatchRoundOutput,
+  MatchRoundTeam,
+  MatchRoundPlayer,
+  PlayerLoadout,
+  RoundAbilityLoadout,
+  LoadoutAbilitySlot,
+  PlayerRoundOutcome,
+} from "./match-round.js";
 export { ScriptedPolicy } from "./policy.js";
 export type { ScriptedPolicyOptions } from "./policy.js";
 export { buildPolicyView, SpatialQueryAdapter, SeededRandomSource } from "./view.js";

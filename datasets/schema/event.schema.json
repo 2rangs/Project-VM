@@ -27,8 +27,8 @@
     "weapon": { "type": ["string", "null"], "description": "Weapon/cause title from the kill feed, e.g. 'Vandal', 'Operator', 'Spike'." },
     "site": { "type": ["string", "null"], "enum": ["A", "B", "C", null], "description": "Plant site letter for plant/defuse events." },
     "afterDetonation": { "type": ["boolean", "null"], "description": "True if this event happened after the spike detonated (DERIVED from the replay 'boom' index)." },
-    "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "Event location (e.g. where the victim died), minimapUnits." },
-    "fromPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector2" }, { "type": "null" } ], "description": "Actor/shooter location, minimapUnits." },
+    "pos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/anyPosition" }, { "type": "null" } ], "description": "Event location (game-world uu)." },
+    "fromPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/anyPosition" }, { "type": "null" } ], "description": "Actor/shooter location (game-world uu)." },
     "positions": {
       "type": "array",
       "description": "Snapshot of all players' positions at this event's moment (the replay `locs` array). This is the Layer-B spatial signal; it is event-triggered (sparse), not continuous.",

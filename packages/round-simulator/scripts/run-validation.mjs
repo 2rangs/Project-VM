@@ -8,8 +8,8 @@
 import { writeFileSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { createEngine } from "@project-v/spatial-engine";
-import { buildCatalog } from "@project-v/combat-engine";
+import { createEngine } from "@pv/spatial-engine";
+import { buildCatalog } from "@pv/combat-engine";
 import { RoundSimulator, ScriptedPolicy, makeSyntheticRound, SYNTHETIC_DEFENSE_ANCHORS, toValidationRun, SpatialQueryAdapter } from "../src/index.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));

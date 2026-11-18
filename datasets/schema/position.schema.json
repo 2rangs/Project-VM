@@ -2,16 +2,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "position.schema.json",
   "title": "Position",
-  "description": "One player's position+facing at an instant. Mirrors a single entry of the VLR 2D-replay `locs` array: [playerId, x, y, angleDeg]. minimapUnits coordinate frame (see common.schema.json vector2). FUTURE for real data / POPULATED for synthetic.",
+  "description": "One player's position+facing at an instant, in game-world Unreal units (uu). FUTURE for real data (Layer-B authorized source only) / POPULATED for synthetic. The legacy minimapUnits frame is removed (v2).",
   "type": "object",
-  "required": ["playerId", "x", "y"],
+  "required": [
+    "playerId",
+    "x",
+    "y"
+  ],
   "additionalProperties": false,
   "properties": {
-    "playerId": { "type": "string", "description": "Player this position belongs to." },
-    "x": { "type": "number", "description": "X in minimapUnits (replay frame, origin top-left)." },
-    "y": { "type": "number", "description": "Y in minimapUnits." },
-    "facingDeg": { "type": ["number", "null"], "minimum": 0, "maximum": 360, "description": "Facing/view yaw in degrees (0..360), as the replay logs it. Null if unavailable." },
-    "alive": { "type": ["boolean", "null"], "description": "Whether the player was alive at this snapshot (DERIVED)." },
-    "worldPos": { "oneOf": [ { "$ref": "common.schema.json#/$defs/vector3" }, { "type": "null" } ], "description": "Optional 3D world position in game units, only when a true 3D source exists." }
+    "playerId": {
+      "type": "string",
+      "description": "Player this position belongs to."
+    },
+    "x": {
+      "type": "number",
+      "description": "X in game units (uu)."
+    },
+    "y": {
+      "type": "number",
+      "description": "Y in game units (uu)."
+    },
+    "z": {
+      "type": "number",
+      "description": "Z (elevation) in game units (uu)."
+    },
+    "frame": {
+      "enum": ["game-world-uu", "minimapUnits"],
+      "description": "Coordinate frame tag. v2 uses 'game-world-uu' (canonical); 'minimapUnits' is the deprecated v1 frame, accepted for backward compatibility. Absent is treated as legacy minimapUnits."
+    },
+    "zoneId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Ascent navgraph zone id, when known."
+    },
+    "facingDeg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 360,
+      "description": "Facing/view yaw in degrees."
+    },
+    "alive": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Whether the player was alive at this snapshot."
+    }
   }
 }

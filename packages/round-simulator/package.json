@@ -16,7 +16,10 @@
     "@pv/spatial-engine": "file:../spatial-engine",
     "@pv/perception-engine": "file:../perception-engine",
     "@pv/combat-engine": "file:../combat-engine",
-    "@pv/ability-engine": "file:../ability-engine"
+    "@pv/ability-engine": "file:../ability-engine",
+    "@pv/decision-engine": "file:../decision-engine",
+    "@pv/shared-types": "file:../shared-types",
+    "@pv/game-rules": "file:../game-rules"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

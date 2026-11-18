@@ -31,7 +31,7 @@ describe("PolicyView does not leak enemy ground truth (DECISION-004)", () => {
       players: [atk, def],
       spike: { phase: "carried", carrierId: "atk", zoneId: null, position: null, plantProgressMs: 0, defuseProgressMs: 0, defuserId: null, detonateAtElapsedMs: null },
     };
-    const view = buildPolicyView("attack", state, new PerceptionEngine(spatial));
+    const view = buildPolicyView("attack", state, new PerceptionEngine(spatial), sq);
 
     // own-team only
     expect(view.teammates.map((t) => t.id)).toEqual(["atk"]);

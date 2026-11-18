@@ -41,3 +41,102 @@ def test_schema_rejects_bad_record(tmp_path):
     bad.write_text(json.dumps({"contextId": "x"}))  # missing required worldState/decidingTeamIdx/provenance
     res = validate_file(str(bad), reg)
     assert not res.ok
+
+
+def _write_zone_ref(tmp_path):
+    """Minimal navgraph ref so zone checks can resolve (v2, game-world uu)."""
+    ref = tmp_path / "datasets" / "synthetic" / "ascent" / "ascent_zones_ref.json"
+    ref.parent.mkdir(parents=True, exist_ok=True)
+    ref.write_text(json.dumps({
+        "zones": [
+            {"id": "a-site", "position": {"x": 6153.6, "y": -6626.2, "z": 500.0}},
+            {"id": "mid", "position": {"x": 0.0, "y": 0.0, "z": 0.0}},
+        ]
+    }))
+
+
+def _scenario(zone_id, x, y):
+    """A minimal valid DecisionContext with one player at (zone_id, x, y)."""
+    return {
+        "contextId": "zc", "formatVersion": 2,
+        "worldState": {
+            "matchId": "syn", "roundId": "syn:1", "mapName": "Ascent",
+            "timeRemainingMs": 100000, "roundPhase": "round",
+            "players": [{
+                "playerId": "p0", "teamIdx": 0, "alive": True,
+                "zoneId": zone_id,
+                "position": {"x": x, "y": y, "z": 500.0, "frame": "game-world-uu"},
+            }],
+            "spike": {"status": "carried", "carrierPlayerId": "p0"},
+        },
+        "decidingTeamIdx": 0,
+        "provenance": {"sourceId": "syn", "retrievedAt": "2026-01-01T00:00:00+00:00",
+                       "evidenceType": "simulated", "synthetic": True},
+    }
+
+
+def _scenario_v1(x, y):
+    """A legacy v1 DecisionContext: minimapUnits {x,y} positions, no frame/zoneId/formatVersion."""
+    return {
+        "contextId": "v1",
+        "worldState": {
+            "matchId": "syn", "roundId": "syn:1", "mapName": "Ascent",
+            "timeRemainingMs": 100000, "roundPhase": "round",
+            "players": [{
+                "playerId": "p0", "teamIdx": 0, "alive": True,
+                "position": {"x": x, "y": y},  # minimapUnits vector2, no frame
+            }],
+            "spike": {"status": "carried", "carrierPlayerId": "p0"},
+        },
+        "decidingTeamIdx": 0,
+        "provenance": {"sourceId": "syn", "retrievedAt": "2026-01-01T00:00:00+00:00",
+                       "evidenceType": "simulated", "synthetic": True},
+    }
+
+
+def test_schema_accepts_v1_minimap_and_v2_gameworld(tmp_path):
+    """Backward compatibility: both the legacy minimapUnits (v1) and game-world (v2) position
+    shapes validate against the schema, so a loader can read either during the v1->v2 transition."""
+    reg = load_registry(str(SCHEMA_DIR))
+    d = tmp_path / "datasets" / "synthetic" / "scenarios"
+    d.mkdir(parents=True, exist_ok=True)
+    v1 = d / "scenario_v1.json"
+    v1.write_text(json.dumps(_scenario_v1(500.0, 420.0)))
+    # no zone ref present -> zone-check skipped; v1 has no zoneId anyway
+    assert validate_file(str(v1), reg).ok, validate_file(str(v1), reg).errors
+    # and a v2 game-world scenario still validates (no zone ref -> coordinate check skipped)
+    v2 = d / "scenario_v2.json"
+    v2.write_text(json.dumps(_scenario("a-site", 6153.6, -6626.2)))
+    assert validate_file(str(v2), reg).ok, validate_file(str(v2), reg).errors
+
+
+def test_zone_check_accepts_position_on_zone(tmp_path):
+    reg = load_registry(str(SCHEMA_DIR))
+    _write_zone_ref(tmp_path)
+    good = tmp_path / "datasets" / "synthetic" / "scenarios" / "scenario_98.json"
+    good.parent.mkdir(parents=True, exist_ok=True)
+    good.write_text(json.dumps(_scenario("a-site", 6153.6, -6626.2)))
+    res = validate_file(str(good), reg)
+    assert res.ok, res.errors
+
+
+def test_zone_check_rejects_unknown_zone_id(tmp_path):
+    reg = load_registry(str(SCHEMA_DIR))
+    _write_zone_ref(tmp_path)
+    bad = tmp_path / "datasets" / "synthetic" / "scenarios" / "scenario_97.json"
+    bad.parent.mkdir(parents=True, exist_ok=True)
+    bad.write_text(json.dumps(_scenario("nowhere", 6153.6, -6626.2)))
+    res = validate_file(str(bad), reg)
+    assert not res.ok
+    assert any("not in navgraph zones" in e for e in res.errors)
+
+
+def test_zone_check_rejects_position_far_from_zone(tmp_path):
+    reg = load_registry(str(SCHEMA_DIR))
+    _write_zone_ref(tmp_path)
+    bad = tmp_path / "datasets" / "synthetic" / "scenarios" / "scenario_96.json"
+    bad.parent.mkdir(parents=True, exist_ok=True)
+    bad.write_text(json.dumps(_scenario("a-site", 0.0, 0.0)))  # a-site is ~9000uu away
+    res = validate_file(str(bad), reg)
+    assert not res.ok
+    assert any("from zone a-site" in e for e in res.errors)

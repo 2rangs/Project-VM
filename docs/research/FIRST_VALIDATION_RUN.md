@@ -86,6 +86,31 @@ round win rate (README §31).
 - Weapon/ability values are `manual-approx` (PV-1 LICENSE_AUDIT); opening-duel tuning is on
   the engagement model, not on weapon stats.
 
+## 5b. After spike pickup + defuse-when-clear (v2, calibrated) — 4/7 judged metrics PASS
+
+The §3 decomposition predicted the round gap was policy/mechanics, not combat. Adding
+**spike pickup** (a dropped spike is retrieved by an attacker) and **defuse-when-clear**
+(defenders clear the site before defusing) — plus the §4 opening-duel calibration — moved the
+result from 1/7 to **4/7**:
+
+| Metric | v1 | **v2** | Real | Result |
+|---|---|---|---|---|
+| side_winrate attack | 0.257 | **0.509** | 0.509 [0.491,0.527] | ✅ PASS (exact) |
+| opening_duel attack | 0.453 | **0.453** | 0.437 [0.420,0.454] | ✅ PASS |
+| outcome: elimination | 0.433 | **0.685** | 0.714 [0.699,0.730] | ✅ PASS |
+| economy_matchup full/full | 0.257 | **0.509** | 0.500 [0.479,0.521] | ✅ PASS |
+| outcome: time_expired | 0.502 | **0.000** | 0.043 [0.037,0.051] | ❌ (now too low) |
+| outcome: defuse | 0.065 | **0.315** | 0.160 [0.148,0.173] | ❌ (too high) |
+| outcome: bomb_detonated | 0.000 | **0.000** | 0.082 [0.074,0.092] | ❌ (still 0) |
+
+The attack win rate matching is a consequence of the **mechanics/policy** fix (pickup), not of
+combat tuning — the opening-duel calibration is unchanged and separate. The two remaining
+outcome fails (too many defuses, no detonations) are a single missing behaviour:
+**post-plant hold** — after planting, attackers currently don't hold angles on the spike to
+deny the retake, so defenders almost always defuse. Adding post-plant positioning (watch the
+spike, trade retakers, let the timer run) should convert part of `defuse` into
+`bomb_detonated` and lift `time_expired` slightly.
+
 ## 6. Recommendations (next)
 
 1. **PV-3 `TeamDecisionPolicy`** (real AI) is the main lever for round-level realism — re-run
