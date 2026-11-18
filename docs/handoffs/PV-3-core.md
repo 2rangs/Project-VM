@@ -236,3 +236,114 @@ valorant-api UUIDs). If `datasets/schema/*.json` diverges (field names, units, i
 record the mapping here as a table so neither side silently reshapes the other's data
 (Handoff §13.2/§24.2). No mapping entries yet — `datasets/schema/` was not present/owned by
 this agent.
+
+---
+
+# PROJECT V — TASK HANDOFF (PV-3 phase 2)
+
+**Agent:** PV-3 (Simulation Core) · **Date:** 2026-11-18 · **Branch:** `claude/pv-core`
+**Scope:** Handoff TASK 006 → 007 → 008 toward the Ascent Decision Prototype (§19), via
+dependency inversion onto PV-4 (no cross-branch merge).
+
+## 1. 작업 목표
+Build the situation-aware decision core: reconstruct a WorldState from PV-2 scenarios
+(TASK 006), maintain a partial-observation Belief State, generate & evaluate tactical
+action candidates (TASK 007), and expose a Decision Debugger report (TASK 008) — without
+merging the spatial/perception branches.
+
+## 2. 완료한 작업 (tested)
+- **TASK 006** `@pv/world-state loadDecisionContext`: PV-2 DecisionContext JSON → internal
+  WorldState (validation, unit mapping, provenance retention, deterministic round-trip).
+- **Belief State v0** `@pv/decision-engine`: zone probability distributions that diffuse
+  with staleness (README §17.3); type boundary — ObservationState + SpatialQuery only, no
+  WorldState (DECISION-004). Per-decider DecisionContext assembly.
+- **TASK 007** `@pv/action-generator`: 4-layer generation from state (not a fixed list),
+  constraint validation excluding impossible actions with reasons, and §19 evaluation
+  (feasibility/time/cost/risk/utility), rule-based (no ML).
+- **TASK 008** `@pv/decision-debugger`: structured trace + Markdown/text report (Handoff
+  §21) + runnable CLI; numbers are the model's own.
+- **Seams** in `@pv/shared-types`: `SpatialQuery`, `ObservationProvider`,
+  `TeamDecisionContext`.
+
+## 3. 변경한 파일
+```
+packages/shared-types/src/{spatial-query,observation-provider,scenario-context}.ts (+index)
+packages/world-state/src/scenario.ts (+index); test/scenario.test.ts; test/fixtures/*
+packages/decision-engine/**            (new package: belief.ts, context.ts, + tests/stub)
+packages/action-generator/**           (new package: generate.ts, evaluate.ts, types.ts, + tests)
+packages/decision-debugger/**          (new package: pipeline, trace, report, cli, placeholder, + tests/fixtures)
+docs/DECISION_MODEL.md, docs/TEST_PLAN.md, docs/handoffs/PV-3-core.md (this section)
+```
+
+## 4. 데이터 출처
+- Scenarios + schemas: `origin/claude/pv-data @ fe246942167b3a1261e88782375c65f650eec6c9`,
+  `datasets/synthetic/scenarios/*.json` + `datasets/schema/*.json` — copied verbatim into
+  `packages/*/test/fixtures/` (READMEs record origin + commit; copies unedited; SYNTHETIC
+  flag preserved).
+- Spatial API shape mirrored from `origin/claude/pv-spatial @ 4a1cf0d3da28d942c739b56c800e6ed835200644`,
+  `packages/spatial-engine` (read-only; not merged). Ascent zone ids reused in the stub.
+
+## 5. 실행 방법
+```bash
+pnpm install && pnpm test && pnpm typecheck
+pnpm --filter @pv/decision-debugger debug <abs-path>/scenario_04.json   # CLI report
+```
+
+## 6. 검증 방법 / 7. 테스트 결과
+`pnpm typecheck` clean; `pnpm test` → **91 passed, 4 todo** (10 files). Handoff §20
+scenarios 01–10 are end-to-end tests; 07/08/09 and the exit-kill valuation of 10 are
+`it.todo` (need P3 economy/ultimate engines) — not faked. Determinism asserted end-to-end.
+
+## 8. 현재 미완료 사항
+Economy/save/ultimate VALUE models (the valuation half of save / ult-denial / exit-kill);
+real spatial-engine + perception-engine adapters; richer tactical decomposition; belief
+from a temporal observation sequence (only single-snapshot + advance/observe now).
+
+## 9. 알려진 문제 / 한계
+- `game-rules` values remain `verified:false`; generator weights are provisional heuristics.
+- Positions are minimapUnits throughout (z=0); world-unit conversion is deferred to the
+  spatial adapter.
+- Ability slot→signature mapping is agent-specific and left null in v0.
+- The CLI uses an Ascent placeholder SpatialQuery until PV-4 is integrated.
+
+## 10. 설계 결정
+Dependency inversion via `SpatialQuery`/`ObservationProvider` (interfaces in shared-types,
+stub/placeholder for now) so PV-3 progresses without merging PV-4. Executes are
+carrier-gated for feasibility. Belief kept strictly downstream of ObservationState to make
+omniscient play unrepresentable. Economic valuation explicitly deferred, not stubbed as
+real.
+
+## 11. 라이선스 및 권한
+No third-party data bundled; fixtures are this project's own synthetic data (clearly
+flagged). No external services called.
+
+## 12. 다음 권장 작업
+1. **Spatial/Perception adapters** (PV-4 integration): implement `SpatialQuery` over the
+   real `SpatialEngine` (+ minimap↔world transform) and `ObservationProvider` over
+   perception-engine; swap the placeholder/stub.
+2. **Economy / Save / Ultimate engines (P3)**: supply the value models that turn the
+   generated SAVE / EXIT_KILL / ult-aware actions into real valuations; flip the §20
+   07–10 `todo`s into assertions.
+3. **Weight calibration** via repeated simulation (Handoff §20.5).
+4. **Combat/movement resolution** to execute selected actions and advance the world.
+
+## 13. 작업 재개 지점
+- Read `docs/DECISION_MODEL.md` and `docs/TEST_PLAN.md`, then this section.
+- Entry points: `packages/world-state/src/scenario.ts` (loader),
+  `packages/decision-engine/src/belief.ts`, `packages/action-generator/src/generate.ts`,
+  `packages/decision-debugger/src/pipeline.ts`.
+- `pnpm install && pnpm test && pnpm typecheck`, then run the CLI on a scenario to see a
+  full trace.
+
+## Appendix — PV-2 DecisionContext → internal mapping (field/unit)
+| PV-2 (world-state.schema.json) | internal (@pv/shared-types) | note |
+|---|---|---|
+| `teamIdx` 0/1 | `TeamId` `team-0`/`team-1` | branded id |
+| `attackingTeamIdx` + `teamIdx` | `PlayerState.side` | derived |
+| `position` vector2 (minimapUnits) | `Vector3 {x,y,z:0}` | `coordinateSpace:"minimapUnits"` |
+| `facingDeg` | `facing` unit `Vector2` | minimap frame |
+| `spike.status` | `SpikePhase` | carried/dropped/planted/defused/detonated |
+| `loadout.weaponId/armor/abilityCharges/ultimate*` | `InventoryState`/`AbilityInventory` | ammo not modeled; signature null |
+| `teamEconomy.bank/lossBonusTier` | `TeamEconomyState.credits/lossBonusTier` | `consecutiveLosses≈tier` |
+| `belief.*` | `ObservationState` + `BeliefState` | observed/inferred only (DECISION-004) |
+| `provenance.*` | `ScenarioProvenance` | synthetic flag preserved |
