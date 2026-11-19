@@ -209,3 +209,10 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .sit-row .mono { font-family: monospace; letter-spacing: 1px; }
 .orders-actions { display: flex; gap: 8px; margin-top: 12px; }
 .ord-cancel { background: #1b2430; color: #cdd6e0; border: 1px solid #39506a; border-radius: 6px; padding: 5px 14px; cursor: pointer; }
+
+/* ── Korean-friendly text wrapping (break at word boundaries, not per syllable) ── */
+.mgr, .mgr button, .mgr select, .mgr input, .mgr option { word-break: keep-all; overflow-wrap: break-word; }
+.rev-decisions { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.rev-dcard, .rev-dhead { min-width: 0; }
+.rev-dhead { flex-wrap: wrap; }
+.rev-dhead b { min-width: 0; overflow-wrap: break-word; }

@@ -55,8 +55,8 @@
 
 | 원어 | 한국어 |
 | --- | --- |
-| elimination | 제압 |
-| spikeDetonation | 설치 폭발 |
+| elimination | 전멸 |
+| spikeDetonation | 스파이크 폭발 |
 | spikeDefused | 해제 |
 | timeExpired | 시간 초과 |
 

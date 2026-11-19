@@ -91,7 +91,7 @@ export function ReviewPanel({ match, replay, timeoutLog = [] }: { match: MatchSu
         </svg>
       </section>
 
-      {/* key decision cards (PV-3 decision traces) */}
+      {/* key decision cards (IGL decision traces) */}
       <section className="rev-card">
         <div className="attr-grouplabel">{t('rev.decisions')} <span className="muted small">{t('rev.decisions.sub')}</span></div>
         {traces.length === 0 ? <div className="row small muted">{t('rev.decisions.loading')}</div> : (
