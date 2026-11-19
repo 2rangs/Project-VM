@@ -29,6 +29,8 @@ export interface TendencyEstimate<K extends string> {
 /** A decaying categorical tendency over a fixed set of categories. */
 export class Tendency<K extends string> {
   private readonly counts: Record<K, number>;
+  /** [series] Standing pseudo-counts (a conviction held before the match): never decayed. */
+  private readonly standing: Record<K, number>;
 
   constructor(
     private readonly keys: readonly K[],
@@ -36,6 +38,7 @@ export class Tendency<K extends string> {
     private readonly decay = 0.85,
   ) {
     this.counts = Object.fromEntries(keys.map((k) => [k, 0])) as Record<K, number>;
+    this.standing = Object.fromEntries(keys.map((k) => [k, 0])) as Record<K, number>;
   }
 
   /** Record one observation of `key` (optionally fractional weight); older evidence fades first. */
@@ -45,16 +48,33 @@ export class Tendency<K extends string> {
   }
 
   estimate(): TendencyEstimate<K> {
-    const n = this.keys.reduce((s, k) => s + this.counts[k], 0);
+    // [series] `standing` is 0 unless seeded, so an unseeded tendency estimates exactly as before.
+    const n = this.keys.reduce((s, k) => s + this.counts[k] + this.standing[k], 0);
     const denom = n + this.keys.length * this.priorPseudoCount;
     const probability = Object.fromEntries(
-      this.keys.map((k) => [k, (this.counts[k] + this.priorPseudoCount) / denom]),
+      this.keys.map((k) => [k, (this.counts[k] + this.standing[k] + this.priorPseudoCount) / denom]),
     ) as Record<K, number>;
     return { probability, confidence: denom === 0 ? 0 : n / denom, samples: n };
   }
 
   snapshot(): Readonly<Record<K, number>> {
     return { ...this.counts };
+  }
+
+  /**
+   * [series] Add pseudo-observations held BEFORE the first round (docs/SERIES_AND_VETO.md §4):
+   *  - evidence-like (default): added to the decaying counts WITHOUT fading what is there, so it
+   *    is worth exactly that many past observations and fades like them as rounds are observed;
+   *  - `standing`: a conviction that does not fade — in-match evidence has to outweigh it.
+   * Negative / non-finite entries are ignored. The estimate formula is unchanged.
+   */
+  seed(counts: Readonly<Partial<Record<K, number>>>, standing = false): void {
+    for (const k of this.keys) {
+      const c = counts[k];
+      if (typeof c !== "number" || !Number.isFinite(c) || c <= 0) continue;
+      if (standing) this.standing[k] += c;
+      else this.counts[k] += c;
+    }
   }
 }
 
@@ -120,6 +140,25 @@ export class OpponentModel {
   get roundsObserved(): number {
     return this.rounds;
   }
+
+  /**
+   * [series] Start the match with prior knowledge of the opponent (a scouting report, or the
+   * team's own game plan) instead of a blank model. The prior is pseudo-observations in the same
+   * Dirichlet estimate, so its confidence is N / (N + K·α) like any other evidence: a thin report
+   * barely tilts the opening call, and what the opponent actually does in the match overrides it.
+   */
+  seed(prior: OpponentPrior, options: { readonly standing?: boolean } = {}): void {
+    if (prior.attackSite) this.attackSite.seed(prior.attackSite, options.standing ?? false);
+    if (prior.defenseSite) this.defenseSite.seed(prior.defenseSite, options.standing ?? false);
+  }
+}
+
+/** [series] Pseudo-observation counts per tendency (see OpponentModel.seed). */
+export interface OpponentPrior {
+  /** Where the opponent attacks: pseudo-counts of plants per site. */
+  readonly attackSite?: Readonly<Partial<Record<SiteKey, number>>>;
+  /** Where the opponent defends: pseudo-counts of defenders met per site. */
+  readonly defenseSite?: Readonly<Partial<Record<SiteKey, number>>>;
 }
 
 /**
