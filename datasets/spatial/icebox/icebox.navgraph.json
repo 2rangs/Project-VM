@@ -357,7 +357,7 @@
       "name": "Mid Blue",
       "callout": "Mid Blue",
       "superRegion": "Mid",
-      "zoneType": "position",
+      "zoneType": "mid",
       "plantable": false,
       "position": {
         "x": -2825,
@@ -385,7 +385,7 @@
       "name": "Mid Pallet",
       "callout": "Mid Pallet",
       "superRegion": "Mid",
-      "zoneType": "position",
+      "zoneType": "mid",
       "plantable": false,
       "position": {
         "x": -4450,
@@ -1040,7 +1040,7 @@
     {
       "a": "defender-spawn",
       "b": "mid-pallet",
-      "type": "angle",
+      "type": "direct",
       "smokeable": true,
       "visibility": 0.264,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
@@ -1360,7 +1360,7 @@
     {
       "a": "mid-blue",
       "b": "mid-pallet",
-      "type": "angle",
+      "type": "direct",
       "smokeable": true,
       "visibility": 0.361,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"

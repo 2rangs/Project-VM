@@ -42,6 +42,8 @@ PROJECT V(루트 LICENSE: MIT, © 2026 Kim Yi Rang)가 포함·파생·의존하
 | **valorant-api.com** | 라이선스 **불명확** | 대량 생성 카탈로그 **gitignore**(스크립트·스키마·소싱테이블만 커밋) |
 | **공식 VALORANT 위키 / 패치노트 / Riot content API** | Riot 소유 사실 | 수치·패치 출처 URL만 기록, 자산 미재배포 |
 | **PV-4 navgraph 파생**(pv-research tactics) | 내부 산출물 | 출처 표기(미러) |
+| **valorant-api.com** `/v1/maps` (10개 맵 콜아웃·미니맵 변환, 2026-11-19) | 라이선스 **불명확** | Ascent와 동일하게 맵별 원본 콜아웃 JSON만 커밋 (`datasets/spatial/<map>/valorant-api-<map>.raw.json`) |
+| **사용자 제공 VALORANT Blender 맵** (Riot Games 지오메트리) | 재배포 라이선스 **미확인** | 원본·추출 메시 **미커밋**. 커밋되는 것은 측정 수치(JSON)와 그래프 도식 PNG뿐 (`docs/research/MAPS_DATA.md`) |
 
 ## 4. 비제휴 고지
 PROJECT V is not affiliated with, endorsed by, or sponsored by Riot Games. VALORANT and related
