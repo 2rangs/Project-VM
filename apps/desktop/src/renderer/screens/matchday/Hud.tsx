@@ -50,9 +50,9 @@ export function TopHud({
   const ally = viewTeam, enemy = other(viewTeam);
   const attacker = nextRound?.attacker ?? round?.attacker ?? 'A';
   const sit = frame?.situation;
-  const phase = round?.summary?.phase;
+  const phase = nextRound ? (nextRound.roundNumber === 1 || nextRound.roundNumber === 13 ? 'pistol' : null) : round?.summary?.phase;
   const roundNo = nextRound?.roundNumber ?? round?.roundNum ?? 1;
-  const matchPoint = Math.max(score.A, score.B) >= 12 && score.A !== score.B;
+  const matchPoint = Math.max(score.A, score.B) === 12 && score.A !== score.B; // regulation match point
   const spikeOn = sit && (sit.spike.phase === 'planted' || sit.spike.phase === 'defusing');
   const side = (team: TeamSlot) => (team === attacker ? t('mdx.side.attack') : t('mdx.side.defense'));
 
@@ -79,7 +79,7 @@ export function TopHud({
             {phase === 'overtime' && <em>{t('mdx.phase.ot')}</em>}
             {matchPoint && phase !== 'overtime' && <em className="hot">{t('mdx.phase.matchPoint')}</em>}
           </span>
-          <strong className="mdx-clock-time">{spikeOn && <i className="mdx-spikeicon" aria-hidden />}{sit && !nextRound ? formatClock(sit.clockMs) : '—:——'}</strong>
+          <strong className="mdx-clock-time">{spikeOn && <i className="mdx-spikeicon" aria-hidden />}{sit && !nextRound ? formatClock(sit.clockMs) : formatClock(100000)}</strong>
         </div>
         <b className="mdx-pts enemy">{score[enemy]}</b>
         <div className="mdx-team enemy">

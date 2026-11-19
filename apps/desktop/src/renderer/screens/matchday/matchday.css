@@ -261,6 +261,12 @@
 .mdx-wall.has-focus .mdx-mon:not(.focus) .mdx-osd.bl, .mdx-wall.has-focus .mdx-mon:not(.focus) .mdx-osd.tl { max-width: calc(100% - 24px); }
 .mdx-wall.has-focus .mdx-mon:not(.focus) .mdx-lost strong { font-size: 14px; }
 
+/* first-person extras: crosshair + a small 2D radar inset (PixiJS follow view) */
+.mdx-xhair { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; z-index: 2; pointer-events: none; opacity: .7;
+  background: linear-gradient(var(--mx-ink), var(--mx-ink)) 50% 50% / 14px 1px no-repeat, linear-gradient(var(--mx-ink), var(--mx-ink)) 50% 50% / 1px 14px no-repeat; }
+.mdx-radar { position: absolute; left: 10px; top: 34px; width: 27%; aspect-ratio: 1; max-width: 190px; z-index: 2; border: 1px solid #ece8e144; background: #0b131b99; pointer-events: none; }
+.mdx-wall.has-focus .mdx-mon:not(.focus) .mdx-radar { display: none; }
+
 /* ── bottom bar ───────────────────────────────────────────────────────────────────────── */
 .mdx-bottom { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 0 12px; background: linear-gradient(0deg, #0b131bee, #0b131b99); border-top: 1px solid var(--mx-line); }
 .mdx-transport, .mdx-coach { display: flex; align-items: center; gap: 12px; }
@@ -316,7 +322,7 @@
   .mdx-chip { flex-basis: 30px; height: 22px; font-size: 13px; } .mdx-chip.cur { height: 24px; } .mdx-chips { height: 24px; }
 }
 @media (max-width: 1240px) {
-  .mdx .rv-src { display: none; }
+  .mdx .rv-src { max-width: 84px; }
   .mdx-tac { grid-template-columns: minmax(220px, 380px) min(calc(100cqh - 20px), calc(100cqw - 488px)) minmax(220px, 380px); }
 }
 @media (prefers-reduced-motion: reduce) {

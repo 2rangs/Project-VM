@@ -18,6 +18,8 @@ export const IPC = {
   sessionCmd: 'pv:session:cmd',
   /** renderer → main (invoke): stop + dispose the live session. */
   sessionStop: 'pv:session:stop',
+  /** renderer → main (invoke): read the optional local map mesh (assets/maps/<map>.glb); null when absent. */
+  mapMesh: 'pv:asset:map-mesh',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -126,6 +128,8 @@ export interface PvBridge {
   sessionPlayNextRound(): Promise<{ round: Record<string, unknown>; state: SessionState }>;
   sessionResult(): Promise<SessionResultSummary>;
   sessionStop(): Promise<void>;
+  /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
+  loadMapMesh(mapId: string): Promise<Uint8Array | null>;
   readonly platform: string;
   readonly isElectron: true;
 }

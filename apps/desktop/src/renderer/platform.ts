@@ -38,6 +38,7 @@ const browserBridge: PvBridge = {
   async sessionPlayNextRound() { throw new Error('interactive session requires Electron'); },
   async sessionResult() { throw new Error('interactive session requires Electron'); },
   async sessionStop() { /* no-op */ },
+  async loadMapMesh() { return null; }, // browser fallback: the cams use the navgraph blockout
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };

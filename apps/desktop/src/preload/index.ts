@@ -28,6 +28,7 @@ const bridge: PvBridge = {
   sessionPlayNextRound: async () => { const r = await cmd({ cmd: 'playNextRound' }); return { round: r.round!, state: r.state! }; },
   sessionResult: async () => (await cmd({ cmd: 'result' })).result!,
   sessionStop: () => ipcRenderer.invoke(IPC.sessionStop),
+  loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
   platform: process.platform,
   isElectron: true,
 };

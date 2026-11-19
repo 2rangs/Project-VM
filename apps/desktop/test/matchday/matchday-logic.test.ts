@@ -289,3 +289,78 @@ test('monitor: kill tally and clock formatting', () => {
   assert.equal(formatClock(9001), '0:10');
   assert.equal(formatClock(-5), '0:00');
 });
+
+// ── 3D world (team cams) ─────────────────────────────────────────────────────────────────
+import { BLOCKOUT, EYE_HEIGHT_M, buildBlockout, firstPersonPose, segDist2d, toScene } from '../../src/renderer/matchday/world3d.ts';
+import { autoTempoAt, computeFrame } from '../../src/renderer/matchday/frame.ts';
+import { DEFAULT_PREFS, parsePrefs } from '../../src/renderer/matchday/prefs.ts';
+
+test('world3d: game → scene swaps y/z (handedness) and converts to metres', () => {
+  assert.deepEqual(toScene({ x: 100, y: -250, z: 400 }), { x: 1, y: 4, z: -2.5 });
+});
+
+test('world3d: first-person camera sits at eye height and looks along the heading', () => {
+  const pos = { x: 1000, y: 2000, z: 300 };
+  const east = firstPersonPose(pos, 0, 3, 0); // heading +game.x, level
+  assert.deepEqual(east.position, { x: 10, y: 3 + EYE_HEIGHT_M, z: 20 });
+  assert.ok(east.target.x > east.position.x && Math.abs(east.target.z - east.position.z) < 1e-9);
+  const north = firstPersonPose(pos, Math.PI / 2, 3, 0); // heading +game.y → +scene.z
+  assert.ok(north.target.z > north.position.z && Math.abs(north.target.x - north.position.x) < 1e-9);
+  assert.ok(firstPersonPose(pos, 0, 3).target.y < east.position.y, 'default pitch looks slightly down');
+});
+
+test('world3d: segment distance', () => {
+  const p = (x: number, y: number) => ({ x, y, z: 0 });
+  assert.equal(segDist2d(p(0, 0), p(10, 0), p(5, -5), p(5, 5)), 0);
+  assert.equal(segDist2d(p(0, 0), p(10, 0), p(0, 3), p(10, 3)), 3);
+  assert.equal(segDist2d(p(0, 0), p(10, 0), p(14, 3), p(20, 3)), 5);
+});
+
+test('world3d: the blockout never walls off a travel link or an authored sightline', () => {
+  const plantZones = (readJson('../../src/data/sim/ascent.navgraph.json') as { plantZones: Array<{ zoneId: string; polygon: Array<{ x: number; y: number }> }> }).plantZones;
+  const b = buildBlockout(nav, plantZones);
+  assert.equal(b.labels.length, nav.zones.length);
+  assert.equal(b.floors.filter((f) => f.kind === 'room').length, nav.zones.length);
+  assert.equal(b.floors.filter((f) => f.kind === 'site').length, 2);
+  assert.ok(b.walls.length > 200, 'still a walled space, not an open field');
+  for (const l of nav.links) {
+    const a = nav.zone(l.a)!.position, c = nav.zone(l.b)!.position;
+    for (const w of b.walls) assert.ok(segDist2d(w.a, w.b, a, c) >= BLOCKOUT.corridorHalfWidth * 0.9, `wall in the lane ${l.a} → ${l.b}`);
+  }
+  for (const z of nav.zones) for (const o of nav.sightZones(z.id)) {
+    const a = z.position, c = nav.zone(o)!.position;
+    for (const w of b.walls) assert.ok(segDist2d(w.a, w.b, a, c) > 0, `wall across the sightline ${z.id} ↔ ${o}`);
+  }
+  // rooms sit at the navgraph height of their zone
+  const site = b.floors.find((f) => f.kind === 'room' && Math.abs(f.pts[0].z - zonePos('a-site').z) < 1e-9);
+  assert.ok(site);
+});
+
+test('frame: one team\'s picture — own units, gated enemies, public kills', () => {
+  const f = computeFrame(replay, tl, nav, 'A', at(r3, 10850))!;
+  assert.equal(f.round.roundNum, 3);
+  assert.deepEqual(f.units.map((u) => u.id), ['atk1', 'atk2', 'atk3', 'atk4', 'atk5']);
+  // atk4 is squaring up to def2: def2 is seen by atk4 (and only by players in a duel with it)
+  const def2 = f.seen.find((e) => e.id === 'def2')!;
+  assert.ok(def2.seenBy.includes('atk4'));
+  assert.ok(!def2.seenBy.includes('atk3'));
+  for (const e of [...f.seen, ...f.ghosts]) assert.ok(e.id.startsWith('def'), 'only enemies are in seen/ghosts');
+  assert.equal(f.kills.length, 3, 'kills up to this instant are public');
+  // the same instant from the other team's side shows THEIR units and nothing of ours unless seen
+  const b = computeFrame(replay, tl, nav, 'B', at(r3, 5000))!;
+  assert.deepEqual(b.units.map((u) => u.id), ['def1', 'def2', 'def3', 'def4', 'def5']);
+  assert.deepEqual(b.seen, []);
+});
+
+test('frame: highlights tempo is real time around events and fast in between', () => {
+  assert.equal(autoTempoAt(r3, at(r3, 10000)), 1); // 0.7 s before the first kills
+  assert.equal(autoTempoAt(r3, at(r3, 25000)), 6); // quiet post-plant stretch
+  assert.equal(autoTempoAt(r3, r3.endMs - 500), 1);
+});
+
+test('prefs: stored view preferences are validated field by field', () => {
+  assert.deepEqual(parsePrefs(null), DEFAULT_PREFS);
+  assert.deepEqual(parsePrefs('not json'), DEFAULT_PREFS);
+  assert.deepEqual(parsePrefs('{"mode":"cams","tempo":4,"belief":true}'), { mode: 'cams', tempo: 4, belief: true });
+  assert.deepEqual(parsePrefs('{"mode":"3d","tempo":3,"belief":"yes"}'), DEFAULT_PREFS);
+});

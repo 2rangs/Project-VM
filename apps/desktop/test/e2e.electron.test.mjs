@@ -42,6 +42,8 @@ async function main() {
   await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
+  // The live view remembers its mode; start from the default (tactical map) on every run.
+  await page.evaluate(() => localStorage.removeItem('pv-matchday-view'));
 
   // run a stub match (separate process → IPC → replay) and confirm it loads
   await page.getByTestId('run-match').click();
@@ -61,7 +63,10 @@ async function main() {
   await page.waitForSelector('[data-testid="fog-on"]', { timeout: 10000 });
   // Seed-42 match: team-A's richest perception frame (observed enemies + belief) is
   // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
-  await page.locator('.rv-scrub').fill('223900');
+  // The live view scrubs one round at a time: jump to round 5 and seek 12 s in (first contact).
+  await page.getByTestId('round-chip-5').click();
+  const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
+  await page.locator('.rv-scrub').fill(String(r5Start + 12000));
   await page.getByTestId('fog-belief').check();
   await page.waitForTimeout(1200);
   await page.screenshot({ path: path.join(OUT, 'desktop-fog.png') });

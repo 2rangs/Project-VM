@@ -30,10 +30,14 @@ import { loadPrefs, savePrefs, type MatchPrefs } from '../../matchday/prefs.ts';
 import { rosterHandles } from '../../matchday/roster.ts';
 import { usePlayback } from '../../matchday/usePlayback.ts';
 import { MatchStage, type StageView } from './MatchStage.ts';
+import { CamStage3D, type CamView } from './CamStage3D.ts';
+import { buildBlockout } from '../../matchday/world3d.ts';
+import { bridge } from '../../platform.ts';
 import { AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
 import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
+const blockout = buildBlockout(nav, (navgraph as unknown as { plantZones?: Array<{ zoneId: string; polygon: Array<{ x: number; y: number }> }> }).plantZones ?? []);
 const EMPTY: MatchTimeline = { rounds: [], startMs: 0, endMs: 0, hasTracks: false };
 const OUR_TEAM: TeamSlot = 'A';
 const CAM_SLOTS = [1, 2, 3, 4, 5] as const;
@@ -67,7 +71,8 @@ export interface LiveMatchProps {
   onReview: (() => void) | null;
 }
 
-interface ViewSpec { key: string; slot: number | null; detail: 'full' | 'compact' }
+/** A rectangle of the stage: `map2d` views are drawn by PixiJS, `cam3d` views by three.js. */
+interface ViewSpec { key: string; slot: number | null; detail: 'full' | 'compact'; kind: 'map2d' | 'cam3d' }
 
 export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay, onAutoPlay, onExit, onReview }: LiveMatchProps) {
   const t = useT();
@@ -190,10 +195,12 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
 
   const specs: ViewSpec[] = useMemo(() => (
     mode === 'tactical'
-      ? [{ key: 'map', slot: null, detail: 'full' as const }]
+      ? [{ key: 'map', slot: null, detail: 'full' as const, kind: 'map2d' as const }]
       : [
-          ...CAM_SLOTS.map((slot) => ({ key: `cam${slot}`, slot, detail: focus === `cam${slot}` ? 'full' as const : 'compact' as const })),
-          { key: 'team', slot: null, detail: focus === 'team' ? 'full' as const : 'compact' as const },
+          // each monitor: a first-person 3D view plus a small 2D radar inset centred on the player
+          ...CAM_SLOTS.map((slot) => ({ key: `cam${slot}`, slot, detail: 'compact' as const, kind: 'cam3d' as const })),
+          ...CAM_SLOTS.map((slot) => ({ key: `radar${slot}`, slot, detail: 'compact' as const, kind: 'map2d' as const })),
+          { key: 'team', slot: null, detail: focus === 'team' ? 'full' as const : 'compact' as const, kind: 'map2d' as const },
         ]
   ), [mode, focus]);
 
@@ -218,6 +225,31 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // three.js stage for the cams: created the first time the cams are opened, then kept.
+  const host3dRef = useRef<HTMLDivElement>(null);
+  const camStageRef = useRef<CamStage3D | null>(null);
+  const [mapMesh, setMapMesh] = useState<'blockout' | 'glb'>('blockout');
+  useEffect(() => {
+    const host = host3dRef.current;
+    if (mode !== 'cams' || !host || camStageRef.current) return;
+    const stage = new CamStage3D(nav, blockout);
+    stage.init(host);
+    camStageRef.current = stage;
+    (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
+    void bridge.loadMapMesh('ascent').then(async (bytes) => {
+      if (!bytes || camStageRef.current !== stage) return;
+      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      if (await stage.setMapGlb(buf)) setMapMesh('glb');
+    }).catch(() => { /* keep the blockout */ });
+  }, [mode]);
+  useEffect(() => {
+    const host = host3dRef.current;
+    if (!host) return;
+    const ro = new ResizeObserver(() => camStageRef.current?.resize(host.clientWidth, host.clientHeight));
+    ro.observe(host);
+    return () => { ro.disconnect(); camStageRef.current?.destroy(); camStageRef.current = null; };
+  }, []);
+
   useEffect(() => {
     let lastSig = '';
     return playback.subscribe((tMs) => {
@@ -227,6 +259,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       const base = host.getBoundingClientRect();
       const frameNow = L.replay && L.tl.rounds.length > 0 ? computeFrame(L.replay, L.tl, nav, L.viewTeam, tMs) : null;
       const views: StageView[] = [];
+      const cams: CamView[] = [];
       let sig = `${tMs}|${L.version}|${mapOk}`;
       for (const s of L.specs) {
         const el = viewEls.current.get(s.key);
@@ -234,9 +267,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         const r = el.getBoundingClientRect();
         if (r.width < 8 || r.height < 8) continue;
         const followId = s.slot != null && frameNow ? playerIdFor(OUR_TEAM, s.slot, frameNow.round.attacker) : null;
-        views.push({ key: s.key, x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, followId, detail: s.detail });
+        const rect = { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height };
+        if (s.kind === 'cam3d') { if (followId) cams.push({ key: s.key, ...rect, followId }); }
+        else views.push({ key: s.key, ...rect, followId, detail: s.detail });
         sig += `|${s.key}:${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
       }
+      // The 3D wall paces itself (CAMS_FPS) and skips identical frames on its own.
+      camStageRef.current?.render(frameNow, cams, { nameOf: L.nameOf });
       if (sig === lastSig) return; // paused and nothing moved: keep the last picture
       lastSig = sig;
       stage.render(frameNow, views, { showBelief: L.belief, nameOf: L.nameOf });
@@ -289,6 +326,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       />
 
       <div className="mdx-body">
+        <div className="mdx-canvas" ref={host3dRef} data-testid="three-stage" data-map={mapMesh} />
         <div className="mdx-canvas" ref={hostRef} data-testid="pixi-stage" />
 
         {mode === 'tactical' ? (
@@ -335,6 +373,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                     <span className="mdx-osd br">
                       {unit && unit.pose.alive ? <>{zoneName(unit.pose.zone)}{unit.view.enemies.length > 0 && <em className="contact">{t('mdx.cam.contact', { n: unit.view.enemies.length })}</em>}</> : ''}
                     </span>
+                    {state !== 'dead' && <><i className="mdx-xhair" aria-hidden /><span className="mdx-radar" ref={setViewEl(`radar${slot}`)} aria-hidden /></>}
                     {state === 'dead' && (
                       <span className="mdx-lost">
                         <strong>{t('mdx.cam.signalLost')}</strong>
