@@ -106,18 +106,25 @@ test('timeline: a gap equal to the walk time is a walk; non-adjacent zones get a
   assert.equal(hops[1].arriveMs - hops[1].departMs, 1500);
 });
 
-test('timeline: pose interpolates the display position but keeps the engine zone', () => {
+test('timeline: a zone hop is never drawn as a straight line between zone centres', () => {
   const atk4 = findPlayer(r3, 'atk4')!;
-  const hop = atk4.hops[0]; // attacker-spawn → a-lobby
+  const hop = atk4.hops[0]; // attacker-spawn → a-lobby (one keyframe per arrival: sparse)
+  assert.equal(hop.sampled, false);
   const mid = (hop.departMs + hop.arriveMs) / 2;
   const pose = poseAt(r3, atk4, mid, nav);
   assert.equal(pose.moving, true);
   assert.equal(pose.zone, 'attacker-spawn', 'the engine keeps the player on the origin zone until arrival');
   assert.equal(pose.toZone, 'a-lobby');
-  const d = displayPos(atk4, mid);
-  const a = displayPos(atk4, hop.departMs), b = displayPos(atk4, hop.arriveMs);
-  assert.ok(Math.abs(d.x - (a.x + b.x) / 2) < 1 && Math.abs(d.y - (a.y + b.y) / 2) < 1, 'halfway along the edge');
+  assert.ok(Math.abs(pose.hopProgress! - 0.5) < 0.01, 'progress is reported for the on-the-way indicator');
+  // the drawn position stays on the origin zone for the whole hop, then is on the destination
+  for (const u of [0.01, 0.25, 0.5, 0.75, 0.99]) {
+    assert.deepEqual(displayPos(atk4, hop.departMs + (hop.arriveMs - hop.departMs) * u), displayPos(atk4, hop.departMs));
+  }
   assert.deepEqual(logicalAt(atk4, hop.arriveMs).zone, 'a-lobby');
+  const after = displayPos(atk4, hop.arriveMs);
+  const off = formationOffset(atk4);
+  assert.ok(Math.abs(after.x - off.x - hop.to.x) < 1e-6 && Math.abs(after.y - off.y - hop.to.y) < 1e-6);
+  assert.equal(poseAt(r3, atk4, at(r3, 25000), nav).hopProgress, null, 'standing on a-site: not on the way anywhere');
 });
 
 test('timeline: travelling players face the next zone; holders face the choke toward the enemy spawn', () => {

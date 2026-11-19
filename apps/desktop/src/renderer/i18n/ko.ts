@@ -434,4 +434,7 @@ export const ko: Record<string, string> = {
   'mdx.sum.buys': '매수',
   'mdx.sum.plan': '우리 플랜',
   'mdx.watchNext': '라운드 {n} 보기 ▶',
+  'mdx.graph': '구역 그래프 (디버그)',
+  'mdx.graph.hint': '엔진의 구역 연결선. 구역 중심을 잇는 직선일 뿐 실제 이동 경로가 아닙니다.',
+  'mdx.legend.dest': '이동 목적지',
 };

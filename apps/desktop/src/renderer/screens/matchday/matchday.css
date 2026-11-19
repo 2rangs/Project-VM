@@ -117,6 +117,8 @@
 .lg.enemy { background: var(--mx-enemy); transform: rotate(45deg) scale(.85); }
 .lg.ghost { border: 2px solid var(--mx-enemy); transform: rotate(45deg) scale(.85); opacity: .7; }
 .lg.sound { border-radius: 50%; border: 2px solid var(--mx-sound); }
+.lg.dest { border-radius: 50%; border: 2px dashed var(--mx-ally); }
+.mdx-debugctl { position: absolute; right: 8px; bottom: 8px; z-index: 2; font-size: 10px; color: var(--mx-muted); background: #0b131bb8; padding: 4px 8px; }
 
 /* ── roster panels ────────────────────────────────────────────────────────────────────── */
 .mdx-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }

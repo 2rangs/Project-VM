@@ -432,4 +432,7 @@ export const en: Record<string, string> = {
   'mdx.sum.buys': 'Buys',
   'mdx.sum.plan': 'Our plan',
   'mdx.watchNext': 'Watch round {n} ▶',
+  'mdx.graph': 'Zone graph (debug)',
+  'mdx.graph.hint': 'Zone links from the engine: straight lines between zone centres, not walkable routes.',
+  'mdx.legend.dest': 'Destination',
 };

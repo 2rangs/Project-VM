@@ -63,6 +63,16 @@ timeouts) up to the furthest point you have watched — a round you have already
 marks. Banners appear when they matter (spike planted + countdown, 1 v N clutch, opponent
 timeout), and the tactical timeout opens the orders sheet over the stage.
 
+### No invented routes
+The live view never draws a straight line between zone centres as if it were a route: no movement
+trails, plan arrows or rotation lines, and the navgraph's travel edges are hidden (the
+`구역 그래프 (디버그)` checkbox on the tactical map shows them, labelled as not being routes). A
+player on the way somewhere is shown by a ring on the destination zone. The only lines on the map
+connect two real positions in a fight (a player and the enemy they see). The 3D blockout — used
+only when no map mesh is installed — is still a schematic of the zone graph, so its corridors are
+straight; the older `ReplayViewer` (Review's full-view replay and Dev) still interpolates between
+keyframes through `@pv/replay-engine`.
+
 ### The coach sees only what the team knows
 The default view is OUR team's fog of war: our players, enemies while one of our players sees
 them, remembered sightings (hollow, fading with age), sound cues, and — public information —
@@ -91,7 +101,7 @@ is a `MatchConfig.recordTracks` option in the engine.
 ### Approximations (derived in the renderer — and the engine field that would make each exact)
 | Shown | How it is derived today | Exact with |
 |---|---|---|
-| Movement | **track samples are drawn exactly as recorded**: consecutive samples (≤ 300 ms or ≤ 120 uu apart) are joined linearly, with no re-timing and no zone-centre shortcut, and players are oriented along their motion. Only when the engine gives one keyframe per zone arrival (the zone-hop engine at 8e165f4) is a travel segment reconstructed: arrival time minus the edge's run time (walk if the gap equals the walk time), plus a small per-player offset so players sharing a zone centre do not overlap | continuous per-tick positions in the replay tracks (then nothing is reconstructed) |
+| Movement | **Players are drawn only where the engine recorded them.** Consecutive track samples (≤ 300 ms or ≤ 120 uu apart) are joined linearly, with no re-timing, and players are oriented along their motion. Nothing is ever interpolated between zone centres: with the zone-hop engine at 8e165f4 (one keyframe per zone arrival) a player stays on the origin zone until the engine moves them, the destination zone is ringed and an arc around the player shows how far along the hop they are — no path is drawn, because the straight line between two zone centres is not a route. A small per-player offset separates players that engine stacks on one point | continuous per-tick positions along walkable paths in the replay tracks (then players simply move) |
 | Facing | engine rule re-implemented: toward the next zone while travelling, toward the choke on the enemy-spawn → here path when standing; toward the opponent during a duel | `TrackFrame.players[].facing` (a policy `aimZone` overrides the default and is not exported) |
 | Which of OUR players sees an enemy | team snapshot `currentlyVisible` ∩ the engine's `canSee` (alive, ≤ 4500 uu, 110° cone, zone sightline) evaluated per player, ∪ the opponent of a kill event the player is in. The team snapshot is the upper bound | per-player `visibleEnemyIds` in the perception snapshot |
 | Duels | a kill resolves in one engine tick; the two players are shown squaring up 1.2 s before it | `engage` events (dropped by the replay bridge) with real duel timing |
@@ -133,9 +143,10 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
   flipped (22/22 zone centres over geometry, 17–18/22 on a floor within 0.6 m; the next-best axis
   assignment scores 8).
 - **Known limits on the real mesh.** The engine simulates on the 22-zone graph, not on the mesh:
-  at 8e165f4 players hop between zone centres, so the reconstructed straight segment between two
-  centres can pass through walls. The view draws whatever the tracks contain, so an engine that
-  records continuous positions along walkable paths removes this without any change here. An enemy
+  at 8e165f4 players hop from zone centre to zone centre, so a monitor's camera cuts from one zone
+  to the next instead of walking there (the view never invents the path in between). An engine
+  that records continuous positions along walkable paths turns that into real movement without any
+  change here. An enemy
   the engine counts as seen can still be behind real geometry — its marker is drawn through walls
   rather than hidden; per-player observations would fix that.
 - **Measured** (this Mac, 1920×1080, 1× playback, before the view model was added): wall render 0.8–1.4 ms CPU

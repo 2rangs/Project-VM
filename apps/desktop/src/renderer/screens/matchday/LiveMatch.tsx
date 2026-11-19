@@ -81,6 +81,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const [focus, setFocus] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [mapOk, setMapOk] = useState<boolean | null>(null);
+  const [showGraph, setShowGraph] = useState(false); // debug: navgraph edges (never on by default, not persisted)
   const update = useCallback((patch: Partial<MatchPrefs>) => setPrefs((p) => { const n = { ...p, ...patch }; savePrefs(n); return n; }), []);
 
   const tl = useMemo(() => (replay ? buildTimeline(replay, match, nav) : EMPTY), [replay, match]);
@@ -218,8 +219,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         ]
   ), [mode, focus]);
 
-  const liveRef = useRef({ replay, tl, viewTeam, specs, belief: prefs.belief, nameOf, version: 0 });
-  liveRef.current = { replay, tl, viewTeam, specs, belief: prefs.belief, nameOf, version: liveRef.current.version + 1 };
+  const liveRef = useRef({ replay, tl, viewTeam, specs, belief: prefs.belief, showGraph, nameOf, version: 0 });
+  liveRef.current = { replay, tl, viewTeam, specs, belief: prefs.belief, showGraph, nameOf, version: liveRef.current.version + 1 };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -290,7 +291,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       camStageRef.current?.render(frameNow, cams, { nameOf: L.nameOf });
       if (sig === lastSig) return; // paused and nothing moved: keep the last picture
       lastSig = sig;
-      stage.render(frameNow, views, { showBelief: L.belief, nameOf: L.nameOf });
+      stage.render(frameNow, views, { showBelief: L.belief, showGraph: L.showGraph, nameOf: L.nameOf });
     });
   }, [playback.subscribe, mapOk]);
 
@@ -362,11 +363,16 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
               <div className="mdx-map" ref={setViewEl('map')} data-testid="tactical-map">
                 {overlays}
                 {mapOk === false && <span className="mdx-maphint">{t('mdx.mapOffline')}</span>}
+                <label className="mdx-ctl check mdx-debugctl" title={t('mdx.graph.hint')}>
+                  <input type="checkbox" checked={showGraph} onChange={(e) => setShowGraph(e.target.checked)} data-testid="debug-graph" />
+                  {t('mdx.graph')}
+                </label>
                 <div className="mdx-legend" aria-hidden>
                   <span><i className="lg ally" />{t('mdx.legend.ally')}</span>
                   <span><i className="lg enemy" />{t('mdx.legend.enemy')}</span>
                   <span><i className="lg ghost" />{t('mdx.legend.ghost')}</span>
                   <span><i className="lg sound" />{t('mdx.legend.sound')}</span>
+                  <span><i className="lg dest" />{t('mdx.legend.dest')}</span>
                 </div>
               </div>
             </div>

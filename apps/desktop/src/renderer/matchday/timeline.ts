@@ -304,11 +304,15 @@ export function formationOffset(p: Pick<PlayerRound, 'slot' | 'side'> & { contin
   return { x: Math.cos(a) * radius, y: Math.sin(a) * radius };
 }
 
-const ease = (u: number) => u * u * (3 - 2 * u);
-
 export interface Pose {
-  /** Display position: interpolated along the edge while travelling (+ formation offset). */
+  /**
+   * Display position. Between two consecutive engine samples it is their linear blend; during a
+   * zone hop (sparse tracks) it stays on the zone the engine still has the player on — the view
+   * never invents a path between zone centres.
+   */
   readonly pos: Vec3;
+  /** 0..1 through a zone hop (sparse tracks only), for the "on the way" indicator; null otherwise. */
+  readonly hopProgress: number | null;
   /** Engine position and zone (what vision/hearing/combat used). */
   readonly logicalPos: Vec3;
   readonly zone: string;
@@ -357,16 +361,20 @@ export function contactAt(round: RoundTimeline, playerId: string, tMs: number): 
   return null;
 }
 
-/** Display position only (travel interpolation + formation offset). */
+/**
+ * Display position: exactly what the engine recorded. Consecutive track samples are joined
+ * linearly; a zone hop is NOT animated — the player stays on the origin zone until the engine
+ * moves them, because the straight line between two zone centres is not a route (it crosses
+ * walls). The small formation offset only separates players the zone-hop engine stacks on one point.
+ */
 export function displayPos(p: PlayerRound, tMs: number): Vec3 {
   const t = p.deathMs != null ? Math.min(tMs, p.deathMs) : tMs;
   const off = formationOffset(p);
   const hop = activeHop(p, t);
   let base: Vec3;
-  if (hop) {
+  if (hop?.sampled) {
     const span = hop.arriveMs - hop.departMs;
-    const lin = span > 0 ? Math.min(1, Math.max(0, (t - hop.departMs) / span)) : 1;
-    const u = hop.sampled ? lin : ease(lin); // engine samples are joined linearly, never re-timed
+    const u = span > 0 ? Math.min(1, Math.max(0, (t - hop.departMs) / span)) : 1;
     base = { x: hop.from.x + (hop.to.x - hop.from.x) * u, y: hop.from.y + (hop.to.y - hop.from.y) * u, z: hop.from.z + (hop.to.z - hop.from.z) * u };
   } else base = logicalAt(p, t).pos;
   return { x: base.x + off.x, y: base.y + off.y, z: base.z };
@@ -393,6 +401,7 @@ export function poseAt(round: RoundTimeline, p: PlayerRound, tMs: number, nav: N
   const logical = logicalAt(p, t);
   return {
     pos: displayPos(p, t), logicalPos: logical.pos, zone: logical.zone, alive,
+    hopProgress: hop && !hop.sampled ? Math.min(1, Math.max(0, (t - hop.departMs) / Math.max(1, hop.arriveMs - hop.departMs))) : null,
     moving: !!hop, moveMode: hop?.mode ?? null, toZone: hop?.toZone ?? null,
     facing: facingAt(round, p, t, nav),
   };

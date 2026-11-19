@@ -30,6 +30,8 @@ export interface StageView {
 
 export interface StageOptions {
   readonly showBelief: boolean;
+  /** Debug only: draw the navgraph's travel edges (straight zone-to-zone lines — NOT routes). */
+  readonly showGraph: boolean;
   /** Display name for an engine player id in the current round. */
   readonly nameOf: (id: string) => string;
 }
@@ -217,13 +219,15 @@ export class MatchStage {
     const lit = node.litMask.clear();
     node.beginLabels();
 
-    // zone schematic: travel links + callout names (stronger when there is no map image)
-    const linkAlpha = hasMap ? 0.1 : 0.32;
-    for (const l of nav.links) {
-      const a = nav.zone(l.a), b = nav.zone(l.b);
-      if (!a || !b) continue;
-      const pa = this.toScreen(cam, a.position), pb = this.toScreen(cam, b.position);
-      under.moveTo(pa.x, pa.y).lineTo(pb.x, pb.y).stroke({ color: C.ink, width: 1, alpha: linkAlpha });
+    // The navgraph's travel edges are straight lines between zone centres: they cross walls and
+    // are not routes, so they are a debug overlay only.
+    if (opts.showGraph) {
+      for (const l of nav.links) {
+        const a = nav.zone(l.a), b = nav.zone(l.b);
+        if (!a || !b) continue;
+        const pa = this.toScreen(cam, a.position), pb = this.toScreen(cam, b.position);
+        under.moveTo(pa.x, pa.y).lineTo(pb.x, pb.y).stroke({ color: C.sound, width: 1, alpha: 0.45 });
+      }
     }
     if (!hasMap) for (const z of nav.zones) { const p = this.toScreen(cam, z.position); under.circle(p.x, p.y, this.px(cam, 420)).fill({ color: C.line, alpha: 0.55 }); }
 
@@ -245,13 +249,6 @@ export class MatchStage {
         const r = this.px(cam, 520);
         lit.circle(q.x, q.y, r).fill(0xffffff);
         under.circle(q.x, q.y, r).fill({ color: C.ally, alpha: 0.05 }).stroke({ color: C.ally, width: 1, alpha: 0.18 });
-        if (zid !== u.pose.zone) {
-          // sightline corridor from the player to the watched zone
-          const dx = q.x - p.x, dy = q.y - p.y; const len = Math.hypot(dx, dy) || 1;
-          const nx = (-dy / len) * this.px(cam, 300), ny = (dx / len) * this.px(cam, 300);
-          lit.poly([p.x + nx * 0.4, p.y + ny * 0.4, q.x + nx, q.y + ny, q.x - nx, q.y - ny, p.x - nx * 0.4, p.y - ny * 0.4]).fill(0xffffff);
-          under.moveTo(p.x, p.y).lineTo(q.x, q.y).stroke({ color: C.ally, width: 1, alpha: 0.22 });
-        }
       }
       // the 110° cone the engine uses for detection
       const a = this.screenAngle(cam, u.facingRad);
@@ -349,7 +346,7 @@ export class MatchStage {
         this.hexagon(over, p.x, p.y, r).fill(sp.phase === 'defused' ? C.ally : C.spike).stroke({ color: C.bg, width: 2 });
         const ourDefuse = defuse && findPlayer(round, defuse.playerId)?.team === frame.team;
         if (sp.phase === 'defusing' && ourDefuse && sp.progress != null) {
-          over.arc(p.x, p.y, r + 6, -Math.PI / 2, -Math.PI / 2 + sp.progress * Math.PI * 2).stroke({ color: C.ally, width: 3 });
+          this.arc(over, p.x, p.y, r + 6, -Math.PI / 2, -Math.PI / 2 + sp.progress * Math.PI * 2).stroke({ color: C.ally, width: 3 });
         }
       }
 
@@ -370,8 +367,20 @@ export class MatchStage {
           over.circle(p.x, p.y, r + 4 + lead * 5).stroke({ color: C.ink, width: 2, alpha: 1 - lead });
         }
         over.circle(p.x, p.y, r).fill(follow && !me ? C.allyDeep : C.ally).stroke({ color: C.bg, width: 2 });
+        if (u.pose.hopProgress != null && u.pose.toZone) {
+          // On the way to another zone (zone-hop engine): no path is drawn — the destination is
+          // ringed, and an arc around the player shows how far along they are.
+          this.arc(over, p.x, p.y, r + 4, -Math.PI / 2, -Math.PI / 2 + u.pose.hopProgress * Math.PI * 2).stroke({ color: C.ink, width: 2, alpha: 0.9 });
+          const dest = nav.zone(u.pose.toZone);
+          if (dest) {
+            const q = this.toScreen(cam, dest.position);
+            const rr = this.px(cam, 360);
+            for (let k = 0; k < 12; k += 2) this.arc(over, q.x, q.y, rr, (k / 12) * Math.PI * 2, ((k + 1) / 12) * Math.PI * 2).stroke({ color: C.ally, width: 2, alpha: 0.75 });
+            relevant.add(dest.id);
+          }
+        }
         if ((u.status.state === 'planting' || u.status.state === 'defusing') && u.status.progress != null) {
-          over.arc(p.x, p.y, r + 5, -Math.PI / 2, -Math.PI / 2 + u.status.progress * Math.PI * 2).stroke({ color: C.sound, width: 3 });
+          this.arc(over, p.x, p.y, r + 5, -Math.PI / 2, -Math.PI / 2 + u.status.progress * Math.PI * 2).stroke({ color: C.sound, width: 3 });
         }
         node.label(`s:${u.id}`, String(u.slot), p.x, p.y, me ? 13 : compact ? 10 : 12, C.bg);
         if (!compact || me) node.label(`n:${u.id}`, opts.nameOf(u.id), p.x, p.y + r + 10, compact ? 10 : 12, C.ally);
@@ -391,6 +400,11 @@ export class MatchStage {
       node.label(`z:${z.id}`, z.name.toUpperCase(), p.x, p.y - this.px(cam, 300) - 4, compact ? 9 : 10, on ? C.ink : C.muted, lost ? 0.35 : on ? 0.9 : 0.55);
     }
     node.endLabels();
+  }
+
+  /** An open arc as its own sub-path (a bare `arc` would be joined to the previous point by a straight line). */
+  private arc(g: Graphics, x: number, y: number, r: number, a0: number, a1: number): Graphics {
+    return g.moveTo(x + Math.cos(a0) * r, y + Math.sin(a0) * r).arc(x, y, r, a0, a1);
   }
 
   private near(view: StageView, p: { x: number; y: number }, margin = 12): boolean {
