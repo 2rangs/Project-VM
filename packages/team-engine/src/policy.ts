@@ -255,6 +255,10 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   private saveCommitted = false;
   /** Post-plant: players who have thrown (broken their hold to dry-peek) this round. */
   private readonly throwers = new Set<string>();
+  /** Post-plant: the staging zone of each defender's retake approach (assigned once per plant). */
+  private readonly retakeStages = new Map<string, ZoneId>();
+  /** Zones with a direct edge onto a zone (its entries), cached per zone. */
+  private readonly entryCache = new Map<string, readonly ZoneId[]>();
   constructor(
     private readonly spatial: SpatialQuery,
     private readonly options: TeamPolicyOptions = {},
@@ -734,6 +738,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (phase !== "planted" && phase !== "defusing") { // new round / pre-plant
       this.retakeCommitted = this.saveCommitted = false;
       this.throwers.clear();
+      this.retakeStages.clear();
     }
     if (view.side !== "defense" || (phase !== "planted" && phase !== "defusing")) return out;
     const pos = view.spike.position;
@@ -744,9 +749,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     let best: (typeof defenders)[number] | null = null;
     let bestMs = Infinity;
     for (const d of defenders) {
-      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-      const t = dz === plantZone ? 0 : this.spatial.shortestTravelTimeMs(dz, plantZone, "run");
-      if (t !== null && t < bestMs) {
+      const t = this.retakeTravelMs(view, d, plantZone);
+      if (t < bestMs) {
         bestMs = t;
         best = d;
       }
@@ -769,7 +773,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (!this.retakeCommitted && defenders.length > 1 && !this.retakeGo(view, defenders, plantZone)) {
       for (const d of defenders) {
         const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-        const entry = this.retakeEntry(dz, plantZone);
+        const entry = this.retakeStageOf(view, d, plantZone);
         // Throw: runs onto the site alone instead of waiting for the group.
         if (dz !== plantZone && this.throws(d.id, rng)) {
           set({ playerId: d.id, kind: "move", targetZone: plantZone, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:solo-retake" });
@@ -815,6 +819,86 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     return from;
   }
 
+  /** Run travel time between two zones (0 for the same zone, ∞ when unreachable). */
+  private legMs(from: ZoneId, to: ZoneId): number {
+    return from === to ? 0 : this.spatial.shortestTravelTimeMs(from, to, "run") ?? Infinity;
+  }
+
+  /** The entries of a zone: every zone with a direct edge onto it. */
+  private entriesOf(zone: ZoneId): readonly ZoneId[] {
+    const key = String(zone);
+    let e = this.entryCache.get(key);
+    if (!e) {
+      e = this.spatial.allZones().filter((z) => z !== zone && this.spatial.findPath(z, zone, "run")?.path.length === 2);
+      this.entryCache.set(key, e);
+    }
+    return e;
+  }
+
+  /**
+   * A defender's retake approach — a minimal-exposure path. The attackers holding the spike watch
+   * the sightlines out of the plant zone, pre-aimed and standing still; a retaker who crosses one
+   * of those sightlines is seen first, mid-stride, by every gun on the site (the worst duel in the
+   * engine: the holder's first-sight edge and the crossfire on the entrant). So the approach is
+   * chosen like a threat-weighted route: for each entry E of the plant zone,
+   *     exposure(E) = Σ time spent in zones the plant zone can see, on  from → E → plant
+   *     travel(E)   = time(from → E) + time(E → plant)
+   * and the defender takes the entry with the least exposure among those that still leave a full
+   * defuse plus the safety margin on the detonation timer (ties: the faster one); when no entry
+   * fits the clock, the fastest. It stages at the last zone of that approach the plant cannot see.
+   * Nothing here is map-specific — which entry is unwatched falls out of the map's sightlines.
+   */
+  retakeApproach(from: ZoneId, plantZone: ZoneId, timerMs: number): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number } {
+    if (from === plantZone) return { stage: plantZone, entry: plantZone, travelMs: 0, exposedMs: 0 };
+    const seen = (z: ZoneId) => this.spatial.hasLineOfSight(plantZone, z) || this.spatial.hasLineOfSight(z, plantZone);
+    let best: { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits: boolean } | null = null;
+    for (const entry of this.entriesOf(plantZone)) {
+      const route = from === entry ? [from] : this.spatial.findPath(from, entry, "run")?.path;
+      if (!route || route.includes(plantZone)) continue; // through the plant is not an approach to it
+      const full = [...route, plantZone];
+      let travelMs = 0;
+      let exposedMs = 0;
+      for (let i = 0; i + 1 < full.length; i++) {
+        const leg = this.legMs(full[i]!, full[i + 1]!);
+        travelMs += leg;
+        if (seen(full[i]!)) exposedMs += leg;
+      }
+      if (!Number.isFinite(travelMs)) continue;
+      const fits = travelMs + DEFUSE_DURATION_MS + RETAKE_TIME_MARGIN_MS <= timerMs;
+      let stage = from;
+      for (let i = route.length - 1; i >= 0; i--) if (!seen(route[i]!)) { stage = route[i]!; break; }
+      const better = !best
+        || (fits !== best.fits ? fits
+          : fits ? exposedMs < best.exposedMs || (exposedMs === best.exposedMs && travelMs < best.travelMs)
+          : travelMs < best.travelMs);
+      if (better) best = { stage, entry, travelMs, exposedMs, fits };
+    }
+    return best ?? { stage: this.retakeEntry(from, plantZone), entry: from, travelMs: this.legMs(from, plantZone), exposedMs: 0 };
+  }
+
+  /**
+   * Time a defender still needs to reach the spike: along its own approach (to the staging zone,
+   * then onto the plant), or straight there when that is now shorter.
+   */
+  private retakeTravelMs(view: PolicyView, d: PolicyView["teammates"][number], plantZone: ZoneId): number {
+    const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+    if (dz === plantZone) return 0;
+    const stage = this.retakeStageOf(view, d, plantZone);
+    return Math.min(this.legMs(dz, plantZone), this.legMs(dz, stage) + this.legMs(stage, plantZone));
+  }
+
+  /** The staging zone of a defender's retake approach, chosen once when the retake is called. */
+  private retakeStageOf(view: PolicyView, d: PolicyView["teammates"][number], plantZone: ZoneId): ZoneId {
+    const key = String(d.id);
+    let stage = this.retakeStages.get(key);
+    if (!stage) {
+      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+      stage = this.retakeApproach(dz, plantZone, view.spike.detonationInMs ?? Infinity).stage;
+      this.retakeStages.set(key, stage);
+    }
+    return stage;
+  }
+
   /**
    * Retake trigger. The old policy sent the nearest defender in alone the instant the spike went
    * down, so retakes trickled in one at a time into attackers holding pre-aimed angles (post-plant
@@ -829,9 +913,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     let slowest = 0;
     for (const d of defenders) {
       const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-      if (dz !== plantZone && dz !== this.retakeEntry(dz, plantZone)) allStaged = false;
-      const t = dz === plantZone ? 0 : this.spatial.shortestTravelTimeMs(dz, plantZone, "run");
-      if (t != null && t + DEFUSE_DURATION_MS <= timer) slowest = Math.max(slowest, t);
+      if (dz !== plantZone && dz !== this.retakeStageOf(view, d, plantZone)) allStaged = false;
+      const t = this.retakeTravelMs(view, d, plantZone);
+      if (t + DEFUSE_DURATION_MS <= timer) slowest = Math.max(slowest, t);
     }
     return allStaged || slowest + DEFUSE_DURATION_MS + RETAKE_TIME_MARGIN_MS >= timer;
   }
