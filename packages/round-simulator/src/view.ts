@@ -1,7 +1,7 @@
 import type { SpatialEngine } from "@pv/spatial-engine";
-import type { AbilityState, ObservationState, ObservedEnemy, SoundObservation, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
+import type { AbilityState, MapObservation, ObservationState, ObservedEnemy, SoundObservation, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
 import type { PerceptionEngine } from "@pv/perception-engine";
-import { revealedEnemies, activeAreaDenials, type AbilityEngine } from "@pv/ability-engine";
+import { revealedEnemies, activeAreaDenials, deployedEffects, type AbilityCatalog, type AbilityEngine } from "@pv/ability-engine";
 import { buildBelief } from "@pv/decision-engine";
 import { asAbilityId } from "@pv/shared-types";
 import type {
@@ -13,9 +13,12 @@ import type {
 } from "@pv/shared-types";
 import { mulberry32, type Rng } from "./rng.js";
 import type {
+  AbilityFact,
   AudibleZoneResult,
   BeliefState,
   PolicyTeammate,
+  TeammateTransit,
+  VisibleEffect,
   PolicyView,
   RandomSource,
   SpatialQuery,
@@ -25,7 +28,7 @@ import type {
   ZonePath,
   ZoneType,
 } from "./policy-contract.js";
-import type { PerceptionSnapshot, ShotCue, SimPlayer, SimState, Side } from "./types.js";
+import type { AbilityCue, PerceptionSnapshot, ShotCue, SimPlayer, SimState, Side } from "./types.js";
 
 /**
  * Adapter exposing PV-4's SpatialEngine as PV-3's SpatialQuery (the dependency-inversion
@@ -118,8 +121,9 @@ function toAbilityInventory(p: SimPlayer): AbilityInventory {
   };
 }
 
-function toTeammate(p: SimPlayer): PolicyTeammate {
+function toTeammate(p: SimPlayer, transit?: TeammateTransit): PolicyTeammate {
   return {
+    ...(transit ? { transit } : {}),
     id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
     position: p.position, facing: p.facing, health: p.health, armor: p.armor, alive: p.alive,
     weapon: p.weaponId ? { weaponId: p.weaponId } : null,
@@ -159,6 +163,14 @@ export interface BuildViewOptions {
   readonly cues?: readonly ShotCue[];
   /** Round clock (elapsed ms) the cue timestamps are measured on. */
   readonly elapsedMs?: number;
+  /** Ability cues observed so far this round (heard casts / seen deployed effects), same role as `cues`. */
+  readonly abilityCues?: readonly AbilityCue[];
+  /** Ability catalog, to give the team the public facts of the abilities it carries. */
+  readonly abilityCatalog?: AbilityCatalog;
+  /** Where a player is going (own team only — the simulator's movement state). */
+  readonly transitOf?: (p: SimPlayer) => TeammateTransit | undefined;
+  /** Players on a route but standing still this tick (waiting at a hazard's edge): they make no footsteps. */
+  readonly stationaryIds?: { has(id: string): boolean };
 }
 
 /** Shot cues older than this no longer appear in the observation (the belief layer ages the rest). */
@@ -186,6 +198,68 @@ function shotCueObservations(side: Side, state: SimState, opts: BuildViewOptions
   return [...best.values()];
 }
 
+/**
+ * The side's ability cues as observations — the same path a shot cue takes. A heard cast points
+ * at the caster's zone; a seen smoke / wall / fire points at the EFFECT's zone (where utility is
+ * being committed). Both are zone-level and carry the cue's confidence; ages are re-expressed on
+ * the observation clock exactly as for shot cues. One observation per zone and channel (the
+ * freshest; firmest on a tie), so one smoke is one piece of evidence however long it stands.
+ */
+function abilityCueObservations(side: Side, state: SimState, opts: BuildViewOptions): SoundObservation[] {
+  if (!opts.abilityCues || opts.abilityCues.length === 0 || opts.elapsedMs === undefined) return [];
+  const best = new Map<string, SoundObservation>();
+  for (const c of opts.abilityCues) {
+    const age = opts.elapsedMs - c.elapsedMs;
+    if (c.observerSide !== side || age < 0 || age > CUE_OBSERVATION_WINDOW_MS) continue;
+    const key = `${c.zoneId}:${c.channel}`;
+    const prev = best.get(key);
+    const heardAtMs = state.timeRemainingMs - age;
+    if (!prev || heardAtMs > prev.heardAtMs || (heardAtMs === prev.heardAtMs && c.confidence > prev.confidence)) {
+      best.set(key, { kind: "abilityCast", approxPosition: { ...c.zonePosition }, heardAtMs, confidence: c.confidence });
+    }
+  }
+  return [...best.values()];
+}
+
+/**
+ * Active effects the side knows of: all of its own, and enemy effects that stand visibly in the
+ * world (smoke / wall / fire / slow field) in a zone a living teammate occupies or has a sightline
+ * onto. Observation-limited (DECISION-004): an enemy effect nobody can see is not reported.
+ */
+function visibleEffectsFor(side: Side, state: SimState, spatial: SpatialQuery, opts: BuildViewOptions): Array<VisibleEffect & { origin: { x: number; y: number; z: number } }> {
+  if (!opts.abilityEngine || opts.elapsedMs === undefined) return [];
+  const effects = deployedEffects(opts.abilityEngine, opts.elapsedMs);
+  if (effects.length === 0) return [];
+  const teamId = side === "attack" ? "attackers" : "defenders";
+  const mine = state.players.filter((p) => p.side === side && p.alive);
+  const seen = (zoneId: string): boolean => mine.some((p) => p.zoneId === zoneId || spatial.hasLineOfSight(p.zoneId, zoneId));
+  const out: Array<VisibleEffect & { origin: { x: number; y: number; z: number } }> = [];
+  for (const e of effects) {
+    const own = e.teamId === teamId;
+    if (!own && !(e.worldVisible && seen(e.zoneId))) continue;
+    out.push({ zoneId: e.zoneId, effectType: e.effectType, abilityId: e.abilityId, own, remainingMs: e.remainingMs, origin: { ...e.origin } });
+  }
+  return out;
+}
+
+/** Catalog facts of every ability the side's players carry. */
+function abilityFactsFor(side: Side, state: SimState, catalog?: AbilityCatalog): Record<string, AbilityFact> {
+  const out: Record<string, AbilityFact> = {};
+  if (!catalog) return out;
+  for (const p of state.players) {
+    if (p.side !== side) continue;
+    for (const a of p.abilities) {
+      const s = catalog[a.abilityId];
+      if (!s || out[a.abilityId]) continue;
+      out[a.abilityId] = {
+        effectType: s.effectType, effectTypes: s.effectTypes, durationMs: s.durationMs, flashDurationMs: s.flashDurationMs,
+        radiusUnits: s.radiusUnits, rangeUnits: s.rangeUnits, windupMs: s.windupMs,
+      };
+    }
+  }
+  return out;
+}
+
 export function buildPolicyView(
   side: Side,
   state: SimState,
@@ -195,16 +269,32 @@ export function buildPolicyView(
   dtMs = 0,
   opts: BuildViewOptions = {},
 ): PolicyView {
-  const result = perception.perceive(toPerceptionWorldForView(state, opts.activeAbilities));
+  const result = perception.perceive(toPerceptionWorldForView(state, opts.activeAbilities, opts.stationaryIds));
   const teamId = side === "attack" ? "attackers" : "defenders";
   const team = result.teams.get(teamId);
-  const teammates = state.players.filter((p) => p.side === side).map(toTeammate);
+  const teammates = state.players.filter((p) => p.side === side).map((p) => toTeammate(p, opts.transitOf?.(p)));
+  const knownEffects = visibleEffectsFor(side, state, spatial, opts);
+  const visibleEffects: VisibleEffect[] = knownEffects.map(({ origin: _origin, ...e }) => e);
+  // What the team knows utility has changed on the map: one entry per known effect, at the
+  // effect's own centre (the centre of the zone it was placed on — not where its caster stands).
+  const knownMapChanges: MapObservation[] = knownEffects.map((e) => ({
+    abilityId: e.abilityId,
+    approxPosition: e.origin,
+    observedAtMs: state.timeRemainingMs,
+    note: `${e.effectType}:${e.own ? "own" : "enemy"}:${e.zoneId}`,
+  }));
 
   // recon/trap reveals (frozen snapshots) become remembered enemies in the team picture.
   const reveals: ObservedEnemy[] = opts.abilityEngine
     ? revealedEnemies(opts.abilityEngine)
         .filter((r) => r.teamId !== teamId)
-        .map((r) => ({ playerId: r.enemyId, agentId: null, lastSeenPosition: r.position, lastSeenAtMs: r.revealedAtMs, healthBand: "unknown", observedWeaponId: null, currentlyVisible: false }))
+        // A reveal's age is measured on the elapsed clock; the observation clock is the remaining
+        // round time, so re-express it there (as shot cues do) instead of mixing the two clocks.
+        .map((r) => ({
+          playerId: r.enemyId, agentId: null, lastSeenPosition: r.position,
+          lastSeenAtMs: opts.elapsedMs !== undefined ? state.timeRemainingMs - Math.max(0, opts.elapsedMs - r.revealedAtMs) : r.revealedAtMs,
+          healthBand: "unknown", observedWeaponId: null, currentlyVisible: false,
+        }))
     : [];
 
   // team-level observation: perceived picture + recon reveals (dedup, prefer live sight)
@@ -219,9 +309,10 @@ export function buildPolicyView(
     audibleEvents: [
       ...(team ? Object.values(team.perPlayer).flatMap((o) => o.audibleEvents) : []),
       ...shotCueObservations(side, state, opts),
+      ...abilityCueObservations(side, state, opts),
     ],
     teammateReports: team?.sharedReports ?? [],
-    knownMapChanges: [],
+    knownMapChanges,
   };
   const perPlayerObservation: Record<string, ObservationState> = team ? { ...team.perPlayer } : {};
 
@@ -257,6 +348,8 @@ export function buildPolicyView(
     knownEnemyAliveCount: state.players.filter((p) => p.side !== side && p.alive).length,
     matchScore: null,
     visibleHazards: visibleHazardsFor(side, state, spatial, opts.abilityEngine),
+    visibleEffects,
+    abilityFacts: abilityFactsFor(side, state, opts.abilityCatalog),
   };
 }
 
@@ -309,12 +402,12 @@ export function toPerceptionSnapshot(view: PolicyView, spatial: SpatialQuery, tM
 }
 
 // Local perception-world builder (mirror of simulator's; kept here so view is self-contained).
-function toPerceptionWorldForView(state: SimState, activeAbilities: readonly AbilityState[] = []) {
+function toPerceptionWorldForView(state: SimState, activeAbilities: readonly AbilityState[] = [], stationaryIds?: { has(id: string): boolean }) {
   const players: PPlayerState[] = state.players.map((p) => ({
     id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
     position: p.position, velocity: { x: 0, y: 0, z: 0 }, facing: p.facing,
     health: p.health, armor: p.armor, alive: p.alive, weapon: null,
-    behaviorState: p.pathIndex < p.path.length ? (p.moveMode === "run" ? "running" : "walking") : "still",
+    behaviorState: p.pathIndex < p.path.length && !stationaryIds?.has(p.id) ? (p.moveMode === "run" ? "running" : "walking") : "still",
   }));
   return {
     matchId: state.matchId, roundId: state.roundId, roundNumber: 1, tick: state.tick,

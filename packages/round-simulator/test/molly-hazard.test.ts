@@ -45,8 +45,10 @@ describe("molly / area-denial as a passable hazard", () => {
     expect(blind.visibleHazards?.some((h) => h.zoneId === "a-site")).toBe(false);
   });
 
-  it("deals per-tick damage to someone standing in it (kills a holder over time)", () => {
-    // a defender mollies the attacker's zone; the attacker holds there and burns.
+  it("burns someone standing on the patch only for as long as it takes to get off it", () => {
+    // A defender mollies the attacker's zone. The fire is a patch (radius 4 m), not the whole
+    // zone: the attacker caught on it runs out by the nearest edge — r / v = 400 / 675 s ≈ 0.59 s,
+    // six 100 ms ticks at 6 HP — and is then clear of it for the rest of the burn.
     const holdInMolly: DecisionPolicy = { decide: (v: PolicyView): PolicyDecision => ({ strategy: "default", roles: [], commands: v.teammates.filter((p) => p.alive).map((p) => ({ playerId: p.id, kind: "hold" as const })) }) };
     const mollyThenHold: DecisionPolicy = {
       decide: (v: PolicyView): PolicyDecision => ({
@@ -64,9 +66,9 @@ describe("molly / area-denial as a passable hazard", () => {
       policies: { attack: holdInMolly, defense: mollyThenHold },
       config: { seed: 1, roundTimeMs: 20000 },
     }).runRound(state);
-    // the attacker standing in the molly dies to it
-    expect(r.events.some((e) => e.kind === "kill" && e.target === "atk" && e.detail === "molly")).toBe(true);
-    expect(r.winner).toBe("defense");
+    expect(r.events.some((e) => e.kind === "kill" && e.detail === "molly")).toBe(false);
+    expect(state.players.find((p) => p.id === "atk")!.health).toBe(100 - 6 * 6);
+    expect(r.reason).toBe("timeExpired"); // nobody died: the patch cost health and position, not the round
   });
 
   it("is deterministic", () => {
