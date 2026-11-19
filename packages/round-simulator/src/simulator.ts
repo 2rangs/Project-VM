@@ -1,6 +1,8 @@
 import type { SpatialEngine } from "@pv/spatial-engine";
 import {
   PerceptionEngine,
+  DEFAULT_PARAMS as PERCEPTION_PARAMS,
+  facingAngleTo,
   type PlayerState as PPlayerState,
   type WorldState as PWorldState,
 } from "@pv/perception-engine";
@@ -13,11 +15,15 @@ import {
 import {
   AbilityEngine,
   type AbilityCatalog,
+  type AbilitySpec,
+  type GroundPatch,
+  type SnapshotEnemy,
   checkAvailability,
   toPerceptionAbilityStates,
   visionBlockerIsSmoke,
-  deniedZoneIds,
-  activeAreaDenials,
+  activeGroundPatches,
+  deployedEffects,
+  visionBlockedZones,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
@@ -33,9 +39,13 @@ import type {
   SimConfig,
   TrackFrame,
 } from "./types.js";
-import { AVERAGE_TRAITS, DEFAULT_CONFIG, type ShotCue } from "./types.js";
-import { angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness, soundCueConfidence, TRACER_CUE_CONFIDENCE } from "./situational.js";
-import type { ActionCommand, BeliefState, DecisionPolicy } from "./policy-contract.js";
+import { AVERAGE_TRAITS, DEFAULT_CONFIG, type AbilityCue, type ShotCue } from "./types.js";
+import {
+  abilityCastCueConfidence, angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness,
+  patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
+  DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, TRACER_CUE_CONFIDENCE,
+} from "./situational.js";
+import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
 import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
@@ -61,12 +71,27 @@ const CROSSFIRE_SAME_LINE_WEIGHT = 0.2;
 const PEEK_CORNER_DISTANCE = 300;
 
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
-// Passable-hazard (molly / area-denial) pathfinding cost: how long you'd detour to avoid 1 HP of
-// damage, and how long a crosser is assumed exposed in a hazard zone. A fresh molly thus adds a
-// multi-second detour cost that shrinks to ~0 as it expires, so the planner routes around a fresh
-// molly but walks a dying one.
-const HAZARD_MS_PER_HP = 50;
-const HAZARD_EXPOSURE_MS = 700;
+// Passable hazard (molly / area-denial): a fire patch is a disc on the route (situational.ts
+// patchExposureMs). It is priced in TIME only — what it costs is the wait for it to burn out — so
+// no HP↔time exchange rate is needed: a mover waits it out, or goes round when the detour is
+// shorter than the wait, and walks through it (paying the chord's damage) only when its side's
+// clock cannot afford the wait.
+/** Half field of view (radians): a holder is "watching" an edge when it lies inside this cone. */
+const HALF_FOV_RAD = (PERCEPTION_PARAMS.vision.halfFovDeg * Math.PI) / 180;
+
+/** What a mover needs to know about the ground ahead (built once per tick). */
+interface MoveWorld {
+  readonly state: SimState;
+  readonly fire: readonly GroundPatch[];
+  readonly slow: readonly GroundPatch[];
+  readonly hazardCosts: ReadonlyMap<string, number>;
+  /** `${patch}|${player}` → elapsed ms until which the player is inside that patch (set once). */
+  readonly patchExposure: Map<string, number>;
+  /** player → elapsed ms until which it is inside fire (the latest of its patch exposures). */
+  readonly burnUntil: Map<string, number>;
+  /** Each player's last zone hop (where it came from, and on which tick). */
+  readonly lastHop: Map<string, { fromZone: string; tick: number }>;
+}
 // Cast occupation: a caster is weapon-unready for the ability's windup (equip/throw) time, not the
 // whole decision tick. DEFAULT applies when the catalog has no windup (manual-approx). If an enemy
 // is met during the windup, the caster reacts this much slower (weapon not out), but no longer —
@@ -111,6 +136,12 @@ export class RoundSimulator {
   private readonly weapons: Readonly<Record<string, WeaponSpec>>;
   private readonly abilitiesCatalog: AbilityCatalog;
   private readonly cfg: SimConfig;
+  // Round-scoped posture sets (reset in runRound; always empty when no ground patch exists).
+  /** Players currently leaving / crossing a fire patch: on the move, and unable to plant or defuse. */
+  private readonly steppingOut = new Set<string>();
+  /** Movers standing at the edge of a fire patch, waiting for it to burn out (stationary) → the burn time left. */
+  private readonly edgeWaiting = new Map<string, number>();
+  private readonly reachCache = new Map<string, boolean>();
 
   constructor(deps: RoundSimulatorDeps) {
     this.spatial = deps.spatial;
@@ -159,6 +190,13 @@ export class RoundSimulator {
     const commands = new Map<string, ActionCommand>();
     const intel: TeamIntel = new Map(); // per side: enemy id → last seen (time, zone)
     const cues: ShotCue[] = []; // every shot cue observed this round (feeds views; traced on request)
+    const abilityCues: AbilityCue[] = []; // every ability cue observed this round (same role as `cues`)
+    const seenEffects = new Set<string>(); // `${effect}|${side}` — deployed effects a side has already noticed
+    const patchExposure = new Map<string, number>();
+    const burnUntil = new Map<string, number>();
+    const lastHop = new Map<string, { fromZone: string; tick: number }>();
+    this.steppingOut.clear();
+    this.edgeWaiting.clear();
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
     const rngOf = {
@@ -180,7 +218,10 @@ export class RoundSimulator {
         const activeAbilities = toPerceptionAbilityStates(abilityEngine);
         for (const side of ["attack", "defense"] as const) {
           const dt = prevBelief[side] ? decisionDtMs : 0;
-          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, { activeAbilities, abilityEngine, cues, elapsedMs: state.elapsedMs });
+          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, {
+            activeAbilities, abilityEngine, cues, elapsedMs: state.elapsedMs,
+            abilityCues, abilityCatalog: this.abilitiesCatalog, transitOf: (p) => this.transitOf(p), stationaryIds: this.edgeWaiting,
+          });
           prevBelief[side] = view.belief;
           // PV-6 fog-of-war / belief heatmap: sample per-team observation+belief (opt-in).
           if (this.cfg.recordPerception && state.tick % perceptionInterval === 0) {
@@ -203,13 +244,16 @@ export class RoundSimulator {
 
       // 2. movement. Molly / area-denial is a PASSABLE hazard: it adds pathfinding cost (the
       // planner detours when cheaper, else crosses and takes the damage below), not a hard block.
-      const denied = deniedZoneIds(abilityEngine); // zones that deal per-tick damage (step 5b)
-      const hazardCosts = this.hazardCostMap(abilityEngine, state.elapsedMs);
+      const fire = activeGroundPatches(abilityEngine, "molly", state.elapsedMs);
+      const slow = activeGroundPatches(abilityEngine, "slow", state.elapsedMs);
+      const hazardCosts = this.hazardCostMap(fire, slow);
+      const moveWorld: MoveWorld = { state, fire, slow, hazardCosts, patchExposure, burnUntil, lastHop };
+      this.edgeWaiting.clear();
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", hazardCosts);
-        this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined);
+        this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined, moveWorld);
         // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
         // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
         if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
@@ -230,21 +274,24 @@ export class RoundSimulator {
         if (!slot) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSlot" }, `ability:${p.id}:${abilityId}:noSlot`); continue; }
         const avail = checkAvailability(this.abilitiesCatalog, slot, state.elapsedMs, { points: p.ultimatePoints, required: p.ultimateCost });
         if (!avail.usable) { trace({ playerId: p.id, phase: "ability", abilityId, result: "unavailable" }, `ability:${p.id}:${abilityId}:unavailable`); continue; }
-        const spec = this.abilitiesCatalog[abilityId];
-        if (!spec) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSpec" }, `ability:${p.id}:${abilityId}:noSpec`); continue; }
+        const catalogSpec = this.abilitiesCatalog[abilityId];
+        if (!catalogSpec) { trace({ playerId: p.id, phase: "ability", abilityId, result: "noSpec" }, `ability:${p.id}:${abilityId}:noSpec`); continue; }
+        const spec = this.runtimeSpec(catalogSpec);
         // Where the effect lands. A thrown/placed ability (smoke, molly/area-denial, remote
         // recon, wall, slow) deploys at the commanded targetZone's centre when within the
         // catalog range; out of range it is rejected (no charge spent). Movement (dash) is
         // self-displacement, handled below, so it always originates at the caster. Flash/concuss
-        // also honour targetZone (pop-flash: blind enemies near the target). ASSUMPTION
-        // (manual-approx): caster→target is treated as unobstructed — no throw-arc/LoS check yet.
+        // also honour targetZone (pop-flash: blind enemies near the target). Reach: the catalog
+        // range when there is one; with no catalogued range the throw reaches only the caster's own
+        // zone, a neighbouring zone, or a zone it has an authored sightline onto (withinThrowReach)
+        // — never the whole map. ASSUMPTION (manual-approx): no throw arc / flight time.
         const isMovement = spec.effectTypes.includes("movement");
         let origin = p.position;
         if (!isMovement && cmd.targetZone) {
           const tz = this.spatial.getZone(cmd.targetZone);
           if (tz) {
-            const rangeUnits = spec.rangeUnits ?? Infinity;
-            if (dist3(p.position, tz.position) > rangeUnits) {
+            const inReach = spec.rangeUnits != null ? dist3(p.position, tz.position) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
+            if (!inReach) {
               trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
               continue;
             }
@@ -255,12 +302,29 @@ export class RoundSimulator {
         // effect origin (the throw target when one was given, else the caster).
         const isFlash = spec.effectTypes.includes("flash") || spec.effectTypes.includes("concuss");
         const isSuppress = spec.effectTypes.includes("suppress");
-        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500, origin) : undefined;
+        const affectedPlayerIds = isFlash || isSuppress ? this.flashTargets(state, p, spec.radiusUnits ?? 1500, origin, isFlash) : undefined;
+        // recon: a frozen snapshot of the enemies the device can see when it lands — it becomes the
+        // team's call on them (intel), usable for a pre-aimed swing while it is fresh.
+        const snapshotEnemies = spec.effectTypes.includes("recon") ? this.reconTargets(state, p, spec.radiusUnits, origin) : undefined;
+        // A ground patch thrown from a neighbouring zone lands on the doorway between the two — the
+        // part of the target zone the thrower can reach, and the entry it denies. Thrown into the
+        // caster's own zone, or onto a zone it only sees, it lands in the middle of the zone.
+        const targetZoneId = this.spatial.nearestZone(origin).id;
+        const isGround = spec.effectType === "molly" || spec.effectType === "slow";
+        const doorToZoneId = isGround && targetZoneId !== p.zoneId && this.adjacent(p.zoneId, targetZoneId) ? p.zoneId : undefined;
         abilityEngine.use(spec, {
           instanceId: `${p.id}:${abilityId}:${state.tick}`,
           abilityId, ownerId: p.id, teamId: p.teamId,
           origin, startedAtMs: state.elapsedMs,
-        }, { affectedPlayerIds });
+          ...(doorToZoneId ? { doorToZoneId } : {}),
+        }, { affectedPlayerIds, snapshotEnemies });
+        if (snapshotEnemies && snapshotEnemies.length > 0) {
+          let m = intel.get(p.side);
+          if (!m) intel.set(p.side, (m = new Map()));
+          for (const e of snapshotEnemies) m.set(e.enemyId, { atMs: state.elapsedMs, zoneId: this.spatial.nearestZone(e.position).id, confidence: 1 });
+        }
+        // The cast is a world event the other team may HEAR (zone-level, loose).
+        if (spec.makesSound !== false) this.emitCastCue(state, p, spec, intel, abilityCues);
         slot.chargesRemaining -= 1;
         slot.lastUsedAtMs = state.elapsedMs;
         // Cast occupation: weapon-unready for the ability's windup (equip/throw), catalog or default.
@@ -285,24 +349,61 @@ export class RoundSimulator {
         }
       }
       abilityEngine.advance(state.elapsedMs);
+      // A deployed smoke / wall / fire is SEEN by whoever has a sightline onto it.
+      this.emitDeployedEffectCues(state, abilityEngine, seenEffects, abilityCues);
 
       // 4. perception snapshot for engagement
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel, cues);
-      this.recordIntel(state, sight, intel);
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel, cues, lastHop);
+      this.recordIntel(state, sight, intel, abilityEngine);
 
-      // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
-      // overlapping mollies in the same zone do not double-dip the per-tick damage.
-      for (const z of new Set(denied)) {
+      // 5b. molly / area-denial: a fire PATCH (a disc on the route through its zone), not a burning
+      // zone. A body is damaged only while it is inside the disc, and how long that is follows from
+      // geometry (situational.ts patchExposureMs):
+      //  - on it when it lands, standing: it runs out by the nearest edge — r / v;
+      //  - on it when it lands, already moving on: the rest of the radius — (r − travelled) / v;
+      //  - walks into the zone later and carries on through it: the whole chord — 2r / v;
+      //  - walks into the zone later and stops there: it stops short of the fire — nothing.
+      // While inside, the player is on the move (no held angle) and cannot plant or defuse.
+      // Overlapping patches do not double-dip the per-tick damage.
+      // A patch on a DOORWAY (thrown from the neighbouring zone) is different: nobody stands on
+      // it, and it is crossed — the whole chord — by whoever passes between the two zones
+      // (stepMovement registers that crossing).
+      this.steppingOut.clear();
+      const fireNow = activeGroundPatches(abilityEngine, "molly", state.elapsedMs);
+      for (const h of fireNow) {
+        if (h.doorToZoneId !== null) continue;
+        const r = h.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS;
         for (const p of state.players) {
-          if (p.alive && p.zoneId === z) {
-            p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
-            if (p.health <= 0) {
-              p.alive = false;
-              push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: undefined, target: p.id, zoneId: z, detail: "molly" });
+          if (!p.alive || p.zoneId !== h.zoneId) continue;
+          const key = `${h.instanceId}|${p.id}`;
+          if (patchExposure.has(key)) continue;
+          const onRoute = p.pathIndex < p.path.length;
+          const landedOnThem = h.startedAtMs >= state.elapsedMs;
+          const travelled = onRoute ? (Math.max(0, p.edgeProgressMs) / 1000) * (p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC) : 0;
+          const insideMs = landedOnThem
+            ? patchExposureMs(r, RUN_UNITS_PER_SEC, false, travelled)
+            : onRoute ? patchExposureMs(r, RUN_UNITS_PER_SEC, true) : 0;
+          const until = state.elapsedMs + Math.min(insideMs, h.remainingMs);
+          patchExposure.set(key, until);
+          burnUntil.set(p.id, Math.max(burnUntil.get(p.id) ?? 0, until));
+        }
+      }
+      if (burnUntil.size > 0) {
+        for (const p of state.players) {
+          if (!p.alive || (burnUntil.get(p.id) ?? 0) <= state.elapsedMs) continue;
+          this.steppingOut.add(p.id);
+          p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
+          if (p.health <= 0) {
+            p.alive = false;
+            if (state.spike.carrierId === p.id && state.spike.phase === "carried") {
+              state.spike.carrierId = null;
+              state.spike.zoneId = p.zoneId;
+              state.spike.position = { ...p.position };
             }
+            push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: undefined, target: p.id, zoneId: p.zoneId, detail: "molly" });
           }
         }
       }
@@ -364,6 +465,7 @@ export class RoundSimulator {
       commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
       engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
       cueTrace: this.cfg.traceCommands ? cues : undefined,
+      abilityCueTrace: this.cfg.traceCommands ? abilityCues : undefined,
     };
   }
 
@@ -383,30 +485,257 @@ export class RoundSimulator {
     }
   }
 
-  /** Passable-hazard pathfinding costs from active molly/area-denial (shrink as they expire). */
-  private hazardCostMap(abilityEngine: AbilityEngine, nowMs: number): ReadonlyMap<string, number> {
+  /** Damage a body takes crossing a fire patch right now (its chord, capped by the burn time left). */
+  private crossDamage(h: GroundPatch): number {
+    const crossMs = Math.min(h.remainingMs, patchExposureMs(h.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS, RUN_UNITS_PER_SEC, true));
+    return Math.ceil(crossMs / this.cfg.tickMs) * this.cfg.mollyDamagePerTick;
+  }
+
+  /**
+   * Pathfinding cost (ms) of routing THROUGH a zone that holds a ground patch:
+   *  - fire: the wait for it to burn out (its remaining burn time) — so the planner goes round
+   *    exactly when the detour is shorter than the wait;
+   *  - slow field: the extra time of its chord at the slowed speed.
+   * Overlapping fire patches count once (the longest); a slow field adds on top.
+   */
+  private hazardCostMap(fire: readonly GroundPatch[], slow: readonly GroundPatch[]): ReadonlyMap<string, number> {
     const m = new Map<string, number>();
-    for (const h of activeAreaDenials(abilityEngine, nowMs)) {
-      const exposureMs = Math.min(h.remainingMs, HAZARD_EXPOSURE_MS);
-      const ticks = Math.ceil(exposureMs / this.cfg.tickMs);
-      const cost = ticks * this.cfg.mollyDamagePerTick * HAZARD_MS_PER_HP;
-      m.set(h.zoneId, Math.max(m.get(h.zoneId) ?? 0, cost)); // overlapping mollies: one hazard, max cost
+    for (const h of fire) {
+      if (h.doorToZoneId !== null) continue; // a doorway patch prices one connection, not the zone (see passFireEdge)
+      m.set(h.zoneId, Math.max(m.get(h.zoneId) ?? 0, h.remainingMs));
     }
+    const slowBy = new Map<string, number>();
+    for (const s of slow) {
+      if (s.doorToZoneId !== null) continue;
+      const d = slowFieldDelayMs(s.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS, RUN_UNITS_PER_SEC, this.cfg.slowSpeedMultiplier);
+      slowBy.set(s.zoneId, Math.max(slowBy.get(s.zoneId) ?? 0, d));
+    }
+    for (const [z, d] of slowBy) m.set(z, (m.get(z) ?? 0) + d);
     return m;
+  }
+
+  /**
+   * How much clock a mover can still spend before its side's objective is out of reach: the
+   * attack before the plant has the round timer minus a plant; the defense after it has the spike
+   * timer minus a defuse. Nobody else is on a clock.
+   */
+  private clockBudgetMs(p: SimPlayer, state: SimState): number {
+    const s = state.spike;
+    if (p.side === "attack" && (s.phase === "carried" || s.phase === "planting")) return state.timeRemainingMs - this.cfg.plantDurationMs;
+    if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.detonateAtElapsedMs != null) {
+      return s.detonateAtElapsedMs - state.elapsedMs - this.cfg.defuseDurationMs;
+    }
+    return Number.POSITIVE_INFINITY;
+  }
+
+  /**
+   * A mover has reached the edge of fire on its route. Wait, go round, or cross:
+   *  - it WAITS for the fire to burn out (standing at the edge) — that is the stall;
+   *  - it GOES ROUND when re-planning from here, with the wait priced in, leaves by another zone;
+   *  - it CROSSES, paying the damage of the chord, only when its side's clock cannot afford the
+   *    wait (clockBudgetMs) — and never when that damage would kill it (then it waits anyway).
+   * Returns true to enter the zone now. Which fire is in the way:
+   *  - a patch in the middle of the next zone, unless the route ENDS there (the mover stops short
+   *    of it);
+   *  - a patch on the doorway between this zone and the next — always (there is no way round a
+   *    door except another route, which the planner does not price per connection: a doorway
+   *    patch is waited out or crossed).
+   */
+  private passFireEdge(p: SimPlayer, nextZoneId: string, edgeMs: number, w: MoveWorld): boolean {
+    let patch: GroundPatch | null = null;
+    const endsHere = p.pathIndex === p.path.length - 1;
+    for (const h of w.fire) {
+      if (w.patchExposure.has(`${h.instanceId}|${p.id}`)) continue;
+      const onDoor = (h.zoneId === nextZoneId && h.doorToZoneId === p.zoneId) || (h.zoneId === p.zoneId && h.doorToZoneId === nextZoneId);
+      const midZone = h.doorToZoneId === null && h.zoneId === nextZoneId && !endsHere;
+      if (!onDoor && !midZone) continue;
+      if (!patch || h.remainingMs > patch.remainingMs) patch = h;
+    }
+    if (!patch) return true;
+    const door = patch.doorToZoneId !== null;
+    const damage = this.crossDamage(patch);
+    const lethal = damage >= p.health;
+    const goal = p.path[p.path.length - 1]!;
+    const restMs = this.spatial.shortestTravelTimeMs(nextZoneId, goal, p.moveMode) ?? 0;
+    const canAffordWait = patch.remainingMs + restMs <= this.clockBudgetMs(p, w.state);
+    if (!lethal && !canAffordWait) {
+      // Go through and pay. A doorway patch is crossed on this very step (the whole chord); a
+      // mid-zone one is registered when the mover is found inside its zone (round loop, step 5b).
+      if (door) {
+        const until = w.state.elapsedMs + Math.min(patch.remainingMs, patchExposureMs(patch.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS, RUN_UNITS_PER_SEC, true));
+        w.patchExposure.set(`${patch.instanceId}|${p.id}`, until);
+        w.burnUntil.set(p.id, Math.max(w.burnUntil.get(p.id) ?? 0, until));
+      }
+      return true;
+    }
+    if (!door) {
+      const alt = this.spatial.findPath(p.zoneId, goal, p.moveMode, { hazardCosts: w.hazardCosts });
+      if (alt && alt.path.length > 1 && alt.path[1] !== nextZoneId) {
+        p.path = alt.path;
+        p.pathIndex = alt.path[0] === p.zoneId ? 1 : 0;
+        p.edgeProgressMs = 0;
+        return false;
+      }
+    }
+    p.edgeProgressMs = edgeMs; // stand at the edge until it burns out
+    this.edgeWaiting.set(p.id, patch.remainingMs);
+    return false;
+  }
+
+  /** Two zones are joined by a walkable connection. */
+  private adjacent(a: string, b: string): boolean {
+    if (a === b) return false;
+    const key = `adj:${a}>${b}`;
+    let ok = this.reachCache.get(key);
+    if (ok === undefined) {
+      ok = this.spatial.findPath(a, b, "run", { allowNonTransitWaypoints: true })?.path.length === 2;
+      this.reachCache.set(key, ok);
+    }
+    return ok;
+  }
+
+  /**
+   * The spec as the round applies it. Two catalog gaps are filled with documented approximations
+   * (manual-approx — NOT confirmed game values):
+   *  - an area-damage ability with no catalogued duration is an instantaneous burst: it does not
+   *    linger, so it lasts one tick (it used to burn forever);
+   *  - a ground patch with no catalogued radius gets DEFAULT_PATCH_RADIUS_UNITS.
+   */
+  private runtimeSpec(spec: AbilitySpec): AbilitySpec {
+    if (spec.effectType !== "molly" && spec.effectType !== "slow") return spec;
+    const durationMs = spec.effectType === "molly" ? spec.durationMs ?? this.cfg.tickMs : spec.durationMs;
+    const radiusUnits = spec.radiusUnits ?? DEFAULT_PATCH_RADIUS_UNITS;
+    return durationMs === spec.durationMs && radiusUnits === spec.radiusUnits ? spec : { ...spec, durationMs, radiusUnits };
+  }
+
+  /**
+   * Reach of a thrown / placed ability that has no catalogued range: the caster's own zone, a zone
+   * next to it, or a zone it has an authored sightline onto. A geometric rule taken from the map,
+   * standing in for a range the catalog does not give (manual-approx).
+   */
+  private withinThrowReach(fromZone: string, toZone: string): boolean {
+    if (fromZone === toZone) return true;
+    const key = `${fromZone}>${toZone}`;
+    let ok = this.reachCache.get(key);
+    if (ok === undefined) {
+      ok = this.spatial.hasLineOfSight(fromZone, toZone) || this.adjacent(fromZone, toZone);
+      this.reachCache.set(key, ok);
+    }
+    return ok;
+  }
+
+  /**
+   * Enemies a recon effect at `center` reveals when it lands: alive, in the centre's zone or a
+   * zone with a sightline onto it, and inside the catalog radius (no radius → its own zone only).
+   */
+  private reconTargets(state: SimState, caster: SimPlayer, radiusUnits: number | null, center: { x: number; y: number; z: number }): SnapshotEnemy[] {
+    const centerZone = this.spatial.nearestZone(center).id;
+    const out: SnapshotEnemy[] = [];
+    for (const e of state.players) {
+      if (!e.alive || e.teamId === caster.teamId) continue;
+      const sameZone = e.zoneId === centerZone;
+      if (!sameZone && (radiusUnits == null || dist3(center, e.position) > radiusUnits || !this.spatial.hasLineOfSight(centerZone, e.zoneId))) continue;
+      out.push({ enemyId: e.id, teamId: e.teamId, position: { ...e.position } });
+    }
+    return out;
+  }
+
+  /** Where a teammate is going (for its own team's view): remaining waypoints + time to the next one. */
+  private transitOf(p: SimPlayer): TeammateTransit | undefined {
+    if (!p.alive || p.pathIndex >= p.path.length) return undefined;
+    const from = this.spatial.getZone(p.zoneId);
+    const next = this.spatial.getZone(p.path[p.pathIndex]!);
+    if (!from || !next) return undefined;
+    const speed = p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC;
+    const edgeMs = (dist3(from.position, next.position) / speed) * 1000;
+    // Standing at a fire's edge: it enters the next zone when the fire is out.
+    const waitMs = this.edgeWaiting.get(p.id);
+    return {
+      path: p.path.slice(p.pathIndex),
+      nextZone: next.id,
+      nextArrivalMs: waitMs !== undefined ? waitMs : Math.max(0, edgeMs - p.edgeProgressMs),
+      ...(waitMs !== undefined ? { waitingAtEdge: true } : {}),
+    };
+  }
+
+  /**
+   * World event → observation: a cast is HEARD by every enemy the sound reaches over the map's
+   * sound graph. The cue names the caster's ZONE (never its position) with a confidence that
+   * falls with distance; like a heard shot it updates the hearing team's intel on the caster,
+   * never overriding a fresher or firmer call.
+   */
+  private emitCastCue(state: SimState, caster: SimPlayer, spec: AbilitySpec, intel: TeamIntel, out: AbilityCue[]): void {
+    const observerSide: Side = caster.side === "attack" ? "defense" : "attack";
+    const observers = state.players.filter((p) => p.alive && p.side === observerSide);
+    if (observers.length === 0) return;
+    const audible = new Map(this.spatial.audibleZones(caster.zoneId, 0.01).map((z) => [z.zoneId, z.strength]));
+    let confidence = 0;
+    for (const o of observers) confidence = Math.max(confidence, abilityCastCueConfidence(o.zoneId === caster.zoneId ? 1 : audible.get(o.zoneId) ?? 0));
+    if (confidence <= 0) return;
+    const zonePosition = { ...(this.spatial.getZone(caster.zoneId)?.position ?? caster.position) };
+    out.push({
+      tick: state.tick, elapsedMs: state.elapsedMs, casterId: caster.id, abilityId: spec.abilityId, effectType: spec.effectType,
+      zoneId: caster.zoneId, zonePosition, observerSide, channel: "sound", confidence,
+    });
+    let m = intel.get(observerSide);
+    if (!m) intel.set(observerSide, (m = new Map()));
+    const prev = m.get(caster.id);
+    const prevNow = prev && prev.zoneId === caster.zoneId
+      ? infoFreshness(state.elapsedMs - prev.atMs, this.cfg.infoWindowMs, AVERAGE_TRAITS.trading, prev.confidence)
+      : 0;
+    if (confidence > prevNow) m.set(caster.id, { atMs: state.elapsedMs, zoneId: caster.zoneId, confidence });
+  }
+
+  /**
+   * World state → observation: a deployed smoke / wall / fire / slow field is SEEN by the other
+   * team the first time one of its players stands in the effect's zone or has a sightline onto it
+   * (the effect is itself visible, so the map's raw sightline is used). The cue names the EFFECT's
+   * zone — where utility is being committed — and says nothing of where the caster is.
+   */
+  private emitDeployedEffectCues(state: SimState, abilityEngine: AbilityEngine, seen: Set<string>, out: AbilityCue[]): void {
+    const effects = deployedEffects(abilityEngine, state.elapsedMs);
+    if (effects.length === 0) return;
+    for (const e of effects) {
+      if (!e.worldVisible) continue;
+      const owner = state.players.find((p) => p.id === e.ownerId);
+      if (!owner) continue;
+      const observerSide: Side = owner.side === "attack" ? "defense" : "attack";
+      const key = `${e.instanceId}|${observerSide}`;
+      if (seen.has(key)) continue;
+      const sighted = state.players.some((p) => p.alive && p.side === observerSide &&
+        (p.zoneId === e.zoneId || this.spatial.hasLineOfSight(p.zoneId, e.zoneId)));
+      if (!sighted) continue;
+      seen.add(key);
+      const zonePosition = { ...(this.spatial.getZone(e.zoneId)?.position ?? owner.position) };
+      out.push({
+        tick: state.tick, elapsedMs: state.elapsedMs, casterId: e.ownerId, abilityId: e.abilityId, effectType: e.effectType,
+        zoneId: e.zoneId, zonePosition, observerSide, channel: "sight", confidence: DEPLOYED_EFFECT_CUE_CONFIDENCE,
+      });
+    }
   }
 
   /**
    * Enemies of `caster` blinded/suppressed by an effect centred at `center` (the caster, or a
    * thrown target point): alive, within `radiusUnits`, in the centre zone or with LoS to it.
+   * `needsSight` (a flash): only someone LOOKING toward where the flash comes from is blinded —
+   * for an enemy inside the target zone that is the side it was thrown from (the caster's zone),
+   * for one watching the target zone from elsewhere it is the target itself. A flash that pops in
+   * the caster's own zone is in the face of everyone there.
    */
-  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number, center?: { x: number; y: number; z: number }): string[] {
+  private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number, center?: { x: number; y: number; z: number }, needsSight = false): string[] {
     const centerPos = center ?? caster.position;
     const centerZone = this.spatial.nearestZone(centerPos).id;
+    const casterZonePos = this.spatial.getZone(caster.zoneId)?.position ?? caster.position;
     const out: string[] = [];
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
       if (dist3(centerPos, e.position) > radiusUnits) continue;
-      if (e.zoneId === centerZone || this.spatial.hasLineOfSight(centerZone, e.zoneId)) out.push(e.id);
+      if (e.zoneId !== centerZone && !this.spatial.hasLineOfSight(centerZone, e.zoneId)) continue;
+      if (needsSight && e.zoneId !== caster.zoneId) {
+        const popFrom = e.zoneId === centerZone ? casterZonePos : centerPos;
+        if (facingAngleTo(e.facing, e.position, popFrom) > HALF_FOV_RAD) continue;
+      }
+      out.push(e.id);
     }
     return out;
   }
@@ -418,7 +747,7 @@ export class RoundSimulator {
    * perception and engagement only use genuine zone sightlines. facing points at the next
    * zone while travelling.
    */
-  private stepMovement(p: SimPlayer, dtMs: number, trace?: Tracer, targetZone?: string): void {
+  private stepMovement(p: SimPlayer, dtMs: number, trace?: Tracer, targetZone?: string, world?: MoveWorld): void {
     if (p.pathIndex >= p.path.length) return;
     const fromZone = this.spatial.getZone(p.zoneId);
     const nextZone = this.spatial.getZone(p.path[p.pathIndex]);
@@ -428,11 +757,37 @@ export class RoundSimulator {
     const edgeMs = (dist3(fromZone.position, nextZone.position) / speed) * 1000;
     p.edgeProgressMs += dtMs;
     if (p.edgeProgressMs >= edgeMs) {
+      // Fire on the route ahead: cross, wait at the edge, or re-route (passFireEdge).
+      if (world && world.fire.length > 0 && !this.passFireEdge(p, nextZone.id, edgeMs, world)) return;
+      // A slow field on the doorway ahead: crossing it costs the extra time of its chord at the
+      // slowed speed, paid once, before the mover is through.
+      if (world && world.slow.length > 0) {
+        let r = 0;
+        for (const sl of world.slow) {
+          const onDoor = (sl.zoneId === nextZone.id && sl.doorToZoneId === p.zoneId) || (sl.zoneId === p.zoneId && sl.doorToZoneId === nextZone.id);
+          const key = `${sl.instanceId}|${p.id}`;
+          if (!onDoor || world.patchExposure.has(key)) continue;
+          world.patchExposure.set(key, world.state.elapsedMs);
+          r = Math.max(r, sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS);
+        }
+        if (r > 0) {
+          p.edgeProgressMs = edgeMs - slowFieldDelayMs(r, speed, this.cfg.slowSpeedMultiplier);
+          return;
+        }
+      }
       const fromId = p.zoneId;
       p.zoneId = nextZone.id;
       p.position = { ...nextZone.position };
       p.pathIndex += 1;
       p.edgeProgressMs = 0;
+      world?.lastHop.set(p.id, { fromZone: fromId, tick: world.state.tick });
+      // A slow field in the middle of the zone just entered slows whoever travels on through it:
+      // the extra time of its chord at the slowed speed is owed on the next leg.
+      if (world && world.slow.length > 0 && p.pathIndex < p.path.length) {
+        let r = 0;
+        for (const sl of world.slow) if (sl.doorToZoneId === null && sl.zoneId === nextZone.id) r = Math.max(r, sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS);
+        if (r > 0) p.edgeProgressMs = -slowFieldDelayMs(r, speed, this.cfg.slowSpeedMultiplier);
+      }
       trace?.({ playerId: p.id, phase: "move", fromZone: fromId, toZone: nextZone.id, targetZone });
       if (p.pathIndex >= p.path.length) {
         trace?.({ playerId: p.id, phase: "arrived", toZone: p.zoneId, targetZone });
@@ -441,6 +796,8 @@ export class RoundSimulator {
   }
 
   private isMoving(p: SimPlayer): boolean {
+    if (this.steppingOut.has(p.id)) return true; // getting out of / crossing a fire patch
+    if (this.edgeWaiting.has(p.id)) return false; // standing at a fire's edge, waiting
     return p.pathIndex < p.path.length;
   }
 
@@ -482,10 +839,33 @@ export class RoundSimulator {
     castBusyUntil: ReadonlyMap<string, number>,
     intel: TeamIntel,
     cues: ShotCue[],
+    lastHop: ReadonlyMap<string, { fromZone: string; tick: number }>,
   ): void {
     const alive = state.players.filter((p) => p.alive);
+    // A blinded player sees nothing: it has no first sight, holds no angle and is not a second gun.
+    const blind = (id: string): boolean => abilityEngine.blindRemainingMs(id, state.elapsedMs) > 0;
     const sees = (viewerId: string, targetId: string): boolean =>
-      sight.players.get(viewerId)?.visibleEnemies.some((e) => e.currentlyVisible && e.playerId === targetId) ?? false;
+      !blind(viewerId) &&
+      (sight.players.get(viewerId)?.visibleEnemies.some((e) => e.currentlyVisible && e.playerId === targetId) ?? false);
+    // Smoke is not a wall: a player can walk through it, but has no sight until it is out. A hop
+    // across a smoke-cut sightline (the map has a sightline between the two zones, and a vision
+    // blocker currently cuts it) is an EXIT FROM SMOKE on the tick it lands.
+    const blockedZones = visionBlockedZones(abilityEngine);
+    const smokedPairs: Array<[string, string]> = blockedZones.flatMap((z) => this.spatial.visibleZonesFrom(z).map((n): [string, string] => [z, n]));
+    const exitedSmokeFrom = (p: SimPlayer): string | null => {
+      if (smokedPairs.length === 0) return null;
+      const hop = lastHop.get(p.id);
+      if (!hop || hop.tick !== state.tick) return null;
+      return this.spatial.hasLineOfSight(hop.fromZone, p.zoneId) && !this.spatial.hasLineOfSight(hop.fromZone, p.zoneId, { smokedPairs }) ? hop.fromZone : null;
+    };
+    // Holding the smoke's edge: stationary, not blind, and the zone the pusher comes out of lies
+    // inside the holder's field of view. Such a holder sees the pusher appear before the pusher,
+    // whose eye is still inside, sees anything.
+    const watchesEdge = (holder: SimPlayer, edgeZone: string): boolean => {
+      if (this.isMoving(holder) || blind(holder.id)) return false;
+      const z = this.spatial.getZone(edgeZone);
+      return !!z && facingAngleTo(holder.facing, holder.position, z.position) <= HALF_FOV_RAD;
+    };
     // Info freshness — exponential decay (half-life model): a call on an enemy that has not left
     // its zone is worth w = 2^(−Δt / halfLife) ∈ (0,1]. Trading stat stretches the half-life
     // (×0.4 … ×1.6): a good trader converts a teammate's call into a refrag for longer.
@@ -509,7 +889,7 @@ export class RoundSimulator {
       const ref = Math.atan2(duelist.position.y - target.position.y, duelist.position.x - target.position.x);
       let guns = 0;
       for (const c of alive) {
-        if (!c.alive || c.side !== duelist.side || c.id === duelist.id) continue;
+        if (!c.alive || c.side !== duelist.side || c.id === duelist.id || blind(c.id)) continue;
         if (!this.spatial.hasLineOfSight(c.zoneId, target.zoneId) && !sees(c.id, target.id)) continue;
         if (!this.isMoving(c)) { guns++; continue; }
         const bearing = Math.atan2(c.position.y - target.position.y, c.position.x - target.position.x);
@@ -529,9 +909,19 @@ export class RoundSimulator {
         if (busy.has(a.id) || busy.has(b.id)) continue;
         const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
         if (engaged.has(key)) continue;
-        const aSeesB = sees(a.id, b.id);
-        const bSeesA = sees(b.id, a.id);
+        let aSeesB = sees(a.id, b.id);
+        let bSeesA = sees(b.id, a.id);
         if (!aSeesB && !bSeesA) continue;
+        // Smoke exit: the one who came out of the smoke did not see first if the other was holding
+        // that edge. Nothing else is decided here — what "not seeing first" costs is the ordinary
+        // surprise delay, discounted by the team's info on the holder (toCombatant), and a blinded
+        // holder is not watching anything (so a flash on the holders turns the exit around).
+        const aFrom = exitedSmokeFrom(a);
+        const bFrom = exitedSmokeFrom(b);
+        const aWatched = aFrom !== null && bFrom === null && bSeesA && watchesEdge(b, aFrom);
+        const bWatched = bFrom !== null && aFrom === null && aSeesB && watchesEdge(a, bFrom);
+        if (aWatched) aSeesB = false;
+        if (bWatched) bSeesA = false;
         // Info (called position): the team saw this enemy recently and it has not left that zone →
         // the swing is pre-aimed at the spot, not a blind entry. No info keeps the surprise penalty.
         const aInfoW = aSeesB ? 0 : infoWeight(a, b);
@@ -563,6 +953,14 @@ export class RoundSimulator {
           const d = angleAdvantageDelays(PEEK_CORNER_DISTANCE, holderDist, speed);
           aAngleMs = aMoving ? d.peekerMs : d.holderMs;
           bAngleMs = bMoving ? d.peekerMs : d.holderMs;
+        }
+        // Out of a watched smoke the occluder is at the pusher's own body, not a corner 3 m away:
+        // the corner geometry's limit (situational.ts smokeExitDelayMs) replaces the corner terms.
+        if (aWatched || bWatched) {
+          const pusher = aWatched ? a : b;
+          const speed = (pusher.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC) * (this.weapons[pusher.weaponId]?.runSpeedMultiplier ?? 1);
+          aAngleMs = aWatched ? smokeExitDelayMs(speed) : 0;
+          bAngleMs = bWatched ? smokeExitDelayMs(speed) : 0;
         }
         const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW, aAngleMs);
         const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW, bAngleMs);
@@ -616,6 +1014,9 @@ export class RoundSimulator {
             info: { attacker: atkP === a ? aInfo : bInfo, defender: defP === a ? aInfo : bInfo },
             attackerFlashedMs: abilityEngine.blindRemainingMs(atkP.id, state.elapsedMs),
             defenderFlashedMs: abilityEngine.blindRemainingMs(defP.id, state.elapsedMs),
+            ...(aFrom !== null || bFrom !== null
+              ? { smokeExit: { attacker: (atkP === a ? aFrom : bFrom) !== null, defender: (defP === a ? aFrom : bFrom) !== null, watched: aWatched || bWatched } }
+              : {}),
             winnerSide,
           });
         }
@@ -661,9 +1062,10 @@ export class RoundSimulator {
   }
 
   /** Remember every enemy each side currently sees (after this tick's duels → usable from the next tick). */
-  private recordIntel(state: SimState, sight: ReturnType<PerceptionEngine["perceive"]>, intel: TeamIntel): void {
+  private recordIntel(state: SimState, sight: ReturnType<PerceptionEngine["perceive"]>, intel: TeamIntel, abilityEngine: AbilityEngine): void {
     for (const p of state.players) {
       if (!p.alive) continue;
+      if (abilityEngine.blindRemainingMs(p.id, state.elapsedMs) > 0) continue; // a blinded player calls nothing
       const seen = sight.players.get(p.id)?.visibleEnemies ?? [];
       for (const e of seen) {
         if (!e.currentlyVisible) continue;
@@ -690,7 +1092,10 @@ export class RoundSimulator {
     // windup reacts slower still (weapon-unready), bounded by the windup.
     // Not seeing first costs the surprise delay, discounted by how fresh the team's call is:
     // surprise = SURPRISE_DELAY × (1 − w). No info (w = 0) → the full penalty of a blind entry.
-    const base = !seesEnemy ? SURPRISE_DELAY_MS * (1 - infoWeight) : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
+    // A blinded player first sees the enemy when the blind ends — the combat engine adds that wait
+    // itself (flashBlindMs + its re-acquisition penalty), so no separate surprise term is stacked on it.
+    const blindMs = abilityEngine.blindRemainingMs(p.id, state.elapsedMs);
+    const base = blindMs > 0 ? 0 : !seesEnemy ? SURPRISE_DELAY_MS * (1 - infoWeight) : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
     const traits = p.traits ?? AVERAGE_TRAITS;
     // Crossfire — Hick–Hyman law: choice reaction time grows with the log of the alternatives,
     // RT = b · log2(n + 1), n = extra enemy guns on this player, b = crossfirePenaltyMs (ms per bit).
@@ -706,7 +1111,7 @@ export class RoundSimulator {
         preAim,
         moving: this.isMoving(p),
         seesEnemyAtMs,
-        flashBlindMs: abilityEngine.blindRemainingMs(p.id, state.elapsedMs),
+        flashBlindMs: blindMs,
         behindCover: 0,
       },
     };
@@ -737,7 +1142,7 @@ export class RoundSimulator {
     // plant
     if (s.phase === "carried" || s.phase === "planting") {
       const carrier = s.carrierId ? state.players.find((p) => p.id === s.carrierId && p.alive) : null;
-      const planting = carrier && readyCommand(commands.get(carrier.id), state.elapsedMs)?.kind === "plant" && this.spatial.isPlantableZone(carrier.zoneId);
+      const planting = carrier && !this.steppingOut.has(carrier.id) && readyCommand(commands.get(carrier.id), state.elapsedMs)?.kind === "plant" && this.spatial.isPlantableZone(carrier.zoneId);
       if (planting && carrier) {
         if (s.phase === "carried") { s.phase = "planting"; s.plantProgressMs = 0; events.push({ kind: "plantStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId }); }
         s.plantProgressMs += dtMs;
@@ -762,7 +1167,7 @@ export class RoundSimulator {
         return;
       }
       // defuse
-      const defuser = state.players.find((p) => p.alive && p.side === "defense" && p.zoneId === s.zoneId && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
+      const defuser = state.players.find((p) => p.alive && p.side === "defense" && p.zoneId === s.zoneId && !this.steppingOut.has(p.id) && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
       if (defuser) {
         if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = 0; s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
         if (s.defuserId && !state.players.find((p) => p.id === s.defuserId)?.alive) {

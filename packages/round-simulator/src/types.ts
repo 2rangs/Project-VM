@@ -257,6 +257,12 @@ export interface EngagementRecord {
   readonly info?: { readonly attacker: boolean; readonly defender: boolean };
   readonly attackerFlashedMs: number;
   readonly defenderFlashedMs: number;
+  /**
+   * Set when a side came out of a vision blocker into this duel (present only then): it crossed a
+   * smoke-cut sightline on the hop that started the duel, so it had no sight until it was out.
+   * `watched` = the other side was holding that smoke edge (stationary, facing it, not blind).
+   */
+  readonly smokeExit?: { readonly attacker: boolean; readonly defender: boolean; readonly watched: boolean };
   /** Winning side of this duel, or null if no one died this duel. */
   readonly winnerSide: Side | null;
 }
@@ -282,6 +288,30 @@ export interface ShotCue {
   readonly confidence: number;
 }
 
+/**
+ * An observable cue an ability gave the OTHER team (world event → observation), the ability
+ * counterpart of {@link ShotCue}. Two channels, decided by physical facts:
+ *  - "sound": the cast was heard over the map's sound graph → zone = the CASTER's zone (loose);
+ *  - "sight": the deployed effect (smoke / wall / fire / slow field) is seen by someone with a
+ *    sightline onto it → zone = the EFFECT's zone. This says where utility is being committed,
+ *    not where the caster stands (a smoke is thrown from range).
+ * Zone-level evidence only — never the caster's position. It feeds the observing team's
+ * observation (and, for a heard cast, its intel on the caster), never the combat resolution.
+ */
+export interface AbilityCue {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly casterId: PlayerId;
+  readonly abilityId: string;
+  readonly effectType: string;
+  readonly zoneId: string;
+  readonly zonePosition: Vector3;
+  readonly observerSide: Side;
+  readonly channel: "sound" | "sight";
+  /** 0..1 — how much this cue is worth as evidence about `zoneId`. */
+  readonly confidence: number;
+}
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -299,6 +329,8 @@ export interface RoundResult {
   readonly commandTrace?: readonly CommandTraceEvent[];
   /** Every shot cue the teams observed, present only when config.traceCommands is true. */
   readonly cueTrace?: readonly ShotCue[];
+  /** Every ability cue the teams observed, present only when config.traceCommands is true. */
+  readonly abilityCueTrace?: readonly AbilityCue[];
   /** First-contact posture of every duel, present only when config.traceCommands is true. */
   readonly engagementTrace?: readonly EngagementRecord[];
 }
@@ -318,8 +350,13 @@ export interface SimConfig {
   readonly traceCommands: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
-  /** HP lost per tick while standing in a molly / area-denial zone. */
+  /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */
   readonly mollyDamagePerTick: number;
+  /**
+   * Movement-speed multiplier inside a slow field (manual-approx: the catalog carries no slow
+   * magnitude). Crossing the field costs the extra time of its chord at this speed.
+   */
+  readonly slowSpeedMultiplier: number;
   /**
    * Peeker's advantage (ms): how stale a stationary holder's picture of a MOVING enemy is — the
    * peeker is already further out than the holder sees, so the holder reacts this much later even on
@@ -361,7 +398,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   recordTracks: false,
   recordPerception: false,
   traceCommands: false,
-  mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
+  mollyDamagePerTick: 6, // ~60 HP/s inside a fire patch (manual-approx)
+  slowSpeedMultiplier: 0.5, // manual-approx (no catalog value)
   crossfirePenaltyMs: 60, // Hick–Hyman slope (ms/bit); calibrated on 160 Ascent matches (8/8 judged)
   infoWindowMs: 2000,
   damageCarryover: 0, // off by default: full attrition needs defensive stall utility to stay balanced

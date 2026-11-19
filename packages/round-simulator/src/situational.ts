@@ -85,3 +85,69 @@ export function angleAdvantageDelays(peekerDist: number, holderDist: number, str
   const lead = unitMs * (1 - peekerDist / holderDist);
   return lead >= 0 ? { peekerMs: lead, holderMs: 0 } : { peekerMs: 0, holderMs: Math.min(2 * unitMs, -lead) };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Abilities as part of the world (smoke exits, ground patches, ability cues).
+// Every constant below that is not a catalog value is marked manual-approx: it is a modelling
+// assumption, not a confirmed game rule.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Leaving a vision blocker. The occluding surface is at the pusher's own body, so this is the
+ * corner geometry of `angleAdvantageDelays` in the limit peekerDist → 0: the watcher sees the
+ * leading half of the body one body half-width of travel before the pusher's eye is clear,
+ *     Δt = BODY_HALF_WIDTH / speed.
+ * It is NOT a success chance: it only says who can see first. What that is worth is decided by the
+ * same surprise / info / pre-aim / flash terms as any other duel.
+ */
+export function smokeExitDelayMs(speedPerSec: number): number {
+  return speedPerSec > 0 ? (BODY_HALF_WIDTH / speedPerSec) * 1000 : 0;
+}
+
+/**
+ * Radius used for a ground patch whose catalog record has no radius (manual-approx, ≈4.5 m — the
+ * order of the catalogued patches: Nanoswarm 5.25 m). Not a confirmed value for any ability.
+ */
+export const DEFAULT_PATCH_RADIUS_UNITS = 450;
+
+/**
+ * How long a body is inside a circular ground patch of radius r, moving at `speedPerSec`:
+ *  - `through` — enters on one side and leaves on the other: the chord through the centre, 2r / v;
+ *  - otherwise — is on the patch when it lands, `travelledUnits` from its centre along its own
+ *    route, and leaves by continuing: (r − travelled) / v (0 once it is already past the edge).
+ * Damage / delay follow from this time; nothing is rolled.
+ */
+export function patchExposureMs(radiusUnits: number, speedPerSec: number, through: boolean, travelledUnits = 0): number {
+  if (radiusUnits <= 0 || speedPerSec <= 0) return 0;
+  const units = through ? 2 * radiusUnits : Math.max(0, radiusUnits - Math.max(0, travelledUnits));
+  return (units / speedPerSec) * 1000;
+}
+
+/**
+ * Extra travel time a slow field costs a body crossing it: the chord at reduced speed minus the
+ * chord at full speed, (2r / v) · (1 / multiplier − 1).
+ */
+export function slowFieldDelayMs(radiusUnits: number, speedPerSec: number, speedMultiplier: number): number {
+  if (speedMultiplier <= 0 || speedMultiplier >= 1) return 0;
+  return patchExposureMs(radiusUnits, speedPerSec, true) * (1 / speedMultiplier - 1);
+}
+
+/** Loudness of an ability cast relative to gunfire (manual-approx; perception-engine LOUDNESS.abilityCast). */
+export const ABILITY_CAST_LOUDNESS = 0.7;
+/** An ability cast is audible when its propagated strength reaches this (manual-approx; perception hearing threshold). */
+export const ABILITY_CAST_AUDIBLE_THRESHOLD = 0.3;
+/**
+ * Seeing a deployed effect (smoke, wall, fire) is firm about where the EFFECT is and only loose
+ * about where the enemy team is: utility is thrown from range and is also used to fake. Its weight
+ * as evidence of commitment toward that zone (manual-approx; below a heard shot from the zone).
+ */
+export const DEPLOYED_EFFECT_CUE_CONFIDENCE = 0.5;
+
+/**
+ * Confidence of a heard cast: SOUND_CUE_CONFIDENCE × strength × ABILITY_CAST_LOUDNESS, or 0 under
+ * the audible threshold. Same form as `soundCueConfidence`; it localises the caster to a zone.
+ */
+export function abilityCastCueConfidence(propagatedStrength: number): number {
+  const s = propagatedStrength * ABILITY_CAST_LOUDNESS;
+  return s >= ABILITY_CAST_AUDIBLE_THRESHOLD ? Math.min(1, SOUND_CUE_CONFIDENCE * s) : 0;
+}

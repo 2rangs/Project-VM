@@ -30,6 +30,7 @@ import { assignRoles, enemySiteBias, profileFor, reconsider, selectStrategy } fr
 import { tendencyLean, type OpponentRead } from "./opponent-model.js";
 import { choosePlayerCommand, type PlayerChoice } from "./player-policy.js";
 import { applyTeamwork, type TeamworkEntry } from "./teamwork.js";
+import { planUtility } from "./utility.js";
 
 export interface TeamPolicyOptions {
   readonly profiles?: ReadonlyMap<string, PlayerProfile>;
@@ -1264,6 +1265,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (saveOrders) {
       commands = saveOrders;
     } else {
+      commands = planUtility(view, strategy, commands, this.spatial, this.options.abilityEffect);
       this.commitSlowPlan(view, plan, rng);
       commands = this.commitPlanMovement(view, plan, commands, roleOf);
       commands = this.commitSpikeCarrier(view, strategy, commands, plan.objective, plan.executeGo && !plan.uncommitted);
