@@ -16,8 +16,10 @@ import type { MatchSummary } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
 import { ZONE_POSITIONS } from '../zones.ts';
 import { ReviewPanel } from './ReviewPanel.tsx';
+import { useT, strategyLabel } from '../i18n/index.tsx';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
+  const t = useT();
   const [running, setRunning] = useState(false);
   const [pct, setPct] = useState(0);
   const [log, setLog] = useState<string[]>([]);
@@ -36,7 +38,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const lastRound = match?.rounds[match.rounds.length - 1];
   const hasPerception = !!(replay?.perception && replay.perception.length > 0);
   // POV labels: real match team names when we have them, else the demo/fixture teams.
-  const povName = (i: number) => match?.teams[i === 0 ? 'A' : 'B']?.name ?? (i === 0 ? 'our team' : 'opponent');
+  const povName = (i: number) => match?.teams[i === 0 ? 'A' : 'B']?.name ?? t(i === 0 ? 'md.povName.our' : 'md.povName.opp');
 
   useEffect(() => { bridge.loadTrace('trace-scenario-01').then((j) => setTrace(parseTrace(j))).catch(() => {}); }, []);
 
@@ -53,8 +55,8 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
     } catch (e) { setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
   }
 
-  const engineLabel = source === 'match-runner' ? '@pv/match-runner (real match, separate process)'
-    : source ? `${source} (fallback)` : (runtime === 'electron' ? '@pv/match-runner' : 'stub (browser)');
+  const engineLabel = source === 'match-runner' ? t('md.engine.matchRunner')
+    : source ? t('md.engine.fallback', { src: source }) : (runtime === 'electron' ? t('md.engine.default') : t('md.engine.stub'));
 
   return (
     <div className="matchday">
@@ -67,15 +69,15 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
           <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={running} data-testid="team-b">
             {allTeams.map((t) => <option key={t.teamId} value={t.name}>{t.name}</option>)}
           </select>
-          <label className="md-seed">seed <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={running} /></label>
+          <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={running} /></label>
           <button className="md-run" onClick={runMatch} disabled={running} data-testid="run-match">
-            {running ? `Simulating… ${Math.round(pct * 100)}%` : '▶ Run match'}
+            {running ? t('md.simulating', { pct: Math.round(pct * 100) }) : t('md.run')}
           </button>
         </div>
         {match && (
           <div className="md-tabs" data-testid="md-tabs">
-            <button className={tab === 'match' ? 'on' : ''} onClick={() => setTab('match')} data-testid="tab-match">경기</button>
-            <button className={tab === 'review' ? 'on' : ''} onClick={() => setTab('review')} data-testid="tab-review">리뷰 (경기 후)</button>
+            <button className={tab === 'match' ? 'on' : ''} onClick={() => setTab('match')} data-testid="tab-match">{t('md.tab.match')}</button>
+            <button className={tab === 'review' ? 'on' : ''} onClick={() => setTab('review')} data-testid="tab-review">{t('md.tab.review')}</button>
           </div>
         )}
         {tab === 'review' && match ? (
@@ -86,8 +88,8 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
           <span className="pill">{engineLabel}</span>
           {hasPerception ? (
             <>
-              <span className="fog-tag" data-testid="fog-on">🌫 Fog of war</span>
-              <label className="fog-ctl">POV
+              <span className="fog-tag" data-testid="fog-on">{t('md.fog.on')}</span>
+              <label className="fog-ctl">{t('md.fog.pov')}
                 <select value={pov} onChange={(e) => setPov(Number(e.target.value))} data-testid="fog-pov">
                   <option value={0}>{povName(0)}</option>
                   <option value={1}>{povName(1)}</option>
@@ -95,12 +97,12 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
               </label>
               <label className="fog-ctl">
                 <input type="checkbox" checked={beliefOn} onChange={(e) => setBeliefOn(e.target.checked)} data-testid="fog-belief" />
-                Belief heatmap
+                {t('md.fog.belief')}
               </label>
-              <span className="muted small">관측된 적 · 고스트 · 소리 구역 · 진실 시점은 Dev</span>
+              <span className="muted small">{t('md.fog.hint')}</span>
             </>
           ) : (
-            <span className="muted small">run a match to see the fog-of-war view (observed enemies · belief · sounds)</span>
+            <span className="muted small">{t('md.fog.need')}</span>
           )}
         </div>
         {log.length > 0 && <div className="md-roundlog small muted">{log.join('  ·  ')}</div>}
@@ -124,7 +126,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
             zonePositions={ZONE_POSITIONS}
           />
         ) : (
-          <div className="md-empty muted">Pick two teams and run the match.</div>
+          <div className="md-empty muted">{t('md.empty')}</div>
         )}
 
         {match && (
@@ -136,7 +138,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
         )}
 
         <div className="md-feed" data-testid="event-feed">
-          <div className="attr-grouplabel">Event feed <span className="muted small">(text play-by-play)</span></div>
+          <div className="attr-grouplabel">{t('md.feed.title')} <span className="muted small">{t('md.feed.sub')}</span></div>
           {(replay?.events ?? []).slice(0, 10).map((e, i) => (
             <div key={i} className="feed-row">
               <span className="feed-t">{Math.round(e.tMs / 1000)}s</span>
@@ -144,7 +146,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
               <span className="muted small">{e.actorId ?? ''}{e.victimId ? ` → ${e.victimId}` : ''}</span>
             </div>
           ))}
-          {!replay && <div className="row small muted">no events yet</div>}
+          {!replay && <div className="row small muted">{t('md.feed.none')}</div>}
         </div>
         </>
         )}
@@ -153,36 +155,36 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
       {!(tab === 'review' && match) && (
       <aside className="md-side">
         <section className="md-card" data-testid="economy-panel">
-          <h3>Economy {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
+          <h3>{t('md.econ.title')} {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
           {lastRound ? (['A', 'B'] as const).map((s) => (
             <div key={s} className="econ-team">
               <b>{match!.teams[s].name}</b>
               <span className="econ-credits">{lastRound.economy[s].credits}c</span>
-              <span className={`buy-badge buy-${lastRound.buys[s].tier}`}>{lastRound.buys[s].tier}</span>
+              <span className={`buy-badge buy-${lastRound.buys[s].tier}`}>{t(`buy.${lastRound.buys[s].tier}`)}</span>
             </div>
-          )) : <div className="row small muted">run a match for real economy</div>}
-          {lastRound && <div className="save-alert">Buys: {match!.teams.A.name} {lastRound.buys.A.weapon} · {match!.teams.B.name} {lastRound.buys.B.weapon} <span className="muted small">— economy-engine</span></div>}
+          )) : <div className="row small muted">{t('md.econ.run')}</div>}
+          {lastRound && <div className="save-alert">{t('md.econ.buys', { a: match!.teams.A.name, aw: lastRound.buys.A.weapon, b: match!.teams.B.name, bw: lastRound.buys.B.weapon })} <span className="muted small">{t('md.econ.engine')}</span></div>}
         </section>
 
         <section className="md-card" data-testid="ult-panel">
-          <h3>Ultimates {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
+          <h3>{t('md.ult.title')} {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
           {lastRound ? (['A', 'B'] as const).map((s) => (
             <div key={s} className="ult-team">
               <b>{match!.teams[s].name}</b>
-              <span className="ult-pts">{lastRound.economy[s].ultPoints} pts</span>
+              <span className="ult-pts">{t('md.ult.pts', { n: lastRound.economy[s].ultPoints })}</span>
             </div>
-          )) : <div className="row small muted">run a match for ultimate points</div>}
+          )) : <div className="row small muted">{t('md.ult.run')}</div>}
         </section>
 
         <section className="md-card coachnote" data-testid="coach-note">
-          <h3>Coach note</h3>
+          <h3>{t('md.coach.title')}</h3>
           {trace ? (
             <p className="note">
-              IGL ({trace.world.decidingSide}) chose <b>{trace.selected?.id ?? '—'}</b> with {trace.timeRemainingMs / 1000}s left.
-              {' '}{trace.selected?.rationale ?? ''} {trace.excluded.length > 0 && <span className="muted">· {trace.excluded.length} option(s) ruled out (time/space).</span>}
-              <span className="muted small"> — full candidates in Dev → Decision Debugger.</span>
+              {t('md.coach.chose', { side: trace.world.decidingSide, time: trace.timeRemainingMs / 1000, action: strategyLabel(t, trace.selected?.id) })}
+              {' '}{trace.selected?.rationale ?? ''} {trace.excluded.length > 0 && <span className="muted">{t('md.coach.ruledOut', { n: trace.excluded.length })}</span>}
+              <span className="muted small">{t('md.coach.candidates')}</span>
             </p>
-          ) : <div className="row small muted">loading trace…</div>}
+          ) : <div className="row small muted">{t('md.coach.loading')}</div>}
         </section>
       </aside>
       )}

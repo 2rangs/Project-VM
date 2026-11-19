@@ -77,7 +77,7 @@ async function main() {
   assert.ok(await page.getByTestId('rev-econ').isVisible(), 'economy timeline rendered');
   await page.waitForSelector('[data-testid="rev-decision"]', { timeout: 10000 }); // traces loaded
   const mvp = await page.getByTestId('rev-mvp').innerText();
-  assert.ok(/\bK\b/.test(mvp), 'MVP shows a kill stat');
+  assert.ok(/MVP/.test(mvp) && /\d/.test(mvp), 'MVP shows a stat'); // language-agnostic
   await page.waitForTimeout(1200); // ground-truth viewer paints
   await page.screenshot({ path: path.join(OUT, 'desktop-review.png') });
 

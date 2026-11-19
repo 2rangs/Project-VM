@@ -2,6 +2,7 @@
 // grid with uncertainty and explicit null handling, source/provenance tags, and
 // a disclaimer banner. Brand-neutral PROJECT V styling (genre conventions only).
 import { useMemo, useState, type ReactNode } from 'react';
+import { useT } from './i18n/index.tsx';
 
 export function Disclaimer({ text, kind = 'warn' }: { text: string; kind?: 'warn' | 'info' }) {
   return <div className={`disclaimer-banner ${kind}`} data-testid="disclaimer">⚠ {text}</div>;
@@ -54,6 +55,7 @@ export function DataTable<T>({
   selectedId?: string;
   rowId?: (row: T) => string;
 }) {
+  const t = useT();
   const [sort, setSort] = useState(initialSort ?? { key: columns[0].key, dir: 'asc' as const });
   const [q, setQ] = useState('');
 
@@ -76,7 +78,7 @@ export function DataTable<T>({
   return (
     <div className="dt-wrap">
       {filterKey && (
-        <input className="dt-filter" placeholder="filter…" value={q} onChange={(e) => setQ(e.target.value)} data-testid="table-filter" />
+        <input className="dt-filter" placeholder={t('common.filter')} value={q} onChange={(e) => setQ(e.target.value)} data-testid="table-filter" />
       )}
       <div className="dt-scroll">
         <table className="dt">
@@ -99,7 +101,7 @@ export function DataTable<T>({
           </tbody>
         </table>
       </div>
-      <div className="dt-count muted small">{sorted.length} rows</div>
+      <div className="dt-count muted small">{t('common.rows', { n: sorted.length })}</div>
     </div>
   );
 }

@@ -1,27 +1,31 @@
 import { RATINGS_DISCLAIMER, TEAMS_DISCLAIMER } from '../data.ts';
 import { Disclaimer } from '../ui.tsx';
+import { useLang } from '../i18n/index.tsx';
 
 export function AboutScreen() {
+  const { t, lang, setLang } = useLang();
   return (
     <div className="pad about">
-      <h2>About · PROJECT V</h2>
-      <Disclaimer text="Pre-release INTERNAL development build. Real VCT player handles and team names are shown by user decision; name / likeness / license rights MUST be re-reviewed before any launch." />
-      <p className="muted">
-        VALORANT esports tactical simulation engine. This desktop shell is a manager-game-style
-        front end over the PROJECT V simulation and data packages. It adopts genre information
-        conventions only — no third-party game's branding, screen designs, icons or colour schemes
-        are copied.
-      </p>
-      <h3>Data provenance</h3>
+      <h2>{t('about.title')}</h2>
+
+      <div className="lang-switch" data-testid="lang-switch">
+        <span className="muted small">{t('about.language')}:</span>
+        <button className={lang === 'ko' ? 'on' : ''} onClick={() => setLang('ko')} data-testid="lang-ko">{t('about.langKo')}</button>
+        <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} data-testid="lang-en">{t('about.langEn')}</button>
+      </div>
+
+      <Disclaimer text={t('about.disclaimer')} />
+      <p className="muted">{t('about.intro')}</p>
+      <h3>{t('about.provenance')}</h3>
       <ul className="prov-list">
-        <li><b>Player ratings</b> (PV-2, vct-reference): statistical ESTIMATES from public match stats, empirical-Bayes shrunk. Not assessments of real ability.</li>
-        <li><b>Team profiles</b> (PV-2): economy tendencies from public match data, not scouting truth.</li>
-        <li><b>Tactics / comps</b> (PV-1): zones/routes navgraph-derived; tactical content tagged <i>expert-knowledge-unsourced</i>.</li>
-        <li><b>Match / simulation</b> (PV-4 stub today): synthetic until the round-simulator is integrated.</li>
-        <li><b>.vrf replay players</b>: non-pro, kept anonymous (player_N) — unlike the pro names above.</li>
+        <li>{t('about.prov.ratings')}</li>
+        <li>{t('about.prov.teams')}</li>
+        <li>{t('about.prov.tactics')}</li>
+        <li>{t('about.prov.sim')}</li>
+        <li>{t('about.prov.vrf')}</li>
       </ul>
       <details className="rawdisc">
-        <summary>Full data disclaimers</summary>
+        <summary>{t('about.rawDisc')}</summary>
         <p className="small muted">{RATINGS_DISCLAIMER}</p>
         <p className="small muted">{TEAMS_DISCLAIMER}</p>
       </details>
