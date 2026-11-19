@@ -1,0 +1,1059 @@
+{
+ "note": "2.5D walk grid measured on the map's art geometry (no collision layer exists in the source scene). Distances are 8-neighbour grid geodesics in metres: they overestimate a true straight walk by up to ~8 % (octile metric), the same bias as Ascent's pv5-measured-edges. A zone's 'cell' is the set of walkable grid cells closer (on foot) to its callout than to any other callout.",
+ "params": {
+  "cell": 0.5,
+  "voxel_z": 0.25,
+  "sample": 0.2,
+  "floor_nz": 0.64,
+  "layer_gap": 0.35,
+  "body_lo": 0.5,
+  "body_hi": 1.5,
+  "max_slope": 1.2,
+  "max_drop": 5.0,
+  "min_component": 40,
+  "snap_radius": 6.0,
+  "zone_radius": 9.0,
+  "eye": 1.6,
+  "los_samples": 12,
+  "los_cell": 2.0,
+  "margin": 45.0,
+  "seed": 20261119
+ },
+ "grid": {
+  "floorLayers": 109453,
+  "standableNodes": 75631,
+  "walkLinks": 501925,
+  "dropLinks": 8152,
+  "components": 1297,
+  "componentsOver10m2": 137,
+  "mainComponentNodes": 22452,
+  "mainComponentArea_m2": 5613,
+  "mainComponentShareOfStandable": 0.297,
+  "mainComponentShareOfComponentsOver10m2": 0.329
+ },
+ "zonesPlaced": 17,
+ "zonesTotal": 17,
+ "zonesOnMainWalkComponent": 17,
+ "zoneSnaps": {
+  "attacker-spawn": {
+   "onMesh": true,
+   "snapDistXY_m": 1.46,
+   "floorZ_uu": 201.5,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -5900.0,
+    -325.0,
+    201.5
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "defender-spawn": {
+   "onMesh": true,
+   "snapDistXY_m": 2.45,
+   "floorZ_uu": 307.3,
+   "calloutZ_uu": -198.5,
+   "repGame_uu": [
+    4050.0,
+    -1975.0,
+    307.3
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "a-alley": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 100.0,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    3350.0,
+    3625.0,
+    100.0
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "a-elbow": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 100.0,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    250.0,
+    4175.0,
+    100.0
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "a-link": {
+   "onMesh": true,
+   "snapDistXY_m": 1.52,
+   "floorZ_uu": 201.6,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    2050.0,
+    2975.0,
+    201.6
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "a-lobby": {
+   "onMesh": true,
+   "snapDistXY_m": 0.25,
+   "floorZ_uu": 0.0,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -1800.0,
+    2025.0,
+    0.0
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "a-main": {
+   "onMesh": true,
+   "snapDistXY_m": 2.02,
+   "floorZ_uu": 0.6,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -600.0,
+    2175.0,
+    0.6
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "a-site": {
+   "onMesh": true,
+   "snapDistXY_m": 1.35,
+   "floorZ_uu": 100.0,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    1050.0,
+    3325.0,
+    100.0
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "b-boba": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 403.3,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    2150.0,
+    -4825.0,
+    403.3
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "b-lobby": {
+   "onMesh": true,
+   "snapDistXY_m": 1.95,
+   "floorZ_uu": 400.0,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -3250.0,
+    -2475.0,
+    400.0
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "b-main": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 200.0,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -1950.0,
+    -5625.0,
+    200.0
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "b-market": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 200.2,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -150.0,
+    -3425.0,
+    200.2
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "b-site": {
+   "onMesh": true,
+   "snapDistXY_m": 1.25,
+   "floorZ_uu": 200.1,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -500.0,
+    -5775.0,
+    200.1
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "mid-bottom": {
+   "onMesh": true,
+   "snapDistXY_m": 0.5,
+   "floorZ_uu": 206.8,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -1800.0,
+    -1975.0,
+    206.8
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "mid-courtyard": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 200.2,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -550.0,
+    -1175.0,
+    200.2
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "mid-tiles": {
+   "onMesh": true,
+   "snapDistXY_m": 0.56,
+   "floorZ_uu": 202.2,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    -1750.0,
+    375.0,
+    202.2
+   ],
+   "component": 76,
+   "onMainComponent": true
+  },
+  "mid-top": {
+   "onMesh": true,
+   "snapDistXY_m": 2.61,
+   "floorZ_uu": 401.2,
+   "calloutZ_uu": -200.0,
+   "repGame_uu": [
+    2250.0,
+    -1925.0,
+    401.2
+   ],
+   "component": 76,
+   "onMainComponent": true
+  }
+ },
+ "walkAdjacency": [
+  {
+   "a": "a-link",
+   "b": "a-site",
+   "pathWithinTheTwoCells_m": 11.7
+  },
+  {
+   "a": "a-lobby",
+   "b": "a-main",
+   "pathWithinTheTwoCells_m": 12.6
+  },
+  {
+   "a": "b-lobby",
+   "b": "mid-bottom",
+   "pathWithinTheTwoCells_m": 17.4
+  },
+  {
+   "a": "b-main",
+   "b": "b-site",
+   "pathWithinTheTwoCells_m": 20.9
+  },
+  {
+   "a": "a-main",
+   "b": "mid-tiles",
+   "pathWithinTheTwoCells_m": 23.0
+  },
+  {
+   "a": "defender-spawn",
+   "b": "mid-top",
+   "pathWithinTheTwoCells_m": 24.2
+  },
+  {
+   "a": "mid-courtyard",
+   "b": "mid-tiles",
+   "pathWithinTheTwoCells_m": 25.1
+  },
+  {
+   "a": "b-market",
+   "b": "b-site",
+   "pathWithinTheTwoCells_m": 26.2
+  },
+  {
+   "a": "mid-bottom",
+   "b": "mid-tiles",
+   "pathWithinTheTwoCells_m": 26.2
+  },
+  {
+   "a": "a-alley",
+   "b": "a-site",
+   "pathWithinTheTwoCells_m": 28.3
+  },
+  {
+   "a": "b-boba",
+   "b": "b-site",
+   "pathWithinTheTwoCells_m": 30.7
+  },
+  {
+   "a": "a-elbow",
+   "b": "a-site",
+   "pathWithinTheTwoCells_m": 31.1
+  },
+  {
+   "a": "a-elbow",
+   "b": "a-main",
+   "pathWithinTheTwoCells_m": 33.1
+  },
+  {
+   "a": "a-elbow",
+   "b": "a-lobby",
+   "pathWithinTheTwoCells_m": 37.1
+  },
+  {
+   "a": "b-market",
+   "b": "mid-courtyard",
+   "pathWithinTheTwoCells_m": 38.5
+  },
+  {
+   "a": "b-boba",
+   "b": "mid-top",
+   "pathWithinTheTwoCells_m": 40.7
+  },
+  {
+   "a": "b-lobby",
+   "b": "b-main",
+   "pathWithinTheTwoCells_m": 46.1
+  },
+  {
+   "a": "a-main",
+   "b": "mid-courtyard",
+   "pathWithinTheTwoCells_m": 48.8
+  },
+  {
+   "a": "mid-courtyard",
+   "b": "mid-top",
+   "pathWithinTheTwoCells_m": 49.3
+  },
+  {
+   "a": "attacker-spawn",
+   "b": "b-lobby",
+   "pathWithinTheTwoCells_m": 49.5
+  },
+  {
+   "a": "b-boba",
+   "b": "b-market",
+   "pathWithinTheTwoCells_m": 49.7
+  },
+  {
+   "a": "a-alley",
+   "b": "a-elbow",
+   "pathWithinTheTwoCells_m": 50.6
+  },
+  {
+   "a": "attacker-spawn",
+   "b": "a-lobby",
+   "pathWithinTheTwoCells_m": 51.5
+  },
+  {
+   "a": "defender-spawn",
+   "b": "a-alley",
+   "pathWithinTheTwoCells_m": 72.0
+  },
+  {
+   "a": "a-alley",
+   "b": "mid-top",
+   "pathWithinTheTwoCells_m": 74.8
+  }
+ ],
+ "dropAdjacency": [
+  {
+   "from": "b-lobby",
+   "to": "mid-bottom",
+   "pathWithinTheTwoCells_m": 21.7
+  },
+  {
+   "from": "b-boba",
+   "to": "b-market",
+   "pathWithinTheTwoCells_m": 29.3
+  },
+  {
+   "from": "a-alley",
+   "to": "a-link",
+   "pathWithinTheTwoCells_m": 55.6
+  },
+  {
+   "from": "attacker-spawn",
+   "to": "a-lobby",
+   "pathWithinTheTwoCells_m": 57.0
+  }
+ ],
+ "walkDistance_m": {
+  "attacker-spawn": {
+   "attacker-spawn": 0.0,
+   "defender-spawn": 128.8,
+   "a-alley": 123.4,
+   "a-elbow": 82.6,
+   "a-link": 103.9,
+   "a-lobby": 51.5,
+   "a-main": 63.7,
+   "a-site": 100.9,
+   "b-boba": 116.9,
+   "b-lobby": 49.5,
+   "b-main": 89.3,
+   "b-market": 104.0,
+   "b-site": 94.9,
+   "mid-bottom": 50.9,
+   "mid-courtyard": 77.3,
+   "mid-tiles": 68.8,
+   "mid-top": 113.4
+  },
+  "defender-spawn": {
+   "attacker-spawn": 128.8,
+   "defender-spawn": 0.0,
+   "a-alley": 72.0,
+   "a-elbow": 110.8,
+   "a-link": 99.9,
+   "a-lobby": 86.9,
+   "a-main": 78.2,
+   "a-site": 99.3,
+   "b-boba": 49.9,
+   "b-lobby": 100.5,
+   "b-main": 92.3,
+   "b-market": 60.9,
+   "b-site": 78.4,
+   "mid-bottom": 86.2,
+   "mid-courtyard": 64.7,
+   "mid-tiles": 75.2,
+   "mid-top": 24.2
+  },
+  "a-alley": {
+   "attacker-spawn": 123.4,
+   "defender-spawn": 72.0,
+   "a-alley": 0.0,
+   "a-elbow": 50.6,
+   "a-link": 28.9,
+   "a-lobby": 74.9,
+   "a-main": 73.9,
+   "a-site": 28.3,
+   "b-boba": 108.6,
+   "b-lobby": 124.2,
+   "b-main": 135.3,
+   "b-market": 102.4,
+   "b-site": 127.3,
+   "mid-bottom": 109.9,
+   "mid-courtyard": 88.8,
+   "mid-tiles": 93.9,
+   "mid-top": 74.7
+  },
+  "a-elbow": {
+   "attacker-spawn": 82.6,
+   "defender-spawn": 110.8,
+   "a-alley": 50.6,
+   "a-elbow": 0.0,
+   "a-link": 34.1,
+   "a-lobby": 34.1,
+   "a-main": 33.1,
+   "a-site": 31.1,
+   "b-boba": 131.5,
+   "b-lobby": 91.1,
+   "b-main": 122.1,
+   "b-market": 104.3,
+   "b-site": 127.7,
+   "mid-bottom": 76.9,
+   "mid-courtyard": 72.9,
+   "mid-tiles": 53.1,
+   "mid-top": 95.4
+  },
+  "a-link": {
+   "attacker-spawn": 103.9,
+   "defender-spawn": 99.9,
+   "a-alley": 28.9,
+   "a-elbow": 34.1,
+   "a-link": 0.0,
+   "a-lobby": 55.4,
+   "a-main": 54.3,
+   "a-site": 11.7,
+   "b-boba": 136.4,
+   "b-lobby": 112.4,
+   "b-main": 143.4,
+   "b-market": 125.5,
+   "b-site": 148.9,
+   "mid-bottom": 98.1,
+   "mid-courtyard": 94.1,
+   "mid-tiles": 74.4,
+   "mid-top": 102.6
+  },
+  "a-lobby": {
+   "attacker-spawn": 51.5,
+   "defender-spawn": 86.9,
+   "a-alley": 74.9,
+   "a-elbow": 34.1,
+   "a-link": 55.4,
+   "a-lobby": 0.0,
+   "a-main": 12.6,
+   "a-site": 52.4,
+   "b-boba": 107.6,
+   "b-lobby": 67.3,
+   "b-main": 98.2,
+   "b-market": 80.4,
+   "b-site": 103.8,
+   "mid-bottom": 53.0,
+   "mid-courtyard": 49.0,
+   "mid-tiles": 29.2,
+   "mid-top": 71.5
+  },
+  "a-main": {
+   "attacker-spawn": 63.7,
+   "defender-spawn": 78.2,
+   "a-alley": 73.9,
+   "a-elbow": 33.1,
+   "a-link": 54.3,
+   "a-lobby": 12.6,
+   "a-main": 0.0,
+   "a-site": 51.3,
+   "b-boba": 98.9,
+   "b-lobby": 61.0,
+   "b-main": 92.0,
+   "b-market": 71.6,
+   "b-site": 96.6,
+   "mid-bottom": 46.7,
+   "mid-courtyard": 42.7,
+   "mid-tiles": 23.0,
+   "mid-top": 62.8
+  },
+  "a-site": {
+   "attacker-spawn": 100.9,
+   "defender-spawn": 99.3,
+   "a-alley": 28.3,
+   "a-elbow": 31.1,
+   "a-link": 11.7,
+   "a-lobby": 52.4,
+   "a-main": 51.3,
+   "a-site": 0.0,
+   "b-boba": 135.8,
+   "b-lobby": 109.4,
+   "b-main": 140.4,
+   "b-market": 122.5,
+   "b-site": 146.0,
+   "mid-bottom": 95.2,
+   "mid-courtyard": 91.2,
+   "mid-tiles": 71.4,
+   "mid-top": 102.0
+  },
+  "b-boba": {
+   "attacker-spawn": 116.9,
+   "defender-spawn": 49.9,
+   "a-alley": 108.7,
+   "a-elbow": 131.5,
+   "a-link": 136.6,
+   "a-lobby": 107.6,
+   "a-main": 98.9,
+   "a-site": 136.0,
+   "b-boba": 0.0,
+   "b-lobby": 73.6,
+   "b-main": 44.6,
+   "b-market": 36.5,
+   "b-site": 30.7,
+   "mid-bottom": 76.0,
+   "mid-courtyard": 67.1,
+   "mid-tiles": 85.1,
+   "mid-top": 40.7
+  },
+  "b-lobby": {
+   "attacker-spawn": 49.5,
+   "defender-spawn": 100.5,
+   "a-alley": 124.3,
+   "a-elbow": 91.1,
+   "a-link": 112.4,
+   "a-lobby": 67.3,
+   "a-main": 61.0,
+   "a-site": 109.4,
+   "b-boba": 73.6,
+   "b-lobby": 0.0,
+   "b-main": 46.1,
+   "b-market": 60.7,
+   "b-site": 51.6,
+   "mid-bottom": 17.4,
+   "mid-courtyard": 49.0,
+   "mid-tiles": 40.5,
+   "mid-top": 85.2
+  },
+  "b-main": {
+   "attacker-spawn": 89.3,
+   "defender-spawn": 92.3,
+   "a-alley": 135.4,
+   "a-elbow": 122.1,
+   "a-link": 143.4,
+   "a-lobby": 98.2,
+   "a-main": 92.0,
+   "a-site": 140.4,
+   "b-boba": 44.6,
+   "b-lobby": 46.1,
+   "b-main": 0.0,
+   "b-market": 34.2,
+   "b-site": 20.9,
+   "mid-bottom": 48.4,
+   "mid-courtyard": 71.5,
+   "mid-tiles": 71.5,
+   "mid-top": 83.2
+  },
+  "b-market": {
+   "attacker-spawn": 104.0,
+   "defender-spawn": 60.9,
+   "a-alley": 102.5,
+   "a-elbow": 104.3,
+   "a-link": 125.5,
+   "a-lobby": 80.4,
+   "a-main": 71.6,
+   "a-site": 122.5,
+   "b-boba": 36.5,
+   "b-lobby": 60.7,
+   "b-main": 34.2,
+   "b-market": 0.0,
+   "b-site": 26.2,
+   "mid-bottom": 63.1,
+   "mid-courtyard": 38.5,
+   "mid-tiles": 56.5,
+   "mid-top": 51.8
+  },
+  "b-site": {
+   "attacker-spawn": 94.9,
+   "defender-spawn": 78.4,
+   "a-alley": 127.4,
+   "a-elbow": 127.7,
+   "a-link": 148.9,
+   "a-lobby": 103.8,
+   "a-main": 96.6,
+   "a-site": 146.0,
+   "b-boba": 30.7,
+   "b-lobby": 51.6,
+   "b-main": 20.9,
+   "b-market": 26.2,
+   "b-site": 0.0,
+   "mid-bottom": 54.0,
+   "mid-courtyard": 63.5,
+   "mid-tiles": 77.0,
+   "mid-top": 69.3
+  },
+  "mid-bottom": {
+   "attacker-spawn": 50.9,
+   "defender-spawn": 86.2,
+   "a-alley": 110.0,
+   "a-elbow": 76.9,
+   "a-link": 98.1,
+   "a-lobby": 53.0,
+   "a-main": 46.7,
+   "a-site": 95.2,
+   "b-boba": 76.0,
+   "b-lobby": 17.4,
+   "b-main": 48.4,
+   "b-market": 63.1,
+   "b-site": 54.0,
+   "mid-bottom": 0.0,
+   "mid-courtyard": 34.8,
+   "mid-tiles": 26.2,
+   "mid-top": 70.9
+  },
+  "mid-courtyard": {
+   "attacker-spawn": 77.3,
+   "defender-spawn": 64.7,
+   "a-alley": 88.9,
+   "a-elbow": 72.9,
+   "a-link": 94.1,
+   "a-lobby": 49.0,
+   "a-main": 42.7,
+   "a-site": 91.2,
+   "b-boba": 67.1,
+   "b-lobby": 49.0,
+   "b-main": 71.5,
+   "b-market": 38.5,
+   "b-site": 63.5,
+   "mid-bottom": 34.8,
+   "mid-courtyard": 0.0,
+   "mid-tiles": 25.1,
+   "mid-top": 49.3
+  },
+  "mid-tiles": {
+   "attacker-spawn": 68.8,
+   "defender-spawn": 75.2,
+   "a-alley": 93.9,
+   "a-elbow": 53.1,
+   "a-link": 74.4,
+   "a-lobby": 29.2,
+   "a-main": 23.0,
+   "a-site": 71.4,
+   "b-boba": 85.1,
+   "b-lobby": 40.5,
+   "b-main": 71.5,
+   "b-market": 56.5,
+   "b-site": 77.0,
+   "mid-bottom": 26.2,
+   "mid-courtyard": 25.1,
+   "mid-tiles": 0.0,
+   "mid-top": 59.8
+  },
+  "mid-top": {
+   "attacker-spawn": 113.4,
+   "defender-spawn": 24.2,
+   "a-alley": 74.8,
+   "a-elbow": 95.4,
+   "a-link": 102.7,
+   "a-lobby": 71.5,
+   "a-main": 62.8,
+   "a-site": 102.1,
+   "b-boba": 40.7,
+   "b-lobby": 85.2,
+   "b-main": 83.2,
+   "b-market": 51.8,
+   "b-site": 69.3,
+   "mid-bottom": 70.9,
+   "mid-courtyard": 49.3,
+   "mid-tiles": 59.8,
+   "mid-top": 0.0
+  }
+ },
+ "walkAndDropDistance_m": {
+  "attacker-spawn": {
+   "attacker-spawn": 0.0,
+   "defender-spawn": 128.8,
+   "a-alley": 123.4,
+   "a-elbow": 82.6,
+   "a-link": 103.9,
+   "a-lobby": 51.5,
+   "a-main": 63.7,
+   "a-site": 100.9,
+   "b-boba": 116.9,
+   "b-lobby": 49.5,
+   "b-main": 89.3,
+   "b-market": 104.0,
+   "b-site": 94.9,
+   "mid-bottom": 50.9,
+   "mid-courtyard": 77.3,
+   "mid-tiles": 68.8,
+   "mid-top": 113.4
+  },
+  "defender-spawn": {
+   "attacker-spawn": 128.8,
+   "defender-spawn": 0.0,
+   "a-alley": 72.0,
+   "a-elbow": 99.4,
+   "a-link": 70.1,
+   "a-lobby": 86.9,
+   "a-main": 78.2,
+   "a-site": 80.3,
+   "b-boba": 49.9,
+   "b-lobby": 100.5,
+   "b-main": 92.3,
+   "b-market": 60.9,
+   "b-site": 78.4,
+   "mid-bottom": 86.2,
+   "mid-courtyard": 64.7,
+   "mid-tiles": 75.2,
+   "mid-top": 24.2
+  },
+  "a-alley": {
+   "attacker-spawn": 123.4,
+   "defender-spawn": 72.0,
+   "a-alley": 0.0,
+   "a-elbow": 50.6,
+   "a-link": 28.9,
+   "a-lobby": 74.9,
+   "a-main": 73.9,
+   "a-site": 28.3,
+   "b-boba": 108.6,
+   "b-lobby": 124.2,
+   "b-main": 135.3,
+   "b-market": 102.4,
+   "b-site": 127.3,
+   "mid-bottom": 109.9,
+   "mid-courtyard": 88.8,
+   "mid-tiles": 93.9,
+   "mid-top": 74.7
+  },
+  "a-elbow": {
+   "attacker-spawn": 82.6,
+   "defender-spawn": 110.8,
+   "a-alley": 50.6,
+   "a-elbow": 0.0,
+   "a-link": 34.1,
+   "a-lobby": 34.1,
+   "a-main": 33.1,
+   "a-site": 31.1,
+   "b-boba": 131.5,
+   "b-lobby": 91.1,
+   "b-main": 122.1,
+   "b-market": 104.3,
+   "b-site": 127.7,
+   "mid-bottom": 76.9,
+   "mid-courtyard": 72.9,
+   "mid-tiles": 53.1,
+   "mid-top": 95.4
+  },
+  "a-link": {
+   "attacker-spawn": 103.9,
+   "defender-spawn": 99.9,
+   "a-alley": 28.9,
+   "a-elbow": 34.1,
+   "a-link": 0.0,
+   "a-lobby": 55.4,
+   "a-main": 54.3,
+   "a-site": 11.7,
+   "b-boba": 136.4,
+   "b-lobby": 112.4,
+   "b-main": 143.4,
+   "b-market": 125.5,
+   "b-site": 148.9,
+   "mid-bottom": 98.1,
+   "mid-courtyard": 94.1,
+   "mid-tiles": 74.4,
+   "mid-top": 102.6
+  },
+  "a-lobby": {
+   "attacker-spawn": 51.5,
+   "defender-spawn": 86.9,
+   "a-alley": 74.9,
+   "a-elbow": 34.1,
+   "a-link": 55.4,
+   "a-lobby": 0.0,
+   "a-main": 12.6,
+   "a-site": 52.4,
+   "b-boba": 107.6,
+   "b-lobby": 67.3,
+   "b-main": 98.2,
+   "b-market": 80.4,
+   "b-site": 103.8,
+   "mid-bottom": 53.0,
+   "mid-courtyard": 49.0,
+   "mid-tiles": 29.2,
+   "mid-top": 71.5
+  },
+  "a-main": {
+   "attacker-spawn": 63.7,
+   "defender-spawn": 78.2,
+   "a-alley": 73.9,
+   "a-elbow": 33.1,
+   "a-link": 54.3,
+   "a-lobby": 12.6,
+   "a-main": 0.0,
+   "a-site": 51.3,
+   "b-boba": 98.9,
+   "b-lobby": 61.0,
+   "b-main": 92.0,
+   "b-market": 71.6,
+   "b-site": 96.6,
+   "mid-bottom": 46.7,
+   "mid-courtyard": 42.7,
+   "mid-tiles": 23.0,
+   "mid-top": 62.8
+  },
+  "a-site": {
+   "attacker-spawn": 100.9,
+   "defender-spawn": 99.3,
+   "a-alley": 28.3,
+   "a-elbow": 31.1,
+   "a-link": 11.7,
+   "a-lobby": 52.4,
+   "a-main": 51.3,
+   "a-site": 0.0,
+   "b-boba": 135.8,
+   "b-lobby": 109.4,
+   "b-main": 140.4,
+   "b-market": 122.5,
+   "b-site": 146.0,
+   "mid-bottom": 95.2,
+   "mid-courtyard": 91.2,
+   "mid-tiles": 71.4,
+   "mid-top": 102.0
+  },
+  "b-boba": {
+   "attacker-spawn": 116.9,
+   "defender-spawn": 49.9,
+   "a-alley": 108.7,
+   "a-elbow": 120.4,
+   "a-link": 91.1,
+   "a-lobby": 103.3,
+   "a-main": 94.6,
+   "a-site": 101.3,
+   "b-boba": 0.0,
+   "b-lobby": 73.6,
+   "b-main": 44.6,
+   "b-market": 29.3,
+   "b-site": 30.7,
+   "mid-bottom": 76.0,
+   "mid-courtyard": 61.9,
+   "mid-tiles": 79.9,
+   "mid-top": 40.7
+  },
+  "b-lobby": {
+   "attacker-spawn": 49.5,
+   "defender-spawn": 100.5,
+   "a-alley": 124.3,
+   "a-elbow": 91.1,
+   "a-link": 106.7,
+   "a-lobby": 67.3,
+   "a-main": 61.0,
+   "a-site": 109.4,
+   "b-boba": 73.6,
+   "b-lobby": 0.0,
+   "b-main": 46.1,
+   "b-market": 60.7,
+   "b-site": 51.6,
+   "mid-bottom": 17.4,
+   "mid-courtyard": 49.0,
+   "mid-tiles": 40.5,
+   "mid-top": 85.2
+  },
+  "b-main": {
+   "attacker-spawn": 89.3,
+   "defender-spawn": 92.3,
+   "a-alley": 135.4,
+   "a-elbow": 122.1,
+   "a-link": 117.9,
+   "a-lobby": 98.2,
+   "a-main": 92.0,
+   "a-site": 128.0,
+   "b-boba": 44.6,
+   "b-lobby": 46.1,
+   "b-main": 0.0,
+   "b-market": 34.2,
+   "b-site": 20.9,
+   "mid-bottom": 48.4,
+   "mid-courtyard": 71.5,
+   "mid-tiles": 71.5,
+   "mid-top": 83.2
+  },
+  "b-market": {
+   "attacker-spawn": 104.0,
+   "defender-spawn": 60.9,
+   "a-alley": 102.5,
+   "a-elbow": 104.3,
+   "a-link": 84.9,
+   "a-lobby": 80.4,
+   "a-main": 71.6,
+   "a-site": 95.0,
+   "b-boba": 36.5,
+   "b-lobby": 60.7,
+   "b-main": 34.2,
+   "b-market": 0.0,
+   "b-site": 26.2,
+   "mid-bottom": 63.1,
+   "mid-courtyard": 38.5,
+   "mid-tiles": 56.5,
+   "mid-top": 51.8
+  },
+  "b-site": {
+   "attacker-spawn": 94.9,
+   "defender-spawn": 78.4,
+   "a-alley": 127.4,
+   "a-elbow": 127.7,
+   "a-link": 109.8,
+   "a-lobby": 103.8,
+   "a-main": 96.6,
+   "a-site": 120.0,
+   "b-boba": 30.7,
+   "b-lobby": 51.6,
+   "b-main": 20.9,
+   "b-market": 26.2,
+   "b-site": 0.0,
+   "mid-bottom": 54.0,
+   "mid-courtyard": 63.5,
+   "mid-tiles": 77.0,
+   "mid-top": 69.3
+  },
+  "mid-bottom": {
+   "attacker-spawn": 50.9,
+   "defender-spawn": 86.2,
+   "a-alley": 110.0,
+   "a-elbow": 76.9,
+   "a-link": 92.5,
+   "a-lobby": 53.0,
+   "a-main": 46.7,
+   "a-site": 95.2,
+   "b-boba": 76.0,
+   "b-lobby": 17.4,
+   "b-main": 48.4,
+   "b-market": 63.1,
+   "b-site": 54.0,
+   "mid-bottom": 0.0,
+   "mid-courtyard": 34.8,
+   "mid-tiles": 26.2,
+   "mid-top": 70.9
+  },
+  "mid-courtyard": {
+   "attacker-spawn": 77.3,
+   "defender-spawn": 64.7,
+   "a-alley": 88.9,
+   "a-elbow": 72.9,
+   "a-link": 71.4,
+   "a-lobby": 49.0,
+   "a-main": 42.7,
+   "a-site": 81.5,
+   "b-boba": 67.1,
+   "b-lobby": 49.0,
+   "b-main": 71.5,
+   "b-market": 38.5,
+   "b-site": 63.5,
+   "mid-bottom": 34.8,
+   "mid-courtyard": 0.0,
+   "mid-tiles": 25.1,
+   "mid-top": 49.3
+  },
+  "mid-tiles": {
+   "attacker-spawn": 68.8,
+   "defender-spawn": 75.2,
+   "a-alley": 93.9,
+   "a-elbow": 53.1,
+   "a-link": 74.4,
+   "a-lobby": 29.2,
+   "a-main": 23.0,
+   "a-site": 71.4,
+   "b-boba": 85.1,
+   "b-lobby": 40.5,
+   "b-main": 71.5,
+   "b-market": 56.5,
+   "b-site": 77.0,
+   "mid-bottom": 26.2,
+   "mid-courtyard": 25.1,
+   "mid-tiles": 0.0,
+   "mid-top": 59.8
+  },
+  "mid-top": {
+   "attacker-spawn": 113.4,
+   "defender-spawn": 24.2,
+   "a-alley": 74.8,
+   "a-elbow": 86.5,
+   "a-link": 57.3,
+   "a-lobby": 71.5,
+   "a-main": 62.8,
+   "a-site": 67.4,
+   "b-boba": 40.7,
+   "b-lobby": 85.2,
+   "b-main": 83.2,
+   "b-market": 51.8,
+   "b-site": 69.3,
+   "mid-bottom": 70.9,
+   "mid-courtyard": 49.3,
+   "mid-tiles": 59.8,
+   "mid-top": 0.0
+  }
+ }
+}

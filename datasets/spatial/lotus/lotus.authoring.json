@@ -1,0 +1,34 @@
+{
+  "mapId": "lotus",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "layout",
+      "name": "Three sites A/B/C",
+      "represented": false,
+      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md \u00a76)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "door",
+      "name": "Two rotating doors (A Door, C Door): closed by default, loud, slow to rotate",
+      "represented": false,
+      "engineNeeds": "DoorInfo cannot express a timed, audible rotating door; needs door state + rotation time + sound cue. The door zones exist (a-door, c-door); which edges they gate must be confirmed by a human",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "destructible",
+      "name": "Breakable wall between A Link and B Site",
+      "represented": false,
+      "engineNeeds": "a destructible edge that only opens after enough damage",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "layout",
+      "name": "No mid: the map has no 'Mid' super-region",
+      "represented": false,
+      "engineNeeds": "zonesByType('mid') is empty",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

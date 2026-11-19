@@ -1,0 +1,13 @@
+{
+  "mapId": "pearl",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "none",
+      "name": "No dynamic map mechanics (static doorways only)",
+      "represented": true,
+      "how": "nothing to encode",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

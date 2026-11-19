@@ -39,6 +39,8 @@ export class ZoneGraph {
   private readonly zones = new Map<string, Zone>();
   private readonly transit = new Map<string, boolean>();
   private readonly speeds: { run: number; walk: number }; // units per ms
+  /** 1 unless a special edge is faster than running its straight line (see constructor). */
+  private heuristicScale = 1;
 
   constructor(zones: Zone[], edges: NavEdge[], unitsPerMeter: number, runMps: number, walkMps: number) {
     for (const z of zones) {
@@ -53,6 +55,18 @@ export class ZoneGraph {
     for (const e of edges) {
       this.addDirected(e.from, e.to, e);
       if (e.bidirectional) this.addDirected(e.to, e.from, e);
+      // A teleporter / zipline / rope may be faster than running the straight line, which
+      // would make the straight-line heuristic overestimate. Scale the heuristic down by the
+      // worst such edge so A* stays optimal. Ordinary edges (every Ascent edge) never touch
+      // this: the scale stays exactly 1.
+      if (e.kind === "teleporter" || e.kind === "zipline" || e.kind === "rope") {
+        const a = this.zones.get(e.from)!;
+        const b = this.zones.get(e.to)!;
+        for (const [time, speed] of [[e.runTimeMs, this.speeds.run], [e.walkTimeMs, this.speeds.walk]] as const) {
+          const straightMs = distance3(a.position, b.position) / speed;
+          if (straightMs > 0) this.heuristicScale = Math.min(this.heuristicScale, time / straightMs);
+        }
+      }
     }
   }
 
@@ -76,7 +90,7 @@ export class ZoneGraph {
     const b = this.zones.get(goalId)!;
     const units = distance3(a.position, b.position);
     const speed = mode === "run" ? this.speeds.run : this.speeds.walk;
-    return units / speed;
+    return (units / speed) * this.heuristicScale;
   }
 
   /** Returns ordered zone ids (start..goal) and total time/distance, or null if unreachable. */

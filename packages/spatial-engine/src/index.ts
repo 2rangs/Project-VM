@@ -7,3 +7,5 @@ export { ZoneGraph } from "./pathfinding.js";
 export type { PathOptions } from "./pathfinding.js";
 export { distance2, distance3, pointInPolygon } from "./geometry.js";
 export { createEngine, loadEngineFromFiles } from "./loader.js";
+export { MAP_IDS, MAPS, isMapId, listMaps, loadMap, loadMapData, defaultDatasetsRoot } from "./maps.js";
+export type { MapId, MapInfo, SiteLetter, LoadedMapData } from "./maps.js";

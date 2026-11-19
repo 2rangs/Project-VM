@@ -1,0 +1,269 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Split.blend",
+  "blendBytes": 306298451,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Bonsai_Art_A": 519,
+    "Bonsai_Art_AtkPathA": 881,
+    "Bonsai_Art_AtkPathB": 782,
+    "Bonsai_Art_AtkSpawn": 232,
+    "Bonsai_Art_ATower": 184,
+    "Bonsai_Art_B": 792,
+    "Bonsai_Art_BTower": 1407,
+    "Bonsai_Art_DefPathA": 108,
+    "Bonsai_Art_DefPathB": 776,
+    "Bonsai_Art_DefSpawn": 509,
+    "Bonsai_Art_HappyStore": 237,
+    "Bonsai_Art_Mid": 825,
+    "Bonsai_Art_MidConstruction": 408,
+    "Bonsai_Art_MidVent": 330,
+    "Bonsai_Art_Sewer": 244,
+    "Bonsai_Art_VistaA": 305,
+    "Bonsai_Art_VistaAtk": 518,
+    "Bonsai_Art_VistaB": 630,
+    "Bonsai_Art_VistaDef": 28,
+    "Collection": 0
+  },
+  "keptCollections": {
+    "Bonsai_Art_AtkPathB": {
+      "objects": 663,
+      "tris": 192982,
+      "min": [
+        -40.75,
+        -2.41,
+        2.36
+      ],
+      "max": [
+        12.54,
+        62.57,
+        25.27
+      ]
+    },
+    "Bonsai_Art_B": {
+      "objects": 679,
+      "tris": 215138,
+      "min": [
+        -51.65,
+        29.51,
+        -9.43
+      ],
+      "max": [
+        17.74,
+        94.63,
+        41.27
+      ]
+    },
+    "Bonsai_Art_BTower": {
+      "objects": 1178,
+      "tris": 315498,
+      "min": [
+        -14.0,
+        35.41,
+        2.91
+      ],
+      "max": [
+        22.05,
+        74.63,
+        53.17
+      ]
+    },
+    "Bonsai_Art_DefPathB": {
+      "objects": 657,
+      "tris": 254628,
+      "min": [
+        -70.54,
+        67.47,
+        -0.11
+      ],
+      "max": [
+        84.63,
+        156.11,
+        38.82
+      ]
+    },
+    "Bonsai_Art_DefSpawn": {
+      "objects": 420,
+      "tris": 191796,
+      "min": [
+        -125.1,
+        52.86,
+        -9.19
+      ],
+      "max": [
+        231.14,
+        438.55,
+        164.18
+      ]
+    },
+    "Bonsai_Art_MidConstruction": {
+      "objects": 339,
+      "tris": 75406,
+      "min": [
+        -36.24,
+        9.43,
+        2.51
+      ],
+      "max": [
+        51.04,
+        47.65,
+        42.36
+      ]
+    },
+    "Bonsai_Art_AtkPathA": {
+      "objects": 751,
+      "tris": 305473,
+      "min": [
+        25.08,
+        3.21,
+        -0.0
+      ],
+      "max": [
+        85.03,
+        61.45,
+        25.09
+      ]
+    },
+    "Bonsai_Art_DefPathA": {
+      "objects": 87,
+      "tris": 53401,
+      "min": [
+        26.72,
+        42.39,
+        1.87
+      ],
+      "max": [
+        57.52,
+        107.75,
+        44.34
+      ]
+    },
+    "Bonsai_Art_A": {
+      "objects": 453,
+      "tris": 199765,
+      "min": [
+        21.67,
+        43.61,
+        -0.33
+      ],
+      "max": [
+        84.49,
+        102.56,
+        177.95
+      ]
+    },
+    "Bonsai_Art_AtkSpawn": {
+      "objects": 204,
+      "tris": 110198,
+      "min": [
+        -14.04,
+        -12.49,
+        1.21
+      ],
+      "max": [
+        39.69,
+        28.0,
+        21.16
+      ]
+    },
+    "Bonsai_Art_ATower": {
+      "objects": 160,
+      "tris": 26306,
+      "min": [
+        26.14,
+        37.77,
+        1.0
+      ],
+      "max": [
+        61.74,
+        82.15,
+        157.99
+      ]
+    },
+    "Bonsai_Art_Mid": {
+      "objects": 729,
+      "tris": 260149,
+      "min": [
+        -30.62,
+        8.39,
+        -2.05
+      ],
+      "max": [
+        33.65,
+        77.3,
+        20.67
+      ]
+    },
+    "Bonsai_Art_MidVent": {
+      "objects": 296,
+      "tris": 93933,
+      "min": [
+        -23.02,
+        32.35,
+        -1.23
+      ],
+      "max": [
+        38.14,
+        77.43,
+        17.82
+      ]
+    },
+    "Bonsai_Art_Sewer": {
+      "objects": 214,
+      "tris": 90911,
+      "min": [
+        -31.0,
+        18.01,
+        -7.93
+      ],
+      "max": [
+        73.32,
+        71.01,
+        17.27
+      ]
+    },
+    "Bonsai_Art_HappyStore": {
+      "objects": 218,
+      "tris": 59702,
+      "min": [
+        24.74,
+        83.92,
+        4.24
+      ],
+      "max": [
+        44.16,
+        101.72,
+        10.7
+      ]
+    }
+  },
+  "objectsKept": 7048,
+  "objectsSkippedExcludedCollection": 1256,
+  "objectsSkippedHidden": 0,
+  "verts": 3178360,
+  "tris": 2445286,
+  "triangleClass": {
+    "floor(nz>=cos45)": 439950,
+    "wall(|nz|<=cos70)": 1161210,
+    "other": 844126
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -125.1,
+      -12.49,
+      -9.43
+    ],
+    "max": [
+      231.14,
+      438.55,
+      177.95
+    ]
+  },
+  "materials": 482,
+  "seconds": 4.6
+}

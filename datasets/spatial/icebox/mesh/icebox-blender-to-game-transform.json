@@ -1,0 +1,111 @@
+{
+ "note": "Blender scene -> game coordinates. The scene is a plain export of the game level: uniform scale and a Y flip, no rotation, no offset. The candidate was chosen from all axis-aligned candidates by how many valorant-api callouts stand on a walkable floor and how closely the callout height matches that floor.",
+ "forward": "gameX_uu = signX * blender{x|y} / blenderUnitsPerUU ; gameY_uu = signY * blender{y|x} / blenderUnitsPerUU ; gameZ_uu = blenderZ / blenderUnitsPerUU",
+ "chosen": {
+  "blenderUnitsPerUU": 0.01,
+  "swapXY": false,
+  "signX": 1,
+  "signY": -1
+ },
+ "calloutCount": 25,
+ "calloutsOnWalkableFloorWithin1.5m": 25,
+ "calloutHeightVsFloor": {
+  "medianOffset_m": -0.0,
+  "medianAbsDeviationAroundOffset_m": 0.0027,
+  "calloutHeightIsFloorHeight": true,
+  "calloutHeightUsableForLayerChoice": true,
+  "perCallout_m": {
+   "attacker-spawn": -0.207,
+   "defender-spawn": 0.25,
+   "a-belt": 0.0,
+   "a-nest": -5.877,
+   "a-pipes": 0.0,
+   "a-rafters": -0.003,
+   "a-screen": 0.0,
+   "a-site": -0.007,
+   "b-back": -0.0,
+   "b-cubby": 0.003,
+   "b-fence": -5.748,
+   "b-garage": 0.0,
+   "b-green": -0.0,
+   "b-hall": -0.3,
+   "b-hut": -0.0,
+   "b-kitchen": -0.094,
+   "b-orange": 0.0,
+   "b-site": -0.0,
+   "b-snow-pile": 0.105,
+   "b-snowman": 0.0,
+   "b-tube": -0.042,
+   "b-yellow": 0.0,
+   "mid-blue": -0.0,
+   "mid-boiler": 1.534,
+   "mid-pallet": 0.005
+  }
+ },
+ "shiftSensitivity": [
+  {
+   "shift_m": 0.0,
+   "calloutsOverWalkableFloor": 25.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 22.0
+  },
+  {
+   "shift_m": 1.0,
+   "calloutsOverWalkableFloor": 25.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 21.5
+  },
+  {
+   "shift_m": 2.0,
+   "calloutsOverWalkableFloor": 25.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 20.5
+  },
+  {
+   "shift_m": 4.0,
+   "calloutsOverWalkableFloor": 25.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 19.8
+  },
+  {
+   "shift_m": 8.0,
+   "calloutsOverWalkableFloor": 24.5,
+   "calloutsAtFloorHeight(\u00b10.3m)": 17.0
+  }
+ ],
+ "topCandidates": [
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": false,
+   "signX": 1,
+   "signY": -1,
+   "calloutsOnFloor": 25,
+   "medianAbsDz_m": 0.0,
+   "within0.05m": 17
+  },
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": false,
+   "signX": 1,
+   "signY": 1,
+   "calloutsOnFloor": 24,
+   "medianAbsDz_m": 0.0693,
+   "within0.05m": 10
+  },
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": true,
+   "signX": 1,
+   "signY": -1,
+   "calloutsOnFloor": 23,
+   "medianAbsDz_m": 0.0043,
+   "within0.05m": 14
+  },
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": false,
+   "signX": -1,
+   "signY": -1,
+   "calloutsOnFloor": 20,
+   "medianAbsDz_m": 0.0197,
+   "within0.05m": 11
+  }
+ ],
+ "provenance": "measured-on-mesh"
+}

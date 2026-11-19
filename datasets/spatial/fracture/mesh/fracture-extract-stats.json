@@ -1,0 +1,206 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Fracture.blend",
+  "blendBytes": 274863402,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Canyon_Asite": 627,
+    "Canyon_AtkPathToASite": 417,
+    "Canyon_AtkPathToBSite": 584,
+    "Canyon_AtkSpawn": 558,
+    "Canyon_BackPath": 161,
+    "Canyon_BackPathtoA": 376,
+    "Canyon_BackPathToB": 847,
+    "Canyon_BSite": 1032,
+    "Canyon_BSiteTunnel": 162,
+    "Canyon_Mid": 800,
+    "Canyon_MidCollider": 291,
+    "Canyon_VistaA": 671,
+    "Collection": 0
+  },
+  "keptCollections": {
+    "Canyon_BackPathtoA": {
+      "objects": 337,
+      "tris": 139923,
+      "min": [
+        93.41,
+        -72.41,
+        -12.02
+      ],
+      "max": [
+        162.79,
+        2.27,
+        35.06
+      ]
+    },
+    "Canyon_BackPathToB": {
+      "objects": 742,
+      "tris": 278171,
+      "min": [
+        -0.42,
+        -34.99,
+        -25.31
+      ],
+      "max": [
+        164.67,
+        95.27,
+        37.72
+      ]
+    },
+    "Canyon_AtkSpawn": {
+      "objects": 486,
+      "tris": 237996,
+      "min": [
+        -0.2,
+        -15.3,
+        -10.49
+      ],
+      "max": [
+        134.58,
+        46.88,
+        32.9
+      ]
+    },
+    "Canyon_BackPath": {
+      "objects": 144,
+      "tris": 78203,
+      "min": [
+        102.09,
+        -7.87,
+        -12.61
+      ],
+      "max": [
+        139.89,
+        36.7,
+        20.53
+      ]
+    },
+    "Canyon_BSite": {
+      "objects": 908,
+      "tris": 521846,
+      "min": [
+        53.9,
+        16.56,
+        1.49
+      ],
+      "max": [
+        111.07,
+        90.39,
+        61.45
+      ]
+    },
+    "Canyon_Asite": {
+      "objects": 536,
+      "tris": 171862,
+      "min": [
+        17.41,
+        -75.0,
+        3.97
+      ],
+      "max": [
+        106.85,
+        31.67,
+        61.45
+      ]
+    },
+    "Canyon_AtkPathToASite": {
+      "objects": 359,
+      "tris": 115351,
+      "min": [
+        -16.6,
+        -83.37,
+        -1.75
+      ],
+      "max": [
+        79.74,
+        15.96,
+        42.88
+      ]
+    },
+    "Canyon_AtkPathToBSite": {
+      "objects": 515,
+      "tris": 235680,
+      "min": [
+        11.49,
+        11.29,
+        -12.89
+      ],
+      "max": [
+        81.69,
+        72.24,
+        30.64
+      ]
+    },
+    "Canyon_BSiteTunnel": {
+      "objects": 143,
+      "tris": 50528,
+      "min": [
+        60.94,
+        21.74,
+        -0.98
+      ],
+      "max": [
+        105.77,
+        50.36,
+        5.5
+      ]
+    },
+    "Canyon_Mid": {
+      "objects": 695,
+      "tris": 241953,
+      "min": [
+        -2.0,
+        -28.34,
+        -0.0
+      ],
+      "max": [
+        127.77,
+        43.31,
+        38.05
+      ]
+    },
+    "Canyon_MidCollider": {
+      "objects": 255,
+      "tris": 211927,
+      "min": [
+        47.37,
+        -60.19,
+        -40.12
+      ],
+      "max": [
+        140.23,
+        44.85,
+        4.49
+      ]
+    }
+  },
+  "objectsKept": 5120,
+  "objectsSkippedExcludedCollection": 596,
+  "objectsSkippedHidden": 0,
+  "verts": 3233229,
+  "tris": 2283440,
+  "triangleClass": {
+    "floor(nz>=cos45)": 593606,
+    "wall(|nz|<=cos70)": 938286,
+    "other": 751548
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -16.6,
+      -83.37,
+      -40.12
+    ],
+    "max": [
+      164.67,
+      95.27,
+      61.45
+    ]
+  },
+  "materials": 347,
+  "seconds": 2.9
+}

@@ -69,6 +69,9 @@ export interface NavEdge {
   runTimeMs: number;
   walkTimeMs: number;
   provenance: string;
+  /** Traversal kind (multi-map datasets); absent = ordinary walkable connection. */
+  kind?: EdgeKind;
+  note?: string;
 }
 
 export interface PlantZone {
@@ -85,6 +88,9 @@ export interface Sightline {
   type: "direct" | "angle";
   smokeable: boolean;
   note?: string;
+  /** Measured fraction of eye-point pairs that see each other (geometry-derived maps). */
+  visibility?: number;
+  provenance?: string;
 }
 
 export interface SoundLink {
@@ -92,6 +98,7 @@ export interface SoundLink {
   b: string;
   /** 0 = no loss, 1 = fully attenuated across this link. */
   attenuation: number;
+  provenance?: string;
 }
 
 export interface CoordinateTransform {
@@ -119,6 +126,10 @@ export interface TacticalMapData {
   edges: NavEdge[];
   sightlines: Sightline[];
   soundLinks: SoundLink[];
+  /** Site letters in order (multi-map datasets; Ascent's file omits it). */
+  sites?: string[];
+  /** Map mechanics and whether the graph expresses them (multi-map datasets). */
+  mechanics?: MapMechanic[];
   // coordinateTransform may be supplied separately (coordinate-system.json)
   // or embedded; the loader accepts either.
   transform?: CoordinateTransform;
@@ -139,4 +150,19 @@ export interface AudibleZone {
   zoneId: string;
   /** Remaining signal strength in [0,1] when the sound reaches this zone. */
   strength: number;
+}
+
+// ---- Multi-map additions (optional fields; Ascent's dataset does not carry them) ----
+
+/** How an edge is traversed. Absent = an ordinary walkable connection. */
+export type EdgeKind = "walk" | "drop" | "teleporter" | "zipline" | "rope" | "approx-link";
+
+/** A map mechanic and whether the navgraph can express it. */
+export interface MapMechanic {
+  kind: string;
+  name: string;
+  represented: boolean;
+  how?: string;
+  engineNeeds?: string;
+  provenance: string;
 }

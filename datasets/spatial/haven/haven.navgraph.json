@@ -1,0 +1,1236 @@
+{
+  "mapId": "haven",
+  "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047",
+  "schemaVersion": "0.2.0",
+  "patchVersion": "UNVERIFIED",
+  "sites": [
+    "A",
+    "B",
+    "C"
+  ],
+  "provenance": {
+    "nodePositions": {
+      "sourceId": "valorant-api-maps",
+      "sourceUrl": "https://valorant-api.com/v1/maps",
+      "retrievedAt": "2026-11-19",
+      "evidenceType": "decoded",
+      "verified": true,
+      "notes": [
+        "x,y are the callout locations returned by valorant-api; z is the measured floor height under the callout where the mesh stage found one (see each zone's positionProvenance)."
+      ]
+    },
+    "zoneTypes": "manual-approx (by callout name, tools/map-processor/mapzones.py)",
+    "graph": "measured-on-mesh for kind walk/drop; manual-approx for special edges and approx-links (see each edge)",
+    "plantZones": "derived-by-rule (callout-centred square; not the real plant boundary)",
+    "sightlines": "measured-on-mesh visibility fraction; type and smokeable derived-by-rule",
+    "soundLinks": "derived-by-rule (one link per travel connection; attenuation by distance bucket / door)",
+    "rules": {
+      "edgeStretch": 1.1,
+      "dropGain": 1.25,
+      "sightMinVisibility": 0.02,
+      "notSmokeableAtVisibility": 0.6,
+      "soundAttenuation": "<=25 m 0.2; <=50 m 0.3; >50 m or door 0.4"
+    },
+    "notes": [
+      "Art geometry only (no collision layer in the source scene): walkability and occlusion are inferred from visible meshes.",
+      "Grid distances overestimate straight walks by up to ~8 % (8-neighbour metric)."
+    ]
+  },
+  "movement": {
+    "unitsPerMeter": 100,
+    "runSpeedMetersPerSec": 6.75,
+    "walkSpeedMetersPerSec": 3.4,
+    "note": "Same model as Ascent: run 6.75 m/s documented base speed, walk ~3.4 m/s approximate (manual-approx)."
+  },
+  "zones": [
+    {
+      "id": "attacker-spawn",
+      "name": "Attacker Spawn",
+      "callout": "Attacker Side Spawn",
+      "superRegion": "Attacker Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 1741.8,
+        "y": -2642.8,
+        "z": 300.0
+      },
+      "transit": false,
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "defender-spawn",
+      "name": "Defender Spawn",
+      "callout": "Defender Side Spawn",
+      "superRegion": "Defender Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 2946.3,
+        "y": -12714.7,
+        "z": 300.0
+      },
+      "transit": false,
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-garden",
+      "name": "A Garden",
+      "callout": "A Garden",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 3100.3,
+        "y": -4683.6,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-link",
+      "name": "A Link",
+      "callout": "A Link",
+      "superRegion": "A",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": 4244.4,
+        "y": -10715.7,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-lobby",
+      "name": "A Lobby",
+      "callout": "A Lobby",
+      "superRegion": "A",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": 3438.5,
+        "y": -6260.4,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-long",
+      "name": "A Long",
+      "callout": "A Long",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 6209.7,
+        "y": -6901.1,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-sewer",
+      "name": "A Sewer",
+      "callout": "A Sewer",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 3452.9,
+        "y": -7915.7,
+        "z": 0.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-site",
+      "name": "A Site",
+      "callout": "A Site",
+      "superRegion": "A",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": 6309.3,
+        "y": -9225.7,
+        "z": 300.1
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-tower",
+      "name": "A Tower",
+      "callout": "A Tower",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 6721.4,
+        "y": -10472.5,
+        "z": 900.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-back",
+      "name": "B Back",
+      "callout": "B Back",
+      "superRegion": "B",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 1966.2,
+        "y": -10664.8,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-site",
+      "name": "B Site",
+      "callout": "B Site",
+      "superRegion": "B",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": 1884.7,
+        "y": -9231.3,
+        "z": 697.3
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-cubby",
+      "name": "C Cubby",
+      "callout": "C Cubby",
+      "superRegion": "C",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": -2119.8,
+        "y": -6561.6,
+        "z": 200.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-garage",
+      "name": "C Garage",
+      "callout": "C Garage",
+      "superRegion": "C",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 180.1,
+        "y": -7999.6,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-link",
+      "name": "C Link",
+      "callout": "C Link",
+      "superRegion": "C",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": -87.8,
+        "y": -10004.4,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-lobby",
+      "name": "C Lobby",
+      "callout": "C Lobby",
+      "superRegion": "C",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": -1642.2,
+        "y": -5720.3,
+        "z": 107.3
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-long",
+      "name": "C Long",
+      "callout": "C Long",
+      "superRegion": "C",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -3356.8,
+        "y": -5990.9,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-site",
+      "name": "C Site",
+      "callout": "C Site",
+      "superRegion": "C",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": -2378.1,
+        "y": -9010.6,
+        "z": 200.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "c-window",
+      "name": "C Window",
+      "callout": "C Window",
+      "superRegion": "C",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -10.1,
+        "y": -8993.2,
+        "z": 301.1
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-courtyard",
+      "name": "Mid Courtyard",
+      "callout": "Mid Courtyard",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 1822.1,
+        "y": -6712.7,
+        "z": 96.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-doors",
+      "name": "Mid Doors",
+      "callout": "Mid Doors",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 151.1,
+        "y": -6262.9,
+        "z": 99.1
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-window",
+      "name": "Mid Window",
+      "callout": "Mid Window",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 1950.2,
+        "y": -5567.9,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    }
+  ],
+  "plantZones": [
+    {
+      "id": "plant-a",
+      "site": "A",
+      "zoneId": "a-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": 5709.3,
+          "y": -8625.7
+        },
+        {
+          "x": 6909.3,
+          "y": -8625.7
+        },
+        {
+          "x": 6909.3,
+          "y": -9825.7
+        },
+        {
+          "x": 5709.3,
+          "y": -9825.7
+        }
+      ]
+    },
+    {
+      "id": "plant-b",
+      "site": "B",
+      "zoneId": "b-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": 1284.7,
+          "y": -8631.3
+        },
+        {
+          "x": 2484.7,
+          "y": -8631.3
+        },
+        {
+          "x": 2484.7,
+          "y": -9831.3
+        },
+        {
+          "x": 1284.7,
+          "y": -9831.3
+        }
+      ]
+    },
+    {
+      "id": "plant-c",
+      "site": "C",
+      "zoneId": "c-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": -2978.1,
+          "y": -8410.6
+        },
+        {
+          "x": -1778.1,
+          "y": -8410.6
+        },
+        {
+          "x": -1778.1,
+          "y": -9610.6
+        },
+        {
+          "x": -2978.1,
+          "y": -9610.6
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "c-link",
+      "to": "c-window",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1290,
+      "distanceMeters": 12.9,
+      "runTimeMs": 1911,
+      "walkTimeMs": 3794,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-cubby",
+      "to": "c-long",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1320,
+      "distanceMeters": 13.2,
+      "runTimeMs": 1956,
+      "walkTimeMs": 3882,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-lobby",
+      "to": "c-long",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1660,
+      "distanceMeters": 16.6,
+      "runTimeMs": 2459,
+      "walkTimeMs": 4882,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-garden",
+      "to": "a-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1670,
+      "distanceMeters": 16.7,
+      "runTimeMs": 2474,
+      "walkTimeMs": 4912,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-garden",
+      "to": "mid-window",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1730,
+      "distanceMeters": 17.3,
+      "runTimeMs": 2563,
+      "walkTimeMs": 5088,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-sewer",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1770,
+      "distanceMeters": 17.7,
+      "runTimeMs": 2622,
+      "walkTimeMs": 5206,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-garage",
+      "to": "mid-doors",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1790,
+      "distanceMeters": 17.9,
+      "runTimeMs": 2652,
+      "walkTimeMs": 5265,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-doors",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1840,
+      "distanceMeters": 18.4,
+      "runTimeMs": 2726,
+      "walkTimeMs": 5412,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-back",
+      "to": "c-link",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2490,
+      "distanceMeters": 24.9,
+      "runTimeMs": 3689,
+      "walkTimeMs": 7324,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "defender-spawn",
+      "to": "a-link",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2540,
+      "distanceMeters": 25.4,
+      "runTimeMs": 3763,
+      "walkTimeMs": 7471,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-long",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2620,
+      "distanceMeters": 26.2,
+      "runTimeMs": 3881,
+      "walkTimeMs": 7706,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "a-garden",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2920,
+      "distanceMeters": 29.2,
+      "runTimeMs": 4326,
+      "walkTimeMs": 8588,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-garage",
+      "to": "c-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2970,
+      "distanceMeters": 29.7,
+      "runTimeMs": 4400,
+      "walkTimeMs": 8735,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-cubby",
+      "to": "c-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3080,
+      "distanceMeters": 30.8,
+      "runTimeMs": 4563,
+      "walkTimeMs": 9059,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-long",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3090,
+      "distanceMeters": 30.9,
+      "runTimeMs": 4578,
+      "walkTimeMs": 9088,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-link",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3280,
+      "distanceMeters": 32.8,
+      "runTimeMs": 4859,
+      "walkTimeMs": 9647,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-link",
+      "to": "a-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3410,
+      "distanceMeters": 34.1,
+      "runTimeMs": 5052,
+      "walkTimeMs": 10029,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-sewer",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3530,
+      "distanceMeters": 35.3,
+      "runTimeMs": 5230,
+      "walkTimeMs": 10382,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-link",
+      "to": "c-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3580,
+      "distanceMeters": 35.8,
+      "runTimeMs": 5304,
+      "walkTimeMs": 10529,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-garden",
+      "to": "mid-doors",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4090,
+      "distanceMeters": 40.9,
+      "runTimeMs": 6059,
+      "walkTimeMs": 12029,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-link",
+      "to": "b-back",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4090,
+      "distanceMeters": 40.9,
+      "runTimeMs": 6059,
+      "walkTimeMs": 12029,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-back",
+      "to": "mid-courtyard",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4460,
+      "distanceMeters": 44.6,
+      "runTimeMs": 6607,
+      "walkTimeMs": 13118,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-link",
+      "to": "mid-courtyard",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4460,
+      "distanceMeters": 44.6,
+      "runTimeMs": 6607,
+      "walkTimeMs": 13118,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "c-lobby",
+      "to": "mid-doors",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4670,
+      "distanceMeters": 46.7,
+      "runTimeMs": 6919,
+      "walkTimeMs": 13735,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "defender-spawn",
+      "to": "c-link",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4830,
+      "distanceMeters": 48.3,
+      "runTimeMs": 7156,
+      "walkTimeMs": 14206,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "mid-doors",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4900,
+      "distanceMeters": 49.0,
+      "runTimeMs": 7259,
+      "walkTimeMs": 14412,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "c-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 5010,
+      "distanceMeters": 50.1,
+      "runTimeMs": 7422,
+      "walkTimeMs": 14735,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-site",
+      "to": "b-back",
+      "bidirectional": false,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1760,
+      "distanceMeters": 17.6,
+      "runTimeMs": 2607,
+      "walkTimeMs": 5176,
+      "provenance": "measured-on-mesh",
+      "kind": "drop",
+      "note": "one-way: a drop down from the higher zone"
+    },
+    {
+      "from": "b-site",
+      "to": "mid-courtyard",
+      "bidirectional": false,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2700,
+      "distanceMeters": 27.0,
+      "runTimeMs": 4000,
+      "walkTimeMs": 7941,
+      "provenance": "measured-on-mesh",
+      "kind": "drop",
+      "note": "one-way: a drop down from the higher zone"
+    },
+    {
+      "from": "b-back",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1491,
+      "distanceMeters": 14.91,
+      "runTimeMs": 2208,
+      "walkTimeMs": 4384,
+      "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)",
+      "kind": "approx-link"
+    }
+  ],
+  "sightlines": [
+    {
+      "a": "attacker-spawn",
+      "b": "a-garden",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.021,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "defender-spawn",
+      "b": "a-link",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.431,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-garden",
+      "b": "a-lobby",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.347,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-garden",
+      "b": "a-sewer",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.042,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-garden",
+      "b": "mid-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.042,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-long",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.389,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-sewer",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.285,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-long",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.243,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-long",
+      "b": "a-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.139,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-site",
+      "b": "a-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.153,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-back",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": false,
+      "visibility": 0.764,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-back",
+      "b": "c-link",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.097,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-back",
+      "b": "c-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.028,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-site",
+      "b": "c-link",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.312,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-site",
+      "b": "mid-courtyard",
+      "type": "direct",
+      "smokeable": true,
+      "visibility": 0.333,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-site",
+      "b": "mid-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.229,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-cubby",
+      "b": "c-long",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.479,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-cubby",
+      "b": "c-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.208,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-garage",
+      "b": "c-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.118,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-garage",
+      "b": "c-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.333,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-garage",
+      "b": "mid-doors",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.049,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-link",
+      "b": "c-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.125,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-lobby",
+      "b": "c-long",
+      "type": "angle",
+      "smokeable": false,
+      "visibility": 0.653,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-long",
+      "b": "c-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.188,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "c-window",
+      "b": "mid-doors",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.021,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-doors",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.562,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.264,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-doors",
+      "b": "mid-window",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.097,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    }
+  ],
+  "soundLinks": [
+    {
+      "a": "c-link",
+      "b": "c-window",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-cubby",
+      "b": "c-long",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-lobby",
+      "b": "c-long",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-garden",
+      "b": "a-lobby",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-garden",
+      "b": "mid-window",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-sewer",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-garage",
+      "b": "mid-doors",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-doors",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-back",
+      "b": "c-link",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-link",
+      "b": "defender-spawn",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-long",
+      "b": "a-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-garden",
+      "b": "attacker-spawn",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-garage",
+      "b": "c-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-cubby",
+      "b": "c-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-long",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-link",
+      "b": "a-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-link",
+      "b": "a-tower",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-sewer",
+      "b": "a-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-link",
+      "b": "c-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-garden",
+      "b": "mid-doors",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-link",
+      "b": "b-back",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-back",
+      "b": "mid-courtyard",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-link",
+      "b": "mid-courtyard",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-lobby",
+      "b": "mid-doors",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "c-link",
+      "b": "defender-spawn",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "attacker-spawn",
+      "b": "mid-doors",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "attacker-spawn",
+      "b": "c-lobby",
+      "attenuation": 0.4,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-back",
+      "b": "b-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-site",
+      "b": "mid-courtyard",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    }
+  ],
+  "mechanics": [
+    {
+      "kind": "layout",
+      "name": "Three sites A/B/C",
+      "represented": false,
+      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md \u00a76)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ],
+  "dataQuality": {
+    "edgeKinds": {
+      "walk": 27,
+      "drop": 2,
+      "approx-link": 1
+    },
+    "approxLinks": [
+      "b-back<->b-site"
+    ],
+    "zonesWithoutMeasuredSightlines": [],
+    "doorsNotAttached": [],
+    "zonesOnMainWalkComponent": "20/21"
+  },
+  "generatedBy": "tools/map-processor/build_map.py"
+}

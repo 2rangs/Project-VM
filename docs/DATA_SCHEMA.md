@@ -154,6 +154,26 @@ knownEnemyAliveCount, tacticalHypotheses with confidence). Tick-accurate reconst
 matches is FUTURE**; the 10 Handoff §20 scenarios in `datasets/synthetic/scenarios/` are synthetic
 samples of this shape and are what PV-4 consumes.
 
+## Spatial map dataset — `datasets/spatial/<map>/`   (eleven maps)
+
+Loaded by `@pv/spatial-engine` (`loadMap(id)`, registry `MAPS` / `MAP_IDS`). Types: `packages/spatial-engine/src/types.ts`.
+
+| File | Content |
+|---|---|
+| `<map>.navgraph.json` | `TacticalMapData`: `zones`, `plantZones`, `edges`, `sightlines`, `soundLinks`, `movement` |
+| `coordinate-system.json` | valorant-api minimap transform |
+| `valorant-api-<map>.raw.json` | raw callouts as fetched |
+| `<map>.authoring.json` | hand-authored inputs (special edges, doors, zone-type overrides, mechanics) — new maps only |
+| `mesh/*.json` | geometry measurements (transform evidence, walk grid, LoS matrix, extraction stats) |
+
+Fields added for the geometry-derived maps (all optional; Ascent's file does not carry them):
+`edge.kind` (`walk` \| `drop` \| `teleporter` \| `zipline` \| `rope` \| `approx-link`), `edge.note`,
+`sightline.visibility` (0..1 measured fraction), `sightline.provenance`, `soundLink.provenance`,
+`zone.positionProvenance`, top-level `sites` (letters), `mechanics[]`, `dataQuality`.
+Provenance strings always contain one of `measured-on-mesh`, `derived-by-rule`, `manual-approx`.
+A one-way connection is an edge with `bidirectional: false` (kinds `drop`, `teleporter`).
+See `docs/research/MAPS_DATA.md`.
+
 ## Provenance — `provenance.schema.json`  (README §13.3)
 Attached to every record. Key fields: `sourceId`, `sourceUrl`, `gamePatch`, `retrievedAt`,
 `evidenceType` (observed/decoded/derived/inferred/simulated), `confidence`, `verified`,
