@@ -1,23 +1,28 @@
-// Match Day — the match view. Reuses the shared ReplayViewer for the 2D minimap,
-// runs a full map through @pv/match-runner (pistol → halves → first-to-13 → OT,
-// with economy + ultimate carryover) in a separate process, and shows the
-// match-level scoreboard + real economy / ultimate / coach-note / event panels.
-//
-// TODO: the information-warfare fog-of-war render and the Belief heatmap overlay
-// need PV-4's recordPerception output (Replay.perception, already defined in
-// @pv/replay-engine). Until then the match plays with full visibility.
+// Match Day — the match view. Reuses the shared ReplayViewer for the 2D minimap.
+// Two modes:
+//  - One-shot: run a whole map through @pv/match-runner in one subprocess call.
+//  - Interactive: drive a stateful @pv/match-runner MatchSession round by round,
+//    calling tactical timeouts (2 per team) and issuing coach orders between rounds;
+//    the AI opponent calls its own timeouts. Both show the fog-of-war view, the
+//    match scoreboard and real economy / ultimate panels; the post-match Review tab
+//    adds the timeout log.
 import { useEffect, useMemo, useState } from 'react';
 import { ReplayViewer } from '@pv/replay-viewer';
 import type { Replay } from '@pv/replay-engine';
 import type { ScreenCtx } from '../App.tsx';
 import { bridge, runtime } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
-import type { MatchSummary } from '../../shared/ipc.ts';
+import type { MatchSummary, TeamOrder } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
 import { ZONE_POSITIONS } from '../zones.ts';
 import { ReviewPanel } from './ReviewPanel.tsx';
+import { OrdersPanel } from './OrdersPanel.tsx';
+import { useMatchSession } from '../useMatchSession.ts';
+import { useT, strategyLabel } from '../i18n/index.tsx';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
+  const t = useT();
+  const [mode, setMode] = useState<'oneshot' | 'interactive'>('oneshot');
   const [running, setRunning] = useState(false);
   const [pct, setPct] = useState(0);
   const [log, setLog] = useState<string[]>([]);
@@ -30,15 +35,29 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [seed, setSeed] = useState(42);
   const [pov, setPov] = useState(0);            // fog point of view: 0 = our team (A), 1 = B
   const [beliefOn, setBeliefOn] = useState(false);
-  const [tab, setTab] = useState<'match' | 'review'>('match'); // post-match review tab
+  const [tab, setTab] = useState<'match' | 'review'>('match');
+  const [autoPlay, setAutoPlay] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const sess = useMatchSession();
+
+  const interactive = mode === 'interactive';
+  const matchForView = interactive ? sess.match : match;
   const replay = ctx.replay;
-  const refOf = (name: string) => { const t = allTeams.find((x) => x.name === name); return { id: t?.teamId ?? name, name }; };
-  const lastRound = match?.rounds[match.rounds.length - 1];
+  const refOf = (name: string) => { const x = allTeams.find((y) => y.name === name); return { id: x?.teamId ?? name, name }; };
+  const lastRound = matchForView?.rounds[matchForView.rounds.length - 1];
   const hasPerception = !!(replay?.perception && replay.perception.length > 0);
-  // POV labels: real match team names when we have them, else the demo/fixture teams.
-  const povName = (i: number) => match?.teams[i === 0 ? 'A' : 'B']?.name ?? (i === 0 ? 'our team' : 'opponent');
+  const povName = (i: number) => matchForView?.teams[i === 0 ? 'A' : 'B']?.name ?? t(i === 0 ? 'md.povName.our' : 'md.povName.opp');
+  const busyControls = running || sess.busy;
 
   useEffect(() => { bridge.loadTrace('trace-scenario-01').then((j) => setTrace(parseTrace(j))).catch(() => {}); }, []);
+  // In interactive mode, mirror the session's live replay into shared ctx (Dev etc.).
+  useEffect(() => { if (interactive && sess.replay) ctx.setReplay(sess.replay); }, [interactive, sess.replay, ctx]);
+  // Auto-play: advance rounds on a timer while enabled and idle.
+  useEffect(() => {
+    if (!(interactive && autoPlay && sess.active && sess.state && !sess.state.finished && !sess.busy && !ordersOpen)) return;
+    const id = setTimeout(() => { void sess.playNext(); }, 700);
+    return () => clearTimeout(id);
+  }, [interactive, autoPlay, sess, ordersOpen]);
 
   async function runMatch() {
     setRunning(true); setPct(0); setLog([]); setMatch(null);
@@ -53,41 +72,79 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
     } catch (e) { setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
   }
 
-  const engineLabel = source === 'match-runner' ? '@pv/match-runner (real match, separate process)'
-    : source ? `${source} (fallback)` : (runtime === 'electron' ? '@pv/match-runner' : 'stub (browser)');
+  async function startInteractive() {
+    setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner');
+    await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'] });
+  }
+  async function callTimeout() { await sess.callTimeout('A'); setOrdersOpen(true); }
+  async function confirmOrders(order: TeamOrder) { await sess.setOrders('A', order); setOrdersOpen(false); }
+
+  const engineLabel = source === 'match-runner' ? t('md.engine.matchRunner')
+    : source ? t('md.engine.fallback', { src: source }) : (runtime === 'electron' ? t('md.engine.default') : t('md.engine.stub'));
+  const st = sess.state;
 
   return (
     <div className="matchday">
       <div className="md-main">
         <div className="md-teamsel">
-          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={running} data-testid="team-a">
-            {allTeams.map((t) => <option key={t.teamId} value={t.name}>{t.name}</option>)}
+          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={busyControls || sess.active} data-testid="team-a">
+            {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
           </select>
           <span className="vs">vs</span>
-          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={running} data-testid="team-b">
-            {allTeams.map((t) => <option key={t.teamId} value={t.name}>{t.name}</option>)}
+          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={busyControls || sess.active} data-testid="team-b">
+            {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
           </select>
-          <label className="md-seed">seed <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={running} /></label>
-          <button className="md-run" onClick={runMatch} disabled={running} data-testid="run-match">
-            {running ? `Simulating… ${Math.round(pct * 100)}%` : '▶ Run match'}
-          </button>
+          <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={busyControls || sess.active} /></label>
+          <div className="md-modetoggle" data-testid="md-mode">
+            <button className={!interactive ? 'on' : ''} onClick={() => setMode('oneshot')} disabled={sess.active} data-testid="mode-oneshot">{t('md.mode.oneshot')}</button>
+            <button className={interactive ? 'on' : ''} onClick={() => setMode('interactive')} disabled={running} data-testid="mode-interactive">{t('md.mode.interactive')}</button>
+          </div>
+          {!interactive ? (
+            <button className="md-run" onClick={runMatch} disabled={busyControls} data-testid="run-match">
+              {running ? t('md.simulating', { pct: Math.round(pct * 100) }) : t('md.run')}
+            </button>
+          ) : !sess.active ? (
+            <button className="md-run" onClick={startInteractive} disabled={busyControls} data-testid="start-interactive">{t('md.sess.start')}</button>
+          ) : (
+            <button className="ord-cancel" onClick={() => { setAutoPlay(false); void sess.stop(); }} data-testid="session-stop">{t('md.sess.stop')}</button>
+          )}
         </div>
-        {match && (
-          <div className="md-tabs" data-testid="md-tabs">
-            <button className={tab === 'match' ? 'on' : ''} onClick={() => setTab('match')} data-testid="tab-match">경기</button>
-            <button className={tab === 'review' ? 'on' : ''} onClick={() => setTab('review')} data-testid="tab-review">리뷰 (경기 후)</button>
+
+        {/* interactive control bar */}
+        {interactive && sess.active && st && (
+          <div className="md-sessbar" data-testid="session-bar">
+            <span className="sess-status">{t('md.sess.status', { round: st.roundNumber, attacker: matchForView?.teams[st.attacker]?.name ?? st.attacker, a: st.score.A, b: st.score.B, ta: st.timeoutsRemaining.A, tb: st.timeoutsRemaining.B })}</span>
+            {!st.finished ? (
+              <>
+                <button className="md-run" onClick={() => void sess.playNext()} disabled={sess.busy || ordersOpen} data-testid="next-round">{t('md.sess.next')}</button>
+                <label className="fog-ctl"><input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} data-testid="auto-play" /> {t('md.sess.auto')}</label>
+                <button className="md-timeout" onClick={() => void callTimeout()} disabled={sess.busy || ordersOpen || st.timeoutsRemaining.A <= 0 || st.timeoutActive.A} data-testid="call-timeout">
+                  {st.timeoutsRemaining.A > 0 ? t('md.sess.timeout', { n: st.timeoutsRemaining.A }) : t('md.sess.timeoutNone')}
+                </button>
+              </>
+            ) : <span className="sess-done">{t('md.sess.finished')}</span>}
           </div>
         )}
-        {tab === 'review' && match ? (
-          <ReviewPanel match={match} replay={replay} />
+
+        {matchForView && (
+          <div className="md-tabs" data-testid="md-tabs">
+            <button className={tab === 'match' ? 'on' : ''} onClick={() => setTab('match')} data-testid="tab-match">{t('md.tab.match')}</button>
+            <button className={tab === 'review' ? 'on' : ''} onClick={() => setTab('review')} data-testid="tab-review">{t('md.tab.review')}</button>
+          </div>
+        )}
+
+        {tab === 'review' && matchForView ? (
+          <ReviewPanel match={matchForView} replay={replay} timeoutLog={interactive ? sess.timeoutLog : []} />
+        ) : ordersOpen && interactive && st ? (
+          <OrdersPanel state={st} match={matchForView} team="A" onConfirm={(o) => void confirmOrders(o)} onCancel={() => setOrdersOpen(false)} />
         ) : (
         <>
         <div className="md-toolbar" data-testid="fog-toolbar">
           <span className="pill">{engineLabel}</span>
           {hasPerception ? (
             <>
-              <span className="fog-tag" data-testid="fog-on">🌫 Fog of war</span>
-              <label className="fog-ctl">POV
+              <span className="fog-tag" data-testid="fog-on">{t('md.fog.on')}</span>
+              <label className="fog-ctl">{t('md.fog.pov')}
                 <select value={pov} onChange={(e) => setPov(Number(e.target.value))} data-testid="fog-pov">
                   <option value={0}>{povName(0)}</option>
                   <option value={1}>{povName(1)}</option>
@@ -95,24 +152,24 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
               </label>
               <label className="fog-ctl">
                 <input type="checkbox" checked={beliefOn} onChange={(e) => setBeliefOn(e.target.checked)} data-testid="fog-belief" />
-                Belief heatmap
+                {t('md.fog.belief')}
               </label>
-              <span className="muted small">관측된 적 · 고스트 · 소리 구역 · 진실 시점은 Dev</span>
+              <span className="muted small">{t('md.fog.hint')}</span>
             </>
           ) : (
-            <span className="muted small">run a match to see the fog-of-war view (observed enemies · belief · sounds)</span>
+            <span className="muted small">{t('md.fog.need')}</span>
           )}
         </div>
         {log.length > 0 && <div className="md-roundlog small muted">{log.join('  ·  ')}</div>}
 
-        {match && (
+        {matchForView && (
           <div className="scoreboard" data-testid="scoreboard">
-            <span className={`sb-team ${match.winner === 'A' ? 'win' : ''}`}>{match.teams.A.name}</span>
-            <span className="sb-score">{match.score.A}</span>
+            <span className={`sb-team ${matchForView.winner === 'A' && (st?.finished ?? true) ? 'win' : ''}`}>{matchForView.teams.A.name}</span>
+            <span className="sb-score">{matchForView.score.A}</span>
             <span className="sb-dash">–</span>
-            <span className="sb-score">{match.score.B}</span>
-            <span className={`sb-team ${match.winner === 'B' ? 'win' : ''}`}>{match.teams.B.name}</span>
-            {match.wentToOvertime && <span className="sb-ot">OT</span>}
+            <span className="sb-score">{matchForView.score.B}</span>
+            <span className={`sb-team ${matchForView.winner === 'B' && (st?.finished ?? true) ? 'win' : ''}`}>{matchForView.teams.B.name}</span>
+            {matchForView.wentToOvertime && <span className="sb-ot">OT</span>}
           </div>
         )}
 
@@ -124,19 +181,32 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
             zonePositions={ZONE_POSITIONS}
           />
         ) : (
-          <div className="md-empty muted">Pick two teams and run the match.</div>
+          <div className="md-empty muted">{t('md.empty')}</div>
         )}
 
-        {match && (
+        {matchForView && (
           <div className="roundstrip" data-testid="roundstrip">
-            {match.rounds.map((r) => (
+            {matchForView.rounds.map((r) => (
               <span key={r.roundNumber} className={`rs-dot rs-${r.winner === 'A' ? 'a' : 'b'} ${r.phase === 'pistol' ? 'pistol' : ''}`} title={`R${r.roundNumber} ${r.phase}: ${r.winner} (${r.reason})`}>{r.roundNumber}</span>
             ))}
           </div>
         )}
 
+        {/* session log (interactive): round outcomes + timeouts (incl. AI opponent) */}
+        {interactive && sess.feed.length > 0 && (
+          <div className="md-feed" data-testid="session-feed">
+            <div className="attr-grouplabel">{t('md.sess.feed')}</div>
+            {sess.feed.slice(-8).map((f, i) => (
+              <div key={i} className={`feed-row sess-${f.kind}`}>
+                <span className="feed-t">R{f.round}</span>
+                <span className="muted small">{f.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="md-feed" data-testid="event-feed">
-          <div className="attr-grouplabel">Event feed <span className="muted small">(text play-by-play)</span></div>
+          <div className="attr-grouplabel">{t('md.feed.title')} <span className="muted small">{t('md.feed.sub')}</span></div>
           {(replay?.events ?? []).slice(0, 10).map((e, i) => (
             <div key={i} className="feed-row">
               <span className="feed-t">{Math.round(e.tMs / 1000)}s</span>
@@ -144,45 +214,45 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
               <span className="muted small">{e.actorId ?? ''}{e.victimId ? ` → ${e.victimId}` : ''}</span>
             </div>
           ))}
-          {!replay && <div className="row small muted">no events yet</div>}
+          {!replay && <div className="row small muted">{t('md.feed.none')}</div>}
         </div>
         </>
         )}
       </div>
 
-      {!(tab === 'review' && match) && (
+      {!((tab === 'review' || ordersOpen) && matchForView) && (
       <aside className="md-side">
         <section className="md-card" data-testid="economy-panel">
-          <h3>Economy {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
+          <h3>{t('md.econ.title')} {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
           {lastRound ? (['A', 'B'] as const).map((s) => (
             <div key={s} className="econ-team">
-              <b>{match!.teams[s].name}</b>
+              <b>{matchForView!.teams[s].name}</b>
               <span className="econ-credits">{lastRound.economy[s].credits}c</span>
-              <span className={`buy-badge buy-${lastRound.buys[s].tier}`}>{lastRound.buys[s].tier}</span>
+              <span className={`buy-badge buy-${lastRound.buys[s].tier}`}>{t(`buy.${lastRound.buys[s].tier}`)}</span>
             </div>
-          )) : <div className="row small muted">run a match for real economy</div>}
-          {lastRound && <div className="save-alert">Buys: {match!.teams.A.name} {lastRound.buys.A.weapon} · {match!.teams.B.name} {lastRound.buys.B.weapon} <span className="muted small">— economy-engine</span></div>}
+          )) : <div className="row small muted">{t('md.econ.run')}</div>}
+          {lastRound && <div className="save-alert">{t('md.econ.buys', { a: matchForView!.teams.A.name, aw: lastRound.buys.A.weapon, b: matchForView!.teams.B.name, bw: lastRound.buys.B.weapon })} <span className="muted small">{t('md.econ.engine')}</span></div>}
         </section>
 
         <section className="md-card" data-testid="ult-panel">
-          <h3>Ultimates {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
+          <h3>{t('md.ult.title')} {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
           {lastRound ? (['A', 'B'] as const).map((s) => (
             <div key={s} className="ult-team">
-              <b>{match!.teams[s].name}</b>
-              <span className="ult-pts">{lastRound.economy[s].ultPoints} pts</span>
+              <b>{matchForView!.teams[s].name}</b>
+              <span className="ult-pts">{t('md.ult.pts', { n: lastRound.economy[s].ultPoints })}</span>
             </div>
-          )) : <div className="row small muted">run a match for ultimate points</div>}
+          )) : <div className="row small muted">{t('md.ult.run')}</div>}
         </section>
 
         <section className="md-card coachnote" data-testid="coach-note">
-          <h3>Coach note</h3>
+          <h3>{t('md.coach.title')}</h3>
           {trace ? (
             <p className="note">
-              IGL ({trace.world.decidingSide}) chose <b>{trace.selected?.id ?? '—'}</b> with {trace.timeRemainingMs / 1000}s left.
-              {' '}{trace.selected?.rationale ?? ''} {trace.excluded.length > 0 && <span className="muted">· {trace.excluded.length} option(s) ruled out (time/space).</span>}
-              <span className="muted small"> — full candidates in Dev → Decision Debugger.</span>
+              {t('md.coach.chose', { side: trace.world.decidingSide, time: trace.timeRemainingMs / 1000, action: strategyLabel(t, trace.selected?.id) })}
+              {' '}{trace.selected?.rationale ?? ''} {trace.excluded.length > 0 && <span className="muted">{t('md.coach.ruledOut', { n: trace.excluded.length })}</span>}
+              <span className="muted small">{t('md.coach.candidates')}</span>
             </p>
-          ) : <div className="row small muted">loading trace…</div>}
+          ) : <div className="row small muted">{t('md.coach.loading')}</div>}
         </section>
       </aside>
       )}

@@ -174,3 +174,45 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .rev-mvptable tr.top td { background: rgba(255,209,102,0.06); }
 .rev-mvptable .tag { font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #1b2430; color: #9aa7b4; }
 .rev-mvptable .tag.rv-a { color: #3cdcff; } .rev-mvptable .tag.rv-b { color: #ff9f40; }
+
+/* ── Language switch (About) ──────────────────────────────────────── */
+.lang-switch { display: flex; align-items: center; gap: 6px; margin: 4px 0 12px; }
+.lang-switch button { background: #121922; color: #9aa7b4; border: 1px solid #2b3440;
+  border-radius: 6px; padding: 3px 12px; font-size: 13px; cursor: pointer; }
+.lang-switch button.on { background: #1d6feb; color: #fff; border-color: #1d6feb; }
+
+/* ── Interactive match (tactical timeouts) ────────────────────────── */
+.md-modetoggle { display: inline-flex; gap: 4px; margin-left: 4px; }
+.md-modetoggle button { background: #121922; color: #9aa7b4; border: 1px solid #2b3440;
+  border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.md-modetoggle button.on { background: #1d6feb; color: #fff; border-color: #1d6feb; }
+.md-sessbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0;
+  padding: 8px 10px; background: #0e141b; border: 1px solid #202a36; border-radius: 8px; }
+.sess-status { font-size: 13px; color: #cdd6e0; }
+.sess-done { color: #3fb950; font-weight: 600; }
+.md-timeout { background: #3a2410; color: #ffd166; border: 1px solid #6b4a1c; border-radius: 6px;
+  padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.md-timeout:hover:not(:disabled) { border-color: #a5771f; }
+.md-timeout:disabled { opacity: 0.5; cursor: default; }
+.feed-row.sess-timeout-ai .muted { color: #ff9f40; }
+.feed-row.sess-timeout-you .muted { color: #ffd166; }
+.feed-row.sess-end .muted { color: #3fb950; }
+
+/* orders panel */
+.orders-panel { background: #0e141b; border: 1px solid #243244; border-radius: 10px; padding: 12px 14px; }
+.orders-head h3 { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+.orders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.ord-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #9aa7b4; }
+.ord-field select { background: #0b0f15; color: #e6edf3; border: 1px solid #2b3440; border-radius: 6px; padding: 4px 6px; }
+.orders-sit { margin-top: 12px; background: #0b0f15; border: 1px solid #1a2230; border-radius: 8px; padding: 8px 10px; }
+.sit-row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; font-size: 13px; }
+.sit-row .mono { font-family: monospace; letter-spacing: 1px; }
+.orders-actions { display: flex; gap: 8px; margin-top: 12px; }
+.ord-cancel { background: #1b2430; color: #cdd6e0; border: 1px solid #39506a; border-radius: 6px; padding: 5px 14px; cursor: pointer; }
+
+/* ── Korean-friendly text wrapping (break at word boundaries, not per syllable) ── */
+.mgr, .mgr button, .mgr select, .mgr input, .mgr option { word-break: keep-all; overflow-wrap: break-word; }
+.rev-decisions { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.rev-dcard, .rev-dhead { min-width: 0; }
+.rev-dhead { flex-wrap: wrap; }
+.rev-dhead b { min-width: 0; overflow-wrap: break-word; }

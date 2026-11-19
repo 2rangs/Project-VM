@@ -5,16 +5,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ReplayViewer } from '@pv/replay-viewer';
 import type { Replay } from '@pv/replay-engine';
-import type { MatchSummary } from '../../shared/ipc.ts';
+import type { MatchSummary, TeamOrder, TimeoutLogEntry } from '../../shared/ipc.ts';
 import { bridge } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import { computeMvp, economySeries } from '../review.ts';
+import { useT, strategyLabel, type TFn } from '../i18n/index.tsx';
 
-const REASON_SHORT: Record<string, string> = {
-  elimination: 'elim', spikeDetonation: 'spike', spikeDefused: 'defuse', timeExpired: 'time',
-};
+/** Render a coach order compactly: "A 실행 · 포스 · 패스트". */
+function orderText(t: TFn, order: TeamOrder | null): string {
+  if (!order) return '—';
+  const parts: string[] = [];
+  if (order.strategy) parts.push(t(`ostrat.${order.strategy}`));
+  if (order.economy) parts.push(t(`oecon.${order.economy}`));
+  if (order.tempo) parts.push(t(`otempo.${order.tempo}`));
+  if (order.roles?.entry) parts.push(`${t('orders.entry')} ${order.roles.entry}`);
+  if (order.roles?.lurker) parts.push(`${t('orders.lurker')} ${order.roles.lurker}`);
+  return parts.join(' · ') || '—';
+}
 
-export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Replay | null }) {
+export function ReviewPanel({ match, replay, timeoutLog = [] }: { match: MatchSummary; replay: Replay | null; timeoutLog?: TimeoutLogEntry[] }) {
+  const t = useT();
+  const reasonShort = (r: string) => t(`reason.${r}`);
   const [traces, setTraces] = useState<DecisionTrace[]>([]);
   useEffect(() => {
     let alive = true;
@@ -46,21 +57,21 @@ export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Re
           <b className={match.winner === 'A' ? 'win' : ''}>{match.teams.A.name}</b> {match.score.A}
           <span className="muted"> – </span>{match.score.B} <b className={match.winner === 'B' ? 'win' : ''}>{match.teams.B.name}</b>
         </span>
-        <span className="muted small">{match.map} · seed {match.seed}{match.wentToOvertime ? ' · OT' : ''} · {match.rounds.length} rounds</span>
+        <span className="muted small">{t('rev.meta', { map: match.map, seed: match.seed, ot: match.wentToOvertime ? t('rev.ot') : '', n: match.rounds.length })}</span>
       </div>
 
       {/* round result strip */}
       <section className="rev-card">
-        <div className="attr-grouplabel">Round results <span className="muted small">({match.teams.A.name} 관점 · W/L · 종료 사유 · 구매)</span></div>
+        <div className="attr-grouplabel">{t('rev.roundResults')} <span className="muted small">{t('rev.roundResults.sub', { team: match.teams.A.name })}</span></div>
         <div className="rev-strip" data-testid="rev-strip">
           {match.rounds.map((r) => {
             const won = r.winner === 'A';
             return (
-              <div key={r.roundNumber} className={`rev-rcell ${won ? 'w' : 'l'}`} title={`R${r.roundNumber} ${r.phase} · ${won ? 'WIN' : 'LOSS'} · ${r.reason} · A ${r.buys.A.tier}/${r.buys.A.weapon} · B ${r.buys.B.tier}/${r.buys.B.weapon}`}>
+              <div key={r.roundNumber} className={`rev-rcell ${won ? 'w' : 'l'}`} title={`R${r.roundNumber} ${r.phase} · ${won ? t('rev.win') : t('rev.loss')} · ${reasonShort(r.reason)} · A ${r.buys.A.tier}/${r.buys.A.weapon} · B ${r.buys.B.tier}/${r.buys.B.weapon}`}>
                 <span className="rc-n">{r.roundNumber}</span>
-                <span className="rc-wl">{won ? 'W' : 'L'}</span>
-                <span className="rc-reason">{REASON_SHORT[r.reason] ?? r.reason.slice(0, 5)}</span>
-                <span className={`rc-buy buy-${r.buys.A.tier}`}>{r.buys.A.tier}</span>
+                <span className="rc-wl">{won ? t('rev.win') : t('rev.loss')}</span>
+                <span className="rc-reason">{reasonShort(r.reason)}</span>
+                <span className={`rc-buy buy-${r.buys.A.tier}`}>{t(`buy.${r.buys.A.tier}`)}</span>
               </div>
             );
           })}
@@ -69,7 +80,7 @@ export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Re
 
       {/* economy timeline */}
       <section className="rev-card">
-        <div className="attr-grouplabel">Economy timeline <span className="muted small">(credits at buy, both teams)</span></div>
+        <div className="attr-grouplabel">{t('rev.econ')} <span className="muted small">{t('rev.econ.sub')}</span></div>
         <svg className="rev-econ" viewBox={`0 0 ${W} ${H}`} data-testid="rev-econ" role="img" aria-label="economy timeline">
           <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="#2b3440" />
           <line x1={PAD} y1={PAD} x2={PAD} y2={H - PAD} stroke="#2b3440" />
@@ -80,36 +91,55 @@ export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Re
         </svg>
       </section>
 
-      {/* key decision cards (PV-3 decision traces) */}
+      {/* key decision cards (IGL decision traces) */}
       <section className="rev-card">
-        <div className="attr-grouplabel">Key decisions <span className="muted small">(PV-3 IGL decision traces · 선택 + 근거 + 제외 대안)</span></div>
-        {traces.length === 0 ? <div className="row small muted">loading decision traces…</div> : (
+        <div className="attr-grouplabel">{t('rev.decisions')} <span className="muted small">{t('rev.decisions.sub')}</span></div>
+        {traces.length === 0 ? <div className="row small muted">{t('rev.decisions.loading')}</div> : (
           <div className="rev-decisions">
-            {traces.map((t, i) => (
+            {traces.map((tr, i) => (
               <div key={i} className="rev-dcard" data-testid="rev-decision">
                 <div className="rev-dhead">
-                  <span className="pill">{t.world.decidingSide}</span>
-                  <b>{t.selected?.id ?? '—'}</b>
-                  <span className="muted small">{(t.timeRemainingMs / 1000).toFixed(0)}s left</span>
+                  <span className="pill">{tr.world.decidingSide}</span>
+                  <b>{strategyLabel(t, tr.selected?.id)}</b>
+                  <span className="muted small">{t('rev.dcard.left', { n: (tr.timeRemainingMs / 1000).toFixed(0) })}</span>
                 </div>
-                <p className="rev-drationale small">{t.selected?.rationale ?? 'no action selected'}</p>
-                <div className="muted small">{t.excluded.length} option(s) ruled out (time/space) · full breakdown in Dev → Decision Debugger</div>
+                <p className="rev-drationale small">{tr.selected?.rationale ?? t('rev.dcard.noAction')}</p>
+                <div className="muted small">{t('rev.dcard.ruledOut', { n: tr.excluded.length })}</div>
               </div>
             ))}
           </div>
         )}
       </section>
 
+      {/* tactical timeout log (interactive matches) */}
+      {timeoutLog.length > 0 && (
+        <section className="rev-card" data-testid="rev-timeouts">
+          <div className="attr-grouplabel">{t('rev.timeouts')} <span className="muted small">{t('rev.timeouts.sub')}</span></div>
+          <table className="rev-mvptable">
+            <tbody>
+              {timeoutLog.map((e, i) => (
+                <tr key={i}>
+                  <td className="muted">{t('rev.to.round', { n: e.round })}</td>
+                  <td><b>{match.teams[e.team].name}</b></td>
+                  <td><span className={`tag ${e.team === 'A' ? 'rv-a' : 'rv-b'}`}>{t(`rev.to.by.${e.by}`)}</span></td>
+                  <td className="small">{orderText(t, e.order)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
       {/* MVP */}
       <section className="rev-card" data-testid="rev-mvp">
-        <div className="attr-grouplabel">Match MVP <span className="muted small">(kills + 생존 · 실명 핸들 · 로스터 귀속은 합성)</span></div>
+        <div className="attr-grouplabel">{t('rev.mvp')} <span className="muted small">{t('rev.mvp.sub')}</span></div>
         {mvp ? (
           <>
             <div className="rev-mvpline">
               <span className={`mvp-badge ${teamClass(mvp.team)}`}>MVP</span>
               <b>{mvp.handle}</b> <span className="muted small">({mvp.teamName})</span>
-              <span className="mvp-stat">{mvp.kills} K</span>
-              <span className="mvp-stat muted">{mvp.survived}/{match.rounds.length} survived</span>
+              <span className="mvp-stat">{t('rev.mvp.k', { n: mvp.kills })}</span>
+              <span className="mvp-stat muted">{t('rev.mvp.survived', { s: mvp.survived, n: match.rounds.length })}</span>
             </div>
             <table className="rev-mvptable">
               <tbody>
@@ -117,21 +147,21 @@ export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Re
                   <tr key={i} className={i === 0 ? 'top' : ''}>
                     <td className="muted">{i + 1}</td>
                     <td><b>{l.handle}</b> <span className={`tag ${teamClass(l.team)}`}>{l.teamName}</span></td>
-                    <td>{l.kills} K</td>
-                    <td className="muted">{l.deaths} D</td>
-                    <td className="muted small">{l.score} pts</td>
+                    <td>{t('rev.mvp.kd.k', { n: l.kills })}</td>
+                    <td className="muted">{t('rev.mvp.kd.d', { n: l.deaths })}</td>
+                    <td className="muted small">{t('rev.mvp.pts', { n: l.score })}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </>
-        ) : <div className="row small muted">no kill data</div>}
+        ) : <div className="row small muted">{t('rev.mvp.none')}</div>}
       </section>
 
       {/* post-match ground truth — allowed because the match is over */}
       {replay && (
         <section className="rev-card">
-          <div className="attr-grouplabel">경기 후 전체 시점 <span className="muted small">(post-match full view — ground truth, match is over)</span></div>
+          <div className="attr-grouplabel">{t('rev.truth')} <span className="muted small">{t('rev.truth.sub')}</span></div>
           <ReplayViewer replay={replay} size={560} />
         </section>
       )}

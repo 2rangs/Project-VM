@@ -15,7 +15,7 @@ import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
 import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
-import { TeamDecisionPolicy } from "@pv/team-engine";
+import { TeamDecisionPolicy, type PolicyOrder } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
 import type { DecisionPolicy, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
@@ -56,6 +56,10 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined) {
     this.inner = new TeamDecisionPolicy(sq, abilityEffect ? { abilityEffect } : {});
   }
+  /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
+  setOrder(order: PolicyOrder | null): void {
+    this.inner.setOrder(order);
+  }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({
       ...p,
@@ -86,7 +90,11 @@ export class WrappedTeamPolicy implements DecisionPolicy {
 export function makeSimPolicies(
   sq: SpatialQuery,
   abilityEffect?: (abilityId: string) => string | undefined,
-): Readonly<Record<Side, SimDecisionPolicy>> {
-  const mk = () => new WrappedTeamPolicy(sq, abilityEffect) as unknown as SimDecisionPolicy;
-  return { attack: mk(), defense: mk() };
+): Readonly<Record<Side, WrappedTeamPolicy>> {
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect), defense: new WrappedTeamPolicy(sq, abilityEffect) };
+}
+
+/** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */
+export function toSimPolicies(p: Readonly<Record<Side, WrappedTeamPolicy>>): Readonly<Record<Side, SimDecisionPolicy>> {
+  return { attack: p.attack as unknown as SimDecisionPolicy, defense: p.defense as unknown as SimDecisionPolicy };
 }

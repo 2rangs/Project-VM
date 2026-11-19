@@ -122,3 +122,27 @@ describe("scenarios extended to the team layer", () => {
     expect(md).toContain("## Player commands");
   });
 });
+
+describe("coach orders (tactical timeouts)", () => {
+  it("a forced strategy order overrides the IGL's own pick", () => {
+    const view = loadView("01");
+    const policy = new TeamDecisionPolicy(spatial);
+    const ownStrat = policy.decideWithTrace(view, rng(1)).trace.finalStrategy;
+    policy.setOrder({ strategy: "midControl" });
+    const { trace } = policy.decideWithTrace(view, rng(1));
+    expect(trace.finalStrategy).toBe("midControl");
+    expect(trace.reconsiderReason).toContain("order");
+    // Clearing the order restores the IGL's own selection.
+    policy.setOrder(null);
+    expect(policy.decideWithTrace(view, rng(1)).trace.finalStrategy).toBe(ownStrat);
+  });
+
+  it("an order pins the entry role", () => {
+    const view = loadView("01");
+    const policy = new TeamDecisionPolicy(spatial);
+    const pid = String(view.teammates[0]!.id);
+    policy.setOrder({ roles: { entry: pid } });
+    const { trace } = policy.decideWithTrace(view, rng(1));
+    expect(trace.roles.find((r) => String(r.playerId) === pid)?.role).toBe("entry");
+  });
+});

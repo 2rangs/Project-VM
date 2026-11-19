@@ -58,8 +58,10 @@ const SMOKE_WINDOW_MS = 7000;
  * side, mid angles); a later pass can read these from the KB directly.
  */
 const SMOKE_TARGETS: Readonly<Record<string, readonly string[]>> = {
-  "a-site": ["a-rafters", "a-wine"],
-  "b-site": ["b-boathouse"],
+  // The forward CHOKE the attack pushes through: smoking it denies the forward defender's hold
+  // angle (the team pushes the smoke; the holder can't pre-aim), then the deeper angle.
+  "a-site": ["a-main", "a-rafters", "a-wine"],
+  "b-site": ["b-main", "b-boathouse"],
   "mid-courtyard": ["mid-top"],
 };
 /** Entry choke each defender anchor watches (pre-aim direction); others fall back to the engine default. */
@@ -94,11 +96,39 @@ export interface TeamRoundTrace {
   readonly decision: PolicyDecision;
 }
 
+/**
+ * A coach/IGL order the policy follows for the round(s) it is set. A forced `strategy` overrides
+ * the IGL's own selection; `tempo` nudges aggression; `roles` pins the entry/lurker. Set via
+ * `setOrder` (persists until changed/cleared). Used by the interactive match session (timeouts).
+ */
+export interface PolicyOrder {
+  readonly strategy?: TeamStrategy;
+  readonly tempo?: "slow" | "normal" | "fast";
+  readonly roles?: { readonly entry?: string; readonly lurker?: string };
+}
+
 export class TeamDecisionPolicy implements DecisionPolicy {
+  private order: PolicyOrder | null = null;
   constructor(
     private readonly spatial: SpatialQuery,
     private readonly options: TeamPolicyOptions = {},
   ) {}
+
+  /** Set (or clear) the active coach order. Persists across decisions until changed. */
+  setOrder(order: PolicyOrder | null): void {
+    this.order = order;
+  }
+
+  /** Pin the ordered entry/lurker roles onto the assignment (if those players are present). */
+  private applyRoleOrder(roles: readonly RoleAssignment[]): RoleAssignment[] {
+    const r = this.order?.roles;
+    if (!r?.entry && !r?.lurker) return roles.slice();
+    return roles.map((a) => {
+      if (r.entry && String(a.playerId) === r.entry) return { ...a, role: "entry" as const };
+      if (r.lurker && String(a.playerId) === r.lurker) return { ...a, role: "lurker" as const };
+      return a;
+    });
+  }
 
   /**
    * ATTACK execute utility coordination: the policy knows ability ids but not effects, so with an
@@ -338,8 +368,13 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const generation = this.candidates(view);
     const opening = selectStrategy(view, this.spatial, rng);
     const recon = reconsider(view, this.spatial, opening, rng);
-    const strategy = recon.strategy;
-    const roles = assignRoles(view, strategy, this.options.profiles, rng);
+    // A coach order (timeout) forces the strategy, overriding the IGL's own call. Draws from the
+    // same RNG first so order-vs-no-order stays deterministic for every other decision.
+    const ordered = this.order?.strategy;
+    const strategy = ordered ?? recon.strategy;
+    const reconReason = ordered ? `order: forced ${ordered}` : recon.reason;
+    const reconChanged = ordered ? ordered !== opening : recon.changed;
+    const roles = this.applyRoleOrder(assignRoles(view, strategy, this.options.profiles, rng));
     const roleOf = new Map(roles.map((r) => [String(r.playerId), r.role]));
 
     const alive = view.teammates.filter((p) => p.alive);
@@ -365,8 +400,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       side: view.side,
       openingStrategy: opening,
       finalStrategy: strategy,
-      reconsidered: recon.changed,
-      reconsiderReason: recon.reason,
+      reconsidered: reconChanged,
+      reconsiderReason: reconReason,
       roles,
       players: choices.map(({ choice }, i) => ({
         playerId: String(alive[i]!.id),

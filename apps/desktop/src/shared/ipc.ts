@@ -12,7 +12,56 @@ export const IPC = {
   traceLoad: 'pv:trace:load',
   /** renderer → main (invoke): list available trace fixture ids. */
   traceList: 'pv:trace:list',
+  /** renderer → main (invoke): start an interactive (tactical-timeout) match session. */
+  sessionStart: 'pv:session:start',
+  /** renderer → main (invoke): send one command to the live session (state/timeout/orders/round/result). */
+  sessionCmd: 'pv:session:cmd',
+  /** renderer → main (invoke): stop + dispose the live session. */
+  sessionStop: 'pv:session:stop',
 } as const;
+
+// ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
+export type TeamSlot = 'A' | 'B';
+/** Coach order set during a timeout. Mirrors match-runner TeamOrder (strategy strings per side). */
+export interface TeamOrder {
+  strategy?: 'aExecute' | 'bExecute' | 'midControl' | 'default' | 'split'
+    | 'defaultHold' | 'stackA' | 'stackB' | 'aggroPush';
+  economy?: 'save' | 'force' | 'full';
+  tempo?: 'slow' | 'normal' | 'fast';
+  roles?: { entry?: string; lurker?: string };
+  durationRounds?: number;
+}
+export interface SessionStartRequest {
+  mapId: string; seed: number;
+  teamA: { id: string; name: string }; teamB: { id: string; name: string };
+  /** Teams driven by the AI (the human team is excluded). Default ['B']. */
+  aiTeams?: TeamSlot[];
+}
+export interface TeamEconomyState { credits: number; ultPoints: number; consecutiveLosses?: number }
+export interface SessionState {
+  roundNumber: number;
+  score: Record<TeamSlot, number>;
+  attacker: TeamSlot;
+  economy: Record<TeamSlot, TeamEconomyState>;
+  timeoutsRemaining: Record<TeamSlot, number>;
+  timeoutActive: Record<TeamSlot, boolean>;
+  finished: boolean;
+}
+export interface TimeoutLogEntry { round: number; team: TeamSlot; by: 'human' | 'ai'; order: TeamOrder | null }
+export interface SessionResultSummary {
+  winner: TeamSlot; score: Record<TeamSlot, number>; wentToOvertime: boolean;
+  timeoutLog: TimeoutLogEntry[];
+}
+/** A command to the live session and its reply (reply shape depends on cmd). */
+export interface SessionCommand { cmd: 'state' | 'callTimeout' | 'setOrders' | 'playNextRound' | 'result'; team?: TeamSlot; order?: TeamOrder }
+export interface SessionReply {
+  ok: boolean;
+  error?: string;
+  state?: SessionState;
+  /** Present for playNextRound: the raw round (RawRound shape for mergeMatch). */
+  round?: Record<string, unknown>;
+  result?: SessionResultSummary;
+}
 
 export interface SimRunRequest {
   mapId: string;
@@ -69,6 +118,14 @@ export interface PvBridge {
   runSimulation(req: SimRunRequest, onProgress: (p: SimProgress) => void): Promise<SimResult>;
   loadTrace(id: string): Promise<unknown>;
   listTraces(): Promise<string[]>;
+  /** Interactive session (tactical timeouts). sessionStart resolves with the opening state. */
+  sessionStart(req: SessionStartRequest): Promise<SessionState>;
+  sessionState(): Promise<SessionState>;
+  sessionCallTimeout(team: TeamSlot): Promise<SessionState>;
+  sessionSetOrders(team: TeamSlot, order: TeamOrder): Promise<SessionState>;
+  sessionPlayNextRound(): Promise<{ round: Record<string, unknown>; state: SessionState }>;
+  sessionResult(): Promise<SessionResultSummary>;
+  sessionStop(): Promise<void>;
   readonly platform: string;
   readonly isElectron: true;
 }

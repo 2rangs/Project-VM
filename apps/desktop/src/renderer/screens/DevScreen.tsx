@@ -6,27 +6,28 @@ import { ReplayViewer } from '@pv/replay-viewer';
 import type { Replay } from '@pv/replay-engine';
 import type { ScreenCtx } from '../App.tsx';
 import { DebuggerScreen } from './DebuggerScreen.tsx';
+import { useT } from '../i18n/index.tsx';
 import perceptionDemo from '../../data/perception-demo.replay.json';
 
 export function DevScreen({ ctx }: { ctx: ScreenCtx }) {
+  const t = useT();
   return (
     <div className="dev-wrap">
       <div className="dev-note muted small pad">
-        Developer tooling. The ground-truth views here are a debug aid only and are not an input to the AI
-        (DECISION-004 / §29). Match Day never shows ground truth — only each team's perception.
+        {t('dev.note')}
         {' '}
         <button
           className="fog-demo" data-testid="load-perception-demo"
           onClick={() => ctx.setReplay(perceptionDemo as unknown as Replay)}
         >
-          Load perception demo replay
+          {t('dev.loadDemo')}
         </button>
-        <span className="muted small"> — a bundled real-data replay with a recorded perception track; open Match Day to see its fog view.</span>
+        <span className="muted small">{t('dev.demoHint')}</span>
       </div>
       {ctx.replay && (
         <section className="dev-truth">
           <div className="attr-grouplabel">
-            Ground truth <span className="muted small">(every real position — Dev only)</span>
+            {t('dev.groundTruth')} <span className="muted small">{t('dev.groundTruth.sub')}</span>
           </div>
           {/* perceptionPovTeamIdx defaults to null → full ground-truth render */}
           <ReplayViewer replay={ctx.replay} size={620} />

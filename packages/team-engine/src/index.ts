@@ -4,7 +4,7 @@
  * team-observable PolicyView (no WorldState; DECISION-004) and a seeded RandomSource.
  */
 export { TeamDecisionPolicy } from "./policy.js";
-export type { TeamPolicyOptions, TeamRoundTrace } from "./policy.js";
+export type { TeamPolicyOptions, TeamRoundTrace, PolicyOrder } from "./policy.js";
 export {
   selectStrategy,
   reconsider,

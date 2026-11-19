@@ -1,4 +1,4 @@
-// Data access for the manager UI. Loads the copied PV-1/PV-2 fixtures, joins
+// Data access for the manager UI. Loads the copied ratings/tactics fixtures, joins
 // ids→names, and exposes helpers. All values are SYNTHETIC/ESTIMATED (see
 // src/data/README.md). Real VCT names are shown by user decision (pre-launch).
 import playerRatings from '../data/player_ratings.json';

@@ -27,12 +27,13 @@ import {
   loadWeapons,
   makeSpatialQuery,
   makeSimPolicies,
+  toSimPolicies,
   NO_ABILITIES,
 } from "./setup.js";
 import { loadAbilityCatalog, agentAbilityLoadout, ASCENT_COMP } from "./abilities.js";
 import {
   newTeamEconomy,
-  decideBuy,
+  decideBuyForCall,
   applyRoundOutcome,
   halfReset,
   overtimeReset,
@@ -42,6 +43,7 @@ import {
 } from "./economy.js";
 import { rosterSkills } from "./teams.js";
 import { selectDefenseSetup } from "./defense-setups.js";
+import { toPolicyOrder, type TeamOrder } from "./orders.js";
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
@@ -199,38 +201,70 @@ function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<ty
  * Run a full match. Pure given its config: no I/O, no clock — only the seeded RNG.
  */
 export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): MatchResult {
-  const spatial = loadSpatial();
-  const weapons = loadWeapons();
-  const sq = makeSpatialQuery(spatial);
-  const maxRounds = config.maxRounds ?? 60;
+  const engine = new MatchEngine(config, options);
+  while (!engine.isFinished()) engine.playRound();
+  return engine.result();
+}
 
-  // Real per-player combat skills from game-data ratings (AVERAGE fallback), 5 per team.
-  const skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>> = {
-    A: rosterSkills(config.teamA.id, 5),
-    B: rosterSkills(config.teamB.id, 5),
-  };
-  const abilitiesOn = config.enableAbilities ?? false;
-  const abilities = abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
-  // Give the policy an abilityId → effectType lookup so it can coordinate entry utility.
-  const abilityEffect = abilitiesOn ? (id: string): string | undefined => abilities[id]?.effectType : undefined;
-  const policies = makeSimPolicies(sq, abilityEffect);
-  const matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
-  const teamRef = (slot: TeamSlot): TeamRef => (slot === "A" ? config.teamA : config.teamB);
+/**
+ * The shared match engine: owns the mutable match state and plays one round at a time. `runMatch`
+ * loops it to completion; the interactive session (createMatchSession) drives it round-by-round and
+ * injects per-round coach orders. With no orders, playRound reproduces the original loop exactly
+ * (byte-identical output), so the default runMatch / sim-batch are unchanged.
+ */
+export class MatchEngine {
+  private readonly spatial = loadSpatial();
+  private readonly weapons = loadWeapons();
+  private readonly sq = makeSpatialQuery(this.spatial);
+  private readonly maxRounds: number;
+  private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
+  private readonly abilitiesOn: boolean;
+  private readonly abilities: ReturnType<typeof loadAbilityCatalog>;
+  private readonly policies: ReturnType<typeof makeSimPolicies>;
+  private readonly matchId: string;
 
-  const economy: Record<TeamSlot, TeamEconomy> = { A: newTeamEconomy(), B: newTeamEconomy() };
-  const score: Record<TeamSlot, number> = { A: 0, B: 0 };
-  const memory: Record<TeamSlot, OpponentMemory> = { A: emptyMemory(), B: emptyMemory() };
-  const rounds: RoundRecord[] = [];
-  let wentToOvertime = false;
+  private readonly economy: Record<TeamSlot, TeamEconomy> = { A: newTeamEconomy(), B: newTeamEconomy() };
+  private readonly score: Record<TeamSlot, number> = { A: 0, B: 0 };
+  private readonly memory: Record<TeamSlot, OpponentMemory> = { A: emptyMemory(), B: emptyMemory() };
+  private readonly rounds: RoundRecord[] = [];
+  private wentToOvertime = false;
+  private roundNumber = 1; // the next round to play
 
-  for (let roundNumber = 1; roundNumber <= maxRounds; roundNumber++) {
+  constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
+    this.maxRounds = config.maxRounds ?? 60;
+    this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5), B: rosterSkills(config.teamB.id, 5) };
+    this.abilitiesOn = config.enableAbilities ?? false;
+    this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
+    const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
+    this.policies = makeSimPolicies(this.sq, abilityEffect);
+    this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
+  }
+
+  private teamRef(slot: TeamSlot): TeamRef { return slot === "A" ? this.config.teamA : this.config.teamB; }
+
+  /** Round the engine will play next (1-based). */
+  get currentRound(): number { return this.roundNumber; }
+  /** The attacking team for the next round. */
+  get nextAttacker(): TeamSlot { return attackerFor(this.roundNumber); }
+  snapshotEconomy(): Record<TeamSlot, TeamEconomy> { return { A: this.economy.A, B: this.economy.B }; }
+  snapshotScore(): Record<TeamSlot, number> { return { ...this.score }; }
+
+  isFinished(): boolean {
+    return matchWinner(this.score) !== null || this.roundNumber > this.maxRounds;
+  }
+
+  /** Play one round. `orders` (optional) are coach orders for THIS round, per team slot. */
+  playRound(orders: Partial<Record<TeamSlot, TeamOrder>> = {}): RoundRecord {
+    const roundNumber = this.roundNumber;
+    const { config, economy, score, memory } = this;
+
     // --- Credits reset at the half boundary and each OT round ---
     if (roundNumber === ROUNDS_PER_HALF + 1) {
       economy.A = halfReset(economy.A);
       economy.B = halfReset(economy.B);
     }
     if (isOvertime(roundNumber)) {
-      wentToOvertime = true;
+      this.wentToOvertime = true;
       economy.A = overtimeReset(economy.A);
       economy.B = overtimeReset(economy.B);
     }
@@ -239,73 +273,68 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
     const defender = other(attacker);
     const pistol = isPistol(roundNumber);
 
-    // --- Buy phase (team-level) ---
-    const buyA = decideBuy(economy.A.credits, pistol);
-    const buyB = decideBuy(economy.B.credits, pistol);
+    // --- Buy phase (team-level; an economy call order overrides the pick) ---
+    const buyA = decideBuyForCall(economy.A.credits, pistol, orders.A?.economy);
+    const buyB = decideBuyForCall(economy.B.credits, pistol, orders.B?.economy);
     economy.A = { ...economy.A, credits: spend(economy.A.credits, buyA.cost) };
     economy.B = { ...economy.B, credits: spend(economy.B.credits, buyB.cost) };
     const buys: Record<TeamSlot, BuyDecision> = { A: buyA, B: buyB };
 
+    // --- Coach orders → policy (attacker's order to the attack policy, defender's to defense) ---
+    this.policies.attack.setOrder(toPolicyOrder(orders[attacker]));
+    this.policies.defense.setOrder(toPolicyOrder(orders[defender]));
+
     // --- Run the round through PV-4's runMatchRound (the match-loop seam) ---
-    const seed = deriveSeed(config.seed, `${matchId}:round:${roundNumber}`);
+    const seed = deriveSeed(config.seed, `${this.matchId}:round:${roundNumber}`);
     const attackers: MatchRoundTeam = {
-      teamId: teamRef(attacker).id,
+      teamId: this.teamRef(attacker).id,
       economy: toEconomyState(economy[attacker], "attack"),
-      players: makeRoster("attack", buys[attacker], skillsBySlot[attacker], abilitiesOn),
+      players: makeRoster("attack", buys[attacker], this.skillsBySlot[attacker], this.abilitiesOn),
     };
-    // Diversified VCT defender setup (PV-2) chosen per round — breaks the vacant-site 5v2.
-    // Applied only with abilities ON: forward holds (a-main/b-main) need utility/crossfire to be
-    // viable; abilities-off they just feed (attack 0.62→0.75), so off keeps the balanced 2-2-1.
-    const defSpawns = abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
+    const defSpawns = this.abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
     const defenders: MatchRoundTeam = {
-      teamId: teamRef(defender).id,
+      teamId: this.teamRef(defender).id,
       economy: toEconomyState(economy[defender], "defense"),
-      players: makeRoster("defense", buys[defender], skillsBySlot[defender], abilitiesOn, defSpawns),
+      players: makeRoster("defense", buys[defender], this.skillsBySlot[defender], this.abilitiesOn, defSpawns),
     };
     const out = runMatchRound({
-      spatial,
-      weapons,
-      abilities,
-      policies,
+      spatial: this.spatial,
+      weapons: this.weapons,
+      abilities: this.abilities,
+      policies: toSimPolicies(this.policies),
       attackers,
       defenders,
       seed,
       roundNumber,
+      ...(this.abilitiesOn ? { spikeCarrierId: "atk4" } : {}),
       mapId: config.map,
-      matchId,
+      matchId: this.matchId,
       roundId: `r${roundNumber}`,
       config: { recordPerception: config.recordPerception ?? false },
     });
+    // Clear orders so they do not leak into the next round (the session re-sets them each round).
+    this.policies.attack.setOrder(null);
+    this.policies.defense.setOrder(null);
     const result = out.round;
 
     // --- Resolve outcome onto teams ---
     const winner: TeamSlot = out.winner === "attack" ? attacker : defender;
     const planted = out.events.some((e) => e.kind === "planted");
-    // Kills a team scored, from per-player outcomes (dead players' guns drop next round).
     const killsOf = (side: Side) => out.players.filter((p) => p.side === side).reduce((s, p) => s + p.kills, 0);
     const kills: Record<TeamSlot, number> = {
       [attacker]: killsOf("attack"),
       [defender]: killsOf("defense"),
     } as Record<TeamSlot, number>;
 
-    // Between-round economy (mirror of economy-engine's advanceMatchEconomy; SWAP TARGET in
-    // economy.ts). leftoverCredits = post-buy credits; plant award goes to the attacking team.
     economy[attacker] = applyRoundOutcome(economy[attacker], {
-      won: winner === attacker,
-      kills: kills[attacker],
-      planted,
-      leftoverCredits: economy[attacker].credits,
+      won: winner === attacker, kills: kills[attacker], planted, leftoverCredits: economy[attacker].credits,
     });
     economy[defender] = applyRoundOutcome(economy[defender], {
-      won: winner === defender,
-      kills: kills[defender],
-      planted: false,
-      leftoverCredits: economy[defender].credits,
+      won: winner === defender, kills: kills[defender], planted: false, leftoverCredits: economy[defender].credits,
     });
 
     score[winner] += 1;
 
-    // --- IGL opponent memory: each team records what the OTHER showed ---
     for (const slot of ["A", "B"] as const) {
       const opp = other(slot);
       memory[slot].buyTiers.push(buys[opp].tier);
@@ -334,16 +363,22 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
         matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
       }),
     };
-    rounds.push(record);
-    options.onRound?.(record, { ...score });
-
-    const won = matchWinner(score);
-    if (won) {
-      return { config, winner: won, score: { ...score }, rounds, memory, wentToOvertime };
-    }
+    this.rounds.push(record);
+    this.options.onRound?.(record, { ...score });
+    this.roundNumber += 1;
+    return record;
   }
 
-  // Hit the safety cap without a 2-round lead — return the current leader (draw → A).
-  const leader: TeamSlot = score.A >= score.B ? "A" : "B";
-  return { config, winner: leader, score: { ...score }, rounds, memory, wentToOvertime };
+  result(): MatchResult {
+    const won = matchWinner(this.score);
+    const winner: TeamSlot = won ?? (this.score.A >= this.score.B ? "A" : "B");
+    return {
+      config: this.config,
+      winner,
+      score: { ...this.score },
+      rounds: this.rounds,
+      memory: this.memory,
+      wentToOvertime: this.wentToOvertime,
+    };
+  }
 }
