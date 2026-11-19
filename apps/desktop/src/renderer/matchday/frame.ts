@@ -116,23 +116,3 @@ export function computeFrame(replay: Replay, tl: MatchTimeline, nav: NavModel, t
     lastKnown,
   };
 }
-
-/**
- * Playback tempo for "highlights" pacing: real time around anything worth watching (a kill, the
- * plant, the defuse, the end of the round), fast through the quiet stretches in between.
- */
-export function autoTempoAt(round: RoundTimeline, tMs: number): number {
-  const marks: number[] = [round.endMs];
-  for (const k of round.kills) marks.push(k.tMs);
-  if (round.plant) marks.push(round.plant.startMs, round.plant.tMs);
-  if (round.defuse) marks.push(round.defuse.startMs, round.defuse.tMs);
-  let near = Infinity;
-  for (const m of marks) {
-    const d = m - tMs; // > 0: the moment is ahead
-    const dist = d >= 0 ? d / 3500 : -d / 1500; // slow down 3.5 s before, stay slow 1.5 s after
-    if (dist < near) near = dist;
-  }
-  if (near <= 1) return 1;
-  if (near <= 2) return 1 + (near - 1) * 5; // ramp 1× → 6×
-  return 6;
-}

@@ -6,9 +6,9 @@ import type { MatchSummary, SessionState } from '../../../shared/ipc.ts';
 import type { TFn } from '../../i18n/index.tsx';
 import type { Frame, FrameUnit } from '../../matchday/frame.ts';
 import type { MonitorStatus } from '../../matchday/monitor.ts';
-import { formatClock } from '../../matchday/monitor.ts';
+import { formatClock, roundMarks } from '../../matchday/monitor.ts';
 import { isAlive, teamPlayers, type MatchTimeline, type RoundTimeline, type TeamSlot } from '../../matchday/timeline.ts';
-import type { Tempo, ViewMode } from '../../matchday/prefs.ts';
+import { TEMPOS, type Tempo, type ViewMode } from '../../matchday/prefs.ts';
 
 export type NameOf = (id: string) => string;
 export type ZoneName = (id: string | null | undefined) => string;
@@ -283,30 +283,58 @@ export function Banners({ t, frame, nameOf, viewTeam }: { t: TFn; frame: Frame |
   );
 }
 
-export function RoundResult({ t, round, viewTeam, score, teams, hint }: {
+/** Plan data a round may carry (RoundRecord.decisions, when the bridge passes it through). */
+interface PlanLike { opening?: string | null; strategy?: string | null; revisions?: ReadonlyArray<{ atMs: number; from: string; to: string; reason?: string }> }
+
+/**
+ * Between-rounds summary: shown only once playback has reached the end of the round. Result and
+ * reason, kills, economy after the round, our own plan changes (never the opponent's), and the
+ * way forward.
+ */
+export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel, onNext, nextDisabled }: {
   t: TFn; round: RoundTimeline; viewTeam: TeamSlot; score: Record<TeamSlot, number>; teams: MatchSummary['teams']; hint: string | null;
+  nextLabel: string | null; onNext: () => void; nextDisabled: boolean;
 }) {
-  const winner = round.summary?.winner;
-  if (!winner) return null;
+  const sum = round.summary;
+  const winner = sum?.winner;
+  if (!winner || !sum) return null;
   const won = winner === viewTeam;
+  const enemy = other(viewTeam);
+  const plan = (sum as unknown as { decisions?: { plans?: Partial<Record<TeamSlot, PlanLike | null>> } | null }).decisions?.plans?.[viewTeam] ?? null;
   return (
     <div className={`mdx-result ${won ? 'won' : 'lost'}`} data-testid="round-result">
       <span className="mdx-result-kicker">{t('mdx.round.n', { n: round.roundNum })} · {t(`reason.${round.endReason ?? 'elimination'}`)}</span>
       <strong>{won ? t('mdx.result.won') : t('mdx.result.lost')}</strong>
-      <span className="mdx-result-score">{teams[viewTeam].name} <b>{score[viewTeam]}</b> : <b>{score[other(viewTeam)]}</b> {teams[other(viewTeam)].name}</span>
+      <span className="mdx-result-score">{teams[viewTeam].name} <b>{score[viewTeam]}</b> : <b>{score[enemy]}</b> {teams[enemy].name}</span>
+      <dl className="mdx-result-facts">
+        <div><dt>{t('mdx.sum.kills')}</dt><dd><b className="ally">{sum.kills[viewTeam]}</b> – <b className="enemy">{sum.kills[enemy]}</b></dd></div>
+        <div><dt>{t('mdx.sum.economy')}</dt><dd>{sum.economy[viewTeam].credits.toLocaleString()} / {sum.economy[enemy].credits.toLocaleString()}</dd></div>
+        <div><dt>{t('mdx.sum.buys')}</dt><dd>{t(`buy.${sum.buys[viewTeam].tier}`)} / {t(`buy.${sum.buys[enemy].tier}`)}</dd></div>
+        {plan && (
+          <div className="wide"><dt>{t('mdx.sum.plan')}</dt>
+            <dd>{plan.opening ?? '—'}{plan.strategy && plan.strategy !== plan.opening ? ` → ${plan.strategy}` : ''}
+              {(plan.revisions ?? []).map((r, i) => <span key={i} className="mdx-result-rev">{formatClock(r.atMs)} {r.from} → {r.to}{r.reason ? ` (${r.reason})` : ''}</span>)}
+            </dd>
+          </div>
+        )}
+      </dl>
       {hint && <span className="mdx-result-hint">{hint}</span>}
+      {nextLabel && <button className="mdx-btn primary" onClick={onNext} disabled={nextDisabled} data-testid="summary-next">{nextLabel}</button>}
     </div>
   );
 }
 
 // ── bottom bar ─────────────────────────────────────────────────────────────────────────────
 
-const TEMPOS: readonly Tempo[] = ['auto', 1, 2, 4, 8];
-
 export function BottomBar({
   t, tl, round, tMs, playing, onToggle, tempo, onTempo, onSeek, onRound, viewTeam, session, autoPlay, onAutoPlay,
-  onNext, onTimeout, canAdvance,
+  onNext, onTimeout, canAdvance, watchedTo, timeouts, onPrevEvent, onNextEvent, onSkipEnd,
 }: {
+  /** Furthest point of this round the viewer has reached: later events stay unmarked (no spoilers). */
+  watchedTo: number;
+  /** Teams that called a tactical timeout before this round. */
+  timeouts: readonly TeamSlot[];
+  onPrevEvent: () => void; onNextEvent: () => void; onSkipEnd: () => void;
   t: TFn; tl: MatchTimeline; round: RoundTimeline | null; tMs: number; playing: boolean; onToggle: () => void;
   tempo: Tempo; onTempo: (v: Tempo) => void; onSeek: (ms: number) => void; onRound: (r: RoundTimeline) => void;
   viewTeam: TeamSlot; session: { state: SessionState; busy: boolean; ordersOpen: boolean } | null;
@@ -321,11 +349,14 @@ export function BottomBar({
         <button className="mdx-play" onClick={onToggle} disabled={!round} data-testid="playpause" aria-label={playing ? t('mdx.pause') : t('mdx.play')}>
           {playing ? <i className="mdx-ico-pause" /> : <i className="mdx-ico-play" />}
         </button>
+        <div className="mdx-seg small icons" aria-label={t('mdx.events')}>
+          <button onClick={onPrevEvent} disabled={!round} data-testid="prev-event" title={t('mdx.prevEvent')} aria-label={t('mdx.prevEvent')}><i className="mdx-ico-prev" /></button>
+          <button onClick={onNextEvent} disabled={!round} data-testid="next-event" title={t('mdx.nextEvent')} aria-label={t('mdx.nextEvent')}><i className="mdx-ico-next" /></button>
+          <button onClick={onSkipEnd} disabled={!round} data-testid="skip-end" title={t('mdx.skipEnd')} aria-label={t('mdx.skipEnd')}><i className="mdx-ico-end" /></button>
+        </div>
         <div className="mdx-seg small" aria-label={t('mdx.tempo')}>
           {TEMPOS.map((v) => (
-            <button key={v} className={tempo === v ? 'on' : ''} onClick={() => onTempo(v)} data-testid={`tempo-${v}`} title={v === 'auto' ? t('mdx.tempo.autoHint') : undefined}>
-              {v === 'auto' ? t('mdx.tempo.auto') : `${v}×`}
-            </button>
+            <button key={v} className={tempo === v ? 'on' : ''} onClick={() => onTempo(v)} data-testid={`tempo-${v}`}>{v}×</button>
           ))}
         </div>
       </div>
@@ -349,9 +380,11 @@ export function BottomBar({
           <span className="mdx-time">{formatClock(round ? tMs - round.startMs : 0).padStart(4, '0')}</span>
           <div className="mdx-scrub">
             <i className="mdx-scrub-fill" style={{ width: round ? pct(tMs) : '0%' }} />
-            {round?.kills.map((k, i) => <i key={i} className={`mdx-tick ${k.killerTeam === viewTeam ? 'ally' : 'enemy'}`} style={{ left: pct(k.tMs) }} />)}
-            {round?.plant && <i className="mdx-tick spike" style={{ left: pct(round.plant.tMs) }} />}
-            {round?.defuse && <i className="mdx-tick defuse" style={{ left: pct(round.defuse.tMs) }} />}
+            {timeouts.map((team) => <i key={team} className={`mdx-tick timeout ${team === viewTeam ? 'ally' : 'enemy'}`} style={{ left: 0 }} title={t('mdx.timeout')} />)}
+            {/* events appear on the timeline as they are reached — the future stays unmarked */}
+            {round && roundMarks(round).filter((m) => m.tMs <= watchedTo && m.kind !== 'end').map((m, i) => (
+              <i key={i} className={`mdx-tick ${m.kind === 'kill' ? (m.team === viewTeam ? 'ally' : 'enemy') : m.kind === 'plant' ? 'spike' : 'defuse'}`} style={{ left: pct(m.tMs) }} />
+            ))}
             <input className="rv-scrub" type="range" min={round?.startMs ?? 0} max={round?.endMs ?? 0} step={50} value={round ? tMs : 0}
               onChange={(e) => onSeek(Number(e.target.value))} disabled={!round} aria-label={t('mdx.scrub')} />
           </div>

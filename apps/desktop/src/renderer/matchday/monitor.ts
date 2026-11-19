@@ -120,3 +120,54 @@ export function killsUpTo(round: RoundTimeline, tMs: number): Map<string, number
   for (const k of round.kills) if (k.tMs <= tMs && k.killerId) out.set(k.killerId, (out.get(k.killerId) ?? 0) + 1);
   return out;
 }
+
+// ── round timeline marks (scrubber ticks, previous/next event) ───────────────────────────────
+
+export type MarkKind = 'kill' | 'plant' | 'defuse' | 'end';
+export interface RoundMark { readonly tMs: number; readonly kind: MarkKind; readonly team: TeamSlot | null }
+
+/** The moments of a round worth jumping to, in time order. */
+export function roundMarks(round: RoundTimeline): RoundMark[] {
+  const marks: RoundMark[] = round.kills.map((k) => ({ tMs: k.tMs, kind: 'kill' as const, team: k.killerTeam }));
+  if (round.plant) marks.push({ tMs: round.plant.tMs, kind: 'plant', team: findPlayer(round, round.plant.playerId)?.team ?? null });
+  if (round.defuse) marks.push({ tMs: round.defuse.tMs, kind: 'defuse', team: findPlayer(round, round.defuse.playerId)?.team ?? null });
+  if (round.endReason != null) marks.push({ tMs: round.endMs, kind: 'end', team: round.summary?.winner ?? null });
+  return marks.sort((a, b) => a.tMs - b.tMs);
+}
+
+/** How long before an event a jump lands, so the viewer sees it happen. */
+export const JUMP_LEAD_MS = 1500;
+
+/**
+ * Where "next event" (+1) / "previous event" (−1) should seek to from `nowMs`, or null when
+ * there is nothing further in that direction. Events closer than 300 ms count as one.
+ */
+export function eventJump(round: RoundTimeline, nowMs: number, dir: 1 | -1): number | null {
+  const targets: number[] = [];
+  for (const m of roundMarks(round)) {
+    const at = Math.max(round.startMs, m.tMs - JUMP_LEAD_MS);
+    if (targets.length === 0 || at - targets[targets.length - 1] > 300) targets.push(at);
+  }
+  if (dir === 1) return targets.find((t) => t > nowMs + 100) ?? null;
+  for (let i = targets.length - 1; i >= 0; i--) if (targets[i] < nowMs - 700) return targets[i];
+  return nowMs > round.startMs + 700 ? round.startMs : null;
+}
+
+// ── firing (first-person view model) ────────────────────────────────────────────────────────
+
+/** A duel resolves in one engine tick; a short burst is shown leading up to each kill a player is part of. Presentation only. */
+export const BURST = { shots: 5, everyMs: 120, kickMs: 100, flashMs: 45 } as const;
+
+/** Recoil (0..1) and muzzle flash for a player at tMs, from the kill events they took part in. */
+export function firingAt(kills: ReadonlyArray<{ tMs: number; killerId: string | null; victimId: string }>, playerId: string, tMs: number): { kick: number; flash: boolean } {
+  let last = -Infinity;
+  for (const k of kills) {
+    if (k.killerId !== playerId && k.victimId !== playerId) continue;
+    for (let n = 0; n < BURST.shots; n++) {
+      const shot = k.tMs - n * BURST.everyMs;
+      if (shot <= tMs && shot > last) last = shot;
+    }
+  }
+  const dt = tMs - last;
+  return { kick: Number.isFinite(dt) ? Math.exp(-dt / BURST.kickMs) : 0, flash: dt >= 0 && dt < BURST.flashMs };
+}

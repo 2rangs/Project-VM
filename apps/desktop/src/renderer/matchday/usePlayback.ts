@@ -3,7 +3,6 @@
 // React only re-renders the HUD ~10×/s through the throttled `tMs` state. Playback always stops
 // at the end of the round under the playhead — the caller decides what happens next.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { autoTempoAt } from './frame.ts';
 import { roundIndexAt, type MatchTimeline, type RoundTimeline } from './timeline.ts';
 import type { Tempo } from './prefs.ts';
 
@@ -39,8 +38,7 @@ export function usePlayback(tl: MatchTimeline, tempo: Tempo, onRoundEnd?: (round
       const { tl: cur, tempo: tp, onRoundEnd: done } = live.current;
       if (playingRef.current && cur.rounds.length > 0) {
         const round = cur.rounds[roundIndexAt(cur, tRef.current)];
-        const speed = tp === 'auto' ? autoTempoAt(round, tRef.current) : tp;
-        const next = Math.max(round.startMs, tRef.current) + dt * speed;
+        const next = Math.max(round.startMs, tRef.current) + dt * tp;
         if (next >= round.endMs) {
           tRef.current = round.endMs;
           setPlay(false);

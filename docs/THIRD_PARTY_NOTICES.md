@@ -31,6 +31,7 @@ PROJECT V(루트 LICENSE: MIT, © 2026 Kim Yi Rang)가 포함·파생·의존하
 
 ### 기타 npm 런타임 (각자 라이선스)
 - `pv-replay` 뷰어: pixi.js, react, react-dom, vite, @vitejs/plugin-react (전부 MIT).
+- `apps/desktop` 경기 화면 팀 캠(3D): three, three-mesh-bvh (둘 다 MIT). 선수 모델·1인칭 뷰모델은 three.js로 직접 만든 오리지널 도형이며, 게임 캐릭터·무기·스킨 에셋이나 외부 3D 에셋은 쓰지 않는다. 맵 메시는 사용자가 제공한 `.blend`의 파생물로 git에 넣지 않는다(`apps/desktop/assets/maps/` gitignore).
 - 공통 개발: typescript, vitest, tsx, @types/* (Apache-2.0/MIT).
 - → `package-lock.json`의 의존성 트리가 정본. 배포 번들 시 각 라이선스 고지 포함.
 

@@ -36,8 +36,13 @@ export interface Hop {
   readonly toZone: string;
   readonly from: Vec3;
   readonly to: Vec3;
-  /** 'walk' when the gap between arrivals matches the edge's walk time, else 'run'. */
+  /** 'walk' when the gap between arrivals matches the edge's walk time (or the sampled speed is walking pace), else 'run'. */
   readonly mode: 'run' | 'walk';
+  /**
+   * True when `from`/`to` are two consecutive engine track samples (≈100 ms apart): the segment
+   * is drawn exactly as recorded, linearly, with no departure-time guess and no easing.
+   */
+  readonly sampled: boolean;
 }
 
 export interface PlayerRound {
@@ -50,6 +55,8 @@ export interface PlayerRound {
   readonly spawn: Vec3;
   readonly spawnZone: string;
   readonly hops: readonly Hop[];
+  /** True when the engine recorded this player's movement continuously (per-tick samples), not as zone hops. */
+  readonly continuous: boolean;
   readonly deathMs: number | null;
   readonly killerId: string | null;
 }
@@ -118,7 +125,18 @@ function defaultAttacker(roundNum: number): TeamSlot {
 
 const sameSpot = (a: Vec3, b: Vec3) => Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1;
 
-/** Turn a player's arrival keyframes inside one round into travel segments. */
+/** Two track keyframes this close in time (ms) or space (uu) are consecutive engine samples. */
+export const SAMPLE_GAP_MS = 300;
+export const SAMPLE_STEP_UU = 120;
+
+/**
+ * Turn a player's track keyframes inside one round into travel segments.
+ *
+ * - Dense tracks (an engine that records every tick): each pair of consecutive samples is one
+ *   `sampled` segment, drawn exactly as recorded. No zone-centre shortcut is ever introduced.
+ * - Sparse tracks (the zone-hop engine: one keyframe per arrival on a zone centre): the departure
+ *   time is reconstructed from the edge's travel time so the hop can be shown as movement.
+ */
 export function buildHops(
   arrivals: ReadonlyArray<{ tMs: number; pos: Vec3 }>, spawn: Vec3, roundStartMs: number, nav: NavModel,
 ): Hop[] {
@@ -128,16 +146,24 @@ export function buildHops(
     if (sameSpot(a.pos, prevPos)) continue;
     const fromZone = nav.nearestZone(prevPos).id;
     const toZone = nav.nearestZone(a.pos).id;
-    const edge = nav.edge(fromZone, toZone);
     const gap = a.tMs - prevArrive;
-    let departMs = prevArrive; let mode: Hop['mode'] = 'run';
-    if (edge) {
-      if (Math.abs(gap - edge.walkTimeMs) <= 200) { mode = 'walk'; departMs = prevArrive; }
-      else if (gap >= edge.runTimeMs) departMs = a.tMs - edge.runTimeMs;
+    const step = Math.hypot(a.pos.x - prevPos.x, a.pos.y - prevPos.y);
+    let departMs = prevArrive; let mode: Hop['mode'] = 'run'; let sampled = false;
+    if (gap <= SAMPLE_GAP_MS || step <= SAMPLE_STEP_UU) {
+      // consecutive samples; after standing still the engine emits nothing, so the step began one tick ago
+      sampled = true;
+      departMs = gap <= SAMPLE_GAP_MS ? prevArrive : a.tMs - 100;
+      mode = step / Math.max(1, a.tMs - departMs) < 0.45 ? 'walk' : 'run'; // uu per ms: walk 0.34, run 0.675
     } else {
-      departMs = Math.max(prevArrive, a.tMs - 1500); // not adjacent in the graph: short slide
+      const edge = nav.edge(fromZone, toZone);
+      if (edge) {
+        if (Math.abs(gap - edge.walkTimeMs) <= 200) { mode = 'walk'; departMs = prevArrive; }
+        else if (gap >= edge.runTimeMs) departMs = a.tMs - edge.runTimeMs;
+      } else {
+        departMs = Math.max(prevArrive, a.tMs - 1500); // not adjacent in the graph: short slide
+      }
     }
-    hops.push({ departMs, arriveMs: a.tMs, fromZone, toZone, from: prevPos, to: a.pos, mode });
+    hops.push({ departMs, arriveMs: a.tMs, fromZone, toZone, from: prevPos, to: a.pos, mode, sampled });
     prevPos = a.pos; prevArrive = a.tMs;
   }
   return hops;
@@ -182,7 +208,8 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
       players.push({
         id, team: teamOfId(id, attacker), side: sideOfId(id), slot: slotOfId(id),
         spawn, spawnZone: kfs.length > 0 ? nav.nearestZone(spawn).id : '',
-        hops, deathMs: death?.tMs ?? null, killerId: death?.killerId ?? null,
+        hops, continuous: hops.length > 0 && hops.filter((h) => h.sampled).length * 2 > hops.length,
+        deathMs: death?.tMs ?? null, killerId: death?.killerId ?? null,
       });
     }
 
@@ -267,8 +294,12 @@ export function teamPlayers(round: RoundTimeline, team: TeamSlot): PlayerRound[]
   return round.players.filter((p) => p.team === team).sort((a, b) => a.slot - b.slot);
 }
 
-/** Small constant per-player offset (world units) so players sharing a zone centre do not overlap. */
-export function formationOffset(p: Pick<PlayerRound, 'slot' | 'side'>, radius = 150): Vec2 {
+/**
+ * Small constant per-player offset (world units) so players sharing a zone centre do not overlap.
+ * Only for the zone-hop engine: continuously recorded positions are drawn where they were recorded.
+ */
+export function formationOffset(p: Pick<PlayerRound, 'slot' | 'side'> & { continuous?: boolean }, radius = 150): Vec2 {
+  if (p.continuous) return { x: 0, y: 0 };
   const a = ((p.slot - 1) / 5) * Math.PI * 2 + (p.side === 'attack' ? 0 : Math.PI / 5);
   return { x: Math.cos(a) * radius, y: Math.sin(a) * radius };
 }
@@ -334,7 +365,8 @@ export function displayPos(p: PlayerRound, tMs: number): Vec3 {
   let base: Vec3;
   if (hop) {
     const span = hop.arriveMs - hop.departMs;
-    const u = span > 0 ? ease(Math.min(1, Math.max(0, (t - hop.departMs) / span))) : 1;
+    const lin = span > 0 ? Math.min(1, Math.max(0, (t - hop.departMs) / span)) : 1;
+    const u = hop.sampled ? lin : ease(lin); // engine samples are joined linearly, never re-timed
     base = { x: hop.from.x + (hop.to.x - hop.from.x) * u, y: hop.from.y + (hop.to.y - hop.from.y) * u, z: hop.from.z + (hop.to.z - hop.from.z) * u };
   } else base = logicalAt(p, t).pos;
   return { x: base.x + off.x, y: base.y + off.y, z: base.z };

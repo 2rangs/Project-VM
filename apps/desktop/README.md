@@ -49,11 +49,19 @@ the belief overlay persist in `localStorage` (`pv-matchday-view`):
 | ![tactical](docs/screenshots/matchday-tactical-map.png) | The 2D map is the centre and largest element; our roster + team intel left, opponent roster + kill feed right, score/clock top, transport + coach actions bottom. Nothing scrolls at 1280×720 or 1920×1080. | |
 | ![cams](docs/screenshots/matchday-team-cams.png) | | Five **first-person 3D cameras**, one per player of our team, plus the team's shared 2D picture. Camera at the player's position and eye height, looking along their facing; CAM id, name, LIVE/OFFLINE, round time, what they are doing, a radar inset. Death → "신호 없음" (signal lost). Click a monitor to focus it. |
 
-Shared by both modes: a round plays automatically when it arrives (tempo `하이라이트` = real time
-around kills/plant/defuse, 6× through quiet stretches; or 1×/2×/4×/8×), the score only counts a
-round once playback reaches its end, banners appear when they matter (spike planted + countdown,
-1 v N clutch, round result, opponent timeout), and the tactical timeout opens the orders sheet
-over the stage. `Space` play/pause, `←/→` ±5 s.
+Shared by both modes — **a round is watched in full**: it plays from the round start to the round
+end in real time (1× by default; 0.5×/2×/4×/8× on request) and then stops. Nothing advances on its
+own: the next round starts from the round summary (result, reason, kills, credits, buys and — when
+the bridge passes `RoundRecord.decisions` through — our own plan changes) or the `다음 라운드`
+button; `자동 진행` / `연속 재생` is an explicit opt-in. Controls are always on screen: play/pause,
+speed, a scrubber over the round, previous/next event, and skip-to-round-end as a deliberate
+choice. `Space` = play/pause, `←/→` = previous/next event (a jump lands 1.5 s before the event).
+
+Nothing reveals a round before it happens: score, clock, alive pips, rosters, kill feed and the
+round chip all follow the playhead, and the scrubber only marks events (kills, plant, defuse,
+timeouts) up to the furthest point you have watched — a round you have already seen keeps its
+marks. Banners appear when they matter (spike planted + countdown, 1 v N clutch, opponent
+timeout), and the tactical timeout opens the orders sheet over the stage.
 
 ### The coach sees only what the team knows
 The default view is OUR team's fog of war: our players, enemies while one of our players sees
@@ -83,7 +91,7 @@ is a `MatchConfig.recordTracks` option in the engine.
 ### Approximations (derived in the renderer — and the engine field that would make each exact)
 | Shown | How it is derived today | Exact with |
 |---|---|---|
-| Movement between zones | the engine hops zone centre → zone centre; the arrival time minus the edge's run time (walk if the gap equals the walk time) gives a travel segment that is interpolated | per-frame `moveMode` + edge progress, or continuous positions, in `TrackFrame` |
+| Movement | **track samples are drawn exactly as recorded**: consecutive samples (≤ 300 ms or ≤ 120 uu apart) are joined linearly, with no re-timing and no zone-centre shortcut, and players are oriented along their motion. Only when the engine gives one keyframe per zone arrival (the zone-hop engine at 8e165f4) is a travel segment reconstructed: arrival time minus the edge's run time (walk if the gap equals the walk time), plus a small per-player offset so players sharing a zone centre do not overlap | continuous per-tick positions in the replay tracks (then nothing is reconstructed) |
 | Facing | engine rule re-implemented: toward the next zone while travelling, toward the choke on the enemy-spawn → here path when standing; toward the opponent during a duel | `TrackFrame.players[].facing` (a policy `aimZone` overrides the default and is not exported) |
 | Which of OUR players sees an enemy | team snapshot `currentlyVisible` ∩ the engine's `canSee` (alive, ≤ 4500 uu, 110° cone, zone sightline) evaluated per player, ∪ the opponent of a kill event the player is in. The team snapshot is the upper bound | per-player `visibleEnemyIds` in the perception snapshot |
 | Duels | a kill resolves in one engine tick; the two players are shown squaring up 1.2 s before it | `engage` events (dropped by the replay bridge) with real duel timing |
@@ -97,7 +105,14 @@ is a `MatchConfig.recordTracks` option in the engine.
 `CamStage3D` (three.js) renders all monitors with ONE WebGL renderer and scissored viewports,
 capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
 
-- **Blockout (default, always available).** Generated at runtime from the navgraph: a round room
+- **Figures and view model are original.** Players are a procedurally built stylised operator
+  (dark fatigues, team-coloured plates and visor, generic rifle, walk cycle); each monitor also
+  draws a first-person view model (generic gloved hands + rifle or pistol silhouette, bob while
+  moving, recoil and muzzle flash around the kills that player is part of). No character, weapon or
+  skin model from the game or any third party is used; identity comes from team colour and the
+  player's handle. An enemy the engine counts as seen keeps a marker and name tag that are drawn
+  through walls.
+- **Blockout (always available; used when no mesh is installed).** Generated at runtime from the navgraph: a round room
   per zone, a walled corridor per travel edge, zone heights, plant areas, callout labels. No wall
   ever stands in a travel lane or across an authored sightline (unit-tested), so it never
   contradicts the simulation. Everything above works on it.
@@ -118,11 +133,12 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
   flipped (22/22 zone centres over geometry, 17–18/22 on a floor within 0.6 m; the next-best axis
   assignment scores 8).
 - **Known limits on the real mesh.** The engine simulates on the 22-zone graph, not on the mesh:
-  players travel in straight lines between zone centres, so a camera can pass through walls
-  mid-edge, and an enemy the engine counts as seen can be behind real geometry — seen enemies are
-  therefore drawn through walls (spotted-contact highlight) rather than hidden. A nav-mesh path per
-  edge would fix the first; per-player observations the second.
-- **Measured** (this Mac, 1920×1080, five live monitors, 1× playback): wall render 0.8–1.4 ms CPU
+  at 8e165f4 players hop between zone centres, so the reconstructed straight segment between two
+  centres can pass through walls. The view draws whatever the tracks contain, so an engine that
+  records continuous positions along walkable paths removes this without any change here. An enemy
+  the engine counts as seen can still be behind real geometry — its marker is drawn through walls
+  rather than hidden; per-player observations would fix that.
+- **Measured** (this Mac, 1920×1080, 1× playback, before the view model was added): wall render 0.8–1.4 ms CPU
   per 30 fps tick on the blockout (8 k triangles, 72 draw calls) and ≈1.1 ms with the 600 k-triangle
   mesh (2.0 M triangles per wall render; the 380 k export above is lighter still); the page stayed at 16.6 ms/frame (p95 17.4 ms) in both.
   CPU-side timings only — GPU time is not measured. Under software GL (the e2e flags) the tactical
@@ -143,7 +159,7 @@ npm install
 npm run dev                                   # electron-vite dev
 npm run build                                 # → out/{main,preload,renderer}
 npm run test:unit                             # IPC contract + trace parser (6)
-npm run test:matchday                         # live match view logic: graph, timeline, visibility, monitors, blockout (27)
+npm run test:matchday                         # live match view logic: graph, timeline, visibility, monitors, playback, blockout (29)
 npm run build && xvfb-run -a npm run test:e2e # Playwright _electron E2E + screenshots
 ```
 

@@ -1,12 +1,13 @@
 // Persisted viewer preferences for the live match screen (localStorage; safe without storage).
 export type ViewMode = 'tactical' | 'cams';
-export type Tempo = 'auto' | 1 | 2 | 4 | 8;
+/** Playback speed. Real time (1×) is the default: a round is watched from start to end. */
+export type Tempo = 0.5 | 1 | 2 | 4 | 8;
 
 export interface MatchPrefs { mode: ViewMode; tempo: Tempo; belief: boolean }
 
 const KEY = 'pv-matchday-view';
-export const DEFAULT_PREFS: MatchPrefs = { mode: 'tactical', tempo: 'auto', belief: false };
-const TEMPOS: readonly Tempo[] = ['auto', 1, 2, 4, 8];
+export const DEFAULT_PREFS: MatchPrefs = { mode: 'tactical', tempo: 1, belief: false };
+export const TEMPOS: readonly Tempo[] = [0.5, 1, 2, 4, 8];
 
 /** Parse a stored value; anything unexpected falls back to the default for that field. */
 export function parsePrefs(raw: string | null | undefined): MatchPrefs {

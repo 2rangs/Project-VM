@@ -25,7 +25,7 @@ import {
   type MatchTimeline, type RoundTimeline, type TeamSlot,
 } from '../../matchday/timeline.ts';
 import { computeFrame, type Frame } from '../../matchday/frame.ts';
-import { formatClock } from '../../matchday/monitor.ts';
+import { eventJump, formatClock } from '../../matchday/monitor.ts';
 import { loadPrefs, savePrefs, type MatchPrefs } from '../../matchday/prefs.ts';
 import { rosterHandles } from '../../matchday/roster.ts';
 import { usePlayback } from '../../matchday/usePlayback.ts';
@@ -161,6 +161,17 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     return undefined;
   }, [session?.feed, t, teams.B.name]);
 
+  // How far each round has been watched: the timeline only marks events up to there.
+  const watched = useRef(new Map<number, number>());
+  if (round) watched.current.set(round.roundNum, Math.max(watched.current.get(round.roundNum) ?? round.startMs, playback.tMs));
+  const watchedTo = round ? watched.current.get(round.roundNum) ?? round.startMs : 0;
+  const jumpEvent = useCallback((dir: 1 | -1) => {
+    if (!round) return;
+    const to = eventJump(round, playback.now(), dir);
+    if (to != null) seek(to);
+  }, [round, playback, seek]);
+  const skipToEnd = useCallback(() => { if (round) seek(round.endMs, { play: false }); }, [round, seek]);
+
   const togglePlay = useCallback(() => {
     if (!round) return;
     if (!playback.playing && roundOver(round, playback.now())) {
@@ -176,16 +187,19 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
-      if (el && /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(el.tagName)) return;
+      if (el && /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) return;
+      const ours = e.code === 'Space' || e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'KeyM';
+      // A HUD button keeps focus after a click; playback keys must not re-activate it.
+      if (ours && el?.tagName === 'BUTTON') { e.preventDefault(); el.blur(); }
       if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-      else if (e.code === 'ArrowLeft') seek(playback.now() - 5000);
-      else if (e.code === 'ArrowRight' && round) seek(Math.min(round.endMs, playback.now() + 5000));
+      else if (e.code === 'ArrowLeft') jumpEvent(-1);
+      else if (e.code === 'ArrowRight') jumpEvent(1);
       else if (e.code === 'KeyM') update({ mode: mode === 'tactical' ? 'cams' : 'tactical' });
       else if (e.code === 'Escape' && focus) setFocus(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay, seek, playback, round, update, mode, focus]);
+  }, [togglePlay, jumpEvent, update, mode, focus]);
 
   // ── stage ────────────────────────────────────────────────────────────────────────────────
   const hostRef = useRef<HTMLDivElement>(null);
@@ -293,6 +307,12 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     : st ? (st.finished ? t('mdx.hint.finished') : atLiveEdge ? t('mdx.hint.between') : null)
     : idx < tl.rounds.length - 1 ? t('mdx.hint.watchNext') : t('mdx.hint.finished');
   const enemyTeam: TeamSlot = viewTeam === 'A' ? 'B' : 'A';
+  // Continue from the round summary: the next recorded round, or the next round of the session.
+  const upcoming = idx >= 0 ? tl.rounds[idx + 1] ?? null : null;
+  const nextLabel = upcoming ? t('mdx.watchNext', { n: upcoming.roundNum })
+    : st && !st.finished && atLiveEdge ? t('mdx.next', { n: st.roundNumber }) : null;
+  const continueNext = () => { if (upcoming) seek(upcoming.startMs, { play: true }); else session?.onNext(); };
+  const roundTimeouts = round ? [...new Set((session?.timeoutLog ?? []).filter((e) => e.round === round.roundNum).map((e) => e.team))] : [];
   // The order our coach set for the round on screen (orders are logged against the round they precede).
   const orderRound = nextRound?.roundNumber ?? round?.roundNum ?? 0;
   const activeOrder = viewTeam === OUR_TEAM
@@ -302,7 +322,10 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const overlays = (
     <>
       <Banners t={t} frame={frame} nameOf={nameOf} viewTeam={viewTeam} />
-      {round && over && !session?.ordersOpen && <RoundResult t={t} round={round} viewTeam={viewTeam} score={score} teams={teams} hint={resultHint} />}
+      {round && over && !session?.ordersOpen && (
+        <RoundResult t={t} round={round} viewTeam={viewTeam} score={score} teams={teams} hint={resultHint}
+          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} />
+      )}
       {preRound && !session!.ordersOpen && (
         <div className="mdx-result neutral" data-testid="pre-match">
           <span className="mdx-result-kicker">{teams.A.name} vs {teams.B.name}</span>
@@ -414,6 +437,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         onRound={(r) => seek(r.startMs, { play: true })} viewTeam={viewTeam}
         session={session ? { state: session.state, busy: session.busy, ordersOpen: session.ordersOpen } : null}
         autoPlay={autoPlay} onAutoPlay={onAutoPlay} onNext={() => session?.onNext()} onTimeout={callTimeout} canAdvance={atLiveEdge || preRound}
+        watchedTo={watchedTo} timeouts={roundTimeouts} onPrevEvent={() => jumpEvent(-1)} onNextEvent={() => jumpEvent(1)} onSkipEnd={skipToEnd}
       />
     </div>
   );

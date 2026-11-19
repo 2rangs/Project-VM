@@ -292,7 +292,9 @@ test('monitor: kill tally and clock formatting', () => {
 
 // ── 3D world (team cams) ─────────────────────────────────────────────────────────────────
 import { BLOCKOUT, EYE_HEIGHT_M, buildBlockout, firstPersonPose, segDist2d, toScene } from '../../src/renderer/matchday/world3d.ts';
-import { autoTempoAt, computeFrame } from '../../src/renderer/matchday/frame.ts';
+import { computeFrame } from '../../src/renderer/matchday/frame.ts';
+import { eventJump, firingAt, roundMarks, BURST, JUMP_LEAD_MS } from '../../src/renderer/matchday/monitor.ts';
+import { formationOffset } from '../../src/renderer/matchday/timeline.ts';
 import { DEFAULT_PREFS, parsePrefs } from '../../src/renderer/matchday/prefs.ts';
 
 test('world3d: game → scene swaps y/z (handedness) and converts to metres', () => {
@@ -352,10 +354,44 @@ test('frame: one team\'s picture — own units, gated enemies, public kills', ()
   assert.deepEqual(b.seen, []);
 });
 
-test('frame: highlights tempo is real time around events and fast in between', () => {
-  assert.equal(autoTempoAt(r3, at(r3, 10000)), 1); // 0.7 s before the first kills
-  assert.equal(autoTempoAt(r3, at(r3, 25000)), 6); // quiet post-plant stretch
-  assert.equal(autoTempoAt(r3, r3.endMs - 500), 1);
+test('playback: round marks and previous/next event jumps', () => {
+  const marks = roundMarks(r3);
+  assert.deepEqual(marks.map((m) => m.kind), ['kill', 'kill', 'kill', 'kill', 'plant', 'kill', 'kill', 'defuse', 'end']);
+  assert.equal(marks[marks.length - 1].tMs, r3.endMs);
+  assert.equal(marks[4].team, 'A', 'our plant');
+  // from the round start, "next" lands a lead before the first kill; the 0.2 s burst of kills is one stop
+  const first = eventJump(r3, r3.startMs, 1)!;
+  assert.equal(first, at(r3, 10700) - JUMP_LEAD_MS);
+  const second = eventJump(r3, first, 1)!;
+  assert.equal(second, at(r3, 17900) - JUMP_LEAD_MS, 'next stop is the plant, not another kill of the same burst');
+  assert.equal(eventJump(r3, second + 5000, -1), second);
+  assert.equal(eventJump(r3, r3.endMs, 1), null);
+  assert.equal(eventJump(r3, r3.startMs, -1), null);
+  assert.equal(eventJump(r3, r3.startMs + 3000, -1), r3.startMs);
+});
+
+test('timeline: dense engine samples are drawn exactly as recorded — no zone-centre shortcut', () => {
+  // an engine that records every tick: 100 ms samples along a curved path through a-main
+  const start = { x: 5000, y: -4000, z: 400 };
+  const samples = Array.from({ length: 20 }, (_, i) => ({ tMs: 1000 + (i + 1) * 100, pos: { x: 5000 + (i + 1) * 60, y: -4000 - Math.sin((i + 1) / 4) * 200, z: 400 } }));
+  const hops = buildHops(samples, start, 1000, nav);
+  assert.equal(hops.length, 20);
+  assert.ok(hops.every((h) => h.sampled && h.arriveMs - h.departMs === 100));
+  assert.deepEqual(hops[7].from, samples[6].pos);
+  assert.deepEqual(hops[7].to, samples[7].pos);
+  const p = { id: 'atk1', team: 'A' as const, side: 'attack' as const, slot: 1, spawn: start, spawnZone: 'a-main', hops, continuous: true, deathMs: null, killerId: null };
+  // halfway between samples 7 and 8: the linear midpoint of those two samples, with no formation offset
+  const mid = displayPos(p, 1000 + 850);
+  assert.ok(Math.abs(mid.x - (samples[7].pos.x + samples[8].pos.x) / 2) < 1e-6);
+  assert.ok(Math.abs(mid.y - (samples[7].pos.y + samples[8].pos.y) / 2) < 1e-6);
+  assert.deepEqual(formationOffset(p), { x: 0, y: 0 });
+  // after standing still the engine emits nothing: the next sample is one tick of movement, not a slow slide
+  const resumed = buildHops([{ tMs: 40000, pos: { x: 5060, y: -4000, z: 400 } }], start, 1000, nav);
+  assert.equal(resumed[0].sampled, true);
+  assert.equal(resumed[0].departMs, 39900);
+  // the zone-hop engine's sparse arrivals are still reconstructed as before
+  assert.equal(findPlayer(r3, 'atk4')!.continuous, false);
+  assert.ok(findPlayer(r3, 'atk4')!.hops.every((h) => !h.sampled));
 });
 
 test('prefs: stored view preferences are validated field by field', () => {
@@ -363,4 +399,18 @@ test('prefs: stored view preferences are validated field by field', () => {
   assert.deepEqual(parsePrefs('not json'), DEFAULT_PREFS);
   assert.deepEqual(parsePrefs('{"mode":"cams","tempo":4,"belief":true}'), { mode: 'cams', tempo: 4, belief: true });
   assert.deepEqual(parsePrefs('{"mode":"3d","tempo":3,"belief":"yes"}'), DEFAULT_PREFS);
+  assert.equal(DEFAULT_PREFS.tempo, 1, 'real time is the default');
+  assert.equal(parsePrefs('{"mode":"cams","tempo":"auto"}').tempo, 1, 'a stored highlights tempo falls back to real time');
+  assert.equal(parsePrefs('{"tempo":0.5}').tempo, 0.5);
+});
+
+test('view model: a player fires only around the kills they are part of', () => {
+  const kill = at(r3, 10900); // atk4 kills def2
+  assert.deepEqual(firingAt(r3.kills, 'atk4', at(r3, 5000)), { kick: 0, flash: false });
+  const shot = firingAt(r3.kills, 'atk4', kill);
+  assert.equal(shot.kick, 1); assert.equal(shot.flash, true);
+  assert.equal(firingAt(r3.kills, 'atk4', kill - BURST.everyMs * 2).flash, true, 'burst before the kill');
+  assert.ok(firingAt(r3.kills, 'atk4', kill + 600).kick < 0.01, 'recoil settles');
+  assert.equal(firingAt(r3.kills, 'atk3', kill).kick, 0, 'a teammate who is not in the duel does not fire');
+  assert.equal(firingAt(r3.kills, 'def2', kill).flash, true, 'the victim was shooting back');
 });
