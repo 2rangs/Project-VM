@@ -20,7 +20,21 @@ import { OrdersPanel } from './OrdersPanel.tsx';
 import { useMatchSession } from '../useMatchSession.ts';
 import { useT, strategyLabel } from '../i18n/index.tsx';
 
-export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
+/**
+ * [series] Optional: this Match Day plays the NEXT MAP of a live series (teams, map and seed come
+ * from the series; our team is always shown as team A). Nothing else about the screen changes.
+ */
+export interface MatchDaySeriesGame {
+  teamA: string; teamB: string;
+  /** Banner text: which map of the series this is. */
+  label: string;
+  /** Extra line under the banner (e.g. the geometry note). */
+  note?: string;
+  returnLabel: string;
+  onReturn: () => void;
+}
+
+export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: MatchDaySeriesGame }) {
   const t = useT();
   const [mode, setMode] = useState<'oneshot' | 'interactive'>('oneshot');
   const [running, setRunning] = useState(false);
@@ -30,8 +44,8 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [match, setMatch] = useState<MatchSummary | null>(null);
   const [source, setSource] = useState<string>('');
   const allTeams = useMemo(() => teams().sort((a, b) => a.name.localeCompare(b.name)), []);
-  const [teamA, setTeamA] = useState('NRG');
-  const [teamB, setTeamB] = useState('Team Heretics');
+  const [teamA, setTeamA] = useState(series?.teamA ?? 'NRG');
+  const [teamB, setTeamB] = useState(series?.teamB ?? 'Team Heretics');
   const [seed, setSeed] = useState(42);
   const [pov, setPov] = useState(0);            // fog point of view: 0 = our team (A), 1 = B
   const [beliefOn, setBeliefOn] = useState(false);
@@ -51,7 +65,9 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const lastRound = matchForView?.rounds[matchForView.rounds.length - 1];
   const hasPerception = !!(replay?.perception && replay.perception.length > 0);
   const povName = (i: number) => matchForView?.teams[i === 0 ? 'A' : 'B']?.name ?? t(i === 0 ? 'md.povName.our' : 'md.povName.opp');
-  const busyControls = running || sess.busy;
+  // [series] teams / seed are fixed by the series, and a map is played once.
+  const busyControls = running || sess.busy || (!!series && (match !== null || (sess.state?.finished ?? false)));
+  const lockSetup = !!series;
   const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0;
   // Only non-default choices are sent, so a default match is the engine's own default config.
   const matchOptions = (): MatchOptions | undefined => {
@@ -83,7 +99,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
     setRunning(true); setPct(0); setLog([]); setMatch(null);
     try {
       const res = await bridge.runSimulation(
-        { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB), options: matchOptions() },
+        { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB), options: matchOptions(), ...(series ? { seriesGame: true } : {}) },
         (p) => { setPct(p.pct); if (p.message) setLog((l) => [...l.slice(-3), p.message!]); },
       );
       ctx.setReplay(res.replay as Replay);
@@ -94,7 +110,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
 
   async function startInteractive() {
     setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner');
-    await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions() });
+    await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions(), ...(series ? { seriesGame: true } : {}) });
   }
   async function callTimeout() { await sess.callTimeout('A'); setOrdersOpen(true); }
   async function confirmOrders(order: TeamOrder) { await sess.setOrders('A', order); setOrdersOpen(false); }
@@ -106,15 +122,22 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   return (
     <div className="matchday">
       <div className="md-main">
+        {series && (
+          <div className="ser-mdbanner" data-testid="series-md-banner">
+            <b>{series.label}</b>
+            {series.note && <span className="muted small">ⓘ {series.note}</span>}
+            <button className="md-run" onClick={series.onReturn} disabled={running || sess.busy} data-testid="series-return">{series.returnLabel}</button>
+          </div>
+        )}
         <div className="md-teamsel">
-          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={busyControls || sess.active} data-testid="team-a">
+          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={busyControls || sess.active || lockSetup} data-testid="team-a">
             {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
           </select>
           <span className="vs">vs</span>
-          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={busyControls || sess.active} data-testid="team-b">
+          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={busyControls || sess.active || lockSetup} data-testid="team-b">
             {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
           </select>
-          <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={busyControls || sess.active} /></label>
+          <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={busyControls || sess.active || lockSetup} /></label>
           <button className={`md-optsbtn ${optsOpen ? 'on' : ''}`} onClick={() => setOptsOpen((v) => !v)} data-testid="match-options-toggle" aria-expanded={optsOpen}>
             ⚙ {t('md.opts.toggle')}{optsChanged && <span className="md-optsdot" data-testid="match-options-changed" title={t('md.opts.changed')}>●</span>}
           </button>

@@ -38,6 +38,10 @@ const browserBridge: PvBridge = {
   async sessionPlayNextRound() { throw new Error('interactive session requires Electron'); },
   async sessionResult() { throw new Error('interactive session requires Electron'); },
   async sessionStop() { /* no-op */ },
+  // [series] needs the match-runner subprocess → Electron only.
+  async seriesStart() { throw new Error('series requires Electron'); },
+  async seriesCmd() { throw new Error('series requires Electron'); },
+  async seriesStop() { /* no-op */ },
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };

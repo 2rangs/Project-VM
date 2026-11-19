@@ -2,6 +2,7 @@
 // names and payload shapes in one typed module is what the "IPC contract" unit
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
+import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
 
 export const IPC = {
   /** renderer → main (invoke): start a simulation, resolves with the result replay. */
@@ -18,6 +19,13 @@ export const IPC = {
   sessionCmd: 'pv:session:cmd',
   /** renderer → main (invoke): stop + dispose the live session. */
   sessionStop: 'pv:session:stop',
+  // [series] best-of-N series + map veto (scripts/series-session.mts; see ./series.ts)
+  /** renderer → main (invoke): start a series (prepares mastery / scouting); resolves with the view. */
+  seriesStart: 'pv:series:start',
+  /** renderer → main (invoke): one veto command (view / chooseVeto / aiStep). */
+  seriesCmd: 'pv:series:cmd',
+  /** renderer → main (invoke): stop + dispose the series. */
+  seriesStop: 'pv:series:stop',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -38,6 +46,8 @@ export interface SessionStartRequest {
   aiTeams?: TeamSlot[];
   /** Pre-match options (opponent memory, minimum throw rates). Omitted = engine defaults. */
   options?: MatchOptions;
+  /** [series] Play the NEXT MAP of the live series round by round (teams / map / seed come from the series). */
+  seriesGame?: boolean;
 }
 
 // ── Pre-match options a team / organiser chooses (match-runner MatchConfig subset).
@@ -110,6 +120,8 @@ export interface SimRunRequest {
   teamB?: { id: string; name: string };
   /** Pre-match options (match-runner only; the stub / round-sim fallback ignore them). */
   options?: MatchOptions;
+  /** [series] Play the NEXT MAP of the live series in one go (teams / map / seed come from the series). */
+  seriesGame?: boolean;
 }
 
 /** Per-round summary from @pv/match-runner (real economy / ultimate / score). */
@@ -170,6 +182,10 @@ export interface PvBridge {
   sessionPlayNextRound(): Promise<{ round: Record<string, unknown>; state: SessionState }>;
   sessionResult(): Promise<SessionResultSummary>;
   sessionStop(): Promise<void>;
+  // [series]
+  seriesStart(req: SeriesStartRequest): Promise<SeriesView>;
+  seriesCmd(cmd: SeriesCommand): Promise<SeriesReply>;
+  seriesStop(): Promise<void>;
   readonly platform: string;
   readonly isElectron: true;
 }
