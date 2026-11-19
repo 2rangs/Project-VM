@@ -193,17 +193,26 @@ export function reconsider(
   return { strategy: prev, changed: false, reason: "committing to plan" };
 }
 
-/** Deterministically assign roles to alive teammates (README §23 role understanding). */
+/**
+ * Deterministically assign roles to alive teammates (README §23 role understanding).
+ *
+ * The lurker is DESIGNATED once: the least aggressive player of the whole roster (alive or not).
+ * It is not "whoever is last among the living" — otherwise each time the lurker died the next
+ * most passive player would peel off the team in turn, and a five-man attack would trickle away
+ * one lurker at a time. A dead lurker is not replaced, and a team that is down to three does not
+ * keep one (the designated player rejoins as support).
+ */
 export function assignRoles(
   view: PolicyView,
   strategy: TeamStrategy,
   profiles: ReadonlyMap<string, PlayerProfile> | undefined,
   _rng: RandomSource,
 ): RoleAssignment[] {
-  const alive = view.teammates
-    .filter((p) => p.alive)
-    .map((p) => ({ id: p.id, profile: profileFor(p.id, profiles) }))
-    .sort((a, b) => b.profile.aggression - a.profile.aggression || (a.id < b.id ? -1 : 1));
+  const byAggression = (a: { id: PlayerId; profile: PlayerProfile }, b: { id: PlayerId; profile: PlayerProfile }) =>
+    b.profile.aggression - a.profile.aggression || (a.id < b.id ? -1 : 1);
+  const roster = view.teammates.map((p) => ({ id: p.id, alive: p.alive, profile: profileFor(p.id, profiles) })).sort(byAggression);
+  const alive = roster.filter((p) => p.alive);
+  const designatedLurker = roster.length > 0 ? roster[roster.length - 1]!.id : null;
 
   const roles: RoleAssignment[] = [];
   const attack = view.side === "attack";
@@ -211,8 +220,8 @@ export function assignRoles(
     let role: RoleAssignment["role"];
     if (attack) {
       if (i === 0) role = "entry";
-      else if (i === alive.length - 1) role = strategy.startsWith("lurk") || alive.length >= 4 ? "lurker" : "support";
-      else if (i === 1) role = "support";
+      else if (id === designatedLurker && (strategy.startsWith("lurk") || alive.length >= 4)) role = "lurker";
+      else if (i === 1 || i === alive.length - 1) role = "support";
       else role = "rotator";
     } else {
       if (i === 0 && strategy === "aggroPush") role = "entry";
