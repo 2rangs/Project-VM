@@ -58,6 +58,23 @@ export function decideBuy(credits: number, isPistol: boolean): BuyDecision {
   return { tier: "eco", weapon: "Classic", weaponKey: "classic", cost: 0 }; // save
 }
 
+export type EconomyCall = "save" | "force" | "full";
+
+/**
+ * Buy honoring a coach economy call (timeout order), overriding economy-engine's own pick.
+ * Pistol rounds ignore the call (fixed pistol economy). An unaffordable call falls back to the
+ * normal `decideBuy`.
+ */
+export function decideBuyForCall(credits: number, isPistol: boolean, call?: EconomyCall): BuyDecision {
+  if (!call || isPistol) return decideBuy(credits, isPistol);
+  if (call === "save") return { tier: "eco", weapon: "Classic", weaponKey: "classic", cost: 0 };
+  const fullCost = priceOf("vandal") + HEAVY_ARMOR;
+  const forceCost = priceOf("spectre") + LIGHT_ARMOR;
+  if (call === "full" && credits >= fullCost) return { tier: "full", weapon: "Vandal", weaponKey: "vandal", cost: fullCost };
+  if (call === "force" && credits >= forceCost) return { tier: "force", weapon: "Spectre", weaponKey: "spectre", cost: forceCost };
+  return decideBuy(credits, isPistol); // cannot honor the call — normal buy
+}
+
 /**
  * Apply a round's outcome to one team economy via @pv/economy-engine's canonical
  * `advanceTeamEconomy` (credits = clamp(leftover + win|lossBonus + plant + kills), loss streak

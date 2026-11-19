@@ -16,6 +16,8 @@ export interface RoundRules {
   readonly roundsPerHalf: RuleValue<number>; // side swap after this many rounds
   readonly overtimeWinMargin: RuleValue<number>; // must win by this many in OT
   readonly overtimeCredits: RuleValue<number>; // credits granted each OT round
+  /** Tactical timeouts a team may call per map (callable only between rounds, pre-buy). */
+  readonly tacticalTimeoutsPerTeam: RuleValue<number>;
 }
 
 export const ROUND_RULES: RoundRules = {
@@ -48,6 +50,11 @@ export const ROUND_RULES: RoundRules = {
     unit: "credits",
     patch: "UNVERIFIED",
     note: "Credits granted per OT round — patch/format dependent.",
+  }),
+  tacticalTimeoutsPerTeam: provisional(2, WIKI + "Rounds", {
+    unit: "timeouts",
+    patch: "UNVERIFIED",
+    note: "VCT: 2 tactical timeouts per team per map (4 total), callable between rounds. Verify vs current ruleset.",
   }),
 };
 
