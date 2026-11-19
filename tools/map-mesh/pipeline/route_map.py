@@ -339,6 +339,13 @@ def main():
                "nx": int(c.vox.nx), "ny": int(c.vox.ny),
                "bitsBase64": base64.b64encode(np.packbits(mask.ravel()).tobytes()).decode()},
               open(os.path.join(a.derived, "walkable.json"), "w"))
+    # silhouette for the schematic PNG (outside the repo): cells reachable on foot or by a drop
+    # from any zone anchor
+    _, owner = MM.G.dijkstra((grid.walk, grid.drop), {n: i for i, n in enumerate(node_of.values())}, grid.n)
+    reach = owner >= 0
+    fmask = np.zeros((c.vox.nx, c.vox.ny), dtype=np.uint8)
+    fmask[grid.ix[reach], grid.iy[reach]] = 1
+    np.savez_compressed(os.path.join(a.derived, "footprint.npz"), mask=fmask, origin=c.lo[:2], cell=MM.P["cell"])
     print(f"[routes] {mp}: {n_route}/{len(out_edges)} edges with a walkable route, {n_flag} flagged straight "
           f"({time.time() - t0:.0f} s)", flush=True)
     for r in out_edges:
