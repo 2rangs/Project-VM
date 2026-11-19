@@ -205,9 +205,60 @@ timings seeds 1 and 99 win the same six duels in that scripted scene).
 longer in simulated time. It passed alone and in the suite, and failed once at 60.5 s while the machine's load
 average was above 45.
 
-## 6. 160-match validation (Ascent)
+## 6. 160-match validation (Ascent) — balance dropped from 7/8 to 3/8
 
-See the table at the end of this file (§7), filled from `reports/` after both runs.
+`npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160` (seeds 1..160, era all), same machine, same
+tool, **before** = the merged base `c05c196`, **after** = this branch. Nothing else was retuned.
+
+| Judged metric | Real (VCT) | Before | After | Tolerance | Verdict |
+|---|---|---|---|---|---|
+| Round ends by elimination | 0.714 | 0.685 | 0.717 | ±0.04 | pass → pass |
+| Round ends by spike detonation | 0.082 | 0.097 | **0.150** | ±0.04 | pass → **FAIL** |
+| Round ends by defuse | 0.160 | 0.173 | **0.083** | ±0.04 | pass → **FAIL** |
+| Round ends by time | 0.043 | 0.045 | 0.049 | ±0.04 | pass → pass |
+| Attack round win rate | 0.509 | 0.521 | **0.635** | ±0.04 | pass → **FAIL** |
+| Opening duel won by attack | 0.437 | 0.461 | **0.503** | ±0.04 | pass → **FAIL** |
+| Pistol vs pistol (attack) | 0.500 | 0.397 | 0.500 | ±0.05 | FAIL → pass |
+| Full buy vs full buy (attack) | 0.500 | 0.518 | **0.612** | ±0.05 | pass → **FAIL** |
+| **Judged metrics passed** | | **7 / 8** | **3 / 8** | | |
+
+Reported-only: mean round 52.6 s → 62.8 s; rounds 3388 → 3403; attack win rate from a 1v1 0.52 → 0.70, 2v2
+0.50 → 0.71; "0v1" (every attacker dead, spike down, one defender left) 0.00 → 0.29.
+
+**Cause.** The simulation was balanced while every player moved at straight-line speed between zone centres —
+on Ascent that is 29 % less distance than the real floor (952 m vs 1345 m over the 32 edges). With real
+distances everyone is slower, but the fixed clocks are not, and the two sides are not hit equally:
+
+| Route (run) | Before (straight) | After (route) |
+|---|---|---|
+| Defender rotation B Site → A Site | 18.2 s | 24.0 s (+32 %) |
+| Defender rotation A Site → B Site | 18.2 s | 22.2 s (+22 %) |
+| Mid Courtyard → A Site | 10.7 s | 14.0 s (+31 %) |
+| Defender Spawn → A Site | 8.9 s | 10.4 s (+17 %) |
+| Attacker Spawn → A Site | 13.9 s | 16.2 s (+17 %) |
+| Attacker Spawn → B Site | 12.4 s | 14.6 s (+18 %) |
+
+- Attackers lose 2–2.5 s out of a 100 s round — it costs them nothing.
+- Defenders lose 4–6 s on a rotation that has to beat a 45 s spike timer and a 7 s defuse. Retakes arrive
+  late: detonations rise 9.7 % → 15.0 %, defuses halve 17.3 % → 8.3 %, and a lone defender left after wiping
+  the attackers now fails to reach and defuse the spike in 29 % of those rounds (never before).
+- The policy's own estimate did not move with reality: it already planned with the edges' measured times
+  (1310 m in total, close to the new 1345 m) while movement used 952 m. So defenders commit to about the same
+  retakes as before, and now arrive ~4–6 s later than the model they were tuned on.
+
+Part of the defenders' extra distance is **Ascent's hand-authored graph, not the map**. The geometry shows 15
+real adjacencies the graph does not have (control run, `MAPS_DATA.md` §3.3) — among them A Tree↔Mid Cubby
+(12 m), Mid Bottom↔Mid Courtyard (14 m), Mid Courtyard↔Mid Link (20 m), B Main↔Mid Link (36 m) — and it forbids
+routing through Defender Spawn (`transit: false`), which is how defenders really rotate. With straight-line
+movement these gaps were hidden; with real distances they cost the defence seconds.
+
+**Open experiment (result not in this document).** A scratch copy of Ascent with those 15 geometry-derived
+adjacencies added (47 edges, all routed) was built and its 160-match run started, to see whether correcting
+the graph — rather than retuning the engine — restores balance. The run had not finished when this was
+written, so no number is claimed; the committed Ascent data does **not** include those edges.
+
+**What was not done.** No other system was retuned (spike timer, defuse time, retake/save thresholds, duel
+calibration). Those were calibrated against straight-line movement and are the owners' call.
 
 ## 7. Reproduce
 

@@ -3,6 +3,10 @@
 **Date:** 2026-11-19 · **Branch:** `claude/maps-data-df31bb` · **Scope:** data + loading only.
 The engine still *plays* only Ascent; §6 lists what must be generalised before any of these maps can be played.
 
+> **Update (same day):** every edge now also carries a measured **walkable route** and the simulator moves
+> players along it — see `docs/research/MAP_ROUTES.md`. Edge lengths/times in §1 are the route's since then;
+> two Lotus approx-links became measured edges.
+
 Ten new folders — `datasets/spatial/{abyss,bind,breeze,fracture,haven,icebox,lotus,pearl,split,sunset}/` —
 follow Ascent's schema and load through one registry call:
 
@@ -21,7 +25,7 @@ MAPS.haven.sites;                     // ["A", "B", "C"]
 
 | Map | Sites | Zones | Edges (walk / drop / special / approx) | Sightlines | Sound links | Callouts over walkable floor | Callout z − floor (median / MAD, m) | Zones on main walk component | Main walkable area (m²) |
 |---|---|---|---|---|---|---|---|---|---|
-| *Ascent (hand-authored, for comparison)* | A/B | 22 | 32 (30 measured, 2 manual) | 11 | 6 | — | — | — | — |
+| *Ascent (hand-authored graph; edges now route-timed)* | A/B | 22 | 32 (all with a measured route) | 11 | 6 | — | — | — | — |
 | *Ascent re-measured with this pipeline (control, not shipped)* | A/B | 22 | 27 walk-adjacent pairs, 8 drop pairs | ≈38 at the same rule | — | 22/22 | 0.00 / 0.00 | 22/22 | 6198 |
 | Abyss | A/B | 23 | 33 (26 / 5 / 0 / 2) | 31 | 32 | 23/23 | −1.23 / 0.27 | 21/23 | 5582 |
 | Bind | A/B | 24 | 34 (31 / 1 / 2 / 0) | 28 | 31 | 24/24 | 0.00 / 0.00 | 24/24 | 6277 |
@@ -29,7 +33,7 @@ MAPS.haven.sites;                     // ["A", "B", "C"]
 | Fracture | A/B | 22 | 31 (28 / 2 / 1 / 0) | 33 | 31 | 22/22 | 0.00 / 0.00 | 22/22 | 5306 |
 | Haven | **A/B/C** | 21 | 30 (27 / 2 / 0 / 1) | 28 | 29 | 21/21 | 0.00 / 0.00 | 20/21 | 5131 |
 | Icebox | A/B | 25 | 41 (32 / 8 / 0 / 1) | 48 | 38 | 25/25 | 0.00 / 0.00 | 24/25 | 7829 |
-| Lotus | **A/B/C** | 28 | 40 (36 / 2 / 0 / 2) | 49 | 39 | 28/28 | +0.67 / 0.42 | 28/28 | 7930 |
+| Lotus | **A/B/C** | 28 | 40 (38 / 2 / 0 / 0) | 49 | 39 | 28/28 | +0.67 / 0.42 | 28/28 | 7930 |
 | Pearl | A/B | 26 | 36 (29 / 2 / 0 / 5) | 34 | 36 | 26/26 | +0.68 / 1.08 | 22/26 | 5783 |
 | Split | A/B | 24 | 28 (25 / 2 / 0 / 1) | 36 | 28 | 24/24 | 0.00 / 0.00 | 23/24 | 5461 |
 | Sunset | A/B | 17 | 25 (24 / 1 / 0 / 0) | 13 | 24 | 17/17 | +4.00 / 1.00 | 17/17 | 5613 |
@@ -38,7 +42,8 @@ MAPS.haven.sites;                     // ["A", "B", "C"]
 connected walkable surface the pipeline found. (Ascent's first NavMesh attempt reached ~27 % of the map and 3/22
 zones; the 2.5D grid here reaches 22/22 on Ascent and 224/233 across the ten new maps.) Zones the measured
 graph could not reach from both spawns — the nine off the main component and three reachable only one-way —
-get **flagged straight-line links** (`kind: "approx-link"`, `manual-approx`; 12 in total), listed in §4.
+get **flagged straight-line links** (`kind: "approx-link"`, `manual-approx`), listed in §4: 12 at first, 10 after
+the route stage found a real route for two of them on Lotus.
 
 Schematic of every graph over the walkable footprint: `docs/research/maps/<map>.png` (graph only — no game art).
 
@@ -46,19 +51,21 @@ Schematic of every graph over the walkable footprint: `docs/research/maps/<map>.
 
 | Map | Site | Attackers | Defenders | | Map | Site | Attackers | Defenders |
 |---|---|---|---|---|---|---|---|---|
-| **Ascent** | A | 17.4 s | 12.7 s | | Icebox | A | 17.0 s | 9.0 s |
-| **Ascent** | B | 17.3 s | 8.2 s | | Icebox | B | 16.6 s | 16.4 s |
-| Abyss | A | 11.1 s | 11.3 s | | Lotus | A | 14.5 s | 8.3 s |
-| Abyss | B | 18.0 s | 12.8 s | | Lotus | B | 8.8 s | 5.6 s |
-| Bind | A | 28.2 s | 11.0 s | | Lotus | C | 15.4 s | 12.1 s |
-| Bind | B | 33.4 s | 11.8 s | | Pearl | A | 22.1 s | 12.2 s |
-| Breeze | A | 17.0 s | 10.6 s | | Pearl | B | 16.8 s | 12.3 s |
-| Breeze | B | 17.5 s | 19.6 s | | Split | A | 16.0 s | 9.8 s |
-| Fracture | A | 11.9 s | 6.8 s | | Split | B | 14.2 s | 12.2 s |
-| Fracture | B | 11.2 s | 8.7 s | | Sunset | A | 17.7 s | 14.9 s |
-| Haven | A | 14.7 s | 8.6 s | | Sunset | B | 17.3 s | 14.2 s |
-| Haven | B | 18.8 s | 12.0 s | | | | | |
-| Haven | C | 14.3 s | 12.5 s | | | | | |
+| **Ascent** | A | 16.2 s | 10.4 s | | Icebox | A | 16.8 s | 8.9 s |
+| **Ascent** | B | 14.6 s | 7.6 s | | Icebox | B | 16.2 s | 16.6 s |
+| Abyss | A | 10.9 s | 11.7 s | | Lotus | A | 14.5 s | 8.4 s |
+| Abyss | B | 18.3 s | 12.8 s | | Lotus | B | 9.1 s | 6.4 s |
+| Bind | A | 27.6 s | 11.3 s | | Lotus | C | 15.9 s | 12.3 s |
+| Bind | B | 33.3 s | 12.0 s | | Pearl | A | 22.0 s | 11.9 s |
+| Breeze | A | 17.3 s | 11.2 s | | Pearl | B | 17.1 s | 12.7 s |
+| Breeze | B | 17.3 s | 17.4 s | | Split | A | 15.7 s | 10.2 s |
+| Fracture | A | 11.9 s | 6.7 s | | Split | B | 14.4 s | 12.3 s |
+| Fracture | B | 10.9 s | 8.7 s | | Sunset | A | 17.6 s | 15.1 s |
+| Haven | A | 14.3 s | 8.7 s | | Sunset | B | 17.6 s | 14.6 s |
+| Haven | B | 18.3 s | 12.1 s | | | | | |
+| Haven | C | 13.7 s | 12.7 s | | | | | |
+
+(Route-timed. Before the routes Ascent read 17.4 / 12.7 s and 17.3 / 8.2 s on its older measured edges.)
 
 Test bounds: attackers 6–40 s, defenders 1.5–30 s. A zone-graph route runs callout-to-callout, so it is longer
 than the tightest real path; Bind's attacker times (28–33 s) are the visible case and should be eyeballed.
@@ -179,7 +186,7 @@ travel connection (teleporters excluded), so no zone is isolated. Consequence: A
 | Fracture | — | Attacker zipline edge authored (straight line at run speed) |
 | Haven | **`b-back↔b-site`** | **B Site itself** is not on the main walk component — its only walk access is this approx-link (plus measured drops *out* of it) |
 | Icebox | `a-pipes↔a-nest` | A Nest is rope-only in game; 8 drop edges found |
-| Lotus | `a-drop↔a-top`, `b-site↔b-upper` | Callout z is a label height |
+| Lotus | — (`a-drop↔a-top`, `b-site↔b-upper` now have a measured route) | Callout z is a label height |
 | Pearl | `mid-shops↔b-club`, `a-main↔a-link`, `mid-doors↔b-link`, `mid-top↔mid-plaza`, `a-flowers↔defender-water` | **Weakest map**: 4/26 zones off the main component; callout z unusable; B Club / Mid Shops share one x,y on different floors |
 | Split | `a-ramps↔mid-vent` | Ropes not modelled |
 | Sunset | — | Callout z unusable (all −200); fewest callouts (17) |
