@@ -1,0 +1,40 @@
+{
+  "mapId": "bind",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "specialEdges": [
+    {
+      "from": "a-teleporter",
+      "to": "b-exit",
+      "bidirectional": false,
+      "kind": "teleporter",
+      "travelTimeMs": 1500,
+      "basis": "authored one-way teleporter; 1.5 s travel is an estimate",
+      "note": "A Short teleporter exits at B Short (B Exit room)"
+    },
+    {
+      "from": "b-teleporter",
+      "to": "a-exit",
+      "bidirectional": false,
+      "kind": "teleporter",
+      "travelTimeMs": 1500,
+      "basis": "authored one-way teleporter; 1.5 s travel is an estimate",
+      "note": "B Long teleporter exits at A Lobby side (A Exit room)"
+    }
+  ],
+  "mechanics": [
+    {
+      "kind": "teleporter",
+      "name": "Two one-way teleporters (A Short -> B Short, B Long -> A Lobby)",
+      "represented": true,
+      "how": "one-way edges kind=teleporter with their own travel time; no sound link (the map-wide teleporter audio cue and the exit door are NOT modelled)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "layout",
+      "name": "No mid: the map has no 'Mid' super-region",
+      "represented": false,
+      "engineNeeds": "zonesByType('mid') is empty; mid-control strategies must be optional",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

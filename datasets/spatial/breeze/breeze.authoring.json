@@ -1,0 +1,20 @@
+{
+  "mapId": "breeze",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "door",
+      "name": "Mid Wood Doors / A Hall mechanical door",
+      "represented": false,
+      "engineNeeds": "DoorInfo on the edge that crosses the door, once a human confirms which zone pair it separates and its default state",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "one-way-chute",
+      "name": "One-way drop chute between upper halls and mid",
+      "represented": false,
+      "engineNeeds": "one-way edge; only drops the walk grid could see are encoded (check the 'drop' edges)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Abyss.blend",
+  "blendBytes": 311849652,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Infinity_Art_ASite": 616,
+    "Infinity_Art_ASiteVista": 304,
+    "Infinity_Art_AtkPathA": 310,
+    "Infinity_Art_AtkPathB": 1018,
+    "Infinity_Art_AtkSpawn": 534,
+    "Infinity_Art_AtkSpawnVista": 537,
+    "Infinity_Art_Blockout": 0,
+    "Infinity_Art_BSite": 839,
+    "Infinity_Art_BSiteVista": 320,
+    "Infinity_Art_DefPathA": 542,
+    "Infinity_Art_DefPathB": 602,
+    "Infinity_Art_DefSpawn": 532,
+    "Infinity_Art_DefSpawnVista": 152,
+    "Infinity_Art_Mid": 511,
+    "Infinity_Art_MidAtk": 231,
+    "Infinity_Art_MidDef": 85,
+    "Infinity_Art_Signs": 52,
+    "Infinity_Audio": 0
+  },
+  "keptCollections": {
+    "Infinity_Art_AtkPathA": {
+      "objects": 275,
+      "tris": 91908,
+      "min": [
+        25.75,
+        -33.7,
+        -28.71
+      ],
+      "max": [
+        60.84,
+        26.01,
+        24.59
+      ]
+    },
+    "Infinity_Art_DefPathA": {
+      "objects": 493,
+      "tris": 156438,
+      "min": [
+        6.74,
+        -32.71,
+        -218.98
+      ],
+      "max": [
+        60.0,
+        64.01,
+        27.92
+      ]
+    },
+    "Infinity_Art_MidDef": {
+      "objects": 78,
+      "tris": 55320,
+      "min": [
+        -14.02,
+        10.7,
+        -70.66
+      ],
+      "max": [
+        12.73,
+        30.77,
+        19.97
+      ]
+    },
+    "Infinity_Art_DefSpawn": {
+      "objects": 456,
+      "tris": 195602,
+      "min": [
+        -64.82,
+        21.47,
+        -8.12
+      ],
+      "max": [
+        46.13,
+        74.0,
+        47.21
+      ]
+    },
+    "Infinity_Art_DefPathB": {
+      "objects": 520,
+      "tris": 342523,
+      "min": [
+        -59.58,
+        -1.0,
+        5.98
+      ],
+      "max": [
+        -7.56,
+        31.98,
+        24.26
+      ]
+    },
+    "Infinity_Art_AtkPathB": {
+      "objects": 885,
+      "tris": 496739,
+      "min": [
+        -94.75,
+        -46.36,
+        -21.13
+      ],
+      "max": [
+        0.0,
+        25.67,
+        33.97
+      ]
+    },
+    "Infinity_Art_MidAtk": {
+      "objects": 206,
+      "tris": 42237,
+      "min": [
+        -55.57,
+        -40.58,
+        -71.7
+      ],
+      "max": [
+        62.5,
+        50.15,
+        19.97
+      ]
+    },
+    "Infinity_Art_AtkSpawn": {
+      "objects": 471,
+      "tris": 352144,
+      "min": [
+        -83.75,
+        -81.03,
+        -479.68
+      ],
+      "max": [
+        42.77,
+        -0.01,
+        44.66
+      ]
+    },
+    "Infinity_Art_Mid": {
+      "objects": 457,
+      "tris": 190367,
+      "min": [
+        -23.78,
+        -29.0,
+        -83.91
+      ],
+      "max": [
+        29.46,
+        34.66,
+        36.87
+      ]
+    },
+    "Infinity_Art_BSite": {
+      "objects": 700,
+      "tris": 319501,
+      "min": [
+        -75.24,
+        -14.07,
+        -64.42
+      ],
+      "max": [
+        -20.06,
+        43.47,
+        37.01
+      ]
+    },
+    "Infinity_Art_ASite": {
+      "objects": 540,
+      "tris": 110717,
+      "min": [
+        -19.96,
+        -29.99,
+        -218.98
+      ],
+      "max": [
+        64.08,
+        62.45,
+        27.66
+      ]
+    },
+    "Infinity_Art_Signs": {
+      "objects": 51,
+      "tris": 4252,
+      "min": [
+        -57.94,
+        -47.1,
+        4.28
+      ],
+      "max": [
+        59.7,
+        59.91,
+        26.5
+      ]
+    },
+    "Scene Collection": {
+      "objects": 248,
+      "tris": 63846,
+      "min": [
+        -8192.0,
+        -8172.0,
+        -3624.6
+      ],
+      "max": [
+        8192.0,
+        8212.0,
+        7192.0
+      ]
+    }
+  },
+  "objectsKept": 5380,
+  "objectsSkippedExcludedCollection": 1168,
+  "objectsSkippedHidden": 0,
+  "verts": 2831241,
+  "tris": 2421594,
+  "triangleClass": {
+    "floor(nz>=cos45)": 536569,
+    "wall(|nz|<=cos70)": 1098763,
+    "other": 786262
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -8192.0,
+      -8172.0,
+      -3624.6
+    ],
+    "max": [
+      8192.0,
+      8212.0,
+      7192.0
+    ]
+  },
+  "materials": 314,
+  "seconds": 3.5
+}

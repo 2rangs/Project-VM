@@ -1,0 +1,13 @@
+{
+  "mapId": "sunset",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "door",
+      "name": "Mechanical door at B Market / Mid (switch-operated, breakable)",
+      "represented": false,
+      "engineNeeds": "DoorInfo on the edge that crosses the door, once a human confirms which zone pair it separates (likely mid-courtyard <-> b-market)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

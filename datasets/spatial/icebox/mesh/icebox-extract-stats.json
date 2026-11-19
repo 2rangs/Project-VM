@@ -1,0 +1,165 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Icebox.blend",
+  "blendBytes": 268893043,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Port_Art_A": 767,
+    "Port_Art_AtkPathB": 518,
+    "Port_Art_AtkSpawn": 583,
+    "Port_Art_B": 435,
+    "Port_Art_DefPathB": 682,
+    "Port_Art_DefSpawn": 615,
+    "Port_Art_Mid": 807,
+    "Port_Art_SnowAll": 669,
+    "Port_Art_Snowball": 2012,
+    "Port_Art_Vista": 110,
+    "Port_Art_VistaA": 277,
+    "Port_Art_VistaB": 107,
+    "Port_LightingSnowball": 281
+  },
+  "keptCollections": {
+    "Port_Art_AtkPathB": {
+      "objects": 432,
+      "tris": 181241,
+      "min": [
+        -22.08,
+        -6.12,
+        -4.23
+      ],
+      "max": [
+        36.19,
+        52.03,
+        24.36
+      ]
+    },
+    "Port_Art_DefSpawn": {
+      "objects": 536,
+      "tris": 138787,
+      "min": [
+        -119.4,
+        -130.68,
+        -13.72
+      ],
+      "max": [
+        2.51,
+        -17.2,
+        33.87
+      ]
+    },
+    "Port_Art_SnowAll": {
+      "objects": 583,
+      "tris": 763034,
+      "min": [
+        -218.27,
+        -106.92,
+        -0.12
+      ],
+      "max": [
+        69.06,
+        60.53,
+        49.03
+      ]
+    },
+    "Port_Art_A": {
+      "objects": 686,
+      "tris": 183530,
+      "min": [
+        -167.03,
+        -54.19,
+        -10.08
+      ],
+      "max": [
+        -42.23,
+        17.73,
+        26.26
+      ]
+    },
+    "Port_Art_DefPathB": {
+      "objects": 612,
+      "tris": 139873,
+      "min": [
+        -29.66,
+        -108.52,
+        -13.72
+      ],
+      "max": [
+        49.03,
+        -27.81,
+        45.94
+      ]
+    },
+    "Port_Art_B": {
+      "objects": 384,
+      "tris": 148404,
+      "min": [
+        -40.12,
+        -82.57,
+        -4.05
+      ],
+      "max": [
+        50.73,
+        19.01,
+        45.88
+      ]
+    },
+    "Port_Art_Mid": {
+      "objects": 707,
+      "tris": 242634,
+      "min": [
+        -82.71,
+        -54.86,
+        0.73
+      ],
+      "max": [
+        14.96,
+        16.51,
+        35.58
+      ]
+    },
+    "Port_Art_AtkSpawn": {
+      "objects": 484,
+      "tris": 229480,
+      "min": [
+        -162.09,
+        -0.39,
+        -5.33
+      ],
+      "max": [
+        47.48,
+        57.02,
+        27.75
+      ]
+    }
+  },
+  "objectsKept": 4424,
+  "objectsSkippedExcludedCollection": 2673,
+  "objectsSkippedHidden": 0,
+  "verts": 3325211,
+  "tris": 2026983,
+  "triangleClass": {
+    "floor(nz>=cos45)": 476057,
+    "wall(|nz|<=cos70)": 772731,
+    "other": 778195
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -218.27,
+      -130.68,
+      -13.72
+    ],
+    "max": [
+      69.06,
+      60.53,
+      49.03
+    ]
+  },
+  "materials": 367,
+  "seconds": 4.2
+}

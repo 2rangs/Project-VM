@@ -1,0 +1,200 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Haven.blend",
+  "blendBytes": 225784219,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Triad_Art_A": 1452,
+    "Triad_Art_A_NPEV2": 1451,
+    "Triad_Art_Atk": 325,
+    "Triad_Art_Atk_NPEV2": 254,
+    "Triad_Art_AtkPathA": 1818,
+    "Triad_Art_AtkPathA_NPEV2": 1755,
+    "Triad_Art_AtkPathB": 1480,
+    "Triad_Art_AtkPathC": 776,
+    "Triad_Art_B": 742,
+    "Triad_Art_Basalt": 252,
+    "Triad_Art_C": 409,
+    "Triad_Art_C_Destruction": 569,
+    "Triad_Art_C_Destruction_NPEV2": 569,
+    "Triad_Art_Def": 1277,
+    "Triad_Art_Def_NPEV2": 1285,
+    "Triad_Art_Destruction": 0,
+    "Triad_Art_Destruction_NPEV2": 0,
+    "Triad_Art_Skybox_NPEV2": 1,
+    "Triad_Art_Vista_Destruction": 20,
+    "Triad_Art_Vista_Destruction_NPEV2": 14
+  },
+  "keptCollections": {
+    "Triad_Art_A": {
+      "objects": 1199,
+      "tris": 275519,
+      "min": [
+        8.38,
+        17.22,
+        0.98
+      ],
+      "max": [
+        77.63,
+        120.63,
+        43.97
+      ]
+    },
+    "Triad_Art_C": {
+      "objects": 409,
+      "tris": 122883,
+      "min": [
+        -46.75,
+        68.45,
+        -4.81
+      ],
+      "max": [
+        9.75,
+        121.39,
+        17.18
+      ]
+    },
+    "Triad_Art_AtkPathA": {
+      "objects": 1567,
+      "tris": 464194,
+      "min": [
+        17.31,
+        31.73,
+        -0.94
+      ],
+      "max": [
+        77.92,
+        88.96,
+        22.32
+      ]
+    },
+    "Triad_Art_AtkPathC": {
+      "objects": 640,
+      "tris": 188232,
+      "min": [
+        -45.61,
+        27.47,
+        -0.63
+      ],
+      "max": [
+        28.19,
+        79.66,
+        17.69
+      ]
+    },
+    "Triad_Art_C_Destruction": {
+      "objects": 450,
+      "tris": 153447,
+      "min": [
+        -46.75,
+        68.02,
+        -8.74
+      ],
+      "max": [
+        4.96,
+        121.39,
+        16.36
+      ]
+    },
+    "Triad_Art_Def": {
+      "objects": 1015,
+      "tris": 299640,
+      "min": [
+        -18.03,
+        83.95,
+        1.6
+      ],
+      "max": [
+        62.97,
+        146.19,
+        22.79
+      ]
+    },
+    "Triad_Art_AtkPathB": {
+      "objects": 1257,
+      "tris": 376135,
+      "min": [
+        -29.05,
+        31.89,
+        -0.54
+      ],
+      "max": [
+        34.93,
+        100.22,
+        20.0
+      ]
+    },
+    "Triad_Art_B": {
+      "objects": 621,
+      "tris": 254444,
+      "min": [
+        -6.09,
+        78.81,
+        -10.79
+      ],
+      "max": [
+        34.21,
+        109.23,
+        46.81
+      ]
+    },
+    "Triad_Art_Basalt": {
+      "objects": 217,
+      "tris": 550191,
+      "min": [
+        -74.67,
+        53.1,
+        -33.6
+      ],
+      "max": [
+        120.33,
+        189.09,
+        120.81
+      ]
+    },
+    "Triad_Art_Atk": {
+      "objects": 284,
+      "tris": 84224,
+      "min": [
+        -1.73,
+        14.99,
+        0.71
+      ],
+      "max": [
+        33.4,
+        41.6,
+        12.46
+      ]
+    }
+  },
+  "objectsKept": 7659,
+  "objectsSkippedExcludedCollection": 4429,
+  "objectsSkippedHidden": 0,
+  "verts": 3898351,
+  "tris": 2768909,
+  "triangleClass": {
+    "floor(nz>=cos45)": 559558,
+    "wall(|nz|<=cos70)": 1235499,
+    "other": 973852
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -74.67,
+      14.99,
+      -33.6
+    ],
+    "max": [
+      120.33,
+      189.09,
+      120.81
+    ]
+  },
+  "materials": 308,
+  "seconds": 7.3
+}

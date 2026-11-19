@@ -1,0 +1,224 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Pearl.blend",
+  "blendBytes": 328916721,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Pitt_Art_ASite": 531,
+    "Pitt_Art_AtkPathA": 1150,
+    "Pitt_Art_AtkPathB": 1020,
+    "Pitt_Art_AtkPathMid": 473,
+    "Pitt_Art_AtkPathMidToA": 616,
+    "Pitt_Art_AtkSpawn": 693,
+    "Pitt_Art_AtkVista": 293,
+    "Pitt_Art_BSite": 550,
+    "Pitt_Art_BVista": 0,
+    "Pitt_Art_DefPathA": 516,
+    "Pitt_Art_DefPathB": 919,
+    "Pitt_Art_DefSpawn": 1827,
+    "Pitt_Art_DefVista": 300,
+    "Pitt_Art_Mid": 917,
+    "Pitt_Art_Signage": 46,
+    "Pitt_Art_Vista": 292
+  },
+  "keptCollections": {
+    "Pitt_Art_DefPathA": {
+      "objects": 440,
+      "tris": 214907,
+      "min": [
+        64.11,
+        -60.3,
+        0.16
+      ],
+      "max": [
+        104.8,
+        -14.01,
+        26.95
+      ]
+    },
+    "Pitt_Art_DefPathB": {
+      "objects": 808,
+      "tris": 232849,
+      "min": [
+        57.61,
+        -21.05,
+        1.85
+      ],
+      "max": [
+        104.81,
+        28.37,
+        19.91
+      ]
+    },
+    "Pitt_Art_DefSpawn": {
+      "objects": 1601,
+      "tris": 517583,
+      "min": [
+        74.65,
+        -27.0,
+        2.0
+      ],
+      "max": [
+        113.65,
+        11.19,
+        20.81
+      ]
+    },
+    "Pitt_Art_Mid": {
+      "objects": 802,
+      "tris": 235165,
+      "min": [
+        21.48,
+        -27.89,
+        -5.0
+      ],
+      "max": [
+        64.23,
+        21.52,
+        32.33
+      ]
+    },
+    "Pitt_Art_AtkPathA": {
+      "objects": 1012,
+      "tris": 391541,
+      "min": [
+        10.01,
+        -100.92,
+        -0.61
+      ],
+      "max": [
+        79.55,
+        -15.75,
+        31.62
+      ]
+    },
+    "Pitt_Art_AtkPathMid": {
+      "objects": 399,
+      "tris": 133614,
+      "min": [
+        -6.67,
+        -99.36,
+        -1.84
+      ],
+      "max": [
+        172.42,
+        64.96,
+        24.44
+      ]
+    },
+    "Pitt_Art_AtkPathMidToA": {
+      "objects": 520,
+      "tris": 117131,
+      "min": [
+        43.78,
+        -38.85,
+        3.0
+      ],
+      "max": [
+        77.75,
+        -15.39,
+        25.47
+      ]
+    },
+    "Pitt_Art_AtkSpawn": {
+      "objects": 619,
+      "tris": 232387,
+      "min": [
+        -16.14,
+        -39.83,
+        7.56
+      ],
+      "max": [
+        28.47,
+        38.04,
+        23.11
+      ]
+    },
+    "Pitt_Art_ASite": {
+      "objects": 455,
+      "tris": 184711,
+      "min": [
+        53.36,
+        -100.92,
+        0.86
+      ],
+      "max": [
+        95.01,
+        -31.22,
+        19.72
+      ]
+    },
+    "Pitt_Art_AtkPathB": {
+      "objects": 886,
+      "tris": 369856,
+      "min": [
+        -253.66,
+        7.54,
+        -8.24
+      ],
+      "max": [
+        75.88,
+        79.38,
+        25.03
+      ]
+    },
+    "Pitt_Art_BSite": {
+      "objects": 465,
+      "tris": 171484,
+      "min": [
+        30.29,
+        11.62,
+        -4.33
+      ],
+      "max": [
+        110.45,
+        62.0,
+        22.86
+      ]
+    },
+    "Pitt_Art_Signage": {
+      "objects": 45,
+      "tris": 1542,
+      "min": [
+        13.98,
+        -65.74,
+        3.46
+      ],
+      "max": [
+        97.12,
+        56.54,
+        19.98
+      ]
+    }
+  },
+  "objectsKept": 8052,
+  "objectsSkippedExcludedCollection": 766,
+  "objectsSkippedHidden": 0,
+  "verts": 3578580,
+  "tris": 2802770,
+  "triangleClass": {
+    "floor(nz>=cos45)": 537002,
+    "wall(|nz|<=cos70)": 1285813,
+    "other": 979955
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -253.66,
+      -100.92,
+      -8.24
+    ],
+    "max": [
+      172.42,
+      79.38,
+      32.33
+    ]
+  },
+  "materials": 513,
+  "seconds": 5.2
+}

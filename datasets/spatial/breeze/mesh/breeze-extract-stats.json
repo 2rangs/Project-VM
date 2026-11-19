@@ -1,0 +1,237 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Breeze.blend",
+  "blendBytes": 307583883,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Foxtrot_Art_A": 790,
+    "Foxtrot_Art_A_Tunnel": 304,
+    "Foxtrot_Art_AtkPath_A": 1158,
+    "Foxtrot_Art_AtkPath_B": 465,
+    "Foxtrot_Art_AtkSpawn": 479,
+    "Foxtrot_Art_B": 730,
+    "Foxtrot_Art_DefPath_B": 156,
+    "Foxtrot_Art_DefPath_Mid": 223,
+    "Foxtrot_Art_DefSpawn": 385,
+    "Foxtrot_Art_Mid": 522,
+    "Foxtrot_Art_MidLower": 635,
+    "Foxtrot_Art_MidUpper": 715,
+    "Foxtrot_Art_Vista": 571,
+    "Foxtrot_Art_VistaShip": 142,
+    "Foxtrot_Art_Workshop": 180
+  },
+  "keptCollections": {
+    "Foxtrot_Art_DefSpawn": {
+      "objects": 333,
+      "tris": 175336,
+      "min": [
+        58.37,
+        -71.32,
+        -2.24
+      ],
+      "max": [
+        124.79,
+        47.7,
+        29.58
+      ]
+    },
+    "Foxtrot_Art_AtkPath_B": {
+      "objects": 413,
+      "tris": 144560,
+      "min": [
+        20.11,
+        -24.0,
+        0.67
+      ],
+      "max": [
+        92.01,
+        83.86,
+        20.05
+      ]
+    },
+    "Foxtrot_Art_MidUpper": {
+      "objects": 616,
+      "tris": 226296,
+      "min": [
+        55.93,
+        -22.03,
+        3.33
+      ],
+      "max": [
+        93.11,
+        25.18,
+        27.78
+      ]
+    },
+    "Foxtrot_Art_Workshop": {
+      "objects": 150,
+      "tris": 55491,
+      "min": [
+        15.8,
+        -49.88,
+        4.0
+      ],
+      "max": [
+        34.22,
+        -33.17,
+        14.01
+      ]
+    },
+    "Foxtrot_Art_A": {
+      "objects": 678,
+      "tris": 203774,
+      "min": [
+        31.94,
+        -125.46,
+        -5.22
+      ],
+      "max": [
+        119.05,
+        1.0,
+        34.81
+      ]
+    },
+    "Foxtrot_Art_Mid": {
+      "objects": 448,
+      "tris": 136809,
+      "min": [
+        7.95,
+        -48.18,
+        1.69
+      ],
+      "max": [
+        101.94,
+        166.91,
+        26.29
+      ]
+    },
+    "Foxtrot_Art_MidLower": {
+      "objects": 537,
+      "tris": 256829,
+      "min": [
+        -0.25,
+        -33.73,
+        0.31
+      ],
+      "max": [
+        50.5,
+        38.85,
+        31.96
+      ]
+    },
+    "Foxtrot_Art_AtkPath_A": {
+      "objects": 1037,
+      "tris": 451887,
+      "min": [
+        -45.98,
+        -90.46,
+        -3.09
+      ],
+      "max": [
+        118.2,
+        54.57,
+        29.1
+      ]
+    },
+    "Foxtrot_Art_A_Tunnel": {
+      "objects": 253,
+      "tris": 75931,
+      "min": [
+        25.14,
+        -36.51,
+        3.18
+      ],
+      "max": [
+        92.03,
+        12.69,
+        18.37
+      ]
+    },
+    "Foxtrot_Art_B": {
+      "objects": 639,
+      "tris": 279774,
+      "min": [
+        53.97,
+        12.9,
+        -8.09
+      ],
+      "max": [
+        116.97,
+        77.41,
+        41.1
+      ]
+    },
+    "Foxtrot_Art_DefPath_B": {
+      "objects": 129,
+      "tris": 92427,
+      "min": [
+        90.57,
+        -74.62,
+        -0.97
+      ],
+      "max": [
+        147.44,
+        61.55,
+        30.83
+      ]
+    },
+    "Foxtrot_Art_DefPath_Mid": {
+      "objects": 191,
+      "tris": 40722,
+      "min": [
+        81.71,
+        -30.0,
+        6.0
+      ],
+      "max": [
+        93.45,
+        14.6,
+        19.79
+      ]
+    },
+    "Foxtrot_Art_AtkSpawn": {
+      "objects": 413,
+      "tris": 215330,
+      "min": [
+        -39.98,
+        -57.25,
+        -3.63
+      ],
+      "max": [
+        43.02,
+        83.51,
+        18.41
+      ]
+    }
+  },
+  "objectsKept": 5837,
+  "objectsSkippedExcludedCollection": 661,
+  "objectsSkippedHidden": 0,
+  "verts": 2956718,
+  "tris": 2355166,
+  "triangleClass": {
+    "floor(nz>=cos45)": 544649,
+    "wall(|nz|<=cos70)": 1018957,
+    "other": 791560
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -45.98,
+      -125.46,
+      -8.09
+    ],
+    "max": [
+      147.44,
+      166.91,
+      41.1
+    ]
+  },
+  "materials": 452,
+  "seconds": 3.2
+}

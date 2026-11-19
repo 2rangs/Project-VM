@@ -1,0 +1,936 @@
+{
+  "mapId": "sunset",
+  "mapUuid": "92584fbe-486a-b1b2-9faa-39b0f486b498",
+  "schemaVersion": "0.2.0",
+  "patchVersion": "UNVERIFIED",
+  "sites": [
+    "A",
+    "B"
+  ],
+  "provenance": {
+    "nodePositions": {
+      "sourceId": "valorant-api-maps",
+      "sourceUrl": "https://valorant-api.com/v1/maps",
+      "retrievedAt": "2026-11-19",
+      "evidenceType": "decoded",
+      "verified": true,
+      "notes": [
+        "x,y are the callout locations returned by valorant-api; z is the measured floor height under the callout where the mesh stage found one (see each zone's positionProvenance)."
+      ]
+    },
+    "zoneTypes": "manual-approx (by callout name, tools/map-processor/mapzones.py)",
+    "graph": "measured-on-mesh for kind walk/drop; manual-approx for special edges and approx-links (see each edge)",
+    "plantZones": "derived-by-rule (callout-centred square; not the real plant boundary)",
+    "sightlines": "measured-on-mesh visibility fraction; type and smokeable derived-by-rule",
+    "soundLinks": "derived-by-rule (one link per travel connection; attenuation by distance bucket / door)",
+    "rules": {
+      "edgeStretch": 1.1,
+      "dropGain": 1.25,
+      "sightMinVisibility": 0.02,
+      "notSmokeableAtVisibility": 0.6,
+      "soundAttenuation": "<=25 m 0.2; <=50 m 0.3; >50 m or door 0.4"
+    },
+    "notes": [
+      "Art geometry only (no collision layer in the source scene): walkability and occlusion are inferred from visible meshes.",
+      "Grid distances overestimate straight walks by up to ~8 % (8-neighbour metric)."
+    ]
+  },
+  "movement": {
+    "unitsPerMeter": 100,
+    "runSpeedMetersPerSec": 6.75,
+    "walkSpeedMetersPerSec": 3.4,
+    "note": "Same model as Ascent: run 6.75 m/s documented base speed, walk ~3.4 m/s approximate (manual-approx)."
+  },
+  "zones": [
+    {
+      "id": "attacker-spawn",
+      "name": "Attacker Spawn",
+      "callout": "Attacker Side Spawn",
+      "superRegion": "Attacker Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": -6025,
+        "y": -400,
+        "z": 201.5
+      },
+      "transit": false,
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "defender-spawn",
+      "name": "Defender Spawn",
+      "callout": "Defender Side Spawn",
+      "superRegion": "Defender Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 3805.5,
+        "y": -1989.1,
+        "z": 307.3
+      },
+      "transit": false,
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-alley",
+      "name": "A Alley",
+      "callout": "A Alley",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 3400,
+        "y": 3600,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-elbow",
+      "name": "A Elbow",
+      "callout": "A Elbow",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 200,
+        "y": 4200,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-link",
+      "name": "A Link",
+      "callout": "A Link",
+      "superRegion": "A",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": 2200,
+        "y": 3000,
+        "z": 201.6
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-lobby",
+      "name": "A Lobby",
+      "callout": "A Lobby",
+      "superRegion": "A",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": -1800,
+        "y": 2000,
+        "z": 0.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-main",
+      "name": "A Main",
+      "callout": "A Main",
+      "superRegion": "A",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": -400,
+        "y": 2200,
+        "z": 0.6
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "a-site",
+      "name": "A Site",
+      "callout": "A Site",
+      "superRegion": "A",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": 1000,
+        "y": 3200,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-boba",
+      "name": "B Boba",
+      "callout": "B Boba",
+      "superRegion": "B",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 2200,
+        "y": -4800,
+        "z": 403.3
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-lobby",
+      "name": "B Lobby",
+      "callout": "B Lobby",
+      "superRegion": "B",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": -3400,
+        "y": -2600,
+        "z": 400.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-main",
+      "name": "B Main",
+      "callout": "B Main",
+      "superRegion": "B",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": -2000,
+        "y": -5650,
+        "z": 200.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-market",
+      "name": "B Market",
+      "callout": "B Market",
+      "superRegion": "B",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": -200,
+        "y": -3400,
+        "z": 200.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "b-site",
+      "name": "B Site",
+      "callout": "B Site",
+      "superRegion": "B",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": -600,
+        "y": -5850,
+        "z": 200.1
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-bottom",
+      "name": "Mid Bottom",
+      "callout": "Mid Bottom",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": -1800,
+        "y": -2025,
+        "z": 206.8
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-courtyard",
+      "name": "Mid Courtyard",
+      "callout": "Mid Courtyard",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": -600,
+        "y": -1200,
+        "z": 200.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-tiles",
+      "name": "Mid Tiles",
+      "callout": "Mid Tiles",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -1800,
+        "y": 400,
+        "z": 202.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    },
+    {
+      "id": "mid-top",
+      "name": "Mid Top",
+      "callout": "Mid Top",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 2000,
+        "y": -2000,
+        "z": 401.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
+    }
+  ],
+  "plantZones": [
+    {
+      "id": "plant-a",
+      "site": "A",
+      "zoneId": "a-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": 400.0,
+          "y": 3800.0
+        },
+        {
+          "x": 1600.0,
+          "y": 3800.0
+        },
+        {
+          "x": 1600.0,
+          "y": 2600.0
+        },
+        {
+          "x": 400.0,
+          "y": 2600.0
+        }
+      ]
+    },
+    {
+      "id": "plant-b",
+      "site": "B",
+      "zoneId": "b-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": -1200.0,
+          "y": -5250.0
+        },
+        {
+          "x": 0.0,
+          "y": -5250.0
+        },
+        {
+          "x": 0.0,
+          "y": -6450.0
+        },
+        {
+          "x": -1200.0,
+          "y": -6450.0
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "a-link",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1170,
+      "distanceMeters": 11.7,
+      "runTimeMs": 1733,
+      "walkTimeMs": 3441,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1260,
+      "distanceMeters": 12.6,
+      "runTimeMs": 1867,
+      "walkTimeMs": 3706,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-lobby",
+      "to": "mid-bottom",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1740,
+      "distanceMeters": 17.4,
+      "runTimeMs": 2578,
+      "walkTimeMs": 5118,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-main",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2090,
+      "distanceMeters": 20.9,
+      "runTimeMs": 3096,
+      "walkTimeMs": 6147,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-main",
+      "to": "mid-tiles",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2300,
+      "distanceMeters": 23.0,
+      "runTimeMs": 3407,
+      "walkTimeMs": 6765,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "defender-spawn",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2420,
+      "distanceMeters": 24.2,
+      "runTimeMs": 3585,
+      "walkTimeMs": 7118,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-tiles",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2510,
+      "distanceMeters": 25.1,
+      "runTimeMs": 3719,
+      "walkTimeMs": 7382,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-market",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2620,
+      "distanceMeters": 26.2,
+      "runTimeMs": 3881,
+      "walkTimeMs": 7706,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-tiles",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2620,
+      "distanceMeters": 26.2,
+      "runTimeMs": 3881,
+      "walkTimeMs": 7706,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-alley",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2830,
+      "distanceMeters": 28.3,
+      "runTimeMs": 4193,
+      "walkTimeMs": 8324,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-boba",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3070,
+      "distanceMeters": 30.7,
+      "runTimeMs": 4548,
+      "walkTimeMs": 9029,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-elbow",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3110,
+      "distanceMeters": 31.1,
+      "runTimeMs": 4607,
+      "walkTimeMs": 9147,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-elbow",
+      "to": "a-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3310,
+      "distanceMeters": 33.1,
+      "runTimeMs": 4904,
+      "walkTimeMs": 9735,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-elbow",
+      "to": "a-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3710,
+      "distanceMeters": 37.1,
+      "runTimeMs": 5496,
+      "walkTimeMs": 10912,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-market",
+      "to": "mid-courtyard",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3850,
+      "distanceMeters": 38.5,
+      "runTimeMs": 5704,
+      "walkTimeMs": 11324,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-boba",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4070,
+      "distanceMeters": 40.7,
+      "runTimeMs": 6030,
+      "walkTimeMs": 11971,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-lobby",
+      "to": "b-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4610,
+      "distanceMeters": 46.1,
+      "runTimeMs": 6830,
+      "walkTimeMs": 13559,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "mid-courtyard",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4930,
+      "distanceMeters": 49.3,
+      "runTimeMs": 7304,
+      "walkTimeMs": 14500,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "b-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4950,
+      "distanceMeters": 49.5,
+      "runTimeMs": 7333,
+      "walkTimeMs": 14559,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-boba",
+      "to": "b-market",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4970,
+      "distanceMeters": 49.7,
+      "runTimeMs": 7363,
+      "walkTimeMs": 14618,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-alley",
+      "to": "a-elbow",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 5060,
+      "distanceMeters": 50.6,
+      "runTimeMs": 7496,
+      "walkTimeMs": 14882,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "a-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 5150,
+      "distanceMeters": 51.5,
+      "runTimeMs": 7630,
+      "walkTimeMs": 15147,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "defender-spawn",
+      "to": "a-alley",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 7200,
+      "distanceMeters": 72.0,
+      "runTimeMs": 10667,
+      "walkTimeMs": 21176,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "a-alley",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 7480,
+      "distanceMeters": 74.8,
+      "runTimeMs": 11081,
+      "walkTimeMs": 22000,
+      "provenance": "measured-on-mesh",
+      "kind": "walk"
+    },
+    {
+      "from": "b-boba",
+      "to": "b-market",
+      "bidirectional": false,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2930,
+      "distanceMeters": 29.3,
+      "runTimeMs": 4341,
+      "walkTimeMs": 8618,
+      "provenance": "measured-on-mesh",
+      "kind": "drop",
+      "note": "one-way: a drop down from the higher zone"
+    }
+  ],
+  "sightlines": [
+    {
+      "a": "defender-spawn",
+      "b": "mid-top",
+      "type": "direct",
+      "smokeable": true,
+      "visibility": 0.278,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-alley",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.229,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-link",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": false,
+      "visibility": 0.819,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-main",
+      "type": "direct",
+      "smokeable": false,
+      "visibility": 0.75,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-main",
+      "b": "mid-tiles",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.118,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-boba",
+      "b": "b-main",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.049,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-boba",
+      "b": "b-market",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.042,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-boba",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.139,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-lobby",
+      "b": "mid-bottom",
+      "type": "direct",
+      "smokeable": false,
+      "visibility": 0.771,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-main",
+      "b": "b-site",
+      "type": "direct",
+      "smokeable": true,
+      "visibility": 0.417,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-market",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": false,
+      "visibility": 0.646,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-tiles",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.299,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-tiles",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.188,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    }
+  ],
+  "soundLinks": [
+    {
+      "a": "a-link",
+      "b": "a-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-main",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-lobby",
+      "b": "mid-bottom",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-main",
+      "b": "b-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-main",
+      "b": "mid-tiles",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "defender-spawn",
+      "b": "mid-top",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-tiles",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-market",
+      "b": "b-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-tiles",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-alley",
+      "b": "a-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-boba",
+      "b": "b-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-elbow",
+      "b": "a-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-elbow",
+      "b": "a-main",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-elbow",
+      "b": "a-lobby",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-market",
+      "b": "mid-courtyard",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-boba",
+      "b": "mid-top",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-lobby",
+      "b": "b-main",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "mid-courtyard",
+      "b": "mid-top",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "attacker-spawn",
+      "b": "b-lobby",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-boba",
+      "b": "b-market",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-alley",
+      "b": "a-elbow",
+      "attenuation": 0.4,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "attacker-spawn",
+      "attenuation": 0.4,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-alley",
+      "b": "defender-spawn",
+      "attenuation": 0.4,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-alley",
+      "b": "mid-top",
+      "attenuation": 0.4,
+      "provenance": "derived-by-rule"
+    }
+  ],
+  "mechanics": [
+    {
+      "kind": "door",
+      "name": "Mechanical door at B Market / Mid (switch-operated, breakable)",
+      "represented": false,
+      "engineNeeds": "DoorInfo on the edge that crosses the door, once a human confirms which zone pair it separates (likely mid-courtyard <-> b-market)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ],
+  "dataQuality": {
+    "edgeKinds": {
+      "walk": 24,
+      "drop": 1
+    },
+    "approxLinks": [],
+    "zonesWithoutMeasuredSightlines": [],
+    "doorsNotAttached": [],
+    "zonesOnMainWalkComponent": "17/17"
+  },
+  "generatedBy": "tools/map-processor/build_map.py"
+}

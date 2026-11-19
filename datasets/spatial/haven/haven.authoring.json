@@ -1,0 +1,13 @@
+{
+  "mapId": "haven",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "layout",
+      "name": "Three sites A/B/C",
+      "represented": false,
+      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md \u00a76)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}
