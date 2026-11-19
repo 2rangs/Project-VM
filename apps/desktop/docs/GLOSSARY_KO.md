@@ -122,6 +122,44 @@
 | save / force / full | 세이브 / 포스 / 풀바이 |
 | slow / normal / fast | 슬로우 / 노멀 / 패스트 |
 
+## 라운드별 판단 (경기 후 리뷰) · 경기 옵션
+
+| 원어 | 한국어 |
+| --- | --- |
+| Round decisions | 라운드별 판단 |
+| Read of the opponent (going in) | (들고 들어간) 상대 리딩 |
+| Where they attack / defend | 상대 공격 방향 / 상대 수비 배치 |
+| Confidence: none / low / medium / high (`conf.*`) | 근거 없음 / 신뢰도 낮음 / 보통 / 높음 |
+| Samples | 표본 |
+| Opening call / Final call | 오프닝 콜 / 최종 콜 |
+| Objective site | 목표 사이트 |
+| Fake (feint) | 페이크 |
+| Plan changes (revisions) | 플랜 수정 |
+| {m:ss} left (round clock) | {m:ss} 남음 |
+| Read was right / wrong / untested | 리딩 적중 / 빗나감 / 확인 불가 |
+| Plant / first contact | 스파이크 설치 / 첫 교전 |
+| Used the read / against the read | 리딩 활용 / 리딩과 반대 |
+| Attack / Defense (`side.*`) | 공격 / 수비 |
+| Pistol / Regulation / Overtime (`phase.*`) | 피스톨 / 정규 / 연장 |
+| Match options | 경기 옵션 |
+| Opponent memory | 상대 기억 |
+| Minimum throw rate | 최소 쓰로잉률 |
+
+라운드별 판단의 콜 이름은 지시 전략과 같은 `ostrat.*` 키를 쓴다. 엔진 `TeamStrategy`
+전체를 덮도록 다음이 추가되었다:
+
+| 엔진 id | 한국어 |
+| --- | --- |
+| fakeAtoB / fakeBtoA | A 페이크 → B / B 페이크 → A |
+| lurkDefault | 러크 디폴트 |
+| save | 세이브 |
+| retake | 리테이크 |
+| `<call> (slow)` | `<콜>` (슬로우) |
+| `commit A` / `commit B` | A 사이트 확정 / B 사이트 확정 |
+
+> 플랜 수정의 **사유(reason)** 는 엔진이 만드는 영어 문장이라 아직 번역 키가 없다
+> (원문 그대로 표시). 엔진이 사유 키를 내보내면 `rev.dec.reason.*` 로 옮긴다.
+
 ## 원어 유지 (번역하지 않음)
 
 - 요원: Jett, Sova, Killjoy, Omen … (한글 음차하지 않음)

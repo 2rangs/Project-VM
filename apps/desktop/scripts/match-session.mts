@@ -17,6 +17,8 @@ import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
 interface Cfg {
   teamA: { id: string; name: string }; teamB: { id: string; name: string };
   map?: string; seed?: number; aiTeams?: ('A' | 'B')[];
+  /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
 }
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 
@@ -27,6 +29,8 @@ const session: MatchSession = createMatchSession(
     map: cfg.map ?? 'ascent',
     seed: cfg.seed ?? 1,
     recordPerception: true,
+    ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
+    ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
   },
   { aiTeams: cfg.aiTeams ?? ['B'] },
 );
@@ -47,6 +51,7 @@ function compactRound(r: ReturnType<MatchSession['playNextRound']>) {
     },
     replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
+    decisions: r.decisions ?? null,
   };
 }
 
