@@ -5,6 +5,7 @@
  *   npx tsx scripts/series-effects.mts mastery  1 200
  *   npx tsx scripts/series-effects.mts scouting 1 200 off,maps,full
  *   npx tsx scripts/series-effects.mts scouting 1 200 break-off,break-full
+ *   PV_HABIT=30 npx tsx scripts/series-effects.mts scouting 1 200 off,full      (a more stubborn habit)
  *
  * Teams (game-data ids): mastery — Paper Rex (624) vs MIBR (7386), near even on Ascent.
  * scouting — FURIA (2406, the weaker side, ~0.30 map win rate) vs Global Esports (918).
@@ -40,8 +41,10 @@ if (exp === "mastery") {
   }
 } else {
   const A = { id: "2406", name: "FURIA" }, B = { id: "918", name: "Global Esports" };
-  const habit: GamePlan = { attack: { site: "A", strength: 8 }, defense: { site: "A", strength: 8 } };
-  const broken: GamePlan = { attack: { site: "B", strength: 8 }, defense: { site: "B", strength: 8 } };
+  /** How stubborn B's habit is (standing pseudo-observations). PV_HABIT overrides the default 8. */
+  const strength = Number(process.env.PV_HABIT ?? 8);
+  const habit: GamePlan = { attack: { site: "A", strength }, defense: { site: "A", strength } };
+  const broken: GamePlan = { attack: { site: "B", strength }, defense: { site: "B", strength } };
   // B's observable history: seven games against other teams (one per pool map), played with its habit.
   const others = listSimulatableTeams().filter((t) => t.teamId !== A.id && t.teamId !== B.id).slice(0, DEFAULT_MAP_POOL.length);
   const history: TeamGameLog[] = others.map((o, k) => {
@@ -56,7 +59,7 @@ if (exp === "mastery") {
     "break-full": (seed) => ({ teamA: { ...A, staff: { analyst: 1 } }, teamB: { ...B, scouting: false, gamePlan: broken, history }, seed }),
   };
   const which = (condArg ?? Object.keys(conditions).join(",")).split(",");
-  console.log(`scouting. ${A.name} (A, scouts) vs ${B.name} (B, habit: attack A / stack A, strength 8), Bo3, seeds ${from}..${to}.`);
+  console.log(`scouting. ${A.name} (A, scouts) vs ${B.name} (B, habit: attack A / stack A, strength ${strength}), Bo3, seeds ${from}..${to}.`);
   console.log(`B's history: ${history.length} games; attack-site evidence share A = ${pct(history.flatMap((h) => h.rounds).filter((r) => r.plantSite === "A").length / Math.max(1, history.flatMap((h) => h.rounds).filter((r) => r.plantSite).length))}% of plants.`);
   const vetoKey = (r: SeriesResult): string => r.veto.actions.map((a) => `${a.kind}:${a.map}:${a.side ?? ""}`).join("|");
   for (const name of which) {

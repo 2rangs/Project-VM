@@ -48,8 +48,9 @@ export const SIMULATED_GEOMETRY = "Ascent";
  *
  *     p(map) = σ( logit(base) + masterySlope · (M_own − M̂_opp) )
  *
- * masterySlope is set from the measured effect of mastery on a map's result (docs §6: a mastery
- * gap of 0.5 moved the map win rate by about 10 points between otherwise equal teams).
+ * masterySlope 0.8 reads a mastery gap of 0.25 as about 5 points of map win rate — a design value
+ * of the same order as the measurement (docs §6.1: 54.0% → 57.5% → 61.0% for d = −0.25 / 0 / +0.25,
+ * n = 200 maps each, ±7 points).
  */
 export const VETO_BELIEF = { masterySlope: 0.8 } as const;
 
