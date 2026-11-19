@@ -1,0 +1,690 @@
+{
+ "schema": "https://project-v/catalog/ascent-comps.schema.json",
+ "map": "Abyss",
+ "filter": "is_international = TRUE",
+ "provenance": {
+  "source": "VCT Reference DuckDB",
+  "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+  "landingPage": "https://vct-reference.com/dataset",
+  "terms": "https://vct-reference.com/terms",
+  "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+  "dbBuild": "rebuilt daily",
+  "retrievedAt": "2026-11-19",
+  "license": "Free to use incl. commercially; attribution appreciated. Data from public pro match pages; not affiliated with Riot.",
+  "evidenceType": "observed",
+  "verified": true,
+  "tablesUsed": [
+   "maps",
+   "matches",
+   "player_map",
+   "rounds"
+  ],
+  "method": "Per team-map (match_id, game_id, team_idx) 5-agent comp from player_map.agents; map win from maps.score0/score1; atk/def round record derived from rounds.winner_team+side. Wilson 95% CI."
+ },
+ "sampleCaveats": [
+  "Sample = 94 team-maps (47 maps) of international Ascent.",
+  "Patches span Patch 9.02 .. Patch 13.05 (5 distinct); aggregates blend multiple metas, NOT stamped to the current build. Ascent rotates in/out of the pool, so recent pick rates may differ.",
+  "Agent names are VCT Reference slugs (e.g. 'kayo'); role from the catalog/valorant-api.",
+  "Pick/comp rates are map-level. atk/def round WR uses per-round sides derived from rounds.winner_team+side."
+ ],
+ "patchesPresent": [
+  "Patch 9.02",
+  "Patch 10.02",
+  "Patch 11.05",
+  "Patch 12.03",
+  "Patch 13.05"
+ ],
+ "patchRangeNumeric": {
+  "min": "Patch 9.02",
+  "max": "Patch 13.05",
+  "count": 5
+ },
+ "overall": {
+  "teamMaps": 94,
+  "atkRoundWR": 0.5343,
+  "atkRounds": 1005,
+  "defRoundWR": 0.4657,
+  "defRounds": 1005
+ },
+ "roleTemplates": [
+  {
+   "template": {
+    "Controller": 1,
+    "Duelist": 1,
+    "Initiator": 2,
+    "Sentinel": 1
+   },
+   "maps": 32,
+   "share": 0.3404
+  },
+  {
+   "template": {
+    "Controller": 2,
+    "Duelist": 2,
+    "Initiator": 1
+   },
+   "maps": 24,
+   "share": 0.2553
+  },
+  {
+   "template": {
+    "Controller": 1,
+    "Duelist": 2,
+    "Initiator": 1,
+    "Sentinel": 1
+   },
+   "maps": 13,
+   "share": 0.1383
+  },
+  {
+   "template": {
+    "Controller": 2,
+    "Duelist": 1,
+    "Initiator": 1,
+    "Sentinel": 1
+   },
+   "maps": 12,
+   "share": 0.1277
+  },
+  {
+   "template": {
+    "Controller": 2,
+    "Duelist": 1,
+    "Initiator": 2
+   },
+   "maps": 10,
+   "share": 0.1064
+  },
+  {
+   "template": {
+    "Controller": 1,
+    "Duelist": 2,
+    "Initiator": 2
+   },
+   "maps": 1,
+   "share": 0.0106
+  },
+  {
+   "template": {
+    "Controller": 2,
+    "Initiator": 2,
+    "Sentinel": 1
+   },
+   "maps": 1,
+   "share": 0.0106
+  },
+  {
+   "template": {
+    "Controller": 1,
+    "Duelist": 1,
+    "Initiator": 3
+   },
+   "maps": 1,
+   "share": 0.0106
+  }
+ ],
+ "pickRate": [
+  {
+   "agent": "sova",
+   "role": "Initiator",
+   "maps": 90,
+   "teamMaps": 94,
+   "pickRate": 0.9574,
+   "pickRateCI95": [
+    0.8956,
+    0.9833
+   ]
+  },
+  {
+   "agent": "omen",
+   "role": "Controller",
+   "maps": 55,
+   "teamMaps": 94,
+   "pickRate": 0.5851,
+   "pickRateCI95": [
+    0.4841,
+    0.6795
+   ]
+  },
+  {
+   "agent": "astra",
+   "role": "Controller",
+   "maps": 49,
+   "teamMaps": 94,
+   "pickRate": 0.5213,
+   "pickRateCI95": [
+    0.4215,
+    0.6194
+   ]
+  },
+  {
+   "agent": "cypher",
+   "role": "Sentinel",
+   "maps": 44,
+   "teamMaps": 94,
+   "pickRate": 0.4681,
+   "pickRateCI95": [
+    0.3705,
+    0.5682
+   ]
+  },
+  {
+   "agent": "yoru",
+   "role": "Duelist",
+   "maps": 43,
+   "teamMaps": 94,
+   "pickRate": 0.4574,
+   "pickRateCI95": [
+    0.3604,
+    0.5578
+   ]
+  },
+  {
+   "agent": "jett",
+   "role": "Duelist",
+   "maps": 39,
+   "teamMaps": 94,
+   "pickRate": 0.4149,
+   "pickRateCI95": [
+    0.3205,
+    0.5159
+   ]
+  },
+  {
+   "agent": "waylay",
+   "role": "Duelist",
+   "maps": 37,
+   "teamMaps": 94,
+   "pickRate": 0.3936,
+   "pickRateCI95": [
+    0.3009,
+    0.4947
+   ]
+  },
+  {
+   "agent": "harbor",
+   "role": "Controller",
+   "maps": 27,
+   "teamMaps": 94,
+   "pickRate": 0.2872,
+   "pickRateCI95": [
+    0.2055,
+    0.3856
+   ]
+  },
+  {
+   "agent": "kayo",
+   "role": "Initiator",
+   "maps": 22,
+   "teamMaps": 94,
+   "pickRate": 0.234,
+   "pickRateCI95": [
+    0.1599,
+    0.329
+   ]
+  },
+  {
+   "agent": "tejo",
+   "role": "Initiator",
+   "maps": 11,
+   "teamMaps": 94,
+   "pickRate": 0.117,
+   "pickRateCI95": [
+    0.0666,
+    0.1975
+   ]
+  },
+  {
+   "agent": "neon",
+   "role": "Duelist",
+   "maps": 10,
+   "teamMaps": 94,
+   "pickRate": 0.1064,
+   "pickRateCI95": [
+    0.0588,
+    0.1849
+   ]
+  },
+  {
+   "agent": "viper",
+   "role": "Controller",
+   "maps": 9,
+   "teamMaps": 94,
+   "pickRate": 0.0957,
+   "pickRateCI95": [
+    0.0512,
+    0.172
+   ]
+  },
+  {
+   "agent": "gekko",
+   "role": "Initiator",
+   "maps": 7,
+   "teamMaps": 94,
+   "pickRate": 0.0745,
+   "pickRateCI95": [
+    0.0365,
+    0.1458
+   ]
+  },
+  {
+   "agent": "breach",
+   "role": "Initiator",
+   "maps": 7,
+   "teamMaps": 94,
+   "pickRate": 0.0745,
+   "pickRateCI95": [
+    0.0365,
+    0.1458
+   ]
+  },
+  {
+   "agent": "vyse",
+   "role": "Sentinel",
+   "maps": 6,
+   "teamMaps": 94,
+   "pickRate": 0.0638,
+   "pickRateCI95": [
+    0.0296,
+    0.1323
+   ]
+  },
+  {
+   "agent": "killjoy",
+   "role": "Sentinel",
+   "maps": 3,
+   "teamMaps": 94,
+   "pickRate": 0.0319,
+   "pickRateCI95": [
+    0.0109,
+    0.0897
+   ]
+  },
+  {
+   "agent": "chamber",
+   "role": "Sentinel",
+   "maps": 3,
+   "teamMaps": 94,
+   "pickRate": 0.0319,
+   "pickRateCI95": [
+    0.0109,
+    0.0897
+   ]
+  },
+  {
+   "agent": "fade",
+   "role": "Initiator",
+   "maps": 2,
+   "teamMaps": 94,
+   "pickRate": 0.0213,
+   "pickRateCI95": [
+    0.0059,
+    0.0743
+   ]
+  },
+  {
+   "agent": "sage",
+   "role": "Sentinel",
+   "maps": 1,
+   "teamMaps": 94,
+   "pickRate": 0.0106,
+   "pickRateCI95": [
+    0.0019,
+    0.0578
+   ]
+  },
+  {
+   "agent": "brimstone",
+   "role": "Controller",
+   "maps": 1,
+   "teamMaps": 94,
+   "pickRate": 0.0106,
+   "pickRateCI95": [
+    0.0019,
+    0.0578
+   ]
+  },
+  {
+   "agent": "reyna",
+   "role": "Duelist",
+   "maps": 1,
+   "teamMaps": 94,
+   "pickRate": 0.0106,
+   "pickRateCI95": [
+    0.0019,
+    0.0578
+   ]
+  },
+  {
+   "agent": "phoenix",
+   "role": "Duelist",
+   "maps": 1,
+   "teamMaps": 94,
+   "pickRate": 0.0106,
+   "pickRateCI95": [
+    0.0019,
+    0.0578
+   ]
+  },
+  {
+   "agent": "deadlock",
+   "role": "Sentinel",
+   "maps": 1,
+   "teamMaps": 94,
+   "pickRate": 0.0106,
+   "pickRateCI95": [
+    0.0019,
+    0.0578
+   ]
+  },
+  {
+   "agent": "skye",
+   "role": "Initiator",
+   "maps": 1,
+   "teamMaps": 94,
+   "pickRate": 0.0106,
+   "pickRateCI95": [
+    0.0019,
+    0.0578
+   ]
+  }
+ ],
+ "topComps": [
+  {
+   "comp": [
+    "cypher",
+    "jett",
+    "kayo",
+    "omen",
+    "sova"
+   ],
+   "roles": {
+    "Sentinel": 1,
+    "Duelist": 1,
+    "Initiator": 2,
+    "Controller": 1
+   },
+   "maps": 12,
+   "mapWinRate": 0.5833,
+   "mapWinCI95": [
+    0.3195,
+    0.8067
+   ],
+   "atkRoundWR": 0.5113,
+   "atkRounds": 133,
+   "defRoundWR": 0.5405,
+   "defRounds": 111
+  },
+  {
+   "comp": [
+    "cypher",
+    "omen",
+    "sova",
+    "waylay",
+    "yoru"
+   ],
+   "roles": {
+    "Sentinel": 1,
+    "Controller": 1,
+    "Initiator": 1,
+    "Duelist": 2
+   },
+   "maps": 9,
+   "mapWinRate": 0.8889,
+   "mapWinCI95": [
+    0.565,
+    0.9801
+   ],
+   "atkRoundWR": 0.6354,
+   "atkRounds": 96,
+   "defRoundWR": 0.5556,
+   "defRounds": 90
+  },
+  {
+   "comp": [
+    "astra",
+    "cypher",
+    "gekko",
+    "jett",
+    "sova"
+   ],
+   "roles": {
+    "Controller": 1,
+    "Sentinel": 1,
+    "Initiator": 2,
+    "Duelist": 1
+   },
+   "maps": 7,
+   "mapWinRate": 0.4286,
+   "mapWinCI95": [
+    0.1582,
+    0.7495
+   ],
+   "atkRoundWR": 0.5139,
+   "atkRounds": 72,
+   "defRoundWR": 0.4419,
+   "defRounds": 86
+  },
+  {
+   "comp": [
+    "astra",
+    "harbor",
+    "neon",
+    "sova",
+    "waylay"
+   ],
+   "roles": {
+    "Controller": 2,
+    "Duelist": 2,
+    "Initiator": 1
+   },
+   "maps": 7,
+   "mapWinRate": 0.7143,
+   "mapWinCI95": [
+    0.3589,
+    0.9178
+   ],
+   "atkRoundWR": 0.6,
+   "atkRounds": 70,
+   "defRoundWR": 0.6027,
+   "defRounds": 73
+  },
+  {
+   "comp": [
+    "harbor",
+    "omen",
+    "sova",
+    "vyse",
+    "yoru"
+   ],
+   "roles": {
+    "Controller": 2,
+    "Initiator": 1,
+    "Sentinel": 1,
+    "Duelist": 1
+   },
+   "maps": 5,
+   "mapWinRate": 0.6,
+   "mapWinCI95": [
+    0.2307,
+    0.8824
+   ],
+   "atkRoundWR": 0.5484,
+   "atkRounds": 62,
+   "defRoundWR": 0.4603,
+   "defRounds": 63
+  },
+  {
+   "comp": [
+    "astra",
+    "omen",
+    "sova",
+    "waylay",
+    "yoru"
+   ],
+   "roles": {
+    "Controller": 2,
+    "Initiator": 1,
+    "Duelist": 2
+   },
+   "maps": 5,
+   "mapWinRate": 0.0,
+   "mapWinCI95": [
+    -0.0,
+    0.4345
+   ],
+   "atkRoundWR": 0.4348,
+   "atkRounds": 46,
+   "defRoundWR": 0.35,
+   "defRounds": 60
+  },
+  {
+   "comp": [
+    "astra",
+    "cypher",
+    "jett",
+    "kayo",
+    "sova"
+   ],
+   "roles": {
+    "Controller": 1,
+    "Sentinel": 1,
+    "Duelist": 1,
+    "Initiator": 2
+   },
+   "maps": 4,
+   "mapWinRate": 0.25,
+   "mapWinCI95": [
+    0.0456,
+    0.6994
+   ],
+   "atkRoundWR": 0.4889,
+   "atkRounds": 45,
+   "defRoundWR": 0.4146,
+   "defRounds": 41
+  },
+  {
+   "comp": [
+    "astra",
+    "breach",
+    "cypher",
+    "sova",
+    "waylay"
+   ],
+   "roles": {
+    "Controller": 1,
+    "Initiator": 2,
+    "Sentinel": 1,
+    "Duelist": 1
+   },
+   "maps": 4,
+   "mapWinRate": 0.75,
+   "mapWinCI95": [
+    0.3006,
+    0.9544
+   ],
+   "atkRoundWR": 0.6389,
+   "atkRounds": 36,
+   "defRoundWR": 0.46,
+   "defRounds": 50
+  },
+  {
+   "comp": [
+    "omen",
+    "sova",
+    "tejo",
+    "viper",
+    "waylay"
+   ],
+   "roles": {
+    "Controller": 2,
+    "Initiator": 2,
+    "Duelist": 1
+   },
+   "maps": 4,
+   "mapWinRate": 0.5,
+   "mapWinCI95": [
+    0.15,
+    0.85
+   ],
+   "atkRoundWR": 0.6944,
+   "atkRounds": 36,
+   "defRoundWR": 0.383,
+   "defRounds": 47
+  },
+  {
+   "comp": [
+    "astra",
+    "jett",
+    "kayo",
+    "omen",
+    "sova"
+   ],
+   "roles": {
+    "Controller": 2,
+    "Duelist": 1,
+    "Initiator": 2
+   },
+   "maps": 4,
+   "mapWinRate": 0.75,
+   "mapWinCI95": [
+    0.3006,
+    0.9544
+   ],
+   "atkRoundWR": 0.5,
+   "atkRounds": 48,
+   "defRoundWR": 0.4865,
+   "defRounds": 37
+  },
+  {
+   "comp": [
+    "astra",
+    "killjoy",
+    "sova",
+    "viper",
+    "yoru"
+   ],
+   "roles": {
+    "Controller": 2,
+    "Sentinel": 1,
+    "Initiator": 1,
+    "Duelist": 1
+   },
+   "maps": 3,
+   "mapWinRate": 0.0,
+   "mapWinCI95": [
+    0.0,
+    0.5615
+   ],
+   "atkRoundWR": 0.4865,
+   "atkRounds": 37,
+   "defRoundWR": 0.3226,
+   "defRounds": 31
+  },
+  {
+   "comp": [
+    "cypher",
+    "harbor",
+    "jett",
+    "omen",
+    "sova"
+   ],
+   "roles": {
+    "Sentinel": 1,
+    "Controller": 2,
+    "Duelist": 1,
+    "Initiator": 1
+   },
+   "maps": 3,
+   "mapWinRate": 0.6667,
+   "mapWinCI95": [
+    0.2077,
+    0.9385
+   ],
+   "atkRoundWR": 0.5,
+   "atkRounds": 30,
+   "defRoundWR": 0.6471,
+   "defRounds": 34
+  }
+ ]
+}

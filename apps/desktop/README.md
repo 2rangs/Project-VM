@@ -108,7 +108,7 @@ Flow:
 3. **Decision support, on the same screen** — every card shows our mastery and our analysts'
    estimate of theirs (0–100, `±` one standard deviation). Selecting a card opens the breakdown
    for both teams — map record, roster continuity, composition fit, each with its own `±` and the
-   note of what it is based on ("27경기 · 승패 데이터 없음") — and the scouting report for that
+   note of what it is based on ("34경기 24승", "선수별 맵 출전 기록 기준") — and the scouting report for that
    map: strong / average / weak verdict, where they attack and defend with the amount of evidence
    behind it, and how many games were reviewed. **Uncertain numbers look uncertain**: at
    `±` ≥ 10 the bar is hatched amber with a dashed outline and the `±` is highlighted (the same
@@ -135,8 +135,9 @@ are routed to the series host while that map is open.
 
 What is simulated rather than real: the **scouting film** is each team's last two games against
 other teams, simulated at series start (`PV_SERIES_FILM` changes the count) — the data has no real
-per-round history. Per-map win/loss records are not in the committed data either, so the "map
-record" component is experience only and says so. Not built yet: the team game plan (site leans)
+per-round history. The map records themselves are real (`packages/game-data/data/map-history.json`:
+maps played and won per team and per player since 2025); a team without a record shows
+"승패 데이터 없음" and is treated as neutral. Not built yet: the team game plan (site leans)
 and both-teams-human veto have no UI; a series does not survive leaving the screen's route
 mid-series (the host keeps running, the screen state is not restored).
 

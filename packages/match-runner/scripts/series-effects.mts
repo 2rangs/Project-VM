@@ -6,11 +6,12 @@
  *   npx tsx scripts/series-effects.mts scouting 1 200 off,maps,full
  *   npx tsx scripts/series-effects.mts scouting 1 200 break-off,break-full
  *   PV_HABIT=30 npx tsx scripts/series-effects.mts scouting 1 200 off,full      (a more stubborn habit)
+ *   npx tsx scripts/series-effects.mts picks    1 200      (picker's win rate on its own pick, vs the real 53.6%)
  *
  * Teams (game-data ids): mastery — Paper Rex (624) vs MIBR (7386), near even on Ascent.
  * scouting — FURIA (2406, the weaker side, ~0.30 map win rate) vs Global Esports (918).
  */
-import { listSimulatableTeams } from "@pv/game-data";
+import { getTeamMapRecords, listSimulatableTeams } from "@pv/game-data";
 import {
   DEFAULT_MAP_POOL, gamePlanPrior, leagueMasteryReference, masteryEngineInputs, runMatch, runSeries, teamGameLog,
   type GamePlan, type SeriesConfig, type SeriesResult, type TeamGameLog,
@@ -39,6 +40,27 @@ if (exp === "mastery") {
     }
     console.log(`  d=${d >= 0 ? "+" : ""}${d.toFixed(2)}  map win ${pct(wins / n)}% ${ci(wins / n, n)}   round share ${pct(roundsWon / rounds)}% ${ci(roundsWon / rounds, rounds)}   (n=${n} maps, ${rounds} rounds)`);
   }
+} else if (exp === "picks") {
+  // Does the team that picks a map win it more often than not? Real VCT maps since 2025: 53.6%
+  // (n = 2,348; packages/game-data/data/map-history.json provenance). Here: default Bo3 series
+  // between rated teams with real per-map records, a different pairing per seed.
+  const rated = listSimulatableTeams().filter((t) => Object.values(getTeamMapRecords(t.teamId)).some((r) => r.wins !== null));
+  let picked = 0, pickerWon = 0, deciders = 0, masteryFavWon = 0, masteryGames = 0;
+  for (let seed = from; seed <= to; seed++) {
+    const i = (seed * 7) % rated.length;
+    let j = (seed * 13 + 5) % rated.length;
+    if (j === i) j = (j + 1) % rated.length;
+    const ref = (k: number) => ({ id: rated[k]!.teamId, name: rated[k]!.name ?? rated[k]!.teamId });
+    const r = runSeries({ teamA: ref(i), teamB: ref(j), seed });
+    for (const g of r.games) {
+      if (g.pickedBy === "decider") deciders++;
+      else { picked++; if (g.winner === g.pickedBy) pickerWon++; }
+      if (g.mastery.A.value !== g.mastery.B.value) { masteryGames++; if ((g.mastery.A.value > g.mastery.B.value) === (g.winner === "A")) masteryFavWon++; }
+    }
+  }
+  console.log(`picks. Bo3 between ${rated.length} rated teams (pairing varies with the seed), seeds ${from}..${to}.`);
+  console.log(`  picker wins its own pick: ${pct(pickerWon / picked)}% ${ci(pickerWon / picked, picked)} (n=${picked} picked maps; ${deciders} deciders played) — real VCT since 2025: 53.6% (n=2,348)`);
+  console.log(`  the team with the higher mastery of the map wins it: ${pct(masteryFavWon / masteryGames)}% ${ci(masteryFavWon / masteryGames, masteryGames)} (n=${masteryGames})`);
 } else {
   const A = { id: "2406", name: "FURIA" }, B = { id: "918", name: "Global Esports" };
   /** How stubborn B's habit is (standing pseudo-observations). PV_HABIT overrides the default 8. */

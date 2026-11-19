@@ -3,6 +3,7 @@
 실제 프로 경기 기반 맵별 요원 픽·조합·승률 통계 (Layer A, 위치 데이터 없음).
 
 - `ascent-comps.json` — 국제전 Ascent 통계 (+ `ascent-comps.schema.json`)
+- `{abyss,bind,corrode,haven,split,summit,sunset}-comps.json` — 같은 빌더(`--map`)로 만든 나머지 풀 맵 통계 (시리즈 계층의 조합 적합도용, `lotus-comps.json` 포함 9개 맵). 표본이 작은 맵(Summit 36, Corrode 40 team-maps)은 조합별 수치를 그대로 믿지 말 것.
 - 출처: **VCT Reference DuckDB** (`https://vct-reference.com/dataset/vct.duckdb`, free to use incl. commercial, 출처 표기 권장). PV-2가 Level 2 검증한 소스.
 
 ## 재생성 (DB는 커밋하지 않음 — 매일 재빌드 + 용량)
