@@ -5,13 +5,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ReplayViewer } from '@pv/replay-viewer';
 import type { Replay } from '@pv/replay-engine';
-import type { MatchSummary } from '../../shared/ipc.ts';
+import type { MatchSummary, TeamOrder, TimeoutLogEntry } from '../../shared/ipc.ts';
 import { bridge } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import { computeMvp, economySeries } from '../review.ts';
-import { useT, strategyLabel } from '../i18n/index.tsx';
+import { useT, strategyLabel, type TFn } from '../i18n/index.tsx';
 
-export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Replay | null }) {
+/** Render a coach order compactly: "A 실행 · 포스 · 패스트". */
+function orderText(t: TFn, order: TeamOrder | null): string {
+  if (!order) return '—';
+  const parts: string[] = [];
+  if (order.strategy) parts.push(t(`ostrat.${order.strategy}`));
+  if (order.economy) parts.push(t(`oecon.${order.economy}`));
+  if (order.tempo) parts.push(t(`otempo.${order.tempo}`));
+  if (order.roles?.entry) parts.push(`${t('orders.entry')} ${order.roles.entry}`);
+  if (order.roles?.lurker) parts.push(`${t('orders.lurker')} ${order.roles.lurker}`);
+  return parts.join(' · ') || '—';
+}
+
+export function ReviewPanel({ match, replay, timeoutLog = [] }: { match: MatchSummary; replay: Replay | null; timeoutLog?: TimeoutLogEntry[] }) {
   const t = useT();
   const reasonShort = (r: string) => t(`reason.${r}`);
   const [traces, setTraces] = useState<DecisionTrace[]>([]);
@@ -98,6 +110,25 @@ export function ReviewPanel({ match, replay }: { match: MatchSummary; replay: Re
           </div>
         )}
       </section>
+
+      {/* tactical timeout log (interactive matches) */}
+      {timeoutLog.length > 0 && (
+        <section className="rev-card" data-testid="rev-timeouts">
+          <div className="attr-grouplabel">{t('rev.timeouts')} <span className="muted small">{t('rev.timeouts.sub')}</span></div>
+          <table className="rev-mvptable">
+            <tbody>
+              {timeoutLog.map((e, i) => (
+                <tr key={i}>
+                  <td className="muted">{t('rev.to.round', { n: e.round })}</td>
+                  <td><b>{match.teams[e.team].name}</b></td>
+                  <td><span className={`tag ${e.team === 'A' ? 'rv-a' : 'rv-b'}`}>{t(`rev.to.by.${e.by}`)}</span></td>
+                  <td className="small">{orderText(t, e.order)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {/* MVP */}
       <section className="rev-card" data-testid="rev-mvp">

@@ -30,6 +30,14 @@ const browserBridge: PvBridge = {
     return FALLBACK_TRACES[id];
   },
   async listTraces() { return Object.keys(FALLBACK_TRACES); },
+  // Interactive session needs the match-runner subprocess → Electron only.
+  async sessionStart() { throw new Error('interactive session requires Electron'); },
+  async sessionState() { throw new Error('interactive session requires Electron'); },
+  async sessionCallTimeout() { throw new Error('interactive session requires Electron'); },
+  async sessionSetOrders() { throw new Error('interactive session requires Electron'); },
+  async sessionPlayNextRound() { throw new Error('interactive session requires Electron'); },
+  async sessionResult() { throw new Error('interactive session requires Electron'); },
+  async sessionStop() { /* no-op */ },
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };

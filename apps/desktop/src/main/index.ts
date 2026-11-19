@@ -4,14 +4,18 @@
 // utilityProcess (DECISION-007), never on the UI thread.
 import { app, BrowserWindow, ipcMain, utilityProcess, type UtilityProcess } from 'electron';
 import { readFile, readdir } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { createInterface, type Interface as ReadlineInterface } from 'node:readline';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { fromSimEventLog, type SimEvent } from '@pv/replay-engine';
 import { ASCENT_TRANSFORM } from '../shared/ascent-transform.ts';
 import { mergeMatch, type RawMatch } from '../shared/match-merge.ts';
-import { IPC, type SimProgress, type SimRunRequest, type SimResult } from '../shared/ipc.ts';
+import {
+  IPC, type SessionCommand, type SessionReply, type SessionStartRequest, type SessionState,
+  type SimProgress, type SimRunRequest, type SimResult,
+} from '../shared/ipc.ts';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 // electron-vite lays out: out/main/index.js, out/main/sim-worker.js, out/preload/index.mjs
@@ -47,6 +51,62 @@ function createWindow(): BrowserWindow {
 // resolves from the app path; override with PV_REPO_ROOT / PV_MATCH_SCRIPT for E2E.
 function repoRoot(): string { return process.env.PV_REPO_ROOT ?? path.resolve(app.getAppPath(), '..', '..'); }
 function matchScript(): string { return process.env.PV_MATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'run-match.mts'); }
+function sessionScript(): string { return process.env.PV_SESSION_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'match-session.mts'); }
+
+// --- interactive match session: one long-lived tsx subprocess hosting a stateful
+//     @pv/match-runner MatchSession, driven over a line-delimited JSON protocol.
+//     One session at a time; starting a new one disposes the old. ---
+class SessionHost {
+  private child: ChildProcessWithoutNullStreams | null = null;
+  private rl: ReadlineInterface | null = null;
+  private seq = 0;
+  private pending = new Map<number, { resolve: (r: SessionReply) => void; reject: (e: Error) => void }>();
+
+  async start(req: SessionStartRequest): Promise<SessionState> {
+    this.dispose();
+    const cfg = {
+      teamA: req.teamA, teamB: req.teamB, map: req.mapId, seed: req.seed, aiTeams: req.aiTeams ?? ['B'],
+    };
+    const child = spawn('npx', ['tsx', sessionScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
+    this.child = child;
+    this.rl = createInterface({ input: child.stdout });
+    this.rl.on('line', (line) => {
+      const text = line.trim(); if (!text) return;
+      let msg: SessionReply & { id?: number };
+      try { msg = JSON.parse(text); } catch { return; } // ignore non-JSON diagnostics
+      if (typeof msg.id === 'number') {
+        const p = this.pending.get(msg.id);
+        if (p) { this.pending.delete(msg.id); msg.ok ? p.resolve(msg) : p.reject(new Error(msg.error ?? 'session error')); }
+      }
+    });
+    child.on('exit', () => { for (const p of this.pending.values()) p.reject(new Error('session ended')); this.pending.clear(); });
+    child.on('error', (e) => { for (const p of this.pending.values()) p.reject(e); this.pending.clear(); });
+    const r = await this.send({ cmd: 'state' });
+    return r.state!;
+  }
+
+  send(cmd: SessionCommand): Promise<SessionReply> {
+    const child = this.child;
+    if (!child) return Promise.reject(new Error('no active session'));
+    const id = ++this.seq;
+    return new Promise<SessionReply>((resolve, reject) => {
+      const timer = setTimeout(() => { if (this.pending.delete(id)) reject(new Error('session command timed out')); }, 60000);
+      this.pending.set(id, {
+        resolve: (r: SessionReply) => { clearTimeout(timer); resolve(r); },
+        reject: (e: Error) => { clearTimeout(timer); reject(e); },
+      });
+      child.stdin.write(JSON.stringify({ id, ...cmd }) + '\n');
+    });
+  }
+
+  dispose(): void {
+    if (this.child) { try { this.child.stdin.write(JSON.stringify({ id: ++this.seq, cmd: 'stop' }) + '\n'); } catch { /* */ } try { this.child.kill(); } catch { /* */ } }
+    this.rl?.close(); this.rl = null; this.child = null;
+    for (const p of this.pending.values()) p.reject(new Error('session disposed'));
+    this.pending.clear();
+  }
+}
+const sessionHost = new SessionHost();
 
 function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
   return new Promise<SimResult>((resolve, reject) => {
@@ -119,6 +179,10 @@ function runRoundSimFallback(req: SimRunRequest, runId: string, sender: Electron
     // the job is posted once the worker signals { type: 'ready' } (see onMsg)
   });
 }
+
+ipcMain.handle(IPC.sessionStart, async (_e, req: SessionStartRequest): Promise<SessionState> => sessionHost.start(req));
+ipcMain.handle(IPC.sessionCmd, async (_e, cmd: SessionCommand): Promise<SessionReply> => sessionHost.send(cmd));
+ipcMain.handle(IPC.sessionStop, async (): Promise<void> => { sessionHost.dispose(); });
 
 ipcMain.handle(IPC.traceList, async (): Promise<string[]> => {
   try {

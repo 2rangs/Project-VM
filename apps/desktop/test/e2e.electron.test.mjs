@@ -32,6 +32,7 @@ async function main() {
       PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
+      PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
     },
   });
   const page = await app.firstWindow();
@@ -80,6 +81,31 @@ async function main() {
   assert.ok(/MVP/.test(mvp) && /\d/.test(mvp), 'MVP shows a stat'); // language-agnostic
   await page.waitForTimeout(1200); // ground-truth viewer paints
   await page.screenshot({ path: path.join(OUT, 'desktop-review.png') });
+
+  // Interactive mode: round-by-round with a tactical timeout + coach orders, and
+  // verify the order reaches the match (timeout log) in the post-match Review.
+  await page.getByTestId('tab-match').click();
+  await page.getByTestId('mode-interactive').click();
+  await page.getByTestId('start-interactive').click();
+  await page.waitForSelector('[data-testid="session-bar"]', { timeout: 60000 });
+  await page.getByTestId('next-round').click();            // play round 1
+  await page.waitForTimeout(1500);
+  await page.getByTestId('call-timeout').click();          // tactical timeout
+  await page.waitForSelector('[data-testid="orders-panel"]', { timeout: 10000 });
+  await page.selectOption('[data-testid="ord-strategy"]', 'aExecute').catch(() => {});
+  await page.selectOption('[data-testid="ord-economy"]', 'force').catch(() => {});
+  await page.screenshot({ path: path.join(OUT, 'desktop-orders.png') });
+  await page.getByTestId('ord-confirm').click();           // issue orders
+  await page.waitForTimeout(500);
+  await page.getByTestId('next-round').click();            // play round 2 (orders applied)
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: path.join(OUT, 'desktop-interactive.png') });
+  // Review shows the tactical-timeout log (proves the order reached the engine)
+  await page.getByTestId('tab-review').click();
+  await page.waitForSelector('[data-testid="rev-timeouts"]', { timeout: 10000 });
+  const tolog = await page.getByTestId('rev-timeouts').innerText();
+  assert.ok(/R2/.test(tolog), 'timeout log records the pre-round-2 order');
+  await page.screenshot({ path: path.join(OUT, 'desktop-review-interactive.png') });
 
   // Squad (sortable table of real VCT names)
   await page.getByTestId('nav-squad').click();

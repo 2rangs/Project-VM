@@ -89,6 +89,39 @@
 > 새 전략 ID가 엔진에 추가되면 `strategy.<ID>` 키를 `ko.ts`·`en.ts`에 넣는다.
 > 키가 없으면 `strategyLabel()`이 원시 ID로 폴백한다.
 
+## 인터랙티브 경기 / 전술 타임아웃
+
+| 원어 | 한국어 |
+| --- | --- |
+| One-shot match | 한 번에 경기 |
+| Interactive (round by round) | 인터랙티브 (라운드 진행) |
+| Next round | 다음 라운드 |
+| Auto-play | 자동 진행 |
+| Tactical timeout | 전술 타임아웃 |
+| Coach orders | 전술 지시 |
+| Situation | 상황 요약 |
+| Timeout log | 타임아웃 로그 |
+| by coach / AI | 감독 / AI |
+
+### 지시 전략 (`ostrat.*`, 공격/수비)
+
+| 엔진 order | 한국어 |
+| --- | --- |
+| aExecute / bExecute | A 실행 / B 실행 |
+| midControl | 미드 컨트롤 |
+| default | 디폴트 |
+| split | 스플릿 |
+| defaultHold | 수비 기본 |
+| stackA / stackB | A 스택 / B 스택 |
+| aggroPush | 공격적 푸시 |
+
+### 경제 콜 (`oecon.*`) · 템포 (`otempo.*`)
+
+| 원어 | 한국어 |
+| --- | --- |
+| save / force / full | 세이브 / 포스 / 풀바이 |
+| slow / normal / fast | 슬로우 / 노멀 / 패스트 |
+
 ## 원어 유지 (번역하지 않음)
 
 - 요원: Jett, Sova, Killjoy, Omen … (한글 음차하지 않음)

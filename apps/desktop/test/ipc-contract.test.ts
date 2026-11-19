@@ -14,6 +14,9 @@ test('IPC channel names are the stable contract', () => {
   assert.equal(IPC.simProgress, 'pv:sim:progress');
   assert.equal(IPC.traceLoad, 'pv:trace:load');
   assert.equal(IPC.traceList, 'pv:trace:list');
+  assert.equal(IPC.sessionStart, 'pv:session:start');
+  assert.equal(IPC.sessionCmd, 'pv:session:cmd');
+  assert.equal(IPC.sessionStop, 'pv:session:stop');
 });
 
 test('StubRunner emits a deterministic, convertible event log + streams progress', async () => {
