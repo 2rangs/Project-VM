@@ -219,6 +219,12 @@
 
 - **추가 발견(PV-3, `1867674`):** 스파이크 폭발(bomb_detonated)이 스킬 on/off·모든 정책 변경에서 0(실측 0.082). 정책이 아니라 시뮬레이터 구조(설치 후 스파이크 타이머 vs 리테이크 타이밍) 문제로 추정 → 스킬 on 공격 승률 상한의 핵심 원인. **다음 스프린트 1순위(PV-4).**
 
+### 7차 main 머지 (2026-11-19 02:05 UTC) — 한글화 + 전술 타임아웃
+- 사용자 요청: 한글화, 타임아웃(상대 포함 총 4번) 때 지시.
+- 데스크톱 한국어 기본(ko/en 전환, `apps/desktop/docs/GLOSSARY_KO.md`) — PV-6 `a506649`, 수정 `a9ad382`(전멸 표기, 한국어 줄바꿈, 내부명 제거).
+- 전술 타임아웃: 팀당 2회(합계 4회), 라운드 사이에만. `createMatchSession`(state/callTimeout/setOrders/playNextRound) — PV-3 `23feb83`. 지시(전략·경제 콜·템포·역할)를 IGL이 실제로 따름, AI 상대도 3연패·매치포인트에 타임아웃. 인터랙티브 경기일 UI(지시 패널, 리뷰의 타임아웃 기록) — PV-6 `f5ec700`.
+- 검증: typecheck clean, core 130/4 todo, match-runner 19, round-sim 49, desktop 단위 통과, sim-batch 기본값 불변(judged 3/8).
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
