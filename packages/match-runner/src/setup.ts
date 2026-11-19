@@ -18,6 +18,7 @@ import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simula
 import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
+import { weaponPrice } from "@pv/game-rules";
 import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +40,11 @@ export function loadWeapons(): Record<string, WeaponSpec> {
 
 export const NO_ABILITIES: AbilityCatalog = {};
 
+/** Shop price of a weapon id as the sim names it ("Vandal" → game-rules key "vandal"). */
+function shopPrice(weaponId: string): number | undefined {
+  return weaponPrice(weaponId.toLowerCase())?.price.value;
+}
+
 /**
  * Build a SpatialQuery over the engine. The internal frame is game world units, so the
  * minimap→game transform is identity (sim positions are already world units; F1 decision).
@@ -54,7 +60,7 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
   constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined) {
-    this.inner = new TeamDecisionPolicy(sq, abilityEffect ? { abilityEffect } : {});
+    this.inner = new TeamDecisionPolicy(sq, { ...(abilityEffect ? { abilityEffect } : {}), weaponPrice: shopPrice });
   }
   /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
   setOrder(order: PolicyOrder | null): void {
