@@ -9,6 +9,7 @@ import type { MatchSummary, TeamOrder, TimeoutLogEntry } from '../../shared/ipc.
 import { bridge } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import { computeMvp, economySeries } from '../review.ts';
+import { DecisionsPanel } from './DecisionsPanel.tsx';
 import { useT, strategyLabel, type TFn } from '../i18n/index.tsx';
 
 /** Render a coach order compactly: "A 실행 · 포스 · 패스트". */
@@ -77,6 +78,9 @@ export function ReviewPanel({ match, replay, timeoutLog = [] }: { match: MatchSu
           })}
         </div>
       </section>
+
+      {/* round decisions: each team's read, call, plan changes and what the round showed */}
+      <DecisionsPanel match={match} />
 
       {/* economy timeline */}
       <section className="rev-card">

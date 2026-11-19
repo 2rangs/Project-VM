@@ -10,7 +10,11 @@
 // Usage: tsx run-match.mts '<json config>'
 import { runMatch } from '../../../packages/match-runner/src/index.ts';
 
-interface Cfg { teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean }
+interface Cfg {
+  teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean;
+  /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
+}
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 
 // recordPerception drives PV-4's fog-of-war / belief track (off by default in the
@@ -21,6 +25,8 @@ const res = runMatch({
   map: cfg.map ?? 'ascent',
   seed: cfg.seed ?? 1,
   recordPerception: cfg.recordPerception ?? true,
+  ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
+  ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
 });
 
 process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);
@@ -34,6 +40,7 @@ const out = {
   winner: res.winner,
   score: res.score,
   wentToOvertime: res.wentToOvertime,
+  options: cfg.options ?? {},
   rounds: res.rounds.map((r) => ({
     roundNumber: r.roundNumber,
     phase: r.phase,
@@ -57,6 +64,9 @@ const out = {
     // the parent remaps side→real-team and offsets tMs onto the match timeline.
     // Absent on match-runner versions without recordPerception.
     perception: r.replay.meta.perception ?? null,
+    // Why each team played the round the way it did (plans, pre-round opponent reads,
+    // what the round let them observe). Plain JSON; null on engines that predate it.
+    decisions: r.decisions ?? null,
   })),
 };
 process.stderr.write(`perception: ${out.rounds.filter((r) => r.perception).length}/${out.rounds.length} rounds\n`);
