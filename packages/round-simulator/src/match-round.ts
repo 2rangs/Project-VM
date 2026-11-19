@@ -31,6 +31,7 @@ import type {
   SimState,
   Side,
 } from "./types.js";
+import { AVERAGE_TRAITS, type TacticalTraits } from "./types.js";
 import type { DecisionPolicy, TeamEconomyState } from "./policy-contract.js";
 import { RoundSimulator } from "./simulator.js";
 
@@ -61,6 +62,8 @@ export interface MatchRoundPlayer {
   readonly agentId: string;
   /** Per-player skill profile; defaults to AVERAGE_SKILLS. */
   readonly skills?: CombatSkills;
+  /** Per-player tactical ratings (crossfire / info / clutch cases); defaults to AVERAGE_TRAITS. */
+  readonly traits?: TacticalTraits;
   /** Starting zone id; defaults to the side's spawn ("attacker-spawn"/"defender-spawn"). */
   readonly spawnZoneId?: string;
   readonly loadout: PlayerLoadout;
@@ -165,6 +168,7 @@ function buildSimPlayer(spatial: SpatialEngine, p: MatchRoundPlayer, side: Side)
     alive: true,
     weaponId: p.loadout.weaponId,
     skills: p.skills ?? AVERAGE_SKILLS,
+    traits: p.traits ?? AVERAGE_TRAITS,
     abilities,
     ultimatePoints: p.loadout.ultimatePoints ?? 0,
     ultimateCost: p.loadout.ultimateCost ?? 7,

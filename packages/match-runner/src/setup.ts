@@ -15,10 +15,10 @@ import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
 import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
-import { TeamDecisionPolicy, type PolicyOrder } from "@pv/team-engine";
+import { TeamDecisionPolicy, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
-import type { DecisionPolicy, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
+import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
@@ -59,6 +59,16 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
   setOrder(order: PolicyOrder | null): void {
     this.inner.setOrder(order);
+  }
+  /** Bind the real roster's decision profiles (keyed by this round's sim player ids). */
+  setProfiles(profiles: ReadonlyMap<string, PlayerProfile> | null): void {
+    this.inner.setProfiles(profiles);
+  }
+  setTuning(tuning: Partial<PolicyTuning> | null): void {
+    this.inner.setTuning(tuning);
+  }
+  setThrowFloors(floors: ReadonlyMap<string, number> | null): void {
+    this.inner.setThrowFloors(floors);
   }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({

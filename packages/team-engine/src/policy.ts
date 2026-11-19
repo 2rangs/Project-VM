@@ -75,8 +75,65 @@ const DEFENSE_AIM: Readonly<Record<string, string>> = {
 const DEFUSE_DURATION_MS = 7000;
 /** Where defenders fall back to when they give up a post-plant retake. */
 const SAVE_FALLBACK_ZONE = "defender-spawn";
-/** A lone post-plant defender saves (no retake) against at least this many alive attackers. */
-const LONE_SAVE_MIN_ATTACKERS = 4;
+/**
+ * Pre-match tunables of the decision formulas. Every field has a calibrated default
+ * (DEFAULT_POLICY_TUNING); a match may override any subset (MatchConfig.tuning).
+ */
+export interface PolicyTuning {
+  /** Throw hazard λ₀: neutral-profile throws per second of holding a post-plant posture. */
+  readonly throwRatePerSec: number;
+  /** Throw hazard β: profile sensitivity (each +0.1 of z multiplies the rate by e^(β/10)). */
+  readonly throwProfileBeta: number;
+  /** Lanchester κ: fighting-strength multiplier of the side already holding the planted spike. */
+  readonly postPlantHolderEdge: number;
+  /** The defense retakes only when the Lanchester win chance is at least this. */
+  readonly retakeMinWinChance: number;
+  /** Odds a hero-play lone defender (aggression ≥ 0.75) still accepts. */
+  readonly heroMinWinChance: number;
+}
+
+/** Calibrated on 160 Ascent matches (seeds 1..160) → 8/8 judged metrics vs the VCT baselines. */
+export const DEFAULT_POLICY_TUNING: PolicyTuning = {
+  throwRatePerSec: 0.006,
+  throwProfileBeta: 3,
+  postPlantHolderEdge: 1,
+  retakeMinWinChance: 0.15,
+  heroMinWinChance: 0.08,
+};
+
+/** Aggression at/above which a lone defender plays for the hero clutch. */
+const HERO_AGGRESSION = 0.75;
+/** Slack kept on top of travel + defuse when the retake waits for the group to stage. */
+const RETAKE_TIME_MARGIN_MS = 3000;
+/** Policy decision cadence (round-simulator decisionIntervalTicks × tickMs). */
+const DECISION_STEP_SEC = 0.5;
+
+/**
+ * Lanchester's square law win chance for `own` fighters against `enemy` (aimed fire: strength ∝ N²),
+ * with `enemyEdge` (κ) multiplying the enemy's strength: own² / (own² + κ · enemy²).
+ */
+export function lanchesterWinChance(own: number, enemy: number, enemyEdge = 1): number {
+  const o = own * own;
+  const e = enemyEdge * enemy * enemy;
+  return o + e === 0 ? 0 : o / (o + e);
+}
+
+/**
+ * Chance that a player with this profile throws during one decision step of `dtSec` seconds:
+ *     λ = max(minRate, λ₀ · exp(β · z)),   p = 1 − e^(−λ · dtSec)
+ * `minRatePerSec` is the player's floor (team / player minimum throw rate) — nobody is below it,
+ * however disciplined.
+ */
+export function throwChance(
+  profile: Pick<PlayerProfile, "aggression" | "discipline" | "decisionMaking">,
+  dtSec: number,
+  tuning: Pick<PolicyTuning, "throwRatePerSec" | "throwProfileBeta"> = DEFAULT_POLICY_TUNING,
+  minRatePerSec = 0,
+): number {
+  const z = (profile.aggression - 0.5) - (profile.discipline - 0.5) - (profile.decisionMaking - 0.5);
+  const rate = Math.max(minRatePerSec, tuning.throwRatePerSec * Math.exp(tuning.throwProfileBeta * z));
+  return 1 - Math.exp(-rate * dtSec);
+}
 
 export interface TeamRoundTrace {
   readonly contextId: string;
@@ -116,14 +173,43 @@ export interface PolicyOrder {
 
 export class TeamDecisionPolicy implements DecisionPolicy {
   private order: PolicyOrder | null = null;
+  private profiles: ReadonlyMap<string, PlayerProfile> | undefined;
+  private tuning: PolicyTuning = DEFAULT_POLICY_TUNING;
+  private throwFloors: ReadonlyMap<string, number> | undefined;
+  /** Post-plant: the defense has called the retake "go" this round (sticky until the next plant). */
+  private retakeCommitted = false;
+  /** Post-plant: the defense has called the save this round (sticky; see commitDefuser). */
+  private saveCommitted = false;
+  /** Post-plant: players who have thrown (broken their hold to dry-peek) this round. */
+  private readonly throwers = new Set<string>();
   constructor(
     private readonly spatial: SpatialQuery,
     private readonly options: TeamPolicyOptions = {},
-  ) {}
+  ) {
+    this.profiles = options.profiles;
+  }
 
   /** Set (or clear) the active coach order. Persists across decisions until changed. */
   setOrder(order: PolicyOrder | null): void {
     this.order = order;
+  }
+
+  /**
+   * Replace the player profiles (tendencies) for upcoming decisions. Sim player ids are side-named
+   * (atk1.. / def1..), so the match runner re-binds the real roster's profiles each round.
+   */
+  setProfiles(profiles: ReadonlyMap<string, PlayerProfile> | null): void {
+    this.profiles = profiles ?? undefined;
+  }
+
+  /** Override any subset of the formula tunables (pre-match option); null restores the defaults. */
+  setTuning(tuning: Partial<PolicyTuning> | null): void {
+    this.tuning = { ...DEFAULT_POLICY_TUNING, ...(tuning ?? {}) };
+  }
+
+  /** Minimum throw rate (per second of holding) per sim player id — the team / player floor. */
+  setThrowFloors(floors: ReadonlyMap<string, number> | null): void {
+    this.throwFloors = floors ?? undefined;
   }
 
   /** Pin the ordered entry/lurker roles onto the assignment (if those players are present). */
@@ -215,21 +301,20 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    */
   /**
    * ATTACK post-plant contest: after the plant, surviving attackers near the spike hold it
-   * (aimZone = plant zone) to watch the defuser, instead of wandering off — without this the
-   * committed defuser retakes uncontested and every plant is defused (0 detonations). Alive
-   * attackers within ~3s of the plant zone hold it pre-aimed; the combat engine then resolves the
-   * retake fight (a realistic defuse/detonation mix).
+   * (aimZone = plant zone) to watch the defuser instead of wandering off; far attackers keep their
+   * drawn command (rotate in / lurk). A holder may throw (see `throws`) and over-peek out of the
+   * site toward the retake. The combat engine then resolves the retake fight.
    */
-  private commitPostPlantContest(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+  private commitPostPlantContest(view: PolicyView, commands: readonly ActionCommand[], rng: RandomSource): ActionCommand[] {
     const out = commands.slice();
-    // Abilities-on only: with util, the plant is held by util-equalised fights; abilities-off is a
-    // merged, balance-tuned state (attack already slightly high) that this hold would inflate.
-    if (!this.options.abilityEffect || view.side !== "attack") return out;
+    if (view.side !== "attack") return out;
     const phase = view.spike.phase;
     if (phase !== "planted" && phase !== "defusing") return out;
     const pos = view.spike.position;
     if (!pos) return out;
     const plantZone = this.spatial.nearestZone({ x: pos.x, y: pos.y });
+    // Where a thrower over-peeks to: one zone out of the site, toward the retake.
+    const pushOut = this.spatial.findPath(plantZone, SAVE_FALLBACK_ZONE as ZoneId, "run")?.path[1];
     return out.map((c) => {
       if (c.kind === "useAbility" || c.kind === "defuse") return c; // keep util / (n/a on attack)
       const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
@@ -237,8 +322,32 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const pz = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
       const near = pz === plantZone || (this.spatial.shortestTravelTimeMs(pz, plantZone, "run") ?? Infinity) <= 3000;
       if (!near) return c; // far — let them rotate in / lurk
+      // Throw: gives up the held post-plant angle to go hunting for the retake, with no info.
+      if (pushOut && this.throws(tm.id, rng)) {
+        return pz === pushOut
+          ? { playerId: c.playerId, kind: "hold", executeAtMs: 0, sourceActionId: "throw:overpeek-hold" }
+          : { playerId: c.playerId, kind: "move", targetZone: pushOut, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:overpeek" };
+      }
       return { playerId: c.playerId, kind: "hold", aimZone: plantZone, executeAtMs: 0, sourceActionId: "attack-postplant-hold" };
     });
+  }
+
+  /**
+   * Throws (쓰로잉): a player in a winning post-plant posture — an attacker holding the plant, a
+   * defender staged for the group retake — sometimes breaks it and dry-peeks alone. Modelled as a
+   * proportional-hazards process: while holding, the throw rate is
+   *     λ = λ₀ · exp(β · z),   z = (aggression − ½) − (discipline − ½) − (decisionMaking − ½)
+   * and the chance in one decision step Δt is p = 1 − e^(−λ·Δt). Sticky for the round. λ₀ is the
+   * neutral-profile rate (tuning.throwRatePerSec); β = tuning.throwProfileBeta, so each +0.1 of z
+   * multiplies the rate by e^(β/10).
+   */
+  private throws(playerId: PolicyView["teammates"][number]["id"], rng: RandomSource): boolean {
+    const key = String(playerId);
+    if (this.throwers.has(key)) return true;
+    const p = throwChance(profileFor(playerId, this.profiles), DECISION_STEP_SEC, this.tuning, this.throwFloors?.get(key) ?? 0);
+    if (rng.nextFloat() >= p) return false;
+    this.throwers.add(key);
+    return true;
   }
 
   private commitSpikeCarrier(
@@ -308,9 +417,13 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * retake: move (run) to the plant zone, then `defuse` and keep defusing while on it. Only the
    * chosen defender's command is overridden; no combat parameter is changed.
    */
-  private commitDefuser(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+  private commitDefuser(view: PolicyView, commands: readonly ActionCommand[], rng: RandomSource): ActionCommand[] {
     const out = commands.slice();
     const phase = view.spike.phase;
+    if (phase !== "planted" && phase !== "defusing") { // new round / pre-plant
+      this.retakeCommitted = this.saveCommitted = false;
+      this.throwers.clear();
+    }
     if (view.side !== "defense" || (phase !== "planted" && phase !== "defusing")) return out;
     const pos = view.spike.position;
     if (!pos) return out;
@@ -329,54 +442,152 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     }
     if (!best) return out;
 
-    if (!this.retakeViable(view, defenders.length, bestMs)) return this.postPlantSave(view, out);
+    // A called save sticks: one pick on the way out does not turn a lost round back into a retake
+    // (the saver would re-peek 1v3 and die) — only an even-or-better man count reopens it.
+    const attackersAlive = view.knownEnemyAliveCount;
+    if (this.saveCommitted && attackersAlive != null && attackersAlive <= defenders.length) this.saveCommitted = false;
+    if (this.saveCommitted || !this.retakeViable(view, defenders, bestMs)) {
+      this.saveCommitted = true;
+      return this.postPlantSave(view, plantZone, out);
+    }
 
+    const byId = new Map(out.map((c) => [String(c.playerId), c]));
+    const set = (c: ActionCommand) => byId.set(String(c.playerId), c);
+
+    // Coordinated retake: stage at the entry zones, then go in together (see retakeGo).
+    if (!this.retakeCommitted && defenders.length > 1 && !this.retakeGo(view, defenders, plantZone)) {
+      for (const d of defenders) {
+        const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+        const entry = this.retakeEntry(dz, plantZone);
+        // Throw: runs onto the site alone instead of waiting for the group.
+        if (dz !== plantZone && this.throws(d.id, rng)) {
+          set({ playerId: d.id, kind: "move", targetZone: plantZone, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:solo-retake" });
+          continue;
+        }
+        set(dz === entry || dz === plantZone
+          ? { playerId: d.id, kind: "hold", aimZone: plantZone, executeAtMs: 0, sourceActionId: "retake-stage:hold" }
+          : { playerId: d.id, kind: "move", targetZone: entry, moveMode: "run", executeAtMs: 0, sourceActionId: "retake-stage:move" });
+      }
+      return [...byId.values()];
+    }
+    this.retakeCommitted = true;
+
+    // Go: the nearest defender commits to the defuse; the rest swing onto the site with them.
+    for (const d of defenders) {
+      if (d === best) continue;
+      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+      set(dz === plantZone
+        ? { playerId: d.id, kind: "hold", executeAtMs: 0, sourceActionId: "retake-go:hold" }
+        : { playerId: d.id, kind: "move", targetZone: plantZone, moveMode: "run", executeAtMs: 0, sourceActionId: "retake-go:move" });
+    }
     const bz = this.spatial.nearestZone({ x: best.position.x, y: best.position.y });
-    const command: ActionCommand = bz === plantZone
+    set(bz === plantZone
       ? { playerId: best.id, kind: "defuse", targetZone: plantZone, executeAtMs: 0, sourceActionId: "defuser-commit:defuse" }
-      : { playerId: best.id, kind: "move", targetZone: plantZone, moveMode: "run", executeAtMs: 0, sourceActionId: "defuser-commit:move" };
-    const idx = out.findIndex((c) => String(c.playerId) === String(best!.id));
-    if (idx >= 0) out[idx] = command;
-    else out.push(command);
-    return out;
+      : { playerId: best.id, kind: "move", targetZone: plantZone, moveMode: "run", executeAtMs: 0, sourceActionId: "defuser-commit:move" });
+    return [...byId.values()];
   }
 
   /**
-   * Post-plant retake viability (the bomb_detonated = 0 fix). Without it the defense ALWAYS
-   * retakes, so a plant ends only in a defuse or an attack elimination and never detonates
-   * (real Ascent: 8.2% of rounds). Pro defenders give up a retake when either
-   *  - the defuse cannot finish in time: travel to the spike + a full defuse > detonation timer, or
-   *  - the retake is hopeless: a lone defender against 4+ attackers (1v4 / 1v5).
-   * Deterministic (no RNG draw), so non-post-plant decisions and the RNG stream are unchanged.
-   * Re-evaluated every decision: if the saving side picks up kills, the retake turns back on.
-   * Threshold sweep (sim-batch, 20 matches, Ascent): 1v3+ → 12.8% detonations, 1v4+ → 9.0%,
-   * down-3 → 24%; real 8.2%, so the lone-defender 1v4+ rule is used.
+   * The zone a defender stages in before swinging onto the plant: the last zone before the plant
+   * on its own route (so several defenders stage on different entries → a crossfire retake).
    */
-  private retakeViable(view: PolicyView, defendersAlive: number, defuserTravelMs: number): boolean {
+  private retakeEntry(from: ZoneId, plantZone: ZoneId): ZoneId {
+    if (from === plantZone) return plantZone;
+    const path = this.spatial.findPath(from, plantZone, "run")?.path;
+    if (!path || path.length < 2) return from;
+    // Stage out of sight of the spike: the zone nearest the plant on this route with no line of
+    // sight onto it (staging in the doorway just feeds the post-plant pre-aim). Fallback: the
+    // defender's own zone if every zone on the route sees the plant.
+    for (let i = path.length - 2; i >= 0; i--) {
+      if (!this.spatial.hasLineOfSight(path[i]!, plantZone)) return path[i]!;
+    }
+    return from;
+  }
+
+  /**
+   * Retake trigger. The old policy sent the nearest defender in alone the instant the spike went
+   * down, so retakes trickled in one at a time into attackers holding pre-aimed angles (post-plant
+   * duels: attack 83%, a 1v3 post-plant still went to the attack 63%). Real retakes group first.
+   * Go when every alive defender is staged (on its entry or the plant zone), or when waiting any
+   * longer would leave too little time: the slowest *reachable* defender's travel + a full defuse +
+   * a safety margin has reached the detonation timer.
+   */
+  private retakeGo(view: PolicyView, defenders: ReadonlyArray<PolicyView["teammates"][number]>, plantZone: ZoneId): boolean {
+    const timer = view.spike.detonationInMs ?? Infinity;
+    let allStaged = true;
+    let slowest = 0;
+    for (const d of defenders) {
+      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+      if (dz !== plantZone && dz !== this.retakeEntry(dz, plantZone)) allStaged = false;
+      const t = dz === plantZone ? 0 : this.spatial.shortestTravelTimeMs(dz, plantZone, "run");
+      if (t != null && t + DEFUSE_DURATION_MS <= timer) slowest = Math.max(slowest, t);
+    }
+    return allStaged || slowest + DEFUSE_DURATION_MS + RETAKE_TIME_MARGIN_MS >= timer;
+  }
+
+  /**
+   * Post-plant retake viability. Without it the defense ALWAYS retakes, so a plant ends only in a
+   * defuse or an attack elimination and never detonates (real Ascent: 8.2% of rounds). The defense
+   * gives up the retake when either
+   *  - the defuse cannot finish in time: travel to the spike + a full defuse > detonation timer, or
+   *  - the fight is not worth taking. Lanchester's square law (aimed fire: fighting strength ∝ N²)
+   *    gives the retake's win chance
+   *        P(retake) = D² / (D² + κ · A²)      D defenders, A attackers alive, κ = holder edge
+   *    and the team saves when P(retake) < tuning.retakeMinWinChance. With κ = 1 and a 0.15 threshold:
+   *    1v2 0.20 retake · 2v4 0.20 retake · 2v5 0.14 save · 1v3 0.10 save · 1v4 0.06 save.
+   *    A hero-play profile (aggression ≥ HERO_AGGRESSION) accepts worse odds as the last man.
+   *    A team/player minimum throw rate (setThrowFloors) floors λ.
+   * Deterministic (no RNG draw). The call is sticky for the round (see commitDefuser).
+   */
+  private retakeViable(view: PolicyView, defenders: ReadonlyArray<PolicyView["teammates"][number]>, defuserTravelMs: number): boolean {
     const timer = view.spike.detonationInMs;
     if (timer != null && defuserTravelMs + DEFUSE_DURATION_MS > timer) return false;
     const attackers = view.knownEnemyAliveCount;
-    if (attackers == null) return true;
-    return !(defendersAlive <= 1 && attackers >= LONE_SAVE_MIN_ATTACKERS);
+    if (attackers == null || attackers <= 0) return true;
+    const hero = defenders.length === 1 && profileFor(defenders[0]!.id, this.profiles).aggression >= HERO_AGGRESSION;
+    const t = this.tuning;
+    return lanchesterWinChance(defenders.length, attackers, t.postPlantHolderEdge) >= (hero ? t.heroMinWinChance : t.retakeMinWinChance);
   }
 
   /**
-   * Save after a lost post-plant: every alive defender falls back to the defender spawn (away from
-   * the post-plant crossfire) instead of feeding the retake; a defender already there holds. The
-   * attackers may still hunt them down — the spike detonates otherwise.
+   * Save after a lost post-plant: every alive defender breaks line of sight with the spike instead
+   * of feeding the retake — it hides in the nearest zone the plant cannot see, reached without
+   * crossing the plant (falling back to the defender spawn), and holds there. Running the whole
+   * map to spawn under 4 attackers' sightlines just gets the saver hunted. The attackers may still
+   * find them; otherwise the spike detonates.
    */
-  private postPlantSave(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
-    const fallback = SAVE_FALLBACK_ZONE as ZoneId;
+  private postPlantSave(view: PolicyView, plantZone: ZoneId, commands: readonly ActionCommand[]): ActionCommand[] {
     const byId = new Map(commands.map((c) => [String(c.playerId), c]));
     for (const d of view.teammates) {
       if (!d.alive) continue;
       const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-      const command: ActionCommand = dz === fallback || !this.spatial.isReachable(dz, fallback)
+      const hide = this.saveZone(dz, plantZone);
+      const command: ActionCommand = hide === dz
         ? { playerId: d.id, kind: "hold", executeAtMs: 0, sourceActionId: "postplant-save:hold" }
-        : { playerId: d.id, kind: "move", targetZone: fallback, moveMode: "run", executeAtMs: 0, sourceActionId: "postplant-save:move" };
+        : { playerId: d.id, kind: "move", targetZone: hide, moveMode: "run", executeAtMs: 0, sourceActionId: "postplant-save:move" };
       byId.set(String(d.id), command);
     }
     return [...byId.values()];
+  }
+
+  /** Where a saving defender hides: nearest zone out of the plant's sight, on a route avoiding it. */
+  private saveZone(from: ZoneId, plantZone: ZoneId): ZoneId {
+    const hidden = (z: ZoneId) => z !== plantZone && !this.spatial.hasLineOfSight(z, plantZone);
+    if (hidden(from)) return from;
+    let best: ZoneId | null = null;
+    let bestMs = Infinity;
+    for (const z of this.spatial.allZones()) {
+      if (!hidden(z)) continue;
+      const route = this.spatial.findPath(from, z, "run");
+      if (!route || route.path.includes(plantZone)) continue;
+      if (route.timeMs < bestMs) {
+        bestMs = route.timeMs;
+        best = z;
+      }
+    }
+    if (best) return best;
+    const spawn = SAVE_FALLBACK_ZONE as ZoneId;
+    return this.spatial.getZoneMeta(spawn) && this.spatial.isReachable(from, spawn) ? spawn : from;
   }
 
   /** Nearest plantable site to a zone by run travel time (falls back to the first plantable site). */
@@ -421,23 +632,23 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const strategy = ordered ?? recon.strategy;
     const reconReason = ordered ? `order: forced ${ordered}` : recon.reason;
     const reconChanged = ordered ? ordered !== opening : recon.changed;
-    const roles = this.applyRoleOrder(assignRoles(view, strategy, this.options.profiles, rng));
+    const roles = this.applyRoleOrder(assignRoles(view, strategy, this.profiles, rng));
     const roleOf = new Map(roles.map((r) => [String(r.playerId), r.role]));
 
     const alive = view.teammates.filter((p) => p.alive);
     const choices: Array<{ choice: PlayerChoice; entry: TeamworkEntry }> = [];
     for (const p of alive) {
       const role = roleOf.get(String(p.id)) ?? "support";
-      const profile = profileFor(p.id, this.options.profiles);
+      const profile = profileFor(p.id, this.profiles);
       const choice = choosePlayerCommand(String(p.id), role, strategy, generation.feasible, profile, rng);
       choices.push({ choice, entry: { command: choice.command, role, profile } });
     }
 
     let commands = this.commitAttackUtil(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
     commands = this.commitSpikeCarrier(view, strategy, commands);
-    commands = this.commitPostPlantContest(view, commands);
+    commands = this.commitPostPlantContest(view, commands, rng);
     commands = this.commitDefenseHold(view, strategy, commands);
-    commands = this.commitDefuser(view, commands);
+    commands = this.commitDefuser(view, commands, rng);
 
     const decision: PolicyDecision = { strategy, roles, commands };
     const trace: TeamRoundTrace = {

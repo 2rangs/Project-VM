@@ -33,7 +33,8 @@ import type {
   SimConfig,
   TrackFrame,
 } from "./types.js";
-import { DEFAULT_CONFIG } from "./types.js";
+import { AVERAGE_TRAITS, DEFAULT_CONFIG } from "./types.js";
+import { clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness } from "./situational.js";
 import type { ActionCommand, BeliefState, DecisionPolicy } from "./policy-contract.js";
 import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
@@ -48,6 +49,14 @@ export interface RoundSimulatorDeps {
 
 const RUN_UNITS_PER_SEC = 675;
 const WALK_UNITS_PER_SEC = 340;
+/** Per side: enemy id → when/where the team last saw them (the info layer of a duel). */
+type TeamIntel = Map<Side, Map<string, { atMs: number; zoneId: string }>>;
+
+/** A moving enemy only adds a crossfire angle when it comes from at least this far off the duel's line. */
+const CROSSFIRE_MIN_ANGLE_RAD = Math.PI / 6;
+/** A teammate swinging on the SAME line is trade pressure, not a second angle: it counts as a fraction of a gun. */
+const CROSSFIRE_SAME_LINE_WEIGHT = 0.5;
+
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
 // Passable-hazard (molly / area-denial) pathfinding cost: how long you'd detour to avoid 1 HP of
 // damage, and how long a crosser is assumed exposed in a hazard zone. A fresh molly thus adds a
@@ -145,6 +154,7 @@ export class RoundSimulator {
       commandTrace.push({ tick: state.tick, elapsedMs: state.elapsedMs, ...e });
     };
     const commands = new Map<string, ActionCommand>();
+    const intel: TeamIntel = new Map(); // per side: enemy id → last seen (time, zone)
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
     const rngOf = {
@@ -276,7 +286,8 @@ export class RoundSimulator {
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil);
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel);
+      this.recordIntel(state, sight, intel);
 
       // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
       // overlapping mollies in the same zone do not double-dip the per-tick damage.
@@ -464,8 +475,43 @@ export class RoundSimulator {
     events: SimEvent[],
     engTrace: EngagementRecord[] | null,
     castBusyUntil: ReadonlyMap<string, number>,
+    intel: TeamIntel,
   ): void {
     const alive = state.players.filter((p) => p.alive);
+    const sees = (viewerId: string, targetId: string): boolean =>
+      sight.players.get(viewerId)?.visibleEnemies.some((e) => e.currentlyVisible && e.playerId === targetId) ?? false;
+    // Info freshness — exponential decay (half-life model): a call on an enemy that has not left
+    // its zone is worth w = 2^(−Δt / halfLife) ∈ (0,1]. Trading stat stretches the half-life
+    // (×0.4 … ×1.6): a good trader converts a teammate's call into a refrag for longer.
+    const infoWeight = (viewer: SimPlayer, enemy: SimPlayer): number => {
+      const seen = intel.get(viewer.side)?.get(enemy.id);
+      if (!seen || seen.zoneId !== enemy.zoneId) return 0;
+      return infoFreshness(state.elapsedMs - seen.atMs, this.cfg.infoWindowMs, (viewer.traits ?? AVERAGE_TRAITS).trading);
+    };
+    // Clutch stat: the last player alive against 2+ plays above/below their level under pressure.
+    const lastAliveVsMany = (p: SimPlayer): boolean =>
+      !alive.some((c) => c.side === p.side && c.id !== p.id) && alive.filter((c) => c.side !== p.side).length >= 2;
+    // Crossfire (양각) = guns on the target from MORE THAN ONE ANGLE. Beyond the duel opponent, an
+    // enemy with line of sight onto the target's zone counts when it is either
+    //  - set up: stationary (holding a spot — two holders on one callout-sized zone cover two angles), or
+    //  - flanking: its bearing to the target differs from the duelist's by ≥ CROSSFIRE_MIN_ANGLE.
+    // A stack running through the same choke behind the entry is one angle, not a crossfire: each
+    // such teammate only adds trade pressure (CROSSFIRE_SAME_LINE_WEIGHT of a gun).
+    // Exposure, not facing: duels resolve at first contact, so "both already look at him" is rare.
+    const crossfired = (target: SimPlayer, duelist: SimPlayer): number => {
+      if (this.cfg.crossfirePenaltyMs <= 0) return 0;
+      const ref = Math.atan2(duelist.position.y - target.position.y, duelist.position.x - target.position.x);
+      let guns = 0;
+      for (const c of alive) {
+        if (!c.alive || c.side !== duelist.side || c.id === duelist.id) continue;
+        if (!this.spatial.hasLineOfSight(c.zoneId, target.zoneId) && !sees(c.id, target.id)) continue;
+        if (!this.isMoving(c)) { guns++; continue; }
+        const bearing = Math.atan2(c.position.y - target.position.y, c.position.x - target.position.x);
+        const diff = Math.abs(Math.atan2(Math.sin(bearing - ref), Math.cos(bearing - ref)));
+        guns += diff >= CROSSFIRE_MIN_ANGLE_RAD ? 1 : CROSSFIRE_SAME_LINE_WEIGHT;
+      }
+      return guns;
+    };
     // A player can be in at most one duel per tick — you can only shoot one target at a
     // time. This lets kills be TRADED over successive ticks instead of one holder winning
     // several simultaneous 1v1s, so numbers advantage actually matters.
@@ -477,18 +523,42 @@ export class RoundSimulator {
         if (busy.has(a.id) || busy.has(b.id)) continue;
         const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
         if (engaged.has(key)) continue;
-        const aSeesB = sight.players.get(a.id)?.visibleEnemies.some((e) => e.currentlyVisible && e.playerId === b.id) ?? false;
-        const bSeesA = sight.players.get(b.id)?.visibleEnemies.some((e) => e.currentlyVisible && e.playerId === a.id) ?? false;
+        const aSeesB = sees(a.id, b.id);
+        const bSeesA = sees(b.id, a.id);
         if (!aSeesB && !bSeesA) continue;
+        // Info (called position): the team saw this enemy recently and it has not left that zone →
+        // the swing is pre-aimed at the spot, not a blind entry. No info keeps the surprise penalty.
+        const aInfoW = aSeesB ? 0 : infoWeight(a, b);
+        const bInfoW = bSeesA ? 0 : infoWeight(b, a);
+        // A call fresher than one half-life is a pre-aimed swing: it also denies the holder's pre-aim.
+        const aInfo = aInfoW >= 0.5;
+        const bInfo = bInfoW >= 0.5;
+        const aAware = aSeesB || aInfo;
+        const bAware = bSeesA || bInfo;
+        // Crossfire (양각): a second enemy, from another zone, also has eyes on this player.
+        const aCross = crossfired(a, b);
+        const bCross = crossfired(b, a);
         engaged.add(key);
         busy.add(a.id);
         busy.add(b.id);
         const seed = deriveSeed(this.cfg.seed, `${state.tick}:${key}`);
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bSeesA, this.isMoving(b), castBusyUntil);
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aSeesB, this.isMoving(a), castBusyUntil);
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW);
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW);
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
+        // Attrition: whoever survives the duel keeps a share (cfg.damageCarryover) of the damage it
+        // took into the next fight. At 0 a winner re-fights every duel at full health, so one player
+        // can chain 1v1s against a group; the carry-over is the Lanchester attrition that makes
+        // numbers count.
+        for (const p of [a, b]) {
+          const o = r.outcomes[p.id];
+          if (o && o.alive) {
+            const f = this.cfg.damageCarryover;
+            p.health = Math.max(1, p.health - f * Math.max(0, p.health - o.health));
+            p.armor = Math.max(0, p.armor - f * Math.max(0, p.armor - o.armor));
+          }
+        }
         if (r.winner && r.loser) {
           const loser = state.players.find((p) => p.id === r.loser)!;
           loser.alive = false;
@@ -515,6 +585,8 @@ export class RoundSimulator {
             attackerPreAim: atkSees && !defSees && !this.isMoving(atkP),
             defenderPreAim: defSees && !atkSees && !this.isMoving(defP),
             attackerMoving: this.isMoving(atkP), defenderMoving: this.isMoving(defP),
+            crossfire: { attacker: (atkP === a ? aCross : bCross) > 0, defender: (defP === a ? aCross : bCross) > 0 },
+            info: { attacker: atkP === a ? aInfo : bInfo, defender: defP === a ? aInfo : bInfo },
             attackerFlashedMs: abilityEngine.blindRemainingMs(atkP.id, state.elapsedMs),
             defenderFlashedMs: abilityEngine.blindRemainingMs(defP.id, state.elapsedMs),
             winnerSide,
@@ -524,18 +596,45 @@ export class RoundSimulator {
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>): Combatant {
+  /** Remember every enemy each side currently sees (after this tick's duels → usable from the next tick). */
+  private recordIntel(state: SimState, sight: ReturnType<PerceptionEngine["perceive"]>, intel: TeamIntel): void {
+    for (const p of state.players) {
+      if (!p.alive) continue;
+      const seen = sight.players.get(p.id)?.visibleEnemies ?? [];
+      for (const e of seen) {
+        if (!e.currentlyVisible) continue;
+        const enemy = state.players.find((q) => q.id === e.playerId);
+        if (!enemy?.alive) continue;
+        let m = intel.get(p.side);
+        if (!m) intel.set(p.side, (m = new Map()));
+        m.set(enemy.id, { atMs: state.elapsedMs, zoneId: enemy.zoneId });
+      }
+    }
+  }
+
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
     const stationary = !this.isMoving(p);
     // Mid-cast: weapon not out (within the ability windup) → no pre-aim and a reaction penalty.
     const casting = (castBusyUntil.get(p.id) ?? 0) > state.elapsedMs;
-    const preAim = seesEnemy && !enemySeesSelf && stationary && !casting;
+    // Caught in a crossfire you cannot hold both angles: no pre-aim, and a late reaction.
+    const crossfire = extraGuns > 0;
+    const preAim = seesEnemy && !enemySeesSelf && stationary && !casting && !crossfire;
     // Peeker's advantage: a stationary holder reacts late to an enemy peeking into it, even on
     // mutual sight. One who did not see first keeps the full surprise delay. A caster caught mid-
     // windup reacts slower still (weapon-unready), bounded by the windup.
-    const base = !seesEnemy ? SURPRISE_DELAY_MS : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
-    const seesEnemyAtMs = base + (casting ? CAST_WINDUP_PENALTY_MS : 0);
+    // Not seeing first costs the surprise delay, discounted by how fresh the team's call is:
+    // surprise = SURPRISE_DELAY × (1 − w). No info (w = 0) → the full penalty of a blind entry.
+    const base = !seesEnemy ? SURPRISE_DELAY_MS * (1 - infoWeight) : stationary && opponentMoving ? this.cfg.peekerAdvantageMs : 0;
+    const traits = p.traits ?? AVERAGE_TRAITS;
+    // Crossfire — Hick–Hyman law: choice reaction time grows with the log of the alternatives,
+    // RT = b · log2(n + 1), n = extra enemy guns on this player, b = crossfirePenaltyMs (ms per bit).
+    // Game sense scales b: reading the second angle shrinks it (×1.5 at 0.2 … ×0.5 at 1.0).
+    const crossMs = crossfirePenaltyMs(this.cfg.crossfirePenaltyMs, extraGuns, traits.gameSense);
+    // Clutch: composure when last alive vs 2+ — below-average clutch reacts late, above-average early.
+    const clutchMs = clutchSpot ? clutchReactionMs(traits.clutch) : 0;
+    const seesEnemyAtMs = Math.max(0, base + (casting ? CAST_WINDUP_PENALTY_MS : 0) + crossMs + clutchMs);
     return {
       id: p.id, teamId: p.teamId, health: p.health, armor: p.armor, weapon, skills: p.skills,
       posture: {

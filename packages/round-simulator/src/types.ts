@@ -27,6 +27,25 @@ export interface AbilityLoadoutSlot {
   lastUsedAtMs: number | null;
 }
 
+/**
+ * Tactical ratings in [0,1] (higher is better; league average 0.6). Mechanical skill (CombatSkills)
+ * decides a fair duel; these decide how a player fares in the SITUATIONS around it:
+ *  - gameSense: caught in a crossfire (양각) → scales the crossfire reaction penalty.
+ *  - trading:   teammate's call on an enemy → how long that info stays usable (refrag window).
+ *  - clutch:    last player alive against several → composure (reaction bonus / penalty).
+ * See docs/STAT_OUTCOME_MATRIX.md for the full stat → outcome table.
+ */
+export interface TacticalTraits {
+  readonly gameSense: number;
+  readonly trading: number;
+  readonly clutch: number;
+}
+
+export const AVERAGE_TRAITS: TacticalTraits = { gameSense: 0.6, trading: 0.6, clutch: 0.6 };
+
+/** Trait reference point: a 0.6 player gets exactly the base (calibrated) value of each effect. */
+export const TRAIT_BASELINE = 0.6;
+
 export interface SimPlayer {
   readonly id: PlayerId;
   readonly teamId: TeamId;
@@ -40,6 +59,8 @@ export interface SimPlayer {
   alive: boolean;
   weaponId: string;
   readonly skills: CombatSkills;
+  /** Tactical (non-mechanical) ratings that decide the situational duel cases (default AVERAGE_TRAITS). */
+  readonly traits?: TacticalTraits;
   readonly abilities: AbilityLoadoutSlot[];
   ultimatePoints: number;
   ultimateCost: number;
@@ -224,6 +245,10 @@ export interface EngagementRecord {
   readonly defenderPreAim: boolean;
   readonly attackerMoving: boolean;
   readonly defenderMoving: boolean;
+  /** The side caught in a crossfire (exposed to a second enemy's sightline), if any. */
+  readonly crossfire?: { readonly attacker: boolean; readonly defender: boolean };
+  /** The side whose team had a fresh call on the other's position (infoWindowMs). */
+  readonly info?: { readonly attacker: boolean; readonly defender: boolean };
   readonly attackerFlashedMs: number;
   readonly defenderFlashedMs: number;
   /** Winning side of this duel, or null if no one died this duel. */
@@ -273,6 +298,24 @@ export interface SimConfig {
    * not attacker-surprise). Opening-duel calibration target only (README §31).
    */
   readonly peekerAdvantageMs: number;
+  /**
+   * Crossfire (양각) — Hick–Hyman law slope b (ms per bit): a player exposed to n extra enemy guns
+   * (enemies with line of sight onto its zone, beyond the one it is duelling) reacts
+   * b · log2(n + 1) later and loses any pre-aim edge. This is what makes numbers count.
+   */
+  readonly crossfirePenaltyMs: number;
+  /**
+   * Info half-life (ms): a teammate's call on an enemy still in the same zone is worth
+   * w = 2^(−Δt / halfLife); the surprise delay of not seeing first is scaled by (1 − w), and a call
+   * fresher than one half-life also denies the holder's pre-aim. No info → full surprise penalty.
+   */
+  readonly infoWindowMs: number;
+  /**
+   * Attrition: share of the damage a duel's survivor took that carries into its next fight
+   * (0 = every duel at full health, 1 = all of it). Below 1 stands in for what the sim does not
+   * model between fights (cover, heals, disengaging).
+   */
+  readonly damageCarryover: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
   readonly combatCalibration?: CombatCalibration;
 }
@@ -289,5 +332,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   recordPerception: false,
   traceCommands: false,
   mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
+  crossfirePenaltyMs: 60, // Hick–Hyman slope (ms/bit); calibrated on 160 Ascent matches (8/8 judged)
+  infoWindowMs: 2000,
+  damageCarryover: 0, // off by default: full attrition needs defensive stall utility to stay balanced
   peekerAdvantageMs: 210, // calibrated with hitChanceScale 0.50 → attacker opening ≈ 0.45 (CI [0.420,0.454])
 };

@@ -8,6 +8,9 @@ import {
   reconsider,
   viewFromTeamContext,
   renderRoundReport,
+  lanchesterWinChance,
+  throwChance,
+  DEFAULT_POLICY_TUNING,
 } from "@pv/team-engine";
 import { loadDecisionContext } from "@pv/world-state";
 import { SeededRng } from "@pv/simulation-core";
@@ -147,7 +150,7 @@ describe("coach orders (tactical timeouts)", () => {
   });
 });
 
-describe("post-plant retake vs save (bomb_detonated fix)", () => {
+describe("post-plant retake vs save (Lanchester)", () => {
   const A_SITE = { x: 780, y: 360, z: 0 };
   /** Defense view with the spike planted on A; only the first `alive` defenders are alive (at A main). */
   const postPlant = (alive: number, attackers: number, detonationInMs: number): PolicyView => {
@@ -159,24 +162,90 @@ describe("post-plant retake vs save (bomb_detonated fix)", () => {
       knownEnemyAliveCount: attackers,
     };
   };
-  const decide = (v: PolicyView) => new TeamDecisionPolicy(spatial).decide(v, rng(5)).commands;
+  const decide = (v: PolicyView, policy = new TeamDecisionPolicy(spatial)) => policy.decide(v, rng(5)).commands;
+  const isSave = (cmds: ReturnType<typeof decide>) => cmds.length > 0 && cmds.every((c) => c.sourceActionId?.startsWith("postplant-save"));
 
-  it("retakes a winnable post-plant: the nearest defender goes for the spike", () => {
-    const cmds = decide(postPlant(2, 2, 40_000));
-    expect(cmds.some((c) => c.sourceActionId?.startsWith("defuser-commit"))).toBe(true);
-    expect(cmds.some((c) => c.sourceActionId?.startsWith("postplant-save"))).toBe(false);
+  it("square law: strength grows with the square of the numbers", () => {
+    expect(lanchesterWinChance(3, 3)).toBeCloseTo(0.5);
+    expect(lanchesterWinChance(1, 2)).toBeCloseTo(0.2);
+    expect(lanchesterWinChance(1, 3)).toBeCloseTo(0.1);
+    expect(lanchesterWinChance(2, 5)).toBeCloseTo(4 / 29);
+    expect(lanchesterWinChance(4, 2)).toBeGreaterThan(lanchesterWinChance(3, 2));
   });
 
-  it("a lone defender saves against 4 attackers (no defuse attempt)", () => {
-    const cmds = decide(postPlant(1, 4, 40_000));
+  it("retakes a winnable post-plant as a group: stage first, never save", () => {
+    const cmds = decide(postPlant(2, 2, 40_000));
+    expect(isSave(cmds)).toBe(false);
+    expect(cmds.every((c) => /^(retake-|defuser-commit|throw:)/.test(c.sourceActionId ?? ""))).toBe(true);
+  });
+
+  it("a lone defender retakes 1v2 but saves 1v3 (win chance 0.20 vs 0.10)", () => {
+    expect(isSave(decide(postPlant(1, 2, 40_000)))).toBe(false);
+    const cmds = decide(postPlant(1, 3, 40_000));
     expect(cmds).toHaveLength(1);
-    expect(cmds[0]!.kind).toBe("move");
-    expect(cmds[0]!.targetZone).toBe("defender-spawn");
-    expect(cmds[0]!.sourceActionId).toBe("postplant-save:move");
+    expect(isSave(cmds)).toBe(true);
+    expect(cmds[0]!.kind).not.toBe("defuse");
+  });
+
+  it("two defenders retake 2v4 but save 2v5", () => {
+    expect(isSave(decide(postPlant(2, 4, 40_000)))).toBe(false);
+    expect(isSave(decide(postPlant(2, 5, 40_000)))).toBe(true);
+  });
+
+  it("a hero-play profile still takes the 1v3", () => {
+    const view = postPlant(1, 3, 40_000);
+    const id = view.teammates[0]!.id;
+    const policy = new TeamDecisionPolicy(spatial);
+    policy.setProfiles(new Map([[String(id), { playerId: id, aggression: 0.9, discipline: 0.5, decisionMaking: 0.5, teamwork: 0.5 }]]));
+    expect(isSave(decide(view, policy))).toBe(false);
   });
 
   it("saves when travel + full defuse cannot beat the detonation timer", () => {
-    const cmds = decide(postPlant(3, 1, 6_000));
-    expect(cmds.every((c) => c.kind !== "defuse" && c.sourceActionId?.startsWith("postplant-save"))).toBe(true);
+    expect(isSave(decide(postPlant(3, 1, 6_000)))).toBe(true);
+  });
+
+  it("the save call is sticky until the man count is level again", () => {
+    const policy = new TeamDecisionPolicy(spatial);
+    expect(isSave(decide(postPlant(1, 3, 40_000), policy))).toBe(true);
+    expect(isSave(decide(postPlant(1, 2, 39_500), policy))).toBe(true); // one pick does not reopen it
+    expect(isSave(decide(postPlant(1, 1, 39_000), policy))).toBe(false);
+  });
+});
+
+describe("throws (proportional hazard)", () => {
+  const neutral = { aggression: 0.5, discipline: 0.5, decisionMaking: 0.5 };
+  it("neutral profile: p = 1 − exp(−λ₀·Δt)", () => {
+    expect(throwChance(neutral, 0.5)).toBeCloseTo(1 - Math.exp(-DEFAULT_POLICY_TUNING.throwRatePerSec * 0.5), 10);
+  });
+  it("aggressive, undisciplined, poor decision makers throw more; the composed throw less", () => {
+    const wild = throwChance({ aggression: 0.9, discipline: 0.3, decisionMaking: 0.3 }, 0.5);
+    const calm = throwChance({ aggression: 0.3, discipline: 0.9, decisionMaking: 0.9 }, 0.5);
+    expect(wild).toBeGreaterThan(throwChance(neutral, 0.5) * 5);
+    expect(calm).toBeLessThan(throwChance(neutral, 0.5) / 5);
+  });
+  it("a minimum throw rate floors even the most composed player, and never lowers a wild one", () => {
+    const calm = { aggression: 0.3, discipline: 0.9, decisionMaking: 0.9 };
+    const wild = { aggression: 0.9, discipline: 0.3, decisionMaking: 0.3 };
+    expect(throwChance(calm, 0.5, DEFAULT_POLICY_TUNING, 0.05)).toBeCloseTo(1 - Math.exp(-0.05 * 0.5), 10);
+    expect(throwChance(wild, 0.5, DEFAULT_POLICY_TUNING, 0.0001)).toBe(throwChance(wild, 0.5));
+  });
+  it("the base rate is a pre-match option", () => {
+    const off = { ...DEFAULT_POLICY_TUNING, throwRatePerSec: 0 };
+    expect(throwChance(neutral, 0.5, off)).toBe(0);
+  });
+  it("retake threshold is a pre-match option: a cautious team saves a 2v3", () => {
+    const base = loadView("03");
+    const view: PolicyView = {
+      ...base,
+      teammates: base.teammates.map((p, i) => ({ ...p, alive: i < 2, position: { x: 720, y: 615, z: 0 } })),
+      spike: { phase: "planted", position: { x: 780, y: 360, z: 0 }, holderId: null, detonationInMs: 40_000 },
+      knownEnemyAliveCount: 3,
+    };
+    const saves = (policy: TeamDecisionPolicy) =>
+      policy.decide(view, rng(5)).commands.every((c) => c.sourceActionId?.startsWith("postplant-save"));
+    expect(saves(new TeamDecisionPolicy(spatial))).toBe(false); // 4/13 ≈ 0.31 ≥ 0.15
+    const cautious = new TeamDecisionPolicy(spatial);
+    cautious.setTuning({ retakeMinWinChance: 0.4 });
+    expect(saves(cautious)).toBe(true);
   });
 });

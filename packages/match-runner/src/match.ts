@@ -14,6 +14,8 @@ import { ROUND_RULES } from "@pv/game-rules";
 import {
   runMatchRound,
   deriveSeed,
+  mulberry32,
+  type TacticalTraits,
   toPv6ReplayFormat,
   type RoundEndReason,
   type SimEvent,
@@ -41,7 +43,9 @@ import {
   type TeamEconomy,
   type BuyDecision,
 } from "./economy.js";
-import { rosterSkills } from "./teams.js";
+import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterProfile } from "./teams.js";
+import type { PlayerProfile } from "@pv/shared-types";
+import type { PolicyTuning } from "@pv/team-engine";
 import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
 
@@ -57,6 +61,21 @@ export type Side = "attack" | "defense";
 export interface TeamRef {
   readonly id: string;
   readonly name: string;
+}
+
+/**
+ * Pre-match engine options (all optional; omitted fields use the calibrated defaults). See
+ * docs/STAT_OUTCOME_MATRIX.md for the formula each one feeds.
+ */
+export interface MatchTuning extends Partial<PolicyTuning> {
+  /** Crossfire (Hick–Hyman) slope b in ms per bit. Default 60. */
+  readonly crossfireMsPerBit?: number;
+  /** Info half-life in ms. Default 2000. */
+  readonly infoHalfLifeMs?: number;
+  /** Round-form σ for a player with consistency 0. Default 0.08. */
+  readonly formSigmaMax?: number;
+  /** Attrition: share of duel damage a survivor carries into the next fight (0..1). Default 0. */
+  readonly damageCarryover?: number;
 }
 
 export interface MatchConfig {
@@ -79,6 +98,17 @@ export interface MatchConfig {
    * ~0.02). Kept off until attacker util-for-executes is modelled; on is for ability experiments.
    */
   readonly enableAbilities?: boolean;
+  /** Pre-match engine options: override any of the calibrated formula constants. */
+  readonly tuning?: MatchTuning;
+  /**
+   * Minimum throw rates (throws per second of holding a post-plant posture). A player's floor is
+   * the larger of their team's and their own entry; nobody throws less often than their floor,
+   * however disciplined their ratings. Keys are game-data team ids / player ids.
+   */
+  readonly minThrowRates?: {
+    readonly teams?: Readonly<Record<string, number>>;
+    readonly players?: Readonly<Record<string, number>>;
+  };
 }
 
 export interface RoundRecord {
@@ -176,7 +206,7 @@ function armorFor(tier: BuyDecision["tier"]): number {
  * Defenders spawn on their anchors (a/b/mid); attackers use the default attacker spawn. Per-player
  * skills come from the team's real ratings. Abilities/ults are the next layer (Stage 2).
  */
-function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean, defenderSpawns: readonly string[] = DEFENDER_SPAWNS): MatchRoundPlayer[] {
+function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean, defenderSpawns: readonly string[] = DEFENDER_SPAWNS, traits: readonly TacticalTraits[] = []): MatchRoundPlayer[] {
   const prefix = side === "attack" ? "atk" : "def";
   const armor = armorFor(buy.tier);
   return Array.from({ length: 5 }, (_, i): MatchRoundPlayer => {
@@ -185,6 +215,7 @@ function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<ty
       id: `${prefix}${i + 1}`,
       agentId: comp.agent,
       skills: skills[i],
+      ...(traits[i] ? { traits: traits[i] } : {}),
       ...(side === "defense" ? { spawnZoneId: defenderSpawns[i] ?? DEFENDER_SPAWNS[i] } : {}),
       loadout: {
         weaponId: buy.weapon,
@@ -218,6 +249,13 @@ export class MatchEngine {
   private readonly sq = makeSpatialQuery(this.spatial);
   private readonly maxRounds: number;
   private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
+  private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
+  private readonly profilesBySlot: Record<TeamSlot, RosterProfile[]>;
+  private readonly consistencyBySlot: Record<TeamSlot, number[]>;
+  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number };
+  private readonly formSigmaMax: number | undefined;
+  /** Per roster index: the player's minimum throw rate (max of team and player entries). */
+  private readonly throwFloorsBySlot: Record<TeamSlot, number[]>;
   private readonly abilitiesOn: boolean;
   private readonly abilities: ReturnType<typeof loadAbilityCatalog>;
   private readonly policies: ReturnType<typeof makeSimPolicies>;
@@ -233,11 +271,64 @@ export class MatchEngine {
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
     this.maxRounds = config.maxRounds ?? 60;
     this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5), B: rosterSkills(config.teamB.id, 5) };
+    this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5), B: rosterTraits(config.teamB.id, 5) };
+    this.profilesBySlot = { A: rosterProfiles(config.teamA.id, 5), B: rosterProfiles(config.teamB.id, 5) };
+    this.consistencyBySlot = { A: rosterConsistency(config.teamA.id, 5), B: rosterConsistency(config.teamB.id, 5) };
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
     this.policies = makeSimPolicies(this.sq, abilityEffect);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
+    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, ...policyTuning } = config.tuning ?? {};
+    this.policies.attack.setTuning(policyTuning);
+    this.policies.defense.setTuning(policyTuning);
+    this.simTuning = {
+      ...(crossfireMsPerBit !== undefined ? { crossfirePenaltyMs: crossfireMsPerBit } : {}),
+      ...(infoHalfLifeMs !== undefined ? { infoWindowMs: infoHalfLifeMs } : {}),
+      ...(damageCarryover !== undefined ? { damageCarryover } : {}),
+    };
+    this.formSigmaMax = formSigmaMax;
+    this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id), B: this.throwFloors(config.teamB.id) };
+  }
+
+  /**
+   * This round's mechanical skills: the roster's ratings with each player's consistency-sized form
+   * swing, plus the clutch-driven nerve shift when the round is a pressure round.
+   */
+  private formSkills(slot: TeamSlot, roundSeed: number, pressure: boolean): ReturnType<typeof rosterSkills> {
+    return this.skillsBySlot[slot].map((sk, i) => {
+      const rng = mulberry32(deriveSeed(roundSeed, `form:${slot}:${i}`));
+      return applyRoundForm(
+        sk,
+        this.consistencyBySlot[slot][i] ?? 0.6,
+        rng(),
+        rng(),
+        pressure ? { clutch: this.traitsBySlot[slot][i]?.clutch ?? 0.6 } : undefined,
+        this.formSigmaMax,
+      );
+    });
+  }
+
+  /** Pressure round: overtime, or either team one round from winning the map. */
+  private isPressureRound(roundNumber: number): boolean {
+    return roundNumber > REGULATION_ROUNDS || this.score.A >= ROUNDS_TO_WIN - 1 || this.score.B >= ROUNDS_TO_WIN - 1;
+  }
+
+  private throwFloors(teamId: string): number[] {
+    const m = this.config.minThrowRates;
+    const team = m?.teams?.[teamId] ?? 0;
+    return rosterPlayerIds(teamId, 5).map((pid) => Math.max(team, (pid && m?.players?.[pid]) || 0));
+  }
+
+  private floorMap(slot: TeamSlot, prefix: "atk" | "def"): ReadonlyMap<string, number> {
+    return new Map(this.throwFloorsBySlot[slot].map((rate, i) => [`${prefix}${i + 1}`, rate]));
+  }
+
+  private profileMap(slot: TeamSlot, prefix: "atk" | "def"): ReadonlyMap<string, PlayerProfile> {
+    return new Map(this.profilesBySlot[slot].map((pr, i) => {
+      const id = `${prefix}${i + 1}`;
+      return [id, { playerId: id as PlayerProfile["playerId"], ...pr }];
+    }));
   }
 
   private teamRef(slot: TeamSlot): TeamRef { return slot === "A" ? this.config.teamA : this.config.teamB; }
@@ -286,16 +377,22 @@ export class MatchEngine {
 
     // --- Run the round through PV-4's runMatchRound (the match-loop seam) ---
     const seed = deriveSeed(config.seed, `${this.matchId}:round:${roundNumber}`);
+    const pressure = this.isPressureRound(roundNumber);
+    // Real-roster decision profiles, re-keyed to this round's side-named sim ids (atk1.. / def1..).
+    this.policies.attack.setProfiles(this.profileMap(attacker, "atk"));
+    this.policies.defense.setProfiles(this.profileMap(defender, "def"));
+    this.policies.attack.setThrowFloors(this.floorMap(attacker, "atk"));
+    this.policies.defense.setThrowFloors(this.floorMap(defender, "def"));
     const attackers: MatchRoundTeam = {
       teamId: this.teamRef(attacker).id,
       economy: toEconomyState(economy[attacker], "attack"),
-      players: makeRoster("attack", buys[attacker], this.skillsBySlot[attacker], this.abilitiesOn),
+      players: makeRoster("attack", buys[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
     };
     const defSpawns = this.abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
       economy: toEconomyState(economy[defender], "defense"),
-      players: makeRoster("defense", buys[defender], this.skillsBySlot[defender], this.abilitiesOn, defSpawns),
+      players: makeRoster("defense", buys[defender], this.formSkills(defender, seed, pressure), this.abilitiesOn, defSpawns, this.traitsBySlot[defender]),
     };
     const out = runMatchRound({
       spatial: this.spatial,
@@ -310,7 +407,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false },
+      config: { recordPerception: config.recordPerception ?? false, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

@@ -8,6 +8,7 @@
 export { runMatch, attackerFor, MatchEngine } from "./match.js";
 export type {
   MatchConfig,
+  MatchTuning,
   MatchResult,
   RoundRecord,
   RunMatchOptions,

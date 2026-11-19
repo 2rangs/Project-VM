@@ -3,8 +3,8 @@
  * the round-simulator drives (Handoff §17, README §23–24). Decisions use only the
  * team-observable PolicyView (no WorldState; DECISION-004) and a seeded RandomSource.
  */
-export { TeamDecisionPolicy } from "./policy.js";
-export type { TeamPolicyOptions, TeamRoundTrace, PolicyOrder } from "./policy.js";
+export { TeamDecisionPolicy, lanchesterWinChance, throwChance, DEFAULT_POLICY_TUNING } from "./policy.js";
+export type { TeamPolicyOptions, TeamRoundTrace, PolicyOrder, PolicyTuning } from "./policy.js";
 export {
   selectStrategy,
   reconsider,
