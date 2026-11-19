@@ -5,7 +5,7 @@
 // ultimate-point carryover, driven by PV-3's TeamDecisionPolicy over both sides
 // (DECISION-004: policy input is observation-only; no WorldState). Deterministic per seed
 // (DECISION-010).
-export { runMatch, attackerFor, MatchEngine } from "./match.js";
+export { runMatch, attackerFor, MatchEngine, observedTendencies } from "./match.js";
 export type {
   MatchConfig,
   MatchTuning,

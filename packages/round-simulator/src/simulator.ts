@@ -33,8 +33,8 @@ import type {
   SimConfig,
   TrackFrame,
 } from "./types.js";
-import { AVERAGE_TRAITS, DEFAULT_CONFIG } from "./types.js";
-import { clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness } from "./situational.js";
+import { AVERAGE_TRAITS, DEFAULT_CONFIG, type ShotCue } from "./types.js";
+import { angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness, soundCueConfidence, TRACER_CUE_CONFIDENCE } from "./situational.js";
 import type { ActionCommand, BeliefState, DecisionPolicy } from "./policy-contract.js";
 import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
@@ -50,12 +50,15 @@ export interface RoundSimulatorDeps {
 const RUN_UNITS_PER_SEC = 675;
 const WALK_UNITS_PER_SEC = 340;
 /** Per side: enemy id → when/where the team last saw them (the info layer of a duel). */
-type TeamIntel = Map<Side, Map<string, { atMs: number; zoneId: string }>>;
+type TeamIntel = Map<Side, Map<string, { atMs: number; zoneId: string; confidence: number }>>;
 
 /** A moving enemy only adds a crossfire angle when it comes from at least this far off the duel's line. */
 const CROSSFIRE_MIN_ANGLE_RAD = Math.PI / 6;
 /** A teammate swinging on the SAME line is trade pressure, not a second angle: it counts as a fraction of a gun. */
-const CROSSFIRE_SAME_LINE_WEIGHT = 0.5;
+const CROSSFIRE_SAME_LINE_WEIGHT = 0.2;
+
+/** How far from the corner a peeking player is when first contact happens (world units; ≈3 m). */
+const PEEK_CORNER_DISTANCE = 300;
 
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
 // Passable-hazard (molly / area-denial) pathfinding cost: how long you'd detour to avoid 1 HP of
@@ -155,6 +158,7 @@ export class RoundSimulator {
     };
     const commands = new Map<string, ActionCommand>();
     const intel: TeamIntel = new Map(); // per side: enemy id → last seen (time, zone)
+    const cues: ShotCue[] = []; // every shot cue observed this round (feeds views; traced on request)
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
     const rngOf = {
@@ -176,7 +180,7 @@ export class RoundSimulator {
         const activeAbilities = toPerceptionAbilityStates(abilityEngine);
         for (const side of ["attack", "defense"] as const) {
           const dt = prevBelief[side] ? decisionDtMs : 0;
-          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, { activeAbilities, abilityEngine });
+          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, { activeAbilities, abilityEngine, cues, elapsedMs: state.elapsedMs });
           prevBelief[side] = view.belief;
           // PV-6 fog-of-war / belief heatmap: sample per-team observation+belief (opt-in).
           if (this.cfg.recordPerception && state.tick % perceptionInterval === 0) {
@@ -286,7 +290,7 @@ export class RoundSimulator {
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel);
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel, cues);
       this.recordIntel(state, sight, intel);
 
       // 5b. molly / area-denial damage to anyone standing in a denied zone. Dedupe zones so two
@@ -359,6 +363,7 @@ export class RoundSimulator {
         : undefined,
       commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
       engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
+      cueTrace: this.cfg.traceCommands ? cues : undefined,
     };
   }
 
@@ -476,6 +481,7 @@ export class RoundSimulator {
     engTrace: EngagementRecord[] | null,
     castBusyUntil: ReadonlyMap<string, number>,
     intel: TeamIntel,
+    cues: ShotCue[],
   ): void {
     const alive = state.players.filter((p) => p.alive);
     const sees = (viewerId: string, targetId: string): boolean =>
@@ -486,7 +492,7 @@ export class RoundSimulator {
     const infoWeight = (viewer: SimPlayer, enemy: SimPlayer): number => {
       const seen = intel.get(viewer.side)?.get(enemy.id);
       if (!seen || seen.zoneId !== enemy.zoneId) return 0;
-      return infoFreshness(state.elapsedMs - seen.atMs, this.cfg.infoWindowMs, (viewer.traits ?? AVERAGE_TRAITS).trading);
+      return infoFreshness(state.elapsedMs - seen.atMs, this.cfg.infoWindowMs, (viewer.traits ?? AVERAGE_TRAITS).trading, seen.confidence);
     };
     // Clutch stat: the last player alive against 2+ plays above/below their level under pressure.
     const lastAliveVsMany = (p: SimPlayer): boolean =>
@@ -542,11 +548,31 @@ export class RoundSimulator {
         busy.add(a.id);
         busy.add(b.id);
         const seed = deriveSeed(this.cfg.seed, `${state.tick}:${key}`);
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW);
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW);
+        // Angle advantage — the geometry of the corner between them (situational.ts): with one
+        // player peeking (PEEK_CORNER_DISTANCE from the corner, strafing at their own speed) and
+        // the other holding the rest of the engagement distance away, whoever is farther from the
+        // corner sees the other's shoulder first. Nothing is added when both move or both hold.
+        let aAngleMs = 0;
+        let bAngleMs = 0;
+        const aMoving = this.isMoving(a);
+        const bMoving = this.isMoving(b);
+        if (aMoving !== bMoving) {
+          const peeker = aMoving ? a : b;
+          const holderDist = Math.max(1, dist3(a.position, b.position) - PEEK_CORNER_DISTANCE);
+          const speed = (peeker.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC) * (this.weapons[peeker.weaponId]?.runSpeedMultiplier ?? 1);
+          const d = angleAdvantageDelays(PEEK_CORNER_DISTANCE, holderDist, speed);
+          aAngleMs = aMoving ? d.peekerMs : d.holderMs;
+          bAngleMs = bMoving ? d.peekerMs : d.holderMs;
+        }
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW, aAngleMs);
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW, bAngleMs);
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
+        // Shots are world events with observable consequences for the OTHER team (sound, tracers).
+        for (const [shooter, target] of [[a, b], [b, a]] as const) {
+          if ((r.outcomes[shooter.id]?.shotsFired ?? 0) > 0) this.emitShotCues(state, shooter, target, alive, intel, cues);
+        }
         // Attrition: whoever survives the duel keeps a share (cfg.damageCarryover) of the damage it
         // took into the next fight. At 0 a winner re-fights every duel at full health, so one player
         // can chain 1v1s against a group; the carry-over is the Lanchester attrition that makes
@@ -585,6 +611,7 @@ export class RoundSimulator {
             attackerPreAim: atkSees && !defSees && !this.isMoving(atkP),
             defenderPreAim: defSees && !atkSees && !this.isMoving(defP),
             attackerMoving: this.isMoving(atkP), defenderMoving: this.isMoving(defP),
+            angleDelayMs: { attacker: atkP === a ? aAngleMs : bAngleMs, defender: defP === a ? aAngleMs : bAngleMs },
             crossfire: { attacker: (atkP === a ? aCross : bCross) > 0, defender: (defP === a ? aCross : bCross) > 0 },
             info: { attacker: atkP === a ? aInfo : bInfo, defender: defP === a ? aInfo : bInfo },
             attackerFlashedMs: abilityEngine.blindRemainingMs(atkP.id, state.elapsedMs),
@@ -594,6 +621,43 @@ export class RoundSimulator {
         }
       }
     }
+  }
+
+  /**
+   * World event → observation. A shot is heard by every enemy the sound reaches (zone-level, loose)
+   * and its tracer is SEEN by every enemy with a sightline onto the shot's path — when the weapon's
+   * tracers are visible to enemies at all. Tracers are light, so smoke does not hide them; the
+   * sightline is the map's zone-to-zone line of sight. Each cue updates the observing team's intel
+   * on the shooter (never weaker than what it already holds from a fresher, firmer source).
+   */
+  private emitShotCues(state: SimState, shooter: SimPlayer, target: SimPlayer, alive: readonly SimPlayer[], intel: TeamIntel, cues: ShotCue[]): void {
+    const weapon = this.weapons[shooter.weaponId];
+    const observerSide: Side = shooter.side === "attack" ? "defense" : "attack";
+    const observers = alive.filter((p) => p.alive && p.side === observerSide && p.id !== target.id);
+    if (observers.length === 0) return;
+    const audible = new Map(this.spatial.audibleZones(shooter.zoneId, 0.01).map((z) => [z.zoneId, z.strength]));
+    let sound = 0;
+    let tracer = false;
+    for (const o of observers) {
+      sound = Math.max(sound, soundCueConfidence(o.zoneId === shooter.zoneId ? 1 : audible.get(o.zoneId) ?? 0, weapon?.fireLoudness ?? 1));
+      if ((weapon?.tracerVisible ?? true) &&
+        (this.spatial.hasLineOfSight(o.zoneId, shooter.zoneId) || this.spatial.hasLineOfSight(o.zoneId, target.zoneId))) tracer = true;
+    }
+    const zonePosition = { ...(this.spatial.getZone(shooter.zoneId)?.position ?? shooter.position) };
+    const push = (channel: ShotCue["channel"], confidence: number) => {
+      cues.push({ tick: state.tick, elapsedMs: state.elapsedMs, shooterId: shooter.id, weaponId: shooter.weaponId, zoneId: shooter.zoneId, zonePosition, observerSide, channel, confidence });
+    };
+    if (sound > 0) push("sound", sound);
+    if (tracer) push("tracer", TRACER_CUE_CONFIDENCE);
+    const confidence = Math.max(sound, tracer ? TRACER_CUE_CONFIDENCE : 0);
+    if (confidence <= 0) return;
+    let m = intel.get(observerSide);
+    if (!m) intel.set(observerSide, (m = new Map()));
+    const prev = m.get(shooter.id);
+    const prevNow = prev && prev.zoneId === shooter.zoneId
+      ? infoFreshness(state.elapsedMs - prev.atMs, this.cfg.infoWindowMs, AVERAGE_TRAITS.trading, prev.confidence)
+      : 0;
+    if (confidence > prevNow) m.set(shooter.id, { atMs: state.elapsedMs, zoneId: shooter.zoneId, confidence });
   }
 
   /** Remember every enemy each side currently sees (after this tick's duels → usable from the next tick). */
@@ -607,12 +671,12 @@ export class RoundSimulator {
         if (!enemy?.alive) continue;
         let m = intel.get(p.side);
         if (!m) intel.set(p.side, (m = new Map()));
-        m.set(enemy.id, { atMs: state.elapsedMs, zoneId: enemy.zoneId });
+        m.set(enemy.id, { atMs: state.elapsedMs, zoneId: enemy.zoneId, confidence: 1 });
       }
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0): Combatant {
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0, angleMs = 0): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
     const stationary = !this.isMoving(p);
@@ -634,7 +698,7 @@ export class RoundSimulator {
     const crossMs = crossfirePenaltyMs(this.cfg.crossfirePenaltyMs, extraGuns, traits.gameSense);
     // Clutch: composure when last alive vs 2+ — below-average clutch reacts late, above-average early.
     const clutchMs = clutchSpot ? clutchReactionMs(traits.clutch) : 0;
-    const seesEnemyAtMs = Math.max(0, base + (casting ? CAST_WINDUP_PENALTY_MS : 0) + crossMs + clutchMs);
+    const seesEnemyAtMs = Math.max(0, base + (casting ? CAST_WINDUP_PENALTY_MS : 0) + crossMs + clutchMs + angleMs);
     return {
       id: p.id, teamId: p.teamId, health: p.health, armor: p.armor, weapon, skills: p.skills,
       posture: {

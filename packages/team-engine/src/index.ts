@@ -4,7 +4,7 @@
  * team-observable PolicyView (no WorldState; DECISION-004) and a seeded RandomSource.
  */
 export { TeamDecisionPolicy, lanchesterWinChance, throwChance, DEFAULT_POLICY_TUNING } from "./policy.js";
-export type { TeamPolicyOptions, TeamRoundTrace, PolicyOrder, PolicyTuning } from "./policy.js";
+export type { TeamPolicyOptions, TeamRoundTrace, PolicyOrder, PolicyTuning, PlanSummary } from "./policy.js";
 export {
   selectStrategy,
   reconsider,
@@ -20,3 +20,5 @@ export { applyTeamwork } from "./teamwork.js";
 export type { TeamworkEntry } from "./teamwork.js";
 export { viewFromTeamContext, synthContextFromView } from "./view.js";
 export { renderRoundReport } from "./report.js";
+export { OpponentModel, Tendency, tendencyLean } from "./opponent-model.js";
+export type { OpponentRead, RoundObservation, TendencyEstimate, SiteKey } from "./opponent-model.js";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clutchReactionMs, crossfirePenaltyMs, infoWeight } from "../src/situational.js";
+import { angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight } from "../src/situational.js";
 
 describe("crossfire — Hick–Hyman law", () => {
   it("no extra gun, no penalty; one extra gun costs exactly one bit", () => {
@@ -39,5 +39,29 @@ describe("clutch composure", () => {
     expect(clutchReactionMs(0.6)).toBeCloseTo(0);
     expect(clutchReactionMs(1.0)).toBeCloseTo(-100);
     expect(clutchReactionMs(0.2)).toBeCloseTo(100);
+  });
+});
+
+describe("angle advantage — corner geometry, no tuned coefficient", () => {
+  // run strafe 675 u/s, body half-width 35 u → one half-width takes 51.9 ms
+  const unit = (35 / 675) * 1000;
+  it("equal distances: nobody sees first", () => {
+    expect(angleAdvantageDelays(300, 300, 675)).toEqual({ peekerMs: 0, holderMs: 0 });
+  });
+  it("a deep holder sees the peeker's shoulder first, approaching one half-width of strafing", () => {
+    const near = angleAdvantageDelays(300, 600, 675);
+    const far = angleAdvantageDelays(300, 3000, 675);
+    expect(near.peekerMs).toBeCloseTo(unit * 0.5);
+    expect(far.peekerMs).toBeCloseTo(unit * 0.9);
+    expect(far.holderMs).toBe(0);
+    expect(far.peekerMs).toBeLessThan(unit);
+  });
+  it("a holder hugging the corner is the one seen first (capped)", () => {
+    const d = angleAdvantageDelays(300, 100, 675);
+    expect(d.peekerMs).toBe(0);
+    expect(d.holderMs).toBeCloseTo(unit * 2);
+  });
+  it("a slower peek (walking) gives the holder more time", () => {
+    expect(angleAdvantageDelays(300, 1500, 340).peekerMs).toBeGreaterThan(angleAdvantageDelays(300, 1500, 675).peekerMs);
   });
 });

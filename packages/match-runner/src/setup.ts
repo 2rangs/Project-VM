@@ -15,7 +15,7 @@ import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
 import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
-import { TeamDecisionPolicy, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
+import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
 import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
@@ -63,6 +63,14 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   /** Bind the real roster's decision profiles (keyed by this round's sim player ids). */
   setProfiles(profiles: ReadonlyMap<string, PlayerProfile> | null): void {
     this.inner.setProfiles(profiles);
+  }
+  /** The plan of the round just played (opening call, final call, revisions). */
+  planSummary(): PlanSummary | null {
+    return this.inner.planSummary();
+  }
+  /** The team's cross-round read of its opponent (null = play without memory). */
+  setOpponentRead(read: OpponentRead | null): void {
+    this.inner.setOpponentRead(read);
   }
   setTuning(tuning: Partial<PolicyTuning> | null): void {
     this.inner.setTuning(tuning);

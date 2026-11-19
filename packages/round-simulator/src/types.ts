@@ -95,6 +95,10 @@ export interface SimState {
   timeRemainingMs: number;
   readonly players: SimPlayer[];
   spike: SpikeState;
+  /** 1-based round number within the match (surfaced to policies). Default 1. */
+  readonly roundNumber?: number;
+  /** Each side's economy going into the round (surfaced to its own policy only). */
+  readonly economy?: Readonly<Partial<Record<Side, { readonly credits: number; readonly lossBonusTier: number; readonly consecutiveLosses: number }>>>;
 }
 
 // The decision layer (DecisionPolicy / PolicyView / ActionCommand) follows PV-3's contract,
@@ -245,6 +249,8 @@ export interface EngagementRecord {
   readonly defenderPreAim: boolean;
   readonly attackerMoving: boolean;
   readonly defenderMoving: boolean;
+  /** Angle-advantage reaction delay each side carried into the duel (ms; the nearer-the-corner side). */
+  readonly angleDelayMs?: { readonly attacker: number; readonly defender: number };
   /** The side caught in a crossfire (exposed to a second enemy's sightline), if any. */
   readonly crossfire?: { readonly attacker: boolean; readonly defender: boolean };
   /** The side whose team had a fresh call on the other's position (infoWindowMs). */
@@ -253,6 +259,27 @@ export interface EngagementRecord {
   readonly defenderFlashedMs: number;
   /** Winning side of this duel, or null if no one died this duel. */
   readonly winnerSide: Side | null;
+}
+
+/**
+ * An observable cue a shot gave the OTHER team (world event → observation). Physical facts decide
+ * which channels exist — sound propagates over the map's sound graph; a tracer needs a weapon
+ * whose tracers enemies can see and a sightline onto the shot's path — and each channel localises
+ * the shooter with a different confidence. The cue is evidence, not ground truth: it feeds the
+ * observing team's intel/belief and never the combat resolution itself.
+ */
+export interface ShotCue {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly shooterId: PlayerId;
+  readonly weaponId: string;
+  /** Zone the shot came from (zone-level localisation) and that zone's centre. */
+  readonly zoneId: string;
+  readonly zonePosition: Vector3;
+  readonly observerSide: Side;
+  readonly channel: "sound" | "tracer";
+  /** 0..1 — how firmly this cue localises the shooter. */
+  readonly confidence: number;
 }
 
 export interface RoundResult {
@@ -270,6 +297,8 @@ export interface RoundResult {
   readonly perception?: readonly PerceptionTrack[];
   /** Command→execution trace, present only when config.traceCommands is true. */
   readonly commandTrace?: readonly CommandTraceEvent[];
+  /** Every shot cue the teams observed, present only when config.traceCommands is true. */
+  readonly cueTrace?: readonly ShotCue[];
   /** First-contact posture of every duel, present only when config.traceCommands is true. */
   readonly engagementTrace?: readonly EngagementRecord[];
 }
@@ -292,10 +321,11 @@ export interface SimConfig {
   /** HP lost per tick while standing in a molly / area-denial zone. */
   readonly mollyDamagePerTick: number;
   /**
-   * Peeker's advantage (ms): a stationary holder reacts this much LATER to an enemy who is
-   * moving (peeking) into it, even on mutual sight — the aggressor's initiative. This is the
-   * opening-duel calibration lever once holders face their angle (so first contact is mutual,
-   * not attacker-surprise). Opening-duel calibration target only (README §31).
+   * Peeker's advantage (ms): how stale a stationary holder's picture of a MOVING enemy is — the
+   * peeker is already further out than the holder sees, so the holder reacts this much later even on
+   * mutual sight. It follows from latency, not from a team's choice, so it is not a match option.
+   * NOTE: 210 is a calibrated aggregate (opening-duel rate, README §31), not a measured latency.
+   * The opposing effect, the angle advantage, is derived from geometry (situational.ts).
    */
   readonly peekerAdvantageMs: number;
   /**
@@ -335,5 +365,5 @@ export const DEFAULT_CONFIG: SimConfig = {
   crossfirePenaltyMs: 60, // Hick–Hyman slope (ms/bit); calibrated on 160 Ascent matches (8/8 judged)
   infoWindowMs: 2000,
   damageCarryover: 0, // off by default: full attrition needs defensive stall utility to stay balanced
-  peekerAdvantageMs: 210, // calibrated with hitChanceScale 0.50 → attacker opening ≈ 0.45 (CI [0.420,0.454])
+  peekerAdvantageMs: 180,
 };

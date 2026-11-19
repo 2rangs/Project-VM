@@ -45,7 +45,7 @@ import {
 } from "./economy.js";
 import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterProfile } from "./teams.js";
 import type { PlayerProfile } from "@pv/shared-types";
-import type { PolicyTuning } from "@pv/team-engine";
+import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
 
@@ -98,6 +98,12 @@ export interface MatchConfig {
    * ~0.02). Kept off until attacker util-for-executes is modelled; on is for ability experiments.
    */
   readonly enableAbilities?: boolean;
+  /**
+   * Cross-round opponent memory: each team learns where the other attacks / defends from what it
+   * observed in earlier rounds and uses it as the prior behind its opening calls. Default true;
+   * false makes both teams play every round as if it were the first.
+   */
+  readonly opponentMemory?: boolean;
   /** Pre-match engine options: override any of the calibrated formula constants. */
   readonly tuning?: MatchTuning;
   /**
@@ -124,6 +130,16 @@ export interface RoundRecord {
   readonly score: Readonly<Record<TeamSlot, number>>;
   readonly economy: Readonly<Record<TeamSlot, TeamEconomy>>;
   readonly events: readonly SimEvent[];
+  /**
+   * Why each team played the round the way it did: its plan (opening call → revisions → final
+   * call), the cross-round read of the opponent it went in with, and what both teams could
+   * observe of the round (which is what the models learn from).
+   */
+  readonly decisions: {
+    readonly plans: Readonly<Record<TeamSlot, PlanSummary | null>>;
+    readonly opponentReadBefore: Readonly<Record<TeamSlot, OpponentRead | null>>;
+    readonly observed: ReturnType<typeof observedTendencies>;
+  };
   /** PV-6 replay-engine bridge input for this round (EventLog → replay). */
   readonly replay: Pv6SimEventLog;
 }
@@ -228,6 +244,35 @@ function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<ty
   });
 }
 
+/** Site letter of a zone id ("a-site" → A, "b-main" → B), or null for mid / spawns. */
+function siteOf(zoneId: string | undefined): SiteKey | null {
+  if (!zoneId) return null;
+  return zoneId.startsWith("a-") ? "A" : zoneId.startsWith("b-") ? "B" : null;
+}
+
+/**
+ * What BOTH teams could observe of a finished round — nothing here is hidden state: the plant is
+ * public, and a kill happens in front of the two players involved (the kill event's zone is where
+ * the victim stood).
+ *  - plantSite / firstContactSite: where the attack showed up (the defenders' evidence).
+ *  - defendersMet: how many defenders the attackers killed on each site (the attackers' evidence
+ *    of where the defense was set up).
+ */
+export function observedTendencies(events: readonly SimEvent[]): Required<Pick<RoundObservation, "plantSite" | "firstContactSite" | "defendersMet">> {
+  let plantSite: SiteKey | null = null;
+  let firstContactSite: SiteKey | null = null;
+  const defendersMet: Partial<Record<SiteKey, number>> = {};
+  for (const e of events) {
+    if (e.kind === "planted") plantSite = siteOf(e.zoneId);
+    if (e.kind !== "kill") continue;
+    const site = siteOf(e.zoneId);
+    if (!site) continue;
+    firstContactSite ??= site;
+    if (String(e.target).startsWith("def")) defendersMet[site] = (defendersMet[site] ?? 0) + 1;
+  }
+  return { plantSite, firstContactSite, defendersMet };
+}
+
 /**
  * Run a full match. Pure given its config: no I/O, no clock — only the seeded RNG.
  */
@@ -252,6 +297,8 @@ export class MatchEngine {
   private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
   private readonly profilesBySlot: Record<TeamSlot, RosterProfile[]>;
   private readonly consistencyBySlot: Record<TeamSlot, number[]>;
+  /** What each team has learned about the other so far this match. */
+  private readonly opponentModels: Record<TeamSlot, OpponentModel>;
   private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number };
   private readonly formSigmaMax: number | undefined;
   /** Per roster index: the player's minimum throw rate (max of team and player entries). */
@@ -288,6 +335,11 @@ export class MatchEngine {
       ...(damageCarryover !== undefined ? { damageCarryover } : {}),
     };
     this.formSigmaMax = formSigmaMax;
+    const recognition = (slot: TeamSlot) => {
+      const pr = this.profilesBySlot[slot];
+      return pr.reduce((s, p) => s + p.decisionMaking, 0) / Math.max(1, pr.length);
+    };
+    this.opponentModels = { A: new OpponentModel(recognition("A")), B: new OpponentModel(recognition("B")) };
     this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id), B: this.throwFloors(config.teamB.id) };
   }
 
@@ -339,6 +391,8 @@ export class MatchEngine {
   get nextAttacker(): TeamSlot { return attackerFor(this.roundNumber); }
   snapshotEconomy(): Record<TeamSlot, TeamEconomy> { return { A: this.economy.A, B: this.economy.B }; }
   snapshotScore(): Record<TeamSlot, number> { return { ...this.score }; }
+  /** What `slot` currently believes about its opponent's tendencies. */
+  opponentRead(slot: TeamSlot): OpponentRead { return this.opponentModels[slot].read(); }
 
   isFinished(): boolean {
     return matchWinner(this.score) !== null || this.roundNumber > this.maxRounds;
@@ -381,17 +435,24 @@ export class MatchEngine {
     // Real-roster decision profiles, re-keyed to this round's side-named sim ids (atk1.. / def1..).
     this.policies.attack.setProfiles(this.profileMap(attacker, "atk"));
     this.policies.defense.setProfiles(this.profileMap(defender, "def"));
+    const readBefore: Record<TeamSlot, OpponentRead | null> = { A: null, B: null };
+    const useMemory = config.opponentMemory ?? true;
+    readBefore[attacker] = useMemory ? this.opponentModels[attacker].read() : null;
+    readBefore[defender] = useMemory ? this.opponentModels[defender].read() : null;
+    this.policies.attack.setOpponentRead(readBefore[attacker]);
+    this.policies.defense.setOpponentRead(readBefore[defender]);
     this.policies.attack.setThrowFloors(this.floorMap(attacker, "atk"));
     this.policies.defense.setThrowFloors(this.floorMap(defender, "def"));
     const attackers: MatchRoundTeam = {
       teamId: this.teamRef(attacker).id,
-      economy: toEconomyState(economy[attacker], "attack"),
+      // Pre-buy bank (what the team could field this round), not the leftover after buying.
+      economy: toEconomyState({ ...economy[attacker], credits: economy[attacker].credits + buys[attacker].cost }, "attack"),
       players: makeRoster("attack", buys[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
     };
     const defSpawns = this.abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
-      economy: toEconomyState(economy[defender], "defense"),
+      economy: toEconomyState({ ...economy[defender], credits: economy[defender].credits + buys[defender].cost }, "defense"),
       players: makeRoster("defense", buys[defender], this.formSkills(defender, seed, pressure), this.abilitiesOn, defSpawns, this.traitsBySlot[defender]),
     };
     const out = runMatchRound({
@@ -413,6 +474,12 @@ export class MatchEngine {
     this.policies.attack.setOrder(null);
     this.policies.defense.setOrder(null);
     const result = out.round;
+
+    const plans = { [attacker]: this.policies.attack.planSummary(), [defender]: this.policies.defense.planSummary() } as Record<TeamSlot, PlanSummary | null>;
+    // --- Each team folds what it OBSERVED this round into its model of the other ---
+    const seen = observedTendencies(out.events);
+    this.opponentModels[defender].observeRound({ opponentSide: "attack", plantSite: seen.plantSite, firstContactSite: seen.firstContactSite });
+    this.opponentModels[attacker].observeRound({ opponentSide: "defense", defendersMet: seen.defendersMet });
 
     // --- Resolve outcome onto teams ---
     const winner: TeamSlot = out.winner === "attack" ? attacker : defender;
@@ -453,6 +520,7 @@ export class MatchEngine {
       score: { ...score },
       economy: { A: economy.A, B: economy.B },
       events: result.events,
+      decisions: { plans, opponentReadBefore: readBefore, observed: seen },
       replay: toPv6ReplayFormat(result, {
         mapId: config.map,
         mapDisplayName: config.map,

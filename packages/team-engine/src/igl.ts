@@ -18,6 +18,7 @@ import type {
   ZoneId,
 } from "@pv/shared-types";
 import { NEUTRAL_PROFILE } from "@pv/shared-types";
+import { tendencyLean, type OpponentRead } from "./opponent-model.js";
 
 /** Team bank at/under this is treated as an eco (no full buy). Provisional. */
 export const ECO_BANK_THRESHOLD = 2000;
@@ -29,11 +30,27 @@ export function profileFor(
   return profiles?.get(String(playerId)) ?? { playerId, ...NEUTRAL_PROFILE };
 }
 
+/** Pistol rounds (first round of each half): both sides are equally poor — not an eco. */
+function isPistolRound(view: PolicyView): boolean {
+  return view.roundNumber === 1 || view.roundNumber === 13;
+}
+
 function isEco(view: PolicyView): boolean {
-  return view.economy.credits <= ECO_BANK_THRESHOLD;
+  return !isPistolRound(view) && view.economy.credits <= ECO_BANK_THRESHOLD;
 }
 
 const v2 = (v: Vector3) => ({ x: v.x, y: v.y });
+
+/** Site-read lead (in seen-enemy units) that justifies changing the team call mid-round. */
+const ROTATE_EVIDENCE = 2;
+/** A heard cue fades to nothing over this long. */
+const SOUND_EVIDENCE_WINDOW_MS = 8000;
+/** A fully confident heard cue is worth this fraction of an enemy actually seen on the site. */
+const SOUND_EVIDENCE_WEIGHT = 0.6;
+/** Ceiling on what sound alone can add to a site read (several zones of noise ≈ a seen push). */
+const SOUND_EVIDENCE_CAP = 1.2;
+/** How far a fully confident opponent tendency can tilt an opening call (multiplier on its weight). */
+const TENDENCY_WEIGHT = 3;
 
 /** Which half (A/B) a zone belongs to, by id prefix; mid/other → null. */
 function siteOfZone(zone: ZoneId): "A" | "B" | null {
@@ -56,6 +73,23 @@ export function enemySiteBias(view: PolicyView, spatial: SpatialQuery): { A: num
       if (site) bias[site] += h.weight * 0.5;
     }
   }
+  // Heard / inferred contact (footsteps, gunfire, tracers): unseen enemies still leave evidence.
+  // Per ZONE the firmest cue counts once (several sounds from one spot are not several enemies);
+  // noise from several zones of a site adds up — a team massing on a site is louder than one
+  // lurker — up to SOUND_EVIDENCE_CAP. Each cue is weighted by confidence and fades over
+  // SOUND_EVIDENCE_WINDOW_MS; a single cue is never worth a sighting.
+  const heard = { A: new Map<string, number>(), B: new Map<string, number>() };
+  for (const s of view.observation.audibleEvents) {
+    const zone = spatial.nearestZone(v2(s.approxPosition));
+    const site = siteOfZone(zone);
+    if (!site) continue;
+    const age = Math.max(0, view.observation.timestampMs - s.heardAtMs);
+    const w = s.confidence * Math.max(0, 1 - age / SOUND_EVIDENCE_WINDOW_MS);
+    heard[site].set(String(zone), Math.max(heard[site].get(String(zone)) ?? 0, w));
+  }
+  const total = (m: Map<string, number>) => Math.min(SOUND_EVIDENCE_CAP, [...m.values()].reduce((s, w) => s + w, 0) * SOUND_EVIDENCE_WEIGHT);
+  bias.A += total(heard.A);
+  bias.B += total(heard.B);
   return bias;
 }
 
@@ -70,8 +104,13 @@ function weightedPick<T>(rng: RandomSource, entries: ReadonlyArray<readonly [T, 
   return entries[entries.length - 1]![0];
 }
 
-/** Choose the round's opening strategy. Eco and full buys yield clearly different plans. */
-export function selectStrategy(view: PolicyView, spatial: SpatialQuery, rng: RandomSource): TeamStrategy {
+/**
+ * Choose the round's opening strategy. Eco and full buys yield clearly different plans. `read` is
+ * what the team has learned about the opponent in earlier rounds (opponent-model.ts): a tendency
+ * tilts the weights in proportion to its confidence and never removes an option, so the call stays
+ * a sample — a small sample barely moves it, and a team is never fully predictable itself.
+ */
+export function selectStrategy(view: PolicyView, spatial: SpatialQuery, rng: RandomSource, read?: OpponentRead): TeamStrategy {
   const planted = view.spike.phase === "planted";
   const bias = enemySiteBias(view, spatial);
 
@@ -81,23 +120,29 @@ export function selectStrategy(view: PolicyView, spatial: SpatialQuery, rng: Ran
     // Lean toward the site the enemy is showing; otherwise hold or push.
     if (bias.A > bias.B + 0.5) return "stackA";
     if (bias.B > bias.A + 0.5) return "stackB";
+    // No read this round yet: fall back on where they have attacked before.
+    const leanA = read ? tendencyLean(read.attackSite, "A") : 0;
     return weightedPick(rng, [
       ["defaultHold", 2],
       ["aggroPush", 1],
+      ["stackA", TENDENCY_WEIGHT * Math.max(0, leanA)],
+      ["stackB", TENDENCY_WEIGHT * Math.max(0, -leanA)],
     ] as const);
   }
 
   // Attack
   if (isEco(view)) return "default"; // conservative: gather info, play for picks
-  // Full buy: commit. Prefer the LESS defended site; fake the more defended one.
-  const aWeight = 1 + Math.max(0, bias.B - bias.A); // A looks safer when enemies lean B
-  const bWeight = 1 + Math.max(0, bias.A - bias.B);
+  // Full buy: commit. Prefer the LESS defended site; fake the more defended one. What we see this
+  // round counts first; where their defenders have tended to be is the prior behind it.
+  const defA = read ? tendencyLean(read.defenseSite, "A") : 0; // > 0: they favour defending A
+  const aWeight = (1 + Math.max(0, bias.B - bias.A)) * (1 + TENDENCY_WEIGHT * Math.max(0, -defA));
+  const bWeight = (1 + Math.max(0, bias.A - bias.B)) * (1 + TENDENCY_WEIGHT * Math.max(0, defA));
   return weightedPick(rng, [
     ["aExecute", aWeight],
     ["bExecute", bWeight],
     ["midControl", 0.8],
-    ["fakeAtoB", bias.A > bias.B ? 0.9 : 0.3],
-    ["fakeBtoA", bias.B > bias.A ? 0.9 : 0.3],
+    ["fakeAtoB", (bias.A > bias.B ? 0.9 : 0.3) * (1 + TENDENCY_WEIGHT * Math.max(0, defA))],
+    ["fakeBtoA", (bias.B > bias.A ? 0.9 : 0.3) * (1 + TENDENCY_WEIGHT * Math.max(0, -defA))],
   ] as const);
 }
 
@@ -121,7 +166,9 @@ export function reconsider(
   const planted = view.spike.phase === "planted";
   const bias = enemySiteBias(view, spatial);
   const lean = bias.A - bias.B;
-  const strong = 1; // how decisive the read must be to change the call
+  // How decisive the read must be to change the call: two enemies' worth of evidence on one
+  // side (two seen, or one seen plus noise). One sighting is a lurker or a fake until proven.
+  const strong = ROTATE_EVIDENCE;
 
   if (view.side === "defense") {
     if (planted && prev !== "retake") {

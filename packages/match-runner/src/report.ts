@@ -61,5 +61,21 @@ export function renderDecisionTrace(result: MatchResult): Array<Record<string, u
     creditsB: r.economy.B.credits,
     ultA: r.economy.A.ultPoints,
     ultB: r.economy.B.ultPoints,
+    // Why: each team's plan (opening → revisions → final), the opponent tendencies it believed going
+    // in (posterior mean + confidence), and what the round let both teams observe.
+    planA: r.decisions.plans.A,
+    planB: r.decisions.plans.B,
+    readA: summariseRead(r.decisions.opponentReadBefore.A),
+    readB: summariseRead(r.decisions.opponentReadBefore.B),
+    observed: r.decisions.observed,
   }));
+}
+
+function summariseRead(read: MatchResult["rounds"][number]["decisions"]["opponentReadBefore"]["A"]): Record<string, unknown> | null {
+  if (!read) return null;
+  const f = (n: number) => Number(n.toFixed(2));
+  return {
+    theyAttackA: f(read.attackSite.probability.A), attackConfidence: f(read.attackSite.confidence),
+    theyDefendA: f(read.defenseSite.probability.A), defenseConfidence: f(read.defenseSite.confidence),
+  };
 }

@@ -1,5 +1,5 @@
 import type { SpatialEngine } from "@pv/spatial-engine";
-import type { AbilityState, ObservationState, ObservedEnemy, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
+import type { AbilityState, ObservationState, ObservedEnemy, SoundObservation, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
 import type { PerceptionEngine } from "@pv/perception-engine";
 import { revealedEnemies, activeAreaDenials, type AbilityEngine } from "@pv/ability-engine";
 import { buildBelief } from "@pv/decision-engine";
@@ -25,7 +25,7 @@ import type {
   ZonePath,
   ZoneType,
 } from "./policy-contract.js";
-import type { PerceptionSnapshot, SimPlayer, SimState, Side } from "./types.js";
+import type { PerceptionSnapshot, ShotCue, SimPlayer, SimState, Side } from "./types.js";
 
 /**
  * Adapter exposing PV-4's SpatialEngine as PV-3's SpatialQuery (the dependency-inversion
@@ -155,6 +155,35 @@ export interface BuildViewOptions {
   readonly activeAbilities?: readonly AbilityState[];
   /** Ability engine, to fold recon/trap reveals into the team picture. */
   readonly abilityEngine?: AbilityEngine;
+  /** Shot cues observed so far this round (sound / tracer); the side's own are folded into its observation. */
+  readonly cues?: readonly ShotCue[];
+  /** Round clock (elapsed ms) the cue timestamps are measured on. */
+  readonly elapsedMs?: number;
+}
+
+/** Shot cues older than this no longer appear in the observation (the belief layer ages the rest). */
+const CUE_OBSERVATION_WINDOW_MS = 10_000;
+
+/**
+ * The side's shot cues as observations: where a shot was heard / its tracer seen, zone-level, with
+ * the cue's confidence. The observation clock is the REMAINING round time, so a cue's age is
+ * re-expressed on it (heardAtMs = now − age).
+ */
+function shotCueObservations(side: Side, state: SimState, opts: BuildViewOptions): SoundObservation[] {
+  if (!opts.cues || opts.elapsedMs === undefined) return [];
+  // One observation per shooter+zone: the firmest cue still inside the window.
+  const best = new Map<string, SoundObservation>();
+  for (const c of opts.cues) {
+    const age = opts.elapsedMs - c.elapsedMs;
+    if (c.observerSide !== side || age < 0 || age > CUE_OBSERVATION_WINDOW_MS) continue;
+    const key = `${c.shooterId}:${c.zoneId}`;
+    const prev = best.get(key);
+    const heardAtMs = state.timeRemainingMs - age;
+    if (!prev || heardAtMs > prev.heardAtMs || (heardAtMs === prev.heardAtMs && c.confidence > prev.confidence)) {
+      best.set(key, { kind: "gunfire", approxPosition: { ...c.zonePosition }, heardAtMs, confidence: c.confidence });
+    }
+  }
+  return [...best.values()];
 }
 
 export function buildPolicyView(
@@ -187,7 +216,10 @@ export function buildPolicyView(
     teamId,
     timestampMs: state.timeRemainingMs,
     visibleEnemies: [...picture.values()],
-    audibleEvents: team ? Object.values(team.perPlayer).flatMap((o) => o.audibleEvents) : [],
+    audibleEvents: [
+      ...(team ? Object.values(team.perPlayer).flatMap((o) => o.audibleEvents) : []),
+      ...shotCueObservations(side, state, opts),
+    ],
     teammateReports: team?.sharedReports ?? [],
     knownMapChanges: [],
   };
@@ -198,7 +230,7 @@ export function buildPolicyView(
     scenarioRef: null,
     teamId,
     side,
-    roundNumber: 1,
+    roundNumber: state.roundNumber ?? 1,
     timeRemainingMs: state.timeRemainingMs,
     mapId: state.mapId,
     patchVersion: "synthetic",
@@ -219,7 +251,9 @@ export function buildPolicyView(
       spatial as unknown as SharedSpatialQuery,
       dtMs,
     ),
-    economy: economyStub(teamId, side),
+    // The side's real economy when the match runner supplies it (a stub of 0 credits made every
+    // round look like an eco to the IGL); own team only — the opponent's bank is never exposed.
+    economy: state.economy?.[side] ? { teamId, side, ...state.economy[side]! } : economyStub(teamId, side),
     knownEnemyAliveCount: state.players.filter((p) => p.side !== side && p.alive).length,
     matchScore: null,
     visibleHazards: visibleHazardsFor(side, state, spatial, opts.abilityEngine),

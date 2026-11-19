@@ -8,54 +8,166 @@
   },
   "weapons": [
     {
-      "id": "vandal", "name": "Vandal", "category": "Rifles", "cost": 2900,
-      "fireRate": 9.75, "magazineSize": 25, "reloadTimeMs": 2500, "equipTimeMs": 1000,
-      "runSpeedMultiplier": 0.95, "provenance": "manual-approx",
-      "damageBands": [{ "maxRangeMeters": 50, "head": 160, "body": 40, "leg": 34 }]
-    },
-    {
-      "id": "phantom", "name": "Phantom", "category": "Rifles", "cost": 2900,
-      "fireRate": 11, "magazineSize": 30, "reloadTimeMs": 2500, "equipTimeMs": 1000,
-      "runSpeedMultiplier": 0.95, "provenance": "manual-approx",
+      "id": "vandal",
+      "name": "Vandal",
+      "category": "Rifles",
+      "cost": 2900,
+      "fireRate": 9.75,
+      "magazineSize": 25,
+      "reloadTimeMs": 2500,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 0.95,
+      "provenance": "manual-approx",
       "damageBands": [
-        { "maxRangeMeters": 15, "head": 156, "body": 39, "leg": 33 },
-        { "maxRangeMeters": 30, "head": 150, "body": 35, "leg": 30 },
-        { "maxRangeMeters": 50, "head": 140, "body": 31, "leg": 26 }
-      ]
+        {
+          "maxRangeMeters": 50,
+          "head": 160,
+          "body": 40,
+          "leg": 34
+        }
+      ],
+      "tracerVisible": true
     },
     {
-      "id": "operator", "name": "Operator", "category": "Snipers", "cost": 4700,
-      "fireRate": 0.6, "magazineSize": 5, "reloadTimeMs": 3700, "equipTimeMs": 1500,
-      "runSpeedMultiplier": 0.5, "provenance": "manual-approx",
-      "damageBands": [{ "maxRangeMeters": 50, "head": 255, "body": 150, "leg": 120 }]
-    },
-    {
-      "id": "sheriff", "name": "Sheriff", "category": "Sidearms", "cost": 800,
-      "fireRate": 4, "magazineSize": 6, "reloadTimeMs": 2250, "equipTimeMs": 1000,
-      "runSpeedMultiplier": 1.0, "provenance": "manual-approx",
+      "id": "phantom",
+      "name": "Phantom",
+      "category": "Rifles",
+      "cost": 2900,
+      "fireRate": 11,
+      "magazineSize": 30,
+      "reloadTimeMs": 2500,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 0.95,
+      "provenance": "manual-approx",
       "damageBands": [
-        { "maxRangeMeters": 30, "head": 159, "body": 55, "leg": 46 },
-        { "maxRangeMeters": 50, "head": 145, "body": 50, "leg": 42 }
-      ]
+        {
+          "maxRangeMeters": 15,
+          "head": 156,
+          "body": 39,
+          "leg": 33
+        },
+        {
+          "maxRangeMeters": 30,
+          "head": 150,
+          "body": 35,
+          "leg": 30
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 140,
+          "body": 31,
+          "leg": 26
+        }
+      ],
+      "tracerVisible": false
     },
     {
-      "id": "spectre", "name": "Spectre", "category": "SMGs", "cost": 1600,
-      "fireRate": 13.33, "magazineSize": 30, "reloadTimeMs": 2250, "equipTimeMs": 750,
-      "runSpeedMultiplier": 1.0, "provenance": "manual-approx",
+      "id": "operator",
+      "name": "Operator",
+      "category": "Snipers",
+      "cost": 4700,
+      "fireRate": 0.6,
+      "magazineSize": 5,
+      "reloadTimeMs": 3700,
+      "equipTimeMs": 1500,
+      "runSpeedMultiplier": 0.5,
+      "provenance": "manual-approx",
       "damageBands": [
-        { "maxRangeMeters": 15, "head": 78, "body": 26, "leg": 22 },
-        { "maxRangeMeters": 30, "head": 66, "body": 22, "leg": 18 },
-        { "maxRangeMeters": 50, "head": 58, "body": 20, "leg": 16 }
-      ]
+        {
+          "maxRangeMeters": 50,
+          "head": 255,
+          "body": 150,
+          "leg": 120
+        }
+      ],
+      "tracerVisible": true
     },
     {
-      "id": "classic", "name": "Classic", "category": "Sidearms", "cost": 0,
-      "fireRate": 6.75, "magazineSize": 12, "reloadTimeMs": 1750, "equipTimeMs": 750,
-      "runSpeedMultiplier": 1.0, "provenance": "manual-approx",
+      "id": "sheriff",
+      "name": "Sheriff",
+      "category": "Sidearms",
+      "cost": 800,
+      "fireRate": 4,
+      "magazineSize": 6,
+      "reloadTimeMs": 2250,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
       "damageBands": [
-        { "maxRangeMeters": 30, "head": 78, "body": 26, "leg": 22 },
-        { "maxRangeMeters": 50, "head": 66, "body": 22, "leg": 18 }
-      ]
+        {
+          "maxRangeMeters": 30,
+          "head": 159,
+          "body": 55,
+          "leg": 46
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 145,
+          "body": 50,
+          "leg": 42
+        }
+      ],
+      "tracerVisible": true
+    },
+    {
+      "id": "spectre",
+      "name": "Spectre",
+      "category": "SMGs",
+      "cost": 1600,
+      "fireRate": 13.33,
+      "magazineSize": 30,
+      "reloadTimeMs": 2250,
+      "equipTimeMs": 750,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 15,
+          "head": 78,
+          "body": 26,
+          "leg": 22
+        },
+        {
+          "maxRangeMeters": 30,
+          "head": 66,
+          "body": 22,
+          "leg": 18
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 58,
+          "body": 20,
+          "leg": 16
+        }
+      ],
+      "tracerVisible": true
+    },
+    {
+      "id": "classic",
+      "name": "Classic",
+      "category": "Sidearms",
+      "cost": 0,
+      "fireRate": 6.75,
+      "magazineSize": 12,
+      "reloadTimeMs": 1750,
+      "equipTimeMs": 750,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 30,
+          "head": 78,
+          "body": 26,
+          "leg": 22
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 66,
+          "body": 22,
+          "leg": 18
+        }
+      ],
+      "tracerVisible": true
     }
   ]
 }

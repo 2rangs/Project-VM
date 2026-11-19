@@ -199,6 +199,11 @@ export function runMatchRound(input: MatchRoundInput): MatchRoundOutput {
     elapsedMs: 0,
     timeRemainingMs: input.config?.roundTimeMs ?? 100000,
     players,
+    roundNumber: input.roundNumber ?? 1,
+    economy: {
+      ...(input.attackers.economy ? { attack: input.attackers.economy } : {}),
+      ...(input.defenders.economy ? { defense: input.defenders.economy } : {}),
+    },
     spike: {
       phase: "carried",
       carrierId,

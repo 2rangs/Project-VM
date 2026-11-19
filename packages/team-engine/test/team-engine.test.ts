@@ -27,12 +27,14 @@ const rng = (seed: number | string) => new SeededRng(seed).stream("policy");
 
 describe("IGL strategy (README §24.1)", () => {
   it("picks a different strategy on eco vs full buy", () => {
-    const full = loadView("01"); // attack, bank 4200 (full)
+    const full = { ...loadView("01"), roundNumber: 5 }; // attack, bank 4200 (full); not a pistol round
     const eco: PolicyView = { ...full, economy: { ...full.economy, credits: 500 } };
     const fullStrat = selectStrategy(full, spatial, rng(1));
     const ecoStrat = selectStrategy(eco, spatial, rng(1));
     expect(ecoStrat).toBe("default"); // conservative on eco
     expect(fullStrat).not.toBe("default"); // commits on full
+    // A pistol round is not an eco: both sides are equally poor.
+    expect(selectStrategy({ ...eco, roundNumber: 1 }, spatial, rng(1))).not.toBe("default");
   });
 
   it("issues a rotate/stack call when enemies are read onto a site (defense)", () => {
@@ -76,9 +78,9 @@ describe("DecisionPolicy input (DECISION-004)", () => {
 describe("determinism", () => {
   it("same seed yields the same decision sequence", () => {
     const view = loadView("01");
-    const policy = new TeamDecisionPolicy(spatial);
-    const a = policy.decide(view, rng(99));
-    const b = policy.decide(view, rng(99));
+    // Same seed AND same state: the policy carries a standing plan, so each run starts fresh.
+    const a = new TeamDecisionPolicy(spatial).decide(view, rng(99));
+    const b = new TeamDecisionPolicy(spatial).decide(view, rng(99));
     expect(a).toEqual(b);
   });
 

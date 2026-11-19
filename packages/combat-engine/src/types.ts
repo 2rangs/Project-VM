@@ -27,6 +27,14 @@ export interface WeaponSpec {
   readonly magazineSize: number;
   readonly reloadTimeMs: number;
   readonly equipTimeMs: number;
+  /**
+   * Observability (not a combat value): whether this weapon's bullet tracers are visible to
+   * ENEMIES. A visible tracer lets an enemy with a sightline localise the shooter even without
+   * seeing them (e.g. through smoke); without it only the sound remains. Default true.
+   */
+  readonly tracerVisible?: boolean;
+  /** Observability: gunfire loudness multiplier at the source (1 = unsuppressed). Default 1. */
+  readonly fireLoudness?: number;
   /** movement speed multiplier while equipped (unitless). */
   readonly runSpeedMultiplier: number;
   /** damage bands sorted ascending by maxRangeMeters; last band caps the range. */
