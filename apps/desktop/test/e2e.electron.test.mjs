@@ -1,6 +1,7 @@
-// E2E: launch the built Electron app (manager-game shell), run a stub match in a
-// separate process, and screenshot the key screens. Run under a virtual display:
-//   xvfb-run -a node test/e2e.electron.test.mjs   (after `npm run build`)
+// E2E: launch the built Electron app (manager-game shell), run real matches in a
+// separate process, and screenshot the key screens. After `npm run build`:
+//   Linux (headless): xvfb-run -a node test/e2e.electron.test.mjs
+//   macOS / Windows:  node test/e2e.electron.test.mjs   (opens a real window)
 // Writes PNGs to apps/desktop/docs/.
 import path from 'node:path';
 import fs from 'node:fs';
@@ -8,6 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 
+// Playwright is not a dependency of this app: point PLAYWRIGHT_REQUIRE_BASE at any
+// directory whose node_modules has `playwright` (no browser download is needed).
 const require = createRequire(process.env.PLAYWRIGHT_REQUIRE_BASE || '/opt/node-tools/');
 const { _electron: electron } = require('playwright');
 
@@ -38,7 +41,11 @@ async function main() {
   const page = await app.firstWindow();
   page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
 
-  // shell + Match Day (default route)
+  // shell + Match Day (default route). The language persists in localStorage across
+  // launches, so pin the default (Korean) first — screenshots and docs are Korean.
+  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
+  await page.reload();
   await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
@@ -82,6 +89,58 @@ async function main() {
   await page.waitForTimeout(1200); // ground-truth viewer paints
   await page.screenshot({ path: path.join(OUT, 'desktop-review.png') });
 
+  // Round decisions (engine RoundRecord.decisions): one note per team per round.
+  await page.waitForSelector('[data-testid="rev-decisions-panel"]', { timeout: 10000 });
+  assert.equal(await page.getByTestId('dec-none').count(), 0, 'the match-runner emitted decisions');
+  const nRounds = await page.locator('[data-testid="rev-strip"] .rev-rcell').count();
+  assert.equal(await page.locator('[data-testid^="dec-pick-"]').count(), nRounds, 'one decision note per round');
+  assert.ok(await page.getByTestId('dec-summary').isVisible(), 'adaptation summary rendered');
+  // Round 1 is shown first: both teams have a call, and nobody has a read yet → flagged "no evidence".
+  assert.equal(await page.getByTestId('dec-round').getAttribute('data-round'), '1');
+  assert.equal(await page.getByTestId('dec-call').count(), 2, 'both teams show their call');
+  assert.equal(await page.locator('[data-testid="dec-read"][data-used="true"][data-level="none"]').count(), 2, 'round-1 reads are marked as having no evidence');
+  // Walk the rounds: plan revisions carry a round clock, and reads gain confidence as the match goes on.
+  let sawRevision = false; let sawBackedRead = false; let lowRound = null;
+  for (let i = 1; i <= nRounds; i++) {
+    await page.getByTestId(`dec-pick-${i}`).click();
+    assert.equal(await page.getByTestId('dec-round').getAttribute('data-round'), String(i));
+    assert.ok(await page.getByTestId('dec-team-A').isVisible() && await page.getByTestId('dec-team-B').isVisible(), `R${i} shows both teams`);
+    if (await page.getByTestId('dec-revision').count() > 0) {
+      sawRevision = true;
+      assert.ok(/\d:\d\d/.test(await page.getByTestId('dec-revision').first().innerText()), 'revision shows its round clock');
+    }
+    if (await page.locator('[data-testid="dec-read"][data-used="true"]:is([data-level="medium"],[data-level="high"])').count() > 0) sawBackedRead = true;
+    if (lowRound == null && await page.locator('[data-testid="dec-read"][data-used="true"][data-level="low"]').count() > 0) lowRound = i;
+  }
+  assert.ok(sawRevision, 'at least one mid-round plan revision is shown');
+  assert.ok(sawBackedRead, 'reads reach medium+ confidence later in the match');
+  const decTxt = await page.getByTestId('rev-decisions-panel').innerText();
+  assert.ok(/라운드별 판단/.test(decTxt) && /오프닝 콜/.test(decTxt), 'decisions view renders in Korean by default');
+  assert.ok(!/\{\w+\}/.test(decTxt) && !/(rev\.dec|ostrat|conf)\.[a-z]/i.test(decTxt), 'no unresolved i18n keys or placeholders');
+  // Screenshot an early round, where the read is still thin (low confidence is visibly weak).
+  await page.getByTestId(`dec-pick-${lowRound ?? 2}`).click();
+  await page.getByTestId('dec-round').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(OUT, 'desktop-review-decisions.png') });
+
+  // Pre-match options: opponent memory off reaches the engine → no reads, and the Review says so.
+  await page.getByTestId('tab-match').click();
+  await page.getByTestId('match-options-toggle').click();
+  await page.getByTestId('opt-memory').uncheck();
+  await page.getByTestId('opt-throw-B').fill('0.02');
+  assert.equal(await page.getByTestId('match-options-changed').count(), 1, 'changed options are flagged');
+  await page.screenshot({ path: path.join(OUT, 'desktop-match-options.png') });
+  await page.getByTestId('run-match').click();
+  await page.waitForFunction(() => !document.querySelector('[data-testid="run-match"]')?.hasAttribute('disabled'), null, { timeout: 90000 });
+  await page.getByTestId('tab-review').click();
+  await page.waitForSelector('[data-testid="dec-memory-off"]', { timeout: 10000 });
+  assert.equal(await page.getByTestId('dec-read-off').count(), 2, 'both teams show "no read" with memory off');
+  assert.equal(await page.getByTestId('dec-read').count(), 0, 'no read estimates are shown with memory off');
+  await page.getByTestId('tab-match').click();
+  await page.getByTestId('opt-reset').click();
+  assert.equal(await page.getByTestId('match-options-changed').count(), 0, 'reset returns to the defaults');
+  await page.getByTestId('match-options-toggle').click();
+
   // Interactive mode: round-by-round with a tactical timeout + coach orders, and
   // verify the order reaches the match (timeout log) in the post-match Review.
   await page.getByTestId('tab-match').click();
@@ -105,7 +164,10 @@ async function main() {
   await page.waitForSelector('[data-testid="rev-timeouts"]', { timeout: 10000 });
   const tolog = await page.getByTestId('rev-timeouts').innerText();
   assert.ok(/R2/.test(tolog), 'timeout log records the pre-round-2 order');
+  // rounds streamed through the session carry their decisions too
+  assert.equal(await page.locator('[data-testid^="dec-pick-"]').count(), 2, 'both played rounds have decision notes');
   await page.screenshot({ path: path.join(OUT, 'desktop-review-interactive.png') });
+  await page.getByTestId('session-stop').click().catch(() => {});
 
   // Squad (sortable table of real VCT names)
   await page.getByTestId('nav-squad').click();
@@ -121,6 +183,25 @@ async function main() {
   await page.waitForTimeout(500);
   assert.ok(/not enough time|needs|not a plantable/i.test(await page.getByTestId('excluded-card').innerText()), 'exclusion reasons visible');
   await page.screenshot({ path: path.join(OUT, 'desktop-debugger.png') });
+
+  // English: the decisions view is fully localised (revision reasons stay engine English in both).
+  await page.getByTestId('nav-about').click();
+  await page.getByTestId('lang-en').click();
+  await page.getByTestId('nav-match-day').click();
+  await page.getByTestId('run-match').click();
+  await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 90000 });
+  await page.getByTestId('tab-review').click();
+  await page.waitForSelector('[data-testid="rev-decisions-panel"]', { timeout: 10000 });
+  const enTxt = await page.getByTestId('rev-decisions-panel').innerText();
+  assert.ok(/round decisions/i.test(enTxt) && /opening call/i.test(enTxt), 'decisions view renders in English');
+  assert.ok(!/[\uAC00-\uD7A3]/.test(enTxt), 'no Korean left in the English decisions view');
+  await page.getByTestId('dec-pick-5').click();
+  await page.getByTestId('dec-round').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(OUT, 'desktop-review-decisions-en.png') });
+  // restore the default language (it persists in localStorage across launches)
+  await page.getByTestId('nav-about').click();
+  await page.getByTestId('lang-ko').click();
 
   await app.close();
   console.log('E2E OK — screenshots in apps/desktop/docs/');

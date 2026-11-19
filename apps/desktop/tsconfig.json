@@ -13,6 +13,10 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],
     "paths": {
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime.d.ts"],
+      "react-dom": ["./node_modules/@types/react-dom/index.d.ts"],
+      "pixi.js": ["./node_modules/pixi.js/lib/index.d.ts"],
       "@pv/replay-engine": ["../../packages/replay-engine/src/index.ts"],
       "@pv/replay-viewer": ["../replay-viewer/src/lib/index.ts"],
       "@pv/round-simulator": ["../../packages/round-simulator/src/index.ts"],

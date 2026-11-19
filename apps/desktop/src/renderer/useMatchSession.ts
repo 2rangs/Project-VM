@@ -9,7 +9,7 @@ import { bridge } from './platform.ts';
 import { ASCENT_TRANSFORM } from '../shared/ascent-transform.ts';
 import { mergeMatch, type RawMatch } from '../shared/match-merge.ts';
 import type {
-  MatchSummary, SessionState, SessionStartRequest, TeamOrder, TeamSlot, TimeoutLogEntry,
+  MatchOptions, MatchSummary, SessionState, SessionStartRequest, TeamOrder, TeamSlot, TimeoutLogEntry,
 } from '../shared/ipc.ts';
 
 type RawRound = RawMatch['rounds'][number];
@@ -42,6 +42,7 @@ export function useMatchSession(): MatchSessionHook {
   const [error, setError] = useState<string | null>(null);
   const teamsRef = useRef<RawMatch['teams'] | null>(null);
   const roundsRef = useRef<RawRound[]>([]);
+  const setupRef = useRef<{ seed: number; options?: MatchOptions }>({ seed: 0 });
 
   const rebuild = useCallback((finished: boolean, winner: TeamSlot | null) => {
     const teams = teamsRef.current!;
@@ -49,9 +50,10 @@ export function useMatchSession(): MatchSessionHook {
     const last = rounds[rounds.length - 1];
     const score = last ? last.score : { A: 0, B: 0 };
     const raw: RawMatch = {
-      teams, map: 'ascent', seed: 0,
+      teams, map: 'ascent', seed: setupRef.current.seed,
       winner: (winner ?? (score.A >= score.B ? 'A' : 'B')),
       score, wentToOvertime: rounds.some((r) => r.phase === 'overtime'), rounds,
+      ...(setupRef.current.options ? { options: setupRef.current.options } : {}),
     };
     const { events, summary, perception } = mergeMatch(raw);
     setMatch(summary);
@@ -68,6 +70,7 @@ export function useMatchSession(): MatchSessionHook {
     try {
       teamsRef.current = { A: req.teamA, B: req.teamB };
       roundsRef.current = [];
+      setupRef.current = { seed: req.seed, options: req.options };
       setReplay(null); setMatch(null); setFeed([]); setTimeoutLog([]);
       const s = await bridge.sessionStart(req);
       setState(s);

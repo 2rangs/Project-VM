@@ -66,6 +66,7 @@ class SessionHost {
     this.dispose();
     const cfg = {
       teamA: req.teamA, teamB: req.teamB, map: req.mapId, seed: req.seed, aiTeams: req.aiTeams ?? ['B'],
+      options: req.options ?? {},
     };
     const child = spawn('npx', ['tsx', sessionScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
     this.child = child;
@@ -113,7 +114,7 @@ function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebC
     const cfg = {
       teamA: req.teamA ?? { id: 'A', name: 'Team A' },
       teamB: req.teamB ?? { id: 'B', name: 'Team B' },
-      map: req.mapId, seed: req.seed,
+      map: req.mapId, seed: req.seed, options: req.options ?? {},
     };
     sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: 'match-runner (pistol → halves → 13 → OT)' } satisfies SimProgress);
     const child = spawn('npx', ['tsx', matchScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
