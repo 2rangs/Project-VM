@@ -146,3 +146,37 @@ describe("coach orders (tactical timeouts)", () => {
     expect(trace.roles.find((r) => String(r.playerId) === pid)?.role).toBe("entry");
   });
 });
+
+describe("post-plant retake vs save (bomb_detonated fix)", () => {
+  const A_SITE = { x: 780, y: 360, z: 0 };
+  /** Defense view with the spike planted on A; only the first `alive` defenders are alive (at A main). */
+  const postPlant = (alive: number, attackers: number, detonationInMs: number): PolicyView => {
+    const base = loadView("03"); // deciding team is defense
+    return {
+      ...base,
+      teammates: base.teammates.map((p, i) => ({ ...p, alive: i < alive, position: { x: 720, y: 615, z: 0 } })),
+      spike: { phase: "planted", position: A_SITE, holderId: null, detonationInMs },
+      knownEnemyAliveCount: attackers,
+    };
+  };
+  const decide = (v: PolicyView) => new TeamDecisionPolicy(spatial).decide(v, rng(5)).commands;
+
+  it("retakes a winnable post-plant: the nearest defender goes for the spike", () => {
+    const cmds = decide(postPlant(2, 2, 40_000));
+    expect(cmds.some((c) => c.sourceActionId?.startsWith("defuser-commit"))).toBe(true);
+    expect(cmds.some((c) => c.sourceActionId?.startsWith("postplant-save"))).toBe(false);
+  });
+
+  it("a lone defender saves against 4 attackers (no defuse attempt)", () => {
+    const cmds = decide(postPlant(1, 4, 40_000));
+    expect(cmds).toHaveLength(1);
+    expect(cmds[0]!.kind).toBe("move");
+    expect(cmds[0]!.targetZone).toBe("defender-spawn");
+    expect(cmds[0]!.sourceActionId).toBe("postplant-save:move");
+  });
+
+  it("saves when travel + full defuse cannot beat the detonation timer", () => {
+    const cmds = decide(postPlant(3, 1, 6_000));
+    expect(cmds.every((c) => c.kind !== "defuse" && c.sourceActionId?.startsWith("postplant-save"))).toBe(true);
+  });
+});

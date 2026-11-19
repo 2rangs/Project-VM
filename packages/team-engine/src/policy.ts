@@ -71,6 +71,13 @@ const DEFENSE_AIM: Readonly<Record<string, string>> = {
   "mid-courtyard": "mid-top",
 };
 
+/** Full defuse duration (game-rules SPIKE_RULES.defuseDurationMs; round-simulator default). */
+const DEFUSE_DURATION_MS = 7000;
+/** Where defenders fall back to when they give up a post-plant retake. */
+const SAVE_FALLBACK_ZONE = "defender-spawn";
+/** A lone post-plant defender saves (no retake) against at least this many alive attackers. */
+const LONE_SAVE_MIN_ATTACKERS = 4;
+
 export interface TeamRoundTrace {
   readonly contextId: string;
   readonly scenarioRef: string | null;
@@ -322,6 +329,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     }
     if (!best) return out;
 
+    if (!this.retakeViable(view, defenders.length, bestMs)) return this.postPlantSave(view, out);
+
     const bz = this.spatial.nearestZone({ x: best.position.x, y: best.position.y });
     const command: ActionCommand = bz === plantZone
       ? { playerId: best.id, kind: "defuse", targetZone: plantZone, executeAtMs: 0, sourceActionId: "defuser-commit:defuse" }
@@ -330,6 +339,44 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (idx >= 0) out[idx] = command;
     else out.push(command);
     return out;
+  }
+
+  /**
+   * Post-plant retake viability (the bomb_detonated = 0 fix). Without it the defense ALWAYS
+   * retakes, so a plant ends only in a defuse or an attack elimination and never detonates
+   * (real Ascent: 8.2% of rounds). Pro defenders give up a retake when either
+   *  - the defuse cannot finish in time: travel to the spike + a full defuse > detonation timer, or
+   *  - the retake is hopeless: a lone defender against 4+ attackers (1v4 / 1v5).
+   * Deterministic (no RNG draw), so non-post-plant decisions and the RNG stream are unchanged.
+   * Re-evaluated every decision: if the saving side picks up kills, the retake turns back on.
+   * Threshold sweep (sim-batch, 20 matches, Ascent): 1v3+ → 12.8% detonations, 1v4+ → 9.0%,
+   * down-3 → 24%; real 8.2%, so the lone-defender 1v4+ rule is used.
+   */
+  private retakeViable(view: PolicyView, defendersAlive: number, defuserTravelMs: number): boolean {
+    const timer = view.spike.detonationInMs;
+    if (timer != null && defuserTravelMs + DEFUSE_DURATION_MS > timer) return false;
+    const attackers = view.knownEnemyAliveCount;
+    if (attackers == null) return true;
+    return !(defendersAlive <= 1 && attackers >= LONE_SAVE_MIN_ATTACKERS);
+  }
+
+  /**
+   * Save after a lost post-plant: every alive defender falls back to the defender spawn (away from
+   * the post-plant crossfire) instead of feeding the retake; a defender already there holds. The
+   * attackers may still hunt them down — the spike detonates otherwise.
+   */
+  private postPlantSave(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+    const fallback = SAVE_FALLBACK_ZONE as ZoneId;
+    const byId = new Map(commands.map((c) => [String(c.playerId), c]));
+    for (const d of view.teammates) {
+      if (!d.alive) continue;
+      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+      const command: ActionCommand = dz === fallback || !this.spatial.isReachable(dz, fallback)
+        ? { playerId: d.id, kind: "hold", executeAtMs: 0, sourceActionId: "postplant-save:hold" }
+        : { playerId: d.id, kind: "move", targetZone: fallback, moveMode: "run", executeAtMs: 0, sourceActionId: "postplant-save:move" };
+      byId.set(String(d.id), command);
+    }
+    return [...byId.values()];
   }
 
   /** Nearest plantable site to a zone by run travel time (falls back to the first plantable site). */
