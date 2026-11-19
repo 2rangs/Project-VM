@@ -11,7 +11,7 @@ export const NAV: NavGroup[] = [
       { id: 'match-day', icon: '▶' },
       { id: 'tactics', icon: '◈' },
       { id: 'agents', icon: '✦' },
-      { id: 'veto', icon: '⊘', soon: true },
+      { id: 'veto', icon: '⊘' }, // [series] series + map veto (screens/series/SeriesScreen.tsx)
     ],
   },
   {

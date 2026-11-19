@@ -21,4 +21,4 @@ export type { TeamworkEntry } from "./teamwork.js";
 export { viewFromTeamContext, synthContextFromView } from "./view.js";
 export { renderRoundReport } from "./report.js";
 export { OpponentModel, Tendency, tendencyLean } from "./opponent-model.js";
-export type { OpponentRead, RoundObservation, TendencyEstimate, SiteKey } from "./opponent-model.js";
+export type { OpponentRead, RoundObservation, TendencyEstimate, SiteKey, OpponentPrior } from "./opponent-model.js";

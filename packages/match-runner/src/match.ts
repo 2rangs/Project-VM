@@ -48,6 +48,10 @@ import type { PlayerProfile } from "@pv/shared-types";
 import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
+// [series] per-team inputs + series metadata (additive; see ./team-inputs.ts)
+import { applyTraitDelta, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
+import { FORM_SIGMA_MAX } from "./teams.js";
+import { DEFAULT_POLICY_TUNING } from "@pv/team-engine";
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
@@ -115,6 +119,14 @@ export interface MatchConfig {
     readonly teams?: Readonly<Record<string, number>>;
     readonly players?: Readonly<Record<string, number>>;
   };
+  /**
+   * [series] Per-team values for the existing formulas (map mastery, scouting prior, game plan —
+   * see ./team-inputs.ts and docs/SERIES_AND_VETO.md). Omitted → both teams run on `tuning` and a
+   * blank opponent model, exactly as before.
+   */
+  readonly teamInputs?: Readonly<Partial<Record<TeamSlot, TeamMatchInputs>>>;
+  /** [series] Series metadata of this map (who picked it, starting sides). Not read by the engine. */
+  readonly series?: SeriesGameContext;
 }
 
 export interface RoundRecord {
@@ -341,6 +353,37 @@ export class MatchEngine {
     };
     this.opponentModels = { A: new OpponentModel(recognition("A")), B: new OpponentModel(recognition("B")) };
     this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id), B: this.throwFloors(config.teamB.id) };
+    // [series] Per-team inputs: re-derive the affected values for the slots that have any.
+    this.basePolicyTuning = policyTuning;
+    for (const slot of ["A", "B"] as const) {
+      const inp = config.teamInputs?.[slot];
+      if (!inp) continue;
+      if (inp.traitDelta) this.traitsBySlot[slot] = applyTraitDelta(this.traitsBySlot[slot], inp.traitDelta);
+      if (inp.patternRecognitionDelta || inp.opponentPrior || inp.standingPrior) {
+        const model = new OpponentModel(Math.min(1, Math.max(0, recognition(slot) + (inp.patternRecognitionDelta ?? 0))));
+        if (inp.opponentPrior) model.seed(inp.opponentPrior);
+        if (inp.standingPrior) model.seed(inp.standingPrior, { standing: true });
+        this.opponentModels[slot] = model;
+      }
+    }
+  }
+
+  /** [series] Policy tunables shared by both teams (config.tuning minus the simulator-side fields). */
+  private readonly basePolicyTuning: Partial<PolicyTuning>;
+
+  /** [series] The side policy's tunables for the team playing that side this round. */
+  private policyTuningFor(slot: TeamSlot): Partial<PolicyTuning> {
+    const scale = this.config.teamInputs?.[slot]?.throwRateScale;
+    if (scale === undefined || scale === 1) return this.basePolicyTuning;
+    const base = this.basePolicyTuning.throwRatePerSec ?? DEFAULT_POLICY_TUNING.throwRatePerSec;
+    return { ...this.basePolicyTuning, throwRatePerSec: base * Math.max(0, scale) };
+  }
+
+  /** [series] Form σ ceiling for a team: the match value, scaled by the team's formSigmaScale. */
+  private formSigmaFor(slot: TeamSlot): number | undefined {
+    const scale = this.config.teamInputs?.[slot]?.formSigmaScale;
+    if (scale === undefined || scale === 1) return this.formSigmaMax;
+    return (this.formSigmaMax ?? FORM_SIGMA_MAX) * Math.max(0, scale);
   }
 
   /**
@@ -356,7 +399,7 @@ export class MatchEngine {
         rng(),
         rng(),
         pressure ? { clutch: this.traitsBySlot[slot][i]?.clutch ?? 0.6 } : undefined,
-        this.formSigmaMax,
+        this.formSigmaFor(slot), // [series] was this.formSigmaMax — identical when no teamInputs
       );
     });
   }
@@ -441,6 +484,11 @@ export class MatchEngine {
     readBefore[defender] = useMemory ? this.opponentModels[defender].read() : null;
     this.policies.attack.setOpponentRead(readBefore[attacker]);
     this.policies.defense.setOpponentRead(readBefore[defender]);
+    // [series] The side policies are shared, so per-team tunables are re-bound to whoever plays the side.
+    if (config.teamInputs) {
+      this.policies.attack.setTuning(this.policyTuningFor(attacker));
+      this.policies.defense.setTuning(this.policyTuningFor(defender));
+    }
     this.policies.attack.setThrowFloors(this.floorMap(attacker, "atk"));
     this.policies.defense.setThrowFloors(this.floorMap(defender, "def"));
     const attackers: MatchRoundTeam = {
