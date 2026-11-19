@@ -84,6 +84,6 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
 
   hearableSounds(observer: PlayerState, world: WorldState): readonly SoundObservation[] {
     const sources = collectSoundSources(world, this.params);
-    return hearSounds(observer.position, sources, this.spatial, this.params, world.timeRemainingMs);
+    return hearSounds(observer.position, sources, this.spatial, this.params, world.timeRemainingMs, observer.teamId);
   }
 }

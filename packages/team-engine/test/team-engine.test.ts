@@ -50,10 +50,13 @@ describe("IGL strategy (README §24.1)", () => {
         ],
       },
     };
-    const r = reconsider(view, spatial, "defaultHold", rng(2));
-    expect(r.changed).toBe(true);
-    expect(r.strategy).toBe("stackA");
-    expect(r.reason).toMatch(/A/);
+    // The threshold-based reconsider no longer makes this call: the policy reads the evidence as a
+    // belief (hit-belief.ts) and rotates in proportion, recording the reason on the plan.
+    expect(reconsider(view, spatial, "defaultHold", rng(2)).changed).toBe(false);
+    const { trace } = new TeamDecisionPolicy(spatial).decideWithTrace(view, rng(2));
+    expect(trace.finalStrategy).toBe("stackA");
+    expect(trace.plan.revisions.at(-1)!.reason).toMatch(/2 seen on A.*P\(hit A\)/);
+    expect(trace.evidence.hitBelief!.hit["A"]).toBeGreaterThan(0.5);
   });
 });
 

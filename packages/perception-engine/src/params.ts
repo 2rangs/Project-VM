@@ -25,7 +25,11 @@ export interface PerceptionParams {
     readonly uncertainBeyondFraction: number;
   };
   readonly hearing: {
-    /** Sound-propagation strength floors (0..1) below which a sound is inaudible. */
+    /**
+     * Sound-propagation strength floors (0..1) below which a sound is inaudible — for sounds that
+     * travel the zone sound graph (gunfire, casts, spike). `footstep` is no longer used: footsteps
+     * follow the distance rule (`footstepRadiusUnits`).
+     */
     readonly thresholds: {
       readonly footstep: number;
       readonly gunfire: number;
@@ -34,6 +38,13 @@ export interface PerceptionParams {
       readonly reload: number;
       readonly other: number;
     };
+    /**
+     * Footsteps: a running player is heard by every enemy within this 3D distance (world units),
+     * through walls. By the game's own rule this equals the spike's blast radius
+     * (game-rules SPIKE_RULES.blastRadiusM — the round simulator passes that value in; the default
+     * here mirrors it). The number itself is a manual approximation, see game-rules/src/spike.ts.
+     */
+    readonly footstepRadiusUnits: number;
     /** How many ticks back in the event log counts as "currently audible". manual-approx. */
     readonly eventWindowTicks: number;
     /** behaviorState substrings that classify movement for footstep emission. */
@@ -74,6 +85,7 @@ export const DEFAULT_PARAMS: PerceptionParams = {
       reload: 0.6,
       other: 0.4,
     },
+    footstepRadiusUnits: 5000,
     eventWindowTicks: 1,
     runningStates: ["run", "running", "sprint", "rush"],
     walkingStates: ["walk", "walking", "crouch", "shift"],
