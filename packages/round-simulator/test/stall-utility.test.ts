@@ -18,11 +18,8 @@ interface Opts { patch?: "fire" | "slow" | null; clockMs?: number; seed?: number
 
 const CROSS_TICKS = Math.ceil(patchExposureMs(400, 675, true) / 100); // 12
 const CROSS_DAMAGE = CROSS_TICKS * 6; // 72
-/** A main → A site at run speed (centre to centre), on the 100 ms tick grid. */
-const TRAVEL_MS = (() => {
-  const a = spatial.getZone("a-main")!.position, b = spatial.getZone("a-site")!.position;
-  return Math.ceil((Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) / 675) * 10) * 100 - 100;
-})();
+/** A main → A site at run speed along the edge's measured walkable route, on the 100 ms tick grid. */
+const TRAVEL_MS = Math.ceil(spatial.edgeTraversal("a-main", "a-site")!.runTimeMs / 100) * 100 - 100;
 
 function run(o: Opts = {}) {
   const clockMs = o.clockMs ?? 30_000;

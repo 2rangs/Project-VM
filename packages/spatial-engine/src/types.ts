@@ -40,6 +40,13 @@ export interface Zone {
   plantable: boolean;
   position: Vec3;
   /**
+   * A walkable standing point for the zone (game uu, z = floor), measured on the map
+   * geometry: where a player in this zone is DRAWN, and where every edge route that
+   * touches the zone starts/ends. `position` stays the callout and remains the zone's
+   * logical centre (nearest-zone lookups, distances).
+   */
+  anchor?: Vec3;
+  /**
    * Whether a shortest path may pass *through* this zone as an intermediate
    * waypoint. Defaults to true. Spawn zones are `transit: false`: a generic
    * (attacker-style) route must not cut through a spawn, so a spawn can only be
@@ -72,6 +79,45 @@ export interface NavEdge {
   /** Traversal kind (multi-map datasets); absent = ordinary walkable connection. */
   kind?: EdgeKind;
   note?: string;
+  /**
+   * Walkable polyline from `from` to `to`, measured on the map geometry. When present the
+   * edge's distance/time ARE this route's. A bidirectional edge is walked back along the
+   * reversed waypoints unless `routeReverse` is present.
+   */
+  route?: EdgeRoute;
+  /** The way back when it differs from the reversed `route` (a one-way drop on one side). */
+  routeReverse?: EdgeRoute;
+  /** Set to "straight (...)" when no walkable route was found: the edge is a flagged straight segment. */
+  routeStatus?: string;
+}
+
+/** [x, y, z] in game uu. */
+export type Waypoint = [number, number, number];
+
+export interface EdgeRoute {
+  /** Ordered points including both zone anchors. */
+  waypoints: Waypoint[];
+  lengthMeters: number;
+  runTimeMs: number;
+  walkTimeMs: number;
+  /** Number of one-way drops along the route. */
+  drops?: number;
+  provenance?: string;
+}
+
+/** One direction of an edge, as a mover experiences it. */
+export interface EdgeTraversal {
+  from: string;
+  to: string;
+  /** Polyline from the `from` zone's stand point to the `to` zone's (>= 2 points). */
+  waypoints: Vec3[];
+  /** Polyline length in game units (for a teleporter: the straight segment, not travelled). */
+  lengthUnits: number;
+  runTimeMs: number;
+  walkTimeMs: number;
+  kind?: EdgeKind;
+  /** True when the polyline is a measured walkable route; false = flagged straight segment. */
+  walkable: boolean;
 }
 
 export interface PlantZone {

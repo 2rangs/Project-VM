@@ -68,15 +68,16 @@ describe("executeAtMs (teamwork timing)", () => {
       policies: { attack: new DelayedPush(at), defense: hold },
       config: { seed: 1, roundTimeMs: 20000, recordTracks: true },
     }).runRound(makeSyntheticRound(spatial));
-    // first frame where any attacker left the attacker-spawn position
-    const spawn = spatial.getZone("attacker-spawn")!.position;
+    // first frame where any attacker has left the spawn's standing point (tracks follow the
+    // walkable route continuously, so this is the first tick of movement)
+    const spawn = spatial.standPosition("attacker-spawn");
     const moved = r.tracks!.find((f) => f.players.some((p) => p.id.startsWith("atk") && (p.x !== spawn.x || p.y !== spawn.y)));
     return moved ? moved.elapsedMs : Infinity;
   }
 
   it("holds commands until their executeAtMs, deterministically", () => {
-    const t0 = firstMoveTick(0); // immediate push: first position change after one zone hop
-    const t6 = firstMoveTick(6000); // delayed push: same hop, shifted later by the delay
+    const t0 = firstMoveTick(0); // immediate push: first position change
+    const t6 = firstMoveTick(6000); // delayed push: the same move, shifted later by the delay
     expect(t0).toBeLessThan(Infinity);
     expect(t6 - t0).toBeGreaterThanOrEqual(5800);
     expect(t6 - t0).toBeLessThanOrEqual(6200);

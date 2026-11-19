@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 import mapzones  # noqa: E402
+import apply_routes  # noqa: E402
 
 MAPS = ["abyss", "bind", "breeze", "fracture", "haven", "icebox", "lotus", "pearl", "split", "sunset"]
 FETCHED = "2026-11-19"
@@ -180,6 +181,15 @@ def build(mp):
                     "approx-link"))
         fallback.append(f"{g}<->{b}")
 
+    # ---- walkable routes (tools/map-mesh/pipeline/route_map.py), when they have been measured:
+    # edge lengths/times become the route's, so this runs before anything derived from them
+    route_summary = None
+    rpath = os.path.join(d, "mesh", f"{mp}-routes.json")
+    if os.path.exists(rpath):
+        part = apply_routes.apply({"zones": zones, "edges": edges, "movement": MOVEMENT}, json.load(open(rpath)))
+        route_summary = part["routes"]
+    fallback = [f"{e['from']}<->{e['to']}" for e in edges if e["kind"] == "approx-link"]
+
     # ---- sightlines: measured visibility, typed/flagged by rule
     sightlines = []
     vis = los["visibility"]
@@ -239,6 +249,7 @@ def build(mp):
         },
         "movement": MOVEMENT,
         "zones": zones, "plantZones": plant, "edges": edges, "sightlines": sightlines, "soundLinks": sound,
+        **({"routes": route_summary} if route_summary else {}),
         "mechanics": authoring.get("mechanics", []),
         "dataQuality": {
             "edgeKinds": kinds,
@@ -249,8 +260,7 @@ def build(mp):
         },
         "generatedBy": "tools/map-processor/build_map.py",
     }
-    json.dump(nav, open(os.path.join(d, f"{mp}.navgraph.json"), "w"), indent=2)
-    open(os.path.join(d, f"{mp}.navgraph.json"), "a").write("\n")
+    apply_routes.dump_nav(nav, os.path.join(d, f"{mp}.navgraph.json"))
 
     cs = {
         "mapId": mp, "mapUuid": raw["uuid"], "patchVersion": "UNVERIFIED",

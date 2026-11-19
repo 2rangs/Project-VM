@@ -7,6 +7,10 @@
 // length is >= this (walls, corners), so these are provenance: manual-approx lower bounds.
 //
 // Usage: node tools/map-processor/build-ascent.mjs
+//
+// The committed navgraph additionally carries walkable routes (edge.route, zone.anchor) measured
+// on the map geometry. After regenerating with this script, re-apply them:
+//   python3 -I tools/map-processor/apply_routes.py ascent
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";

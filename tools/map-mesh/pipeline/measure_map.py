@@ -70,36 +70,40 @@ def log(*a):
     print("[measure]", *a, flush=True)
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--map", required=True)
-    ap.add_argument("--derived", required=True)
-    ap.add_argument("--out-dir", default="", help="default datasets/spatial/<map>/mesh; use a scratch dir for the Ascent control run")
-    ap.add_argument("--raw", default="", help="default datasets/spatial/<map>/valorant-api-<map>.raw.json")
-    ap.add_argument("--authoring", default="", help="default datasets/spatial/<map>/<map>.authoring.json")
-    ap.add_argument("--debug", action="store_true", help="also dump <derived>/grid-debug.npz (nodes, components, blocked layers)")
-    ap.add_argument("--no-los", action="store_true", help="stop after the grid stage")
-    a = ap.parse_args()
-    t0 = time.time()
-    mp = a.map
-    ddir = os.path.join(ROOT, "datasets", "spatial", mp)
-    out_dir = a.out_dir or os.path.join(ddir, "mesh")
-    os.makedirs(out_dir, exist_ok=True)
-    raw = json.load(open(a.raw or os.path.join(ddir, f"valorant-api-{mp}.raw.json")))
-    apath = a.authoring or os.path.join(ddir, f"{mp}.authoring.json")
-    authoring = json.load(open(apath)) if os.path.exists(apath) else {}
+def zone_list_from_api(raw, authoring):
+    """[(zone id, callout position in game metres)] straight from the valorant-api callouts."""
     zones = mapzones.zones_from_api(raw, authoring.get("zoneOverrides"))
-    zid = [z["id"] for z in zones]
-    Z = len(zones)
+    co = {mapzones.zone_id(c["superRegionName"], c["regionName"]):
+          np.array([c["location"]["x"], c["location"]["y"], c["location"]["z"]]) / 100.0
+          for c in raw["callouts"]}
+    return [(z["id"], co[z["id"]]) for z in zones]
+
+
+def zone_list_from_navgraph(nav, raw):
+    """[(zone id, callout position in game metres)] for an existing navgraph: ids from the
+    navgraph, positions from the matching raw callout (nearest x,y), so Ascent's hand-authored
+    ids and its rounded z values do not disturb the snapping."""
+    cs = np.array([[c["location"]["x"], c["location"]["y"], c["location"]["z"]] for c in raw["callouts"]])
+    out = []
+    for z in nav["zones"]:
+        d = np.hypot(cs[:, 0] - z["position"]["x"], cs[:, 1] - z["position"]["y"])
+        out.append((z["id"], cs[int(np.argmin(d))] / 100.0))
+    return out
+
+
+def prepare(mp, derived, raw, authoring, zone_list, debug=False):
+    """Everything up to the zone representatives: filtered geometry in game metres, voxel
+    occupancy, the walk grid with its components, and each zone snapped onto it."""
+    from types import SimpleNamespace
+    a = SimpleNamespace(derived=derived, debug=debug)
+    zid = [z[0] for z in zone_list]
+    Z = len(zid)
+    cz = np.array([z[1] for z in zone_list])                        # zone callouts, game metres
     callout_uu = np.array([[c["location"]["x"], c["location"]["y"], c["location"]["z"]]
                            for c in raw["callouts"]], dtype=np.float64)
-    co_by_id = {mapzones.zone_id(c["superRegionName"], c["regionName"]):
-                np.array([c["location"]["x"], c["location"]["y"], c["location"]["z"]]) / 100.0
-                for c in raw["callouts"]}
-    cz = np.array([co_by_id[i] for i in zid])                      # zone callouts, game metres
 
     # ------------------------------------------------------------------ load
-    npz = np.load(os.path.join(a.derived, "mesh.npz"))
+    npz = np.load(os.path.join(derived, "mesh.npz"))
     verts_bl, tris, nz, obj, mat = npz["verts"], npz["tris"], npz["nz"], npz["obj"], npz["mat"]
     meta = json.load(open(os.path.join(a.derived, "objects.json")))
     onames = [o["name"] for o in meta["objects"]]
@@ -273,6 +277,34 @@ def main():
             "onMainComponent": bool(label[k] == main_label),
         }
     placed = [i for i in range(Z) if rep[i] >= 0]
+
+    return SimpleNamespace(**{k: v for k, v in locals().items() if k not in ("a", "SimpleNamespace")})
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--map", required=True)
+    ap.add_argument("--derived", required=True)
+    ap.add_argument("--out-dir", default="", help="default datasets/spatial/<map>/mesh; use a scratch dir for the Ascent control run")
+    ap.add_argument("--raw", default="", help="default datasets/spatial/<map>/valorant-api-<map>.raw.json")
+    ap.add_argument("--authoring", default="", help="default datasets/spatial/<map>/<map>.authoring.json")
+    ap.add_argument("--debug", action="store_true", help="also dump <derived>/grid-debug.npz (nodes, components, blocked layers)")
+    ap.add_argument("--no-los", action="store_true", help="stop after the grid stage")
+    a = ap.parse_args()
+    t0 = time.time()
+    mp = a.map
+    ddir = os.path.join(ROOT, "datasets", "spatial", mp)
+    out_dir = a.out_dir or os.path.join(ddir, "mesh")
+    os.makedirs(out_dir, exist_ok=True)
+    raw = json.load(open(a.raw or os.path.join(ddir, f"valorant-api-{mp}.raw.json")))
+    apath = a.authoring or os.path.join(ddir, f"{mp}.authoring.json")
+    authoring = json.load(open(apath)) if os.path.exists(apath) else {}
+    c = prepare(mp, a.derived, raw, authoring, zone_list_from_api(raw, authoring), debug=a.debug)
+    (zid, Z, cz, callout_uu, grid, vox, xyz, label, sizes, main_label, rep, snaps, placed, lo, n_layers, n_walk, n_drop,
+     resid, have, z_offset, z_mad, z_informative, sens, cand_rows, best, p0, p1, p2, solid_k, see_k) = (
+        c.zid, c.Z, c.cz, c.callout_uu, c.grid, c.vox, c.xyz, c.label, c.sizes, c.main_label, c.rep, c.snaps, c.placed, c.lo,
+        c.n_layers, c.n_walk, c.n_drop, c.resid, c.have, c.z_offset, c.z_mad, c.z_informative, c.sens, c.cand_rows, c.best,
+        c.p0, c.p1, c.p2, c.solid_k, c.see_k)
 
     # ------------------------------------------------------------------ geodesic Voronoi (walk only)
     both = (grid.walk,)
