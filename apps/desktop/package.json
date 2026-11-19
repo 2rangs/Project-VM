@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "test:matchday": "node --experimental-strip-types --test test/matchday/*.test.ts",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
     "test:unit": "node --experimental-strip-types --test test/ipc-contract.test.ts test/trace-parser.test.ts",

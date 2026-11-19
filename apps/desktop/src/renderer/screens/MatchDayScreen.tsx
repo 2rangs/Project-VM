@@ -7,18 +7,17 @@
 //    match scoreboard and real economy / ultimate panels; the post-match Review tab
 //    adds the timeout log.
 import { useEffect, useMemo, useState } from 'react';
-import { ReplayViewer } from '@pv/replay-viewer';
 import type { Replay } from '@pv/replay-engine';
 import type { ScreenCtx } from '../App.tsx';
 import { bridge, runtime } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
 import type { MatchSummary, TeamOrder } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
-import { ZONE_POSITIONS } from '../zones.ts';
 import { ReviewPanel } from './ReviewPanel.tsx';
-import { OrdersPanel } from './OrdersPanel.tsx';
 import { useMatchSession } from '../useMatchSession.ts';
 import { useT, strategyLabel } from '../i18n/index.tsx';
+import { LiveMatch } from './matchday/LiveMatch.tsx';
+import { MatchHub } from './matchday/MatchHub.tsx';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const t = useT();
@@ -33,8 +32,9 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [teamA, setTeamA] = useState('NRG');
   const [teamB, setTeamB] = useState('Team Heretics');
   const [seed, setSeed] = useState(42);
-  const [pov, setPov] = useState(0);            // fog point of view: 0 = our team (A), 1 = B
-  const [beliefOn, setBeliefOn] = useState(false);
+  // Full-window live view (matchday/LiveMatch). Opens when a match starts; closing it returns
+  // to the shell (MatchHub) without stopping the session.
+  const [immersive, setImmersive] = useState(false);
   const [tab, setTab] = useState<'match' | 'review'>('match');
   const [autoPlay, setAutoPlay] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
@@ -45,19 +45,12 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const replay = ctx.replay;
   const refOf = (name: string) => { const x = allTeams.find((y) => y.name === name); return { id: x?.teamId ?? name, name }; };
   const lastRound = matchForView?.rounds[matchForView.rounds.length - 1];
-  const hasPerception = !!(replay?.perception && replay.perception.length > 0);
-  const povName = (i: number) => matchForView?.teams[i === 0 ? 'A' : 'B']?.name ?? t(i === 0 ? 'md.povName.our' : 'md.povName.opp');
   const busyControls = running || sess.busy;
 
   useEffect(() => { bridge.loadTrace('trace-scenario-01').then((j) => setTrace(parseTrace(j))).catch(() => {}); }, []);
   // In interactive mode, mirror the session's live replay into shared ctx (Dev etc.).
   useEffect(() => { if (interactive && sess.replay) ctx.setReplay(sess.replay); }, [interactive, sess.replay, ctx]);
-  // Auto-play: advance rounds on a timer while enabled and idle.
-  useEffect(() => {
-    if (!(interactive && autoPlay && sess.active && sess.state && !sess.state.finished && !sess.busy && !ordersOpen)) return;
-    const id = setTimeout(() => { void sess.playNext(); }, 700);
-    return () => clearTimeout(id);
-  }, [interactive, autoPlay, sess, ordersOpen]);
+  // (Auto-play now lives in LiveMatch: it advances once the round has been watched.)
 
   async function runMatch() {
     setRunning(true); setPct(0); setLog([]); setMatch(null);
@@ -69,11 +62,12 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
       ctx.setReplay(res.replay as Replay);
       setMatch(res.match ?? null);
       setSource(res.source);
+      setTab('match'); setImmersive(true);
     } catch (e) { setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
   }
 
   async function startInteractive() {
-    setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner');
+    setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner'); setImmersive(true);
     await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'] });
   }
   async function callTimeout() { await sess.callTimeout('A'); setOrdersOpen(true); }
@@ -82,6 +76,29 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const engineLabel = source === 'match-runner' ? t('md.engine.matchRunner')
     : source ? t('md.engine.fallback', { src: source }) : (runtime === 'electron' ? t('md.engine.default') : t('md.engine.stub'));
   const st = sess.state;
+
+  // Live view: full-window, replaces the shell while a match is being played or watched.
+  const liveAvailable = interactive ? sess.active : !!replay && source !== '';
+  if (immersive && tab === 'match' && liveAvailable) {
+    return (
+      <LiveMatch
+        replay={interactive ? sess.replay : replay}
+        match={matchForView}
+        teams={matchForView?.teams ?? { A: refOf(teamA), B: refOf(teamB) }}
+        sourceLabel={engineLabel}
+        session={interactive && st ? {
+          state: st, busy: sess.busy, error: sess.error, feed: sess.feed, timeoutLog: sess.timeoutLog, ordersOpen,
+          onNext: () => { void sess.playNext(); },
+          onTimeout: () => { void callTimeout(); },
+          onConfirmOrders: (o) => { void confirmOrders(o); },
+          onCancelOrders: () => setOrdersOpen(false),
+        } : null}
+        autoPlay={autoPlay} onAutoPlay={setAutoPlay}
+        onExit={() => setImmersive(false)}
+        onReview={matchForView ? () => { setImmersive(false); setTab('review'); } : null}
+      />
+    );
+  }
 
   return (
     <div className="matchday">
@@ -110,22 +127,6 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
           )}
         </div>
 
-        {/* interactive control bar */}
-        {interactive && sess.active && st && (
-          <div className="md-sessbar" data-testid="session-bar">
-            <span className="sess-status">{t('md.sess.status', { round: st.roundNumber, attacker: matchForView?.teams[st.attacker]?.name ?? st.attacker, a: st.score.A, b: st.score.B, ta: st.timeoutsRemaining.A, tb: st.timeoutsRemaining.B })}</span>
-            {!st.finished ? (
-              <>
-                <button className="md-run" onClick={() => void sess.playNext()} disabled={sess.busy || ordersOpen} data-testid="next-round">{t('md.sess.next')}</button>
-                <label className="fog-ctl"><input type="checkbox" checked={autoPlay} onChange={(e) => setAutoPlay(e.target.checked)} data-testid="auto-play" /> {t('md.sess.auto')}</label>
-                <button className="md-timeout" onClick={() => void callTimeout()} disabled={sess.busy || ordersOpen || st.timeoutsRemaining.A <= 0 || st.timeoutActive.A} data-testid="call-timeout">
-                  {st.timeoutsRemaining.A > 0 ? t('md.sess.timeout', { n: st.timeoutsRemaining.A }) : t('md.sess.timeoutNone')}
-                </button>
-              </>
-            ) : <span className="sess-done">{t('md.sess.finished')}</span>}
-          </div>
-        )}
-
         {matchForView && (
           <div className="md-tabs" data-testid="md-tabs">
             <button className={tab === 'match' ? 'on' : ''} onClick={() => setTab('match')} data-testid="tab-match">{t('md.tab.match')}</button>
@@ -135,92 +136,15 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
 
         {tab === 'review' && matchForView ? (
           <ReviewPanel match={matchForView} replay={replay} timeoutLog={interactive ? sess.timeoutLog : []} />
-        ) : ordersOpen && interactive && st ? (
-          <OrdersPanel state={st} match={matchForView} team="A" onConfirm={(o) => void confirmOrders(o)} onCancel={() => setOrdersOpen(false)} />
         ) : (
-        <>
-        <div className="md-toolbar" data-testid="fog-toolbar">
-          <span className="pill">{engineLabel}</span>
-          {hasPerception ? (
-            <>
-              <span className="fog-tag" data-testid="fog-on">{t('md.fog.on')}</span>
-              <label className="fog-ctl">{t('md.fog.pov')}
-                <select value={pov} onChange={(e) => setPov(Number(e.target.value))} data-testid="fog-pov">
-                  <option value={0}>{povName(0)}</option>
-                  <option value={1}>{povName(1)}</option>
-                </select>
-              </label>
-              <label className="fog-ctl">
-                <input type="checkbox" checked={beliefOn} onChange={(e) => setBeliefOn(e.target.checked)} data-testid="fog-belief" />
-                {t('md.fog.belief')}
-              </label>
-              <span className="muted small">{t('md.fog.hint')}</span>
-            </>
-          ) : (
-            <span className="muted small">{t('md.fog.need')}</span>
-          )}
-        </div>
-        {log.length > 0 && <div className="md-roundlog small muted">{log.join('  ·  ')}</div>}
-
-        {matchForView && (
-          <div className="scoreboard" data-testid="scoreboard">
-            <span className={`sb-team ${matchForView.winner === 'A' && (st?.finished ?? true) ? 'win' : ''}`}>{matchForView.teams.A.name}</span>
-            <span className="sb-score">{matchForView.score.A}</span>
-            <span className="sb-dash">–</span>
-            <span className="sb-score">{matchForView.score.B}</span>
-            <span className={`sb-team ${matchForView.winner === 'B' && (st?.finished ?? true) ? 'win' : ''}`}>{matchForView.teams.B.name}</span>
-            {matchForView.wentToOvertime && <span className="sb-ot">OT</span>}
-          </div>
-        )}
-
-        {replay ? (
-          <ReplayViewer
-            replay={replay}
-            perceptionPovTeamIdx={hasPerception ? pov : null}
-            showBelief={beliefOn}
-            zonePositions={ZONE_POSITIONS}
+          <MatchHub
+            match={matchForView} session={interactive ? st : null} engineLabel={engineLabel}
+            log={log} error={sess.error} canOpen={liveAvailable} onOpen={() => { setTab('match'); setImmersive(true); }}
           />
-        ) : (
-          <div className="md-empty muted">{t('md.empty')}</div>
-        )}
-
-        {matchForView && (
-          <div className="roundstrip" data-testid="roundstrip">
-            {matchForView.rounds.map((r) => (
-              <span key={r.roundNumber} className={`rs-dot rs-${r.winner === 'A' ? 'a' : 'b'} ${r.phase === 'pistol' ? 'pistol' : ''}`} title={`R${r.roundNumber} ${r.phase}: ${r.winner} (${r.reason})`}>{r.roundNumber}</span>
-            ))}
-          </div>
-        )}
-
-        {/* session log (interactive): round outcomes + timeouts (incl. AI opponent) */}
-        {interactive && sess.feed.length > 0 && (
-          <div className="md-feed" data-testid="session-feed">
-            <div className="attr-grouplabel">{t('md.sess.feed')}</div>
-            {sess.feed.slice(-8).map((f, i) => (
-              <div key={i} className={`feed-row sess-${f.kind}`}>
-                <span className="feed-t">R{f.round}</span>
-                <span className="muted small">{f.text}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="md-feed" data-testid="event-feed">
-          <div className="attr-grouplabel">{t('md.feed.title')} <span className="muted small">{t('md.feed.sub')}</span></div>
-          {(replay?.events ?? []).slice(0, 10).map((e, i) => (
-            <div key={i} className="feed-row">
-              <span className="feed-t">{Math.round(e.tMs / 1000)}s</span>
-              <span className={`feed-kind k-${e.kind}`}>{e.kind}</span>
-              <span className="muted small">{e.actorId ?? ''}{e.victimId ? ` → ${e.victimId}` : ''}</span>
-            </div>
-          ))}
-          {!replay && <div className="row small muted">{t('md.feed.none')}</div>}
-        </div>
-        </>
         )}
       </div>
 
-      {!((tab === 'review' || ordersOpen) && matchForView) && (
+      {tab !== 'review' && (
       <aside className="md-side">
         <section className="md-card" data-testid="economy-panel">
           <h3>{t('md.econ.title')} {lastRound ? <span className="pill">R{lastRound.roundNumber}</span> : <span className="pill synth">—</span>}</h3>
