@@ -295,6 +295,13 @@
 - 범위 밖 수정: `match-runner/src/setup.ts`·`match.ts`(구역 좌표·반경 주입, `shownSite` 전달) 최소 수정. `round-simulator/src/simulator.ts`는 `stepMovement` 밖 2줄(지각 파라미터 주입).
 - 남은 것: 공격의 소음 읽기, 반경·우도 수치의 실측 검증, 접촉 전에 도착하는 로테이션.
 
+### 13차 main 머지 (2026-11-20) — 통합: 전술 지능 · 밸런스 · 스킬 · 11개 맵 · 시리즈/밴픽 · 경기 화면 · 발소리 · 보행 경로
+- 합친 브랜치: desktop-decisions, balance-recovery, ability-realism, maps-data(맵 데이터 + 보행 경로), series-veto, matchday-uiux, footstep-noise-belief.
+- 통합 중 수정: `policy.ts` 세이브 지시와 스킬 계획 연결, 데스크톱 8개 파일 충돌(경기 옵션·밴픽·라이브 화면 공존), 라이브 화면에서 시리즈 복귀 버튼, 시리즈 e2e가 전체 라운드 재생을 따르도록.
+- 검증(160경기·3,449R, 시드 1–160): judged **7/9**. 공격 승률 0.507(실측 0.509), 해체 0.189, 폭발 0.108, 시간 초과 0.030. 실패: 전멸 0.674(0.714, 허용 경계), 피스톨 0.438(0.500).
+- 테스트: typecheck clean, core 252/4 todo, round-simulator 107, match-runner 62, spatial-engine 213(+11 로컬 격자 필요로 skip), ability-engine 21, 데스크톱 단위 40·엔진 3·e2e·시리즈 e2e(Bo3, ko/en) 통과.
+- 알려진 한계: 선수 위치(`p.position`)는 여전히 구역 단위이고 화면 궤적만 보행 경로를 따름(이동 엔진 개편 과제로 이관), 13개 연결은 직선 근사(텔레포터·집라인 등), 스킬 on 모드 공격 과다(0.695), 피스톨 라운드, 계획 변경 사유 영어, Ascent 외 맵은 Ascent 지형으로 플레이.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
