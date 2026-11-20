@@ -143,11 +143,20 @@ polylines (they remain as the zone graph's edge times and in the schematics).
 | Split | 999 | 3,319 | 73 | 0 | 0 | 69 KB |
 | Sunset | 894 | 3,813 | 27 | 0 | 0 | 73 KB |
 
-**A decision for the integrator.** The roadmap is points and segments — no surfaces, no mesh, no grid — in the
-same spirit as the edge polylines and footprint schematics already committed, but it is denser: about one point
-per 6 m² of floor. If that is closer to "reproducing geometry" than the project wants in git, the eleven
-`*.nav.json` files can move outside the repository; the engine loads them through one function
-(`loadMapData`) and refuses to start a round without one rather than falling back.
+**Decided (user, 2026-11-20): the eleven `<map>.nav.json` roadmaps are committed to the repository.** They are
+derived from the user-provided Blender maps and hold points and segments only: stand points
+(`[x, y, floor z, clearance, zone]`, at least 2.5 m apart — about one per 6 m² of floor), walkable segments
+between them (`[a, b, half-width]`), one-way drops, authored links, zone anchors and the generator's own check
+figures. They hold no triangles, vertex buffers, faces, materials, grid cells, voxels or height map — no surface
+in any form — and a mesh cannot be rebuilt from them. Meshes (`mesh.npz`), walk grids (`walkable.json`,
+`footprint.npz`) and every other surface geometry stay outside git, generated locally under the derived
+directory. The map IP is still Riot's; this is a decision about a development repository, not a redistribution
+right, and is recorded with its caveats in `docs/LICENSE_AUDIT.md` §2.0b.
+
+Not covered by that decision as worded, and waiting for one: `ascent.vis.json` (§7b) — one bit per pair of
+roadmap points, no coordinates and no surfaces, committed on this branch beside the roadmap with a copy in
+`apps/desktop/src/data/sim/`. If it is not to be in git, sight falls back to the zone table (the engine already
+does this for the ten maps that have no such file).
 
 ## 4. The three layers
 
@@ -494,7 +503,7 @@ that enters together.
   patches and "no path" marks from real matches; a `blocked` event is drawn the same way but has not been seen
   outside the simulator's own tests.
 - **Sight is positional on Ascent only.** The other ten maps have no `<map>.vis.json` yet (about 2.3 MB for all
-  of them; not generated while the question of what navigation data may be committed is open) and keep the
+  of them; not generated: the 2026-11-20 decision covers the roadmaps, and the visibility tables are still to be decided — §3) and keep the
   zone sightline table. Sight is decided between the roadmap nodes the two bodies stand at (≤ ~1.3 m from the
   body), not between exact positions. Ability effects that reveal or blind (recon, flash) and tracers still use
   zone sightlines.
