@@ -12,3 +12,7 @@ offline. **Do not edit** — re-copy if upstream changes.
 The round simulator (`@pv/round-simulator`) + its spatial/combat/perception/
 ability engines are imported from source via Vite aliases; these JSON files are
 their data inputs. All are navgraph-derived / manual-approx estimates.
+
+`ascent.nav.json` is the map's navigation roadmap (`datasets/spatial/ascent/ascent.nav.json`): the round
+simulator moves players on it and will not start a round without one. Re-copy it together with
+`ascent.navgraph.json` whenever either changes in `datasets/spatial/ascent/`.

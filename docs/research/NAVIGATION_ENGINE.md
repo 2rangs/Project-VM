@@ -71,11 +71,11 @@ on foot or by a drop, from the committed roadmaps):
 
 | Criterion | Walk grid + roadmap (chosen) | PV-5 Recast NavMesh | navcat |
 |---|---|---|---|
-| Accuracy vs real walls | **Measured:** 0 of ~47,000 roadmap edges hit solid geometry; every edge walked cell by cell | **Measured (PV-5):** 27 % of Ascent connected, 3 of 22 zones on the main component | Not measured. Same voxelisation pipeline as Recast (`rasterizeTriangles` → `buildCompactHeightfield` → `buildRegions`), so the same art-mesh problem is expected unless it is fed a cleaned surface |
+| Accuracy vs real walls | **Measured:** 0 of 52,372 roadmap edges hit solid geometry; every edge walked cell by cell | **Measured (PV-5):** 27 % of Ascent connected, 3 of 22 zones on the main component | Not measured. Same voxelisation pipeline as Recast (`rasterizeTriangles` → `buildCompactHeightfield` → `buildRegions`), so the same art-mesh problem is expected unless it is fed a cleaned surface |
 | Height / multi-level | Yes: floor layers per cell, nodes carry z, stacked floors resolved by height band | Yes in principle | Yes in principle |
 | Drops / special links | One-way drop edges measured; authored links (teleporter, zipline) with their own time | Off-mesh connections | `addOffMeshConnection` with `BIDIRECTIONAL` / `START_TO_END`; custom cost "not stated" in its README |
 | Dynamic obstacles | Node / edge blocking with a version counter; replanning on change (tested) | Tile rebuild | Tile add / remove; "temp obstacles: not stated" |
-| Performance, 10 movers | **Measured:** 10.8 ms per 5v5 round (1,000 rounds), was 15–29 ms before | Not measured | Not measured; its README says recast-navigation-js is faster at generation |
+| Performance, 10 movers | **Measured:** 11.6 ms per 5v5 round (1,000 rounds), was 15–29 ms before | Not measured | Not measured; its README says recast-navigation-js is faster at generation |
 | Determinism | Yes: binary heap with index tie-break, no randomness; same seed → same tracks (tested) | Yes | "Not stated" |
 | Adding a map | One script, ~6–10 s per map, all 11 maps done | Did not connect the one map tried | Unknown |
 | Integration cost | None: plain JSON, ~70–200 KB per map, no dependency | WASM dependency, navmesh binary | New dependency; pure JS (MIT) |
@@ -189,8 +189,12 @@ The only code that assigns `p.position`.
 - **Zone from position.** The zone of the nearer end of the segment the player is on, among the route's zones.
   The simulator publishes it (`SpatialEngine.setPositionZones`) so perception and every policy lookup made
   from a position agree with it.
-- **Yielding.** A mover gives way to a body within 60 uu ahead of it (lower id first between two movers), for
-  at most 6 ticks, then squeezes past.
+- **Yielding.** A mover queues behind a mover going the same way for as long as it takes; it gives way to a
+  body standing in its path (or to a lower-id mover coming head-on) for at most 6 ticks, then squeezes past.
+- **Stacking up** (`simulator.ts` `stackedUp`). Teammates heading into the same next zone cross into it
+  together: the first one at the boundary waits for teammates within 1.5 s behind it, for at most 2 s. Under
+  zone-hopping everyone given the same order entered on the same tick; with real positions they arrive a few
+  tenths of a second apart, and walking in one by one hands a holder a series of 1v1s. Design values.
 - **New orders mid-path** are planned from where the player is.
 - **Blockers.** When the blocker set changes, the remaining route is revalidated; if cut, it is re-planned; if
   nothing is left the player stops, the failure is traced (`RoundResult.navTrace`, `commandTrace`), and it
@@ -237,10 +241,11 @@ the disc, not the zone. Doorway patches keep their zone-boundary rule.
 | M | Same start / goal, different information → different route | navigation + movement | pass |
 | N | Determinism | navigation + movement (tick for tick) | pass |
 | O | Instant result equals spectated result | movement (recording tracks changes no event) | pass |
-| P | Performance vs the current engine | `perf.test.ts` | 10.8 ms / round, see §6 |
+| P | Performance vs the current engine | `perf.test.ts` | 11.6 ms / round, see §6 |
 | — | Local geometry only: every roadmap edge and every track position on a walkable grid cell | both suites, with `PV_MAPS_DERIVED` | pass here; skipped where the grid is absent |
 
-Suites on this branch: spatial-engine 269, round-simulator 115 (1 skipped), match-runner 62, root 252;
+Suites on this branch: spatial-engine 269, round-simulator 116 (115 + 1 skipped without the local grid),
+match-runner 62, root 252;
 `npx tsc --noEmit -p tsconfig.json` clean.
 
 Existing tests changed because they encoded the zone-hop model: `stall-utility` (entering a zone and arriving
@@ -251,14 +256,68 @@ mastery no longer changes that game's score-and-calls signature; with 10 and 11 
 
 ## 6. Performance
 
-`perf.test.ts`, 1,000 scripted 5v5 rounds on Ascent, same machine: **10.8 ms per round** with the navigation
+`perf.test.ts`, 1,000 scripted 5v5 rounds on Ascent, same machine: **11.6 ms per round** with the navigation
 engine, against 15–29 ms for the zone-hop engine measured earlier the same day (the spread was machine load).
 The scripted rounds are also shorter now, so this is not a like-for-like speed-up of the code; it shows that
 geometric pathfinding for ten movers is not a cost problem. A path query is one A\* over ~1,300 nodes.
 
 ## 7. 160-match validation
 
-VALIDATION_PLACEHOLDER
+`sim-batch.mts --matches 160` (seeds 1..160), same machine and tool. **Before** = `origin/main` `8cb75cd`
+(run here: 7/9, as reported). **After** = this branch. No walking speed, duel odds or other constant was retuned.
+
+| Judged metric | Real (VCT) | Before | After | Verdict |
+|---|---|---|---|---|
+| Round ends by elimination | 0.714 | 0.674 | 0.705 | FAIL → pass |
+| Round ends by spike detonation | 0.082 | 0.108 | 0.095 | pass → pass |
+| Round ends by defuse | 0.160 | 0.189 | **0.078** | pass → **FAIL** |
+| Round ends by time | 0.043 | 0.030 | **0.122** | pass → **FAIL** |
+| Attack round win rate | 0.509 | 0.507 | 0.488 | pass → pass |
+| Opening duel won by attack | 0.437 | 0.458 | **0.387** | pass → **FAIL** |
+| Pistol vs pistol (attack) | 0.500 | 0.438 | 0.403 | FAIL → FAIL |
+| Full buy vs full buy (attack) | 0.500 | 0.493 | 0.468 | pass → pass |
+| Full buy vs eco (attack) | 0.960 | 1.000 | 1.000 | pass → pass |
+| **Judged metrics passed** | | **7 / 9** | **5 / 9** | |
+
+Mean round 54.0 s → 53.8 s. The attack win rate stays inside tolerance; the shape of rounds moved.
+
+How it got here (each a 160-match run on this branch):
+
+| State | Attack win rate | Timed out | Passed |
+|---|---|---|---|
+| Executor only (zone from the roadmap cell) | 0.066 | 0.418 | 0 / 8 |
+| + strategic corridor, zone restricted to route zones | 0.421 | 0.138 | 1 / 8 |
+| + mover faces the zone it enters | 0.482 | 0.119 | 4 / 8 |
+| + stack-up and queueing (**committed**) | 0.488 | 0.122 | 5 / 9 |
+| committed, without "plant needs arrival" (experiment, not kept) | 0.509 | 0.105 | 5 / 9 |
+
+**Why the balance moved — what the data shows.** Eight matches traced on both engines (same seeds):
+
+| First duel of the round | Before | After |
+|---|---|---|
+| Distance | 20.5 m | **30.9 m** |
+| All duels: distance | 13.7 m | **26.9 m** |
+| All duels: defender saw first | 2.4 % | **18.9 %** |
+| All duels: defender was moving | 11 % | **40 %** |
+
+1. **Fights start from twice as far.** Who sees whom is still decided by the two players' *zones*; how far
+   apart they are now comes from their real *positions*. A mover is "seen" the moment its zone changes at the
+   boundary, by a holder who may be standing at the far end of the next zone. Before, both were on zone centres
+   (≈20 m apart, or 0 m inside one zone). Longer range favours the player who is standing still.
+2. **So attackers lose more entries** (opening duel 0.458 → 0.387), lose the carrier early more often, and the
+   last one or two survivors do what the policy tells outnumbered players to do: fall back to spawn and save.
+   18 of 20 timed-out rounds traced were exactly that (carrier dead, spike on the floor in A Main or B Main,
+   1–2 attackers holding at spawn). The timeouts are saves after a failed execute, not movers that got stuck.
+3. **Fewer plants, and the ones that happen are held.** Plants fall from 29.7 % of rounds to 17.3 %; of those,
+   detonations rise from 36 % to 55 % (why retakes got harder was not investigated).
+4. **"Plant needs arrival"** costs the attack about 2 points (0.509 without it) and is not the cause of the
+   timeouts (0.105 without it). It was kept: a player still walking is not planting.
+
+This is the limitation listed first in §9, and it is the next thing to fix: with sight decided at real
+positions (§10.2) a mover would be seen where it can actually be seen, not at the zone boundary. Nothing else
+was adjusted to compensate.
+
+
 
 ## 8. Path errors found and fixed along the way
 
@@ -278,8 +337,11 @@ VALIDATION_PLACEHOLDER
   still judge travel with zone-graph times (`shortestTravelTimeMs`), which are route-based but not the
   roadmap's; no policy sets `routePreference` or `zoneCosts`, so every route is FASTEST. The interface is in
   place (`ActionCommand.routePreference`, `.zoneCosts`; `Navigator.zoneTravelMs`).
-- **Phase 5 — the navigation debug view is not built.** `MatchConfig.recordTracks` exists; `track-shim.mts` is
-  still in use and the desktop was not touched or run.
+- **Phase 5 — the navigation debug view is not built.** `MatchConfig.recordTracks` exists but `track-shim.mts`
+  is still in use. The only desktop change is that its in-app simulator is given the roadmap
+  (`apps/desktop/src/shared/real-sim.ts`, `src/data/sim/ascent.nav.json`, refreshed `ascent.navgraph.json`) —
+  without it the simulator refuses to start a round. **The desktop was not built, typechecked or run here**
+  (its dependencies are not installed in this worktree).
 - **Sight is still zone-level.** Who sees whom is decided by the two players' zones and the zone sightline
   table. No occluder geometry is available at runtime, so a player in a long zone is "visible" along it
   regardless of where it stands.

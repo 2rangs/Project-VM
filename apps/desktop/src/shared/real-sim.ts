@@ -17,6 +17,7 @@ import type { SimProgress, SimRunRequest } from './ipc.ts';
 import type { SimulationRunner } from './sim.ts';
 
 import nav from '../data/sim/ascent.navgraph.json';
+import roadmap from '../data/sim/ascent.nav.json';
 import cs from '../data/sim/coordinate-system.json';
 import weaponsData from '../data/sim/weapons.json';
 
@@ -31,6 +32,8 @@ export class RealMatchRunner implements SimulationRunner {
     const spatial = createEngine(
       nav as unknown as Parameters<typeof createEngine>[0],
       (cs as { transform: unknown }).transform as Parameters<typeof createEngine>[1],
+      // the navigation roadmap: players move on it; the simulator refuses to run without one
+      roadmap as unknown as Parameters<typeof createEngine>[2],
     );
     const sq = new SpatialQueryAdapter(spatial);
     const weapons = buildCatalog(
