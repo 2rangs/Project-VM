@@ -151,8 +151,9 @@ class Walker:
         return seen if cur == b else None
 
 
-def pull(walker, path, clear, cfg):
-    """Greedy string-pull of one walk-only run of grid nodes. Returns the kept nodes."""
+def pull(walker, path, clear, cfg, seg_ok=None):
+    """Greedy string-pull of one walk-only run of grid nodes. Returns the kept nodes.
+    seg_ok(a, b): extra acceptance test for a pulled segment (the solid-geometry ray check)."""
     path = [int(u) for u in path]
     out = [path[0]]
     i = 0
@@ -162,7 +163,7 @@ def pull(walker, path, clear, cfg):
         hi = min(n - 1, i + cfg["lookahead"])
         for j in range(hi, i + 1, -1):
             need = min(1, int(min(clear[path[i:j + 1]])))
-            if walker.traverse(path[i], path[j], need, cfg["sample"]) is not None:
+            if walker.traverse(path[i], path[j], need, cfg["sample"]) is not None and (seg_ok is None or seg_ok(path[i], path[j])):
                 best = j
                 break
         out.append(path[best])
@@ -199,7 +200,7 @@ def add_height_points(walker, nodes, xyz, tol, step):
     return out
 
 
-def polyline(grid, walker, path, clear, xyz, cfg):
+def polyline(grid, walker, path, clear, xyz, cfg, seg_ok=None):
     """Grid path -> short validated polyline. Drop links are never pulled across: both ends
     of a drop stay as waypoints. Returns (nodes, drops, all_segments_validated)."""
     runs, cur, drops = [], [path[0]], 0
@@ -214,11 +215,12 @@ def polyline(grid, walker, path, clear, xyz, cfg):
     nodes = []
     ok = True
     def valid(ns):
-        return all(walker.traverse(a, b, 0, cfg["sample"]) is not None for a, b in zip(ns[:-1], ns[1:]))
+        return all(walker.traverse(a, b, 0, cfg["sample"]) is not None and (seg_ok is None or seg_ok(a, b))
+                   for a, b in zip(ns[:-1], ns[1:]))
 
     for run in runs:
         if len(run) > 1:
-            pulled = pull(walker, run, clear, cfg)
+            pulled = pull(walker, run, clear, cfg, seg_ok)
             kept = add_height_points(walker, pulled, xyz, cfg["height_tol"], cfg["sample"])
             if not valid(kept):
                 kept = pulled            # the height refinement is optional; the pulled line is not
@@ -259,11 +261,35 @@ def main():
         x, y, z = xyz[u]
         return [round(x * 100), round(y * 100), round(z * 100)]
 
+    # Independent of the grid: cast each polyline segment against the solid triangles at two
+    # body heights. A walking segment that hits geometry would mean the grid let a wall through.
+    tindex = MM.G.TriangleIndex(c.p0[c.solid_k], c.p1[c.solid_k], c.p2[c.solid_k], cs=MM.P["los_cell"])
+    BODY = (0.7, 1.3)
+
+    def ray_check(r):
+        """(segments checked, segments hitting solid geometry) for the walking segments of a route."""
+        pts = [(w[0] / 100.0, w[1] / 100.0, w[2] / 100.0) for w in r["waypoints"]]
+        n = hit = 0
+        for a_, b_ in zip(pts[:-1], pts[1:]):
+            if math.hypot(b_[0] - a_[0], b_[1] - a_[1]) <= MM.P["cell"] * 1.5 and abs(b_[2] - a_[2]) > MM.P["max_slope"] * MM.P["cell"] * 1.5:
+                continue                         # a drop: the body leaves the floor here
+            n += 1
+            if any(tindex.occluded((a_[0], a_[1], a_[2] + h), (b_[0], b_[1], b_[2] + h)) for h in BODY):
+                hit += 1
+        r["raySegments"], r["raySegmentsBlocked"] = n, hit
+        return n, hit
+
+    def seg_ok(u, v):
+        """A pulled segment between two grid nodes must also be clear of the solid triangles."""
+        a_, b_ = xyz[u], xyz[v]
+        return not any(tindex.occluded((a_[0], a_[1], a_[2] + h), (b_[0], b_[1], b_[2] + h)) for h in BODY)
+
+
     def route(src, dst, adj_lists):
         path = find_path(grid, adj_lists, mult, src, dst, xyz)
         if path is None:
             return None
-        nodes, drops, ok = polyline(grid, walker, path, clear, xyz, R)
+        nodes, drops, ok = polyline(grid, walker, path, clear, xyz, R, seg_ok)
         pts = [xyz[u] for u in nodes]
         return {"waypoints": [uu(u) for u in nodes], "lengthMeters": round(length_m(pts), 2),
                 "drops": drops, "validated": bool(ok),
@@ -272,6 +298,7 @@ def main():
 
     anchors = {z: {"x": uu(n)[0], "y": uu(n)[1], "z": uu(n)[2]} for z, n in node_of.items()}
     out_edges, n_route, n_flag = [], 0, 0
+    ray_total = [0, 0]
     WALK, BOTH = (grid.walk,), (grid.walk, grid.drop)
     for e in nav["edges"]:
         f, t, kind = e["from"], e["to"], e.get("kind", "walk")
@@ -306,9 +333,14 @@ def main():
             if e["bidirectional"]:
                 row["routeReverse"] = rev            # the way back differs (a drop is one-way)
         row["status"] = "route"
+        for r_ in (row["route"], row.get("routeReverse")):
+            if r_:
+                n_, h_ = ray_check(r_)
+                ray_total[0] += n_
+                ray_total[1] += h_
         if not all(r["validated"] for r in (row["route"], row.get("routeReverse")) if r):
             row["status"] = "straight"
-            row["reason"] = "polyline failed re-validation against the grid"
+            row["reason"] = "no polyline that is both on walkable cells and clear of solid geometry (ray check)"
             row.pop("route", None)
             row.pop("routeReverse", None)
             n_flag += 1
@@ -324,7 +356,8 @@ def main():
                 "edge keeps its straight segment and is flagged in the navgraph.",
         "params": {**MM.P, **{k: (sorted(v) if isinstance(v, set) else v) for k, v in R.items()}},
         "provenance": "measured-on-mesh",
-        "summary": {"edges": len(out_edges), "withWalkableRoute": n_route, "flaggedStraight": n_flag},
+        "summary": {"edges": len(out_edges), "withWalkableRoute": n_route, "flaggedStraight": n_flag,
+                    "walkingSegmentsRayChecked": ray_total[0], "walkingSegmentsHittingGeometry": ray_total[1]},
         "zoneAnchors": anchors,
         "zonesWithoutAnchor": [z for z in zid if z not in node_of],
         "edges": out_edges,
@@ -347,7 +380,11 @@ def main():
     fmask[grid.ix[reach], grid.iy[reach]] = 1
     np.savez_compressed(os.path.join(a.derived, "footprint.npz"), mask=fmask, origin=c.lo[:2], cell=MM.P["cell"])
     print(f"[routes] {mp}: {n_route}/{len(out_edges)} edges with a walkable route, {n_flag} flagged straight "
-          f"({time.time() - t0:.0f} s)", flush=True)
+          f"; ray check: {ray_total[1]}/{ray_total[0]} walking segments hit solid geometry ({time.time() - t0:.0f} s)", flush=True)
+    for r in out_edges:
+        for k in ("route", "routeReverse"):
+            if r.get(k) and r[k]["raySegmentsBlocked"]:
+                print(f"[routes]   ray-blocked: {r['from']} -> {r['to']} {k}: {r[k]['raySegmentsBlocked']}/{r[k]['raySegments']} segments")
     for r in out_edges:
         if r["status"] != "route":
             print(f"[routes]   straight: {r['from']} -> {r['to']} ({r['kind']}): {r['reason']}")

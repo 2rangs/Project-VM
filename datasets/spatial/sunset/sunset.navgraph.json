@@ -490,10 +490,10 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1764,
-      "distanceMeters": 17.64,
-      "runTimeMs": 2613,
-      "walkTimeMs": 5188,
+      "distanceUnits": 1751,
+      "distanceMeters": 17.51,
+      "runTimeMs": 2594,
+      "walkTimeMs": 5150,
       "provenance": "measured-on-mesh (walkable route)",
       "kind": "walk",
       "beforeRoute": {
@@ -506,13 +506,13 @@
       "route": {
         "waypoints": [
           [-3250, -2475, 400],
-          [-2200, -1875, 400],
-          [-1950, -1775, 289],
+          [-2200, -1825, 400],
+          [-2050, -1775, 343],
           [-1800, -1975, 207]
         ],
-        "lengthMeters": 17.64,
-        "runTimeMs": 2613,
-        "walkTimeMs": 5188,
+        "lengthMeters": 17.51,
+        "runTimeMs": 2594,
+        "walkTimeMs": 5150,
         "drops": 0,
         "provenance": "measured-on-mesh (walkable route)"
       }
@@ -1131,10 +1131,10 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 5147,
-      "distanceMeters": 51.47,
-      "runTimeMs": 7625,
-      "walkTimeMs": 15138,
+      "distanceUnits": 5217,
+      "distanceMeters": 52.17,
+      "runTimeMs": 7729,
+      "walkTimeMs": 15344,
       "provenance": "measured-on-mesh (walkable route)",
       "kind": "walk",
       "beforeRoute": {
@@ -1147,12 +1147,15 @@
       "route": {
         "waypoints": [
           [-5900, -325, 202],
+          [-3950, 1825, 202],
+          [-3850, 1925, 151],
+          [-3500, 2125, -2],
           [-3250, 2225, -1],
           [-1800, 2025, 0]
         ],
-        "lengthMeters": 51.47,
-        "runTimeMs": 7625,
-        "walkTimeMs": 15138,
+        "lengthMeters": 52.17,
+        "runTimeMs": 7729,
+        "walkTimeMs": 15344,
         "drops": 0,
         "provenance": "measured-on-mesh (walkable route)"
       }
@@ -1201,10 +1204,10 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 7542,
-      "distanceMeters": 75.42,
-      "runTimeMs": 11173,
-      "walkTimeMs": 22182,
+      "distanceUnits": 7552,
+      "distanceMeters": 75.52,
+      "runTimeMs": 11188,
+      "walkTimeMs": 22212,
       "provenance": "measured-on-mesh (walkable route)",
       "kind": "walk",
       "beforeRoute": {
@@ -1224,12 +1227,13 @@
           [3900, 1575, 300],
           [2850, 1225, 300],
           [2800, 1025, 300],
-          [2750, 775, 400],
+          [2800, 825, 397],
+          [2700, 25, 400],
           [2250, -1925, 401]
         ],
-        "lengthMeters": 75.42,
-        "runTimeMs": 11173,
-        "walkTimeMs": 22182,
+        "lengthMeters": 75.52,
+        "runTimeMs": 11188,
+        "walkTimeMs": 22212,
         "drops": 0,
         "provenance": "measured-on-mesh (walkable route)"
       }

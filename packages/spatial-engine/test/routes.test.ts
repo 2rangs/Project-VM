@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { MAP_IDS, loadMap, loadMapData, pointAlongPolyline, type MapId, type Vec3 } from "../src/index.js";
+import { MAP_IDS, defaultDatasetsRoot, loadMap, loadMapData, pointAlongPolyline, type MapId, type Vec3 } from "../src/index.js";
 
 const dist = (a: Vec3, b: Vec3): number => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const coverage: string[] = [];
@@ -32,6 +32,19 @@ describe.each(MAP_IDS.map((id) => [id] as const))("edge routes: %s", (id: MapId)
       expect(["teleporter", "zipline", "rope", "approx-link"].includes(e.kind ?? "walk") || stacked, `${e.from}->${e.to} (${e.kind})`).toBe(true);
     }
     coverage.push(`${id.padEnd(9)} ${String(routed.length).padStart(2)}/${String(data.edges.length).padStart(2)} routed   straight: ${straight.map((e) => `${e.from}->${e.to}`).join(", ") || "-"}`);
+  });
+
+  it("the measurement recorded no route segment hitting solid geometry (ray check at body height)", () => {
+    const m = JSON.parse(readFileSync(resolve(defaultDatasetsRoot(), id, "mesh", `${id}-routes.json`), "utf8")) as {
+      summary: { walkingSegmentsRayChecked: number; walkingSegmentsHittingGeometry: number };
+      edges: Array<{ status: string; route?: { validated: boolean; raySegmentsBlocked: number }; routeReverse?: { validated: boolean; raySegmentsBlocked: number } }>;
+    };
+    expect(m.summary.walkingSegmentsRayChecked).toBeGreaterThan(100);
+    expect(m.summary.walkingSegmentsHittingGeometry).toBe(0);
+    for (const e of m.edges) for (const r of [e.route, e.routeReverse]) if (r) {
+      expect(r.validated).toBe(true);
+      expect(r.raySegmentsBlocked).toBe(0);
+    }
   });
 
   it("routes start and end at the zones' walkable anchors and match their recorded length and time", () => {

@@ -623,10 +623,10 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1458,
-      "distanceMeters": 14.58,
-      "runTimeMs": 2160,
-      "walkTimeMs": 4288,
+      "distanceUnits": 1472,
+      "distanceMeters": 14.72,
+      "runTimeMs": 2181,
+      "walkTimeMs": 4329,
       "provenance": "measured-on-mesh (walkable route)",
       "kind": "walk",
       "beforeRoute": {
@@ -640,13 +640,13 @@
         "waypoints": [
           [5468, -6240, 550],
           [5418, -6840, 550],
-          [5268, -6840, 669],
-          [4718, -6790, 652],
+          [5268, -6890, 671],
+          [5168, -6890, 656],
           [4618, -6740, 651]
         ],
-        "lengthMeters": 14.58,
-        "runTimeMs": 2160,
-        "walkTimeMs": 4288,
+        "lengthMeters": 14.72,
+        "runTimeMs": 2181,
+        "walkTimeMs": 4329,
         "drops": 0,
         "provenance": "measured-on-mesh (walkable route)"
       }

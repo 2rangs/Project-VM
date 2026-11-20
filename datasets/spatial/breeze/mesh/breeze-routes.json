@@ -38,7 +38,9 @@
  "summary": {
   "edges": 39,
   "withWalkableRoute": 39,
-  "flaggedStraight": 0
+  "flaggedStraight": 0,
+  "walkingSegmentsRayChecked": 195,
+  "walkingSegmentsHittingGeometry": 0
  },
  "zoneAnchors": {
   "attacker-spawn": {
@@ -187,7 +189,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 5.86
+    "gridPathMeters": 5.86,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -219,7 +223,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 13.54
+    "gridPathMeters": 13.54,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -261,7 +267,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 18.0
+    "gridPathMeters": 18.0,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -293,7 +301,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 19.74
+    "gridPathMeters": 19.74,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -330,7 +340,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 23.92
+    "gridPathMeters": 23.92,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -367,7 +379,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 24.07
+    "gridPathMeters": 24.07,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -414,7 +428,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 25.7
+    "gridPathMeters": 25.7,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -451,7 +467,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 27.27
+    "gridPathMeters": 27.27,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -493,7 +511,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 29.43
+    "gridPathMeters": 29.43,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -530,7 +550,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 26.22
+    "gridPathMeters": 26.22,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -572,7 +594,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 29.29
+    "gridPathMeters": 29.29,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -599,7 +623,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 28.39
+    "gridPathMeters": 28.39,
+    "raySegments": 1,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -641,7 +667,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 31.34
+    "gridPathMeters": 31.34,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -673,7 +701,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 32.03
+    "gridPathMeters": 32.03,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -710,7 +740,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 34.23
+    "gridPathMeters": 34.23,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -752,7 +784,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 31.48
+    "gridPathMeters": 31.48,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -789,7 +823,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 36.35
+    "gridPathMeters": 36.35,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -826,7 +862,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 34.45
+    "gridPathMeters": 34.45,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -845,22 +883,27 @@
      ],
      [
       4725,
-      5400,
+      5450,
       500
      ],
      [
       4475,
-      5400,
+      5450,
       605
      ],
      [
-      2875,
-      5300,
-      595
+      3225,
+      5450,
+      604
      ],
      [
-      2525,
-      4500,
+      2825,
+      5250,
+      591
+     ],
+     [
+      2575,
+      4550,
       600
      ],
      [
@@ -869,11 +912,13 @@
       600
      ]
     ],
-    "lengthMeters": 36.72,
+    "lengthMeters": 37.03,
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 39.15
+    "gridPathMeters": 39.15,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -925,7 +970,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 38.31
+    "gridPathMeters": 38.31,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -967,7 +1014,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 38.7
+    "gridPathMeters": 38.7,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1014,7 +1063,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 38.14
+    "gridPathMeters": 38.14,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1061,7 +1112,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 44.19
+    "gridPathMeters": 44.19,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1084,12 +1137,17 @@
       501
      ],
      [
-      7025,
+      6975,
       -4400,
-      600
+      595
      ],
      [
-      8125,
+      7625,
+      -3450,
+      598
+     ],
+     [
+      8175,
       -3000,
       600
      ],
@@ -1099,11 +1157,13 @@
       600
      ]
     ],
-    "lengthMeters": 36.05,
+    "lengthMeters": 36.06,
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 37.96
+    "gridPathMeters": 37.96,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1150,7 +1210,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 47.08
+    "gridPathMeters": 47.08,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1189,17 +1251,17 @@
      ],
      [
       6625,
-      3250,
-      1000
-     ],
-     [
-      6375,
-      3200,
+      3300,
       1000
      ],
      [
       6475,
-      2750,
+      3300,
+      999
+     ],
+     [
+      6375,
+      2850,
       1000
      ],
      [
@@ -1223,11 +1285,13 @@
       1000
      ]
     ],
-    "lengthMeters": 43.74,
+    "lengthMeters": 44.06,
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 47.06
+    "gridPathMeters": 47.06,
+    "raySegments": 11,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -1266,7 +1330,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 30.6
+    "gridPathMeters": 30.6,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1363,7 +1429,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 43.26
+    "gridPathMeters": 43.26,
+    "raySegments": 15,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1410,7 +1478,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 48.14
+    "gridPathMeters": 48.14,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1477,7 +1547,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 53.46
+    "gridPathMeters": 53.46,
+    "raySegments": 9,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1534,7 +1606,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 54.56
+    "gridPathMeters": 54.56,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1576,7 +1650,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 56.7
+    "gridPathMeters": 56.7,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1628,7 +1704,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 67.04
+    "gridPathMeters": 67.04,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1656,8 +1734,13 @@
       600
      ],
      [
+      5125,
+      2700,
+      512
+     ],
+     [
       5325,
-      2100,
+      2050,
       400
      ],
      [
@@ -1666,11 +1749,13 @@
       408
      ]
     ],
-    "lengthMeters": 57.94,
+    "lengthMeters": 58.04,
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 62.34
+    "gridPathMeters": 62.34,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1737,7 +1822,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 60.12
+    "gridPathMeters": 60.12,
+    "raySegments": 9,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1765,8 +1852,13 @@
       600
      ],
      [
+      5125,
+      2700,
+      512
+     ],
+     [
       5325,
-      2100,
+      2050,
       400
      ],
      [
@@ -1784,7 +1876,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 63.77
+    "gridPathMeters": 63.77,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1841,7 +1935,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 57.72
+    "gridPathMeters": 57.72,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1883,7 +1979,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 11.98
+    "gridPathMeters": 11.98,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1935,7 +2033,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 41.05
+    "gridPathMeters": 41.05,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -2002,7 +2102,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 45.93
+    "gridPathMeters": 45.93,
+    "raySegments": 8,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   }

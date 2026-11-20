@@ -39,7 +39,7 @@ describe("map registry", () => {
     const direct = JSON.parse(readFileSync(resolve(root, "ascent", "ascent.navgraph.json"), "utf8"));
     expect(viaRegistry.data).toEqual(direct);
     expect(viaRegistry.data.zones).toHaveLength(22);
-    expect(viaRegistry.data.edges).toHaveLength(32);
+    expect(viaRegistry.data.edges).toHaveLength(47); // 32 hand-authored + 15 adjacencies the geometry shows
     const engine = loadMap("ascent");
     expect(engine.mapId).toBe("ascent");
     expect(engine.shortestTravelTimeMs("attacker-spawn", "a-site")).toBe(

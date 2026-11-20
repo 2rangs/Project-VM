@@ -36,9 +36,11 @@
  },
  "provenance": "measured-on-mesh",
  "summary": {
-  "edges": 32,
-  "withWalkableRoute": 32,
-  "flaggedStraight": 0
+  "edges": 47,
+  "withWalkableRoute": 47,
+  "flaggedStraight": 0,
+  "walkingSegmentsRayChecked": 303,
+  "walkingSegmentsHittingGeometry": 0
  },
  "zoneAnchors": {
   "attacker-spawn": {
@@ -217,7 +219,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 64.79
+    "gridPathMeters": 64.79,
+    "raySegments": 9,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -244,7 +248,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 20.8
+    "gridPathMeters": 20.8,
+    "raySegments": 1,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -306,7 +312,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 54.49
+    "gridPathMeters": 54.49,
+    "raySegments": 8,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -338,7 +346,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 25.06
+    "gridPathMeters": 25.06,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -380,7 +390,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 36.74
+    "gridPathMeters": 36.74,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -477,7 +489,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 107.71
+    "gridPathMeters": 107.71,
+    "raySegments": 15,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -526,7 +540,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 62.0
+    "gridPathMeters": 62.0,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -568,7 +584,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 25.47
+    "gridPathMeters": 25.47,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -605,7 +623,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 25.78
+    "gridPathMeters": 25.78,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -647,7 +667,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 37.35
+    "gridPathMeters": 37.35,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -746,7 +768,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 96.34
+    "gridPathMeters": 96.34,
+    "raySegments": 17,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -798,7 +822,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 30.49
+    "gridPathMeters": 30.49,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -905,7 +931,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 103.32
+    "gridPathMeters": 103.32,
+    "raySegments": 17,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -934,7 +962,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 20.06
+    "gridPathMeters": 20.06,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1001,7 +1031,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 39.74
+    "gridPathMeters": 39.74,
+    "raySegments": 9,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1048,7 +1080,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 30.35
+    "gridPathMeters": 30.35,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1145,7 +1179,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 92.78
+    "gridPathMeters": 92.78,
+    "raySegments": 15,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1202,7 +1238,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 54.05
+    "gridPathMeters": 54.05,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1259,7 +1297,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 35.49
+    "gridPathMeters": 35.49,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1301,7 +1341,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 13.25
+    "gridPathMeters": 13.25,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1358,7 +1400,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 30.41
+    "gridPathMeters": 30.41,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -1392,7 +1436,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 25.96
+    "gridPathMeters": 25.96,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1439,7 +1485,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 28.08
+    "gridPathMeters": 28.08,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1486,7 +1534,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 33.25
+    "gridPathMeters": 33.25,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -1555,7 +1605,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 45.24
+    "gridPathMeters": 45.24,
+    "raySegments": 11,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1592,7 +1644,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 3,
-    "gridPathMeters": 14.39
+    "gridPathMeters": 14.39,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1629,7 +1683,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 2,
-    "gridPathMeters": 31.53
+    "gridPathMeters": 31.53,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1701,7 +1757,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 67.46
+    "gridPathMeters": 67.46,
+    "raySegments": 10,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1758,7 +1816,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 74.18
+    "gridPathMeters": 74.18,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1785,7 +1845,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 7.41
+    "gridPathMeters": 7.41,
+    "raySegments": 1,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1837,7 +1899,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 41.56
+    "gridPathMeters": 41.56,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1884,7 +1948,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 51.69
+    "gridPathMeters": 51.69,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -1933,7 +1999,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 59.55
+    "gridPathMeters": 59.55,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -1951,19 +2019,19 @@
       200
      ],
      [
-      -1460,
+      -1310,
       -2470,
       200
      ],
      [
-      -1460,
-      -2720,
-      94
+      -1310,
+      -2620,
+      130
      ],
      [
       -1460,
-      -2970,
-      94
+      -2820,
+      92
      ],
      [
       -2610,
@@ -1981,11 +2049,13 @@
       96
      ]
     ],
-    "lengthMeters": 52.3,
+    "lengthMeters": 52.65,
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 55.77
+    "gridPathMeters": 55.77,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -2032,7 +2102,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 28.31
+    "gridPathMeters": 28.31,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -2114,7 +2186,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 43.94
+    "gridPathMeters": 43.94,
+    "raySegments": 12,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -2176,7 +2250,9 @@
     "drops": 0,
     "validated": true,
     "minClearanceCells": 1,
-    "gridPathMeters": 66.74
+    "gridPathMeters": 66.74,
+    "raySegments": 8,
+    "raySegmentsBlocked": 0
    },
    "routeReverse": {
     "waypoints": [
@@ -2230,7 +2306,9 @@
     "drops": 1,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 53.09
+    "gridPathMeters": 53.09,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   },
@@ -2269,12 +2347,12 @@
      ],
      [
       1040,
-      -9470,
+      -9370,
       300
      ],
      [
-      1890,
-      -9570,
+      1490,
+      -9370,
       300
      ],
      [
@@ -2283,11 +2361,588 @@
       302
      ]
     ],
-    "lengthMeters": 51.39,
+    "lengthMeters": 51.59,
     "drops": 0,
     "validated": true,
     "minClearanceCells": 0,
-    "gridPathMeters": 55.02
+    "gridPathMeters": 55.02,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-tree",
+   "to": "mid-cubby",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 10.0,
+   "route": {
+    "waypoints": [
+     [
+      3990,
+      -5920,
+      395
+     ],
+     [
+      3440,
+      -5670,
+      403
+     ],
+     [
+      3390,
+      -5120,
+      400
+     ]
+    ],
+    "lengthMeters": 11.56,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 2,
+    "gridPathMeters": 12.56,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-bottom",
+   "to": "mid-courtyard",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 14.04,
+   "route": {
+    "waypoints": [
+     [
+      1140,
+      -5970,
+      200
+     ],
+     [
+      1240,
+      -4570,
+      200
+     ]
+    ],
+    "lengthMeters": 14.04,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 3,
+    "gridPathMeters": 14.83,
+    "raySegments": 1,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-bottom",
+   "to": "mid-pizza",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 14.57,
+   "route": {
+    "waypoints": [
+     [
+      1140,
+      -5970,
+      200
+     ],
+     [
+      1240,
+      -6270,
+      200
+     ],
+     [
+      1290,
+      -6520,
+      300
+     ],
+     [
+      1440,
+      -7120,
+      300
+     ],
+     [
+      1790,
+      -7270,
+      300
+     ]
+    ],
+    "lengthMeters": 15.89,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 1,
+    "gridPathMeters": 17.02,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-garden",
+   "to": "a-tree",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 16.73,
+   "route": {
+    "waypoints": [
+     [
+      3790,
+      -7570,
+      584
+     ],
+     [
+      3940,
+      -7070,
+      546
+     ],
+     [
+      4040,
+      -6770,
+      398
+     ],
+     [
+      4140,
+      -6370,
+      405
+     ],
+     [
+      3990,
+      -5920,
+      395
+     ]
+    ],
+    "lengthMeters": 17.59,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 1,
+    "gridPathMeters": 18.97,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-catwalk",
+   "to": "mid-cubby",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 14.5,
+   "route": {
+    "waypoints": [
+     [
+      2340,
+      -4120,
+      400
+     ],
+     [
+      2390,
+      -4970,
+      400
+     ],
+     [
+      2540,
+      -5120,
+      400
+     ],
+     [
+      3390,
+      -5120,
+      400
+     ]
+    ],
+    "lengthMeters": 19.14,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 1,
+    "gridPathMeters": 19.74,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-courtyard",
+   "to": "mid-link",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 18.74,
+   "route": {
+    "waypoints": [
+     [
+      1240,
+      -4570,
+      200
+     ],
+     [
+      190,
+      -4170,
+      200
+     ],
+     [
+      -610,
+      -4270,
+      200
+     ]
+    ],
+    "lengthMeters": 19.3,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 2,
+    "gridPathMeters": 20.57,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-main",
+   "to": "a-wine",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 20.03,
+   "route": {
+    "waypoints": [
+     [
+      5340,
+      -4720,
+      390
+     ],
+     [
+      6690,
+      -4820,
+      392
+     ],
+     [
+      6840,
+      -4820,
+      330
+     ],
+     [
+      7340,
+      -4670,
+      296
+     ]
+    ],
+    "lengthMeters": 20.39,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 2,
+    "gridPathMeters": 21.26,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-lobby",
+   "to": "mid-top",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 19.68,
+   "route": {
+    "waypoints": [
+     [
+      4490,
+      -3020,
+      392
+     ],
+     [
+      3890,
+      -2320,
+      386
+     ],
+     [
+      2740,
+      -2120,
+      400
+     ]
+    ],
+    "lengthMeters": 20.89,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 2,
+    "gridPathMeters": 22.13,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-rafters",
+   "to": "a-window",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 21.01,
+   "route": {
+    "waypoints": [
+     [
+      6140,
+      -8220,
+      789
+     ],
+     [
+      4040,
+      -8170,
+      800
+     ]
+    ],
+    "lengthMeters": 21.01,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 2,
+    "gridPathMeters": 21.3,
+    "raySegments": 1,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-catwalk",
+   "to": "mid-top",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 20.4,
+   "route": {
+    "waypoints": [
+     [
+      2340,
+      -4120,
+      400
+     ],
+     [
+      2390,
+      -2170,
+      400
+     ],
+     [
+      2740,
+      -2120,
+      400
+     ]
+    ],
+    "lengthMeters": 23.04,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 2,
+    "gridPathMeters": 23.83,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "defender-spawn",
+   "to": "mid-market",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 25.16,
+   "route": {
+    "waypoints": [
+     [
+      1990,
+      -9720,
+      302
+     ],
+     [
+      1790,
+      -8520,
+      300
+     ],
+     [
+      1190,
+      -8070,
+      300
+     ],
+     [
+      1090,
+      -7370,
+      300
+     ]
+    ],
+    "lengthMeters": 26.74,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 28.69,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "defender-spawn",
+   "to": "a-garden",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 28.18,
+   "route": {
+    "waypoints": [
+     [
+      1990,
+      -9720,
+      302
+     ],
+     [
+      3140,
+      -9020,
+      389
+     ],
+     [
+      3090,
+      -7770,
+      555
+     ],
+     [
+      3790,
+      -7570,
+      584
+     ]
+    ],
+    "lengthMeters": 33.4,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 36.51,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-lobby",
+   "to": "mid-link",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 30.22,
+   "route": {
+    "waypoints": [
+     [
+      -1460,
+      -1370,
+      200
+     ],
+     [
+      -1410,
+      -2470,
+      200
+     ],
+     [
+      -1410,
+      -2720,
+      95
+     ],
+     [
+      -1360,
+      -3920,
+      110
+     ],
+     [
+      -1160,
+      -4020,
+      200
+     ],
+     [
+      -660,
+      -4220,
+      200
+     ],
+     [
+      -610,
+      -4270,
+      200
+     ]
+    ],
+    "lengthMeters": 34.24,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 37.26,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-main",
+   "to": "mid-link",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 20.58,
+   "route": {
+    "waypoints": [
+     [
+      -1960,
+      -5820,
+      96
+     ],
+     [
+      -2510,
+      -5670,
+      97
+     ],
+     [
+      -2510,
+      -4520,
+      94
+     ],
+     [
+      -660,
+      -4220,
+      200
+     ],
+     [
+      -610,
+      -4270,
+      200
+     ]
+    ],
+    "lengthMeters": 36.68,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 39.15,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "defender-spawn",
+   "to": "a-window",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 26.18,
+   "route": {
+    "waypoints": [
+     [
+      1990,
+      -9720,
+      302
+     ],
+     [
+      4640,
+      -9220,
+      804
+     ],
+     [
+      4640,
+      -8220,
+      808
+     ],
+     [
+      4040,
+      -8170,
+      800
+     ]
+    ],
+    "lengthMeters": 43.45,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 47.07,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
    },
    "status": "route"
   }
