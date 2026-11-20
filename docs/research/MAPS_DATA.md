@@ -25,7 +25,7 @@ MAPS.haven.sites;                     // ["A", "B", "C"]
 
 | Map | Sites | Zones | Edges (walk / drop / special / approx) | Sightlines | Sound links | Callouts over walkable floor | Callout z − floor (median / MAD, m) | Zones on main walk component | Main walkable area (m²) |
 |---|---|---|---|---|---|---|---|---|---|
-| *Ascent (hand-authored graph; edges now route-timed)* | A/B | 22 | 32 (all with a measured route) | 11 | 6 | — | — | — | — |
+| *Ascent (hand-authored graph + 15 geometry-derived adjacencies; route-timed)* | A/B | 22 | 47 (all with a measured route) | 11 | 6 | — | — | — | — |
 | *Ascent re-measured with this pipeline (control, not shipped)* | A/B | 22 | 27 walk-adjacent pairs, 8 drop pairs | ≈38 at the same rule | — | 22/22 | 0.00 / 0.00 | 22/22 | 6198 |
 | Abyss | A/B | 23 | 33 (26 / 5 / 0 / 2) | 31 | 32 | 23/23 | −1.23 / 0.27 | 21/23 | 5582 |
 | Bind | A/B | 24 | 34 (31 / 1 / 2 / 0) | 28 | 31 | 24/24 | 0.00 / 0.00 | 24/24 | 6277 |

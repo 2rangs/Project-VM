@@ -13,20 +13,22 @@ the route's time for the edge and records a track position that moves continuous
 
 ## 1. Result per map
 
-| Map | Edges | With walkable route | Flagged straight | Edges with a different way back | Route ÷ straight (median / max) | Waypoints per route | Flagged straight edges |
+| Map | Edges | With walkable route | Flagged straight | Edges with a different way back | Route ÷ straight (median / max) | Segments hitting solid geometry / ray-checked | Flagged straight edges |
 |---|---|---|---|---|---|---|---|
-| **Ascent** | 32 | **32** | 0 | 7 | 1.20 / 6.12 | 7.6 | — |
-| Abyss | 33 | 31 | 2 | 1 | 1.18 / 4.77 | 5.1 | a-security→a-secret, b-nest→b-danger |
-| Bind | 34 | 32 | 2 | 1 | 1.15 / 2.39 | 4.5 | a-teleporter→b-exit, b-teleporter→a-exit |
-| Breeze | 39 | 39 | 0 | 1 | 1.19 / 2.55 | 5.9 | — |
-| Fracture | 31 | 30 | 1 | 0 | 1.06 / 2.27 | 4.9 | attacker-spawn→attacker-bridge |
-| Haven | 30 | 29 | 1 | 1 | 1.13 / 2.53 | 5.5 | b-back→b-site |
-| Icebox | 41 | 40 | 1 | 2 | 1.19 / 2.48 | 5.7 | a-pipes→a-nest |
-| Lotus | 40 | 40 | 0 | 2 | 1.14 / 10.92 | 4.9 | — |
-| Pearl | 36 | 31 | 5 | 2 | 1.18 / 2.94 | 6.0 | mid-shops→b-club, a-main→a-link, mid-doors→b-link, mid-top→mid-plaza, a-flowers→defender-water |
-| Split | 28 | 27 | 1 | 0 | 1.14 / 1.59 | 5.2 | a-ramps→mid-vent |
-| Sunset | 25 | 25 | 0 | 0 | 1.27 / 2.73 | 5.0 | — |
-| **Total** | **369** | **356** | **13** | 17 | | | |
+| **Ascent** | 47 | **47** | 0 | 7 | 1.17 / 6.12 | **0** / 303 | — |
+| Abyss | 33 | 31 | 2 | 1 | 1.18 / 4.74 | **0** / 128 | a-security→a-secret, b-nest→b-danger |
+| Bind | 34 | 32 | 2 | 1 | 1.15 / 2.39 | **0** / 115 | a-teleporter→b-exit, b-teleporter→a-exit |
+| Breeze | 39 | 39 | 0 | 1 | 1.19 / 2.55 | **0** / 195 | — |
+| Fracture | 31 | 30 | 1 | 0 | 1.06 / 2.27 | **0** / 116 | attacker-spawn→attacker-bridge |
+| Haven | 30 | 29 | 1 | 1 | 1.13 / 2.53 | **0** / 134 | b-back→b-site |
+| Icebox | 41 | 40 | 1 | 2 | 1.19 / 2.48 | **0** / 198 | a-pipes→a-nest |
+| Lotus | 40 | 40 | 0 | 2 | 1.14 / 10.92 | **0** / 165 | — |
+| Pearl | 36 | 31 | 5 | 2 | 1.18 / 2.94 | **0** / 169 | mid-shops→b-club, a-main→a-link, mid-doors→b-link, mid-top→mid-plaza, a-flowers→defender-water |
+| Split | 28 | 27 | 1 | 0 | 1.14 / 1.59 | **0** / 111 | a-ramps→mid-vent |
+| Sunset | 25 | 25 | 0 | 0 | 1.27 / 2.73 | **0** / 107 | — |
+| **Total** | **384** | **371** | **13** | 17 | | **0 / 1,741** | |
+
+Ascent has 47 edges: the 32 hand-authored ones plus 15 adjacencies the geometry shows (§6).
 
 Why 13 edges stay straight (each is flagged in the navgraph: `edge.routeStatus = "straight (…)"`, and listed in
 `navgraph.routes.edgesFlaggedStraight`):
@@ -59,7 +61,12 @@ Ascent's is new). Orange = the way back where it differs (a one-way drop).
    must be a standable cell walk-linked to the previous one. (A first version sampled every 0.2 m and let a
    segment clip a blocked cell's corner; the exact traversal fixed that.) A polyline that fails would be
    dropped and the edge flagged — none did.
-5. **Direction** — a bidirectional edge gets one polyline, walked both ways, when the walk-only path is within
+5. **Ray check, independent of the grid** — each walking segment is also cast against the solid triangles of
+   the scene at two body heights (0.7 m and 1.3 m above the floor). A pulled segment is accepted only if both
+   rays are clear, so the polyline is wall-free on the real geometry and not merely on the grid derived from
+   it. Before this was part of construction 3 of ~1,700 segments clipped geometry (2 on Breeze, 1 on Ascent);
+   now 0 of 1,741 do. The counts are recorded per route in `mesh/<map>-routes.json` and asserted by a test.
+6. **Direction** — a bidirectional edge gets one polyline, walked both ways, when the walk-only path is within
    10 % of the best path each way. Otherwise it gets `route` (from→to) and `routeReverse` (to→from): on Ascent
    `a-site → a-rafters` is a 97 m walk around, the way back a 19 m drop.
 
@@ -89,8 +96,8 @@ value is kept under `beforeRoute`. An edge without a route keeps its own time (a
 approx-link's straight-line lower bound). Pathfinding and movement now read the same number — before, A\* chose
 routes by the edge's measured time while movement used the straight line between centres.
 
-Ascent's navgraph changed: 22 zone anchors added, 32 edges re-timed (table in §4). Zone ids, positions,
-sightlines and sound links are untouched.
+Ascent's navgraph changed: 22 zone anchors added, its 32 edges re-timed (table in §4) and 15 edges added (§6).
+Zone ids, positions, sightlines and sound links are untouched.
 
 ## 4. Engine
 
@@ -188,6 +195,7 @@ geometry (`MAPS_DATA.md` §8.9) is a separate decision.
 | An edge takes its route's time, not the straight line's | same | pass |
 | Per map: routes start/end on anchors; length, run and walk time consistent; flagged edges are only special / approx / stacked; each direction's traversal correct | `spatial-engine/test/routes.test.ts` | pass ×11 |
 | A\* equals exhaustive search on every map | same | pass ×11 |
+| The measurement recorded no route segment hitting solid geometry (ray check) | same | 0 / 1,741 segments, ×11 maps |
 | **Local geometry only** (`PV_MAPS_DERIVED=<derived dir>`): every routed polyline, sampled every 0.2 m, and every track position stand on a walkable grid cell | both files | pass on this machine; **skipped** where the grid is absent (it is not committed) |
 
 The 24-round match in the test uses the simulator's scripted policy (attackers alternating A and B), because
@@ -195,70 +203,89 @@ The 24-round match in the test uses the simulator's scripted policy (attackers a
 position is always a point of an edge polyline or a zone anchor, and all of those are checked against the grid
 for every edge in both directions.
 
-Four existing tests were updated because they encoded the old model, not because behaviour regressed:
-`stall-utility` (travel time constant: straight line → the edge's route), `contract-supplement` and `dash-round`
-(track positions are anchors, not callouts), `spatial-engine/pathfinding` (the spawn short-cut example moved
-from A Site→B Site to A Lobby→B Lobby, where it still exists) and `round` (seed pair 1/99 → 1/2: with the new
-timings seeds 1 and 99 win the same six duels in that scripted scene).
+Existing tests were updated where they encoded the old model or the old Ascent graph, not because behaviour
+regressed: `stall-utility` (travel-time constant: straight line → the edge's route; the fire-detour scene moved
+from Mid Courtyard→Mid Bottom, now directly joined, to Mid Cubby→Mid Link), `contract-supplement` and
+`dash-round` (track positions are anchors, not callouts), `spatial-engine/pathfinding` (the spawn short-cut
+example moved from A Site→B Site to A Lobby→B Lobby, where it still exists), `maps` (Ascent edge count 32 → 47)
+and `round` (seed pair 1/99 → 1/2: with the first route timings those two seeds won the same six duels).
 
-`perf.test` (1,000 rounds < 60 s wall clock) now runs at ≈49 ms/round here against ≈43 ms before: rounds last
-longer in simulated time. It passed alone and in the suite, and failed once at 60.5 s while the machine's load
-average was above 45.
+`perf.test` (1,000 rounds < 60 s wall clock) is load-sensitive: ≈43 ms/round before, 49–60 ms/round on the
+32-edge route graph while the machine's load average was above 45 (it failed once at 60.5 s), 29 ms/round on the
+final 47-edge graph with the machine idle.
 
-## 6. 160-match validation (Ascent) — balance dropped from 7/8 to 3/8
+## 6. 160-match validation (Ascent) — 7/8 → 3/8 → 7/8
 
-`npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160` (seeds 1..160, era all), same machine, same
-tool, **before** = the merged base `c05c196`, **after** = this branch. Nothing else was retuned.
+`npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160` (seeds 1..160, era all), same machine and
+tool for all three runs. **Before** = the merged base `c05c196` (straight-line movement). **Routes only** = real
+route lengths on Ascent's 32 hand-authored edges. **Final** = the same plus the 15 adjacencies the geometry
+shows (what is committed). No engine constant was retuned in any of them.
 
-| Judged metric | Real (VCT) | Before | After | Tolerance | Verdict |
-|---|---|---|---|---|---|
-| Round ends by elimination | 0.714 | 0.685 | 0.717 | ±0.04 | pass → pass |
-| Round ends by spike detonation | 0.082 | 0.097 | **0.150** | ±0.04 | pass → **FAIL** |
-| Round ends by defuse | 0.160 | 0.173 | **0.083** | ±0.04 | pass → **FAIL** |
-| Round ends by time | 0.043 | 0.045 | 0.049 | ±0.04 | pass → pass |
-| Attack round win rate | 0.509 | 0.521 | **0.635** | ±0.04 | pass → **FAIL** |
-| Opening duel won by attack | 0.437 | 0.461 | **0.503** | ±0.04 | pass → **FAIL** |
-| Pistol vs pistol (attack) | 0.500 | 0.397 | 0.500 | ±0.05 | FAIL → pass |
-| Full buy vs full buy (attack) | 0.500 | 0.518 | **0.612** | ±0.05 | pass → **FAIL** |
-| **Judged metrics passed** | | **7 / 8** | **3 / 8** | | |
+| Judged metric | Real (VCT) | Before | Routes only | **Final** | Tolerance | Verdict |
+|---|---|---|---|---|---|---|
+| Round ends by elimination | 0.714 | 0.685 | 0.717 | **0.699** | ±0.04 | pass → pass → pass |
+| Round ends by spike detonation | 0.082 | 0.097 | 0.150 | **0.083** | ±0.04 | pass → FAIL → pass |
+| Round ends by defuse | 0.160 | 0.173 | 0.083 | **0.172** | ±0.04 | pass → FAIL → pass |
+| Round ends by time | 0.043 | 0.045 | 0.049 | **0.046** | ±0.04 | pass → pass → pass |
+| Attack round win rate | 0.509 | 0.521 | 0.635 | **0.526** | ±0.04 | pass → FAIL → pass |
+| Opening duel won by attack | 0.437 | 0.461 | 0.503 | **0.456** | ±0.04 | pass → FAIL → pass |
+| Pistol vs pistol (attack) | 0.500 | 0.397 | 0.500 | **0.403** | ±0.05 | FAIL → pass → FAIL |
+| Full buy vs full buy (attack) | 0.500 | 0.518 | 0.612 | **0.521** | ±0.05 | pass → FAIL → pass |
+| **Judged metrics passed** | | **7 / 8** | **3 / 8** | **7 / 8** | | |
 
-Reported-only: mean round 52.6 s → 62.8 s; rounds 3388 → 3403; attack win rate from a 1v1 0.52 → 0.70, 2v2
-0.50 → 0.71; "0v1" (every attacker dead, spike down, one defender left) 0.00 → 0.29.
+Reported-only: mean round 52.6 s → 62.8 s → 56.6 s; attack win rate from a 1v1 0.52 → 0.70 → 0.59, from a 2v2
+0.50 → 0.71 → 0.56; "0v1" (every attacker dead, spike down, one defender left) 0.00 → 0.29 → 0.05. The one
+metric still failing (pistol vs pistol, 0.403) was failing before this work.
 
-**Cause.** The simulation was balanced while every player moved at straight-line speed between zone centres —
-on Ascent that is 29 % less distance than the real floor (952 m vs 1345 m over the 32 edges). With real
-distances everyone is slower, but the fixed clocks are not, and the two sides are not hit equally:
+**Why "routes only" broke the balance.** The simulation was balanced while every player moved at straight-line
+speed between zone centres — on Ascent's 32 edges that is 29 % less distance than the real floor (952 m vs
+1345 m). With real distances everyone is slower, the fixed clocks are not, and the two sides are not hit
+equally:
 
-| Route (run) | Before (straight) | After (route) |
+| Route (run) | Before (straight) | Routes only | Final |
+|---|---|---|---|
+| Defender rotation B Site → A Site | 18.2 s | 24.0 s | 19.7 s |
+| Defender rotation A Site → B Site | 18.2 s | 22.2 s | 17.9 s |
+| Mid Courtyard → A Site | 10.7 s | 14.0 s | 9.7 s |
+| Attacker Spawn → A Site | 13.9 s | 16.2 s | 16.2 s |
+| Attacker Spawn → B Site | 12.4 s | 14.6 s | 14.7 s |
+
+Attackers lose ~2 s out of a 100 s round — it costs them nothing. Defenders lost 4–6 s on rotations that must
+beat a 45 s spike timer and a 7 s defuse, so retakes arrived late: detonations 9.7 % → 15.0 %, defuses 17.3 %
+→ 8.3 %.
+
+**Why the graph, not the engine, was the thing to fix.** Most of the defenders' extra distance was not the map —
+it was Ascent's hand-authored graph. The geometry (control run, `MAPS_DATA.md` §3.3) shows 15 pairs of zones
+whose walkable areas touch that the graph did not join, so a defender was routed around through zones it can
+simply walk between. Straight-line movement hid this; real distances exposed it. The 15 edges, all with a
+measured, ray-checked route:
+
+| Edge | Route | Run |
 |---|---|---|
-| Defender rotation B Site → A Site | 18.2 s | 24.0 s (+32 %) |
-| Defender rotation A Site → B Site | 18.2 s | 22.2 s (+22 %) |
-| Mid Courtyard → A Site | 10.7 s | 14.0 s (+31 %) |
-| Defender Spawn → A Site | 8.9 s | 10.4 s (+17 %) |
-| Attacker Spawn → A Site | 13.9 s | 16.2 s (+17 %) |
-| Attacker Spawn → B Site | 12.4 s | 14.6 s (+18 %) |
+| a-tree ↔ mid-cubby | 11.6 m | 1.7 s |
+| mid-bottom ↔ mid-courtyard | 14.0 m | 2.1 s |
+| mid-bottom ↔ mid-pizza | 15.9 m | 2.4 s |
+| a-garden ↔ a-tree | 17.6 m | 2.6 s |
+| mid-catwalk ↔ mid-cubby | 19.1 m | 2.8 s |
+| mid-courtyard ↔ mid-link | 19.3 m | 2.9 s |
+| a-main ↔ a-wine | 20.4 m | 3.0 s |
+| a-lobby ↔ mid-top | 20.9 m | 3.1 s |
+| a-rafters ↔ a-window | 21.0 m | 3.1 s |
+| mid-catwalk ↔ mid-top | 23.0 m | 3.4 s |
+| defender-spawn ↔ mid-market | 26.7 m | 4.0 s |
+| defender-spawn ↔ a-garden | 33.4 m | 4.9 s |
+| b-lobby ↔ mid-link | 34.2 m | 5.1 s |
+| b-main ↔ mid-link | 36.7 m | 5.4 s |
+| defender-spawn ↔ a-window | 43.5 m | 6.4 s |
 
-- Attackers lose 2–2.5 s out of a 100 s round — it costs them nothing.
-- Defenders lose 4–6 s on a rotation that has to beat a 45 s spike timer and a 7 s defuse. Retakes arrive
-  late: detonations rise 9.7 % → 15.0 %, defuses halve 17.3 % → 8.3 %, and a lone defender left after wiping
-  the attackers now fails to reach and defuse the spike in 29 % of those rounds (never before).
-- The policy's own estimate did not move with reality: it already planned with the edges' measured times
-  (1310 m in total, close to the new 1345 m) while movement used 952 m. So defenders commit to about the same
-  retakes as before, and now arrive ~4–6 s later than the model they were tuned on.
+They are in `ascent.source.json` with a note each, so `build-ascent.mjs` regenerates them. Nothing else in the
+Ascent graph was changed: zone ids, sightlines, sound links and the 32 original edges (including the three that
+join zones that are not really neighbours — `a-site → a-rafters`, `a-main → a-window`, `a-wine →
+defender-spawn`; they stay, at their real, long cost).
 
-Part of the defenders' extra distance is **Ascent's hand-authored graph, not the map**. The geometry shows 15
-real adjacencies the graph does not have (control run, `MAPS_DATA.md` §3.3) — among them A Tree↔Mid Cubby
-(12 m), Mid Bottom↔Mid Courtyard (14 m), Mid Courtyard↔Mid Link (20 m), B Main↔Mid Link (36 m) — and it forbids
-routing through Defender Spawn (`transit: false`), which is how defenders really rotate. With straight-line
-movement these gaps were hidden; with real distances they cost the defence seconds.
-
-**Open experiment (result not in this document).** A scratch copy of Ascent with those 15 geometry-derived
-adjacencies added (47 edges, all routed) was built and its 160-match run started, to see whether correcting
-the graph — rather than retuning the engine — restores balance. The run had not finished when this was
-written, so no number is claimed; the committed Ascent data does **not** include those edges.
-
-**What was not done.** No other system was retuned (spike timer, defuse time, retake/save thresholds, duel
-calibration). Those were calibrated against straight-line movement and are the owners' call.
+**What this does not show.** 7/8 on aggregate rates is not proof that every rotation is right. The engine's
+constants were calibrated on straight-line movement and were not re-examined; the result says the corrected
+graph with real distances lands where the old model did, not that either is tuned to the real game.
 
 ## 7. Reproduce
 
