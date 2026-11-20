@@ -142,7 +142,8 @@ async function main() {
     await page.getByTestId('start-interactive').click();
     await page.waitForSelector('[data-testid="session-bar"]', { timeout: LONG });
     await page.getByTestId('next-round').click();
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="roundstrip"] .rs-dot').length >= 1, null, { timeout: LONG });
+    // The live view plays each round in full; a round chip appears once the engine has played it.
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="roundstrip"] [data-testid^="round-chip-"]').length >= 1, null, { timeout: LONG });
     await page.getByTestId('series-return').click();
     await page.waitForSelector('[data-testid="series-scoreboard"]', { timeout: LONG });
     await page.waitForFunction(() => Number(document.querySelector('[data-testid="series-score-a"]')?.textContent) + Number(document.querySelector('[data-testid="series-score-b"]')?.textContent) === 2, null, { timeout: LONG });

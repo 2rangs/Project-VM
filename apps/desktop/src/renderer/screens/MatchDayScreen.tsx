@@ -119,6 +119,15 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   const liveAvailable = interactive ? sess.active : !!replay && source !== '';
   if (immersive && tab === 'match' && liveAvailable) {
     return (
+      <>
+      {/* [series] the live view replaces the setup screen, so the way back to the series lives here too */}
+      {series && (
+        <div className="ser-mdbanner ser-live" data-testid="series-md-banner-live"
+          style={{ position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+          <b>{series.label}</b>
+          <button className="md-run" onClick={series.onReturn} disabled={running || sess.busy} data-testid="series-return">{series.returnLabel}</button>
+        </div>
+      )}
       <LiveMatch
         replay={interactive ? sess.replay : replay}
         match={matchForView}
@@ -135,6 +144,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
         onExit={() => setImmersive(false)}
         onReview={matchForView ? () => { setImmersive(false); setTab('review'); } : null}
       />
+      </>
     );
   }
 
