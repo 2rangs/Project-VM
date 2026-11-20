@@ -43,8 +43,8 @@ export function canSee(observer: PlayerState, target: PlayerState, ctx: VisionCo
   const halfFovRad = (ctx.params.vision.halfFovDeg * Math.PI) / 180;
   if (angle > halfFovRad) return false;
 
-  const zo = ctx.spatial.nearestZone(observer.position).id;
-  const zt = ctx.spatial.nearestZone(target.position).id;
+  const zo = observer.zoneId ?? ctx.spatial.nearestZone(observer.position).id;
+  const zt = target.zoneId ?? ctx.spatial.nearestZone(target.position).id;
   if (zo === zt) {
     return ctx.params.vision.sameZoneAlwaysVisible;
   }

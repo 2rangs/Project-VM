@@ -48,6 +48,11 @@ export interface NavigationRequest {
    * waited out. Not charged for the zone the route starts or ends in. Applies to every preference.
    */
   zoneEntryMs?: (zoneId: string) => number;
+  /**
+   * Passable hazards on the floor (a fire patch that can be waited out, a slow field): stepping
+   * INTO the disc from outside costs `costMs` once. A route that skirts the disc pays nothing.
+   */
+  hazards?: ReadonlyArray<{ center: Vec3; radius: number; costMs: number }>;
   /** Zones that may be the start or the goal of a route but never a zone it merely passes through (spawns). */
   noTransitZones?: ReadonlySet<string>;
   /**
@@ -266,11 +271,23 @@ export class Navigator {
     const n = this.locate(p, LOCATE_RADIUS + 600);
     if (n === null) return Infinity;
     let best = Math.max(0, Math.hypot(this.x[n]! - p.x, this.y[n]! - p.y) - Math.max(25, this.clearance[n]!));
-    const consider = [n, ...this.arcs[n]!.filter((a) => a.kind === "walk").map((a) => a.to)];
+    // every arc near the position counts: a walk edge with its half-width, a drop / link as a
+    // thin line (the body is on it while it falls or is carried)
+    const consider = new Set<number>([n]);
+    for (const a of this.arcs[n]!) consider.add(a.to);
     for (const u of consider) for (const a of this.arcs[u]!) {
-      if (a.kind !== "walk") continue;
       const d = this.distToSegment(p, u, a.to) - Math.max(25, a.halfWidth);
       if (d < best) best = Math.max(0, d);
+    }
+    // arcs that END at a nearby node but start further off (one-way drops down to here)
+    if (best > 0) {
+      for (let u = 0; u < this.nodeCount && best > 0; u++) {
+        if (Math.abs(this.x[u]! - p.x) > 900 || Math.abs(this.y[u]! - p.y) > 900) continue;
+        for (const a of this.arcs[u]!) {
+          const d = this.distToSegment(p, u, a.to) - Math.max(25, a.halfWidth);
+          if (d < best) best = Math.max(0, d);
+        }
+      }
     }
     return best;
   }
@@ -337,15 +354,23 @@ export class Navigator {
     const startZone = this.zoneIdx[located]!, goalZone = this.zoneIdx[g]!;
     const entryMs = new Map<number, number>();
     const forbidden = req.noTransitZones && req.noTransitZones.size > 0 ? req.noTransitZones : null;
-    const gate: ZoneGate | null = req.zoneEntryMs || forbidden
+    const hazardAt = new Map<number, number>(); // node inside a hazard disc -> its cost
+    for (const h of req.hazards ?? []) {
+      if (!(h.costMs > 0)) continue;
+      for (const n of this.withinDisc(h.center, h.radius).nodes) hazardAt.set(n, Math.max(hazardAt.get(n) ?? 0, h.costMs));
+    }
+    const gate: ZoneGate | null = req.zoneEntryMs || forbidden || hazardAt.size > 0
       ? (fromNode, toNode) => {
+          let cost = 0;
+          const hz = hazardAt.get(toNode);
+          if (hz !== undefined && !hazardAt.has(fromNode)) cost += hz;
           const zi = this.zoneIdx[toNode]!;
-          if (zi === this.zoneIdx[fromNode]! || zi === goalZone || zi === startZone) return 0;
+          if (zi === this.zoneIdx[fromNode]! || zi === goalZone || zi === startZone) return cost;
           if (forbidden?.has(this.zones[zi]!)) return Infinity;
-          if (!req.zoneEntryMs) return 0;
+          if (!req.zoneEntryMs) return cost;
           let c = entryMs.get(zi);
           if (c === undefined) { c = Math.max(0, req.zoneEntryMs(this.zones[zi]!)); entryMs.set(zi, c); }
-          return c;
+          return cost + c;
         }
       : null;
     const path = this.search(sources, g, mode, blockers, costOf, gate, true);

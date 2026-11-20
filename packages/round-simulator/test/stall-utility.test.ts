@@ -18,8 +18,6 @@ interface Opts { patch?: "fire" | "slow" | null; clockMs?: number; seed?: number
 
 const CROSS_TICKS = Math.ceil(patchExposureMs(400, 675, true) / 100); // 12
 const CROSS_DAMAGE = CROSS_TICKS * 6; // 72
-/** A main → A site at run speed along the edge's measured walkable route, on the 100 ms tick grid. */
-const TRAVEL_MS = Math.ceil(spatial.edgeTraversal("a-main", "a-site")!.runTimeMs / 100) * 100 - 100;
 
 function run(o: Opts = {}) {
   const clockMs = o.clockMs ?? 30_000;
@@ -42,33 +40,46 @@ function run(o: Opts = {}) {
     spatial, weapons, abilities: catalog, policies: { attack, defense: scripted(() => undefined) },
     config: { seed: o.seed ?? 5, roundTimeMs: clockMs, traceCommands: true },
   }).runRound(state);
-  const arrival = (result.commandTrace ?? []).find((c) => c.playerId === "mov" && c.phase === "move" && c.toZone === "a-site");
+  // entering the zone (crossing its boundary) and arriving (reaching the standing spot) are two moments
+  const entered = (result.commandTrace ?? []).find((c) => c.playerId === "mov" && c.phase === "move" && c.toZone === "a-site");
+  const arrival = (result.commandTrace ?? []).find((c) => c.playerId === "mov" && c.phase === "arrived" && c.toZone === "a-site");
   const mov = state.players.find((p) => p.id === "mov")!;
   const transits = views.map((v) => v.teammates.find((t) => t.id === "mov")?.transit).filter((t) => t !== undefined);
-  return { result, arrivedAtMs: arrival?.elapsedMs ?? null, health: mov.health, alive: mov.alive, views, transits };
+  return { result, enteredAtMs: entered?.elapsedMs ?? null, arrivedAtMs: arrival?.elapsedMs ?? null, health: mov.health, alive: mov.alive, views, transits };
 }
+
+/** The undisturbed run: when the runner crosses onto A site, and when it reaches its spot there. */
+const CONTROL = run();
+const ENTER_MS = CONTROL.enteredAtMs!;
+const TRAVEL_MS = CONTROL.arrivedAtMs!;
 
 describe("a ground patch on the entry delays it or makes it pay — through pathing, damage and the clock", () => {
   it("control: with nothing on the door the runner arrives in the travel time, unhurt", () => {
     const r = run();
-    expect(r.arrivedAtMs).toBe(TRAVEL_MS);
     expect(r.health).toBe(100);
+    expect(ENTER_MS).toBeGreaterThan(0);
+    expect(TRAVEL_MS).toBeGreaterThan(ENTER_MS);
+    // the walk takes about what the map's measured A Main -> A Site route takes (spot to spot, not anchor to anchor)
+    const route = spatial.edgeTraversal("a-main", "a-site")!.runTimeMs;
+    expect(TRAVEL_MS).toBeGreaterThan(route * 0.5);
+    expect(TRAVEL_MS).toBeLessThan(route * 1.8);
   });
 
   it("counterfactual — fire on the door, clock to spare: the runner waits it out (later, unhurt, clock burned)", () => {
     const base = run();
     const fire = run({ patch: "fire" });
     expect(fire.health).toBe(100);
-    // Thrown at 0.5 s for 5 s → the door is clear at 5.5 s; the runner has been standing at it.
-    expect(fire.arrivedAtMs).toBeGreaterThanOrEqual(5500);
-    expect(fire.arrivedAtMs).toBeLessThanOrEqual(5600);
+    // Thrown at 0.5 s for 5 s → the door is clear at 5.5 s; the runner has been standing at it,
+    // and crosses onto the site within a step or two of that.
+    expect(fire.enteredAtMs).toBeGreaterThanOrEqual(5500);
+    expect(fire.enteredAtMs).toBeLessThanOrEqual(5500 + 700);
     const burned = fire.arrivedAtMs! - base.arrivedAtMs!; // the round clock the stall cost
-    expect(burned).toBeGreaterThanOrEqual(5500 - TRAVEL_MS);
+    expect(burned).toBeGreaterThanOrEqual(5500 - ENTER_MS - 100);
     expect(fire.result.endedAtElapsedMs).toBeGreaterThanOrEqual(base.result.endedAtElapsedMs);
     // Its own team can see why and for how long: the runner is waiting at the edge, ETA = burn time left.
     const waiting = fire.transits.filter((t) => t!.waitingAtEdge);
     expect(waiting.length).toBeGreaterThan(0);
-    for (const t of waiting) expect(t!.nextArrivalMs).toBeLessThanOrEqual(5500 - TRAVEL_MS);
+    for (const t of waiting) expect(t!.nextArrivalMs).toBeLessThanOrEqual(5000); // never more than the burn time
     expect(base.transits.some((t) => t!.waitingAtEdge)).toBe(false);
   });
 
@@ -126,10 +137,17 @@ describe("a patch in the middle of a zone: who is on it, and for how long, is ge
     const state = scene([player("mov", "attack", "a-lobby"), player("thr", "attack", "a-main", [FIRE]), player("far", "defense", "defender-spawn")], 30_000, "thr");
     const result = new RoundSimulator({
       spatial, weapons, abilities: catalog, policies: { attack, defense: scripted(() => undefined) },
-      config: { seed: 5, roundTimeMs: 30_000, traceCommands: true },
+      config: { seed: 5, roundTimeMs: 30_000, traceCommands: true, recordTracks: true },
     }).runRound(state);
     const hop = (zone: string) => (result.commandTrace ?? []).find((c) => c.playerId === "mov" && c.phase === "move" && c.toZone === zone)?.elapsedMs ?? null;
-    return { health: state.players.find((p) => p.id === "mov")!.health, thrower: state.players.find((p) => p.id === "thr")!.health, intoMain: hop("a-main"), ontoSite: hop("a-site") };
+    // how far the runner is from the patch's centre (A main's standing point) at a given time
+    const centre = spatial.standPosition("a-main");
+    const distAt = (ms: number): number => {
+      const f = result.tracks!.find((fr) => fr.elapsedMs === ms)!.players.find((q) => q.id === "mov")!;
+      return Math.hypot(f.x - centre.x, f.y - centre.y);
+    };
+    const cast = result.events.find((e) => e.kind === "abilityUsed")?.elapsedMs ?? null;
+    return { health: state.players.find((p) => p.id === "mov")!.health, thrower: state.players.find((p) => p.id === "thr")!.health, intoMain: hop("a-main"), ontoSite: hop("a-site"), distAt, cast };
   }
 
   it("standing on it when it lands costs the run to its edge (r / v), then nothing", () => {
@@ -137,50 +155,89 @@ describe("a patch in the middle of a zone: who is on it, and for how long, is ge
     expect(r.thrower).toBe(100 - Math.ceil(patchExposureMs(400, 675, false) / 100) * 6); // 6 ticks → 64
   });
 
-  it("counterfactual — when it lands: a runner just inside the zone is caught for the rest of the radius, one already past it is not", () => {
+  it("counterfactual — when it lands: a runner on the patch is caught for the rest of the way out, one off it is not", () => {
+    // The patch is a 4 m disc on A main's standing point. Throw it at every decision while the
+    // runner crosses A main: it is burned exactly when it is on the disc at that moment.
     const none = midZone(null);
-    const hop = none.intoMain!; // when the runner enters A main
-    const nextDecision = Math.ceil((hop + 1) / 500) * 500;
-    const justInside = midZone(nextDecision); // under half a second past the centre: still on the patch
-    const longPast = midZone(nextDecision + 1000); // over a second past it: 7 m on, off the 4 m patch
-    expect(justInside.health).toBeLessThan(100);
-    expect(justInside.health).toBeGreaterThan(100 - Math.ceil(patchExposureMs(400, 675, false) / 100) * 6); // less than a full radius
-    expect(longPast.health).toBe(100);
-    expect(justInside.ontoSite).toBe(none.ontoSite); // it keeps running: the patch cost health, not time
+    let on = 0, off = 0;
+    for (let at = Math.ceil(none.intoMain! / 500) * 500; at < none.ontoSite!; at += 500) {
+      const r = midZone(at);
+      if (r.cast === null) continue;
+      const d = none.distAt(r.cast); // same walk up to the moment it lands
+      if (d < 400 - 70) {
+        on++;
+        expect(r.health, `cast at ${r.cast} ms, runner ${d.toFixed(0)} uu from the centre`).toBeLessThan(100);
+        // never more than the whole chord (2r / v)
+        expect(r.health).toBeGreaterThanOrEqual(100 - Math.ceil(patchExposureMs(400, 675, true) / 100) * 6);
+        expect(r.ontoSite).toBe(none.ontoSite); // it keeps running: the patch cost health, not time
+      } else if (d > 400 + 70) {
+        off++;
+        expect(r.health, `cast at ${r.cast} ms, runner ${d.toFixed(0)} uu from the centre`).toBe(100);
+      }
+    }
+    expect(on).toBeGreaterThan(0);
+    expect(off).toBeGreaterThan(0);
   });
 
-  it("counterfactual — it is already burning when the runner gets there: the runner waits at the zone's edge", () => {
+  it("counterfactual — it is already burning when the runner gets there: the runner waits at the patch's rim", () => {
     const none = midZone(null);
-    const burning = midZone(1000); // burns 1.0–6.0 s; the runner reaches A main's edge before that
-    expect(none.intoMain!).toBeLessThan(6000);
+    const burning = midZone(1000); // burns 1.0–6.0 s; the runner reaches the patch before that
+    expect(none.ontoSite!).toBeLessThan(6000);
     expect(burning.health).toBe(100);
-    expect(burning.intoMain).toBeGreaterThanOrEqual(6000);
-    expect(burning.intoMain).toBeLessThanOrEqual(6100);
+    // while it burns the runner is never on the disc — it stands just outside it
+    for (let ms = burning.cast! + 100; ms < burning.cast! + 5000; ms += 100) expect(burning.distAt(ms), `at ${ms} ms`).toBeGreaterThan(400);
+    expect(burning.distAt(burning.cast! + 4900)).toBeLessThan(400 + 80);
+    // and it goes on once the fire is out: the site is reached late by about the wait
+    expect(burning.ontoSite!).toBeGreaterThan(6000);
+    expect(burning.ontoSite! - none.ontoSite!).toBeGreaterThan(1000);
   });
 });
 
 describe("the route planner prices fire: wait, cross or go round, whichever is cheapest", () => {
-  /** `mov` goes mid cubby → mid link; the short way is the courtyard (6.5 s), the long way mid bottom (9.0 s). */
+  /** `mov` goes A main → A garden; the short way is past A tree, the other way is over A site. */
   function route(fire: boolean) {
     const attack = scripted((p, v) => {
-      if (p.id === "thr") return fire && charges(p, FIRE) > 0 ? { kind: "useAbility", abilityId: FIRE, targetZone: "mid-courtyard" } : undefined;
-      return v.timeRemainingMs > 29_500 ? undefined : { kind: "move", targetZone: "mid-link", moveMode: "run" }; // plans after the fire is down
+      if (p.id === "thr") return fire && charges(p, FIRE) > 0 ? { kind: "useAbility", abilityId: FIRE, targetZone: "a-tree" } : undefined;
+      return v.timeRemainingMs > 29_500 ? undefined : { kind: "move", targetZone: "a-garden", moveMode: "run" }; // plans after the fire is down
     });
-    const state = scene([player("mov", "attack", "mid-cubby"), player("thr", "attack", "mid-courtyard", [FIRE]), player("far", "defense", "defender-spawn")], 30_000, "thr");
+    const state = scene([player("mov", "attack", "a-main"), player("thr", "attack", "a-tree", [FIRE]), player("far", "defense", "defender-spawn")], 30_000, "thr");
     const result = new RoundSimulator({
       spatial, weapons, abilities: catalog, policies: { attack, defense: scripted(() => undefined) },
-      config: { seed: 5, roundTimeMs: 30_000, traceCommands: true },
+      config: { seed: 5, roundTimeMs: 30_000, traceCommands: true, recordTracks: true },
     }).runRound(state);
-    return { hops: (result.commandTrace ?? []).filter((c) => c.playerId === "mov" && c.phase === "move").map((c) => c.toZone), health: state.players.find((p) => p.id === "mov")!.health };
+    const trace = (result.commandTrace ?? []).filter((c) => c.playerId === "mov");
+    const centre = spatial.standPosition("a-tree");
+    const cast = result.events.find((e) => e.kind === "abilityUsed")?.elapsedMs ?? null;
+    // closest the runner comes to the patch's centre while it burns (5 s from the cast)
+    let nearestWhileBurning = Infinity;
+    if (cast !== null) for (const f of result.tracks!) {
+      if (f.elapsedMs <= cast || f.elapsedMs >= cast + 5000) continue;
+      const q = f.players.find((pl) => pl.id === "mov")!;
+      nearestWhileBurning = Math.min(nearestWhileBurning, Math.hypot(q.x - centre.x, q.y - centre.y));
+    }
+    return {
+      hops: trace.filter((c) => c.phase === "move").map((c) => c.toZone),
+      arrivedAtMs: trace.find((c) => c.phase === "arrived")?.elapsedMs ?? null,
+      health: state.players.find((p) => p.id === "mov")!.health,
+      nearestWhileBurning,
+    };
   }
 
   it("no fire: the short way", () => {
-    expect(route(false).hops).toEqual(["mid-courtyard", "mid-link"]);
+    const r = route(false);
+    expect(r.hops).toContain("a-tree");
+    expect(r.hops[r.hops.length - 1]).toBe("a-garden");
   });
 
   it("counterfactual — fresh fire on the short way: the detour is shorter than the wait, so the runner goes round", () => {
+    const short = route(false);
     const r = route(true);
-    expect(r.hops).toEqual(["mid-bottom", "mid-link"]);
+    expect(r.hops[r.hops.length - 1]).toBe("a-garden");
     expect(r.health).toBe(100);
+    expect(r.nearestWhileBurning).toBeGreaterThan(400); // it never sets foot on the burning disc
+    expect(short.nearestWhileBurning).toBe(Infinity); // (no fire in the control)
+    // going round the disc costs at most a little time — far less than standing out the 5 s burn
+    expect(r.arrivedAtMs!).toBeGreaterThanOrEqual(short.arrivedAtMs!);
+    expect(r.arrivedAtMs!).toBeLessThan(short.arrivedAtMs! + 4500);
   });
 });

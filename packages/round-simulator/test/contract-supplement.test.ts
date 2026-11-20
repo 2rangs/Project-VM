@@ -70,8 +70,8 @@ describe("executeAtMs (teamwork timing)", () => {
     }).runRound(makeSyntheticRound(spatial));
     // first frame where any attacker has left the spawn's standing point (tracks follow the
     // walkable route continuously, so this is the first tick of movement)
-    const spawn = spatial.standPosition("attacker-spawn");
-    const moved = r.tracks!.find((f) => f.players.some((p) => p.id.startsWith("atk") && (p.x !== spawn.x || p.y !== spawn.y)));
+    const start = new Map(r.tracks![0]!.players.map((p) => [p.id, p]));
+    const moved = r.tracks!.find((f) => f.players.some((p) => p.id.startsWith("atk") && (p.x !== start.get(p.id)!.x || p.y !== start.get(p.id)!.y)));
     return moved ? moved.elapsedMs : Infinity;
   }
 

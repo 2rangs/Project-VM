@@ -7,6 +7,17 @@ const spatial = loadSpatial();
 const sq = spatialQuery(spatial);
 const weapons = loadWeapons();
 
+/** One attacker on A Main, one defender far away at its spawn: nobody meets. */
+function aloneOnMain(): SimState {
+  const base = makeSyntheticRound(spatial);
+  const keep = (p: SimPlayer): boolean => p.id === "atk1" || p.id === "def1";
+  const players = base.players.filter(keep).map((p) => {
+    const zone = spatial.getZone(p.id === "atk1" ? "a-main" : "defender-spawn")!;
+    return { ...p, zoneId: zone.id, position: { ...zone.position } };
+  });
+  return { ...base, players, spike: { ...base.spike, carrierId: "atk1" } };
+}
+
 function syntheticRun(traceCommands: boolean) {
   return new RoundSimulator({
     spatial, weapons, abilities: NO_ABILITIES,
@@ -30,9 +41,17 @@ describe("traceCommands (policy-debugging aid)", () => {
     expect(t.length).toBeGreaterThan(0);
     // issued commands are captured with their kind
     expect(t.some((e) => e.phase === "issued" && e.command === "move")).toBe(true);
-    // zone-hops and arrival are traced
+    // zone changes are traced as the mover crosses into each zone ...
     expect(t.some((e) => e.phase === "move" && e.fromZone && e.toZone)).toBe(true);
-    expect(t.some((e) => e.phase === "arrived")).toBe(true);
+    // ... and arrival when it reaches its standing spot (here: an unopposed walk onto A Site)
+    const walk = new RoundSimulator({
+      spatial, weapons, abilities: NO_ABILITIES,
+      policies: { attack: { decide: (v) => ({ strategy: "aExecute", roles: [], commands: v.teammates.map((p) => ({ playerId: p.id, kind: "move" as const, targetZone: "a-site", moveMode: "run" as const })) }) }, defense: { decide: () => ({ strategy: "defaultHold", roles: [], commands: [] }) } },
+      config: { seed: 9, roundTimeMs: 40000, traceCommands: true },
+    }).runRound(aloneOnMain());
+    const arrived = walk.commandTrace!.find((e) => e.phase === "arrived");
+    expect(arrived?.toZone).toBe("a-site");
+    expect(walk.commandTrace!.findIndex((e) => e.phase === "arrived")).toBeGreaterThan(walk.commandTrace!.findIndex((e) => e.phase === "move" && e.toZone === "a-site"));
     // every entry carries tick + player
     for (const e of t) {
       expect(typeof e.tick).toBe("number");

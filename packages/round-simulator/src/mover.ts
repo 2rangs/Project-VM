@@ -36,11 +36,15 @@ export interface MoveGoal {
   readonly zoneCost?: (zoneId: string) => number;
   /** One-off cost (ms) of entering a zone: a hazard that can be waited out. */
   readonly zoneEntryMs?: (zoneId: string) => number;
+  /** Passable hazards on the floor (fire, slow field): entering the disc costs `costMs` once. */
+  readonly hazards?: ReadonlyArray<{ center: { x: number; y: number; z: number }; radius: number; costMs: number }>;
 }
 
 export interface MoverHooks {
   /** May the mover step into `toZone` now? false = it stays this tick (it waits, or was re-routed). */
   canEnterZone?(p: SimPlayer, toZone: string): boolean;
+  /** May the mover take this tick's step to `next`? false = it stays this tick (it waits, or was re-routed). */
+  canStep?(p: SimPlayer, next: { x: number; y: number; z: number }): boolean;
   onZoneChange?(p: SimPlayer, fromZone: string, toZone: string): void;
   onArrive?(p: SimPlayer): void;
   onNavEvent?(e: NavEvent): void;
@@ -228,7 +232,7 @@ export class MovementExecutor {
     if (same) {
       m.goal = goal; // refresh the cost callbacks
       if (m.index < m.waypoints.length) return "SUCCESS";
-      if (m.failure) return m.blockersVersion === this.blockers.version ? "UNREACHABLE" : this.plan(p, m, "planned", hooks);
+      if (m.failure) return m.blockersVersion === this.blockers.version ? "UNREACHABLE" : this.plan(p, m, "replanned", hooks);
       if (p.zoneId === goal.zoneId) return "SUCCESS"; // already standing there
     }
     m.goal = goal;
@@ -265,6 +269,7 @@ export class MovementExecutor {
       routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
       startNodes: this.startNodes(m),
       ...(goal.zoneCost ? { zoneCost: goal.zoneCost } : {}), ...(goal.zoneEntryMs ? { zoneEntryMs: goal.zoneEntryMs } : {}),
+      ...(goal.hazards && goal.hazards.length > 0 ? { hazards: goal.hazards } : {}),
     });
     if (r.status !== "SUCCESS") return this.fail(p, m, r.status, r.reason, hooks);
     m.failure = null;
@@ -425,6 +430,11 @@ export class MovementExecutor {
           m.pushTicks = 15; // waited long enough: squeeze past
         }
         m.yieldTicks = 0;
+        if (stepLen > 0 && hooks?.canStep) {
+          const f = stepLen / d;
+          if (!hooks.canStep(p, { x: p.position.x + dx * f, y: p.position.y + dy * f, z: p.position.z + dz * f })) break;
+          if (m.index >= m.waypoints.length || m.waypoints[m.index] !== w) continue; // the hook re-planned
+        }
         if (stepLen >= d) {
           p.position = { ...w.position };
           budget -= speed > 0 ? d / speed : budget;
