@@ -1210,6 +1210,7 @@ export class RoundSimulator {
         ...OPEN_POSTURE,
         preAim,
         moving: this.isMoving(p),
+        pace: p.moveMode === "walk" ? "walk" : "run",
         seesEnemyAtMs,
         flashBlindMs: blindMs,
         behindCover: 0,

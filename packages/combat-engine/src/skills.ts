@@ -14,6 +14,23 @@ export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibrati
   return c.posture.seesEnemyAtMs + scaled + flash;
 }
 
+/**
+ * When (ms after t0) a combatant that was moving at contact has stopped: it starts stopping the
+ * moment it perceives the enemy, and needs stopMs — by its pace, scaled by its movement skill.
+ * 0 for a combatant that was standing.
+ */
+export function stoppedAtMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}): number {
+  if (!c.posture.moving) return 0;
+  const base = c.posture.pace === "walk" ? p.accuracy.stopMs.walk : p.accuracy.stopMs.run;
+  return c.posture.seesEnemyAtMs + base * lerp(1.4, 0.6, c.skills.movement) * (cal.stopTimeScale ?? 1);
+}
+
+/** Is this combatant still moving at time `atMs` of the duel? Without a time: as it was at contact. */
+export function movingAt(c: Combatant, p: CombatParams, cal: CombatCalibration, atMs?: number): boolean {
+  if (!c.posture.moving) return false;
+  return atMs === undefined || atMs < stoppedAtMs(c, p, cal);
+}
+
 /** The comfortable range of a weapon = the edge of its first (full-damage) band. */
 function weaponComfortRange(w: WeaponSpec): number {
   return w.damageBands[0]?.maxRangeMeters ?? 30;
@@ -27,6 +44,7 @@ export function hitChance(
   isFirstShot: boolean,
   p: CombatParams,
   cal: CombatCalibration = {},
+  atMs?: number,
 ): number {
   let chance = p.accuracy.pointBlank;
 
@@ -41,8 +59,8 @@ export function hitChance(
   const over = Math.max(0, distanceMeters - weaponComfortRange(shooter.weapon));
   chance -= over * p.accuracy.rangeFalloffPerMeter;
 
-  // moving shooter: big penalty, partially offset by movement skill.
-  if (shooter.posture.moving) {
+  // moving shooter: big penalty, partially offset by movement skill — until it has stopped.
+  if (movingAt(shooter, p, cal, atMs)) {
     const movingMult = p.accuracy.movingPenalty + (1 - p.accuracy.movingPenalty) * shooter.skills.movement * 0.5;
     chance *= movingMult;
   }
@@ -52,16 +70,16 @@ export function hitChance(
   // target behind cover / hard angle.
   chance *= 1 - clamp(target.posture.behindCover, 0, 1);
   // moving target is harder to hit; tracking skill recovers some of it.
-  if (target.posture.moving) chance *= lerp(0.7, 1, shooter.skills.tracking);
+  if (movingAt(target, p, cal, atMs)) chance *= lerp(0.7, 1, shooter.skills.tracking);
 
   chance *= cal.hitChanceScale ?? 1;
   return clamp(chance, p.accuracy.minHitChance, p.accuracy.maxHitChance);
 }
 
 /** Probability a landed shot is a headshot, from crosshair placement and situation. */
-export function headshotChance(shooter: Combatant, p: CombatParams, cal: CombatCalibration = {}): number {
+export function headshotChance(shooter: Combatant, p: CombatParams, cal: CombatCalibration = {}, atMs?: number): number {
   let hs = lerp(p.headshot.baseLow, p.headshot.baseHigh, shooter.skills.crosshairPlacement);
-  if (shooter.posture.moving) hs *= p.headshot.movingMultiplier;
+  if (movingAt(shooter, p, cal, atMs)) hs *= p.headshot.movingMultiplier;
   if (shooter.posture.flashBlindMs > 0) hs *= p.headshot.flashedMultiplier;
   hs *= cal.headshotScale ?? 1;
   return clamp(hs, 0, 0.95);

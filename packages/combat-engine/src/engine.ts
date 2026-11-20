@@ -92,9 +92,9 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
     events.push({ kind: "shot", timeMs: t, actor: shooter.c.id, target: target.c.id });
 
     const isFirst = shooter.shotsFired === 1;
-    const pHit = hitChance(shooter.c, target.c, duel.distanceMeters, isFirst, p, cal);
+    const pHit = hitChance(shooter.c, target.c, duel.distanceMeters, isFirst, p, cal, t);
     if (shooter.rng() < pHit) {
-      const loc = rollLocation(shooter.rng, headshotChance(shooter.c, p, cal));
+      const loc = rollLocation(shooter.rng, headshotChance(shooter.c, p, cal, t));
       const dmg = damageForRange(shooter.c.weapon, duel.distanceMeters, loc);
       const after = applyDamage({ health: target.health, armor: target.armor }, dmg);
       target.health = after.health;

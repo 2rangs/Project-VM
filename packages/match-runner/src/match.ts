@@ -81,6 +81,12 @@ export interface MatchTuning extends Partial<PolicyTuning> {
   readonly formSigmaMax?: number;
   /** Attrition: share of duel damage a survivor carries into the next fight (0..1). Default 0. */
   readonly damageCarryover?: number;
+  /**
+   * Multiplier on the time a shooter caught on the move needs before it fights like a set player
+   * (combat-engine accuracy.stopMs: 700 ms from a run, 350 ms from a walk at movement skill 0.5).
+   * Default 1. Larger = moving into a held angle costs more; Infinity = a mover never settles.
+   */
+  readonly movingStopScale?: number;
 }
 
 export interface MatchConfig {
@@ -323,7 +329,7 @@ export class MatchEngine {
   private readonly consistencyBySlot: Record<TeamSlot, number[]>;
   /** What each team has learned about the other so far this match. */
   private readonly opponentModels: Record<TeamSlot, OpponentModel>;
-  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number };
+  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number; combatCalibration?: { stopTimeScale?: number } };
   private readonly formSigmaMax: number | undefined;
   /** Per roster index: the player's minimum throw rate (max of team and player entries). */
   private readonly throwFloorsBySlot: Record<TeamSlot, number[]>;
@@ -350,13 +356,14 @@ export class MatchEngine {
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
     this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
-    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, ...policyTuning } = config.tuning ?? {};
+    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
     this.policies.defense.setTuning(policyTuning);
     this.simTuning = {
       ...(crossfireMsPerBit !== undefined ? { crossfirePenaltyMs: crossfireMsPerBit } : {}),
       ...(infoHalfLifeMs !== undefined ? { infoWindowMs: infoHalfLifeMs } : {}),
       ...(damageCarryover !== undefined ? { damageCarryover } : {}),
+      ...(movingStopScale !== undefined ? { combatCalibration: { stopTimeScale: movingStopScale } } : {}),
     };
     this.formSigmaMax = formSigmaMax;
     const recognition = (slot: TeamSlot) => {

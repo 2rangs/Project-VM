@@ -17,7 +17,7 @@ const SPAWN = { x: 500, y: 905, z: 0 };
 
 function attackView(over: Partial<PolicyView> = {}, weaponId = "Vandal"): PolicyView {
   const v = viewFromTeamContext(loadDecisionContext(JSON.parse(readFileSync(join(here, "fixtures", "scenarios", "scenario_01.json"), "utf8"))));
-  const teammates = v.teammates.map((p) => ({ ...p, alive: true, position: SPAWN, weapon: { ...p.weapon, weaponId } })) as PolicyView["teammates"];
+  const teammates = v.teammates.map((p) => ({ ...p, alive: true, position: SPAWN, weapon: { ...p.weapon, weaponId } })) as unknown as PolicyView["teammates"];
   return {
     ...v, roundNumber: 5, timeRemainingMs: 95_000, knownEnemyAliveCount: 5,
     economy: { ...v.economy, credits: 4500 },
