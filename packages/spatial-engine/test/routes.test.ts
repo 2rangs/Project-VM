@@ -8,13 +8,16 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MAP_IDS, defaultDatasetsRoot, loadMap, loadMapData, pointAlongPolyline, type MapId, type Vec3 } from "../src/index.js";
+import { createEngine } from "../src/loader.js";
 
 const dist = (a: Vec3, b: Vec3): number => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 const coverage: string[] = [];
 
 describe.each(MAP_IDS.map((id) => [id] as const))("edge routes: %s", (id: MapId) => {
-  const { data } = loadMapData(id);
+  const { data, transform } = loadMapData(id);
   const engine = loadMap(id);
+  /** The zone graph alone (no roadmap): what the edge-route checks are about. */
+  const graph = createEngine(data, transform);
   const zone = new Map(data.zones.map((z) => [z.id, z]));
   const routed = data.edges.filter((e) => e.route);
   const straight = data.edges.filter((e) => !e.route);
@@ -98,7 +101,7 @@ describe.each(MAP_IDS.map((id) => [id] as const))("edge routes: %s", (id: MapId)
       if (via < d.get(`${a}|${b}`)!) d.set(`${a}|${b}`, via);
     }
     for (const a of ids) for (const b of ids) {
-      const t = engine.shortestTravelTimeMs(a, b, "run", { allowNonTransitWaypoints: true });
+      const t = graph.shortestTravelTimeMs(a, b, "run", { allowNonTransitWaypoints: true });
       const want = d.get(`${a}|${b}`)!;
       if (want === Infinity) expect(t).toBeNull();
       else expect(t, `${a} -> ${b}`).toBe(want);

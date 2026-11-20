@@ -66,7 +66,10 @@ export interface NavigationRequest {
    * INTO the disc from outside costs `costMs` once. A route that skirts the disc pays nothing.
    */
   hazards?: ReadonlyArray<{ center: Vec3; radius: number; costMs: number }>;
-  /** Zones that may be the start or the goal of a route but never a zone it merely passes through (spawns). */
+  /**
+   * Zones that may be the start or the goal of a route but are not to be used as a way through
+   * (spawns). Their floor is taken only when the goal cannot be reached any other way.
+   */
   noTransitZones?: ReadonlySet<string>;
   /**
    * Roadmap nodes the mover can step to directly from `start` (the two ends of the segment it is
@@ -107,6 +110,14 @@ interface Arc {
 type ZoneGate = (fromNode: number, toNode: number) => number;
 
 const GRID = 300; // spatial-hash cell (uu)
+/**
+ * Search cost of stepping onto the floor of a no-transit zone (a spawn) that is neither the start
+ * nor the goal. Larger than any detour on these maps, so a route uses that floor only when there
+ * is no other way to the goal — on some maps the only stairs to a zone lie on floor that the zone
+ * partition gives to a spawn (Ascent: A Rafters). It is a search cost only: it is never part of
+ * the travel time a path reports.
+ */
+const NO_TRANSIT_MS = 120_000;
 /** A point further than this from every node (XY) is not on the roadmap. */
 const LOCATE_RADIUS = 450;
 /** Height band within which a node counts as "this floor" for a 3D lookup (uu). */
@@ -183,7 +194,7 @@ export class Navigator {
   private readonly byZone = new Map<string, number[]>();
   private readonly speeds: { run: number; walk: number }; // uu per ms
   private readonly hasLinks: boolean;
-  private readonly travelCache = new Map<string, Float64Array>();
+  private readonly pairCache = new Map<string, number>();
   private visBits: Uint8Array | null = null;
   private visRange = 0;
 
@@ -443,7 +454,7 @@ export class Navigator {
           if (hz !== undefined && !hazardAt.has(fromNode)) cost += hz;
           const zi = this.zoneIdx[toNode]!;
           if (zi === this.zoneIdx[fromNode]! || zi === goalZone || zi === startZone) return cost;
-          if (forbidden?.has(this.zones[zi]!)) return Infinity;
+          if (forbidden?.has(this.zones[zi]!)) cost += NO_TRANSIT_MS;
           if (!req.zoneEntryMs) return cost;
           let c = entryMs.get(zi);
           if (c === undefined) { c = Math.max(0, req.zoneEntryMs(this.zones[zi]!)); entryMs.set(zi, c); }
@@ -529,31 +540,34 @@ export class Navigator {
   }
 
   /**
-   * Travel time between two zones' anchors on the roadmap (ms), or null if unreachable. Cached
-   * per (origin, mode); this is the number the tactical layer should plan with.
+   * Travel time between two zones' standing points on the roadmap (ms), or null if unreachable —
+   * the number the tactical layer plans with. `noTransitZones` (spawns) may be the start or the goal and
+   * are otherwise passed through only when there is no other floor to walk, as for a mover. Cached per (from, to, mode).
    */
-  zoneTravelMs(fromZone: string, toZone: string, mode: MovementMode = "run"): number | null {
+  zoneTravelMs(fromZone: string, toZone: string, mode: MovementMode = "run", noTransitZones?: ReadonlySet<string>): number | null {
     const s = this.anchors.get(fromZone), g = this.anchors.get(toZone);
     if (s === undefined || g === undefined) return null;
-    const key = `${s}|${mode}`;
-    let d = this.travelCache.get(key);
-    if (!d) {
-      d = new Float64Array(this.nodeCount).fill(Infinity);
-      const heap = new MinHeap();
-      d[s] = 0; heap.push(0, s);
-      const done = new Uint8Array(this.nodeCount);
-      while (heap.size > 0) {
-        const u = heap.pop();
-        if (done[u]) continue;
-        done[u] = 1;
-        for (const a of this.arcs[u]!) {
-          const nd = d[u]! + this.arcMs(a, mode);
-          if (nd < d[a.to]!) { d[a.to] = nd; heap.push(nd, a.to); }
+    if (s === g) return 0;
+    const forbid = noTransitZones && noTransitZones.size > 0 ? noTransitZones : null;
+    const key = `${s}|${g}|${mode}|${forbid ? 1 : 0}`;
+    const hit = this.pairCache.get(key);
+    if (hit !== undefined) return hit < 0 ? null : hit;
+    const startZone = this.zoneIdx[s]!, goalZone = this.zoneIdx[g]!;
+    const gate: ZoneGate | null = forbid
+      ? (fromNode, toNode) => {
+          const zi = this.zoneIdx[toNode]!;
+          if (zi === this.zoneIdx[fromNode]! || zi === goalZone || zi === startZone) return 0;
+          return forbid.has(this.zones[zi]!) ? NO_TRANSIT_MS : 0;
         }
-      }
-      this.travelCache.set(key, d);
+      : null;
+    const path = this.search([{ node: s, ms: 0 }], g, mode, null, () => 0, gate, true);
+    let ms = -1;
+    if (path) {
+      ms = 0;
+      for (let i = 1; i < path.nodes.length; i++) ms += this.arcMs(path.arcs[i]!, mode);
     }
-    return Number.isFinite(d[g]!) ? d[g]! : null;
+    this.pairCache.set(key, ms);
+    return ms < 0 ? null : ms;
   }
 
   /** Is this node still usable under the blockers (for revalidating a path in progress)? */

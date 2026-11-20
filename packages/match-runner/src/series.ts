@@ -85,7 +85,7 @@ export interface SeriesConfig {
   /** Team A's baseline chance to win a map against B, as both teams estimate it. Default 0.5. */
   readonly baselineWinProbabilityA?: number;
   /** Options passed through to every game. */
-  readonly match?: Pick<MatchConfig, "tuning" | "minThrowRates" | "opponentMemory" | "enableAbilities" | "maxRounds" | "recordPerception">;
+  readonly match?: Pick<MatchConfig, "tuning" | "minThrowRates" | "opponentMemory" | "enableAbilities" | "maxRounds" | "recordPerception" | "recordTracks">;
 }
 
 export interface SeriesPreparation {

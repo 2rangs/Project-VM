@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MAP_IDS, NavBlockers, loadMap, loadMapData, type MapId, type NavigationRequest, type NavigationResult, type Vec3 } from "../src/index.js";
+import { createEngine } from "../src/loader.js";
 
 const ascent = loadMap("ascent");
 const nav = ascent.nav!;
@@ -193,6 +194,76 @@ describe("navigation: Ascent", () => {
       expect(road / edge, `${a}->${b}`).toBeLessThan(1.2);
     }
     expect(nav.zoneTravelMs("a-site", "no-such-zone")).toBeNull();
+  });
+});
+
+// ---- Phase 4: the tactical layer's travel times are navigation path costs ----
+
+/** Zones the walk grid cannot reach on each map (NAVIGATION_ENGINE.md §3) — unreachable, never bridged. */
+const ROADMAP_GAPS: Partial<Record<MapId, string[]>> = {
+  abyss: ["a-secret", "b-danger"],
+  haven: ["b-site"],
+  icebox: ["a-nest"],
+  pearl: ["a-link", "b-link", "defender-water", "mid-plaza"],
+  split: ["mid-vent"],
+};
+
+describe("tactical travel time = navigation path cost", () => {
+  const spawns = new Set(ascent.zones.filter((z) => z.transit === false).map((z) => z.id));
+
+  it("every Ascent zone pair: the query the policies make is the roadmap path's time, not a sum of graph edges", () => {
+    let worst = 0, differ = 0, pairs = 0;
+    const { data, transform } = loadMapData("ascent");
+    const graphOnly = createEngine(data, transform);
+    for (const a of ascent.zones) for (const b of ascent.zones) {
+      if (a.id === b.id) continue;
+      pairs++;
+      const asked = ascent.shortestTravelTimeMs(a.id, b.id)!;
+      expect(asked, `${a.id}->${b.id}`).not.toBeNull();
+      expect(asked).toBe(Math.round(nav.zoneTravelMs(a.id, b.id, "run", spawns)!));
+      expect(ascent.findPath(a.id, b.id)!.timeMs).toBe(asked);
+      expect(ascent.isReachable(a.id, b.id)).toBe(true);
+      // and it is the time of the path a mover gets between the two standing points
+      const r = nav.findPath({ actorId: "t", start: ascent.standPosition(a.id), destination: ascent.standPosition(b.id), movementMode: "run", routePreference: "FASTEST", noTransitZones: spawns });
+      expect(r.status).toBe("SUCCESS");
+      if (r.status === "SUCCESS") worst = Math.max(worst, Math.abs(r.estimatedTravelMs - asked));
+      if (graphOnly.shortestTravelTimeMs(a.id, b.id) !== asked) differ++;
+    }
+    expect(worst).toBeLessThan(900); // the free first/last step between a callout and its roadmap node
+    expect(differ / pairs).toBeGreaterThan(0.9); // it really is another number than the zone graph's
+  });
+
+  it("walking takes longer than running, by the speed ratio", () => {
+    const run = ascent.shortestTravelTimeMs("attacker-spawn", "b-site", "run")!;
+    const walk = ascent.shortestTravelTimeMs("attacker-spawn", "b-site", "walk")!;
+    expect(walk / run).toBeGreaterThan(1.5);
+    expect(walk / run).toBeLessThan(2.2);
+  });
+
+  it("spawn floor is a way through only when there is no other: A Rafters is reachable, a rotation does not cut through spawn", () => {
+    // the only stairs to A Rafters lie on floor the zone partition gives to defender spawn
+    expect(ascent.shortestTravelTimeMs("a-site", "a-rafters")).not.toBeNull();
+    expect(ascent.isReachable("b-site", "a-rafters")).toBe(true);
+    const r = nav.findPath({ actorId: "t", start: ascent.standPosition("a-main"), destination: ascent.standPosition("b-main"), movementMode: "run", routePreference: "FASTEST", noTransitZones: spawns });
+    expect(r.status).toBe("SUCCESS");
+    if (r.status === "SUCCESS") expect(r.zones.some((z) => spawns.has(z))).toBe(false);
+  });
+
+  it("queries that carry hazards or blocked zones are priced on the zone graph", () => {
+    const plain = ascent.findPath("a-site", "b-site")!;
+    const blocked = ascent.findPath("a-site", "b-site", "run", { blockedZones: plain.path.slice(1, -1) });
+    if (blocked) expect(blocked.path).not.toEqual(plain.path);
+    expect(ascent.shortestTravelTimeMs("a-site", "b-site", "run", { hazardCosts: new Map([[plain.path[1]!, 60_000]]) })).toBeGreaterThan(0);
+  });
+
+  it.each(MAP_IDS.map((id) => [id] as const))("%s: zones the roadmap cannot reach answer unreachable to the tactical layer too", (id: MapId) => {
+    const engine = loadMap(id);
+    const gaps = new Set<string>();
+    for (const z of engine.zones) {
+      const t = engine.shortestTravelTimeMs("attacker-spawn", z.id);
+      if (z.id !== "attacker-spawn" && t === null) { gaps.add(z.id); expect(engine.isReachable("attacker-spawn", z.id)).toBe(false); }
+    }
+    expect([...gaps].sort()).toEqual((ROADMAP_GAPS[id] ?? []).slice().sort());
   });
 });
 

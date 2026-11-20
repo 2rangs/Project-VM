@@ -22,6 +22,7 @@ import {
   type Pv6SimEventLog,
   type MatchRoundPlayer,
   type MatchRoundTeam,
+  type NavTraceEvent,
 } from "@pv/round-simulator";
 import { lossBonusTierFor, type TeamEconomyState } from "@pv/economy-engine";
 import {
@@ -159,6 +160,12 @@ export interface RoundRecord {
   };
   /** PV-6 replay-engine bridge input for this round (EventLog → replay). */
   readonly replay: Pv6SimEventLog;
+  /**
+   * What the navigation layer did this round — every planned path (goal, preference, length,
+   * time), replan, blocked step and unreachable goal. Present only when `recordTracks` is on;
+   * it is what the navigation debug view draws.
+   */
+  readonly navTrace?: readonly NavTraceEvent[];
 }
 
 /**
@@ -586,6 +593,7 @@ export class MatchEngine {
         seed,
         matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
       }),
+      ...(result.navTrace ? { navTrace: result.navTrace } : {}),
     };
     this.rounds.push(record);
     this.options.onRound?.(record, { ...score });

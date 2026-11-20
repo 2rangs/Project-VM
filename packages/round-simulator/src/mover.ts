@@ -65,6 +65,16 @@ export interface NavEvent {
   readonly pathLength?: number;
   readonly estimatedTravelMs?: number;
   readonly preference?: RoutePreference;
+  /** Where the player stood when the path was planned or refused. */
+  readonly from?: { x: number; y: number; z: number };
+  /** The planned path, as the points the player will walk through (its own lane applied). */
+  readonly waypoints?: ReadonlyArray<{ x: number; y: number; z: number }>;
+  /** The strategic route: the zones the path was asked to follow, current zone first. */
+  readonly zones?: readonly string[];
+  /** Zones the planner was told to avoid, with their cost (the team's belief), heaviest first. */
+  readonly avoided?: ReadonlyArray<{ zoneId: string; cost: number }>;
+  /** Ground patches (fire, slow) priced into the plan. */
+  readonly hazards?: ReadonlyArray<{ x: number; y: number; z: number; radius: number }>;
 }
 
 interface Mover {
@@ -343,10 +353,21 @@ export class MovementExecutor {
     p.pathIndex = Math.min(1, p.path.length - 1);
     p.edgeProgressMs = 0;
     if (m.waypoints.length <= 1) this.arrive(p, m, hooks);
-    hooks?.onNavEvent?.({
-      kind, playerId: p.id, goalZone: goal.zoneId, pathLength: r.pathLength, estimatedTravelMs: r.estimatedTravelMs,
-      preference: goal.preference ?? "FASTEST",
-    });
+    if (hooks?.onNavEvent) {
+      const round = (v: { x: number; y: number; z: number }) => ({ x: Math.round(v.x), y: Math.round(v.y), z: Math.round(v.z) });
+      const avoided = goal.zoneCost && (goal.preference ?? "FASTEST") !== "FASTEST"
+        ? this.spatial.zones.map((z) => ({ zoneId: z.id, cost: goal.zoneCost!(z.id) })).filter((z) => z.cost > 0).sort((a, b) => b.cost - a.cost || (a.zoneId < b.zoneId ? -1 : 1))
+        : [];
+      hooks.onNavEvent({
+        kind, playerId: p.id, goalZone: goal.zoneId, pathLength: r.pathLength, estimatedTravelMs: r.estimatedTravelMs,
+        preference: goal.preference ?? "FASTEST",
+        from: round(m.waypoints[0]?.position ?? p.position),
+        waypoints: m.waypoints.map((w) => round(w.position)),
+        zones: [...p.path],
+        ...(avoided.length > 0 ? { avoided } : {}),
+        ...(goal.hazards && goal.hazards.length > 0 ? { hazards: goal.hazards.map((h) => ({ ...round(h.center), radius: Math.round(h.radius) })) } : {}),
+      });
+    }
     return "SUCCESS";
   }
 
@@ -361,7 +382,11 @@ export class MovementExecutor {
       m.atNode = node;
       this.claim(p.id, node);
     }
-    hooks?.onNavEvent?.({ kind: this.blockers.empty ? "unreachable" : "blocked", playerId: p.id, goalZone: m.goal?.zoneId ?? "", reason: `${status}: ${reason}` });
+    hooks?.onNavEvent?.({
+      kind: this.blockers.empty ? "unreachable" : "blocked", playerId: p.id, goalZone: m.goal?.zoneId ?? "", reason: `${status}: ${reason}`,
+      preference: m.goal?.preference ?? "FASTEST",
+      from: { x: Math.round(p.position.x), y: Math.round(p.position.y), z: Math.round(p.position.z) },
+    });
     return status;
   }
 

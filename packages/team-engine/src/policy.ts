@@ -10,6 +10,7 @@
  * The SpatialQuery and (optional) EconomyEvaluator are CONSTRUCTION dependencies — the
  * per-decision input is only the PolicyView (no WorldState; DECISION-004).
  */
+import { annotateRoutes } from "./route-intent.js";
 import type {
   ActionCommand,
   DecisionPolicy,
@@ -1659,6 +1660,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (!ordered) commands = this.commitDefenseRotation(view, plan, commands);
     commands = this.commitDefenseChase(view, plan, commands, rng);
     commands = this.commitDefuser(view, commands, rng);
+
+    // Route intent: every move order says how it wants to get there (route-intent.ts).
+    commands = annotateRoutes(view, strategy, roleOf, commands);
 
     const decision: PolicyDecision = { strategy, roles, commands };
     const trace: TeamRoundTrace = {

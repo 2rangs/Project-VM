@@ -290,7 +290,7 @@ export class RoundSimulator {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         const targetZone = cmd?.kind === "move" ? cmd.targetZone : undefined;
-        const hooks = this.moverHooks(moveWorld, trace, targetZone, navEvents);
+        const hooks = this.moverHooks(moveWorld, trace, targetZone, navEvents, cmd?.kind === "move" ? cmd.sourceActionId : undefined);
         if (cmd?.kind === "move" && cmd.targetZone) {
           this.mover.setGoal(p, {
             zoneId: cmd.targetZone, mode: cmd.moveMode ?? "run",
@@ -831,7 +831,7 @@ export class RoundSimulator {
    *  - onZoneChange: the hop is recorded (smoke-exit timing) and the move is traced;
    *  - onArrive: traced.
    */
-  private moverHooks(world: MoveWorld, trace: Tracer, targetZone: string | undefined, navEvents: NavTraceEvent[]): MoverHooks {
+  private moverHooks(world: MoveWorld, trace: Tracer, targetZone: string | undefined, navEvents: NavTraceEvent[], intent?: string): MoverHooks {
     const hooks: MoverHooks = {
       canStep: (p, next) => (world.fire.length === 0 && world.slow.length === 0) || this.passPatchRim(p, next, world, hooks),
       canEnterZone: (p, toZone) => {
@@ -859,7 +859,7 @@ export class RoundSimulator {
       },
       onArrive: (p) => trace({ playerId: p.id, phase: "arrived", toZone: p.zoneId, targetZone }),
       onNavEvent: (e: NavEvent) => {
-        navEvents.push({ tick: world.state.tick, elapsedMs: world.state.elapsedMs, ...e });
+        navEvents.push({ tick: world.state.tick, elapsedMs: world.state.elapsedMs, ...e, ...(intent ? { intent } : {}) });
         if (e.kind === "blocked" || e.kind === "unreachable") {
           trace({ playerId: e.playerId, phase: "move", targetZone: e.goalZone, result: e.kind, reason: e.reason }, `nav:${e.playerId}:${e.goalZone}:${e.kind}:${world.state.tick}`);
         }

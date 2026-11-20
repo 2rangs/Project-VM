@@ -59,6 +59,16 @@ export function toSimGameEvents(result: RoundResult, opts: { includeMoves?: bool
 
 function moveEvents(tracks: readonly TrackFrame[], nextSeq: () => number): SimGameEvent[] {
   const out: SimGameEvent[] = [];
+  // Where everybody starts: one zero-length move per player at the first frame, so a player who
+  // never leaves their spot still has a position in the replay.
+  const first = tracks[0];
+  if (first) {
+    for (const p of first.players) {
+      const s = nextSeq();
+      const at = { x: p.x, y: p.y, z: p.z };
+      out.push({ id: `m${s}`, seq: s, tick: first.tick, timeMs: first.elapsedMs, kind: "move", playerId: p.id, from: at, to: at });
+    }
+  }
   for (let i = 1; i < tracks.length; i++) {
     const prev = tracks[i - 1], cur = tracks[i];
     const prevById = new Map(prev.players.map((p) => [p.id, p]));

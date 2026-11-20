@@ -160,6 +160,18 @@ export interface NavTraceEvent {
   readonly pathLength?: number;
   readonly estimatedTravelMs?: number;
   readonly preference?: string;
+  /** The order behind the move (the policy's `sourceActionId`), i.e. what the route is for. */
+  readonly intent?: string;
+  /** Where the player stood when the path was planned or refused. */
+  readonly from?: { readonly x: number; readonly y: number; readonly z: number };
+  /** The planned path: the points the player will walk through. */
+  readonly waypoints?: ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number }>;
+  /** The strategic route (zones), current zone first. */
+  readonly zones?: readonly string[];
+  /** Zones the planner was told to avoid and their cost — from the team's belief, never true positions. */
+  readonly avoided?: ReadonlyArray<{ readonly zoneId: string; readonly cost: number }>;
+  /** Ground patches (fire, slow) priced into the plan. */
+  readonly hazards?: ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number; readonly radius: number }>;
 }
 
 /** One recorded frame of player positions — the basis for a replay track (PV-6). */

@@ -26,3 +26,5 @@ export { viewFromTeamContext, synthContextFromView } from "./view.js";
 export { renderRoundReport } from "./report.js";
 export { OpponentModel, Tendency, tendencyLean, FAKE_BASE_RATE } from "./opponent-model.js";
 export type { OpponentRead, RoundObservation, TendencyEstimate, SiteKey, OpponentPrior } from "./opponent-model.js";
+export { annotateRoutes, beliefZoneCosts, routeIntentOf } from "./route-intent.js";
+export type { RouteIntent, RoutePreference } from "./route-intent.js";

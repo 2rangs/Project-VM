@@ -45,6 +45,7 @@ export class SpatialEngine {
   /** Geometric navigation on the map's roadmap; null when the map has no nav data loaded. */
   readonly nav: Navigator | null;
   private positionZones: ReadonlyMap<string, string> | null = null;
+  private readonly noTransitZones: ReadonlySet<string>;
   private readonly data: TacticalMapData;
   private readonly graph: ZoneGraph;
   private readonly zoneById = new Map<string, Zone>();
@@ -61,6 +62,7 @@ export class SpatialEngine {
 
     for (const z of data.zones) this.zoneById.set(z.id, z);
     this.nav = opts.nav ? new Navigator(opts.nav, data.movement) : null;
+    this.noTransitZones = new Set(data.zones.filter((z) => z.transit === false).map((z) => z.id));
     if (this.nav && opts.visibility) this.nav.setVisibility(opts.visibility);
 
     const m = data.movement;
@@ -161,22 +163,49 @@ export class SpatialEngine {
   findPath(fromId: string, toId: string, mode: TravelMode = "run", opts: PathOptions = {}): PathResult | null {
     const r = this.graph.findPath(fromId, toId, mode, opts);
     if (!r) return null;
+    // The zone path is the strategic route; its time is the navigation path's when a roadmap is
+    // loaded (the zone graph's own sum of edge times where the roadmap has no floor between them).
+    const navMs = this.navTravelMs(fromId, toId, mode, opts);
     return {
       path: r.path,
       distanceUnits: r.distanceUnits,
       distanceMeters: Number((r.distanceUnits / this.data.movement.unitsPerMeter).toFixed(2)),
-      timeMs: r.timeMs,
+      timeMs: navMs ?? r.timeMs,
       mode,
     };
   }
 
   /** Shortest travel time in ms, or null if unreachable. */
   shortestTravelTimeMs(fromId: string, toId: string, mode: TravelMode = "run", opts: PathOptions = {}): number | null {
+    const navMs = this.navTravelMs(fromId, toId, mode, opts);
+    if (navMs !== null) return navMs;
+    if (this.nav && this.plainQuery(opts) && this.zoneById.has(fromId) && this.zoneById.has(toId)) return null; // unreachable on the floor
     const r = this.graph.findPath(fromId, toId, mode, opts);
     return r ? r.timeMs : null;
   }
 
+  private plainQuery(opts: PathOptions): boolean {
+    return !opts.hazardCosts?.size && !opts.blockedZones?.length;
+  }
+
+  /**
+   * The navigation path's time between two zones' standing points — the same floor a mover will
+   * walk — so every travel-time judgement made through `shortestTravelTimeMs` / `findPath`
+   * (rotations, retakes, who arrives first, spike recovery, chase) is a path cost, not a sum of
+   * graph edges. null without a roadmap, when unreachable, or for queries that carry hazards or
+   * blocked zones (those are answered on the zone graph, which prices them).
+   */
+  private navTravelMs(fromId: string, toId: string, mode: TravelMode, opts: PathOptions): number | null {
+    if (!this.nav || !this.plainQuery(opts) || !this.zoneById.has(fromId) || !this.zoneById.has(toId)) return null;
+    const ms = this.nav.zoneTravelMs(fromId, toId, mode, opts.allowNonTransitWaypoints ? undefined : this.noTransitZones);
+    return ms === null ? null : Math.round(ms);
+  }
+
   isReachable(fromId: string, toId: string, opts: PathOptions = {}): boolean {
+    // with a roadmap, "reachable" means there is floor to walk — what a mover will find
+    if (this.nav && this.plainQuery(opts) && this.zoneById.has(fromId) && this.zoneById.has(toId)) {
+      return fromId === toId || this.navTravelMs(fromId, toId, "run", opts) !== null;
+    }
     return this.graph.findPath(fromId, toId, "run", opts) !== null;
   }
 
