@@ -217,12 +217,22 @@ in Dev.
 | `src/data/sim/ascent.navgraph.json` | zones, travel edges, sightlines, sound links (vision/hearing rules, blockout) |
 | `@pv/game-data` `rosters.json` (read-only import) | engine slot 1..5 → real player handle |
 
-**Position tracks come from an app-side bridge.** `@pv/match-runner` does not forward
-`recordTracks`, so the app received no player positions at all. `scripts/track-shim.mts` turns the
-simulator's own track recording on from the app's two match scripts (outcomes, sim events and
-perception are identical with and without it) and adds a spawn position per player. It reads a
-private simulator field; if that breaks, the screen says positions are unavailable. The clean fix
-is a `MatchConfig.recordTracks` option in the engine.
+**Position tracks come from the engine.** The match scripts ask for them with `MatchConfig.recordTracks`
+(`scripts/run-match.mts`, `match-session.mts`, `series-session.mts`): every player's position on every tick,
+written into each round's replay as `move` events, starting with one zero-length move per player so that a
+player who never leaves their spot still has a position. Players are drawn exactly where the engine recorded
+them — consecutive samples joined linearly — and the engine only ever moves a body along its navigation
+roadmap, so nobody is drawn crossing a wall (`packages/match-runner/test/movement-floor.test.ts` checks every
+recorded position of whole matches against the roadmap). The former app-side `track-shim.mts` is gone.
+
+**Navigation (developer) view.** The checkbox at the bottom right of the tactical map turns on the navigation
+debug overlay (off by default, not persisted): the walkable floor as the engine's roadmap knows it
+(`src/data/sim/ascent.nav.json`), one-way drops, the zone graph with every zone ringed green (connected) or red
+(not), and for each player of the viewed team the destination, the planned waypoints still ahead (coloured by
+route preference), the walked trace, replans and refused paths. The panel beside the map says, per player, WHY
+that route: what the order is for → goal · route preference · zones avoided (from the team's belief) · length ·
+time. It draws engine output only (`RoundRecord.navTrace`); the model is `src/renderer/matchday/navdebug.ts`.
+Screen: `docs/desktop-nav-debug.png`.
 
 ### Approximations (derived in the renderer — and the engine field that would make each exact)
 | Shown | How it is derived today | Exact with |
@@ -337,7 +347,7 @@ the renderer still runs in plain-browser mode (`window.pv` absent → in-page
    Match Runner (`pnpm sim:match` on the integration branch), same interface; the
    worker + IPC path stay unchanged.
 2. **Per-player data for the live match view** — see "Approximations" above for the engine
-   fields that would replace each renderer-side derivation, and `scripts/track-shim.mts`.
+   fields that would replace each renderer-side derivation.
 3. **Spatial adapter** — `src/shared/ascent-transform.ts` (copied PV-4 transform)
    → a real spatial-engine adapter supplying the transform per map.
 4. **Team select** — pick two real teams + seed to start a match.

@@ -4,7 +4,7 @@
 // round's per-team PerceptionTrack into ONE match-level perception track per real
 // team (fog-of-war / belief heatmap source, DECISION-004).
 import type { PerceptionTrack, PerceptionSnapshot, SimEvent } from '@pv/replay-engine';
-import type { MatchOptions, MatchSummary, RoundDecisions } from './ipc.ts';
+import type { MatchOptions, MatchSummary, NavTraceEvent, RoundDecisions } from './ipc.ts';
 
 const GAP_MS = 5000;
 
@@ -27,6 +27,8 @@ interface RawRound {
   perception?: RawPerceptionTrack[] | null;
   /** RoundRecord.decisions, passed through untouched (absent on older engines). */
   decisions?: RoundDecisions | null;
+  /** RoundRecord.navTrace (round-relative ms), passed through untouched. */
+  nav?: NavTraceEvent[] | null;
 }
 export interface RawMatch {
   teams: { A: { id: string; name: string }; B: { id: string; name: string } };
@@ -92,6 +94,7 @@ export function mergeMatch(raw: RawMatch): MergedMatch {
       economy: r.economy,
       buys: r.buys,
       ...(r.decisions ? { decisions: r.decisions } : {}),
+      ...(r.nav ? { nav: r.nav } : {}),
     })),
     ...(raw.options ? { options: raw.options } : {}),
   };

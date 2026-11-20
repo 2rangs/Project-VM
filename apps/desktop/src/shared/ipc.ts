@@ -126,6 +126,30 @@ export interface SimRunRequest {
   seriesGame?: boolean;
 }
 
+/**
+ * One thing the engine's navigation layer did for one player (mirrors @pv/round-simulator
+ * NavTraceEvent). `elapsedMs` is ROUND-relative. Positions are game units.
+ */
+export interface NavTraceEvent {
+  tick: number;
+  elapsedMs: number;
+  kind: 'planned' | 'replanned' | 'blocked' | 'unreachable';
+  playerId: string;
+  goalZone: string;
+  reason?: string;
+  pathLength?: number;
+  estimatedTravelMs?: number;
+  preference?: string;
+  /** The order behind the move (the policy's sourceActionId): what the route is for. */
+  intent?: string;
+  from?: { x: number; y: number; z: number };
+  waypoints?: Array<{ x: number; y: number; z: number }>;
+  zones?: string[];
+  /** Zones the planner was told to avoid, from the team's belief. */
+  avoided?: Array<{ zoneId: string; cost: number }>;
+  hazards?: Array<{ x: number; y: number; z: number; radius: number }>;
+}
+
 /** Per-round summary from @pv/match-runner (real economy / ultimate / score). */
 export interface MatchRoundSummary {
   roundNumber: number;
@@ -141,6 +165,8 @@ export interface MatchRoundSummary {
   buys: { A: { tier: string; weapon: string }; B: { tier: string; weapon: string } };
   /** Plans, pre-round opponent reads and observations. Absent on engines that predate it. */
   decisions?: RoundDecisions | null;
+  /** Navigation trace of the round (developer view). Absent when the engine recorded none. */
+  nav?: NavTraceEvent[] | null;
 }
 
 export interface MatchSummary {

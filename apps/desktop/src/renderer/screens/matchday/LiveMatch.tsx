@@ -16,15 +16,17 @@ import { valorantApiMinimap } from '@pv/replay-viewer';
 import type { MatchSummary, SessionState, TeamOrder, TimeoutLogEntry } from '../../../shared/ipc.ts';
 import { ASCENT_TRANSFORM } from '../../../shared/ascent-transform.ts';
 import navgraph from '../../../data/sim/ascent.navgraph.json';
+import roadmapData from '../../../data/sim/ascent.nav.json';
 import { useT } from '../../i18n/index.tsx';
 import { OrdersPanel } from '../OrdersPanel.tsx';
 import type { SessionFeedItem } from '../../useMatchSession.ts';
 import { buildNav, type NavData } from '../../matchday/nav.ts';
 import {
-  buildTimeline, playerIdFor, roundIndexAt, roundOver, scoreAt, teamOfId, slotOfId,
+  buildTimeline, displayPos, playerIdFor, roundIndexAt, roundOver, scoreAt, teamOfId, slotOfId,
   type MatchTimeline, type RoundTimeline, type TeamSlot,
 } from '../../matchday/timeline.ts';
 import { computeFrame, type Frame } from '../../matchday/frame.ts';
+import { buildRoadmap, navDebugAt, type NavDebugFrame, type RoadmapData } from '../../matchday/navdebug.ts';
 import { eventJump, formatClock } from '../../matchday/monitor.ts';
 import { loadPrefs, savePrefs, type MatchPrefs } from '../../matchday/prefs.ts';
 import { rosterHandles } from '../../matchday/roster.ts';
@@ -38,6 +40,8 @@ import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
 const blockout = buildBlockout(nav, (navgraph as unknown as { plantZones?: Array<{ zoneId: string; polygon: Array<{ x: number; y: number }> }> }).plantZones ?? []);
+/** The engine's navigation roadmap (the floor players walk on) — drawn by the developer overlay. */
+const roadmap = buildRoadmap(roadmapData as unknown as RoadmapData);
 const EMPTY: MatchTimeline = { rounds: [], startMs: 0, endMs: 0, hasTracks: false };
 const OUR_TEAM: TeamSlot = 'A';
 const CAM_SLOTS = [1, 2, 3, 4, 5] as const;
@@ -81,7 +85,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const [focus, setFocus] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [mapOk, setMapOk] = useState<boolean | null>(null);
-  const [showGraph, setShowGraph] = useState(false); // debug: navgraph edges (never on by default, not persisted)
+  const [showGraph, setShowGraph] = useState(false); // developer: navigation debug overlay (never on by default, not persisted)
   const update = useCallback((patch: Partial<MatchPrefs>) => setPrefs((p) => { const n = { ...p, ...patch }; savePrefs(n); return n; }), []);
 
   const tl = useMemo(() => (replay ? buildTimeline(replay, match, nav) : EMPTY), [replay, match]);
@@ -98,6 +102,11 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const frame: Frame | null = useMemo(
     () => (replay && tl.rounds.length > 0 ? computeFrame(replay, tl, nav, viewTeam, playback.tMs) : null),
     [replay, tl, viewTeam, playback.tMs],
+  );
+  // Developer view: what the navigation layer planned for the viewed team at this instant.
+  const navDebug: NavDebugFrame | null = useMemo(
+    () => (showGraph && round ? navDebugAt(round, viewTeam, playback.tMs, (p) => displayPos(p, playback.tMs), (id) => nav.zone(id)?.name ?? id) : null),
+    [showGraph, round, viewTeam, playback.tMs],
   );
   const over = !!round && roundOver(round, playback.tMs);
   const atLiveEdge = !!round && round === latest && over;
@@ -226,6 +235,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     const host = hostRef.current;
     if (!host) return;
     const stage = new MatchStage(nav, replay?.meta.coordinateTransform ?? ASCENT_TRANSFORM);
+    stage.setRoadmap(roadmap);
     stageRef.current = stage;
     let alive = true;
     void stage.init(host).then(async () => {
@@ -291,7 +301,10 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       camStageRef.current?.render(frameNow, cams, { nameOf: L.nameOf });
       if (sig === lastSig) return; // paused and nothing moved: keep the last picture
       lastSig = sig;
-      stage.render(frameNow, views, { showBelief: L.belief, showGraph: L.showGraph, nameOf: L.nameOf });
+      const dbg = L.showGraph && frameNow
+        ? navDebugAt(frameNow.round, L.viewTeam, frameNow.tMs, (p) => displayPos(p, frameNow.tMs))
+        : null;
+      stage.render(frameNow, views, { showBelief: L.belief, showGraph: L.showGraph, navDebug: dbg, nameOf: L.nameOf });
     });
   }, [playback.subscribe, mapOk]);
 
@@ -340,6 +353,40 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     </>
   );
 
+  // Developer view: the navigation panel (why each player walks where it walks), beside the map.
+  const navPanel = showGraph ? (
+    <div className="mdx-navdbg" data-testid="nav-debug-panel">
+      <div className="mdx-navdbg-head">
+        <b>{t('mdx.nav.title')}</b>
+        <span data-testid="nav-debug-zones">{t('mdx.nav.zones', { ok: roadmap.connectedZones, n: roadmap.zones.length })}</span>
+        <span>{t('mdx.nav.floor', { nodes: roadmap.nodes.length, edges: roadmap.segments.length })}</span>
+        {navDebug && <span data-testid="nav-debug-counts">{t('mdx.nav.counts', navDebug.counts)}</span>}
+      </div>
+      {round && !round.summary?.nav && <div className="mdx-navdbg-row warn">{t('mdx.nav.noTrace')}</div>}
+      {navDebug?.plans.map((p) => (
+        <div key={p.playerId} className={`mdx-navdbg-row ${p.failure ? 'fail' : ''}`} data-testid={`nav-debug-row-${p.slot}`}>
+          <i className={`pref ${(p.event?.preference ?? (p.failure ? 'FAIL' : 'NONE')).toLowerCase()}`} />
+          <b>{p.slot} {nameOf(p.playerId)}</b>
+          <span>{p.why || t('mdx.nav.dead')}</span>
+          {p.replans.length > 0 && <em>{t('mdx.nav.replans', { n: p.replans.length })}</em>}
+          {p.failures.length > 0 && <em className="fail">{t('mdx.nav.failures', { n: p.failures.length })}</em>}
+        </div>
+      ))}
+      <div className="mdx-navdbg-legend" aria-hidden>
+        <span><i className="pref fastest" />{t('mdx.nav.lg.fastest')}</span>
+        <span><i className="pref safest" />{t('mdx.nav.lg.safest')}</span>
+        <span><i className="pref stealth" />{t('mdx.nav.lg.stealth')}</span>
+        <span><i className="pref tactical" />{t('mdx.nav.lg.tactical')}</span>
+        <span><i className="lgn trail" />{t('mdx.nav.lg.trail')}</span>
+        <span><i className="lgn replan" />{t('mdx.nav.lg.replan')}</span>
+        <span><i className="lgn fail" />{t('mdx.nav.lg.fail')}</span>
+        <span><i className="lgn zone-ok" />{t('mdx.nav.lg.zoneOk')}</span>
+        <span><i className="lgn zone-bad" />{t('mdx.nav.lg.zoneBad')}</span>
+        <span><i className="lgn drop" />{t('mdx.nav.lg.drop')}</span>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className={`mdx mode-${mode}`} data-testid="live-match" data-mode={mode}>
       <TopHud
@@ -377,6 +424,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
               </div>
             </div>
             <EnemyPanel t={t} frame={frame} teamName={teams[enemyTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(enemyTeam)}>
+              {navPanel}
               <KillFeed t={t} frame={frame} nameOf={nameOf} zoneName={zoneName} />
             </EnemyPanel>
           </div>

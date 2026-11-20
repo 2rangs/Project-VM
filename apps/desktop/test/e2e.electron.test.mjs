@@ -83,6 +83,25 @@ async function main() {
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-fog-pov.png') });
 
+  // Navigation debug (developer view): the walkable floor as the engine's roadmap knows it, the
+  // zone graph with every zone's connection, and per player the destination, planned waypoints,
+  // walked trace, replans, failures and WHY that route (order + route preference).
+  await page.selectOption('[data-testid="fog-pov"]', '0');
+  await page.getByTestId('round-chip-3').click();
+  const r3Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
+  await page.locator('.rv-scrub').fill(String(r3Start + 9000));
+  await page.getByTestId('debug-graph').check();
+  await page.waitForSelector('[data-testid="nav-debug-panel"]', { timeout: 5000 });
+  const navTxt = await page.getByTestId('nav-debug-panel').innerText();
+  assert.ok(/22\/22/.test(await page.getByTestId('nav-debug-zones').innerText()), 'every Ascent zone is connected to the floor');
+  assert.equal(await page.locator('[data-testid^="nav-debug-row-"]').count(), 5, 'one row per player of the viewed team');
+  assert.ok(/route/.test(navTxt) && /→/.test(navTxt), 'each row says why: order → goal · route preference');
+  assert.ok(/\d+ m · \d+(\.\d)? s/.test(navTxt), 'planned length and time are shown');
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: path.join(OUT, 'desktop-nav-debug.png') });
+  await page.getByTestId('debug-graph').uncheck();
+  assert.equal(await page.getByTestId('nav-debug-panel').count(), 0, 'the overlay is off by default and goes away');
+
   // Post-match Review tab: round strip, economy timeline, decisions, MVP, ground truth.
   await page.getByTestId('tab-review').click();
   await page.waitForSelector('[data-testid="review-panel"]', { timeout: 10000 });

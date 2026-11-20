@@ -18,6 +18,7 @@ import type { Frame, FrameEnemy, FrameUnit } from '../../matchday/frame.ts';
 import { findPlayer, formationOffset } from '../../matchday/timeline.ts';
 import { PERCEPTION } from '../../matchday/visibility.ts';
 import { C, FONT } from '../../matchday/theme.ts';
+import type { NavDebugFrame, Roadmap } from '../../matchday/navdebug.ts';
 
 export interface StageView {
   readonly key: string;
@@ -30,8 +31,14 @@ export interface StageView {
 
 export interface StageOptions {
   readonly showBelief: boolean;
-  /** Debug only: draw the navgraph's travel edges (straight zone-to-zone lines — NOT routes). */
+  /**
+   * Developer view: the navigation debug overlay — the walkable floor as the engine's roadmap
+   * knows it, the zone graph with connected / unconnected zones, and (with `navDebug`) each
+   * player's destination, planned waypoints, walked trace, replans and path failures.
+   */
   readonly showGraph: boolean;
+  /** What the navigation layer planned for the viewed team at this instant (see navdebug.ts). */
+  readonly navDebug?: NavDebugFrame | null;
   /** Display name for an engine player id in the current round. */
   readonly nameOf: (id: string) => string;
 }
@@ -46,14 +53,24 @@ class ViewNode {
   readonly mapDim = new Sprite();
   readonly mapLit = new Sprite();
   readonly litMask = new Graphics();
+  /**
+   * Navigation debug, static part, redrawn only when the camera changes. `floor` is the walkable
+   * surface: drawn opaque and flattened to one texture, so overlapping corridors give ONE even
+   * tint whose edge is the outline of the floor. `road` is the roadmap and zone graph on top.
+   */
+  readonly floor = new Graphics();
+  readonly road = new Graphics();
+  roadSig = '';
   readonly under = new Graphics();
   readonly over = new Graphics();
   readonly labels = new Container();
   private readonly pool = new Map<string, Text>();
   private used = new Set<string>();
 
-  constructor(private readonly resolution: number) {
-    this.root.addChild(this.clip, this.mapDim, this.litMask, this.mapLit, this.under, this.over, this.labels);
+  constructor(readonly resolution: number) {
+    this.root.addChild(this.clip, this.mapDim, this.litMask, this.mapLit, this.floor, this.road, this.under, this.over, this.labels);
+    this.floor.alpha = 0.3;
+    this.floor.visible = false;
     this.root.mask = this.clip;
     this.mapLit.mask = this.litMask;
     this.mapDim.alpha = 0.3;
@@ -87,6 +104,13 @@ export class MatchStage {
   private nodes = new Map<string, ViewNode>();
   private texture: Texture | null = null;
   private zoneBox = { u0: 0, v0: 0, u1: 1, v1: 1 };
+  private roadmap: Roadmap | null = null;
+
+  /** The engine's navigation roadmap, for the developer overlay. */
+  setRoadmap(roadmap: Roadmap | null): void {
+    this.roadmap = roadmap;
+    for (const n of this.nodes.values()) n.roadSig = '';
+  }
 
   constructor(private readonly nav: NavModel, private readonly transform: CoordinateTransform) {
     let u0 = Infinity, v0 = Infinity, u1 = -Infinity, v1 = -Infinity;
@@ -219,16 +243,10 @@ export class MatchStage {
     const lit = node.litMask.clear();
     node.beginLabels();
 
-    // The navgraph's travel edges are straight lines between zone centres: they cross walls and
-    // are not routes, so they are a debug overlay only.
-    if (opts.showGraph) {
-      for (const l of nav.links) {
-        const a = nav.zone(l.a), b = nav.zone(l.b);
-        if (!a || !b) continue;
-        const pa = this.toScreen(cam, a.position), pb = this.toScreen(cam, b.position);
-        under.moveTo(pa.x, pa.y).lineTo(pb.x, pb.y).stroke({ color: C.sound, width: 1, alpha: 0.45 });
-      }
-    }
+    // Navigation debug (developer view). Static part: the walkable floor as the roadmap knows it
+    // and the zone graph. The zone graph's links are straight lines between zone centres — they
+    // are adjacency, not routes; the routes are the roadmap underneath.
+    this.drawRoad(node, cam, opts.showGraph && !view.followId);
     if (!hasMap) for (const z of nav.zones) { const p = this.toScreen(cam, z.position); under.circle(p.x, p.y, this.px(cam, 420)).fill({ color: C.line, alpha: 0.55 }); }
 
     const units = frame?.units ?? [];
@@ -391,6 +409,8 @@ export class MatchStage {
       this.cross(over, p.x, p.y, 9, C.dead, 0.9);
     }
 
+    if (opts.showGraph && opts.navDebug && !follow && !lost) this.drawNavDebug(node, over, cam, opts.navDebug, opts.nameOf);
+
     // zone names
     for (const z of nav.zones) {
       if (compact && !relevant.has(z.id)) continue;
@@ -400,6 +420,105 @@ export class MatchStage {
       node.label(`z:${z.id}`, z.name.toUpperCase(), p.x, p.y - this.px(cam, 300) - 4, compact ? 9 : 10, on ? C.ink : C.muted, lost ? 0.35 : on ? 0.9 : 0.55);
     }
     node.endLabels();
+  }
+
+  /** The static navigation layer of one view; rebuilt only when the camera (or the roadmap) changes. */
+  private drawRoad(node: ViewNode, cam: Camera, on: boolean): void {
+    const sig = on ? `${cam.cx.toFixed(1)},${cam.cy.toFixed(1)},${cam.cu.toFixed(5)},${cam.cv.toFixed(5)},${cam.scale.toFixed(3)},${cam.rot.toFixed(4)},${this.roadmap ? 1 : 0}` : '';
+    if (sig === node.roadSig) return;
+    node.roadSig = sig;
+    const g = node.road.clear();
+    const f = node.floor;
+    if (f.isCachedAsTexture) f.cacheAsTexture(false);
+    f.clear();
+    f.visible = on && !!this.roadmap;
+    if (!on) return;
+    const road = this.roadmap;
+    if (road) {
+      // the floor: every walkable roadmap segment at its measured width, every node at its
+      // clearance — opaque, then flattened, so the union reads as one surface with one edge
+      for (const s of road.segments) {
+        if (s.kind !== 'walk') continue;
+        const a = this.toScreen(cam, s.a), b = this.toScreen(cam, s.b);
+        f.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color: C.navFloor, width: Math.max(2, this.px(cam, Math.max(35, s.halfWidth) * 2)), cap: 'round' });
+      }
+      for (const n of road.nodes) {
+        if (n.clearance <= 0) continue;
+        const p = this.toScreen(cam, n.pos);
+        f.circle(p.x, p.y, Math.max(1, this.px(cam, n.clearance))).fill({ color: C.navFloor });
+      }
+      f.cacheAsTexture({ resolution: node.resolution, antialias: true });
+      // the roadmap itself: walk edges, one-way drops, authored links
+      for (const s of road.segments) {
+        const a = this.toScreen(cam, s.a), b = this.toScreen(cam, s.b);
+        if (s.kind === 'walk') g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color: C.navFloor, width: 1, alpha: 0.28 });
+        else {
+          const color = s.kind === 'drop' ? C.navDrop : C.navLink;
+          g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color, width: 1, alpha: 0.7 });
+          g.circle(b.x, b.y, 1.6).fill({ color, alpha: 0.8 }); // the end it leads to
+        }
+      }
+    }
+    // the zone graph
+    for (const l of this.nav.links) {
+      const a = this.nav.zone(l.a), b = this.nav.zone(l.b);
+      if (!a || !b) continue;
+      const pa = this.toScreen(cam, a.position), pb = this.toScreen(cam, b.position);
+      g.moveTo(pa.x, pa.y).lineTo(pb.x, pb.y).stroke({ color: C.sound, width: 1, alpha: 0.4 });
+    }
+    // every zone's standing point: connected to the floor, or not
+    const conn = new Map((road?.zones ?? []).map((z) => [z.id, z]));
+    for (const z of this.nav.zones) {
+      const c = conn.get(z.id);
+      const p = this.toScreen(cam, c?.anchor ?? z.position);
+      if (!road || c?.connected) g.circle(p.x, p.y, 5).stroke({ color: road ? C.navOk : C.sound, width: 2, alpha: 0.9 });
+      else { g.circle(p.x, p.y, 7).stroke({ color: C.enemy, width: 2, alpha: 0.95 }); this.cross(g, p.x, p.y, 4, C.enemy, 0.95); }
+    }
+  }
+
+  private prefColor(pref: string | undefined): number {
+    return pref === 'SAFEST' ? C.navSafest : pref === 'STEALTH' ? C.navStealth : pref === 'TACTICAL' ? C.navTactical : C.navFastest;
+  }
+
+  /** The moving part of the navigation debug view: plans, traces, replans, failures, priced patches. */
+  private drawNavDebug(node: ViewNode, g: Graphics, cam: Camera, dbg: NavDebugFrame, nameOf: (id: string) => string): void {
+    for (const h of dbg.hazards) {
+      const p = this.toScreen(cam, h);
+      g.circle(p.x, p.y, Math.max(3, this.px(cam, h.radius))).fill({ color: C.navDrop, alpha: 0.12 }).stroke({ color: C.navDrop, width: 1.5, alpha: 0.8 });
+    }
+    for (const plan of dbg.plans) {
+      // where the player actually went
+      if (plan.trail.length > 1) {
+        const p0 = this.toScreen(cam, plan.trail[0]!);
+        g.moveTo(p0.x, p0.y);
+        for (let i = 1; i < plan.trail.length; i++) { const p = this.toScreen(cam, plan.trail[i]!); g.lineTo(p.x, p.y); }
+        g.stroke({ color: C.navTrail, width: 1.5, alpha: 0.55 });
+      }
+      for (const r of plan.replans) { const p = this.toScreen(cam, r); this.diamond(g, p.x, p.y, 4).fill({ color: C.navReplan, alpha: 0.95 }); }
+      for (const f of plan.failures) {
+        if (!f.from) continue;
+        const p = this.toScreen(cam, f.from);
+        this.cross(g, p.x, p.y, 5, C.enemy, f === plan.failure ? 1 : 0.5);
+      }
+      // what the player plans to walk from here: the waypoints ahead and the destination
+      const color = this.prefColor(plan.event?.preference);
+      if (plan.ahead.length > 1) {
+        const p0 = this.toScreen(cam, plan.ahead[0]!);
+        g.moveTo(p0.x, p0.y);
+        for (let i = 1; i < plan.ahead.length; i++) { const p = this.toScreen(cam, plan.ahead[i]!); g.lineTo(p.x, p.y); }
+        g.stroke({ color, width: 2, alpha: 0.95 });
+        for (let i = 1; i < plan.ahead.length - 1; i++) { const p = this.toScreen(cam, plan.ahead[i]!); g.circle(p.x, p.y, 2).fill({ color, alpha: 0.95 }); }
+      }
+      if (plan.destination && plan.ahead.length > 1) {
+        const p = this.toScreen(cam, plan.destination);
+        g.rect(p.x - 5, p.y - 5, 10, 10).stroke({ color, width: 2 });
+        node.label(`nd:${plan.playerId}`, `${plan.slot}`, p.x, p.y, 9, color);
+      }
+      if (plan.failure?.from) {
+        const p = this.toScreen(cam, plan.failure.from);
+        node.label(`nf:${plan.playerId}`, `${nameOf(plan.playerId)}: NO PATH`, p.x, p.y - 20, 11, C.enemy);
+      }
+    }
   }
 
   /** An open arc as its own sub-path (a bare `arc` would be joined to the previous point by a straight line). */
