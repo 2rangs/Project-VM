@@ -88,6 +88,10 @@ interface Mover {
   gatePassed: string | null;
   /** Zones of the strategic route in force; the player's zone is always one of them. null = no route. */
   corridor: Set<string> | null;
+  /** Unit heading of the last step taken, and the tick-count it was taken on (to tell a mover that is advancing from one that waits). */
+  dirX: number;
+  dirY: number;
+  advanced: boolean;
 }
 
 const LANES = [0, -0.7, 0.7, -0.35, 0.35];
@@ -140,7 +144,7 @@ export class MovementExecutor {
       perTeam.set(p.teamId, slot + 1);
       const m: Mover = {
         goal: null, spot: -1, atNode: -1, waypoints: [], index: 0, zoneCursor: 0, blockersVersion: this.blockers.version,
-        linkElapsedMs: 0, failure: null, yieldTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null,
+        linkElapsedMs: 0, failure: null, yieldTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false,
       };
       this.movers.set(p.id, m);
       const zone = this.spatial.getZone(p.zoneId);
@@ -480,9 +484,15 @@ export class MovementExecutor {
         const stepLen = Math.min(d, speed * budget);
         // yield to a body just ahead (light separation; never for long)
         if (m.pushTicks > 0) m.pushTicks--;
-        else if (stepLen > 0 && this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others)) {
-          if (++m.yieldTicks < MAX_YIELD_TICKS) break;
-          m.pushTicks = 15; // waited long enough: squeeze past
+        else if (stepLen > 0) {
+          const ahead = this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others);
+          // behind a mover going the same way (or queued at a boundary): simply follow, for as long as it takes
+          if (ahead === "queue") break;
+          // a body standing in the way: give it a moment, then squeeze past
+          if (ahead === "standing") {
+            if (++m.yieldTicks < MAX_YIELD_TICKS) break;
+            m.pushTicks = 15;
+          }
         }
         m.yieldTicks = 0;
         if (stepLen > 0 && hooks?.canStep) {
@@ -499,6 +509,7 @@ export class MovementExecutor {
           budget = 0;
         }
         moved += stepLen;
+        if (stepLen > 0) { m.dirX = dx / d; m.dirY = dy / d; }
         if (stepLen < d) { this.updateZone(p, m, prev, w, hooks); break; }
       }
       // reached waypoint w
@@ -507,6 +518,7 @@ export class MovementExecutor {
       if (m.index >= m.waypoints.length) { this.arrive(p, m, hooks); break; }
     }
     if (m.index < m.waypoints.length && moved > 0) p.edgeProgressMs += dtMs;
+    m.advanced = moved > 0;
     return moved;
   }
 
@@ -528,19 +540,30 @@ export class MovementExecutor {
     return { x: dx, y: dy };
   }
 
-  private bodyAhead(p: SimPlayer, ux: number, uy: number, stepLen: number, others: readonly SimPlayer[]): boolean {
+  /**
+   * Is there a body just ahead of this mover's next step?
+   *  - "queue": a mover going the same way, or one waiting (at a boundary, at fire) — follow it;
+   *  - "standing": a body that is not going anywhere, or a mover coming the other way that has
+   *    the right of way (lower id) — give way briefly;
+   *  - null: the way is clear.
+   */
+  private bodyAhead(p: SimPlayer, ux: number, uy: number, stepLen: number, others: readonly SimPlayer[]): "queue" | "standing" | null {
     const nx = p.position.x + ux * stepLen, ny = p.position.y + uy * stepLen;
+    let found: "queue" | "standing" | null = null;
     for (const q of others) {
       if (q.id === p.id || !q.alive) continue;
       if (Math.abs(q.position.z - p.position.z) > 120) continue;
       const ox = q.position.x - nx, oy = q.position.y - ny;
       if (ox * ox + oy * oy >= YIELD_DISTANCE * YIELD_DISTANCE) continue;
-      // only to a body AHEAD, and between two movers the lower id goes first
-      if ((q.position.x - p.position.x) * ux + (q.position.y - p.position.y) * uy <= 0) continue;
-      if (this.isMoving(q) && q.id > p.id) continue;
-      return true;
+      if ((q.position.x - p.position.x) * ux + (q.position.y - p.position.y) * uy <= 0) continue; // not ahead
+      const mq = this.movers.get(q.id);
+      const qMoving = !!mq && mq.index < mq.waypoints.length;
+      if (!qMoving) { found = found ?? "standing"; continue; }
+      const headOn = mq!.advanced && mq!.dirX * ux + mq!.dirY * uy < -0.3;
+      if (headOn) { if (q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
+      return "queue";
     }
-    return false;
+    return found;
   }
 
   /**

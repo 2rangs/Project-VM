@@ -78,6 +78,17 @@ const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see
 // no HP↔time exchange rate is needed: a mover waits it out, or goes round when the detour is
 // shorter than the wait, and walks through it (paying the chord's damage) only when its side's
 // clock cannot afford the wait.
+// Stacking up: teammates heading into the same next zone cross into it together. A mover that
+// reaches the boundary first waits for teammates close behind it (design values, manual-approx).
+// Under zone-hopping every teammate given the same order entered on the same tick; with real
+// positions they arrive a few tenths of a second apart, and walking in one by one hands a
+// holder a series of 1v1s that no team offers on purpose.
+/** A teammate this close (ms) to the boundary counts as there. */
+const STACK_READY_MS = 900; // (covers a short queue behind the first one there)
+/** A teammate within this (ms) of the boundary is worth waiting for. */
+const STACK_WINDOW_MS = 1500;
+/** Nobody waits at a boundary longer than this (ms). */
+const STACK_MAX_WAIT_MS = 2000;
 /** Half field of view (radians): a holder is "watching" an edge when it lies inside this cone. */
 const HALF_FOV_RAD = (PERCEPTION_PARAMS.vision.halfFovDeg * Math.PI) / 180;
 
@@ -90,6 +101,8 @@ interface MoveWorld {
   readonly hazards: ReadonlyArray<{ center: { x: number; y: number; z: number }; radius: number; costMs: number }>;
   /** `${patch}|${player}` for which a way round has already been looked for (once per patch). */
   readonly rerouteTried: Set<string>;
+  /** player → the boundary it is waiting at for teammates, and since when. */
+  readonly stackWait: Map<string, { zone: string; sinceMs: number }>;
   /** `${patch}|${player}` → elapsed ms until which the player is inside that patch (set once). */
   readonly patchExposure: Map<string, number>;
   /** player → elapsed ms until which it is inside fire (the latest of its patch exposures). */
@@ -203,6 +216,7 @@ export class RoundSimulator {
     const burnUntil = new Map<string, number>();
     const lastHop = new Map<string, { fromZone: string; tick: number }>();
     const rerouteTried = new Set<string>();
+    const stackWait = new Map<string, { zone: string; sinceMs: number }>();
     this.steppingOut.clear();
     this.edgeWaiting.clear();
     // Navigation: every player takes its own standing spot; from here on only the executor moves them.
@@ -260,7 +274,7 @@ export class RoundSimulator {
       const fire = activeGroundPatches(abilityEngine, "molly", state.elapsedMs);
       const slow = activeGroundPatches(abilityEngine, "slow", state.elapsedMs);
       const hazards = this.groundHazards(fire, slow);
-      const moveWorld: MoveWorld = { state, fire, slow, hazards, rerouteTried, patchExposure, burnUntil, lastHop };
+      const moveWorld: MoveWorld = { state, fire, slow, hazards, rerouteTried, stackWait, patchExposure, burnUntil, lastHop };
       this.edgeWaiting.clear();
       // Movement blockers (things a body cannot walk through) in force this tick. Vision
       // blockers such as smoke are NOT among them: a smoke is walked through.
@@ -594,6 +608,25 @@ export class RoundSimulator {
     return false;
   }
 
+  /**
+   * Stack up before crossing into the next zone: wait while a teammate in this zone, heading for
+   * the same next zone, is close behind — until it is there too, or the wait has lasted long
+   * enough. True = cross now.
+   */
+  private stackedUp(p: SimPlayer, toZone: string, w: MoveWorld): boolean {
+    const behind = w.state.players.some((q) => {
+      if (!q.alive || q.id === p.id || q.teamId !== p.teamId || q.zoneId !== p.zoneId) return false;
+      if (!this.mover.isMoving(q) || this.mover.nextZoneOf(q) !== toZone) return false;
+      const ms = this.mover.msToNextZone(q) ?? 0;
+      return ms > STACK_READY_MS && ms <= STACK_WINDOW_MS;
+    });
+    if (!behind) { w.stackWait.delete(p.id); return true; }
+    const held = w.stackWait.get(p.id);
+    const sinceMs = held && held.zone === toZone ? held.sinceMs : w.state.elapsedMs;
+    w.stackWait.set(p.id, { zone: toZone, sinceMs });
+    return w.state.elapsedMs - sinceMs >= STACK_MAX_WAIT_MS;
+  }
+
   /** Fire on the doorway into `nextZoneId` (the longest-burning, if several): wait or cross. */
   private passFireEdge(p: SimPlayer, nextZoneId: string, w: MoveWorld, hooks: MoverHooks): boolean {
     let patch: GroundPatch | null = null;
@@ -818,7 +851,7 @@ export class RoundSimulator {
             return false;
           }
         }
-        return true;
+        return this.stackedUp(p, toZone, world);
       },
       onZoneChange: (p, fromZone, toZone) => {
         world.lastHop.set(p.id, { fromZone, tick: world.state.tick });
