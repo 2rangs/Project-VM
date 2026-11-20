@@ -387,6 +387,12 @@ export interface SimConfig {
   readonly plantDurationMs: number;
   readonly defuseDurationMs: number;
   readonly spikeTimerMs: number;
+  /**
+   * A mover told what to watch on arrival (the order's `aimZone`) takes a covered spot that sees
+   * it, instead of standing near the zone's anchor. Off by default: measured on 160 matches it
+   * moves the round-outcome mix away from the real one (NAVIGATION_ENGINE.md §7d).
+   */
+  readonly coverSpots: boolean;
   readonly seed: number;
   readonly recordTracks: boolean;
   /** Record per-team observation/belief snapshots (PV-6 fog-of-war). Off by default (cost). */
@@ -439,6 +445,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   plantDurationMs: 4000,
   defuseDurationMs: 7000,
   spikeTimerMs: 45000,
+  coverSpots: false,
   seed: 1,
   recordTracks: false,
   recordPerception: false,

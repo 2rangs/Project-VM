@@ -168,6 +168,106 @@ describe("route choice follows purpose and information", () => {
   });
 });
 
+describe("a standing spot is chosen by what the stop is for", () => {
+  const last = (r: RoundResult, id: string): P3 => { const t = track(r, id); return t[t.length - 1]!; };
+  const run = (state: SimState, attack: Rule, defense: Rule, cfg: Record<string, unknown> = {}): RoundResult =>
+    new RoundSimulator({
+      spatial, weapons, abilities: NO_ABILITIES,
+      policies: { attack: scripted((p, v) => attack(p.id, v.timeRemainingMs)), defense: scripted((p, v) => defense(p.id, v.timeRemainingMs)) },
+      config: { seed: 1, roundTimeMs: state.timeRemainingMs, traceCommands: true, recordTracks: true, ...cfg },
+    }).runRound(state);
+  const hold: Rule = () => undefined;
+
+  it("the spike carrier stops on the plant area and plants there; a teammate on the same order stands by the callout", () => {
+    const state = scene([player("car", "attack", "a-main"), player("mate", "attack", "a-main"), player("far", "defense", "b-site")], 30_000, "car");
+    const inSite = (id: string): boolean => state.players.find((p) => p.id === id)!.zoneId === "a-site";
+    const r = run(state, (id) => (id === "car" && inSite("car") ? { kind: "plant" } : { kind: "move", targetZone: "a-site", moveMode: "run" }), hold);
+    const planted = r.events.find((e) => e.kind === "planted");
+    expect(planted).toBeDefined();
+    const car = track(r, "car")[Math.floor(planted!.elapsedMs / TICK_MS) - 1]!;
+    expect(spatial.plantZoneAt(car)?.zoneId).toBe("a-site");
+    expect(state.spike.position).toEqual({ x: car.x, y: car.y, z: car.z }); // the spike is where the carrier stood
+    // among the plant area's standing points it took one that is well covered or near where it
+    // came in (here: the least exposed of the thirty — it plants behind cover, not in the open)
+    const entry = track(r, "car").find((q, i) => i > 0 && nav.zoneAt(q) === "a-site")!;
+    const onArea = nav.zoneNodes("a-site").map((n) => nav.nodePosition(n)).filter((q) => spatial.plantZoneAt(q)?.zoneId === "a-site");
+    const ds = onArea.map((q) => dist(q, entry)).sort((x, y) => x - y);
+    const es = onArea.map((q) => nav.exposure(nav.locate(q)!)).sort((x, y) => x - y);
+    const median = <T,>(v: T[]): T => v[v.length >> 1]!;
+    expect(nav.exposure(nav.locate(car)!) <= median(es) || dist(car, entry) <= median(ds)).toBe(true);
+    expect(nav.exposure(nav.locate(car)!)).toBeLessThan(nav.exposure(nav.anchorNode("a-site")!));
+    // the teammate has no such business there
+    expect(dist(last(r, "mate"), car)).toBeGreaterThan(70);
+  });
+
+  it("a defender sent onto the planted spike stops at the spike and defuses", () => {
+    // the spike lies at the plant-area point farthest from the site's callout
+    const A = spatial.standPosition("a-site");
+    const onArea = nav.zoneNodes("a-site").map((n) => nav.nodePosition(n)).filter((q) => spatial.plantZoneAt(q)?.zoneId === "a-site" && Math.abs(q.z - A.z) < 100);
+    const spike = onArea.reduce((best, q) => (dist(q, A) > dist(best, A) ? q : best));
+    const base = scene([player("lone", "attack", "attacker-spawn"), player("d1", "defense", "a-garden")], 40_000, null);
+    const state: SimState = { ...base, spike: { ...base.spike, phase: "planted", carrierId: null, zoneId: "a-site", position: { ...spike }, detonateAtElapsedMs: 40_000 } };
+    const at = (): string => state.players.find((p) => p.id === "d1")!.zoneId;
+    const r = run(state, hold, () => (at() === "a-site" ? { kind: "defuse" } : { kind: "move", targetZone: "a-site", moveMode: "run" }));
+    expect(r.reason).toBe("spikeDefused");
+    const stop = last(r, "d1");
+    expect(dist(stop, spike)).toBeLessThan(1); // the spike's own standing point was free
+    expect(dist(stop, A)).toBeGreaterThan(300); // and that is not where a player merely sent to A Site stands
+  });
+
+  it("with cover spots on, a mover told what to watch takes a spot that sees it and that the rest of the map sees less", () => {
+    const go = (coverSpots: boolean): P3 => {
+      const state = scene([player("h", "defense", "a-garden"), player("far", "attack", "attacker-spawn")], 20_000, null);
+      return last(run(state, hold, (id) => (id === "h" ? { kind: "move", targetZone: "a-site", aimZone: "a-main", moveMode: "run" } : undefined), { coverSpots }), "h");
+    };
+    const plain = nav.locate(go(false))!, covered = nav.locate(go(true))!;
+    expect(nav.nodeZone(covered)).toBe("a-site");
+    expect(nav.sightInto(covered, "a-main")).toBeGreaterThan(0);
+    expect(covered).not.toBe(plain);
+    // judged as the rule judges it: nearer to where it came in, or less seen from the rest of the map
+    expect(nav.exposure(covered, "a-main")).toBeLessThanOrEqual(Math.max(...nav.zoneNodes("a-site").map((n) => nav.exposure(n, "a-main"))));
+    // off (the default) nothing changes: the order stands by the callout as before
+    expect(dist(nav.nodePosition(plain), spatial.standPosition("a-site"))).toBeLessThan(400);
+  });
+
+  it("a replan on the way keeps the spot the player was going to", () => {
+    const wall: MovementBlocker = { id: "wall", zoneId: "mid-bottom", fromMs: 3000, untilMs: 60_000 };
+    const { result } = walk({ mov: "a-site" }, () => ({ kind: "move", targetZone: "b-site", moveMode: "run" }), { blockers: [wall] });
+    const plans = result.navTrace!.filter((e) => e.playerId === "mov" && (e.kind === "planned" || e.kind === "replanned"));
+    expect(plans.length).toBeGreaterThan(1);
+    const dest = plans.map((e) => e.waypoints![e.waypoints!.length - 1]!);
+    for (const d of dest) expect(dist(d, dest[0]!)).toBeLessThan(40); // the same spot (lane offset aside)
+  });
+});
+
+describe("movers never wait on each other forever", () => {
+  const TURN_MS = 4_200;
+  it("two players who turn round on a narrow walkway both get back (no mutual queue)", () => {
+    // both run from attacker spawn toward A; a few seconds in, both are called back — the one in
+    // front is now behind, and each finds the other in its way
+    const { result } = walk({ m1: "attacker-spawn", m2: "attacker-spawn" }, (_id, left) =>
+      ({ kind: "move", targetZone: left > 60_000 - TURN_MS ? "a-site" : "attacker-spawn", moveMode: "run" }), { clockMs: 60_000 });
+    for (const id of ["m1", "m2"]) {
+      const back = (result.commandTrace ?? []).filter((c) => c.playerId === id && c.phase === "arrived" && c.elapsedMs > TURN_MS);
+      expect(back.length, `${id} arrives back at attacker spawn`).toBeGreaterThan(0);
+      expect(back[0]!.toZone).toBe("attacker-spawn");
+      expect(back[0]!.elapsedMs).toBeLessThan(16_000);
+      // and it never stood still for more than three seconds on the way
+      const pts = track(result, id), until = Math.floor(back[0]!.elapsedMs / TICK_MS);
+      let still = 0, worst = 0;
+      for (let i = 1; i < Math.min(until, pts.length); i++) { still = dist(pts[i]!, pts[i - 1]!) < 1e-6 ? still + 1 : 0; worst = Math.max(worst, still); }
+      expect(worst * TICK_MS, `${id} longest stand-still`).toBeLessThanOrEqual(3_500);
+    }
+  });
+
+  it("two players meeting head-on in a corridor pass each other", () => {
+    const { result } = walk({ m1: "a-main", m2: "a-lobby" }, (id) => ({ kind: "move", targetZone: id === "m1" ? "a-lobby" : "a-main", moveMode: "run" }), { clockMs: 40_000 });
+    expect(arrivedAt(result, "m1")).not.toBeNull();
+    expect(arrivedAt(result, "m2")).not.toBeNull();
+    expect(offFloor([...track(result, "m1"), ...track(result, "m2")])).toBeLessThanOrEqual(1);
+  });
+});
+
 // ---- a full Ascent match of ten players ----
 
 function team(prefix: string, side: "attack" | "defense"): MatchRoundTeam {

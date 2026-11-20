@@ -180,6 +180,28 @@ describe("navigation: Ascent", () => {
     expect(seen).toBeLessThan(nav.zoneNodes("a-site").length);
   });
 
+  it("exposure counts the standing points of other zones that see a point; the watched zone can be left out", () => {
+    const nodes = nav.zoneNodes("a-site");
+    for (const n of nodes.slice(0, 12)) {
+      let all = 0, intoMain = 0;
+      for (let j = 0; j < nav.nodeCount; j++) {
+        if (j === n || !nav.nodesVisible(n, j)) continue;
+        if (nav.nodeZone(j) !== "a-site") all++;
+        if (nav.nodeZone(j) === "a-main") intoMain++;
+      }
+      expect(nav.exposure(n)).toBe(all);
+      expect(nav.sightInto(n, "a-main")).toBe(intoMain);
+      expect(nav.exposure(n, "a-main")).toBe(all - intoMain);
+    }
+    // an open site has both covered and exposed standing points
+    const e = nodes.map((n) => nav.exposure(n));
+    expect(Math.max(...e)).toBeGreaterThan(2 * Math.min(...e) + 5);
+    // without measured sight there is nothing to count
+    const bind = loadMap("bind").nav!;
+    expect(bind.exposure(bind.zoneNodes("a-site")[0]!)).toBe(0);
+    expect(bind.sightInto(bind.zoneNodes("a-site")[0]!, "a-short")).toBe(0);
+  });
+
   it("a map without measured line of sight answers null, and the caller keeps its zone rule", () => {
     const bind = loadMap("bind");
     expect(bind.nav!.hasVisibility).toBe(false);

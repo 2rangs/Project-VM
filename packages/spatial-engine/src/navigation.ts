@@ -197,6 +197,7 @@ export class Navigator {
   private readonly pairCache = new Map<string, number>();
   private visBits: Uint8Array | null = null;
   private visRange = 0;
+  private seenCache: Map<number, Int32Array> | null = null;
 
   constructor(data: NavData, movement: { unitsPerMeter: number; runSpeedMetersPerSec: number; walkSpeedMetersPerSec: number }) {
     this.mapId = data.mapId;
@@ -246,9 +247,44 @@ export class Navigator {
     for (let i = 0; i < bin.length; i++) bits[i] = bin.charCodeAt(i);
     this.visBits = bits;
     this.visRange = v.rangeUnits;
+    this.seenCache = null;
     return true;
   }
   get hasVisibility(): boolean { return this.visBits !== null; }
+
+  /** Per node: how many nodes of each zone have measured line of sight to it (row = node, column = zone). */
+  private seenFrom(n: number): Int32Array {
+    const rows = (this.seenCache ??= new Map<number, Int32Array>());
+    let row = rows.get(n);
+    if (!row) {
+      row = new Int32Array(this.zones.length);
+      if (this.visBits) for (let j = 0; j < this.nodeCount; j++) if (j !== n && this.nodesVisible(n, j)) row[this.zoneIdx[j]!]!++;
+      rows.set(n, row);
+    }
+    return row;
+  }
+
+  /**
+   * How exposed a standing point is: the number of roadmap nodes in OTHER zones with measured line
+   * of sight to it — how much of the rest of the map can see a body standing there. A corner
+   * behind cover scores low, the middle of an open site high. `exceptZone` leaves one more zone
+   * out of the count: the zone the body is there to watch. 0 without visibility data.
+   */
+  exposure(n: number, exceptZone?: string): number {
+    if (!this.visBits) return 0;
+    const row = this.seenFrom(n), own = this.zoneIdx[n]!;
+    const skip = exceptZone !== undefined ? this.zones.indexOf(exceptZone) : -1;
+    let c = 0;
+    for (let z = 0; z < row.length; z++) if (z !== own && z !== skip) c += row[z]!;
+    return c;
+  }
+
+  /** How many standing points of a zone this node has measured line of sight to (0 without visibility data). */
+  sightInto(n: number, zoneId: string): number {
+    if (!this.visBits) return 0;
+    const z = this.zones.indexOf(zoneId);
+    return z < 0 ? 0 : this.seenFrom(n)[z]!;
+  }
 
   /** Measured line of sight between two roadmap nodes (false beyond the measured range). */
   nodesVisible(a: number, b: number): boolean {

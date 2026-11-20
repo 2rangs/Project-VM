@@ -34,10 +34,37 @@ const ZONE_COST_MS: Record<RoutePreference, number> = { FASTEST: 0, TACTICAL: 25
 const YIELD_DISTANCE = 2 * PLAYER_RADIUS_UNITS * 0.85;
 /** ...but not for longer than this many consecutive ticks (then it squeezes past). */
 const MAX_YIELD_TICKS = 6;
+/**
+ * A mover follows the body it is queued behind for as long as that body is getting somewhere.
+ * Queued this many consecutive ticks without advancing at all, the line is not moving for a
+ * reason that is not this mover's (3 s — longer than a stack-up's wait): it squeezes past.
+ */
+const MAX_QUEUE_TICKS = 30;
+
+/**
+ * What the player will do where it stops — which decides the standing spot it takes in the goal zone.
+ *  - "stand" (the default): a free spot near the zone's anchor.
+ *  - "hold": a covered angle — a spot that sees the zone it is there to watch and that the rest
+ *    of the map sees least, as near as possible to where its route enters the zone.
+ *  - "plant": a spot on the zone's plant area, scored like a held angle but with nothing to watch:
+ *    the less the rest of the map sees it and the nearer it is to where the route enters the zone,
+ *    the better. The carrier plants behind what cover the plant area has, not on the callout.
+ *  - "at": as near a point as the floor allows (the planted spike, for the defuser).
+ */
+export type SpotIntent =
+  | { readonly kind: "stand" }
+  | { readonly kind: "hold"; readonly watchZone: string }
+  | { readonly kind: "plant" }
+  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } };
+
+/** Share of a spot's score that is the player's own preference (so teammates spread out the same way every time). */
+const SPOT_JITTER = 0.25;
 
 export interface MoveGoal {
   readonly zoneId: string;
   readonly mode: MoveMode;
+  /** What the stop is for (default "stand"). */
+  readonly spot?: SpotIntent;
   readonly preference?: RoutePreference;
   /** Belief-based extra cost per zone (never true enemy positions). */
   readonly zoneCost?: (zoneId: string) => number;
@@ -81,6 +108,8 @@ interface Mover {
   goal: MoveGoal | null;
   /** Roadmap node the player is heading for (its own spot in the goal zone), or -1. */
   spot: number;
+  /** What `spot` was chosen for (zone + intent): the same request keeps the same spot. */
+  spotKey: string;
   /** Roadmap node the player stands on when not moving, or -1 if between nodes. */
   atNode: number;
   waypoints: NavWaypoint[];
@@ -91,6 +120,8 @@ interface Mover {
   linkElapsedMs: number;
   failure: string | null;
   yieldTicks: number;
+  /** Consecutive ticks spent queued behind another mover without advancing. */
+  queueTicks: number;
   /** Ticks left during which the mover does not yield (it just gave way for long enough). */
   pushTicks: number;
   lane: number;
@@ -105,6 +136,15 @@ interface Mover {
 }
 
 const LANES = [0, -0.7, 0.7, -0.35, 0.35];
+
+/** The identity of a spot request: the zone and what the stop is for. */
+function spotKey(goal: MoveGoal): string {
+  const k = goal.spot;
+  if (!k || k.kind === "stand") return `${goal.zoneId}|stand`;
+  if (k.kind === "plant") return `${goal.zoneId}|plant`;
+  if (k.kind === "hold") return `${goal.zoneId}|hold|${k.watchZone}`;
+  return `${goal.zoneId}|at|${Math.round(k.position.x)},${Math.round(k.position.y)},${Math.round(k.position.z)}`;
+}
 
 function hash01(s: string): number {
   let h = 2166136261;
@@ -153,8 +193,8 @@ export class MovementExecutor {
       const slot = perTeam.get(p.teamId) ?? 0;
       perTeam.set(p.teamId, slot + 1);
       const m: Mover = {
-        goal: null, spot: -1, atNode: -1, waypoints: [], index: 0, zoneCursor: 0, blockersVersion: this.blockers.version,
-        linkElapsedMs: 0, failure: null, yieldTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false,
+        goal: null, spot: -1, spotKey: "", atNode: -1, waypoints: [], index: 0, zoneCursor: 0, blockersVersion: this.blockers.version,
+        linkElapsedMs: 0, failure: null, yieldTicks: 0, queueTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false,
       };
       this.movers.set(p.id, m);
       const zone = this.spatial.getZone(p.zoneId);
@@ -176,25 +216,60 @@ export class MovementExecutor {
   }
 
   /**
-   * A standing spot for this player in a zone: a roadmap node of that zone near its anchor that
-   * nobody else has claimed. Deterministic per player, so teammates spread out the same way
-   * every time. -1 if the zone has no standable node.
+   * A standing spot for this player in a zone: a roadmap node of that zone that nobody else has
+   * claimed, chosen by what the stop is for (SpotIntent). Every choice carries the player's own
+   * fixed preference, so teammates spread out the same way every time. -1 if the zone has no
+   * standable node.
+   *
+   * "hold" and "plant" score each candidate by how far it is from `from` (where the player's
+   * route enters the zone) and by how much of the rest of the map can see it — each as a share
+   * of the worst value among the candidates, equally weighted. Without measured line of sight the
+   * node's wall clearance stands in for exposure (open floor is exposed, a wall is cover).
    */
-  pickSpot(playerId: string, zoneId: string): number {
+  pickSpot(playerId: string, zoneId: string, opts: { from?: { x: number; y: number; z: number }; intent?: SpotIntent } = {}): number {
     const anchor = this.nav.anchorNode(zoneId);
     if (anchor === undefined) return -1;
     const a = this.nav.nodePosition(anchor);
-    let best = -1, bestScore = Infinity;
+    const intent = opts.intent ?? { kind: "stand" };
+    let pool: number[] = [];
     for (const n of this.nav.zoneNodes(zoneId)) {
       const holder = this.claims.get(n);
       if (holder !== undefined && holder !== playerId) continue;
       if (this.blockers.nodeBlocked(n)) continue;
-      const q = this.nav.nodePosition(n);
-      if (Math.abs(q.z - a.z) > 160) continue; // same floor as the zone's anchor
-      const score = Math.hypot(q.x - a.x, q.y - a.y) + 350 * hash01(`${playerId}|${n}`);
-      if (score < bestScore || (score === bestScore && n < best)) { bestScore = score; best = n; }
+      if (Math.abs(this.nav.nodePosition(n).z - a.z) > 160) continue; // same floor as the zone's anchor
+      pool.push(n);
     }
-    return best;
+    if (pool.length === 0) return -1;
+    const pick = (score: (n: number) => number): number => {
+      let best = -1, bestScore = Infinity;
+      for (const n of pool) {
+        const sc = score(n);
+        if (sc < bestScore || (sc === bestScore && n < best)) { bestScore = sc; best = n; }
+      }
+      return best;
+    };
+    const flat = (n: number, to: { x: number; y: number }): number => { const q = this.nav.nodePosition(n); return Math.hypot(q.x - to.x, q.y - to.y); };
+    if (intent.kind === "stand") return pick((n) => flat(n, a) + 350 * hash01(`${playerId}|${n}`));
+    if (intent.kind === "at") {
+      const t = intent.position;
+      return pick((n) => { const q = this.nav.nodePosition(n); return Math.hypot(q.x - t.x, q.y - t.y, q.z - t.z); });
+    }
+    let watch: string | undefined;
+    if (intent.kind === "plant") {
+      const onArea = pool.filter((n) => this.spatial.plantZoneAt(this.nav.nodePosition(n))?.zoneId === zoneId);
+      if (onArea.length > 0) pool = onArea;
+    } else {
+      // a held angle sees what it watches: only spots with line of sight into the watched zone
+      watch = intent.watchZone;
+      const seeing = this.nav.hasVisibility ? pool.filter((n) => this.nav.sightInto(n, watch!) > 0) : [];
+      if (seeing.length === 0) return pick((n) => flat(n, a) + 350 * hash01(`${playerId}|${n}`)); // nothing to hold from: stand
+      pool = seeing;
+    }
+    const ref = opts.from ?? a;
+    const exposureOf = (n: number): number => (this.nav.hasVisibility ? this.nav.exposure(n, watch) : this.nav.nodeClearance(n));
+    let maxD = 1, maxE = 1;
+    for (const n of pool) { maxD = Math.max(maxD, flat(n, ref)); maxE = Math.max(maxE, exposureOf(n)); }
+    return pick((n) => flat(n, ref) / maxD + exposureOf(n) / maxE + SPOT_JITTER * hash01(`${playerId}|${n}`));
   }
 
   isMoving(p: SimPlayer): boolean {
@@ -289,7 +364,7 @@ export class MovementExecutor {
     const m = this.movers.get(p.id);
     if (!m) return "INVALID_START";
     p.moveMode = goal.mode;
-    const same = m.goal && m.goal.zoneId === goal.zoneId && (m.goal.preference ?? "FASTEST") === (goal.preference ?? "FASTEST");
+    const same = m.goal && m.goal.zoneId === goal.zoneId && (m.goal.preference ?? "FASTEST") === (goal.preference ?? "FASTEST") && spotKey(m.goal) === spotKey(goal);
     if (same) {
       m.goal = goal; // refresh the cost callbacks
       if (m.index < m.waypoints.length) return "SUCCESS";
@@ -320,13 +395,44 @@ export class MovementExecutor {
     return m.atNode >= 0 ? [m.atNode] : [];
   }
 
+  /**
+   * The spot this player goes to for a goal. The same request keeps the spot it already has (a
+   * replan on the way must not send it somewhere else); otherwise the spot is chosen from where
+   * its route enters the goal zone — the first point of the path to the zone that lies in it.
+   */
+  private spotFor(p: SimPlayer, m: Mover, goal: MoveGoal, corridor: ReadonlySet<string> | null): number {
+    const key = spotKey(goal);
+    if (m.spot >= 0 && m.spotKey === key && !this.blockers.nodeBlocked(m.spot)) {
+      const holder = this.claims.get(m.spot);
+      if (holder === undefined || holder === p.id) return m.spot;
+    }
+    const intent = goal.spot ?? { kind: "stand" as const };
+    if (intent.kind === "at" || intent.kind === "stand") return this.pickSpot(p.id, goal.zoneId, { intent });
+    let from: { x: number; y: number; z: number } = p.position;
+    const anchor = this.nav.anchorNode(goal.zoneId);
+    if (p.zoneId !== goal.zoneId && anchor !== undefined) {
+      const r = this.nav.findPath({
+        ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
+        actorId: p.id, start: p.position, destination: this.nav.nodePosition(anchor), movementMode: goal.mode,
+        routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
+        startNodes: this.startNodes(m),
+        ...(goal.zoneCost ? { zoneCost: goal.zoneCost } : {}),
+      });
+      if (r.status === "SUCCESS") {
+        const entry = r.waypoints.find((w) => w.node >= 0 && w.zoneId === goal.zoneId);
+        if (entry) from = entry.position;
+      }
+    }
+    return this.pickSpot(p.id, goal.zoneId, { from, intent });
+  }
+
   private plan(p: SimPlayer, m: Mover, kind: "planned" | "replanned", hooks?: MoverHooks): NavigationResult["status"] {
     const goal = m.goal!;
     m.blockersVersion = this.blockers.version;
-    const spot = this.pickSpot(p.id, goal.zoneId);
-    if (spot < 0) return this.fail(p, m, "UNREACHABLE", `zone ${goal.zoneId} has no walkable standing spot`, hooks);
     const route = this.strategicRoute(p, goal);
     const corridor = route ? new Set(route) : null;
+    const spot = this.spotFor(p, m, goal, corridor);
+    if (spot < 0) return this.fail(p, m, "UNREACHABLE", `zone ${goal.zoneId} has no walkable standing spot`, hooks);
     const r = this.nav.findPath({
       ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
       actorId: p.id, start: p.position, destination: this.nav.nodePosition(spot), movementMode: goal.mode,
@@ -338,6 +444,7 @@ export class MovementExecutor {
     if (r.status !== "SUCCESS") return this.fail(p, m, r.status, r.reason, hooks);
     m.failure = null;
     m.spot = spot;
+    m.spotKey = spotKey(goal);
     this.claim(p.id, spot);
     m.atNode = -1;
     m.waypoints = this.withLane(r.waypoints, m.lane);
@@ -345,6 +452,7 @@ export class MovementExecutor {
     m.linkElapsedMs = 0;
     m.gatePassed = null;
     m.yieldTicks = 0;
+    m.queueTicks = 0;
     // the strategic route is the player's path of zones (current zone first); where the zone
     // graph offers none, the zones the geometric path itself passes
     m.corridor = corridor;
@@ -508,11 +616,17 @@ export class MovementExecutor {
         if (d > 1e-6) p.facing = this.facingFor(p, m, dx, dy);
         const stepLen = Math.min(d, speed * budget);
         // yield to a body just ahead (light separation; never for long)
+        let ahead: "queue" | "standing" | null = null;
         if (m.pushTicks > 0) m.pushTicks--;
         else if (stepLen > 0) {
-          const ahead = this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others);
-          // behind a mover going the same way (or queued at a boundary): simply follow, for as long as it takes
-          if (ahead === "queue") break;
+          ahead = this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others);
+          // behind a mover going the same way (or queued at a boundary): simply follow — unless the
+          // line has not moved at all for MAX_QUEUE_TICKS (then pass it, as past a standing body)
+          if (ahead === "queue") {
+            if (++m.queueTicks < MAX_QUEUE_TICKS) break;
+            m.queueTicks = 0;
+            m.pushTicks = 15;
+          }
           // a body standing in the way: give it a moment, then squeeze past
           if (ahead === "standing") {
             if (++m.yieldTicks < MAX_YIELD_TICKS) break;
@@ -520,6 +634,7 @@ export class MovementExecutor {
           }
         }
         m.yieldTicks = 0;
+        if (ahead !== "queue") m.queueTicks = 0;
         if (stepLen > 0 && hooks?.canStep) {
           const f = stepLen / d;
           if (!hooks.canStep(p, { x: p.position.x + dx * f, y: p.position.y + dy * f, z: p.position.z + dz * f })) break;
@@ -584,7 +699,13 @@ export class MovementExecutor {
       const mq = this.movers.get(q.id);
       const qMoving = !!mq && mq.index < mq.waypoints.length;
       if (!qMoving) { found = found ?? "standing"; continue; }
-      const headOn = mq!.advanced && mq!.dirX * ux + mq!.dirY * uy < -0.3;
+      // Which way q WANTS to go — toward its next waypoint — not whether it advanced last tick:
+      // two movers that meet head-on are both stopped, and judged by "advanced" each took the
+      // other for the back of a queue and neither ever moved again.
+      const wq = mq!.waypoints[mq!.index]!.position;
+      const qx = wq.x - q.position.x, qy = wq.y - q.position.y;
+      const ql = Math.hypot(qx, qy);
+      const headOn = ql > 1e-6 ? (qx * ux + qy * uy) / ql < -0.3 : mq!.advanced && mq!.dirX * ux + mq!.dirY * uy < -0.3;
       if (headOn) { if (q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
       return "queue";
     }

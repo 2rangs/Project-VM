@@ -49,7 +49,7 @@ import {
 import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
 import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
-import { MovementExecutor, type MoverHooks, type NavEvent } from "./mover.js";
+import { MovementExecutor, type MoverHooks, type NavEvent, type SpotIntent } from "./mover.js";
 
 export interface RoundSimulatorDeps {
   readonly spatial: SpatialEngine;
@@ -296,6 +296,7 @@ export class RoundSimulator {
             zoneId: cmd.targetZone, mode: cmd.moveMode ?? "run",
             ...(cmd.routePreference ? { preference: cmd.routePreference } : {}),
             ...(cmd.zoneCosts ? { zoneCost: (z: string) => cmd.zoneCosts![z] ?? 0 } : {}),
+            ...this.spotIntent(p, cmd, state),
             hazards,
           }, hooks);
         }
@@ -877,6 +878,21 @@ export class RoundSimulator {
     for (const p of state.players) hints.set(positionKey(p.position.x, p.position.y), p.zoneId);
     if (state.spike.position && state.spike.zoneId) hints.set(positionKey(state.spike.position.x, state.spike.position.y), state.spike.zoneId);
     this.spatial.setPositionZones(hints);
+  }
+
+  /**
+   * What a mover will do where it stops, read from the state of the round and the order's own
+   * fields (never from the policy's labels): the spike carrier heading for a plantable zone stops
+   * on its plant area; a defender heading for the zone the spike is planted in stops at the spike;
+   * with cfg.coverSpots, a mover told what to watch on arrival (`aimZone`) takes a covered spot
+   * that sees it. Everyone else stands near the zone's anchor.
+   */
+  private spotIntent(p: SimPlayer, cmd: ActionCommand, state: SimState): { spot?: SpotIntent } {
+    const s = state.spike, targetZone = cmd.targetZone!;
+    if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: { kind: "plant" } };
+    if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.zoneId === targetZone && s.position) return { spot: { kind: "at", position: s.position } };
+    if (this.cfg.coverSpots && cmd.aimZone && cmd.aimZone !== targetZone) return { spot: { kind: "hold", watchZone: cmd.aimZone } };
+    return {};
   }
 
   private isMoving(p: SimPlayer): boolean {
