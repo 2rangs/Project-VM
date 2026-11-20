@@ -90,6 +90,16 @@ export interface ActionCommand {
    * hold/peek, `targetZone` is used; absent entirely, the sim defaults to the enemy entry choke.
    */
   readonly aimZone?: ZoneId;
+  /**
+   * How the route to `targetZone` should be chosen (the policy picks the goal and the purpose;
+   * the navigation layer finds the path). Default FASTEST.
+   */
+  readonly routePreference?: "FASTEST" | "SAFEST" | "STEALTH" | "TACTICAL";
+  /**
+   * Extra cost of passing through a zone (>= 0), from the team's BELIEF — seen / heard /
+   * suspected enemies, utility. Never true enemy positions. Used by every preference but FASTEST.
+   */
+  readonly zoneCosts?: Readonly<Record<string, number>>;
 }
 
 export type TeamStrategy =

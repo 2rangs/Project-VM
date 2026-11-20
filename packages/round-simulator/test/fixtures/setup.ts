@@ -14,7 +14,8 @@ const spatialDir = resolve(repoRoot, "datasets/spatial/ascent");
 export function loadSpatial(): SpatialEngine {
   const nav = JSON.parse(readFileSync(resolve(spatialDir, "ascent.navgraph.json"), "utf8"));
   const cs = JSON.parse(readFileSync(resolve(spatialDir, "coordinate-system.json"), "utf8"));
-  return createEngine(nav, cs.transform);
+  const roadmap = JSON.parse(readFileSync(resolve(spatialDir, "ascent.nav.json"), "utf8"));
+  return createEngine(nav, cs.transform, roadmap);
 }
 
 export function spatialQuery(engine: SpatialEngine): SpatialQuery {

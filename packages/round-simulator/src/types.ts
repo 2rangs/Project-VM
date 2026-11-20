@@ -97,6 +97,12 @@ export interface SimState {
   spike: SpikeState;
   /** 1-based round number within the match (surfaced to policies). Default 1. */
   readonly roundNumber?: number;
+  /**
+   * Things a body cannot walk through for a time (a physical wall). NOT vision blockers: a smoke
+   * blocks sight and is walked through. No ability creates one yet — the catalog records walls as
+   * vision blockers only — so this is set by scenarios / tests and by future verified rules.
+   */
+  readonly movementBlockers?: readonly MovementBlocker[];
   /** Each side's economy going into the round (surfaced to its own policy only). */
   readonly economy?: Readonly<Partial<Record<Side, { readonly credits: number; readonly lossBonusTier: number; readonly consecutiveLosses: number }>>>;
 }
@@ -132,6 +138,29 @@ export interface SimEvent {
 }
 
 export type RoundEndReason = "elimination" | "spikeDetonation" | "spikeDefused" | "timeExpired";
+
+/** A movement blocker: a whole zone's floor, or a disc of floor. */
+export interface MovementBlocker {
+  readonly id: string;
+  readonly zoneId?: string;
+  readonly center?: Vector3;
+  readonly radiusUnits?: number;
+  readonly fromMs: number;
+  readonly untilMs: number;
+}
+
+/** A navigation event of the round: a route planned / re-planned, or a goal found blocked / unreachable. */
+export interface NavTraceEvent {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly kind: "planned" | "replanned" | "blocked" | "unreachable";
+  readonly playerId: string;
+  readonly goalZone: string;
+  readonly reason?: string;
+  readonly pathLength?: number;
+  readonly estimatedTravelMs?: number;
+  readonly preference?: string;
+}
 
 /** One recorded frame of player positions — the basis for a replay track (PV-6). */
 export interface TrackFrame {
@@ -225,6 +254,8 @@ export interface CommandTraceEvent {
    * when held by executeAtMs, else "active".
    */
   readonly result?: string;
+  /** Why (a navigation failure's reason). */
+  readonly reason?: string;
 }
 
 /**
@@ -323,6 +354,8 @@ export interface RoundResult {
   readonly roster: Readonly<Record<PlayerId, Side>>;
   /** Per-tick position frames, present only when config.recordTracks is true. */
   readonly tracks?: readonly TrackFrame[];
+  /** Navigation events (routes planned / re-planned, goals blocked or unreachable); with traceCommands or recordTracks. */
+  readonly navTrace?: readonly NavTraceEvent[];
   /** Per-team observation/belief series, present only when config.recordPerception is true. */
   readonly perception?: readonly PerceptionTrack[];
   /** Command→execution trace, present only when config.traceCommands is true. */

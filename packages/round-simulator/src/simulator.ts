@@ -38,6 +38,7 @@ import type {
   SimState,
   SimConfig,
   TrackFrame,
+  NavTraceEvent,
 } from "./types.js";
 import { AVERAGE_TRAITS, DEFAULT_CONFIG, type AbilityCue, type ShotCue } from "./types.js";
 import {
@@ -45,9 +46,10 @@ import {
   patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, TRACER_CUE_CONFIDENCE,
 } from "./situational.js";
-import type { ActionCommand, BeliefState, DecisionPolicy, MoveMode, TeammateTransit } from "./policy-contract.js";
+import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
 import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
+import { MovementExecutor, type MoverHooks, type NavEvent } from "./mover.js";
 
 export interface RoundSimulatorDeps {
   readonly spatial: SpatialEngine;
@@ -142,6 +144,8 @@ export class RoundSimulator {
   /** Movers standing at the edge of a fire patch, waiting for it to burn out (stationary) → the burn time left. */
   private readonly edgeWaiting = new Map<string, number>();
   private readonly reachCache = new Map<string, boolean>();
+  /** The round's movement executor: the only thing that changes a player's position. */
+  private mover!: MovementExecutor;
 
   constructor(deps: RoundSimulatorDeps) {
     this.spatial = deps.spatial;
@@ -197,6 +201,10 @@ export class RoundSimulator {
     const lastHop = new Map<string, { fromZone: string; tick: number }>();
     this.steppingOut.clear();
     this.edgeWaiting.clear();
+    // Navigation: every player takes its own standing spot; from here on only the executor moves them.
+    this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
+    this.mover.reset(state.players);
+    const navEvents: NavTraceEvent[] = [];
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
     const rngOf = {
@@ -249,11 +257,30 @@ export class RoundSimulator {
       const hazardCosts = this.hazardCostMap(fire, slow);
       const moveWorld: MoveWorld = { state, fire, slow, hazardCosts, patchExposure, burnUntil, lastHop };
       this.edgeWaiting.clear();
+      // Movement blockers (things a body cannot walk through) in force this tick. Vision
+      // blockers such as smoke are NOT among them: a smoke is walked through.
+      for (const b of state.movementBlockers ?? []) {
+        const active = state.elapsedMs >= b.fromMs && state.elapsedMs < b.untilMs;
+        if (active && !this.mover.blockers.has(b.id)) {
+          if (b.zoneId) this.mover.blockers.addZone(b.id, b.zoneId);
+          else if (b.center) this.mover.blockers.addDisc(b.id, b.center, b.radiusUnits ?? DEFAULT_PATCH_RADIUS_UNITS);
+        } else if (!active && this.mover.blockers.has(b.id)) this.mover.blockers.remove(b.id);
+      }
+      const alive = state.players.filter((q) => q.alive);
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
-        if (cmd?.kind === "move" && cmd.targetZone) this.ensurePath(p, cmd.targetZone, cmd.moveMode ?? "run", hazardCosts);
-        this.stepMovement(p, dt, trace, cmd?.kind === "move" ? cmd.targetZone : undefined, moveWorld);
+        const targetZone = cmd?.kind === "move" ? cmd.targetZone : undefined;
+        const hooks = this.moverHooks(moveWorld, trace, targetZone, navEvents);
+        if (cmd?.kind === "move" && cmd.targetZone) {
+          this.mover.setGoal(p, {
+            zoneId: cmd.targetZone, mode: cmd.moveMode ?? "run",
+            ...(cmd.routePreference ? { preference: cmd.routePreference } : {}),
+            ...(cmd.zoneCosts ? { zoneCost: (z: string) => cmd.zoneCosts![z] ?? 0 } : {}),
+            zoneEntryMs: (z: string) => hazardCosts.get(z) ?? 0,
+          }, hooks);
+        }
+        this.mover.step(p, dt, alive, hooks);
         // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
         // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
         if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
@@ -337,11 +364,8 @@ export class RoundSimulator {
           const target = this.spatial.getZone(cmd.targetZone);
           const rangeUnits = spec.rangeUnits ?? 1500;
           if (target && dist3(p.position, target.position) <= rangeUnits) {
-            p.zoneId = target.id;
-            p.position = { ...target.position };
-            p.path = [];
-            p.pathIndex = 0;
-            p.edgeProgressMs = 0;
+            // a movement ability sets the caster down on a standing spot of the target zone
+            this.mover.placeInZone(p, target.id);
             trace({ playerId: p.id, phase: "ability", abilityId, toZone: target.id, result: "displaced" });
           } else {
             trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
@@ -426,10 +450,7 @@ export class RoundSimulator {
       if (this.cfg.recordTracks) {
         tracks.push({
           tick: state.tick, elapsedMs: state.elapsedMs,
-          players: state.players.map((p) => {
-            const t = this.trackPosition(p);
-            return { id: p.id, side: p.side, x: t.x, y: t.y, z: t.z, alive: p.alive };
-          }),
+          players: state.players.map((p) => ({ id: p.id, side: p.side, x: p.position.x, y: p.position.y, z: p.position.z, alive: p.alive })),
         });
       }
 
@@ -459,6 +480,7 @@ export class RoundSimulator {
       },
       roster: Object.fromEntries(state.players.map((p) => [p.id, p.side])),
       tracks: this.cfg.recordTracks ? tracks : undefined,
+      navTrace: this.cfg.traceCommands || this.cfg.recordTracks ? navEvents : undefined,
       perception: this.cfg.recordPerception
         ? ([
             { teamIdx: 0, side: "attack", intervalTicks: perceptionInterval, snapshots: perceptionSnaps.attack },
@@ -473,20 +495,6 @@ export class RoundSimulator {
   }
 
   // ---- helpers ----
-
-  private ensurePath(p: SimPlayer, targetZone: string, mode: "run" | "walk", hazardCosts?: ReadonlyMap<string, number>): void {
-    p.moveMode = mode;
-    // Keep the cached path while the goal is unchanged; the path is planned with the hazard costs
-    // active when it was computed (a hazard appearing mid-route is not re-routed — the crosser
-    // takes the damage, which is the intended passable-hazard behaviour).
-    if (p.path[p.path.length - 1] === targetZone && p.pathIndex < p.path.length) return;
-    const r = this.spatial.findPath(p.zoneId, targetZone, mode, { hazardCosts });
-    if (r) {
-      p.path = r.path;
-      p.pathIndex = p.path[0] === p.zoneId ? 1 : 0;
-      p.edgeProgressMs = 0;
-    }
-  }
 
   /** Damage a body takes crossing a fire patch right now (its chord, capped by the burn time left). */
   private crossDamage(h: GroundPatch): number {
@@ -544,9 +552,9 @@ export class RoundSimulator {
    *    door except another route, which the planner does not price per connection: a doorway
    *    patch is waited out or crossed).
    */
-  private passFireEdge(p: SimPlayer, nextZoneId: string, edgeMs: number, w: MoveWorld): boolean {
+  private passFireEdge(p: SimPlayer, nextZoneId: string, w: MoveWorld, hooks: MoverHooks): boolean {
     let patch: GroundPatch | null = null;
-    const endsHere = p.pathIndex === p.path.length - 1;
+    const endsHere = this.mover.goalOf(p) === nextZoneId;
     for (const h of w.fire) {
       if (w.patchExposure.has(`${h.instanceId}|${p.id}`)) continue;
       const onDoor = (h.zoneId === nextZoneId && h.doorToZoneId === p.zoneId) || (h.zoneId === p.zoneId && h.doorToZoneId === nextZoneId);
@@ -558,8 +566,8 @@ export class RoundSimulator {
     const door = patch.doorToZoneId !== null;
     const damage = this.crossDamage(patch);
     const lethal = damage >= p.health;
-    const goal = p.path[p.path.length - 1]!;
-    const restMs = this.spatial.shortestTravelTimeMs(nextZoneId, goal, p.moveMode) ?? 0;
+    const goal = this.mover.goalOf(p) ?? nextZoneId;
+    const restMs = this.spatial.nav?.zoneTravelMs(nextZoneId, goal, p.moveMode) ?? 0;
     const canAffordWait = patch.remainingMs + restMs <= this.clockBudgetMs(p, w.state);
     if (!lethal && !canAffordWait) {
       // Go through and pay. A doorway patch is crossed on this very step (the whole chord); a
@@ -572,15 +580,10 @@ export class RoundSimulator {
       return true;
     }
     if (!door) {
-      const alt = this.spatial.findPath(p.zoneId, goal, p.moveMode, { hazardCosts: w.hazardCosts });
-      if (alt && alt.path.length > 1 && alt.path[1] !== nextZoneId) {
-        p.path = alt.path;
-        p.pathIndex = alt.path[0] === p.zoneId ? 1 : 0;
-        p.edgeProgressMs = 0;
-        return false;
-      }
+      // Plan again from here with the wait priced in: if the route now leaves by another zone,
+      // the mover goes round; otherwise it stands at the edge until the fire is out.
+      if (this.mover.replan(p, hooks) === "SUCCESS" && this.mover.nextZoneOf(p) !== nextZoneId) return false;
     }
-    p.edgeProgressMs = edgeMs; // stand at the edge until it burns out
     this.edgeWaiting.set(p.id, patch.remainingMs);
     return false;
   }
@@ -646,16 +649,15 @@ export class RoundSimulator {
   /** Where a teammate is going (for its own team's view): remaining waypoints + time to the next one. */
   private transitOf(p: SimPlayer): TeammateTransit | undefined {
     if (!p.alive || p.pathIndex >= p.path.length) return undefined;
-    const from = this.spatial.getZone(p.zoneId);
     const next = this.spatial.getZone(p.path[p.pathIndex]!);
-    if (!from || !next) return undefined;
-    const edgeMs = this.edgeTravelMs(from.id, next.id, p.moveMode);
+    if (!next) return undefined;
     // Standing at a fire's edge: it enters the next zone when the fire is out.
     const waitMs = this.edgeWaiting.get(p.id);
     return {
       path: p.path.slice(p.pathIndex),
       nextZone: next.id,
-      nextArrivalMs: waitMs !== undefined ? waitMs : Math.max(0, edgeMs - p.edgeProgressMs),
+      // time left on the real path to the next zone's boundary (or to the spot, inside the last zone)
+      nextArrivalMs: waitMs !== undefined ? waitMs : Math.max(0, this.mover.msToNextZone(p) ?? 0),
       ...(waitMs !== undefined ? { waitingAtEdge: true } : {}),
     };
   }
@@ -743,101 +745,61 @@ export class RoundSimulator {
   }
 
   /**
-   * How long the edge between two adjacent zones takes. The map's edge decides: its measured
-   * walkable route when it has one (navgraph `edge.route`, route length at the map's run/walk
-   * speed), else the edge's own time (a teleporter's fixed time, a flagged straight link). Only
-   * for two zones with no edge between them does it fall back to the straight line between
-   * their centres. This is the same number pathfinding uses to choose the route.
+   * What the executor asks the round on a mover's behalf. Movement itself — the path, the
+   * position, the zone a position lies in — is the executor's (mover.ts); these hooks keep the
+   * round's zone-level rules attached to it:
+   *  - canEnterZone: fire on the way in (wait / go round / cross, passFireEdge) and a slow field
+   *    on the doorway (its delay is paid before the mover is through);
+   *  - onZoneChange: the hop is recorded (smoke-exit timing), a slow field in the zone entered
+   *    is owed on the way through it, and the move is traced;
+   *  - onArrive: traced.
    */
-  private edgeTravelMs(fromId: string, toId: string, mode: MoveMode): number {
-    const t = this.spatial.edgeTraversal(fromId, toId);
-    if (t) return mode === "run" ? t.runTimeMs : t.walkTimeMs;
-    const from = this.spatial.getZone(fromId), to = this.spatial.getZone(toId);
-    if (!from || !to) return 0;
-    return (dist3(from.position, to.position) / (mode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC)) * 1000;
-  }
-
-  /**
-   * Where the player IS on the map this tick, for the recorded track: travelling, the point
-   * that far along the edge's walkable polyline (so a mover follows the real floor around
-   * walls instead of cutting straight between zone centres); standing, the zone's walkable
-   * anchor. `p.position` deliberately stays the zone's logical centre — perception, combat
-   * range and every policy derive the zone from it (nearest-zone), so those stay zone-level.
-   */
-  private trackPosition(p: SimPlayer): SimPlayer["position"] {
-    const zone = this.spatial.getZone(p.zoneId);
-    // moved off its zone centre by something other than walking (not the case today): as is
-    if (!zone || p.position.x !== zone.position.x || p.position.y !== zone.position.y || p.position.z !== zone.position.z) return p.position;
-    // (a player killed mid-edge stops advancing, so its track stays where it fell)
-    if (p.pathIndex < p.path.length && p.edgeProgressMs > 0) {
-      const nextId = p.path[p.pathIndex]!;
-      const edgeMs = this.edgeTravelMs(p.zoneId, nextId, p.moveMode);
-      const at = edgeMs > 0 ? this.spatial.pointAlongEdge(p.zoneId, nextId, p.edgeProgressMs / edgeMs) : null;
-      if (at) return at.position;
-    }
-    return this.spatial.standPosition(p.zoneId);
-  }
-
-  /**
-   * Zone-hop movement on measured routes: a player belongs to its current zone until it has
-   * spent the edge's traversal time, then enters the next zone. The time is the edge's walkable
-   * route (edgeTravelMs), and the recorded track shows the player moving continuously along
-   * that route's polyline (trackPosition). Logically the player stays ON real zones — never
-   * between them — so perception and engagement only use genuine zone sightlines. facing
-   * points at the next zone while travelling.
-   */
-  private stepMovement(p: SimPlayer, dtMs: number, trace?: Tracer, targetZone?: string, world?: MoveWorld): void {
-    if (p.pathIndex >= p.path.length) return;
-    const fromZone = this.spatial.getZone(p.zoneId);
-    const nextZone = this.spatial.getZone(p.path[p.pathIndex]);
-    if (!nextZone || !fromZone) return;
-    p.facing = { x: nextZone.position.x - fromZone.position.x, y: nextZone.position.y - fromZone.position.y };
-    const speed = p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC;
-    const edgeMs = this.edgeTravelMs(fromZone.id, nextZone.id, p.moveMode);
-    p.edgeProgressMs += dtMs;
-    if (p.edgeProgressMs >= edgeMs) {
-      // Fire on the route ahead: cross, wait at the edge, or re-route (passFireEdge).
-      if (world && world.fire.length > 0 && !this.passFireEdge(p, nextZone.id, edgeMs, world)) return;
-      // A slow field on the doorway ahead: crossing it costs the extra time of its chord at the
-      // slowed speed, paid once, before the mover is through.
-      if (world && world.slow.length > 0) {
-        let r = 0;
-        for (const sl of world.slow) {
-          const onDoor = (sl.zoneId === nextZone.id && sl.doorToZoneId === p.zoneId) || (sl.zoneId === p.zoneId && sl.doorToZoneId === nextZone.id);
-          const key = `${sl.instanceId}|${p.id}`;
-          if (!onDoor || world.patchExposure.has(key)) continue;
-          world.patchExposure.set(key, world.state.elapsedMs);
-          r = Math.max(r, sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS);
+  private moverHooks(world: MoveWorld, trace: Tracer, targetZone: string | undefined, navEvents: NavTraceEvent[]): MoverHooks {
+    const hooks: MoverHooks = {
+      canEnterZone: (p, toZone) => {
+        if (world.fire.length > 0 && !this.passFireEdge(p, toZone, world, hooks)) return false;
+        if (world.slow.length > 0) {
+          let r = 0;
+          for (const sl of world.slow) {
+            const onDoor = (sl.zoneId === toZone && sl.doorToZoneId === p.zoneId) || (sl.zoneId === p.zoneId && sl.doorToZoneId === toZone);
+            const key = `${sl.instanceId}|${p.id}`;
+            if (!onDoor || world.patchExposure.has(key)) continue;
+            world.patchExposure.set(key, world.state.elapsedMs);
+            r = Math.max(r, sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS);
+          }
+          if (r > 0) {
+            const speed = p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC;
+            p.edgeProgressMs = -slowFieldDelayMs(r, speed, this.cfg.slowSpeedMultiplier);
+            return false;
+          }
         }
-        if (r > 0) {
-          p.edgeProgressMs = edgeMs - slowFieldDelayMs(r, speed, this.cfg.slowSpeedMultiplier);
-          return;
+        return true;
+      },
+      onZoneChange: (p, fromZone, toZone) => {
+        world.lastHop.set(p.id, { fromZone, tick: world.state.tick });
+        if (world.slow.length > 0 && this.mover.goalOf(p) !== toZone) {
+          let r = 0;
+          for (const sl of world.slow) if (sl.doorToZoneId === null && sl.zoneId === toZone) r = Math.max(r, sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS);
+          const speed = p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC;
+          if (r > 0) p.edgeProgressMs = -slowFieldDelayMs(r, speed, this.cfg.slowSpeedMultiplier);
         }
-      }
-      const fromId = p.zoneId;
-      p.zoneId = nextZone.id;
-      p.position = { ...nextZone.position };
-      p.pathIndex += 1;
-      p.edgeProgressMs = 0;
-      world?.lastHop.set(p.id, { fromZone: fromId, tick: world.state.tick });
-      // A slow field in the middle of the zone just entered slows whoever travels on through it:
-      // the extra time of its chord at the slowed speed is owed on the next leg.
-      if (world && world.slow.length > 0 && p.pathIndex < p.path.length) {
-        let r = 0;
-        for (const sl of world.slow) if (sl.doorToZoneId === null && sl.zoneId === nextZone.id) r = Math.max(r, sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS);
-        if (r > 0) p.edgeProgressMs = -slowFieldDelayMs(r, speed, this.cfg.slowSpeedMultiplier);
-      }
-      trace?.({ playerId: p.id, phase: "move", fromZone: fromId, toZone: nextZone.id, targetZone });
-      if (p.pathIndex >= p.path.length) {
-        trace?.({ playerId: p.id, phase: "arrived", toZone: p.zoneId, targetZone });
-      }
-    }
+        trace({ playerId: p.id, phase: "move", fromZone, toZone, targetZone });
+      },
+      onArrive: (p) => trace({ playerId: p.id, phase: "arrived", toZone: p.zoneId, targetZone }),
+      onNavEvent: (e: NavEvent) => {
+        navEvents.push({ tick: world.state.tick, elapsedMs: world.state.elapsedMs, ...e });
+        if (e.kind === "blocked" || e.kind === "unreachable") {
+          trace({ playerId: e.playerId, phase: "move", targetZone: e.goalZone, result: e.kind, reason: e.reason }, `nav:${e.playerId}:${e.goalZone}:${e.kind}:${world.state.tick}`);
+        }
+      },
+    };
+    return hooks;
   }
 
   private isMoving(p: SimPlayer): boolean {
     if (this.steppingOut.has(p.id)) return true; // getting out of / crossing a fire patch
     if (this.edgeWaiting.has(p.id)) return false; // standing at a fire's edge, waiting
-    return p.pathIndex < p.path.length;
+    return this.mover.isMoving(p);
   }
 
   /**

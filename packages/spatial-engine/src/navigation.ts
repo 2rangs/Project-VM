@@ -43,6 +43,19 @@ export interface NavigationRequest {
   zoneCost?: (zoneId: string) => number;
   /** Movement blockers in force (walls that physically stop a body). */
   blockers?: NavBlockers;
+  /**
+   * One-off cost (ms) of ENTERING a zone on the way — a passable hazard such as fire that can be
+   * waited out. Not charged for the zone the route starts or ends in. Applies to every preference.
+   */
+  zoneEntryMs?: (zoneId: string) => number;
+  /** Zones that may be the start or the goal of a route but never a zone it merely passes through (spawns). */
+  noTransitZones?: ReadonlySet<string>;
+  /**
+   * Roadmap nodes the mover can step to directly from `start` (the two ends of the segment it is
+   * on). When given, the route leaves through whichever is cheaper overall, instead of through the
+   * nearest node — which might be on the far side of a wall.
+   */
+  startNodes?: readonly number[];
 }
 
 export interface NavWaypoint {
@@ -71,6 +84,9 @@ interface Arc {
   /** Index into the undirected walk edge list, or -1. Blockers refer to it. */
   edge: number;
 }
+
+/** Cost (ms) of crossing from one node's zone into another's; Infinity = not allowed. */
+type ZoneGate = (fromNode: number, toNode: number) => number;
 
 const GRID = 300; // spatial-hash cell (uu)
 /** A point further than this from every node (XY) is not on the roadmap. */
@@ -298,13 +314,15 @@ export class Navigator {
 
   /** Geometric path between two world positions. Never a straight-line fallback. */
   findPath(req: NavigationRequest): NavigationResult {
-    const s = this.locate(req.start);
-    if (s === null) return { status: "INVALID_START", reason: `start (${req.start.x.toFixed(0)}, ${req.start.y.toFixed(0)}) is not on walkable floor` };
+    const given = (req.startNodes ?? []).filter((n) => n >= 0 && n < this.nodeCount);
+    const located = given.length > 0 ? given[0]! : this.locate(req.start);
+    if (located === null) return { status: "INVALID_START", reason: `start (${req.start.x.toFixed(0)}, ${req.start.y.toFixed(0)}) is not on walkable floor` };
     const g = this.locate(req.destination);
     if (g === null) return { status: "INVALID_TARGET", reason: `destination (${req.destination.x.toFixed(0)}, ${req.destination.y.toFixed(0)}) is not on walkable floor` };
     const blockers = req.blockers && !req.blockers.empty ? req.blockers : null;
     if (blockers?.nodeBlocked(g)) return { status: "UNREACHABLE", reason: `destination is inside a movement blocker (${blockers.ids().join(", ")})` };
     const mode: MovementMode = req.routePreference === "STEALTH" ? "walk" : req.movementMode;
+    const speed = mode === "run" ? this.speeds.run : this.speeds.walk;
     const dangerWeight = req.routePreference === "FASTEST" || !req.zoneCost ? 0 : req.routePreference === "TACTICAL" ? 1 : 3;
     const zoneCost = new Map<number, number>();
     const costOf = (node: number): number => {
@@ -314,14 +332,31 @@ export class Navigator {
       if (c === undefined) { c = Math.max(0, req.zoneCost!(this.zones[zi]!)); zoneCost.set(zi, c); }
       return c * dangerWeight;
     };
-    const path = this.search(s, g, mode, blockers, costOf, true);
+    const startNodes = given.length > 0 ? given : [located];
+    const sources = startNodes.map((n) => ({ node: n, ms: Math.hypot(this.x[n]! - req.start.x, this.y[n]! - req.start.y, this.z[n]! - req.start.z) / speed }));
+    const startZone = this.zoneIdx[located]!, goalZone = this.zoneIdx[g]!;
+    const entryMs = new Map<number, number>();
+    const forbidden = req.noTransitZones && req.noTransitZones.size > 0 ? req.noTransitZones : null;
+    const gate: ZoneGate | null = req.zoneEntryMs || forbidden
+      ? (fromNode, toNode) => {
+          const zi = this.zoneIdx[toNode]!;
+          if (zi === this.zoneIdx[fromNode]! || zi === goalZone || zi === startZone) return 0;
+          if (forbidden?.has(this.zones[zi]!)) return Infinity;
+          if (!req.zoneEntryMs) return 0;
+          let c = entryMs.get(zi);
+          if (c === undefined) { c = Math.max(0, req.zoneEntryMs(this.zones[zi]!)); entryMs.set(zi, c); }
+          return c;
+        }
+      : null;
+    const path = this.search(sources, g, mode, blockers, costOf, gate, true);
     if (!path) {
-      const without = blockers ? this.search(s, g, mode, null, costOf, false) : null;
+      const without = blockers ? this.search(sources, g, mode, null, costOf, gate, false) : null;
       return {
         status: "UNREACHABLE",
         reason: without ? `every route is cut by a movement blocker (${blockers!.ids().join(", ")})` : "no walkable connection between start and destination",
       };
     }
+    const s = path.nodes[0]!;
     // waypoints: the free start point, the roadmap nodes, the free destination point
     const waypoints: NavWaypoint[] = [{ position: { ...req.start }, node: -1, via: "walk", halfWidth: 0, zoneId: this.nodeZone(s) }];
     let length = 0, ms = 0;
@@ -330,7 +365,7 @@ export class Navigator {
       const d = Math.hypot(position.x - prev.x, position.y - prev.y, position.z - prev.z);
       if (d === 0 && fixedMs === 0 && node === -1) return;
       length += d;
-      ms += fixedMs > 0 ? fixedMs : d / (mode === "run" ? this.speeds.run : this.speeds.walk);
+      ms += fixedMs > 0 ? fixedMs : d / speed;
       waypoints.push({ position, node, via, halfWidth, ...(fixedMs > 0 ? { fixedMs } : {}), zoneId });
     };
     push(this.nodePosition(s), s, "walk", 0, 0, this.nodeZone(s));
@@ -349,8 +384,8 @@ export class Navigator {
   }
 
   private search(
-    s: number, g: number, mode: MovementMode, blockers: NavBlockers | null,
-    costOf: (node: number) => number, useHeuristic: boolean,
+    sources: ReadonlyArray<{ node: number; ms: number }>, g: number, mode: MovementMode, blockers: NavBlockers | null,
+    costOf: (node: number) => number, gate: ZoneGate | null, useHeuristic: boolean,
   ): { nodes: number[]; arcs: Array<Arc | null> } | null {
     const n = this.nodeCount;
     const gScore = new Float64Array(n).fill(Infinity);
@@ -361,8 +396,10 @@ export class Navigator {
     const vmax = this.speeds.run;
     const h = (i: number): number => (useHeuristic && !this.hasLinks ? this.dist(i, g) / vmax : 0);
     const heap = new MinHeap();
-    gScore[s] = 0;
-    heap.push(h(s), s);
+    for (const src of sources) {
+      if (blockers?.nodeBlocked(src.node)) continue;
+      if (src.ms < gScore[src.node]!) { gScore[src.node] = src.ms; heap.push(src.ms + h(src.node), src.node); }
+    }
     while (heap.size > 0) {
       const u = heap.pop();
       if (closed[u]) continue;
@@ -372,8 +409,10 @@ export class Navigator {
         const v = a.to;
         if (closed[v]) continue;
         if (blockers && (blockers.nodeBlocked(v) || blockers.edgeBlocked(a.edge))) continue;
+        const enter = gate ? gate(u, v) : 0;
+        if (enter === Infinity) continue;
         const t = this.arcMs(a, mode);
-        const nd = gScore[u]! + t * (1 + costOf(v));
+        const nd = gScore[u]! + t * (1 + costOf(v)) + enter;
         if (nd < gScore[v]!) {
           gScore[v] = nd; came[v] = u; cameArc[v] = a;
           heap.push(nd + h(v), v);

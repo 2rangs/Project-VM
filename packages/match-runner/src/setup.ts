@@ -24,12 +24,13 @@ import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSour
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
 
-/** Load the Ascent spatial engine from the shared dataset (datasets/spatial/ascent). */
-export function loadSpatial(): SpatialEngine {
-  const dir = resolve(repoRoot, "datasets/spatial/ascent");
-  const nav = JSON.parse(readFileSync(resolve(dir, "ascent.navgraph.json"), "utf8"));
+/** Load a map's spatial engine — zone graph, coordinate system and navigation roadmap — from datasets/spatial/<map>. */
+export function loadSpatial(mapId = "ascent"): SpatialEngine {
+  const dir = resolve(repoRoot, "datasets/spatial", mapId);
+  const nav = JSON.parse(readFileSync(resolve(dir, `${mapId}.navgraph.json`), "utf8"));
   const cs = JSON.parse(readFileSync(resolve(dir, "coordinate-system.json"), "utf8"));
-  return createEngine(nav, cs.transform);
+  const roadmap = JSON.parse(readFileSync(resolve(dir, `${mapId}.nav.json`), "utf8"));
+  return createEngine(nav, cs.transform, roadmap);
 }
 
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
