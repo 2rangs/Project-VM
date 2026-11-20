@@ -336,7 +336,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
@@ -526,7 +526,13 @@ export class MatchEngine {
     const plans = { [attacker]: this.policies.attack.planSummary(), [defender]: this.policies.defense.planSummary() } as Record<TeamSlot, PlanSummary | null>;
     // --- Each team folds what it OBSERVED this round into its model of the other ---
     const seen = observedTendencies(out.events);
-    this.opponentModels[defender].observeRound({ opponentSide: "attack", plantSite: seen.plantSite, firstContactSite: seen.firstContactSite });
+    // Where the attack first SHOWED is what the defense itself heard and saw (its plan keeps it);
+    // against the plant site it tells a fake from a straight hit.
+    const shown = plans[defender]?.shownSite;
+    this.opponentModels[defender].observeRound({
+      opponentSide: "attack", plantSite: seen.plantSite, firstContactSite: seen.firstContactSite,
+      shownSite: shown === "A" || shown === "B" ? shown : null,
+    });
     this.opponentModels[attacker].observeRound({ opponentSide: "defense", defendersMet: seen.defendersMet });
 
     // --- Resolve outcome onto teams ---

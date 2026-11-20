@@ -18,7 +18,7 @@ import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simula
 import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
-import { weaponPrice } from "@pv/game-rules";
+import { spikeBlastRadiusUnits, weaponPrice } from "@pv/game-rules";
 import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -59,8 +59,15 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined) {
-    this.inner = new TeamDecisionPolicy(sq, { ...(abilityEffect ? { abilityEffect } : {}), weaponPrice: shopPrice });
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine) {
+    this.inner = new TeamDecisionPolicy(sq, {
+      ...(abilityEffect ? { abilityEffect } : {}),
+      weaponPrice: shopPrice,
+      // Footsteps carry as far as the spike's blast (game-rules); zone centres let a player judge
+      // whether a run is inside an enemy's hearing.
+      footstepRadiusUnits: spikeBlastRadiusUnits(),
+      ...(spatial ? { zonePosition: (id: string) => spatial.getZone(id)?.position } : {}),
+    });
   }
   /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
   setOrder(order: PolicyOrder | null): void {
@@ -114,8 +121,9 @@ export class WrappedTeamPolicy implements DecisionPolicy {
 export function makeSimPolicies(
   sq: SpatialQuery,
   abilityEffect?: (abilityId: string) => string | undefined,
+  spatial?: SpatialEngine,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect), defense: new WrappedTeamPolicy(sq, abilityEffect) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

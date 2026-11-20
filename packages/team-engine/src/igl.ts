@@ -41,7 +41,7 @@ function isEco(view: PolicyView): boolean {
 
 const v2 = (v: Vector3) => ({ x: v.x, y: v.y });
 
-/** Site-read lead (in seen-enemy units) that justifies changing the team call mid-round. */
+/** ATTACK: site-read lead (in seen-enemy units) that justifies swinging off a stacked site mid-round. */
 const ROTATE_EVIDENCE = 2;
 /** A heard cue fades to nothing over this long. */
 const SOUND_EVIDENCE_WINDOW_MS = 8000;
@@ -153,9 +153,9 @@ export interface Reconsideration {
 }
 
 /**
- * Re-decide mid-round when new information arrives (README §24.1 call changes). If the
- * enemy is now clearly committed to a site, defenders rotate/stack toward it (or retake a
- * planted site); attackers swing away from a stacked site.
+ * Re-decide mid-round when new information arrives (README §24.1 call changes): defenders
+ * call the retake when the spike goes down (their pre-plant rotation is belief-driven, see
+ * hit-belief.ts); attackers swing away from a stacked site.
  */
 export function reconsider(
   view: PolicyView,
@@ -174,12 +174,9 @@ export function reconsider(
     if (planted && prev !== "retake") {
       return { strategy: "retake", changed: true, reason: "spike planted — retake call" };
     }
-    if (lean >= strong && prev !== "stackA") {
-      return { strategy: "stackA", changed: true, reason: "enemies reading A — rotate/stack A" };
-    }
-    if (-lean >= strong && prev !== "stackB") {
-      return { strategy: "stackB", changed: true, reason: "enemies reading B — rotate/stack B" };
-    }
+    // Where the hit is coming, and how many to send, is not a threshold on a site count any more:
+    // the policy keeps a Bayesian belief over hit / fake / nothing (hit-belief.ts) and rotates in
+    // proportion to it (TeamDecisionPolicy.commitDefenseRotation), recording each change on the plan.
     return { strategy: prev, changed: false, reason: "no decisive new info" };
   }
 

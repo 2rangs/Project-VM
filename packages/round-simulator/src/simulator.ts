@@ -46,7 +46,7 @@ import {
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, TRACER_CUE_CONFIDENCE,
 } from "./situational.js";
 import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
-import { buildPolicyView, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
+import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
 export interface RoundSimulatorDeps {
@@ -154,7 +154,7 @@ export class RoundSimulator {
   runRound(initial: SimState): RoundResult {
     const state = initial;
     // perception is smoke/wall aware so deployed abilities actually block line of sight
-    const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke });
+    const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke, params: roundPerceptionParams() });
     const abilityEngine = new AbilityEngine(this.spatial);
     const spatialQuery = new SpatialQueryAdapter(this.spatial);
     // Each side's starting zone (mode of its players' tick-0 zones), used as the structural

@@ -1,6 +1,7 @@
 import type { SpatialEngine } from "@pv/spatial-engine";
 import type { AbilityState, MapObservation, ObservationState, ObservedEnemy, SoundObservation, PlayerState as PPlayerState, SpikeState as PSpikeState, Vector2 } from "@pv/perception-engine";
-import type { PerceptionEngine } from "@pv/perception-engine";
+import { DEFAULT_PARAMS, type PerceptionEngine, type PerceptionParams } from "@pv/perception-engine";
+import { spikeBlastRadiusUnits } from "@pv/game-rules";
 import { revealedEnemies, activeAreaDenials, deployedEffects, type AbilityCatalog, type AbilityEngine } from "@pv/ability-engine";
 import { buildBelief } from "@pv/decision-engine";
 import { asAbilityId } from "@pv/shared-types";
@@ -173,6 +174,48 @@ export interface BuildViewOptions {
   readonly stationaryIds?: { has(id: string): boolean };
 }
 
+/**
+ * Perception parameters for a round: the defaults, with the footstep audio range taken from the
+ * game rule it is defined by — a running player is heard within the spike's blast radius
+ * (@pv/game-rules SPIKE_RULES.blastRadiusM). One number, one place.
+ */
+export function roundPerceptionParams(): PerceptionParams {
+  return { ...DEFAULT_PARAMS, hearing: { ...DEFAULT_PARAMS.hearing, footstepRadiusUnits: spikeBlastRadiusUnits() } };
+}
+
+/**
+ * The team's footstep picture: one cue per DISTINCT runner. Each listener hears every runner in
+ * range, so the raw per-player observations repeat the same runner once per listener. Steps are
+ * distinguishable as separate sources but carry no identity, so the team cannot match them by
+ * name — it reconciles by place: for each zone, the number of runners is the most any single
+ * listener hears there (three teammates each hearing the same two runners is two runners, not
+ * six), and the k-th runner's confidence is the best any listener has for a k-th source.
+ */
+function teamFootsteps(perPlayer: Readonly<Record<string, ObservationState>>, spatial: SpatialQuery): SoundObservation[] {
+  const byZone = new Map<string, { position: SoundObservation["approxPosition"]; heardAtMs: number; best: number[] }>();
+  for (const id of Object.keys(perPlayer).sort()) {
+    const mine = new Map<string, SoundObservation[]>();
+    for (const e of perPlayer[id]!.audibleEvents) {
+      if (e.kind !== "footstep") continue;
+      const zone = spatial.nearestZone(e.approxPosition);
+      const list = mine.get(zone);
+      if (list) list.push(e); else mine.set(zone, [e]);
+    }
+    for (const [zone, list] of mine) {
+      const conf = list.map((e) => e.confidence).sort((a, b) => b - a);
+      const entry = byZone.get(zone) ?? { position: list[0]!.approxPosition, heardAtMs: list[0]!.heardAtMs, best: [] };
+      conf.forEach((c, k) => { entry.best[k] = Math.max(entry.best[k] ?? 0, c); });
+      byZone.set(zone, entry);
+    }
+  }
+  const out: SoundObservation[] = [];
+  for (const zone of [...byZone.keys()].sort()) {
+    const e = byZone.get(zone)!;
+    for (const confidence of e.best) out.push({ kind: "footstep", approxPosition: { ...e.position }, heardAtMs: e.heardAtMs, confidence });
+  }
+  return out;
+}
+
 /** Shot cues older than this no longer appear in the observation (the belief layer ages the rest). */
 const CUE_OBSERVATION_WINDOW_MS = 10_000;
 
@@ -307,7 +350,8 @@ export function buildPolicyView(
     timestampMs: state.timeRemainingMs,
     visibleEnemies: [...picture.values()],
     audibleEvents: [
-      ...(team ? Object.values(team.perPlayer).flatMap((o) => o.audibleEvents) : []),
+      ...(team ? teamFootsteps(team.perPlayer, spatial) : []),
+      ...(team ? Object.values(team.perPlayer).flatMap((o) => o.audibleEvents.filter((e) => e.kind !== "footstep")) : []),
       ...shotCueObservations(side, state, opts),
       ...abilityCueObservations(side, state, opts),
     ],

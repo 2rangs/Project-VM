@@ -88,6 +88,11 @@ export interface RoundObservation {
   readonly firstContactSite?: SiteKey | null;
   /** Opponent defending: how many of their players we met on each site. */
   readonly defendersMet?: Readonly<Partial<Record<SiteKey, number>>>;
+  /**
+   * Opponent attacking: the site where their presence first showed to us this round (two or more
+   * bodies heard or seen there). Compared with the plant site it tells a fake from a straight hit.
+   */
+  readonly shownSite?: SiteKey | null;
   /** Opponent defending: they gave up a post-plant (we saw the spike detonate with them alive). */
   readonly savedPostPlant?: boolean;
 }
@@ -97,7 +102,18 @@ export interface OpponentRead {
   readonly attackSite: TendencyEstimate<SiteKey>;
   /** Where the opponent tends to put its defenders. */
   readonly defenseSite: TendencyEstimate<SiteKey>;
+  /**
+   * How often the opponent fakes: of the rounds where it showed on one site and planted, the share
+   * where the plant was on ANOTHER site. A Beta–Bernoulli estimate around a base rate,
+   *     rate = (n_fake + φ₀ · s) / (N + s),   confidence = N / (N + s)
+   * with φ₀ = FAKE_BASE_RATE and s the prior strength (smaller for a sharper team). Optional so a
+   * read built without it means "no information" (the base rate is used).
+   */
+  readonly fakeRate?: { readonly rate: number; readonly confidence: number; readonly samples: number };
 }
+
+/** Prior fake rate before any round is observed (the attack's own opening mix is about 0.2). */
+export const FAKE_BASE_RATE = 0.2;
 
 /**
  * One team's model of its opponent. `patternRecognition` (0..1, a roster trait) sets how quickly
@@ -106,6 +122,8 @@ export interface OpponentRead {
 export class OpponentModel {
   private readonly attackSite: Tendency<SiteKey>;
   private readonly defenseSite: Tendency<SiteKey>;
+  private readonly fakes: Tendency<"fake" | "straight">;
+  private readonly priorStrength: number;
   private rounds = 0;
 
   constructor(patternRecognition = 0.6, decay = 0.85) {
@@ -113,6 +131,8 @@ export class OpponentModel {
     const prior = Math.min(2, Math.max(0.25, 1 - (patternRecognition - 0.6) * 1.25));
     this.attackSite = new Tendency<SiteKey>(["A", "B"], prior, decay);
     this.defenseSite = new Tendency<SiteKey>(["A", "B"], prior, decay);
+    this.fakes = new Tendency<"fake" | "straight">(["fake", "straight"], prior, decay);
+    this.priorStrength = 2 * prior;
   }
 
   /** Fold one finished round's observations in. Rounds with nothing observed teach nothing. */
@@ -122,6 +142,8 @@ export class OpponentModel {
       // The plant is the firm fact; a first contact without a plant is weaker evidence (could be a fake).
       if (obs.plantSite) this.attackSite.observe(obs.plantSite, 1);
       else if (obs.firstContactSite) this.attackSite.observe(obs.firstContactSite, 0.5);
+      // Showed on one site, planted on another: a fake. Showed and planted on the same: straight.
+      if (obs.shownSite && obs.plantSite) this.fakes.observe(obs.shownSite === obs.plantSite ? "straight" : "fake");
     } else {
       const met = obs.defendersMet ?? {};
       const total = (met.A ?? 0) + (met.B ?? 0);
@@ -134,7 +156,14 @@ export class OpponentModel {
   }
 
   read(): OpponentRead {
-    return { attackSite: this.attackSite.estimate(), defenseSite: this.defenseSite.estimate() };
+    const f = this.fakes.snapshot();
+    const n = f.fake + f.straight;
+    const s = this.priorStrength;
+    return {
+      attackSite: this.attackSite.estimate(),
+      defenseSite: this.defenseSite.estimate(),
+      fakeRate: { rate: (f.fake + FAKE_BASE_RATE * s) / (n + s), confidence: n / (n + s), samples: n },
+    };
   }
 
   get roundsObserved(): number {
