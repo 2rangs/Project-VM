@@ -153,10 +153,10 @@ in any form — and a mesh cannot be rebuilt from them. Meshes (`mesh.npz`), wal
 directory. The map IP is still Riot's; this is a decision about a development repository, not a redistribution
 right, and is recorded with its caveats in `docs/LICENSE_AUDIT.md` §2.0b.
 
-Not covered by that decision as worded, and waiting for one: `ascent.vis.json` (§7b) — one bit per pair of
-roadmap points, no coordinates and no surfaces, committed on this branch beside the roadmap with a copy in
-`apps/desktop/src/data/sim/`. If it is not to be in git, sight falls back to the zone table (the engine already
-does this for the ten maps that have no such file).
+The same decision covers the visibility tables (confirmed by the user the same day): `ascent.vis.json` (§7b) —
+one bit per pair of roadmap points, no coordinates and no surfaces — stays committed, with its copy in
+`apps/desktop/src/data/sim/`. The other ten maps' tables have not been generated yet; when they are, they fall
+under the same terms.
 
 ## 4. The three layers
 
@@ -603,7 +603,7 @@ told not to retune.
   patches and "no path" marks from real matches; a `blocked` event is drawn the same way but has not been seen
   outside the simulator's own tests.
 - **Sight is positional on Ascent only.** The other ten maps have no `<map>.vis.json` yet (about 2.3 MB for all
-  of them; not generated: the 2026-11-20 decision covers the roadmaps, and the visibility tables are still to be decided — §3) and keep the
+  of them; simply not generated yet — the 2026-11-20 decision allows committing them, §3) and keep the
   zone sightline table. Sight is decided between the roadmap nodes the two bodies stand at (≤ ~1.3 m from the
   body), not between exact positions. Ability effects that reveal or blind (recon, flash) and tracers still use
   zone sightlines.
@@ -628,8 +628,8 @@ told not to retune.
    decide the whole route for plan orders too.
 3. Cover spots at round start and for holders with a default watch zone, once (1) has settled what holders are
    worth; plant and defuse *at* a position rather than in a zone.
-4. `<map>.vis.json` for the other ten maps (pending the data decision, §3); fix Haven B Site and Pearl in the
-   source data so their zones connect.
+4. `<map>.vis.json` for the other ten maps (allowed by the data decision, §3; needs each map's mesh
+   re-extracted locally); fix Haven B Site and Pearl in the source data so their zones connect.
 
 ## 11. Reproduce
 
