@@ -76,7 +76,9 @@ async function main() {
     assert.ok(await page.getByTestId('series-geometry-note').isVisible(), 'the Ascent-geometry note is on the veto screen');
     assert.equal(await page.locator('[data-testid^="veto-card-"]').count(), 7, 'seven map cards');
     assert.equal(await page.locator('[data-testid^="veto-mastery-us-"]').count(), 7, 'our mastery on every card');
-    assert.ok(await page.locator('.ser-bar.lvl-low').count() > 0, 'uncertain numbers are marked as uncertain');
+    // Every mastery number carries its certainty level (which ones are "low" depends on the data).
+    const levels = await page.locator('.ser-bar').evaluateAll((els) => els.map((e) => e.getAttribute('data-level') ?? (e.classList.contains('lvl-none') ? 'none' : '')));
+    assert.ok(levels.length >= 14 && levels.every((l) => ['high', 'medium', 'low', 'none'].includes(l)), 'every mastery bar shows a certainty level');
 
     let humanSteps = 0; let aiSteps = 0; let againstAdvice = null; let shot = false;
     while ((await phase()) === 'veto') {

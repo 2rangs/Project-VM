@@ -152,6 +152,14 @@ describe("map mastery: documented components, shrinkage, continuity", () => {
     expect(thirty.value).toBeLessThanOrEqual(1);
   });
 
+  it("real records: wins are known, per-player map games are measured", () => {
+    const m = mapMastery({ teamId: team, map: "Lotus" });
+    expect(m.history.resultsKnown).toBe(true);
+    expect(m.history.wins).toBeGreaterThan(0);
+    expect(m.continuity.measured).toBe(true);
+    expect(m.continuity.uncertainty).toBe(0);
+  });
+
   it("without results in the data the results term is neutral and the uncertainty says so", () => {
     const m = mapMastery({ teamId: team, map: "Lotus", records: flatRecords(10) });
     expect(m.history.resultsKnown).toBe(false);
@@ -165,11 +173,13 @@ describe("map mastery: documented components, shrinkage, continuity", () => {
     const lineup = defaultLineup(team);
     const before = mapMastery({ teamId: team, map: "Ascent", lineup });
     const newcomer = defaultLineup("7386")[0]!; // a real player who has never played for this team
-    const after = mapMastery({ teamId: team, map: "Ascent", lineup: [newcomer, ...lineup.slice(1)] });
+    // Replace the player with the most games on the map (his pairs are the strongest ones).
+    const most = before.continuity.playerGames.indexOf(Math.max(...before.continuity.playerGames));
+    const after = mapMastery({ teamId: team, map: "Ascent", lineup: lineup.map((id, i) => (i === most ? newcomer : id)) });
     expect(before.continuity.value).toBeGreaterThan(0);
     // The newcomer shares no games with anyone: 4 of the 10 pairs go to zero and the other six are
-    // untouched. He replaces the most-present player, whose pairs were the strongest — hence ≤ 60%.
-    expect(after.continuity.playerGames[0]).toBe(0);
+    // untouched — hence at most 60% of the value is left.
+    expect(after.continuity.playerGames[most]).toBe(0);
     expect(after.continuity.value).toBeLessThanOrEqual(before.continuity.value * 0.6 + 1e-9);
     expect(after.history.value).toBe(before.history.value); // the team's record is unchanged
     expect(after.value).toBeLessThan(before.value);
@@ -189,7 +199,7 @@ describe("map mastery: documented components, shrinkage, continuity", () => {
   it("comp fit uses the map's comps where they exist and says when it falls back to roles", () => {
     expect(mapMastery({ teamId: team, map: "Ascent" }).compFit.basis).toBe("comps");
     expect(mapMastery({ teamId: team, map: "Ascent" }).compFit.bestComp).toHaveLength(5);
-    const fallback = mapMastery({ teamId: team, map: "Haven" }).compFit;
+    const fallback = mapMastery({ teamId: team, map: "Icebox" }).compFit; // no comp statistics built for it
     expect(fallback.basis).toBe("roles");
     expect(fallback.uncertainty).toBeGreaterThan(mapMastery({ teamId: team, map: "Ascent" }).compFit.uncertainty);
   });
