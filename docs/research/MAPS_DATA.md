@@ -3,9 +3,15 @@
 **Date:** 2026-11-19 · **Branch:** `claude/maps-data-df31bb` · **Scope:** data + loading only.
 The engine still *plays* only Ascent; §6 lists what must be generalised before any of these maps can be played.
 
-> **Update (same day):** every edge now also carries a measured **walkable route** and the simulator moves
-> players along it — see `docs/research/MAP_ROUTES.md`. Edge lengths/times in §1 are the route's since then;
-> two Lotus approx-links became measured edges.
+> **Update (same day):** every edge now also carries a measured **walkable route** — see
+> `docs/research/MAP_ROUTES.md`. Edge lengths/times in §1 are the route's since then; two Lotus approx-links
+> became measured edges.
+>
+> **Update (2026-11-20):** each map also has a navigation roadmap (`<map>.nav.json`: stand points and walkable
+> segments), and Ascent a table of line of sight between those points (`ascent.vis.json`). The simulator moves
+> players on the roadmap with a real position every tick — see `docs/research/NAVIGATION_ENGINE.md` (§3 for
+> the data and the decision to commit it, §9 for what still keeps the other ten maps from being played).
+> `loadMap(id)` loads both files when present.
 
 Ten new folders — `datasets/spatial/{abyss,bind,breeze,fracture,haven,icebox,lotus,pearl,split,sunset}/` —
 follow Ascent's schema and load through one registry call:

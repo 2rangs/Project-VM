@@ -6,16 +6,15 @@ Players used to be points that sat on a zone's centre and hopped to the next one
 continuous position on the map, found by geometric pathfinding on a roadmap measured from the map geometry, and
 only one piece of code — the movement executor — may change it.
 
-**Delivered:** Phases 1–3 (diagnosis, approach decision, the three-layer navigation), positional sight (§7b),
-Phase 4 (tactical travel times are navigation path costs; route preference by intent from the team's belief,
-§7c), Phase 5 (the navigation debug view in the desktop live match screen; the track shim removed, §4), the
-Phase 6 tests and the 160-match validation after each step. The desktop app was typechecked, built and run:
-unit, engine-contract and both Electron end-to-end suites pass, and rounds were watched in the live view.
+| | |
+|---|---|
+| **Built** | Roadmap navigation on all eleven maps' data; movement executor with continuous positions; sight decided between real positions (Ascent); every tactical travel time taken from the navigator; route preference by intent; standing spots by intent; the navigation debug view in the desktop app |
+| **Checked** | Every recorded position of whole real matches is on walkable floor (§5). All engine suites, desktop typecheck, build, unit, engine-contract and both Electron end-to-end runs pass |
+| **Balance** | 160 matches: **6 of 8 judged metrics, attack win rate 0.480.** The target before a merge was 7 with attack 0.47–0.55 — the win rate is in range, the count is one short. Defuse (0.104, needs ≥ 0.120) and time expired (0.092, needs ≤ 0.083) fail; the measured cause is in §7.2 |
+| **Playable** | Ascent only. The other ten maps have roadmaps but are not playable (§9) |
 
-**Balance, plainly:** 160 matches give **6 of 8 judged metrics, attack win rate 0.480** — the target before a
-merge was 7 of 9 with attack 0.47–0.55, so the win rate is in range and the count is one short. Defuse (0.104,
-needs 0.120) and time expired (0.092, needs 0.083) still fail; §7d has the measured cause and what was tried.
-§9 lists what is not done.
+Contents: 1 diagnosis · 2 approach · 3 navigation data · 4 how it works · 5 tests · 6 performance · 7 balance ·
+8 errors fixed · 9 not done · 10 next · 11 reproduce.
 
 ---
 
@@ -112,7 +111,11 @@ links, the exact transform, the ray-check against solid triangles (`measure_map.
 links. New: `nav_map.py` (roadmap), `navigation.ts`, `mover.ts`. Retired at runtime: moving along `edge.route`
 polylines (they remain as the zone graph's edge times and in the schematics).
 
-## 3. The roadmap (`datasets/spatial/<map>/<map>.nav.json`)
+## 3. Navigation data
+
+Two files per map under `datasets/spatial/<map>/`, both derived offline from the user-provided Blender maps.
+
+### 3.1 The roadmap — `<map>.nav.json`
 
 `tools/map-mesh/pipeline/nav_map.py` builds it from the walk grid:
 
@@ -143,22 +146,34 @@ polylines (they remain as the zone graph's edge times and in the schematics).
 | Split | 999 | 3,319 | 73 | 0 | 0 | 69 KB |
 | Sunset | 894 | 3,813 | 27 | 0 | 0 | 73 KB |
 
-**Decided (user, 2026-11-20): the eleven `<map>.nav.json` roadmaps are committed to the repository.** They are
-derived from the user-provided Blender maps and hold points and segments only: stand points
-(`[x, y, floor z, clearance, zone]`, at least 2.5 m apart — about one per 6 m² of floor), walkable segments
-between them (`[a, b, half-width]`), one-way drops, authored links, zone anchors and the generator's own check
-figures. They hold no triangles, vertex buffers, faces, materials, grid cells, voxels or height map — no surface
-in any form — and a mesh cannot be rebuilt from them. Meshes (`mesh.npz`), walk grids (`walkable.json`,
+### 3.2 Line of sight between roadmap points — `<map>.vis.json`
+
+`tools/map-mesh/pipeline/vis_map.py` casts eye-level segments between every pair of roadmap nodes within 46 m
+against the map's solid, opaque triangles (a pair is visible when either eye sees the other's eye or chest) and
+stores **one bit per pair**. Ascent: 420,860 pairs tested, 73,041 visible (17.4 %), 144 KB. Only Ascent has
+this file so far; the other ten would total about 2.3 MB and need each map's mesh re-extracted locally.
+
+### 3.3 What is in git, and by whose decision
+
+**Decided by the user on 2026-11-20:** the eleven roadmaps and the visibility tables are committed. They hold
+points, segments and bits only:
+
+- roadmap — stand points (`[x, y, floor z, clearance, zone]`, at least 2.5 m apart, about one per 6 m² of
+  floor), walkable segments (`[a, b, half-width]`), one-way drops, authored links, zone anchors and the
+  generator's own check figures;
+- visibility — one bit per pair of roadmap points, no coordinates.
+
+Neither holds triangles, vertex buffers, faces, materials, grid cells, voxels or a height map — no surface in
+any form — and a mesh cannot be rebuilt from them. Meshes (`mesh.npz`), walk grids (`walkable.json`,
 `footprint.npz`) and every other surface geometry stay outside git, generated locally under the derived
 directory. The map IP is still Riot's; this is a decision about a development repository, not a redistribution
-right, and is recorded with its caveats in `docs/LICENSE_AUDIT.md` §2.0b.
+right. Recorded with its caveats in `docs/LICENSE_AUDIT.md` §2.0b.
 
-The same decision covers the visibility tables (confirmed by the user the same day): `ascent.vis.json` (§7b) —
-one bit per pair of roadmap points, no coordinates and no surfaces — stays committed, with its copy in
-`apps/desktop/src/data/sim/`. The other ten maps' tables have not been generated yet; when they are, they fall
-under the same terms.
+The desktop app carries copies of Ascent's two files (`apps/desktop/src/data/sim/`).
 
-## 4. The three layers
+## 4. How it works
+
+Three layers, each with one job: choose the zones (A), find the floor (B), move the body (C).
 
 ### A. Strategic route — the zone graph (`mover.ts` `strategicRoute`)
 
@@ -172,7 +187,7 @@ That route is a **corridor** for the next layer, and it defines the player's zon
 of its route's zones. This matters. The geometric shortest path from B Lobby to B Site clips a corner of floor
 nearest the Mid Link callout; without the corridor the carrier's zone became `mid-link`, the policy reacted,
 turned it round, and it oscillated until the clock ran out — 42 % of rounds timed out and the attack won 6.6 %
-(§7).
+(§7.4).
 
 ### B. Geometric path — the roadmap (`spatial-engine/src/navigation.ts` `Navigator.findPath`)
 
@@ -183,20 +198,25 @@ NavigationResult   { status: "SUCCESS", waypoints, pathLength, estimatedTravelMs
                  | { status: "UNREACHABLE" | "INVALID_START" | "INVALID_TARGET", reason }
 ```
 
-A\* over roadmap nodes, cost in time. Floor outside the corridor costs 60 % more. A passable hazard (fire that
-can be waited out, a slow field) is a disc: stepping into it costs its wait once, skirting it costs nothing.
-Movement blockers remove nodes and edges. A mover re-planning mid-segment may only leave through the two ends
-of the segment it is on, never through "the nearest node", which could be on the far side of a wall.
-**There is no fallback:** with no path the result is UNREACHABLE with a reason, and a start or goal off the floor
-is INVALID_START / INVALID_TARGET.
+A\* over roadmap nodes, cost in time.
+
+- Floor outside the corridor costs 60 % more.
+- A passable hazard (fire that can be waited out, a slow field) is a disc: stepping into it costs its wait
+  once, skirting it costs nothing.
+- Movement blockers remove nodes and edges.
+- Spawn floor is priced, not forbidden: a no-transit zone costs the search 120 s — more than any detour — so it
+  is crossed only when nothing else leads to the goal (the only stairs to A Rafters lie on floor the zone
+  partition gives to defender spawn). The cost is never part of a reported travel time.
+- A mover re-planning mid-segment may only leave through the two ends of the segment it is on, never through
+  "the nearest node", which could be on the far side of a wall.
+
+**There is no fallback.** With no path the result is UNREACHABLE with a reason, and a start or goal off the
+floor is INVALID_START / INVALID_TARGET. The player does not move.
 
 ### C. Local execution — the executor (`round-simulator/src/mover.ts` `MovementExecutor`)
 
 The only code that assigns `p.position`.
 
-- **Own spot.** A player sent to a zone takes a standing spot there: a roadmap node of that zone near its
-  anchor that nobody else holds, chosen deterministically per player. Five players sent to one zone stand on
-  five spots.
 - **Own lane.** Waypoints are shifted sideways per player, never further than the segment's half-width allows
   a 35 uu body with a 10 uu margin.
 - **Continuous, no tunnelling.** Each tick's movement is consumed waypoint by waypoint along validated
@@ -204,13 +224,15 @@ The only code that assigns `p.position`.
 - **Zone from position.** The zone of the nearer end of the segment the player is on, among the route's zones.
   The simulator publishes it (`SpatialEngine.setPositionZones`) so perception and every policy lookup made
   from a position agree with it.
-- **Yielding.** A mover queues behind a mover going the same way for as long as it takes; it gives way to a
-  body standing in its path (or to a lower-id mover coming head-on) for at most 6 ticks, then squeezes past.
+- **Facing.** A mover faces the next zone of its route, as a body rounding a corner looks into the room.
+- **Bodies in the way** (`bodyAhead`). A mover follows a mover going the same way. Two movers meeting head-on:
+  the lower id has the right of way, the other gives way for at most 6 ticks and then squeezes past; head-on is
+  judged by where the other mover is *trying* to go. It gives way to a standing body the same way. A queue that
+  has not moved at all for 3 s is passed.
 - **Stacking up** (`simulator.ts` `stackedUp`). Teammates heading into the same next zone cross into it
-  together: the first one at the boundary waits for teammates within 1.5 s behind it, for at most 2 s. Under
-  zone-hopping everyone given the same order entered on the same tick; with real positions they arrive a few
-  tenths of a second apart, and walking in one by one hands a holder a series of 1v1s. Design values.
-- **New orders mid-path** are planned from where the player is.
+  together: the first one at the boundary waits for teammates within 1.5 s behind it, for at most 2 s. Design
+  values.
+- **New orders mid-path** are planned from where the player is; a replan keeps the standing spot it was going to.
 - **Blockers.** When the blocker set changes, the remaining route is revalidated; if cut, it is re-planned; if
   nothing is left the player stops, the failure is traced (`RoundResult.navTrace`, `commandTrace`), and it
   plans again when the blockers change.
@@ -218,7 +240,61 @@ The only code that assigns `p.position`.
   along the link. These are the only non-walking moves, and they are explicit edges.
 - **Plant and defuse need arrival.** A player still walking to its spot cannot plant or defuse.
 
-### Vision, movement and bullet blockers are separate
+**Standing spots by intent** (`SpotIntent`). Five players sent to one zone stand on five spots. Which spot is
+decided by what the stop is for — read from the state of the round and the order's own fields, never from the
+policy's labels:
+
+| Intent | Who | Spot |
+|---|---|---|
+| `plant` | the spike carrier heading for a plantable zone | on the plant area, scored by distance from where its route enters the zone and by how much of the other zones can see it (`Navigator.exposure`), equally weighted. On A Site from A Main that is the least exposed of the thirty plant points (seen from 12 standing points of other zones; the area's median is 36) — 15 m in, where the callout is 11 m in |
+| `at` | a defender heading for the zone the spike is planted in | the standing point nearest the spike |
+| `hold` | a mover whose order says what to watch (`aimZone`) — **only with `SimConfig.coverSpots`, default off** (§7.3) | a spot that sees the watched zone and that the rest of the map sees least, near where the route enters |
+| `stand` | everyone else, and everybody at round start | a free point near the zone's anchor, chosen deterministically per player |
+
+`plantable` stays a property of the zone, and a defuse can still be done from anywhere in the spike's zone —
+only the destination changed.
+
+### D. Tactical layers plan with the same floor
+
+**Every travel-time judgement is a navigation path cost.** All of them — `team-engine` (site choice, staging,
+quiet-approach slack, spike recovery, retake approach, defuser commit, save), `action-generator` (rotation
+feasibility, arriving first, chase, support arrival) and the belief model (`decision-engine/belief.ts`: how far
+an unseen enemy can have got) — go through `SpatialQuery.shortestTravelTimeMs` / `findPath`. With a roadmap
+loaded those answer from `Navigator.zoneTravelMs` (`spatial-engine/src/engine.ts` `navTravelMs`): the time of
+the path a mover will walk between the two zones' standing points. `isReachable` follows the roadmap too.
+Queries that carry hazards or blocked zones are still priced on the zone graph. `outcome-predictor` makes no
+travel-time query of its own.
+
+**Route preference by intent** (`team-engine/src/route-intent.ts`, applied to every move order at the end of
+`decideWithTrace`):
+
+| Order | Preference | Zone costs |
+|---|---|---|
+| Entry, execute, retake, defuser, spike recovery, rotation | FASTEST | none |
+| Exit-kill chase | FASTEST, to the ground the attackers fall back to (the policy's believed escape) | none |
+| Save, holding a rifle, sniper or heavy | SAFEST | the belief's `threatZones` |
+| Save, holding a cheap weapon | TACTICAL | the belief's `threatZones` |
+| The lurker's own lurk order (never the spike carrier) | SAFEST | `threatZones`, plus the zones teammates have announced as their route |
+| A walked approach | STEALTH | the belief's `threatZones` |
+
+The costs read `view.belief.threatZones` and teammates' own routes only — nothing in a `PolicyView` is a true
+enemy position. In four traced matches: 3,027 planned paths — 2,271 FASTEST, 502 STEALTH, 251 SAFEST,
+3 TACTICAL.
+
+Two limits. Most plan orders name the *next* zone of the policy's own route, so there the preference only
+decides how the floor between two neighbouring zones is crossed; it decides the whole way for save, chase,
+retake and rotate orders, which name the goal. And the lurk routing applies to the lurk order only: once the
+team commits, the execute waits for the lurker, and a detour there stalls the round (§7.3).
+
+### E. Sight is decided where two bodies stand
+
+`perception-engine/src/vision.ts` asks `Navigator.sees(positionA, zoneA, positionB, zoneB)` after its distance
+and field-of-view checks, using the table of §3.2. Vision blockers keep their zone rule on top (a smoke in
+either body's zone cuts the line between two different zones). Maps without the table — every map but Ascent
+today — keep the zone sightline table. `PerceptionParams.vision.positionalSight = false` switches it off. The
+observation / belief separation is unchanged.
+
+### F. Vision, movement and bullet blockers are separate
 
 | Blocker | In the engine | Blocks |
 |---|---|---|
@@ -230,14 +306,14 @@ The only code that assigns `p.position`.
 with destructible HP") and says nothing about whether a body can pass, so nothing was invented: the mechanism is
 implemented and tested, and a verified rule can attach to it in one place.
 
-### Ground patches act where they are
+### G. Ground patches act where they are
 
 Fire and slow fields used to be "in a zone". With real positions that let a mover already inside the zone walk
 into a burning patch unchecked. They are now discs at a real point: a body is burned while it is on the disc; a
 mover stops at the **rim** and waits, goes round, or crosses (the existing rule, unchanged); the planner prices
 the disc, not the zone. Doorway patches keep their zone-boundary rule.
 
-### The navigation debug view (desktop developer view)
+### H. The navigation debug view (desktop developer view)
 
 `apps/desktop` live match screen → **Navigation (developer)** checkbox on the tactical map (off by default, not
 persisted). It draws engine output only — nothing is re-planned in the renderer:
@@ -266,30 +342,42 @@ export itself writes every player's starting position (a zero-length `move` at t
 | G | Dynamic blocker mid-move → revalidate / replan | navigation + movement (wall on Mid Bottom at 3 s; all ways sealed) | pass |
 | H | Blocker removed → route available again | navigation + movement | pass |
 | I | Ten players, no abnormal overlap or wall crossing | movement (24-round match: all positions on floor, < 0.2 % of living pairs within one body radius, no step longer than a run step) | pass |
+| I (bodies) | Two players meeting head-on pass each other; two who turn round together both get back; nobody stands still for more than 3.5 s | movement | pass (the first fails on the code before the fix in §8) |
 | J | Path failure → no teleport, no straight fallback | navigation + movement (player does not move at all) | pass |
 | K | Rotations at real travel times | movement (arrival within 300 ms of the plan, > 1.3× the straight line) | pass |
-| L | Sight, range and footsteps from real positions | navigation + movement: sight between the two bodies' standing points (§7b), duel range between the two recorded positions; footsteps were already positional | pass |
+| L | Sight, range and footsteps from real positions | navigation + movement: sight between the two bodies' standing points, duel range between the two recorded positions; footsteps were already positional | pass |
 | M | Same start / goal, different information → different route | navigation + movement | pass |
-| I (bodies) | Two players meeting head-on pass each other; two who turn round together both get back; nobody stands still for more than 3.5 s | `round-simulator/test/movement.test.ts` | pass (the first fails on the code before §7d) |
-| Spots | The carrier stops on the plant area at a covered point and plants there; a defender sent onto the spike stops at the spike and defuses; with cover spots on, a mover told what to watch takes a spot that sees it; a replan keeps the spot; exposure equals a brute-force count | `movement.test.ts`, `spatial-engine/test/navigation.test.ts` | pass |
 | M (real intents) | The policy's own annotation decides the route: entry FASTEST through believed danger, saver with a rifle SAFEST round it (1 believed zone crossed instead of 3, 26.8 s instead of 17.3 s), pistol saver TACTICAL, lurker off the team's lane, walked approach STEALTH; a real match's trace shows all of them and no unreachable goal | `team-engine/test/route-intent.test.ts`, `match-runner/test/route-intent.test.ts` | pass |
-| Phase 4 | The tactical travel-time query equals the Navigator's cost for every Ascent zone pair (and differs from the zone graph's for > 90 % of them); spawn floor only when there is no other way; zones the roadmap cannot reach answer unreachable on every map | `spatial-engine/test/navigation.test.ts` | pass |
-| Live view | Every recorded position of two real matches (52,635 and 33,323 positions) is on the roadmap's floor (0.00 uu off), every step and its midpoint too, longest step 67.5 uu, every track continuous, a start position for all ten players | `match-runner/test/movement-floor.test.ts` | pass |
-| Debug view | Roadmap drawing model and zone connectivity, plan in force through time, waypoints ahead, walked trace, replans, failures, "why" text | `apps/desktop/test/navdebug.test.ts` (unit), `test/engine-contract.test.ts` (tracks + navigation trace from the real match script), `test/e2e.electron.test.mjs` (overlay on, 22/22 zones, five rows) | pass |
 | N | Determinism | navigation + movement (tick for tick) | pass |
 | O | Instant result equals spectated result | movement (recording tracks changes no event) | pass |
-| P | Performance vs the current engine | `perf.test.ts` | 11.6 ms / round, see §6 |
-| — | Local geometry only: every roadmap edge and every track position on a walkable grid cell | both suites, with `PV_MAPS_DERIVED` | pass here; skipped where the grid is absent |
+| P | Performance vs the previous engine | `perf.test.ts` | 11.6 ms / round, see §6 |
+| Travel times | The tactical travel-time query equals the Navigator's cost for every Ascent zone pair (and differs from the zone graph's for > 90 % of them); spawn floor only when there is no other way; zones the roadmap cannot reach answer unreachable on every map | navigation | pass |
+| Spots | The carrier stops on the plant area at a covered point and plants there; a defender sent onto the spike stops at the spike and defuses; with cover spots on, a mover told what to watch takes a spot that sees it; a replan keeps the spot; exposure equals a brute-force count | movement, navigation | pass |
+| Live view | Every recorded position of two real matches (52,635 and 33,323 positions) is on the roadmap's floor (0.00 uu off), every step and its midpoint too, longest step 67.5 uu, every track continuous, a start position for all ten players | `match-runner/test/movement-floor.test.ts` | pass |
+| Debug view | Roadmap drawing model and zone connectivity, plan in force through time, waypoints ahead, walked trace, replans, failures, "why" text | `apps/desktop/test/navdebug.test.ts` (unit), `test/engine-contract.test.ts` (tracks + navigation trace from the real match script), `test/e2e.electron.test.mjs` (overlay on, 22/22 zones, five rows) | pass |
+| — | Local geometry only: every roadmap edge and every track position on a walkable grid cell | navigation + movement, with `PV_MAPS_DERIVED` | pass where the grid is present; skipped otherwise |
 
-Suites on this branch: spatial-engine 269, round-simulator 116 (115 + 1 skipped without the local grid),
-match-runner 62, root 252;
-`npx tsc --noEmit -p tsconfig.json` clean.
+Suites at the head of the branch:
+
+| Suite | Result |
+|---|---|
+| root `npx vitest run` (PV-core packages incl. team-engine) | 259 passed, 4 todo |
+| `packages/spatial-engine` | 265 passed, 22 skipped (local grid absent) |
+| `packages/round-simulator` | 121 passed, 1 skipped (local grid absent) |
+| `packages/match-runner` | 70 passed |
+| `packages/perception-engine` / `packages/combat-engine` | 22 / 15 passed |
+| `apps/desktop` typecheck, build | clean |
+| `apps/desktop` `test:unit` / `test:matchday` / `test:engine` | 48 / 29 / 4 passed |
+| `apps/desktop` `test:e2e`, `test:e2e:series` (Electron) | both pass |
 
 Existing tests changed because they encoded the zone-hop model: `stall-utility` (entering a zone and arriving
 are now two moments; the patch is a disc), `smoke-exit` (a holder looking away no longer sees "mutually" — the
 entry is outside its field of view), `trace-commands`, `contract-supplement`, `route-movement` (replaced by
-`movement.test.ts`), and match-runner's mastery counterfactual (seed 9 → 10: with seeds 9 and 12 the raised
-mastery no longer changes that game's score-and-calls signature; with 10 and 11 it does).
+`movement.test.ts`), seven scene tests that assumed two callouts see each other (now placed with sight-aware
+fixtures), `molly-hazard` (the player is put on the patch explicitly), match-runner's mastery counterfactual
+(seed 9 → 10: with seeds 9 and 12 the raised mastery no longer changes that game's signature; with 10 and 11 it
+does), and one desktop timeline assertion that now allows one tick (its fixture predates the measured edge
+times).
 
 ## 6. Performance
 
@@ -298,262 +386,36 @@ engine, against 15–29 ms for the zone-hop engine measured earlier the same day
 The scripted rounds are also shorter now, so this is not a like-for-like speed-up of the code; it shows that
 geometric pathfinding for ten movers is not a cost problem. A path query is one A\* over ~1,300 nodes.
 
-Phase 4 makes the policies ask the roadmap for travel times. Each (from, to, mode) answer is cached on the
-`Navigator`; all 462 Ascent zone pairs cost 49 ms the first time and nothing after. The 160-match validation
-(full team policies, 3,454 rounds) ran in 191 s — 55 ms per round, policies included.
+The policies ask the roadmap for travel times. Each (from, to, mode) answer is cached on the `Navigator`; all
+462 Ascent zone pairs cost 49 ms the first time and nothing after. A 160-match validation with full team
+policies (about 3,440 rounds) runs in about three minutes — roughly 55 ms per round, policies included.
 
-## 7. 160-match validation
+## 7. Balance — 160-match validation
 
-`sim-batch.mts --matches 160` (seeds 1..160), same machine and tool. **Before** = `origin/main` `8cb75cd`
-(run here: 7/9, as reported). **After** = this branch. No walking speed, duel odds or other constant was retuned.
+`tools/data-validator/scripts/sim-batch.mts --matches 160` (seeds 1..160, Ascent), judged against VCT priors.
+**No walking speed, duel odds or other constant was retuned at any point.**
 
-| Judged metric | Real (VCT) | Before | After | Verdict |
+### 7.1 Where it stands
+
+| Judged metric | Real (VCT) | Pass band | `main` (`8cb75cd`) | **This branch** |
 |---|---|---|---|---|
-| Round ends by elimination | 0.714 | 0.674 | 0.705 | FAIL → pass |
-| Round ends by spike detonation | 0.082 | 0.108 | 0.095 | pass → pass |
-| Round ends by defuse | 0.160 | 0.189 | **0.078** | pass → **FAIL** |
-| Round ends by time | 0.043 | 0.030 | **0.122** | pass → **FAIL** |
-| Attack round win rate | 0.509 | 0.507 | 0.488 | pass → pass |
-| Opening duel won by attack | 0.437 | 0.458 | **0.387** | pass → **FAIL** |
-| Pistol vs pistol (attack) | 0.500 | 0.438 | 0.403 | FAIL → FAIL |
-| Full buy vs full buy (attack) | 0.500 | 0.493 | 0.468 | pass → pass |
-| Full buy vs eco (attack) | 0.960 | 1.000 | 1.000 | pass → pass |
-| **Judged metrics passed** | | **7 / 9** | **5 / 9** | |
+| Round ends by elimination | 0.714 | ± 0.04 | 0.674 FAIL | **0.711 pass** |
+| Round ends by spike detonation | 0.082 | ± 0.04 | 0.108 pass | **0.094 pass** |
+| Round ends by defuse | 0.160 | ± 0.04 | 0.189 pass | **0.104 FAIL** |
+| Round ends by time | 0.043 | ± 0.04 | 0.030 pass | **0.092 FAIL** |
+| Attack round win rate | 0.509 | ± 0.04 | 0.507 pass | **0.480 pass** |
+| Opening duel won by attack | 0.437 | ± 0.04 | 0.458 pass | **0.412 pass** |
+| Pistol vs pistol (attack) | 0.500 | ± 0.05 | 0.438 FAIL | **0.466 pass** |
+| Full buy vs full buy (attack) | 0.500 | ± 0.05 | 0.493 pass | **0.482 pass** |
+| Full buy vs eco (attack) | 0.960 | ± 0.05 | 1.000 pass | not judged — that matchup does not occur in the batch |
+| **Judged passed** | | | **7 / 9** | **6 / 8** |
 
-Mean round 54.0 s → 53.8 s. The attack win rate stays inside tolerance; the shape of rounds moved.
+The target before a merge was at least 7 judged metrics with the attack win rate inside 0.47–0.55.
+The win rate is in range; the count is one short.
 
-How it got here (each a 160-match run on this branch):
+### 7.2 Why the last two fail
 
-| State | Attack win rate | Timed out | Passed |
-|---|---|---|---|
-| Executor only (zone from the roadmap cell) | 0.066 | 0.418 | 0 / 8 |
-| + strategic corridor, zone restricted to route zones | 0.421 | 0.138 | 1 / 8 |
-| + mover faces the zone it enters | 0.482 | 0.119 | 4 / 8 |
-| + stack-up and queueing (**committed**) | 0.488 | 0.122 | 5 / 9 |
-| committed, without "plant needs arrival" (experiment, not kept) | 0.509 | 0.105 | 5 / 9 |
-
-**Why the balance moved — what the data shows.** Eight matches traced on both engines (same seeds):
-
-| First duel of the round | Before | After |
-|---|---|---|
-| Distance | 20.5 m | **30.9 m** |
-| All duels: distance | 13.7 m | **26.9 m** |
-| All duels: defender saw first | 2.4 % | **18.9 %** |
-| All duels: defender was moving | 11 % | **40 %** |
-
-1. **Fights start from twice as far.** Who sees whom is still decided by the two players' *zones*; how far
-   apart they are now comes from their real *positions*. A mover is "seen" the moment its zone changes at the
-   boundary, by a holder who may be standing at the far end of the next zone. Before, both were on zone centres
-   (≈20 m apart, or 0 m inside one zone). Longer range favours the player who is standing still.
-2. **So attackers lose more entries** (opening duel 0.458 → 0.387), lose the carrier early more often, and the
-   last one or two survivors do what the policy tells outnumbered players to do: fall back to spawn and save.
-   18 of 20 timed-out rounds traced were exactly that (carrier dead, spike on the floor in A Main or B Main,
-   1–2 attackers holding at spawn). The timeouts are saves after a failed execute, not movers that got stuck.
-3. **Fewer plants, and the ones that happen are held.** Plants fall from 29.7 % of rounds to 17.3 %; of those,
-   detonations rise from 36 % to 55 % (why retakes got harder was not investigated).
-4. **"Plant needs arrival"** costs the attack about 2 points (0.509 without it) and is not the cause of the
-   timeouts (0.105 without it). It was kept: a player still walking is not planting.
-
-This is the limitation listed first in §9, and it is the next thing to fix: with sight decided at real
-positions (§10.2) a mover would be seen where it can actually be seen, not at the zone boundary. Nothing else
-was adjusted to compensate.
-
-
-
-### 7b. Positional sight (added after the table above)
-
-Sight is now decided from where two bodies stand. `tools/map-mesh/pipeline/vis_map.py` casts eye-level segments
-between every pair of roadmap nodes within 46 m against the map's solid, opaque triangles (a pair is visible when
-either eye sees the other's eye or chest) and stores one bit per pair in `<map>.vis.json`. For Ascent: 420,860
-pairs tested, 73,041 visible (17.4 %), 144 KB. `perception-engine/src/vision.ts` asks
-`Navigator.sees(positionA, zoneA, positionB, zoneB)` after its distance and FOV checks; vision blockers keep
-their zone rule on top (a smoke in either body's zone cuts the line between two different zones). Maps without
-the file — every map but Ascent today — keep the zone sightline table. `PerceptionParams.vision.positionalSight
-= false` switches it off.
-
-160 matches with positional sight, nothing retuned:
-
-| Judged metric | Real | `main` | Zone sight (§7) | **Positional sight** |
-|---|---|---|---|---|
-| Elimination | 0.714 | 0.674 | 0.705 | 0.675 |
-| Spike detonation | 0.082 | 0.108 | 0.095 | **0.127** |
-| Defuse | 0.160 | 0.189 | 0.078 | 0.101 |
-| Time expired | 0.043 | 0.030 | 0.122 | 0.098 |
-| Attack win rate | 0.509 | 0.507 | 0.488 | **0.465** |
-| Opening duel (attack) | 0.437 | 0.458 | 0.387 | 0.383 |
-| Pistol vs pistol | 0.500 | 0.438 | 0.403 | 0.403 |
-| Full vs full | 0.500 | 0.493 | 0.468 | 0.489 |
-| **Passed** | | 7 / 9 | 5 / 9 | **2 / 8** (two more miss by 0.004–0.005) |
-
-It did what it was meant to do and it is not enough. Eight matches traced again, same seeds:
-
-| | `main` | Zone sight | Positional sight |
-|---|---|---|---|
-| First duel: distance | 20.5 m | 30.9 m | **20.0 m** |
-| All duels: distance | 13.7 m | 26.9 m | 19.6 m |
-| First duel: attacker is moving | 83 % | 92 % | **98 %** |
-| First duel: attacker pre-aimed | 4.7 % | 4.0 % | 0.6 % |
-| All duels: defender saw first | 2.4 % | 18.9 % | **22.6 %** |
-| Plants (share of rounds) | 29.7 % | 17.3 % | 22.8 % (real 24.2 %) |
-
-- The range problem is gone: first contact is back at 20 m, and plants are close to the real rate.
-- What remains is **who is ready when they meet**. On `main` a player "arrived" the instant it entered a zone,
-  so one first duel in six found the attacker standing; now an attacker is still walking to its spot when it
-  comes into view, in 98 % of first duels, and the duel model penalises a moving shooter.
-- With real geometry a defender in *any* zone that actually overlooks the attacker's path sees it — from A Tree,
-  A Rafters, A Window — where the zone table only had the eleven hand-authored lines. Attackers face the zone
-  they are entering and nothing else, so one duel in five now starts with the defender seeing first.
-
-Both are behaviours the movement spec names and this engine does not have yet (§9): a destination chosen for
-its **cover** rather than its nearness to the callout, and **clearing angles** on the way in. They were not
-attempted here, and no duel or perception constant was changed to compensate.
-
-> **Correction (§7d).** Two readings in this section were wrong. The "defender saw first" share is over *all*
-> duels, and it is dominated by duels **after** the plant, where the "defender" is the retaker walking in and
-> seeing a standing attacker first (about 60 % of post-plant duels); before the plant the defender sees first in
-> about 6 % of duels and the attacker in 5 %. So "attackers are seen first from off-angle zones" was not what
-> the number showed, and angle clearing was not the missing behaviour. And the row labelled "Plants" is the
-> share of rounds that END in a detonation or a defuse, not the share in which the spike is planted.
-
-### 7c. Phase 4 — tactical travel times and route intents (added after §7b)
-
-What changed:
-
-- **Every travel-time judgement is a navigation path cost.** All of them — `team-engine` (site choice, staging,
-  quiet-approach slack, spike recovery, retake approach, defuser commit, save), `action-generator` (rotation
-  feasibility, arriving first, chase, support arrival) and the belief model (`decision-engine/belief.ts`, how far an
-  unseen enemy can have got) — go through `SpatialQuery.shortestTravelTimeMs` / `findPath`. With a roadmap loaded
-  those now answer from `Navigator.zoneTravelMs` (`spatial-engine/src/engine.ts` `navTravelMs`): the time of the
-  path a mover will walk between the two zones' standing points. `isReachable` follows the roadmap too. Queries
-  that carry hazards or blocked zones are still priced on the zone graph. `outcome-predictor` makes no travel-time
-  query of its own.
-- **Spawn floor is priced, not forbidden.** The zone partition gives the only stairs to A Rafters to defender
-  spawn, so a rotating defender was refused the path (12 refusals in 105 rounds). A no-transit zone now costs the
-  search 120 s — more than any detour — so it is used only when nothing else leads to the goal; the cost is never
-  part of a reported travel time. Refusals in the same 105 rounds: 0.
-- **Route preference by intent** (`team-engine/src/route-intent.ts`, applied to every move order at the end of
-  `decideWithTrace`): entry / execute / retake / defuser / spike recovery / rotation → FASTEST; a saver holding a
-  rifle, sniper or heavy → SAFEST with zone costs from the belief's `threatZones` (a cheap weapon → TACTICAL);
-  the lurker's own lurk order → SAFEST, additionally priced off the zones teammates have announced as their
-  route; a walked approach → STEALTH; the exit-kill chaser → FASTEST to the ground the attackers fall back to
-  (the policy's existing choice of the believed escape). The costs read `view.belief.threatZones` and teammates'
-  own routes only — nothing in a `PolicyView` is a true enemy position.
-- In four traced matches: 3,027 planned paths — 2,271 FASTEST, 502 STEALTH, 251 SAFEST, 3 TACTICAL.
-
-Two limits, stated plainly. Most plan orders name the *next* zone of the policy's own route, so there the
-preference only decides how the floor between two neighbouring zones is crossed; it decides the whole way for
-save, chase, retake and rotate orders, which name the goal. And routing *every* order of the lurker as a lurk
-stalled rounds — the execute waits for the lurker — so the lurk routing applies to the lurk order only, and never
-to the spike carrier (40 matches: time-expired rounds 28.8 % with it on every order, 9.1 % as shipped).
-
-160 matches, nothing retuned:
-
-| Judged metric | Real | `main` | Positional sight (§7b) | **Phase 4** |
-|---|---|---|---|---|
-| Round ends by elimination | 0.714 | 0.674 FAIL | 0.675 pass | **0.690 pass** |
-| Round ends by spike detonation | 0.082 | 0.108 pass | 0.127 FAIL | **0.140 FAIL** |
-| Round ends by defuse | 0.160 | 0.189 pass | 0.101 FAIL | **0.074 FAIL** |
-| Round ends by time | 0.043 | 0.030 pass | 0.098 FAIL | **0.096 FAIL** |
-| Attack round win rate | 0.509 | 0.507 pass | 0.465 FAIL | **0.514 pass** |
-| Opening duel won by attacker | 0.437 | pass | 0.383 FAIL | **0.420 pass** |
-| Pistol round (attack) | 0.500 | 0.438 FAIL | 0.403 FAIL | **0.466 pass** |
-| Full buy vs full buy (attack) | 0.500 | pass | 0.489 pass | **0.511 pass** |
-| **Judged passed** | | **7 / 9** | **2 / 8** | **5 / 8** |
-
-Which part moved it (40 matches each, attack win rate): everything on 55.3 %; walked approaches left on FASTEST
-55.5 %; travel times left on the zone graph 45.3 %. So the gain is the travel times — the policies' timing and
-the belief model's "how far can they be" now match the floor the players actually walk — and the stealth routing
-is neutral on the win rate (it lowers eliminations 70.5 % → 66.8 % when removed).
-
-**The target (7 of 9, attack 0.47–0.55) is not met: 5 of 8, attack 0.514.** The three that fail are one thing —
-what happens after the plant. Eight traced matches, 179 rounds, 104 plants:
-
-- 64 of the 104 end with the **defenders eliminated**, 25 with a detonation, 15 with a defuse: the attack wins
-  86 % of post-plant rounds.
-- In 23 of the 25 detonations defenders were still alive and **no defuse was ever started**; in 13 no defender
-  set foot in the site in the 45 seconds. Their orders in those rounds: 57 retake-stage, 36 retake-go, 17
-  post-plant save, 16 solo retake, 13 defuser commit.
-- It is the mechanism of §7b on the other side of the plant. The side that has to move is seen first from angles
-  the zone table never had and fights while walking; before the plant that is the attack (now offset by better
-  timing), after it that is the retaking defender, who walks one at a time into attackers standing on their
-  post-plant spots. On `main` a retaker hopped onto the site centre and fought standing.
-- The time-expired rounds are saves after a failed execute (§7), unchanged by Phase 4.
-
-Nothing was adjusted to hide this. What it points at is in the movement spec and not built (§9): standing spots
-chosen for cover and for the angle they hold, movers clearing the angles that overlook their path, and a retake
-that enters together.
-
-### 7d. The retake, the deadlock behind it, and standing spots by intent (added after §7c)
-
-§7c ended with "retakes fail" and proposed three behaviours: cover-aware spots, angle clearing, a joint retake.
-Measuring before building changed the list.
-
-**What the comparison with `main` showed** (the same eight matches on both, every duel traced):
-
-| Post-plant duels | `main` | this branch (§7c) |
-|---|---|---|
-| Both players standing | 80 % (at 0 m: both on the site's centre) | 0 % |
-| Retaking defender is moving | 19 % | 93 % |
-| Retaker saw first | 4 % | 60 % |
-| Attack wins the duel | 55 % | 65 % |
-| Even-numbers plants: defused / detonated / defenders eliminated | 20 / 0 / 19 | 5 / 13 / 19 |
-
-On `main` a retaker hopped onto the site's centre and fought standing at zero range — an artefact of zone hops
-that the balance had been tuned around. Here it walks in, usually sees the attacker first, and still loses two
-duels in three because it is shooting on the move. That is the duel model doing what it says; it is not a
-navigation fault. The thirteen detonations at even numbers were.
-
-**The fault: two movers meeting head-on waited on each other forever.** A mover treated any stopped mover just
-ahead of it as the back of a queue and followed "for as long as it takes". Two players who met head-on in a
-corridor, or who both turned round on a walkway, were both stopped — so each queued behind the other until the
-round ended. In the traced retake two defenders turned back on the A Rafters walkway and stood still for 16
-seconds; the team's retake waits for everybody to be staged, so it only went when the clock forced it, with 25
-seconds left and three players a 17–20 second walk away. `mover.ts` `bodyAhead` now judges head-on by where the
-other mover is trying to go (the lower id has the right of way), and a queue that has not moved for 3 s is
-passed like a standing body. `movement.test.ts` "two players meeting head-on in a corridor pass each other"
-fails on the old code. After the fix, over eight matches no mover is held for more than the 2-second stack-up.
-
-So the **joint retake** did not need building — the policy already stages and goes together
-(`team-engine` `retakeGo`); it was being broken underneath.
-
-**Standing spots by intent** (`mover.ts` `SpotIntent`, chosen from the state of the round and the order's own
-fields, never from the policy's labels):
-
-| Intent | Who | Spot |
-|---|---|---|
-| `plant` | the spike carrier heading for a plantable zone | on the plant area, scored by distance from where its route enters the zone and by how much of the other zones can see it (`Navigator.exposure`), equally weighted. On A Site from A Main that is the least exposed of the thirty plant points (seen from 12 standing points of other zones; the area's median is 36) — it plants behind cover, 15 m in, where the callout is 11 m in |
-| `at` | a defender heading for the zone the spike is planted in | the standing point nearest the spike |
-| `hold` | a mover whose order says what to watch (`aimZone`), **only with `SimConfig.coverSpots`** | a spot that sees the watched zone and that the rest of the map sees least, near where the route enters |
-| `stand` | everyone else (and everything, as before, at round start) | a free point near the zone's anchor |
-
-A replan on the way keeps the spot. `plantable` stays a property of the zone, and a defuse can still be done
-from anywhere in the spike's zone — only the destination changed.
-
-**Measured, 160 matches each, nothing retuned:**
-
-| Judged metric | Real | §7c | + deadlock fix | **+ plant / defuse spots (shipped)** | + cover spots on | stop-and-shoot |
-|---|---|---|---|---|---|---|
-| Elimination | 0.714 | 0.690 | 0.719 | **0.711 pass** | 0.713 | 0.585 |
-| Spike detonation | 0.082 | 0.140 | 0.083 | **0.094 pass** | 0.079 | 0.065 |
-| Defuse | 0.160 | 0.074 | 0.093 | **0.104 FAIL** | 0.114 | 0.281 |
-| Time expired | 0.043 | 0.096 | 0.105 | **0.092 FAIL** | 0.094 | 0.069 |
-| Attack win rate | 0.509 | 0.514 | 0.468 | **0.480 pass** | 0.457 | 0.250 |
-| Opening duel (attack) | 0.437 | 0.420 | 0.413 | **0.412 pass** | — | 0.377 |
-| Pistol vs pistol | 0.500 | 0.466 | 0.444 | **0.466 pass** | 0.466 | 0.256 |
-| Full vs full | 0.500 | 0.511 | 0.464 | **0.482 pass** | — | 0.257 |
-| **Judged passed** | | 5 / 8 | 4 / 8 | **6 / 8** | attack out of range | 2 / 8 |
-
-- **Cover spots are built and off.** The first version put *every* player on the least-seen point of its zone:
-  players stopped finding each other (elimination 0.606, time expired 0.126, 2 / 8). Redefined as a held angle
-  — it must see what it watches — it is sound, and it makes holders stronger on both sides of the plant; the
-  net effect is an attack win rate of 0.457, below the range. It is a `SimConfig` option, default off.
-- **Angle clearing was not built as a facing rule**, because the data did not ask for it (correction in §7b).
-  Its practical content — a mover that sees an enemy who has not seen it stops and shoots from a standstill —
-  was tried as a rule and removed: attack win rate 0.250. Whether a first look is worth a standing shot is a
-  duel-model calibration, and none was done here.
-
-**Where it stands: 6 of 8, attack 0.480 — the target of 7 is still not met.** Defuse is 0.104 against a lower
-bound of 0.120, and time expired 0.092 against an upper bound of 0.083. Sixteen matches against `main`:
+Sixteen matches on `main` and on this branch:
 
 | | `main` | this branch |
 |---|---|---|
@@ -565,11 +427,67 @@ bound of 0.120, and time expired 0.092 against an upper bound of 0.083. Sixteen 
 
 With real movement there is more fighting before the spike is down — the attackers walk onto the site and the
 carrier has to reach a spot and stop, where they used to arrive by a hop and start planting — and the attack
-loses a little more of it (1.61 deaths per defender's against 1.51). So twice as many rounds reach the
-man-count at which the team's policy calls a save, and a saved round runs out the clock. Both remaining
-failures are that one shift: fewer plants, so fewer defuses; more saves, so more time-outs. What decides it
-from here is the policy's save rule and the duel model's treatment of a moving shooter, which this work was
-told not to retune.
+loses a little more of it. So twice as many rounds reach the man-count at which the team's policy calls a save,
+and a saved round runs out the clock. Both failures are that one shift: fewer plants, so fewer defuses; more
+saves, so more time-outs.
+
+After the plant, the duels themselves changed character (eight matches, every duel traced, before the fixes of
+§8 — the numbers that led to them):
+
+| Post-plant duels | `main` | this branch |
+|---|---|---|
+| Both players standing | 80 % (at 0 m: both on the site's centre) | 0 % |
+| Retaking defender is moving | 19 % | 93 % |
+| Retaker saw first | 4 % | 60 % |
+| Attack wins the duel | 55 % | 65 % |
+
+On `main` a retaker hopped onto the site's centre and fought standing at zero range — an artefact of zone hops
+that the balance had been tuned around. Here it walks in, usually sees the attacker first, and still loses two
+duels in three because it is shooting on the move. That is the duel model doing what it says.
+
+**What decides it from here** is the policy's save rule and the duel model's treatment of a moving shooter.
+Both are balance calibration, which this work was told not to retune.
+
+### 7.3 Measured and not shipped
+
+| Option | 160-match result | Decision |
+|---|---|---|
+| Cover spots for every player (least-seen point of the zone) | elimination 0.606, time expired 0.126, 2 / 8 — players stopped finding each other | Dropped |
+| Cover spots as a held angle (`SimConfig.coverSpots`: sees what it watches, least seen otherwise) | attack 0.457, defuse 0.114, detonation 0.079 — holders stronger on both sides of the plant | Built, **off by default** |
+| "A mover that sees an enemy who has not seen it stops and shoots from a standstill" | attack 0.250, defuse 0.281, 2 / 8 | Removed. Whether a first look is worth a standing shot is a duel-model calibration |
+| Routing every order of the lurker as a lurk | time expired 0.284, attack 0.407 — the execute waits for the lurker | Lurk routing on the lurk order only |
+| Planting without having arrived at a spot | attack 0.509 instead of 0.488 at that stage, time expired 0.105 | Not kept: a player still walking is not planting |
+| Angle clearing as a facing rule | not built | The data did not ask for it: before the plant the defender sees first in 6 % of duels and the attacker in 5 % |
+
+### 7.4 How the numbers moved, stage by stage
+
+Each row is a 160-match run of the branch at that stage.
+
+| Stage | Attack | Elim. | Deton. | Defuse | Time | Opening | Pistol | Full | Passed |
+|---|---|---|---|---|---|---|---|---|---|
+| `main` | 0.507 | 0.674 | 0.108 | 0.189 | 0.030 | 0.458 | 0.438 | 0.493 | 7 / 9 |
+| Executor only (zone from the roadmap cell) | 0.066 | | | | 0.418 | | | | 0 / 8 |
+| + strategic corridor | 0.421 | | | | 0.138 | | | | 1 / 8 |
+| + mover faces the zone it enters | 0.482 | | | | 0.119 | | | | 4 / 8 |
+| + stack-up and queueing (sight still by zone) | 0.488 | 0.705 | 0.095 | 0.078 | 0.122 | 0.387 | 0.403 | 0.468 | 5 / 9 |
+| + sight between real positions | 0.465 | 0.675 | 0.127 | 0.101 | 0.098 | 0.383 | 0.403 | 0.489 | 2 / 8 |
+| + tactical travel times, route intents | 0.514 | 0.690 | 0.140 | 0.074 | 0.096 | 0.420 | 0.466 | 0.511 | 5 / 8 |
+| + head-on deadlock fixed | 0.468 | 0.719 | 0.083 | 0.093 | 0.105 | 0.413 | 0.444 | 0.464 | 4 / 8 |
+| **+ plant and defuse spots (head of branch)** | **0.480** | **0.711** | **0.094** | **0.104** | **0.092** | **0.412** | **0.466** | **0.482** | **6 / 8** |
+
+What each step showed:
+
+- **Sight by zone with real positions** made fights start from twice as far (first duel 20.5 m → 30.9 m): a
+  mover was "seen" the moment its zone changed, by a holder at the far end of the next zone.
+- **Sight between real positions** brought first contact back to 20.0 m. It did not by itself restore the
+  balance: nearly every first duel now finds the attacker still walking (98 %, against 83 % on `main`).
+- **Tactical travel times** were the gain of that step (40 matches, attack win rate: all on 55.3 %; travel times
+  left on the zone graph 45.3 %; walked approaches left on FASTEST 55.5 %) — the policies' timing and the belief
+  model's "how far can they be" now match the floor the players actually walk.
+- **The head-on deadlock** was hiding behind "retakes fail": in a traced retake two defenders stood still for 16
+  seconds, so the team went only when the clock forced it. Fixing it took detonations from 0.140 to 0.083 and
+  cost the attack 4.6 points — retakes that used to stall now happen.
+- **Plant and defuse spots** brought the attack back into range and lifted defuses.
 
 ## 8. Path errors found and fixed along the way
 
@@ -583,59 +501,77 @@ told not to retune.
 | A Rafters stored at A Site's height; the 3D zone lookup put it on the site | navigation test | Ascent zone heights set to the measured floor |
 | Pearl: two callouts on one spot gave a zero-length route | navigation test | Treated as stacked; flagged |
 | A rotating defender was refused the way to A Rafters: its only stairs lie on floor the zone partition gives to defender spawn, and spawn floor was forbidden as a way through | navigation trace of four matches (12 refusals in 105 rounds) | Spawn floor is priced (used only when there is no other way), not forbidden |
-| Routing every order of the lurker as a lurk stalled the execute that waits for it (time-expired 9 % → 28 %) | 160-match validation, 40-match ablation | Lurk routing on the lurk order only; never the spike carrier |
-| **Two movers meeting head-on (or turning round together) each queued behind the other and stood still for the rest of the round** | trace of a retake that never grouped; reproduced in a two-player test | Head-on judged by intended direction; a queue that does not move for 3 s is passed (§7d) |
-| The spike carrier walked to the site's callout, in the open, before it could plant | comparison with `main`: plant 5 s later, 11 points fewer plants | Plant spot on the plant area, chosen for cover and entry distance (§7d) |
+| Routing every order of the lurker as a lurk stalled the execute that waits for it (time expired 9 % → 28 %) | 160-match validation, 40-match ablation | Lurk routing on the lurk order only; never the spike carrier |
+| **Two movers meeting head-on (or turning round together) each queued behind the other and stood still for the rest of the round** | trace of a retake that never grouped; reproduced in a two-player test | Head-on judged by intended direction; a queue that does not move for 3 s is passed  |
+| The spike carrier walked to the site's callout, in the open, before it could plant | comparison with `main`: plant 5 s later, 11 points fewer plants | Plant spot on the plant area, chosen for cover and entry distance  |
 
 ## 9. Not supported yet / not done
 
-- **The last two balance metrics** (defuse, time expired) — see the end of §7d. What moves them is outside
-  movement: the policy's save rule and how the duel model treats a shooter who is walking.
-- **Cover spots are off by default** (`SimConfig.coverSpots`), and round-start positions are still "near the
-  anchor"; **angle clearing is not built** (§7d says why).
-- **Chaser cut-off.** The chaser runs the fastest route to the ground the attackers fall back to (the policy's
-  believed escape). It does not predict which exit a particular player will take.
-- **Route preference on plan orders** acts between neighbouring zones only, because the policy hands out its own
-  zone route one zone at a time (§7c).
-- **The debug view shows Ascent.** The live view's map, zone graph and roadmap are Ascent's
-  (`apps/desktop/src/data/sim/`); a series map other than Ascent is still drawn on Ascent, as before.
-- **Movement blockers in the debug view.** No ability creates one, so the view has only ever drawn priced ground
-  patches and "no path" marks from real matches; a `blocked` event is drawn the same way but has not been seen
-  outside the simulator's own tests.
-- **Sight is positional on Ascent only.** The other ten maps have no `<map>.vis.json` yet (about 2.3 MB for all
-  of them; simply not generated yet — the 2026-11-20 decision allows committing them, §3) and keep the
-  zone sightline table. Sight is decided between the roadmap nodes the two bodies stand at (≤ ~1.3 m from the
-  body), not between exact positions. Ability effects that reveal or blind (recon, flash) and tracers still use
-  zone sightlines.
-- **Intent-based spots.** A spot is "a free node near the zone's anchor". Cover, the angle being held, an entry
-  position at the edge of a space, a plant spot on the plant area — none of that is modelled; there is no data
-  for it yet.
-- **Standing players do not shift.** No shoulder-checks or repositioning after being seen.
-- **Ropes, ziplines on Icebox / Split, rotating doors, breakable walls, fall-off edges**: as in
-  `MAPS_DATA.md` §5. Only Bind's teleporters and Fracture's zipline are links.
-- **Jumping.** A step up to 0.6 m is walkable; anything higher is not climbable. Jump-only routes do not exist.
-- **Bullet blockers** are not modelled.
-- **Plant / defuse position.** Both are still "in the zone", not "at the spike".
-- **Other maps are not playable** for the reasons in `MAPS_DATA.md` §6; Haven's B Site and most of Pearl are
-  additionally unreachable on the roadmap (§1).
-- **navcat was not benchmarked** (§2).
+**Balance**
+- The last two judged metrics (defuse, time expired) — §7.2. What moves them is outside movement.
+
+**Movement behaviour**
+- Cover spots are off by default (§7.3); round-start positions are "near the anchor".
+- Angle clearing is not built (§7.3).
+- Standing players do not shift: no shoulder-checks or repositioning after being seen.
+- The exit-kill chaser runs the fastest route to the ground the attackers fall back to. It does not predict
+  which exit a particular player will take.
+- Route preference on plan orders acts between neighbouring zones only, because the policy hands out its own
+  zone route one zone at a time (§4 D).
+- Plant and defuse are still decided by zone: the carrier and the defuser *stop* at the right place, but the
+  rule checks the zone, not the distance to the spike.
+
+**Geometry and rules**
+- Sight is positional on Ascent only (§3.2), and is decided between the roadmap nodes the two bodies stand at
+  (≤ ~1.3 m from the body), not between exact positions. Ability effects that reveal or blind (recon, flash) and
+  tracers still use zone sightlines.
+- No ability creates a movement blocker (§4): the mechanism exists and is tested, the rule is not verified.
+- Bullet blockers are not modelled.
+- Jumping: a step up to 0.6 m is walkable; anything higher is not climbable. Jump-only routes do not exist.
+- Ropes, ziplines on Icebox / Split, rotating doors, breakable walls, fall-off edges: as in `MAPS_DATA.md` §5.
+  Only Bind's teleporters and Fracture's zipline are links.
+
+**Maps**
+- Only Ascent is playable, for the reasons in `MAPS_DATA.md` §6. Haven's B Site and most of Pearl are
+  additionally unreachable on the roadmap (§1), and the tactical layer answers "unreachable" for them.
+- The debug view, like the live view, draws Ascent (`apps/desktop/src/data/sim/`).
+
+**Not evaluated**
+- navcat was not benchmarked (§2).
+- The debug view has only ever drawn priced ground patches and "no path" marks from real matches; a `blocked`
+  event is drawn the same way but has not been seen outside the simulator's own tests.
 
 ## 10. Next priorities
 
 1. Decide, with the balance owner, how the save rule and the moving-shooter penalty should read now that players
-   really walk: the two metrics still outside (§7d) are a calibration question, not a movement one.
+   really walk: the two metrics still outside (§7.2) are a calibration question, not a movement one.
 2. Let the policies hand the navigation layer the final goal instead of one zone at a time, so SAFEST / STEALTH
    decide the whole route for plan orders too.
 3. Cover spots at round start and for holders with a default watch zone, once (1) has settled what holders are
    worth; plant and defuse *at* a position rather than in a zone.
-4. `<map>.vis.json` for the other ten maps (allowed by the data decision, §3; needs each map's mesh
-   re-extracted locally); fix Haven B Site and Pearl in the source data so their zones connect.
+4. `<map>.vis.json` for the other ten maps; fix Haven B Site and Pearl in the source data so their zones
+   connect.
 
 ## 11. Reproduce
 
 ```bash
 PY=<python with numpy>; D=<derived dir outside the repo>
+
+# geometry (local only, never committed) -> roadmap and visibility (committed)
 $BLENDER --background --factory-startup --python tools/map-mesh/blender/extract-map.py -- --blend Ascent.blend --out-dir $D/ascent
-$PY -I tools/map-mesh/pipeline/nav_map.py --map ascent --derived $D/ascent      # datasets/spatial/ascent/ascent.nav.json
-PV_MAPS_DERIVED=$D npx vitest run     # in packages/spatial-engine and packages/round-simulator
+$PY -I tools/map-mesh/pipeline/nav_map.py --map ascent --derived $D/ascent        # datasets/spatial/ascent/ascent.nav.json
+for i in 0 1 2 3 4 5; do $PY -I tools/map-mesh/pipeline/vis_map.py --map ascent --derived $D/ascent --part $i/6 & done; wait
+$PY -I tools/map-mesh/pipeline/vis_map.py --map ascent --derived $D/ascent --merge 6   # datasets/spatial/ascent/ascent.vis.json
+rm $D/ascent/mesh.npz                                                             # 85 MB; not needed afterwards
+
+# tests (run inside each package; PV_MAPS_DERIVED enables the local-grid checks)
+PV_MAPS_DERIVED=$D npx vitest run        # packages/spatial-engine, packages/round-simulator, packages/match-runner
+
+# balance (needs Node 22 and a Python with jsonschema)
+cd tools/data-validator && PYTHON=<python> npx tsx scripts/sim-batch.mts --matches 160   # reports/sim-batch.md
+
+# desktop
+cd apps/desktop && npm run typecheck && npm run build && npm run test:unit && npm run test:engine
+PLAYWRIGHT_REQUIRE_BASE=<dir with playwright>/ npm run test:e2e && npm run test:e2e:series
+npm start                                 # live match → tactical map → "Navigation (developer)"
 ```

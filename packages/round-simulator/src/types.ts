@@ -390,7 +390,7 @@ export interface SimConfig {
   /**
    * A mover told what to watch on arrival (the order's `aimZone`) takes a covered spot that sees
    * it, instead of standing near the zone's anchor. Off by default: measured on 160 matches it
-   * moves the round-outcome mix away from the real one (NAVIGATION_ENGINE.md §7d).
+   * moves the round-outcome mix away from the real one (NAVIGATION_ENGINE.md §7.3).
    */
   readonly coverSpots: boolean;
   readonly seed: number;
