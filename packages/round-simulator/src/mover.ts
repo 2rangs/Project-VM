@@ -476,7 +476,7 @@ export class MovementExecutor {
         budget = m.linkElapsedMs - w.fixedMs;
         m.linkElapsedMs = 0;
       } else {
-        if (d > 1e-6) p.facing = { x: dx, y: dy };
+        if (d > 1e-6) p.facing = this.facingFor(p, m, dx, dy);
         const stepLen = Math.min(d, speed * budget);
         // yield to a body just ahead (light separation; never for long)
         if (m.pushTicks > 0) m.pushTicks--;
@@ -508,6 +508,24 @@ export class MovementExecutor {
     }
     if (m.index < m.waypoints.length && moved > 0) p.edgeProgressMs += dtMs;
     return moved;
+  }
+
+  /**
+   * Where a mover looks. Sight is zone-level, so a mover watches the space it is about to enter:
+   * it faces the next zone of its route (as a body rounding a corner looks into the room, not
+   * along its last two metres of floor). Inside its goal zone it faces the way it walks.
+   */
+  private facingFor(p: SimPlayer, m: Mover, dx: number, dy: number): { x: number; y: number } {
+    const next = p.pathIndex < p.path.length ? p.path[p.pathIndex] : undefined;
+    if (next && next !== p.zoneId) {
+      const z = this.spatial.getZone(next);
+      if (z) {
+        const fx = z.position.x - p.position.x, fy = z.position.y - p.position.y;
+        if (fx !== 0 || fy !== 0) return { x: fx, y: fy };
+      }
+    }
+    void m;
+    return { x: dx, y: dy };
   }
 
   private bodyAhead(p: SimPlayer, ux: number, uy: number, stepLen: number, others: readonly SimPlayer[]): boolean {

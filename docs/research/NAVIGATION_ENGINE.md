@@ -1,0 +1,316 @@
+# PROJECT V — Navigation & movement engine (NAVIGATION_ENGINE.md)
+
+**Date:** 2026-11-20 · **Branch:** `claude/nav-engine` (from `origin/main` `8cb75cd`) · not merged, not pushed.
+
+Players used to be points that sat on a zone's centre and hopped to the next one. They now have a real,
+continuous position on the map, found by geometric pathfinding on a roadmap measured from the map geometry, and
+only one piece of code — the movement executor — may change it.
+
+**Delivered in this increment:** Phases 1–3 (diagnosis, approach decision, the three-layer navigation), the
+Phase 6 tests that cover them, the 160-match validation, and one item of Phase 5 (`MatchConfig.recordTracks`).
+**Not delivered:** Phase 4 (tactical layers still plan with zone-graph times and choose no route preference) and
+the Phase 5 debug view. §9 lists everything that is not done.
+
+---
+
+## 1. Diagnosis — how movement worked, and why it looked like straight lines
+
+Pipeline on `main` before this work, with the code that implemented each step:
+
+| Step | Where | What it did |
+|---|---|---|
+| Tactical objective | `team-engine/src/policy.ts` `TeamDecisionPolicy.decide` | Issues `ActionCommand { kind: "move", targetZone, moveMode }` per player |
+| Target position | — | **None.** The target was a zone id; every player's destination was that zone's centre |
+| Route planning | `round-simulator/src/simulator.ts` `ensurePath` → `spatial-engine` `ZoneGraph.findPath` | A\* over 22 zones; result a list of zone ids |
+| Waypoints | `SimPlayer.path` / `pathIndex` | Zone ids only |
+| Movement execution | `simulator.ts` `stepMovement` | Accumulated `edgeProgressMs`; when it reached the edge's time: `p.zoneId = next; p.position = { ...nextZone.position }` — a **jump** from centre to centre |
+| Collision validation | — | **None at runtime.** Edges carried a validated polyline, used only for timing and for the recorded track |
+| World-state position | `SimPlayer.position` | Always exactly a zone centre |
+| Perception / combat / replay | `perception-engine/src/vision.ts`, `simulator.ts` `resolveEngagements`, `export.ts` `moveEvents` | Zone from `nearestZone(position)`; duel range = distance between two zone centres; replay drew `trackPosition()` (a point on the edge polyline) |
+
+The ten failure modes asked about:
+
+| # | Failure mode | Found? | Evidence |
+|---|---|---|---|
+| 1 | Movement by direction vector only | No | There was no vector at all: position was assigned, not integrated |
+| 2 | Computed path ignored at execution | **Yes** | The edge polyline existed (`edge.route`) but `stepMovement` never moved `p.position` along it; only `trackPosition()` did, for display |
+| 3 | Navmesh / world coordinate mismatch | No (now) | The Blender→game transform is exact (`MAPS_DATA.md` §3.1); the earlier 6.6 m affine was the mismatch and is gone |
+| 4 | Straight-line fallback on path failure | **Yes** | `edgeTravelMs` fell back to the straight line between centres when two zones had no edge; 13 edges were flagged straight segments; `SpatialEngine.nearestZone` snapped any point to the nearest centre |
+| 5 | Collision mesh unused in movement | **Yes** | No geometry of any kind was loaded at runtime |
+| 6 | Walkable areas connected through walls | Partly | Not in the routes (ray-checked), but 13 zone-graph edges were straight "approx-links" across unconnected floor, and movers were attributed to zones through walls by nearest-centre lookup |
+| 7 | Height / stairs lost | **Yes** | Ascent's zone heights were stale (A Rafters stored at the site's level); a zone hop changed z instantly |
+| 8 | Tactical AI using Euclidean distance for travel | Partly | Travel *time* came from zone-graph edge times (route lengths since `d004919`); ranges and reach checks (`dist3(p.position, target.position)`) used centre-to-centre distance |
+| 9 | Render transform making correct motion look straight | **Yes, originally** | Before tracks were recorded the views interpolated between zone centres |
+| 10 | Skipping waypoints / teleporting | **Yes** | Every zone change was a teleport of `p.position`; a movement ability set the position to the target zone's centre |
+
+**Root cause in one sentence:** the engine had no position between zones — `SimPlayer.position` was a zone's
+centre by construction (`simulator.ts` `stepMovement`: `p.position = { ...nextZone.position }`), so everything
+drawn or computed from it was a straight line between centres, and the walkable geometry that existed offline
+never reached the runtime.
+
+**Zone connectivity re-check.** The old note "21 of 22 Ascent zones connected" described the first 1.2 m grid
+(B Boat House was isolated and bridged by an auto off-mesh link). On the current 0.5 m walk grid **all 22
+Ascent zones are mutually reachable — 462 of 462 ordered pairs** — with no bridge. Per map (zone pairs reachable
+on foot or by a drop, from the committed roadmaps):
+
+| Map | Reachable zone pairs | Unreachable: real separation or data error? |
+|---|---|---|
+| Ascent | 462 / 462 | — |
+| Bind | 552 / 552 (+ teleporter links) | — |
+| Breeze | 506 / 506 | — |
+| Fracture | 462 / 462 (+ zipline link) | — |
+| Lotus | 756 / 756 | — |
+| Sunset | 272 / 272 | — |
+| Haven | 400 / 420 | **Data error.** B Site cannot be walked into (only dropped out of). In the game it is open floor; the art mesh leaves a gap or a blocking prop at its entrances |
+| Icebox | 576 / 600 | **Real.** A Nest is reached by rope; ropes are not modelled |
+| Split | 506 / 552 | **Real (ropes)** for Mid Vent; not verified for the other pairs |
+| Abyss | 420 / 506 | **Unverified.** A Secret and B Danger are off the main floor; Abyss has jump gaps, so part of this may be real |
+| Pearl | 506 / 650 | **Mostly data error.** Callout heights are unusable on Pearl, so several zones are snapped to the wrong floor |
+
+## 2. Approach — compared and decided
+
+| Criterion | Walk grid + roadmap (chosen) | PV-5 Recast NavMesh | navcat |
+|---|---|---|---|
+| Accuracy vs real walls | **Measured:** 0 of ~47,000 roadmap edges hit solid geometry; every edge walked cell by cell | **Measured (PV-5):** 27 % of Ascent connected, 3 of 22 zones on the main component | Not measured. Same voxelisation pipeline as Recast (`rasterizeTriangles` → `buildCompactHeightfield` → `buildRegions`), so the same art-mesh problem is expected unless it is fed a cleaned surface |
+| Height / multi-level | Yes: floor layers per cell, nodes carry z, stacked floors resolved by height band | Yes in principle | Yes in principle |
+| Drops / special links | One-way drop edges measured; authored links (teleporter, zipline) with their own time | Off-mesh connections | `addOffMeshConnection` with `BIDIRECTIONAL` / `START_TO_END`; custom cost "not stated" in its README |
+| Dynamic obstacles | Node / edge blocking with a version counter; replanning on change (tested) | Tile rebuild | Tile add / remove; "temp obstacles: not stated" |
+| Performance, 10 movers | **Measured:** 10.8 ms per 5v5 round (1,000 rounds), was 15–29 ms before | Not measured | Not measured; its README says recast-navigation-js is faster at generation |
+| Determinism | Yes: binary heap with index tie-break, no randomness; same seed → same tracks (tested) | Yes | "Not stated" |
+| Adding a map | One script, ~6–10 s per map, all 11 maps done | Did not connect the one map tried | Unknown |
+| Integration cost | None: plain JSON, ~70–200 KB per map, no dependency | WASM dependency, navmesh binary | New dependency; pure JS (MIT) |
+| Can the data be committed? | Roadmap: yes (points and segments, no surfaces). The grid itself: no | No — a navmesh is the walkable surface as polygons | No — same; "fully JSON serializable" does not change what it is |
+
+**Decision: keep the walk grid as the offline source of truth and navigate at runtime on a roadmap derived from
+it.** The deciding facts are measured ones — Recast reached 27 % on this art geometry, the grid reaches 100 % on
+Ascent with zero wall hits — plus one constraint: the repository may not contain a mesh or grid of the map, and
+an engine whose navigation data lives outside the repository would not be self-contained or reproducible.
+
+**navcat was verified from its repository but not run.** Read from `github.com/isaac-mason/navcat` on
+2026-11-20: pure JavaScript, MIT, input is a triangle soup (`positions`, `indices`), `generateSoloNavMesh` /
+`generateTiledNavMesh`, `findPath` returning `{ success, path }`, `findStraightPath`, `findNearestPoly`,
+`raycast`, off-mesh connections, tiles that can be added and removed, a crowd block with agent and wall
+avoidance. Its version could not be confirmed (the npm page returned 403 and the README states none). It would be
+the natural next step if the project obtains geometry it may ship, or decides a navmesh may be committed: its
+crowd and funnel paths are better than what a roadmap gives. It was not benchmarked here.
+
+**What the roadmap costs.** Paths run node to node (a few metres apart), so they are slightly longer and more
+angular than a true shortest path on a mesh; on Ascent the roadmap's zone-to-zone times are within 0.85–1.2× of
+the measured edge routes (tested).
+
+### Reuse of existing assets
+
+Reused as is: the Blender extraction (`extract-map.py`), the walk grid with headroom and wall blocking, drop
+links, the exact transform, the ray-check against solid triangles (`measure_map.py`, `route_map.py`,
+`mapgeom.py`), the zone graph with its measured edge routes (now the strategic layer), sightlines and sound
+links. New: `nav_map.py` (roadmap), `navigation.ts`, `mover.ts`. Retired at runtime: moving along `edge.route`
+polylines (they remain as the zone graph's edge times and in the schematics).
+
+## 3. The roadmap (`datasets/spatial/<map>/<map>.nav.json`)
+
+`tools/map-mesh/pipeline/nav_map.py` builds it from the walk grid:
+
+- **Nodes** — every zone anchor, then standable cells chosen widest-clearance-first with a 2.5 m minimum spacing
+  (corridor centres and open floor come first). Each carries x, y, floor z, wall clearance and the zone whose
+  floor it is on.
+- **Edges** — straight segments between nodes up to 6 m apart, kept only if every grid cell the segment touches
+  is a standable, walk-linked cell **and** rays at 0.7 m and 1.3 m above the floor hit no solid triangle. Each
+  carries a half-width: how far a body may stray sideways and still be on floor.
+- **Repair** — wherever two nodes' areas touch but no straight edge joins them, the grid path between them is
+  added as a chain of bend nodes, so the roadmap reaches exactly what the grid reaches (checked for every zone
+  pair on every map: 0 disagreements).
+- **Drops** — one-way edges across a ledge, kept where they beat the walkable way by 30 %.
+- **Links** — the authored special traversals of the zone graph (Bind's teleporters, Fracture's zipline) with
+  their own travel time.
+
+| Map | Nodes | Edges | Drops | Links | Edges hitting geometry | Size |
+|---|---|---|---|---|---|---|
+| Ascent | 1,328 | 4,181 | 215 | 0 | 0 | 91 KB |
+| Abyss | 1,160 | 3,578 | 147 | 0 | 0 | 77 KB |
+| Bind | 1,108 | 4,056 | 55 | 2 | 0 | 82 KB |
+| Breeze | 2,671 | 9,884 | 262 | 0 | 0 | 207 KB |
+| Fracture | 935 | 3,625 | 50 | 1 | 0 | 72 KB |
+| Haven | 867 | 3,474 | 33 | 0 | 0 | 68 KB |
+| Icebox | 2,119 | 6,477 | 284 | 0 | 0 | 144 KB |
+| Lotus | 1,452 | 5,418 | 112 | 0 | 0 | 111 KB |
+| Pearl | 1,391 | 4,547 | 150 | 0 | 0 | 96 KB |
+| Split | 999 | 3,319 | 73 | 0 | 0 | 69 KB |
+| Sunset | 894 | 3,813 | 27 | 0 | 0 | 73 KB |
+
+**A decision for the integrator.** The roadmap is points and segments — no surfaces, no mesh, no grid — in the
+same spirit as the edge polylines and footprint schematics already committed, but it is denser: about one point
+per 6 m² of floor. If that is closer to "reproducing geometry" than the project wants in git, the eleven
+`*.nav.json` files can move outside the repository; the engine loads them through one function
+(`loadMapData`) and refuses to start a round without one rather than falling back.
+
+## 4. The three layers
+
+### A. Strategic route — the zone graph (`mover.ts` `strategicRoute`)
+
+The zones to pass are chosen on the zone graph (`ZoneGraph.findPath`): travel time on the measured edge routes,
+plus a cost per zone taken from the command's `zoneCosts` weighted by its `routePreference` (FASTEST ignores
+it; TACTICAL 2.5 s, SAFEST and STEALTH 7 s per unit), minus zones sealed by a movement blocker. `zoneCosts` is
+defined as the team's **belief** — the type and the request say so — and nothing in the navigation layer reads
+enemy positions.
+
+That route is a **corridor** for the next layer, and it defines the player's zone: a mover's zone is always one
+of its route's zones. This matters. The geometric shortest path from B Lobby to B Site clips a corner of floor
+nearest the Mid Link callout; without the corridor the carrier's zone became `mid-link`, the policy reacted,
+turned it round, and it oscillated until the clock ran out — 42 % of rounds timed out and the attack won 6.6 %
+(§7).
+
+### B. Geometric path — the roadmap (`spatial-engine/src/navigation.ts` `Navigator.findPath`)
+
+```ts
+NavigationRequest  { actorId, start, destination, movementMode, routePreference,
+                     zoneCost?, corridor?, hazards?, zoneEntryMs?, noTransitZones?, blockers?, startNodes? }
+NavigationResult   { status: "SUCCESS", waypoints, pathLength, estimatedTravelMs, zones }
+                 | { status: "UNREACHABLE" | "INVALID_START" | "INVALID_TARGET", reason }
+```
+
+A\* over roadmap nodes, cost in time. Floor outside the corridor costs 60 % more. A passable hazard (fire that
+can be waited out, a slow field) is a disc: stepping into it costs its wait once, skirting it costs nothing.
+Movement blockers remove nodes and edges. A mover re-planning mid-segment may only leave through the two ends
+of the segment it is on, never through "the nearest node", which could be on the far side of a wall.
+**There is no fallback:** with no path the result is UNREACHABLE with a reason, and a start or goal off the floor
+is INVALID_START / INVALID_TARGET.
+
+### C. Local execution — the executor (`round-simulator/src/mover.ts` `MovementExecutor`)
+
+The only code that assigns `p.position`.
+
+- **Own spot.** A player sent to a zone takes a standing spot there: a roadmap node of that zone near its
+  anchor that nobody else holds, chosen deterministically per player. Five players sent to one zone stand on
+  five spots.
+- **Own lane.** Waypoints are shifted sideways per player, never further than the segment's half-width allows
+  a 35 uu body with a 10 uu margin.
+- **Continuous, no tunnelling.** Each tick's movement is consumed waypoint by waypoint along validated
+  segments, at run (675 uu/s) or walk (340 uu/s) speed. Position, facing and zone update every tick.
+- **Zone from position.** The zone of the nearer end of the segment the player is on, among the route's zones.
+  The simulator publishes it (`SpatialEngine.setPositionZones`) so perception and every policy lookup made
+  from a position agree with it.
+- **Yielding.** A mover gives way to a body within 60 uu ahead of it (lower id first between two movers), for
+  at most 6 ticks, then squeezes past.
+- **New orders mid-path** are planned from where the player is.
+- **Blockers.** When the blocker set changes, the remaining route is revalidated; if cut, it is re-planned; if
+  nothing is left the player stops, the failure is traced (`RoundResult.navTrace`, `commandTrace`), and it
+  plans again when the blockers change.
+- **Links.** A teleporter holds the body for its travel time and then moves it; a zipline or rope carries it
+  along the link. These are the only non-walking moves, and they are explicit edges.
+- **Plant and defuse need arrival.** A player still walking to its spot cannot plant or defuse.
+
+### Vision, movement and bullet blockers are separate
+
+| Blocker | In the engine | Blocks |
+|---|---|---|
+| Vision | smoke, wall (`ability-engine` `blocksVision`) → cuts zone sightlines | sight only — a smoke is walked through (tested in `smoke-exit.test.ts`) |
+| Movement | `SimState.movementBlockers` → `NavBlockers` | bodies only |
+| Bullets | not modelled | — |
+
+**No ability creates a movement blocker.** The catalog records walls as vision blockers ("temporary LoS block
+with destructible HP") and says nothing about whether a body can pass, so nothing was invented: the mechanism is
+implemented and tested, and a verified rule can attach to it in one place.
+
+### Ground patches act where they are
+
+Fire and slow fields used to be "in a zone". With real positions that let a mover already inside the zone walk
+into a burning patch unchecked. They are now discs at a real point: a body is burned while it is on the disc; a
+mover stops at the **rim** and waits, goes round, or crosses (the existing rule, unchanged); the planner prices
+the disc, not the zone. Doorway patches keep their zone-boundary rule.
+
+## 5. Tests
+
+| Test | Requirement | Where | Result |
+|---|---|---|---|
+| A | Simple move | `spatial-engine/test/navigation.test.ts`, `round-simulator/test/movement.test.ts` | pass |
+| B | Wall detour, never straight through | navigation (A Site → A Rafters: 16 m apart, path > 4× that) | pass |
+| C | Multi-corner corridor | navigation (more than a half-turn in total) | pass |
+| D | Unconnected → UNREACHABLE | navigation, every zone pair of all 11 maps | pass |
+| E | Height via real slopes and drops | navigation (up: slopes only; down: a drop, 3× shorter) | pass |
+| F | Goal behind a wall → longer length and time | navigation | pass |
+| G | Dynamic blocker mid-move → revalidate / replan | navigation + movement (wall on Mid Bottom at 3 s; all ways sealed) | pass |
+| H | Blocker removed → route available again | navigation + movement | pass |
+| I | Ten players, no abnormal overlap or wall crossing | movement (24-round match: all positions on floor, < 0.2 % of living pairs within one body radius, no step longer than a run step) | pass |
+| J | Path failure → no teleport, no straight fallback | navigation + movement (player does not move at all) | pass |
+| K | Rotations at real travel times | movement (arrival within 300 ms of the plan, > 1.3× the straight line) | pass |
+| L | Sight, range and footsteps from real positions | movement — **range only**: every duel is fought at the distance between the two recorded positions. Sight stays zone-level (§9); footsteps were already positional | pass (partial) |
+| M | Same start / goal, different information → different route | navigation + movement | pass |
+| N | Determinism | navigation + movement (tick for tick) | pass |
+| O | Instant result equals spectated result | movement (recording tracks changes no event) | pass |
+| P | Performance vs the current engine | `perf.test.ts` | 10.8 ms / round, see §6 |
+| — | Local geometry only: every roadmap edge and every track position on a walkable grid cell | both suites, with `PV_MAPS_DERIVED` | pass here; skipped where the grid is absent |
+
+Suites on this branch: spatial-engine 269, round-simulator 115 (1 skipped), match-runner 62, root 252;
+`npx tsc --noEmit -p tsconfig.json` clean.
+
+Existing tests changed because they encoded the zone-hop model: `stall-utility` (entering a zone and arriving
+are now two moments; the patch is a disc), `smoke-exit` (a holder looking away no longer sees "mutually" — the
+entry is outside its field of view), `trace-commands`, `contract-supplement`, `route-movement` (replaced by
+`movement.test.ts`), and match-runner's mastery counterfactual (seed 9 → 10: with seeds 9 and 12 the raised
+mastery no longer changes that game's score-and-calls signature; with 10 and 11 it does).
+
+## 6. Performance
+
+`perf.test.ts`, 1,000 scripted 5v5 rounds on Ascent, same machine: **10.8 ms per round** with the navigation
+engine, against 15–29 ms for the zone-hop engine measured earlier the same day (the spread was machine load).
+The scripted rounds are also shorter now, so this is not a like-for-like speed-up of the code; it shows that
+geometric pathfinding for ten movers is not a cost problem. A path query is one A\* over ~1,300 nodes.
+
+## 7. 160-match validation
+
+VALIDATION_PLACEHOLDER
+
+## 8. Path errors found and fixed along the way
+
+| Error | Found by | Fix |
+|---|---|---|
+| A mover's zone taken from the nearest roadmap node could be a zone on the far side of a wall, and disagreed with the simulator's | `smoke-exit` duels happening before the zone change | Zone from the segment the mover is on; perception is given that zone |
+| The geometric path clipped a neighbouring zone's floor and flipped the carrier's zone → oscillation, 42 % timeouts | match-runner round-end test, validation run | Strategic corridor; zone restricted to route zones |
+| A mover inside a zone walked into a burning patch (the gate was at the zone boundary) | `stall-utility` | Rim gate at the disc |
+| Fire priced per zone made the planner wait where it could skirt | `stall-utility` | Disc hazards in the planner |
+| Re-planning from the nearest node could cross a wall | design review | Start nodes restricted to the current segment's ends |
+| A Rafters stored at A Site's height; the 3D zone lookup put it on the site | navigation test | Ascent zone heights set to the measured floor |
+| Pearl: two callouts on one spot gave a zero-length route | navigation test | Treated as stacked; flagged |
+
+## 9. Not supported yet / not done
+
+- **Phase 4 — tactical integration is not done.** `team-engine`, `action-generator` and `outcome-predictor`
+  still judge travel with zone-graph times (`shortestTravelTimeMs`), which are route-based but not the
+  roadmap's; no policy sets `routePreference` or `zoneCosts`, so every route is FASTEST. The interface is in
+  place (`ActionCommand.routePreference`, `.zoneCosts`; `Navigator.zoneTravelMs`).
+- **Phase 5 — the navigation debug view is not built.** `MatchConfig.recordTracks` exists; `track-shim.mts` is
+  still in use and the desktop was not touched or run.
+- **Sight is still zone-level.** Who sees whom is decided by the two players' zones and the zone sightline
+  table. No occluder geometry is available at runtime, so a player in a long zone is "visible" along it
+  regardless of where it stands.
+- **Intent-based spots.** A spot is "a free node near the zone's anchor". Cover, the angle being held, an entry
+  position at the edge of a space, a plant spot on the plant area — none of that is modelled; there is no data
+  for it yet.
+- **Standing players do not shift.** No shoulder-checks or repositioning after being seen.
+- **Ropes, ziplines on Icebox / Split, rotating doors, breakable walls, fall-off edges**: as in
+  `MAPS_DATA.md` §5. Only Bind's teleporters and Fracture's zipline are links.
+- **Jumping.** A step up to 0.6 m is walkable; anything higher is not climbable. Jump-only routes do not exist.
+- **Bullet blockers** are not modelled.
+- **Plant / defuse position.** Both are still "in the zone", not "at the spike".
+- **Other maps are not playable** for the reasons in `MAPS_DATA.md` §6; Haven's B Site and most of Pearl are
+  additionally unreachable on the roadmap (§1).
+- **navcat was not benchmarked** (§2).
+
+## 10. Next priorities
+
+1. Phase 4: make the policies plan with `Navigator.zoneTravelMs` and set a route preference per role (entry
+   FASTEST, saver SAFEST, lurker a separate corridor), with `zoneCosts` built from the belief state.
+2. Positional sight: precompute node-to-node visibility with the existing ray caster and ship it with the
+   roadmap, so that sight stops being zone-level.
+3. Phase 5: the debug view (roadmap, corridor, planned waypoints, actual trace, failures, blockers).
+4. Spot semantics (cover / angle / plant area) once there is data for them.
+5. Fix Haven B Site and Pearl in the source data so their zones connect.
+
+## 11. Reproduce
+
+```bash
+PY=<python with numpy>; D=<derived dir outside the repo>
+$BLENDER --background --factory-startup --python tools/map-mesh/blender/extract-map.py -- --blend Ascent.blend --out-dir $D/ascent
+$PY -I tools/map-mesh/pipeline/nav_map.py --map ascent --derived $D/ascent      # datasets/spatial/ascent/ascent.nav.json
+PV_MAPS_DERIVED=$D npx vitest run     # in packages/spatial-engine and packages/round-simulator
+```
