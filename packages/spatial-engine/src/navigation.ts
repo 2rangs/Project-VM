@@ -49,6 +49,12 @@ export interface NavigationRequest {
    */
   zoneEntryMs?: (zoneId: string) => number;
   /**
+   * The strategic route's zones. Floor belonging to any other zone costs `penalty` times more
+   * time (0.5 = half as much again), so the geometric path follows the lanes the route planner
+   * chose instead of cutting across a neighbouring zone's floor. Applies to every preference.
+   */
+  corridor?: { zones: ReadonlySet<string>; penalty: number };
+  /**
    * Passable hazards on the floor (a fire patch that can be waited out, a slow field): stepping
    * INTO the disc from outside costs `costMs` once. A route that skirts the disc pays nothing.
    */
@@ -342,12 +348,17 @@ export class Navigator {
     const speed = mode === "run" ? this.speeds.run : this.speeds.walk;
     const dangerWeight = req.routePreference === "FASTEST" || !req.zoneCost ? 0 : req.routePreference === "TACTICAL" ? 1 : 3;
     const zoneCost = new Map<number, number>();
+    const corridor = req.corridor && req.corridor.zones.size > 0 && req.corridor.penalty > 0 ? req.corridor : null;
     const costOf = (node: number): number => {
-      if (dangerWeight === 0) return 0;
+      if (dangerWeight === 0 && !corridor) return 0;
       const zi = this.zoneIdx[node]!;
       let c = zoneCost.get(zi);
-      if (c === undefined) { c = Math.max(0, req.zoneCost!(this.zones[zi]!)); zoneCost.set(zi, c); }
-      return c * dangerWeight;
+      if (c === undefined) {
+        const zid = this.zones[zi]!;
+        c = (dangerWeight > 0 ? Math.max(0, req.zoneCost!(zid)) * dangerWeight : 0) + (corridor && !corridor.zones.has(zid) ? corridor.penalty : 0);
+        zoneCost.set(zi, c);
+      }
+      return c;
     };
     const startNodes = given.length > 0 ? given : [located];
     const sources = startNodes.map((n) => ({ node: n, ms: Math.hypot(this.x[n]! - req.start.x, this.y[n]! - req.start.y, this.z[n]! - req.start.z) / speed }));

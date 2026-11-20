@@ -96,6 +96,11 @@ export interface MatchConfig {
    */
   readonly recordPerception?: boolean;
   /**
+   * Record every player's position on every tick (RoundResult.tracks → `move` events in each
+   * round's replay). Passive: outcomes are identical with and without it. Default false.
+   */
+  readonly recordTracks?: boolean;
+  /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
    * coordinate ATTACKER utility to execute, so enabling it makes defense dominant (attack win
@@ -516,7 +521,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

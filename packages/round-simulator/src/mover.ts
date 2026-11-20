@@ -23,6 +23,13 @@ export const PLAYER_RADIUS_UNITS = 35;
 const MAX_LANE_OFFSET = 110;
 /** Gap kept between a body and the corridor's edge (uu). */
 const WALL_MARGIN = 10;
+/**
+ * Floor outside the strategic route's zones costs this much more time, so the path keeps to the
+ * lanes the route planner chose rather than clipping a neighbouring zone's corner.
+ */
+const OFF_ROUTE_PENALTY = 0.6;
+/** Zone-graph cost (ms) per unit of belief-supplied zone cost, per preference. */
+const ZONE_COST_MS: Record<RoutePreference, number> = { FASTEST: 0, TACTICAL: 2500, SAFEST: 7000, STEALTH: 7000 };
 /** A mover yields to a body this close ahead of it (uu). */
 const YIELD_DISTANCE = 2 * PLAYER_RADIUS_UNITS * 0.85;
 /** ...but not for longer than this many consecutive ticks (then it squeezes past). */
@@ -79,6 +86,8 @@ interface Mover {
   lane: number;
   /** Zone the entry gate was last passed for (so the hook is asked once per boundary). */
   gatePassed: string | null;
+  /** Zones of the strategic route in force; the player's zone is always one of them. null = no route. */
+  corridor: Set<string> | null;
 }
 
 const LANES = [0, -0.7, 0.7, -0.35, 0.35];
@@ -96,6 +105,8 @@ export class MovementExecutor {
   /** zone → (node → player id) so two players never share a standing spot. */
   private readonly claims = new Map<number, string>();
   private readonly noTransit: ReadonlySet<string>;
+  /** blocker id → the zone it seals (zone blockers only), for the strategic route. */
+  private readonly zoneOfBlocker = new Map<string, string>();
   private readonly speeds: { run: number; walk: number }; // uu per ms
 
   constructor(private readonly spatial: SpatialEngine, speeds: { runUnitsPerSec: number; walkUnitsPerSec: number }) {
@@ -104,6 +115,19 @@ export class MovementExecutor {
     this.blockers = new NavBlockers(this.nav);
     this.noTransit = new Set(spatial.zones.filter((z) => z.transit === false).map((z) => z.id));
     this.speeds = { run: speeds.runUnitsPerSec / 1000, walk: speeds.walkUnitsPerSec / 1000 };
+  }
+
+  /** Seal a whole zone's floor / a disc of floor against bodies. */
+  addZoneBlocker(id: string, zoneId: string): void {
+    this.blockers.addZone(id, zoneId);
+    this.zoneOfBlocker.set(id, zoneId);
+  }
+  addDiscBlocker(id: string, center: { x: number; y: number; z: number }, radius: number): void {
+    this.blockers.addDisc(id, center, radius);
+  }
+  removeBlocker(id: string): void {
+    this.blockers.remove(id);
+    this.zoneOfBlocker.delete(id);
   }
 
   /** Put every player on its own standing spot in its starting zone. */
@@ -116,7 +140,7 @@ export class MovementExecutor {
       perTeam.set(p.teamId, slot + 1);
       const m: Mover = {
         goal: null, spot: -1, atNode: -1, waypoints: [], index: 0, zoneCursor: 0, blockersVersion: this.blockers.version,
-        linkElapsedMs: 0, failure: null, yieldTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null,
+        linkElapsedMs: 0, failure: null, yieldTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null,
       };
       this.movers.set(p.id, m);
       const zone = this.spatial.getZone(p.zoneId);
@@ -192,18 +216,41 @@ export class MovementExecutor {
     for (let i = m.index; i < m.waypoints.length; i++) {
       const w = m.waypoints[i]!;
       const d = Math.hypot(w.position.x - prev.x, w.position.y - prev.y, w.position.z - prev.z);
-      if (w.zoneId !== p.zoneId) return ms + (w.fixedMs ?? d / speed) / 2; // the zone changes about half-way along the segment
+      if (this.eff(m, w) !== null && w.zoneId !== p.zoneId) return ms + (w.fixedMs ?? d / speed) / 2; // the zone changes about half-way along the segment
       ms += w.fixedMs ?? d / speed;
       prev = w.position;
     }
     return ms;
   }
 
+  /** A waypoint's zone as far as the mover's own zone goes: only zones of its strategic route count. */
+  private eff(m: Mover, w: NavWaypoint): string | null {
+    return !m.corridor || m.corridor.has(w.zoneId) ? w.zoneId : null;
+  }
+
+  /**
+   * Strategic route (navigation layer A): the zones to pass, chosen on the zone graph by travel
+   * time plus what the team BELIEVES about each zone (zoneCost, weighted by the preference) and
+   * minus zones sealed by a movement blocker. null when the zone graph offers none.
+   */
+  private strategicRoute(p: SimPlayer, goal: MoveGoal): string[] | null {
+    const pref = goal.preference ?? "FASTEST";
+    const hazardCosts = new Map<string, number>();
+    const w = ZONE_COST_MS[pref];
+    if (w > 0 && goal.zoneCost) for (const z of this.spatial.zones) {
+      const c = goal.zoneCost(z.id);
+      if (c > 0) hazardCosts.set(z.id, c * w);
+    }
+    const blockedZones = this.blockers.ids().map((id) => this.zoneOfBlocker.get(id)).filter((z): z is string => !!z);
+    const r = this.spatial.findPath(p.zoneId, goal.zoneId, pref === "STEALTH" ? "walk" : goal.mode, { hazardCosts, blockedZones });
+    return r ? r.path : null;
+  }
+
   /** Forget a player's route (it was displaced by an ability, or stopped). */
   stop(p: SimPlayer, atNode?: number): void {
     const m = this.movers.get(p.id);
     if (!m) return;
-    m.goal = null; m.waypoints = []; m.index = 0; m.spot = -1; m.failure = null; m.linkElapsedMs = 0; m.gatePassed = null;
+    m.goal = null; m.waypoints = []; m.index = 0; m.spot = -1; m.failure = null; m.linkElapsedMs = 0; m.gatePassed = null; m.corridor = null;
     p.path = []; p.pathIndex = 0; p.edgeProgressMs = 0;
     const node = atNode ?? this.nav.locate(p.position) ?? -1;
     m.atNode = node;
@@ -264,7 +311,10 @@ export class MovementExecutor {
     m.blockersVersion = this.blockers.version;
     const spot = this.pickSpot(p.id, goal.zoneId);
     if (spot < 0) return this.fail(p, m, "UNREACHABLE", `zone ${goal.zoneId} has no walkable standing spot`, hooks);
+    const route = this.strategicRoute(p, goal);
+    const corridor = route ? new Set(route) : null;
     const r = this.nav.findPath({
+      ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
       actorId: p.id, start: p.position, destination: this.nav.nodePosition(spot), movementMode: goal.mode,
       routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
       startNodes: this.startNodes(m),
@@ -281,8 +331,10 @@ export class MovementExecutor {
     m.linkElapsedMs = 0;
     m.gatePassed = null;
     m.yieldTicks = 0;
-    // strategic view of the same route: the zones it passes, current zone first
-    p.path = r.zones[0] === p.zoneId ? [...r.zones] : [p.zoneId, ...r.zones];
+    // the strategic route is the player's path of zones (current zone first); where the zone
+    // graph offers none, the zones the geometric path itself passes
+    m.corridor = corridor;
+    p.path = route ?? (r.zones[0] === p.zoneId ? [...r.zones] : [p.zoneId, ...r.zones]);
     m.zoneCursor = 0;
     p.pathIndex = Math.min(1, p.path.length - 1);
     p.edgeProgressMs = 0;
@@ -356,7 +408,10 @@ export class MovementExecutor {
   nextZoneOf(p: SimPlayer): string | null {
     const m = this.movers.get(p.id);
     if (!m) return null;
-    for (let i = m.index; i < m.waypoints.length; i++) if (m.waypoints[i]!.zoneId !== p.zoneId) return m.waypoints[i]!.zoneId;
+    for (let i = m.index; i < m.waypoints.length; i++) {
+      const w = m.waypoints[i]!;
+      if (this.eff(m, w) !== null && w.zoneId !== p.zoneId) return w.zoneId;
+    }
     return null;
   }
 
@@ -399,7 +454,7 @@ export class MovementExecutor {
       const w = m.waypoints[m.index]!;
       const prev = m.waypoints[m.index - 1]!;
       // zone gate: asked once, before the first step of a segment that ends in another zone
-      if (w.zoneId !== p.zoneId && m.gatePassed !== w.zoneId) {
+      if (this.eff(m, w) !== null && w.zoneId !== p.zoneId && m.gatePassed !== w.zoneId) {
         if (hooks?.canEnterZone && !hooks.canEnterZone(p, w.zoneId)) break;
         if (m.index >= m.waypoints.length || m.waypoints[m.index] !== w) continue; // the hook re-planned
         m.gatePassed = w.zoneId;
@@ -470,13 +525,20 @@ export class MovementExecutor {
     return false;
   }
 
-  /** The player's zone is the zone of the nearer end of the segment it is on. */
+  /**
+   * The player's zone is the zone of the nearer end of the segment it is on — among the zones of
+   * its strategic route. Floor that belongs to some other zone (a corner of a neighbouring area
+   * the path clips) leaves the player in the route zone it was in.
+   */
   private updateZone(p: SimPlayer, m: Mover, a: NavWaypoint, b: NavWaypoint, hooks?: MoverHooks): void {
-    let zone = b.zoneId;
-    if (a !== b && a.zoneId !== b.zoneId) {
+    const zb = this.eff(m, b);
+    if (zb === null) return;
+    const za = this.eff(m, a) ?? p.zoneId;
+    let zone = zb;
+    if (a !== b && za !== zb) {
       const da = Math.hypot(p.position.x - a.position.x, p.position.y - a.position.y, p.position.z - a.position.z);
       const db = Math.hypot(p.position.x - b.position.x, p.position.y - b.position.y, p.position.z - b.position.z);
-      zone = db <= da ? b.zoneId : a.zoneId;
+      zone = db <= da ? zb : za;
     }
     if (zone === p.zoneId) return;
     const from = p.zoneId;

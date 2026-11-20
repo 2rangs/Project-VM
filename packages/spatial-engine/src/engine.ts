@@ -18,6 +18,11 @@ import { ZoneGraph, type PathOptions } from "./pathfinding.js";
 import { distance3, pointAlongPolyline, pointInPolygon } from "./geometry.js";
 import { Navigator, type NavData } from "./navigation.js";
 
+/** Key of an exact position for SpatialEngine.setPositionZones. */
+export function positionKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
 export interface SpatialEngineOptions {
   /** Transform supplied separately (e.g. from coordinate-system.json). Falls back to data.transform. */
   transform?: CoordinateTransform;
@@ -37,6 +42,7 @@ export class SpatialEngine {
   readonly coords: MapCoordinateSystem;
   /** Geometric navigation on the map's roadmap; null when the map has no nav data loaded. */
   readonly nav: Navigator | null;
+  private positionZones: ReadonlyMap<string, string> | null = null;
   private readonly data: TacticalMapData;
   private readonly graph: ZoneGraph;
   private readonly zoneById = new Map<string, Zone>();
@@ -109,7 +115,22 @@ export class SpatialEngine {
   }
 
   /** Nearest zone center to a game-world position (3D euclidean). */
+  /**
+   * Zones the simulation has its bodies in, keyed by exact position (positionKey). A lookup for
+   * exactly such a position answers with that zone: the simulation knows which roadmap segment
+   * a mover is on and which route it follows, which a bare point cannot tell. Set every tick by
+   * the round simulator; null clears it.
+   */
+  setPositionZones(hints: ReadonlyMap<string, string> | null): void {
+    this.positionZones = hints;
+  }
+
   nearestZone(position: Vec2 | Vec3): Zone {
+    const hinted = this.positionZones?.get(positionKey(position.x, position.y));
+    if (hinted) {
+      const z = this.zoneById.get(hinted);
+      if (z) return z;
+    }
     // With a roadmap: the zone whose walkable area the position lies in (a player part-way
     // down a corridor belongs to the zone that corridor is in, not to whichever callout
     // happens to be nearest through a wall).

@@ -1,4 +1,4 @@
-import type { SpatialEngine } from "@pv/spatial-engine";
+import { positionKey, type SpatialEngine } from "@pv/spatial-engine";
 import {
   PerceptionEngine,
   DEFAULT_PARAMS as PERCEPTION_PARAMS,
@@ -208,6 +208,7 @@ export class RoundSimulator {
     // Navigation: every player takes its own standing spot; from here on only the executor moves them.
     this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
     this.mover.reset(state.players);
+    this.publishZones(state);
     const navEvents: NavTraceEvent[] = [];
     const engaged = new Set<string>(); // pair keys already resolved
     // one persistent RNG stream per side (deterministic, independent)
@@ -266,9 +267,9 @@ export class RoundSimulator {
       for (const b of state.movementBlockers ?? []) {
         const active = state.elapsedMs >= b.fromMs && state.elapsedMs < b.untilMs;
         if (active && !this.mover.blockers.has(b.id)) {
-          if (b.zoneId) this.mover.blockers.addZone(b.id, b.zoneId);
-          else if (b.center) this.mover.blockers.addDisc(b.id, b.center, b.radiusUnits ?? DEFAULT_PATCH_RADIUS_UNITS);
-        } else if (!active && this.mover.blockers.has(b.id)) this.mover.blockers.remove(b.id);
+          if (b.zoneId) this.mover.addZoneBlocker(b.id, b.zoneId);
+          else if (b.center) this.mover.addDiscBlocker(b.id, b.center, b.radiusUnits ?? DEFAULT_PATCH_RADIUS_UNITS);
+        } else if (!active && this.mover.blockers.has(b.id)) this.mover.removeBlocker(b.id);
       }
       const alive = state.players.filter((q) => q.alive);
       for (const p of state.players) {
@@ -289,6 +290,7 @@ export class RoundSimulator {
         // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
         if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
       }
+      this.publishZones(state);
 
       // 3. abilities
       for (const p of state.players) {
@@ -477,6 +479,7 @@ export class RoundSimulator {
       }
     }
 
+    this.spatial.setPositionZones(null);
     if (!ended) ended = { winner: "defense", reason: "timeExpired" };
     push({ kind: "roundEnd", tick: state.tick, elapsedMs: state.elapsedMs, detail: `${ended.winner}:${ended.reason}` });
 
@@ -830,6 +833,17 @@ export class RoundSimulator {
       },
     };
     return hooks;
+  }
+
+  /**
+   * Tell the map which zone each body is in, so that every zone lookup made from a player's
+   * position (perception, the policies) agrees with the simulation's own zone for that player.
+   */
+  private publishZones(state: SimState): void {
+    const hints = new Map<string, string>();
+    for (const p of state.players) hints.set(positionKey(p.position.x, p.position.y), p.zoneId);
+    if (state.spike.position && state.spike.zoneId) hints.set(positionKey(state.spike.position.x, state.spike.position.y), state.spike.zoneId);
+    this.spatial.setPositionZones(hints);
   }
 
   private isMoving(p: SimPlayer): boolean {

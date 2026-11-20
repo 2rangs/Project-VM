@@ -1,7 +1,7 @@
 // PROJECT V — spatial-engine public API.
 export * from "./types.js";
 export { MapCoordinateSystem } from "./coordinate.js";
-export { SpatialEngine } from "./engine.js";
+export { SpatialEngine, positionKey } from "./engine.js";
 export type { SpatialEngineOptions } from "./engine.js";
 export { ZoneGraph } from "./pathfinding.js";
 export type { PathOptions } from "./pathfinding.js";
