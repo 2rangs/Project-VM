@@ -43,6 +43,11 @@ def apply(nav, routes):
     for z in nav["zones"]:
         if z["id"] in anchors:
             z["anchor"] = anchors[z["id"]]
+            # the zone's height is the measured floor under it (Ascent's hand-authored file carried
+            # rounded / stale callout heights, e.g. A Rafters at the site's level)
+            if abs(z["position"]["z"] - z["anchor"]["z"]) > 1:
+                z.setdefault("calloutZ", z["position"]["z"])
+                z["position"]["z"] = z["anchor"]["z"]
     by_key = {(e["from"], e["to"]): e for e in routes["edges"]}
     with_route, straight = 0, []
     for e in nav["edges"]:

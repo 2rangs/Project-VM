@@ -16,10 +16,13 @@ import type {
 import { MapCoordinateSystem } from "./coordinate.js";
 import { ZoneGraph, type PathOptions } from "./pathfinding.js";
 import { distance3, pointAlongPolyline, pointInPolygon } from "./geometry.js";
+import { Navigator, type NavData } from "./navigation.js";
 
 export interface SpatialEngineOptions {
   /** Transform supplied separately (e.g. from coordinate-system.json). Falls back to data.transform. */
   transform?: CoordinateTransform;
+  /** The map's navigation roadmap (<map>.nav.json). Without it there is no geometric navigation. */
+  nav?: NavData;
 }
 
 /**
@@ -32,6 +35,8 @@ export interface SpatialEngineOptions {
 export class SpatialEngine {
   readonly mapId: string;
   readonly coords: MapCoordinateSystem;
+  /** Geometric navigation on the map's roadmap; null when the map has no nav data loaded. */
+  readonly nav: Navigator | null;
   private readonly data: TacticalMapData;
   private readonly graph: ZoneGraph;
   private readonly zoneById = new Map<string, Zone>();
@@ -47,6 +52,7 @@ export class SpatialEngine {
     this.coords = new MapCoordinateSystem(transform);
 
     for (const z of data.zones) this.zoneById.set(z.id, z);
+    this.nav = opts.nav ? new Navigator(opts.nav, data.movement) : null;
 
     const m = data.movement;
     this.graph = new ZoneGraph(
@@ -103,11 +109,20 @@ export class SpatialEngine {
   }
 
   /** Nearest zone center to a game-world position (3D euclidean). */
-  nearestZone(position: Vec3): Zone {
+  nearestZone(position: Vec2 | Vec3): Zone {
+    // With a roadmap: the zone whose walkable area the position lies in (a player part-way
+    // down a corridor belongs to the zone that corridor is in, not to whichever callout
+    // happens to be nearest through a wall).
+    const byNav = this.nav?.zoneAt(position);
+    if (byNav) {
+      const z = this.zoneById.get(byNav);
+      if (z) return z;
+    }
+    const p3: Vec3 = { x: position.x, y: position.y, z: (position as Vec3).z ?? Number.NaN };
     let best: Zone | null = null;
     let bestD = Infinity;
     for (const z of this.data.zones) {
-      const d = distance3(z.position, position);
+      const d = Number.isNaN(p3.z) ? Math.hypot(z.position.x - p3.x, z.position.y - p3.y) : distance3(z.position, p3);
       if (d < bestD) {
         bestD = d;
         best = z;

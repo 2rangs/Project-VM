@@ -2,11 +2,12 @@
 //
 // Node-only (reads datasets/spatial/<id>/ from disk), like loadEngineFromFiles. The engine
 // class itself stays filesystem-free.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CoordinateTransform, TacticalMapData } from "./types.js";
 import { SpatialEngine } from "./engine.js";
+import type { NavData } from "./navigation.js";
 
 export const MAP_IDS = [
   "ascent",
@@ -74,6 +75,8 @@ export interface LoadedMapData {
   readonly info: MapInfo;
   readonly data: TacticalMapData;
   readonly transform: CoordinateTransform;
+  /** The map's navigation roadmap, when <id>.nav.json exists. */
+  readonly nav?: NavData;
 }
 
 /** Read a map's navgraph + coordinate system from disk. Throws on an unknown id. */
@@ -82,11 +85,13 @@ export function loadMapData(id: string, datasetsRoot: string = defaultDatasetsRo
   const dir = resolve(datasetsRoot, id);
   const data = JSON.parse(readFileSync(resolve(dir, `${id}.navgraph.json`), "utf8")) as TacticalMapData;
   const cs = JSON.parse(readFileSync(resolve(dir, "coordinate-system.json"), "utf8")) as { transform: CoordinateTransform };
-  return { info: MAPS[id], data, transform: cs.transform };
+  const navPath = resolve(dir, `${id}.nav.json`);
+  const nav = existsSync(navPath) ? (JSON.parse(readFileSync(navPath, "utf8")) as NavData) : undefined;
+  return { info: MAPS[id], data, transform: cs.transform, ...(nav ? { nav } : {}) };
 }
 
 /** Load a map by id and return its spatial engine. */
 export function loadMap(id: string, datasetsRoot?: string): SpatialEngine {
-  const { data, transform } = loadMapData(id, datasetsRoot);
-  return new SpatialEngine(data, { transform });
+  const { data, transform, nav } = loadMapData(id, datasetsRoot);
+  return new SpatialEngine(data, { transform, nav });
 }
