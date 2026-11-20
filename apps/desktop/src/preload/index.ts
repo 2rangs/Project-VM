@@ -33,6 +33,7 @@ const bridge: PvBridge = {
   seriesStart: (req: SeriesStartRequest): Promise<SeriesView> => ipcRenderer.invoke(IPC.seriesStart, req),
   seriesCmd: (c: SeriesCommand): Promise<SeriesReply> => ipcRenderer.invoke(IPC.seriesCmd, c),
   seriesStop: () => ipcRenderer.invoke(IPC.seriesStop),
+  loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
   platform: process.platform,
   isElectron: true,
 };

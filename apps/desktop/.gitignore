@@ -5,3 +5,5 @@ dist/
 # nothing else here is generated
 *.vrf
 real-*.json
+# real map meshes for the 3D team cams (third-party map geometry — never commit)
+assets/maps/

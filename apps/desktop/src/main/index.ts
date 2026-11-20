@@ -221,6 +221,20 @@ async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron
   return { runId, source: 'match-runner', replay, match: summary };
 }
 
+// Optional real map mesh for the 3D team cams: apps/desktop/assets/maps/<map>.glb (gitignored —
+// map geometry is third-party IP and is never committed). Absent → null → navgraph blockout.
+ipcMain.handle(IPC.mapMesh, async (_e, mapId: string): Promise<Uint8Array | null> => {
+  const safe = path.basename(String(mapId)).replace(/[^a-zA-Z0-9_-]/g, '');
+  // app path is apps/desktop under electron-vite dev, but out/main when Electron is given the built entry.
+  const dirs = process.env.PV_MAP_ASSETS_DIR
+    ? [process.env.PV_MAP_ASSETS_DIR]
+    : [path.join(app.getAppPath(), 'assets', 'maps'), path.join(dirname, '..', '..', 'assets', 'maps')];
+  for (const dir of dirs) {
+    try { return new Uint8Array(await readFile(path.join(dir, `${safe}.glb`))); } catch { /* try the next location */ }
+  }
+  return null;
+});
+
 ipcMain.handle(IPC.traceList, async (): Promise<string[]> => {
   try {
     const files = await readdir(tracesDir());

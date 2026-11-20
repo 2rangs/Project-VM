@@ -13,6 +13,9 @@
 import { createInterface } from 'node:readline';
 import { createMatchSession, type MatchSession } from '../../../packages/match-runner/src/index.ts';
 import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
+import { installTrackRecording, withSpawnMoves } from './track-shim.mts';
+
+installTrackRecording(); // player positions for the live match screen (see track-shim.mts)
 
 interface Cfg {
   teamA: { id: string; name: string }; teamB: { id: string; name: string };
@@ -49,7 +52,7 @@ function compactRound(r: ReturnType<MatchSession['playNextRound']>) {
       A: { tier: r.buys.A.tier, weapon: r.buys.A.weapon },
       B: { tier: r.buys.B.tier, weapon: r.buys.B.weapon },
     },
-    replayEvents: r.replay.events,
+    replayEvents: withSpawnMoves(r.replay.events as unknown as Record<string, unknown>[]),
     perception: r.replay.meta.perception ?? null,
     decisions: r.decisions ?? null,
   };
