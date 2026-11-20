@@ -10,7 +10,7 @@ only one piece of code — the movement executor — may change it.
 |---|---|
 | **Built** | Roadmap navigation on all eleven maps' data; movement executor with continuous positions; sight decided between real positions (Ascent); every tactical travel time taken from the navigator; route preference by intent; standing spots by intent; the navigation debug view in the desktop app |
 | **Checked** | Every recorded position of whole real matches is on walkable floor (§5). All engine suites, desktop typecheck, build, unit, engine-contract and both Electron end-to-end runs pass |
-| **Balance** | 160 matches: **6 of 8 judged metrics, attack win rate 0.480.** The target before a merge was 7 with attack 0.47–0.55 — the win rate is in range, the count is one short. Defuse (0.104, needs ≥ 0.120) and time expired (0.092, needs ≤ 0.083) fail; the measured cause is in §7.2 |
+| **Balance** | 160 matches: **8 of 8 judged metrics, attack win rate 0.521** — the target before a merge (at least 7, attack 0.47–0.55) is met, and it holds on two unseen seed ranges (8 / 8 each). The movement work alone reached 6 of 8; the last two were closed by calibrating the moving-shot model and the attack's save threshold, at the user's request (§7.2) |
 | **Playable** | Ascent only. The other ten maps have roadmaps but are not playable (§9) |
 
 Contents: 1 diagnosis · 2 approach · 3 navigation data · 4 how it works · 5 tests · 6 performance · 7 balance ·
@@ -362,10 +362,11 @@ Suites at the head of the branch:
 | Suite | Result |
 |---|---|
 | root `npx vitest run` (PV-core packages incl. team-engine) | 259 passed, 4 todo |
+| `packages/combat-engine` | 21 passed |
 | `packages/spatial-engine` | 265 passed, 22 skipped (local grid absent) |
 | `packages/round-simulator` | 121 passed, 1 skipped (local grid absent) |
 | `packages/match-runner` | 70 passed |
-| `packages/perception-engine` / `packages/combat-engine` | 22 / 15 passed |
+| `packages/perception-engine` | 22 passed |
 | `apps/desktop` typecheck, build | clean |
 | `apps/desktop` `test:unit` / `test:matchday` / `test:engine` | 48 / 29 / 4 passed |
 | `apps/desktop` `test:e2e`, `test:e2e:series` (Electron) | both pass |
@@ -393,31 +394,40 @@ policies (about 3,440 rounds) runs in about three minutes — roughly 55 ms per 
 ## 7. Balance — 160-match validation
 
 `tools/data-validator/scripts/sim-batch.mts --matches 160` (seeds 1..160, Ascent), judged against VCT priors.
-**No walking speed, duel odds or other constant was retuned at any point.**
+Through the whole movement work (every row of §7.4 but the last) no walking speed, duel odds or other constant
+was retuned. The last step is a calibration of two constants, done at the user's request and described in §7.2.
 
 ### 7.1 Where it stands
 
-| Judged metric | Real (VCT) | Pass band | `main` (`8cb75cd`) | **This branch** |
-|---|---|---|---|---|
-| Round ends by elimination | 0.714 | ± 0.04 | 0.674 FAIL | **0.711 pass** |
-| Round ends by spike detonation | 0.082 | ± 0.04 | 0.108 pass | **0.094 pass** |
-| Round ends by defuse | 0.160 | ± 0.04 | 0.189 pass | **0.104 FAIL** |
-| Round ends by time | 0.043 | ± 0.04 | 0.030 pass | **0.092 FAIL** |
-| Attack round win rate | 0.509 | ± 0.04 | 0.507 pass | **0.480 pass** |
-| Opening duel won by attack | 0.437 | ± 0.04 | 0.458 pass | **0.412 pass** |
-| Pistol vs pistol (attack) | 0.500 | ± 0.05 | 0.438 FAIL | **0.466 pass** |
-| Full buy vs full buy (attack) | 0.500 | ± 0.05 | 0.493 pass | **0.482 pass** |
-| Full buy vs eco (attack) | 0.960 | ± 0.05 | 1.000 pass | not judged — that matchup does not occur in the batch |
-| **Judged passed** | | | **7 / 9** | **6 / 8** |
+| Judged metric | Real (VCT) | Pass band | `main` (`8cb75cd`) | Movement work only | **Head of branch (calibrated)** |
+|---|---|---|---|---|---|
+| Round ends by elimination | 0.714 | ± 0.04 | 0.674 FAIL | 0.711 pass | **0.704 pass** |
+| Round ends by spike detonation | 0.082 | ± 0.04 | 0.108 pass | 0.094 pass | **0.106 pass** |
+| Round ends by defuse | 0.160 | ± 0.04 | 0.189 pass | 0.104 FAIL | **0.148 pass** |
+| Round ends by time | 0.043 | ± 0.04 | 0.030 pass | 0.092 FAIL | **0.042 pass** |
+| Attack round win rate | 0.509 | ± 0.04 | 0.507 pass | 0.480 pass | **0.521 pass** |
+| Opening duel won by attack | 0.437 | ± 0.04 | 0.458 pass | 0.412 pass | **0.462 pass** |
+| Pistol vs pistol (attack) | 0.500 | ± 0.05 | 0.438 FAIL | 0.466 pass | **0.528 pass** |
+| Full buy vs full buy (attack) | 0.500 | ± 0.05 | 0.493 pass | 0.482 pass | **0.495 pass** |
+| Full buy vs eco (attack) | 0.960 | ± 0.05 | 1.000 pass | not judged | not judged — that matchup does not occur in the batch |
+| **Judged passed** | | | **7 / 9** | **6 / 8** | **8 / 8** |
 
-The target before a merge was at least 7 judged metrics with the attack win rate inside 0.47–0.55.
-The win rate is in range; the count is one short.
+The target before a merge was at least 7 judged metrics with the attack win rate inside 0.47–0.55. It is met.
 
-### 7.2 Why the last two fail
+The calibration was done on seeds 1..160, so it was checked on seeds it had not seen:
 
-Sixteen matches on `main` and on this branch:
+| Seeds | Attack | Elim. | Deton. | Defuse | Time | Opening | Pistol | Full | Passed |
+|---|---|---|---|---|---|---|---|---|---|
+| 1..160 (calibration) | 0.521 | 0.704 | 0.106 | 0.148 | 0.042 | 0.462 | 0.528 | 0.495 | 8 / 8 |
+| 161..320 | 0.535 | 0.725 | 0.098 | 0.141 | 0.037 | 0.472 | 0.512 | 0.508 | 8 / 8 |
+| 321..480 | 0.519 | 0.717 | 0.099 | 0.144 | 0.040 | 0.459 | 0.494 | 0.484 | 8 / 8 |
 
-| | `main` | this branch |
+### 7.2 Why the last two failed, and what closed them
+
+With the movement work alone, defuse (0.104) and time expired (0.092) were outside. Sixteen matches on `main`
+and on the branch at that point:
+
+| | `main` | movement work only |
 |---|---|---|
 | Rounds with a plant | 63 % | 51 % |
 | Mean time of the plant | 36.2 s | 37.9 s |
@@ -427,12 +437,11 @@ Sixteen matches on `main` and on this branch:
 
 With real movement there is more fighting before the spike is down — the attackers walk onto the site and the
 carrier has to reach a spot and stop, where they used to arrive by a hop and start planting — and the attack
-loses a little more of it. So twice as many rounds reach the man-count at which the team's policy calls a save,
-and a saved round runs out the clock. Both failures are that one shift: fewer plants, so fewer defuses; more
-saves, so more time-outs.
+loses a little more of it. So twice as many rounds reached the man-count at which the team's policy calls a
+save, and a saved round runs out the clock: fewer plants, so fewer defuses; more saves, so more time-outs.
 
-After the plant, the duels themselves changed character (eight matches, every duel traced, before the fixes of
-§8 — the numbers that led to them):
+After the plant, the duels themselves had changed character (eight matches, every duel traced, before the
+fixes of §8):
 
 | Post-plant duels | `main` | this branch |
 |---|---|---|
@@ -442,11 +451,23 @@ After the plant, the duels themselves changed character (eight matches, every du
 | Attack wins the duel | 55 % | 65 % |
 
 On `main` a retaker hopped onto the site's centre and fought standing at zero range — an artefact of zone hops
-that the balance had been tuned around. Here it walks in, usually sees the attacker first, and still loses two
-duels in three because it is shooting on the move. That is the duel model doing what it says.
+that the balance had been tuned around. With real movement the side that has to come in is always "the moving
+shooter", and the duel model charged it the moving penalty for the whole duel.
 
-**What decides it from here** is the policy's save rule and the duel model's treatment of a moving shooter.
-Both are balance calibration, which this work was told not to retune.
+Those two things — the save rule and the treatment of a moving shooter — are balance calibration, outside what
+the movement work was allowed to touch. The user then asked for both to be calibrated:
+
+- **A moving shooter stops** (`combat-engine`, `accuracy.stopMs`). A shooter who is moving at contact pays the
+  moving penalty until it has stopped: 700 ms after it first perceives the enemy from a run, 350 ms from a walk
+  (the ratio of the two speeds), × 1.4 at movement skill 0 … × 0.6 at skill 1. Before that its shots are moving
+  shots and it is a moving target; after it, standing. Short duels still end before the mover has stopped;
+  long ones no longer punish it to the end. Pre-match option `movingStopScale` (Infinity = the old model).
+- **The attack's save threshold is its own tunable** (`team-engine`, `attackSaveMinWinChance`, 0.09; the
+  defense's `retakeMinWinChance` stays 0.15). With κ = 1 the attack now plays 1v3 and 2v5 out and saves at 1v4
+  and 1v5 — real rounds run out the clock 4.3 % of the time, and the shared 0.15 gave 7–9 %.
+
+Formulas, the outcome case of each attribute, the sweep and why 700 ms / 0.09 were chosen:
+`docs/STAT_OUTCOME_MATRIX.md` §2.7, §3.6 and §6.
 
 ### 7.3 Measured and not shipped
 
@@ -454,7 +475,7 @@ Both are balance calibration, which this work was told not to retune.
 |---|---|---|
 | Cover spots for every player (least-seen point of the zone) | elimination 0.606, time expired 0.126, 2 / 8 — players stopped finding each other | Dropped |
 | Cover spots as a held angle (`SimConfig.coverSpots`: sees what it watches, least seen otherwise) | attack 0.457, defuse 0.114, detonation 0.079 — holders stronger on both sides of the plant | Built, **off by default** |
-| "A mover that sees an enemy who has not seen it stops and shoots from a standstill" | attack 0.250, defuse 0.281, 2 / 8 | Removed. Whether a first look is worth a standing shot is a duel-model calibration |
+| "A mover that sees an enemy who has not seen it stops and shoots from a standstill" | attack 0.250, defuse 0.281, 2 / 8 | Removed as a rule. The calibrated stopping time of §7.2 is its measured form: a mover does stop, but it takes time |
 | Routing every order of the lurker as a lurk | time expired 0.284, attack 0.407 — the execute waits for the lurker | Lurk routing on the lurk order only |
 | Planting without having arrived at a spot | attack 0.509 instead of 0.488 at that stage, time expired 0.105 | Not kept: a player still walking is not planting |
 | Angle clearing as a facing rule | not built | The data did not ask for it: before the plant the defender sees first in 6 % of duels and the attacker in 5 % |
@@ -473,7 +494,8 @@ Each row is a 160-match run of the branch at that stage.
 | + sight between real positions | 0.465 | 0.675 | 0.127 | 0.101 | 0.098 | 0.383 | 0.403 | 0.489 | 2 / 8 |
 | + tactical travel times, route intents | 0.514 | 0.690 | 0.140 | 0.074 | 0.096 | 0.420 | 0.466 | 0.511 | 5 / 8 |
 | + head-on deadlock fixed | 0.468 | 0.719 | 0.083 | 0.093 | 0.105 | 0.413 | 0.444 | 0.464 | 4 / 8 |
-| **+ plant and defuse spots (head of branch)** | **0.480** | **0.711** | **0.094** | **0.104** | **0.092** | **0.412** | **0.466** | **0.482** | **6 / 8** |
+| + plant and defuse spots (movement work complete) | 0.480 | 0.711 | 0.094 | 0.104 | 0.092 | 0.412 | 0.466 | 0.482 | 6 / 8 |
+| **+ moving shooter stops, attack save threshold 0.09 (head of branch)** | **0.521** | **0.704** | **0.106** | **0.148** | **0.042** | **0.462** | **0.528** | **0.495** | **8 / 8** |
 
 What each step showed:
 
@@ -488,6 +510,8 @@ What each step showed:
   seconds, so the team went only when the clock forced it. Fixing it took detonations from 0.140 to 0.083 and
   cost the attack 4.6 points — retakes that used to stall now happen.
 - **Plant and defuse spots** brought the attack back into range and lifted defuses.
+- **The calibration** (§7.2) closed the last two: movers recover in long duels, so more executes reach the plant
+  and more retakes reach the defuse; and the attack no longer gives up a 1v3.
 
 ## 8. Path errors found and fixed along the way
 
@@ -508,7 +532,10 @@ What each step showed:
 ## 9. Not supported yet / not done
 
 **Balance**
-- The last two judged metrics (defuse, time expired) — §7.2. What moves them is outside movement.
+- The stopping time and the attack's save threshold are calibrated on Ascent (§7.2). They hold on unseen seeds,
+  but they are fitted constants, not measurements, and need re-checking when another map becomes playable.
+- Pistol rounds sit toward the upper edge of their band (0.494–0.528 across the three seed ranges; a stopping
+  time of 800 ms pushes them out at 0.553).
 
 **Movement behaviour**
 - Cover spots are off by default (§7.3); round-start positions are "near the anchor".
@@ -543,14 +570,13 @@ What each step showed:
 
 ## 10. Next priorities
 
-1. Decide, with the balance owner, how the save rule and the moving-shooter penalty should read now that players
-   really walk: the two metrics still outside (§7.2) are a calibration question, not a movement one.
-2. Let the policies hand the navigation layer the final goal instead of one zone at a time, so SAFEST / STEALTH
+1. Let the policies hand the navigation layer the final goal instead of one zone at a time, so SAFEST / STEALTH
    decide the whole route for plan orders too.
-3. Cover spots at round start and for holders with a default watch zone, once (1) has settled what holders are
-   worth; plant and defuse *at* a position rather than in a zone.
-4. `<map>.vis.json` for the other ten maps; fix Haven B Site and Pearl in the source data so their zones
+2. Cover spots at round start and for holders with a default watch zone — now measurable against a balance that
+   passes; plant and defuse *at* a position rather than in a zone.
+3. `<map>.vis.json` for the other ten maps; fix Haven B Site and Pearl in the source data so their zones
    connect.
+4. Re-check the two calibrated constants (§7.2) on the next playable map.
 
 ## 11. Reproduce
 
