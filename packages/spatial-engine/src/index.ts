@@ -10,4 +10,4 @@ export { createEngine, loadEngineFromFiles } from "./loader.js";
 export { MAP_IDS, MAPS, isMapId, listMaps, loadMap, loadMapData, defaultDatasetsRoot } from "./maps.js";
 export type { MapId, MapInfo, SiteLetter, LoadedMapData } from "./maps.js";
 export { Navigator, NavBlockers } from "./navigation.js";
-export type { NavData, NavEdgeKind, NavWaypoint, NavigationRequest, NavigationResult, MovementMode, RoutePreference } from "./navigation.js";
+export type { NavVisibility, NavData, NavEdgeKind, NavWaypoint, NavigationRequest, NavigationResult, MovementMode, RoutePreference } from "./navigation.js";

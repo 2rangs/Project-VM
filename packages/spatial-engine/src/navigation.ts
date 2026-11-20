@@ -29,6 +29,13 @@ export interface NavData {
   links: Array<{ from: number; to: number; kind: NavEdgeKind; travelTimeMs: number; bidirectional: boolean }>;
 }
 
+/** Line of sight between roadmap nodes (<map>.vis.json): one bit per unordered pair, upper triangle. */
+export interface NavVisibility {
+  nodes: number;
+  rangeUnits: number;
+  bitsBase64: string;
+}
+
 export interface NavigationRequest {
   actorId: string;
   start: Vec3;
@@ -177,6 +184,8 @@ export class Navigator {
   private readonly speeds: { run: number; walk: number }; // uu per ms
   private readonly hasLinks: boolean;
   private readonly travelCache = new Map<string, Float64Array>();
+  private visBits: Uint8Array | null = null;
+  private visRange = 0;
 
   constructor(data: NavData, movement: { unitsPerMeter: number; runSpeedMetersPerSec: number; walkSpeedMetersPerSec: number }) {
     this.mapId = data.mapId;
@@ -216,6 +225,63 @@ export class Navigator {
       run: (movement.runSpeedMetersPerSec * movement.unitsPerMeter) / 1000,
       walk: (movement.walkSpeedMetersPerSec * movement.unitsPerMeter) / 1000,
     };
+  }
+
+  /** Attach the measured node-to-node line of sight. Ignored (returns false) if it is for another roadmap. */
+  setVisibility(v: NavVisibility): boolean {
+    if (v.nodes !== this.nodeCount) return false;
+    const bin = atob(v.bitsBase64);
+    const bits = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bits[i] = bin.charCodeAt(i);
+    this.visBits = bits;
+    this.visRange = v.rangeUnits;
+    return true;
+  }
+  get hasVisibility(): boolean { return this.visBits !== null; }
+
+  /** Measured line of sight between two roadmap nodes (false beyond the measured range). */
+  nodesVisible(a: number, b: number): boolean {
+    if (a === b) return true;
+    if (!this.visBits) return false;
+    const i = Math.min(a, b), j = Math.max(a, b), n = this.nodeCount;
+    const k = i * n - (i * (i + 1)) / 2 + (j - i - 1);
+    return ((this.visBits[k >> 3]! >> (7 - (k & 7))) & 1) === 1;
+  }
+
+  /**
+   * The roadmap node a body stands at, given the zone the simulation has it in: the nearest node
+   * of that zone (so a point near a wall is not matched to the floor behind the wall), else the
+   * nearest node of any zone.
+   */
+  locateInZone(p: Vec2 | Vec3, zoneId: string | null | undefined, maxDist = 700): number | null {
+    if (zoneId) {
+      const hasZ = typeof (p as Vec3).z === "number";
+      let best = -1, bestScore = Infinity;
+      for (const i of this.byZone.get(zoneId) ?? []) {
+        const d = Math.hypot(this.x[i]! - p.x, this.y[i]! - p.y);
+        if (d > maxDist) continue;
+        const dz = hasZ ? Math.abs(this.z[i]! - (p as Vec3).z) : 0;
+        const score = d + (dz > FLOOR_BAND ? 4 * dz : dz * 0.5);
+        if (score < bestScore) { bestScore = score; best = i; }
+      }
+      if (best >= 0) return best;
+    }
+    return this.locate(p);
+  }
+
+  /**
+   * Can a body at `a` see a body at `b`? Decided by where they really are: the measured line of
+   * sight between the roadmap nodes they stand at (walls, corners and height included), within
+   * the measured range. null when this map has no visibility data or a position is off the
+   * roadmap — the caller then falls back to its zone-level rule.
+   */
+  sees(a: Vec3, aZone: string | null | undefined, b: Vec3, bZone: string | null | undefined): boolean | null {
+    if (!this.visBits) return null;
+    const na = this.locateInZone(a, aZone), nb = this.locateInZone(b, bZone);
+    if (na === null || nb === null) return null;
+    if (na === nb) return true;
+    if (Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > this.visRange) return false;
+    return this.nodesVisible(na, nb);
   }
 
   private key(x: number, y: number): number {

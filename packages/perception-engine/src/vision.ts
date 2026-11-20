@@ -45,6 +45,20 @@ export function canSee(observer: PlayerState, target: PlayerState, ctx: VisionCo
 
   const zo = observer.zoneId ?? ctx.spatial.nearestZone(observer.position).id;
   const zt = target.zoneId ?? ctx.spatial.nearestZone(target.position).id;
+  // Positional sight: where the map carries measured line of sight between its roadmap nodes,
+  // who sees whom is decided by where the two bodies really stand — walls, corners and height —
+  // not by which zones they are in. Vision blockers keep their zone-level rule on top of it: a
+  // smoke in either body's zone cuts the line between two different zones, unless the map marks
+  // that line as one a smoke cannot cut.
+  const positional = ctx.params.vision.positionalSight === false ? null : ctx.spatial.nav?.sees(observer.position, zo, target.position, zt) ?? null;
+  if (positional !== null) {
+    if (!positional) return false;
+    if (zo !== zt && ctx.smokedPairs.some(([z]) => z === zo || z === zt)) {
+      if (!ctx.spatial.hasLineOfSight(zo, zt)) return false;
+      if (!ctx.spatial.hasLineOfSight(zo, zt, { smokedPairs: ctx.smokedPairs as Array<[string, string]> })) return false;
+    }
+    return true;
+  }
   if (zo === zt) {
     return ctx.params.vision.sameZoneAlwaysVisible;
   }

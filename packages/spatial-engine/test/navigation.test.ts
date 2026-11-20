@@ -154,6 +154,37 @@ describe("navigation: Ascent", () => {
     for (const w of r.waypoints) expect(["a-main", "a-site"]).toContain(ascent.nearestZone(w.position).id);
   });
 
+  it("L — sight is decided by where two bodies stand, not by their zones", () => {
+    expect(nav.hasVisibility).toBe(true);
+    // A Main and A Site have a zone sightline, yet their two anchor points do not see each other …
+    const main = at("a-main"), site = at("a-site");
+    expect(ascent.hasLineOfSight("a-main", "a-site")).toBe(true);
+    expect(nav.sees(main, "a-main", site, "a-site")).toBe(false);
+    // … while some point of A Main does see some point of A Site, and what one sees sees it back
+    let pairs = 0;
+    for (const i of nav.zoneNodes("a-main")) for (const j of nav.zoneNodes("a-site")) {
+      if (!nav.nodesVisible(i, j)) continue;
+      pairs++;
+      expect(nav.nodesVisible(j, i)).toBe(true);
+      expect(nav.sees(nav.nodePosition(i), "a-main", nav.nodePosition(j), "a-site")).toBe(true);
+    }
+    expect(pairs).toBeGreaterThan(0);
+    // two bodies on the same spot see each other; beyond the measured range nobody does
+    expect(nav.sees(main, "a-main", main, "a-main")).toBe(true);
+    expect(nav.sees(at("attacker-spawn"), "attacker-spawn", at("defender-spawn"), "defender-spawn")).toBe(false);
+    // a wall decides it: A Site and A Rafters are 16 m apart with a zone sightline, and the site's
+    // floor under the rafters cannot see up onto them from everywhere
+    const seen = [...nav.zoneNodes("a-site")].filter((i) => nav.zoneNodes("a-rafters").some((j) => nav.nodesVisible(i, j))).length;
+    expect(seen).toBeGreaterThan(0);
+    expect(seen).toBeLessThan(nav.zoneNodes("a-site").length);
+  });
+
+  it("a map without measured line of sight answers null, and the caller keeps its zone rule", () => {
+    const bind = loadMap("bind");
+    expect(bind.nav!.hasVisibility).toBe(false);
+    expect(bind.nav!.sees(bind.standPosition("a-site"), "a-site", bind.standPosition("a-short"), "a-short")).toBeNull();
+  });
+
   it("roadmap travel times agree with the measured edge routes", () => {
     for (const [a, b] of [["a-main", "a-site"], ["b-main", "b-site"], ["mid-top", "mid-courtyard"], ["attacker-spawn", "b-lobby"]] as const) {
       const edge = ascent.edgeTraversal(a, b)!.runTimeMs;

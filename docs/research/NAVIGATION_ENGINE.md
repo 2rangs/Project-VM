@@ -237,7 +237,7 @@ the disc, not the zone. Doorway patches keep their zone-boundary rule.
 | I | Ten players, no abnormal overlap or wall crossing | movement (24-round match: all positions on floor, < 0.2 % of living pairs within one body radius, no step longer than a run step) | pass |
 | J | Path failure → no teleport, no straight fallback | navigation + movement (player does not move at all) | pass |
 | K | Rotations at real travel times | movement (arrival within 300 ms of the plan, > 1.3× the straight line) | pass |
-| L | Sight, range and footsteps from real positions | movement — **range only**: every duel is fought at the distance between the two recorded positions. Sight stays zone-level (§9); footsteps were already positional | pass (partial) |
+| L | Sight, range and footsteps from real positions | navigation + movement: sight between the two bodies' standing points (§7b), duel range between the two recorded positions; footsteps were already positional | pass |
 | M | Same start / goal, different information → different route | navigation + movement | pass |
 | N | Determinism | navigation + movement (tick for tick) | pass |
 | O | Instant result equals spectated result | movement (recording tracks changes no event) | pass |
@@ -319,6 +319,54 @@ was adjusted to compensate.
 
 
 
+### 7b. Positional sight (added after the table above)
+
+Sight is now decided from where two bodies stand. `tools/map-mesh/pipeline/vis_map.py` casts eye-level segments
+between every pair of roadmap nodes within 46 m against the map's solid, opaque triangles (a pair is visible when
+either eye sees the other's eye or chest) and stores one bit per pair in `<map>.vis.json`. For Ascent: 420,860
+pairs tested, 73,041 visible (17.4 %), 144 KB. `perception-engine/src/vision.ts` asks
+`Navigator.sees(positionA, zoneA, positionB, zoneB)` after its distance and FOV checks; vision blockers keep
+their zone rule on top (a smoke in either body's zone cuts the line between two different zones). Maps without
+the file — every map but Ascent today — keep the zone sightline table. `PerceptionParams.vision.positionalSight
+= false` switches it off.
+
+160 matches with positional sight, nothing retuned:
+
+| Judged metric | Real | `main` | Zone sight (§7) | **Positional sight** |
+|---|---|---|---|---|
+| Elimination | 0.714 | 0.674 | 0.705 | 0.675 |
+| Spike detonation | 0.082 | 0.108 | 0.095 | **0.127** |
+| Defuse | 0.160 | 0.189 | 0.078 | 0.101 |
+| Time expired | 0.043 | 0.030 | 0.122 | 0.098 |
+| Attack win rate | 0.509 | 0.507 | 0.488 | **0.465** |
+| Opening duel (attack) | 0.437 | 0.458 | 0.387 | 0.383 |
+| Pistol vs pistol | 0.500 | 0.438 | 0.403 | 0.403 |
+| Full vs full | 0.500 | 0.493 | 0.468 | 0.489 |
+| **Passed** | | 7 / 9 | 5 / 9 | **2 / 8** (two more miss by 0.004–0.005) |
+
+It did what it was meant to do and it is not enough. Eight matches traced again, same seeds:
+
+| | `main` | Zone sight | Positional sight |
+|---|---|---|---|
+| First duel: distance | 20.5 m | 30.9 m | **20.0 m** |
+| All duels: distance | 13.7 m | 26.9 m | 19.6 m |
+| First duel: attacker is moving | 83 % | 92 % | **98 %** |
+| First duel: attacker pre-aimed | 4.7 % | 4.0 % | 0.6 % |
+| All duels: defender saw first | 2.4 % | 18.9 % | **22.6 %** |
+| Plants (share of rounds) | 29.7 % | 17.3 % | 22.8 % (real 24.2 %) |
+
+- The range problem is gone: first contact is back at 20 m, and plants are close to the real rate.
+- What remains is **who is ready when they meet**. On `main` a player "arrived" the instant it entered a zone,
+  so one first duel in six found the attacker standing; now an attacker is still walking to its spot when it
+  comes into view, in 98 % of first duels, and the duel model penalises a moving shooter.
+- With real geometry a defender in *any* zone that actually overlooks the attacker's path sees it — from A Tree,
+  A Rafters, A Window — where the zone table only had the eleven hand-authored lines. Attackers face the zone
+  they are entering and nothing else, so one duel in five now starts with the defender seeing first.
+
+Both are behaviours the movement spec names and this engine does not have yet (§9): a destination chosen for
+its **cover** rather than its nearness to the callout, and **clearing angles** on the way in. They were not
+attempted here, and no duel or perception constant was changed to compensate.
+
 ## 8. Path errors found and fixed along the way
 
 | Error | Found by | Fix |
@@ -342,9 +390,11 @@ was adjusted to compensate.
   (`apps/desktop/src/shared/real-sim.ts`, `src/data/sim/ascent.nav.json`, refreshed `ascent.navgraph.json`) —
   without it the simulator refuses to start a round. **The desktop was not built, typechecked or run here**
   (its dependencies are not installed in this worktree).
-- **Sight is still zone-level.** Who sees whom is decided by the two players' zones and the zone sightline
-  table. No occluder geometry is available at runtime, so a player in a long zone is "visible" along it
-  regardless of where it stands.
+- **Sight is positional on Ascent only.** The other ten maps have no `<map>.vis.json` yet (about 2.3 MB for all
+  of them; not generated while the question of what navigation data may be committed is open) and keep the
+  zone sightline table. Sight is decided between the roadmap nodes the two bodies stand at (≤ ~1.3 m from the
+  body), not between exact positions. Ability effects that reveal or blind (recon, flash) and tracers still use
+  zone sightlines.
 - **Intent-based spots.** A spot is "a free node near the zone's anchor". Cover, the angle being held, an entry
   position at the edge of a space, a plant spot on the plant area — none of that is modelled; there is no data
   for it yet.
@@ -362,8 +412,8 @@ was adjusted to compensate.
 
 1. Phase 4: make the policies plan with `Navigator.zoneTravelMs` and set a route preference per role (entry
    FASTEST, saver SAFEST, lurker a separate corridor), with `zoneCosts` built from the belief state.
-2. Positional sight: precompute node-to-node visibility with the existing ray caster and ship it with the
-   roadmap, so that sight stops being zone-level.
+2. Cover and angles (§7b): choose a standing spot by what can see it, and make a mover check the angles that
+   overlook its path — the two behaviours the remaining balance gap points at.
 3. Phase 5: the debug view (roadmap, corridor, planned waypoints, actual trace, failures, blockers).
 4. Spot semantics (cover / angle / plant area) once there is data for them.
 5. Fix Haven B Site and Pearl in the source data so their zones connect.

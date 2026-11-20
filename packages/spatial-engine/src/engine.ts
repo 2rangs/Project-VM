@@ -16,7 +16,7 @@ import type {
 import { MapCoordinateSystem } from "./coordinate.js";
 import { ZoneGraph, type PathOptions } from "./pathfinding.js";
 import { distance3, pointAlongPolyline, pointInPolygon } from "./geometry.js";
-import { Navigator, type NavData } from "./navigation.js";
+import { Navigator, type NavData, type NavVisibility } from "./navigation.js";
 
 /** Key of an exact position for SpatialEngine.setPositionZones. */
 export function positionKey(x: number, y: number): string {
@@ -28,6 +28,8 @@ export interface SpatialEngineOptions {
   transform?: CoordinateTransform;
   /** The map's navigation roadmap (<map>.nav.json). Without it there is no geometric navigation. */
   nav?: NavData;
+  /** Measured line of sight between roadmap nodes (<map>.vis.json). Without it sight is zone-level. */
+  visibility?: NavVisibility;
 }
 
 /**
@@ -59,6 +61,7 @@ export class SpatialEngine {
 
     for (const z of data.zones) this.zoneById.set(z.id, z);
     this.nav = opts.nav ? new Navigator(opts.nav, data.movement) : null;
+    if (this.nav && opts.visibility) this.nav.setVisibility(opts.visibility);
 
     const m = data.movement;
     this.graph = new ZoneGraph(

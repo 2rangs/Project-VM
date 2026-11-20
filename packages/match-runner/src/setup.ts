@@ -8,7 +8,7 @@
  * shapes and fills the belief PV-3 owns (perception produces observation only). R2-B: PV-4 to
  * populate the contract teammate fields natively so this backfill can be dropped.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
@@ -30,7 +30,10 @@ export function loadSpatial(mapId = "ascent"): SpatialEngine {
   const nav = JSON.parse(readFileSync(resolve(dir, `${mapId}.navgraph.json`), "utf8"));
   const cs = JSON.parse(readFileSync(resolve(dir, "coordinate-system.json"), "utf8"));
   const roadmap = JSON.parse(readFileSync(resolve(dir, `${mapId}.nav.json`), "utf8"));
-  return createEngine(nav, cs.transform, roadmap);
+  // measured line of sight between roadmap nodes; without it sight falls back to the zone table
+  const visPath = resolve(dir, `${mapId}.vis.json`);
+  const visibility = existsSync(visPath) ? JSON.parse(readFileSync(visPath, "utf8")) : undefined;
+  return createEngine(nav, cs.transform, roadmap, visibility);
 }
 
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */

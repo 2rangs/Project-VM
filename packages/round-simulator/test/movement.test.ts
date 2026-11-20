@@ -228,7 +228,7 @@ describe("ten players, a full match", () => {
     expect(overlapping / pairs).toBeLessThan(0.002);
   });
 
-  it("L — a duel is fought at the distance between where the two players really are", () => {
+  it("L — a duel is fought between two players who really see each other, at the distance between where they really are", () => {
     const r = new RoundSimulator({
       spatial, weapons, abilities: NO_ABILITIES,
       policies: { attack: new ScriptedPolicy(sq, { attackSite: "a-site" }), defense: new ScriptedPolicy(sq, { defenseAnchors: SYNTHETIC_DEFENSE_ANCHORS }) },
@@ -243,6 +243,12 @@ describe("ten players, a full match", () => {
       const f = out.round.tracks!.find((fr) => fr.elapsedMs === d.elapsedMs)!;
       const a = f.players.find((p) => p.id === d.attackerId)!, b = f.players.find((p) => p.id === d.defenderId)!;
       expect(Math.abs(d.distanceMeters - dist(a, b) / 100), `${d.attackerId} v ${d.defenderId}`).toBeLessThan(0.6);
+    }
+    // … and between two bodies that really have line of sight from where they stand
+    for (const d of duels) {
+      const f = out.round.tracks!.find((fr) => fr.elapsedMs === d.elapsedMs)!;
+      const a = f.players.find((p) => p.id === d.attackerId)!, b = f.players.find((p) => p.id === d.defenderId)!;
+      expect(nav.sees(a, d.attackerZone, b, d.defenderZone), `${d.attackerId} v ${d.defenderId} @${d.elapsedMs}`).toBe(true);
     }
     // and at least one duel is NOT at the distance between the two zones' callouts
     const callouts = duels.some((d) => {

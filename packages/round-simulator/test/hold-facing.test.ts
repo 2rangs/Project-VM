@@ -3,16 +3,15 @@ import { AVERAGE_SKILLS } from "@pv/combat-engine";
 import {
   RoundSimulator, type DecisionPolicy, type PolicyDecision, type PolicyView, type SimPlayer, type SimState, type ZoneId,
 } from "../src/index.js";
-import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, NO_ABILITIES, scenePos } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
 const weapons = loadWeapons();
 
 function mk(id: string, side: "attack" | "defense", zoneId: string, facing: { x: number; y: number }): SimPlayer {
-  const z = spatial.getZone(zoneId)!;
   return {
     id, teamId: side === "attack" ? "attackers" : "defenders", side, agentId: "a",
-    position: { ...z.position }, zoneId, facing, health: 100, armor: 100, alive: true, weaponId: "Classic",
+    position: { ...scenePos(spatial, zoneId) }, zoneId, facing, health: 100, armor: 100, alive: true, weaponId: "Classic",
     skills: AVERAGE_SKILLS, abilities: [], ultimatePoints: 0, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run",
   };
 }

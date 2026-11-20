@@ -3,16 +3,15 @@ import { PerceptionEngine, type AbilityState } from "@pv/perception-engine";
 import { AbilityEngine, abilitySpecFromCatalog, visionBlockerIsSmoke } from "@pv/ability-engine";
 import { AVERAGE_SKILLS } from "@pv/combat-engine";
 import { buildPolicyView, SpatialQueryAdapter, type SimPlayer, type SimState } from "../src/index.js";
-import { loadSpatial } from "./fixtures/setup.js";
+import { loadSpatial, scenePos } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
 const sq = new SpatialQueryAdapter(spatial);
 
 function mk(id: string, side: "attack" | "defense", zoneId: string, facing = { x: 1, y: 0 }): SimPlayer {
-  const z = spatial.getZone(zoneId)!;
   return {
     id, teamId: side === "attack" ? "attackers" : "defenders", side, agentId: "a",
-    position: { ...z.position }, zoneId, facing, health: 100, armor: 0, alive: true, weaponId: "Vandal",
+    position: { ...scenePos(spatial, zoneId) }, zoneId, facing, health: 100, armor: 0, alive: true, weaponId: "Vandal",
     skills: AVERAGE_SKILLS, abilities: [], ultimatePoints: 0, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run",
   };
 }
