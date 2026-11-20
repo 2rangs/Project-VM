@@ -18,11 +18,8 @@ interface Opts { patch?: "fire" | "slow" | null; clockMs?: number; seed?: number
 
 const CROSS_TICKS = Math.ceil(patchExposureMs(400, 675, true) / 100); // 12
 const CROSS_DAMAGE = CROSS_TICKS * 6; // 72
-/** A main → A site at run speed (centre to centre), on the 100 ms tick grid. */
-const TRAVEL_MS = (() => {
-  const a = spatial.getZone("a-main")!.position, b = spatial.getZone("a-site")!.position;
-  return Math.ceil((Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) / 675) * 10) * 100 - 100;
-})();
+/** A main → A site at run speed along the edge's measured walkable route, on the 100 ms tick grid. */
+const TRAVEL_MS = Math.ceil(spatial.edgeTraversal("a-main", "a-site")!.runTimeMs / 100) * 100 - 100;
 
 function run(o: Opts = {}) {
   const clockMs = o.clockMs ?? 30_000;
@@ -163,13 +160,13 @@ describe("a patch in the middle of a zone: who is on it, and for how long, is ge
 });
 
 describe("the route planner prices fire: wait, cross or go round, whichever is cheapest", () => {
-  /** `mov` goes mid courtyard → mid bottom; the short way is the catwalk (6.7 s), the long way the cubby (9.4 s). */
+  /** `mov` goes mid cubby → mid link; the short way is the courtyard (6.5 s), the long way mid bottom (9.0 s). */
   function route(fire: boolean) {
     const attack = scripted((p, v) => {
-      if (p.id === "thr") return fire && charges(p, FIRE) > 0 ? { kind: "useAbility", abilityId: FIRE, targetZone: "mid-catwalk" } : undefined;
-      return v.timeRemainingMs > 29_500 ? undefined : { kind: "move", targetZone: "mid-bottom", moveMode: "run" }; // plans after the fire is down
+      if (p.id === "thr") return fire && charges(p, FIRE) > 0 ? { kind: "useAbility", abilityId: FIRE, targetZone: "mid-courtyard" } : undefined;
+      return v.timeRemainingMs > 29_500 ? undefined : { kind: "move", targetZone: "mid-link", moveMode: "run" }; // plans after the fire is down
     });
-    const state = scene([player("mov", "attack", "mid-courtyard"), player("thr", "attack", "mid-catwalk", [FIRE]), player("far", "defense", "defender-spawn")], 30_000, "thr");
+    const state = scene([player("mov", "attack", "mid-cubby"), player("thr", "attack", "mid-courtyard", [FIRE]), player("far", "defense", "defender-spawn")], 30_000, "thr");
     const result = new RoundSimulator({
       spatial, weapons, abilities: catalog, policies: { attack, defense: scripted(() => undefined) },
       config: { seed: 5, roundTimeMs: 30_000, traceCommands: true },
@@ -178,12 +175,12 @@ describe("the route planner prices fire: wait, cross or go round, whichever is c
   }
 
   it("no fire: the short way", () => {
-    expect(route(false).hops).toEqual(["mid-catwalk", "mid-bottom"]);
+    expect(route(false).hops).toEqual(["mid-courtyard", "mid-link"]);
   });
 
   it("counterfactual — fresh fire on the short way: the detour is shorter than the wait, so the runner goes round", () => {
     const r = route(true);
-    expect(r.hops).toEqual(["mid-cubby", "mid-bottom"]);
+    expect(r.hops).toEqual(["mid-bottom", "mid-link"]);
     expect(r.health).toBe(100);
   });
 });

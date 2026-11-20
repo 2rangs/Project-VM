@@ -34,8 +34,10 @@ describe("5v5 round loop", () => {
   });
 
   it("different seeds can produce different rounds", () => {
+    // (seeds 1 and 99 happen to win the same six duels in this scripted scene since travel
+    // times follow the measured routes; 1 and 2 do not)
     const a = sim(1).runRound(makeSyntheticRound(spatial));
-    const b = sim(99).runRound(makeSyntheticRound(spatial));
+    const b = sim(2).runRound(makeSyntheticRound(spatial));
     expect(JSON.stringify(a.events)).not.toEqual(JSON.stringify(b.events));
   });
 });

@@ -1,0 +1,1296 @@
+{
+ "note": "Walkable polylines for the navgraph edges, measured on the 2.5D walk grid of the map geometry (game uu, z = floor height). Every segment was re-walked cell by cell: each step moves between walk-linked, standable cells. 'route' is used in both directions (reversed) unless 'routeReverse' is present. status 'straight' = no walkable route; the edge keeps its straight segment and is flagged in the navgraph.",
+ "params": {
+  "cell": 0.5,
+  "voxel_z": 0.25,
+  "sample": 0.2,
+  "floor_nz": 0.64,
+  "layer_gap": 0.35,
+  "body_lo": 0.5,
+  "body_hi": 1.5,
+  "max_slope": 1.2,
+  "max_drop": 5.0,
+  "min_component": 40,
+  "snap_radius": 6.0,
+  "zone_radius": 9.0,
+  "eye": 1.6,
+  "los_samples": 12,
+  "los_cell": 2.0,
+  "margin": 45.0,
+  "seed": 20261119,
+  "clearance_levels": 3,
+  "clearance_cost": [
+   2.6,
+   1.7,
+   1.25,
+   1.0
+  ],
+  "lookahead": 120,
+  "height_tol": 0.3,
+  "symmetric_within": 1.1,
+  "no_special_route": [
+   "rope",
+   "teleporter",
+   "zipline"
+  ]
+ },
+ "provenance": "measured-on-mesh",
+ "summary": {
+  "edges": 25,
+  "withWalkableRoute": 25,
+  "flaggedStraight": 0,
+  "walkingSegmentsRayChecked": 107,
+  "walkingSegmentsHittingGeometry": 0
+ },
+ "zoneAnchors": {
+  "attacker-spawn": {
+   "x": -5900,
+   "y": -325,
+   "z": 202
+  },
+  "defender-spawn": {
+   "x": 4050,
+   "y": -1975,
+   "z": 307
+  },
+  "a-alley": {
+   "x": 3350,
+   "y": 3625,
+   "z": 100
+  },
+  "a-elbow": {
+   "x": 250,
+   "y": 4175,
+   "z": 100
+  },
+  "a-link": {
+   "x": 2050,
+   "y": 2975,
+   "z": 202
+  },
+  "a-lobby": {
+   "x": -1800,
+   "y": 2025,
+   "z": 0
+  },
+  "a-main": {
+   "x": -600,
+   "y": 2175,
+   "z": 1
+  },
+  "a-site": {
+   "x": 1050,
+   "y": 3325,
+   "z": 100
+  },
+  "b-boba": {
+   "x": 2150,
+   "y": -4825,
+   "z": 403
+  },
+  "b-lobby": {
+   "x": -3250,
+   "y": -2475,
+   "z": 400
+  },
+  "b-main": {
+   "x": -1950,
+   "y": -5625,
+   "z": 200
+  },
+  "b-market": {
+   "x": -150,
+   "y": -3425,
+   "z": 200
+  },
+  "b-site": {
+   "x": -500,
+   "y": -5775,
+   "z": 200
+  },
+  "mid-bottom": {
+   "x": -1800,
+   "y": -1975,
+   "z": 207
+  },
+  "mid-courtyard": {
+   "x": -550,
+   "y": -1175,
+   "z": 200
+  },
+  "mid-tiles": {
+   "x": -1750,
+   "y": 375,
+   "z": 202
+  },
+  "mid-top": {
+   "x": 2250,
+   "y": -1925,
+   "z": 401
+  }
+ },
+ "zonesWithoutAnchor": [],
+ "edges": [
+  {
+   "from": "a-link",
+   "to": "a-site",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 10.64,
+   "route": {
+    "waypoints": [
+     [
+      2050,
+      2975,
+      202
+     ],
+     [
+      1800,
+      2975,
+      103
+     ],
+     [
+      1600,
+      2975,
+      100
+     ],
+     [
+      1300,
+      3325,
+      100
+     ],
+     [
+      1050,
+      3325,
+      100
+     ]
+    ],
+    "lengthMeters": 11.8,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 13.58,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-lobby",
+   "to": "a-main",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 12.09,
+   "route": {
+    "waypoints": [
+     [
+      -1800,
+      2025,
+      0
+     ],
+     [
+      -600,
+      2175,
+      1
+     ]
+    ],
+    "lengthMeters": 12.09,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 13.04,
+    "raySegments": 1,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-lobby",
+   "to": "mid-bottom",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 15.46,
+   "route": {
+    "waypoints": [
+     [
+      -3250,
+      -2475,
+      400
+     ],
+     [
+      -2200,
+      -1825,
+      400
+     ],
+     [
+      -2050,
+      -1775,
+      343
+     ],
+     [
+      -1800,
+      -1975,
+      207
+     ]
+    ],
+    "lengthMeters": 17.51,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 18.94,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-main",
+   "to": "b-site",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 14.58,
+   "route": {
+    "waypoints": [
+     [
+      -1950,
+      -5625,
+      200
+     ],
+     [
+      -550,
+      -5125,
+      200
+     ],
+     [
+      -350,
+      -5425,
+      200
+     ],
+     [
+      -500,
+      -5775,
+      200
+     ]
+    ],
+    "lengthMeters": 22.28,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 24.31,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-main",
+   "to": "mid-tiles",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 21.45,
+   "route": {
+    "waypoints": [
+     [
+      -600,
+      2175,
+      1
+     ],
+     [
+      -1600,
+      475,
+      188
+     ],
+     [
+      -1750,
+      375,
+      202
+     ]
+    ],
+    "lengthMeters": 21.62,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 23.29,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "defender-spawn",
+   "to": "mid-top",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 18.03,
+   "route": {
+    "waypoints": [
+     [
+      4050,
+      -1975,
+      307
+     ],
+     [
+      4050,
+      -1425,
+      300
+     ],
+     [
+      3200,
+      -1475,
+      400
+     ],
+     [
+      2250,
+      -1925,
+      401
+     ]
+    ],
+    "lengthMeters": 24.59,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 27.2,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-courtyard",
+   "to": "mid-tiles",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 19.6,
+   "route": {
+    "waypoints": [
+     [
+      -550,
+      -1175,
+      200
+     ],
+     [
+      -200,
+      -775,
+      200
+     ],
+     [
+      -600,
+      -125,
+      199
+     ],
+     [
+      -1750,
+      375,
+      202
+     ]
+    ],
+    "lengthMeters": 25.49,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 27.47,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-market",
+   "to": "b-site",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 23.76,
+   "route": {
+    "waypoints": [
+     [
+      -150,
+      -3425,
+      200
+     ],
+     [
+      100,
+      -4225,
+      200
+     ],
+     [
+      -500,
+      -5775,
+      200
+     ]
+    ],
+    "lengthMeters": 25.0,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 27.44,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-bottom",
+   "to": "mid-tiles",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 23.51,
+   "route": {
+    "waypoints": [
+     [
+      -1800,
+      -1975,
+      207
+     ],
+     [
+      -1300,
+      -675,
+      200
+     ],
+     [
+      -1750,
+      375,
+      202
+     ]
+    ],
+    "lengthMeters": 25.35,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 27.73,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-alley",
+   "to": "a-site",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 23.19,
+   "route": {
+    "waypoints": [
+     [
+      3350,
+      3625,
+      100
+     ],
+     [
+      2800,
+      4225,
+      100
+     ],
+     [
+      1050,
+      3325,
+      100
+     ]
+    ],
+    "lengthMeters": 27.82,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 29.8,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-boba",
+   "to": "b-site",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 28.22,
+   "route": {
+    "waypoints": [
+     [
+      2150,
+      -4825,
+      403
+     ],
+     [
+      1800,
+      -4875,
+      403
+     ],
+     [
+      1750,
+      -4875,
+      347
+     ],
+     [
+      1600,
+      -4925,
+      329
+     ],
+     [
+      1300,
+      -5225,
+      300
+     ],
+     [
+      1000,
+      -5225,
+      298
+     ],
+     [
+      600,
+      -5275,
+      200
+     ],
+     [
+      -50,
+      -5325,
+      200
+     ],
+     [
+      -500,
+      -5775,
+      200
+     ]
+    ],
+    "lengthMeters": 30.17,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 31.71,
+    "raySegments": 8,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-elbow",
+   "to": "a-site",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 11.67,
+   "route": {
+    "waypoints": [
+     [
+      250,
+      4175,
+      100
+     ],
+     [
+      450,
+      2425,
+      102
+     ],
+     [
+      1400,
+      2925,
+      100
+     ],
+     [
+      1300,
+      3325,
+      100
+     ],
+     [
+      1050,
+      3325,
+      100
+     ]
+    ],
+    "lengthMeters": 34.97,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 37.24,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-elbow",
+   "to": "a-main",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 21.75,
+   "route": {
+    "waypoints": [
+     [
+      250,
+      4175,
+      100
+     ],
+     [
+      100,
+      3975,
+      97
+     ],
+     [
+      -1400,
+      3325,
+      0
+     ],
+     [
+      -1150,
+      2675,
+      0
+     ],
+     [
+      -600,
+      2175,
+      1
+     ]
+    ],
+    "lengthMeters": 33.27,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 35.77,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-elbow",
+   "to": "a-lobby",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 29.72,
+   "route": {
+    "waypoints": [
+     [
+      250,
+      4175,
+      100
+     ],
+     [
+      100,
+      3975,
+      97
+     ],
+     [
+      -1400,
+      3325,
+      0
+     ],
+     [
+      -1800,
+      2025,
+      0
+     ]
+    ],
+    "lengthMeters": 32.48,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 35.32,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-market",
+   "to": "mid-courtyard",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 22.85,
+   "route": {
+    "waypoints": [
+     [
+      -150,
+      -3425,
+      200
+     ],
+     [
+      800,
+      -2525,
+      201
+     ],
+     [
+      700,
+      -1025,
+      200
+     ],
+     [
+      -400,
+      -1075,
+      200
+     ],
+     [
+      -550,
+      -1175,
+      200
+     ]
+    ],
+    "lengthMeters": 40.93,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 43.06,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-boba",
+   "to": "mid-top",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 29.02,
+   "route": {
+    "waypoints": [
+     [
+      2150,
+      -4825,
+      403
+     ],
+     [
+      2150,
+      -4325,
+      400
+     ],
+     [
+      3000,
+      -3775,
+      400
+     ],
+     [
+      3200,
+      -1975,
+      401
+     ],
+     [
+      2400,
+      -1775,
+      401
+     ],
+     [
+      2250,
+      -1925,
+      401
+     ]
+    ],
+    "lengthMeters": 43.6,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 47.09,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-lobby",
+   "to": "b-main",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 34.14,
+   "route": {
+    "waypoints": [
+     [
+      -3250,
+      -2475,
+      400
+     ],
+     [
+      -2400,
+      -2425,
+      400
+     ],
+     [
+      -1800,
+      -3125,
+      400
+     ],
+     [
+      -1400,
+      -3425,
+      400
+     ],
+     [
+      -1450,
+      -3875,
+      200
+     ],
+     [
+      -1750,
+      -5425,
+      200
+     ],
+     [
+      -1950,
+      -5625,
+      200
+     ]
+    ],
+    "lengthMeters": 46.3,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 50.0,
+    "raySegments": 6,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-courtyard",
+   "to": "mid-top",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 29.06,
+   "route": {
+    "waypoints": [
+     [
+      -550,
+      -1175,
+      200
+     ],
+     [
+      2100,
+      -75,
+      400
+     ],
+     [
+      2400,
+      -275,
+      400
+     ],
+     [
+      2250,
+      -1925,
+      401
+     ]
+    ],
+    "lengthMeters": 48.94,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 52.73,
+    "raySegments": 3,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "attacker-spawn",
+   "to": "b-lobby",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 34.18,
+   "route": {
+    "waypoints": [
+     [
+      -5900,
+      -325,
+      202
+     ],
+     [
+      -3000,
+      -375,
+      400
+     ],
+     [
+      -3250,
+      -2475,
+      400
+     ]
+    ],
+    "lengthMeters": 50.22,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 52.85,
+    "raySegments": 2,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-boba",
+   "to": "b-market",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 27.0,
+   "route": {
+    "waypoints": [
+     [
+      2150,
+      -4825,
+      403
+     ],
+     [
+      1250,
+      -3975,
+      400
+     ],
+     [
+      1100,
+      -3925,
+      400
+     ],
+     [
+      1000,
+      -3875,
+      473
+     ],
+     [
+      950,
+      -3875,
+      200
+     ],
+     [
+      -150,
+      -3425,
+      200
+     ]
+    ],
+    "lengthMeters": 29.96,
+    "drops": 1,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 32.16,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "routeReverse": {
+    "waypoints": [
+     [
+      -150,
+      -3425,
+      200
+     ],
+     [
+      650,
+      -5225,
+      212
+     ],
+     [
+      1000,
+      -5175,
+      298
+     ],
+     [
+      1600,
+      -5025,
+      300
+     ],
+     [
+      1850,
+      -4775,
+      403
+     ],
+     [
+      2150,
+      -4825,
+      403
+     ]
+    ],
+    "lengthMeters": 36.25,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 39.83,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-alley",
+   "to": "a-elbow",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 31.48,
+   "route": {
+    "waypoints": [
+     [
+      3350,
+      3625,
+      100
+     ],
+     [
+      2600,
+      4725,
+      100
+     ],
+     [
+      2450,
+      4975,
+      207
+     ],
+     [
+      2150,
+      5425,
+      213
+     ],
+     [
+      450,
+      5325,
+      213
+     ],
+     [
+      400,
+      5025,
+      213
+     ],
+     [
+      300,
+      4575,
+      101
+     ],
+     [
+      250,
+      4175,
+      100
+     ]
+    ],
+    "lengthMeters": 50.68,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 54.33,
+    "raySegments": 7,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "attacker-spawn",
+   "to": "a-lobby",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 47.3,
+   "route": {
+    "waypoints": [
+     [
+      -5900,
+      -325,
+      202
+     ],
+     [
+      -3950,
+      1825,
+      202
+     ],
+     [
+      -3850,
+      1925,
+      151
+     ],
+     [
+      -3500,
+      2125,
+      -2
+     ],
+     [
+      -3250,
+      2225,
+      -1
+     ],
+     [
+      -1800,
+      2025,
+      0
+     ]
+    ],
+    "lengthMeters": 52.17,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 54.23,
+    "raySegments": 5,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "defender-spawn",
+   "to": "a-alley",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 56.47,
+   "route": {
+    "waypoints": [
+     [
+      4050,
+      -1975,
+      307
+     ],
+     [
+      5000,
+      -1125,
+      301
+     ],
+     [
+      4900,
+      1375,
+      300
+     ],
+     [
+      4250,
+      2025,
+      300
+     ],
+     [
+      4250,
+      2225,
+      295
+     ],
+     [
+      4200,
+      2975,
+      104
+     ],
+     [
+      4200,
+      3775,
+      100
+     ],
+     [
+      3350,
+      3675,
+      100
+     ],
+     [
+      3350,
+      3625,
+      100
+     ]
+    ],
+    "lengthMeters": 73.77,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 78.17,
+    "raySegments": 8,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "a-alley",
+   "to": "mid-top",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 56.66,
+   "route": {
+    "waypoints": [
+     [
+      3350,
+      3625,
+      100
+     ],
+     [
+      3500,
+      3825,
+      100
+     ],
+     [
+      4250,
+      3725,
+      100
+     ],
+     [
+      4100,
+      2975,
+      105
+     ],
+     [
+      4000,
+      2225,
+      296
+     ],
+     [
+      3900,
+      1575,
+      300
+     ],
+     [
+      2850,
+      1225,
+      300
+     ],
+     [
+      2800,
+      1025,
+      300
+     ],
+     [
+      2800,
+      825,
+      397
+     ],
+     [
+      2700,
+      25,
+      400
+     ],
+     [
+      2250,
+      -1925,
+      401
+     ]
+    ],
+    "lengthMeters": 75.52,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 80.27,
+    "raySegments": 10,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "b-boba",
+   "to": "b-market",
+   "bidirectional": false,
+   "kind": "drop",
+   "straightMeters": 27.0,
+   "route": {
+    "waypoints": [
+     [
+      2150,
+      -4825,
+      403
+     ],
+     [
+      1250,
+      -3975,
+      400
+     ],
+     [
+      1100,
+      -3925,
+      400
+     ],
+     [
+      1000,
+      -3875,
+      473
+     ],
+     [
+      950,
+      -3875,
+      200
+     ],
+     [
+      -150,
+      -3425,
+      200
+     ]
+    ],
+    "lengthMeters": 29.96,
+    "drops": 1,
+    "validated": true,
+    "minClearanceCells": 0,
+    "gridPathMeters": 32.16,
+    "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  }
+ ]
+}

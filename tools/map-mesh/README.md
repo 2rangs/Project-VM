@@ -84,12 +84,18 @@ python3 -I tools/map-processor/build_map.py bind          # or --all
 # 4. schematic PNG (graph over the walkable footprint, minimap orientation)
 $PY -I tools/map-mesh/pipeline/render_map.py --map bind --derived $D/bind
 
+# 4b. walkable route (polyline) for every edge -> mesh/bind-routes.json, then merge into the navgraph
+$PY -I tools/map-mesh/pipeline/route_map.py --map bind --derived $D/bind
+python3 -I tools/map-processor/build_map.py bind          # Ascent: python3 -I tools/map-processor/apply_routes.py ascent
+
 # 5. independent orientation check from named collections
 python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-landmark-check.json
 ```
 
 - `pipeline/mapgeom.py`   — surface sampling, voxel occupancy, walk grid, Dijkstra, ray index
 - `pipeline/measure_map.py` — the measurement stage (reuses `los/los.py`'s tested ray/triangle core)
+- `pipeline/route_map.py`  — A* + string-pull + exact cell-by-cell validation of one polyline per edge
+  (`docs/research/MAP_ROUTES.md`); writes `<derived>/walkable.json` for the optional local tests
 - `pipeline/render_map.py`, `pipeline/pngdraw.py` — dependency-free PNG schematic
 - `../map-processor/mapzones.py` — callout -> zone rule; `../map-processor/build_map.py` — rules + provenance
 

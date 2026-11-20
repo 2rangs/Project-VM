@@ -172,6 +172,12 @@ Fields added for the geometry-derived maps (all optional; Ascent's file does not
 `zone.positionProvenance`, top-level `sites` (letters), `mechanics[]`, `dataQuality`.
 Provenance strings always contain one of `measured-on-mesh`, `derived-by-rule`, `manual-approx`.
 A one-way connection is an edge with `bidirectional: false` (kinds `drop`, `teleporter`).
+
+Walkable routes (all eleven maps, including Ascent): `zone.anchor` (walkable standing point, z = floor),
+`edge.route` / `edge.routeReverse` = `{ waypoints: [[x,y,z],…] in game uu, lengthMeters, runTimeMs, walkTimeMs,
+drops, provenance }`, `edge.routeStatus` (`"straight (…)"` when no route exists), `edge.beforeRoute` (the
+length/time the edge had before the route replaced them), top-level `routes` summary. When an edge has a route,
+its `distanceMeters` / `runTimeMs` / `walkTimeMs` are the route's. See `docs/research/MAP_ROUTES.md`.
 See `docs/research/MAPS_DATA.md`.
 
 ## Provenance — `provenance.schema.json`  (README §13.3)

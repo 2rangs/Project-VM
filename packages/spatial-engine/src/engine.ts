@@ -1,6 +1,7 @@
 import type {
   AudibleZone,
   CoordinateTransform,
+  EdgeTraversal,
   PathResult,
   PlantZone,
   Sightline,
@@ -14,7 +15,7 @@ import type {
 } from "./types.js";
 import { MapCoordinateSystem } from "./coordinate.js";
 import { ZoneGraph, type PathOptions } from "./pathfinding.js";
-import { distance3, pointInPolygon } from "./geometry.js";
+import { distance3, pointAlongPolyline, pointInPolygon } from "./geometry.js";
 
 export interface SpatialEngineOptions {
   /** Transform supplied separately (e.g. from coordinate-system.json). Falls back to data.transform. */
@@ -138,6 +139,31 @@ export class SpatialEngine {
 
   isReachable(fromId: string, toId: string, opts: PathOptions = {}): boolean {
     return this.graph.findPath(fromId, toId, "run", opts) !== null;
+  }
+
+  // ---- Movement along an edge ----
+
+  /** Where a player in this zone stands (and is drawn): the zone's walkable anchor, else its callout. */
+  standPosition(zoneId: string): Vec3 {
+    return this.graph.standPosition(zoneId);
+  }
+
+  /**
+   * The directed traversal between two ADJACENT zones: the polyline a mover follows (a measured
+   * walkable route, or a flagged straight segment), its length and its run/walk time. null when
+   * the zones are not joined by an edge in that direction.
+   */
+  edgeTraversal(fromId: string, toId: string): EdgeTraversal | null {
+    return this.graph.traversal(fromId, toId);
+  }
+
+  /**
+   * The point a given fraction (0..1, by distance) of the way along an edge's polyline, with the
+   * heading of the segment it lies on. null when the zones are not adjacent.
+   */
+  pointAlongEdge(fromId: string, toId: string, fraction: number): { position: Vec3; heading: Vec2 } | null {
+    const t = this.graph.traversal(fromId, toId);
+    return t ? pointAlongPolyline(t.waypoints, fraction) : null;
   }
 
   // ---- Plant judgment ----

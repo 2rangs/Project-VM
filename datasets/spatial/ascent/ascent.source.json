@@ -115,7 +115,23 @@
     { "from": "b-main", "to": "b-site" },
     { "from": "b-site", "to": "b-boathouse" },
     { "from": "b-boathouse", "to": "b-main" },
-    { "from": "b-site", "to": "defender-spawn" }
+    { "from": "b-site", "to": "defender-spawn" },
+
+    { "from": "a-tree", "to": "mid-cubby", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "mid-bottom", "to": "mid-courtyard", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "mid-bottom", "to": "mid-pizza", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "a-garden", "to": "a-tree", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "mid-catwalk", "to": "mid-cubby", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "mid-courtyard", "to": "mid-link", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "a-main", "to": "a-wine", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "a-lobby", "to": "mid-top", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "a-rafters", "to": "a-window", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "mid-catwalk", "to": "mid-top", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "defender-spawn", "to": "mid-market", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "defender-spawn", "to": "a-garden", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "b-lobby", "to": "mid-link", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "b-main", "to": "mid-link", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" },
+    { "from": "defender-spawn", "to": "a-window", "note": "geometry-derived adjacency (walk-grid control run 2026-11-19): the two zones' walkable areas touch" }
   ],
   "sightlines": [
     { "a": "a-main", "b": "a-site", "type": "direct", "smokeable": true, "note": "main entry onto site" },

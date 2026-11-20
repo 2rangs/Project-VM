@@ -1,4 +1,4 @@
-import type { NavEdge, TravelMode, Zone } from "./types.js";
+import type { EdgeRoute, EdgeTraversal, NavEdge, TravelMode, Vec3, Waypoint, Zone } from "./types.js";
 import { distance3 } from "./geometry.js";
 
 interface AdjEntry {
@@ -6,6 +6,16 @@ interface AdjEntry {
   distanceUnits: number;
   runTimeMs: number;
   walkTimeMs: number;
+  /** The directed traversal a mover follows (polyline + its own length/times). */
+  traversal: EdgeTraversal;
+}
+
+const toVec = (w: Waypoint): Vec3 => ({ x: w[0], y: w[1], z: w[2] });
+
+function polylineLength(points: readonly Vec3[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) total += distance3(points[i - 1]!, points[i]!);
+  return total;
 }
 
 /**
@@ -39,8 +49,9 @@ export class ZoneGraph {
   private readonly zones = new Map<string, Zone>();
   private readonly transit = new Map<string, boolean>();
   private readonly speeds: { run: number; walk: number }; // units per ms
-  /** 1 unless a special edge is faster than running its straight line (see constructor). */
+  /** <= 1: keeps the straight-line heuristic admissible (see constructor). */
   private heuristicScale = 1;
+  private readonly unitsPerMeter: number;
 
   constructor(zones: Zone[], edges: NavEdge[], unitsPerMeter: number, runMps: number, walkMps: number) {
     for (const z of zones) {
@@ -48,33 +59,72 @@ export class ZoneGraph {
       this.transit.set(z.id, z.transit !== false);
       this.adj.set(z.id, []);
     }
+    this.unitsPerMeter = unitsPerMeter;
     this.speeds = {
       run: (runMps * unitsPerMeter) / 1000,
       walk: (walkMps * unitsPerMeter) / 1000,
     };
     for (const e of edges) {
-      this.addDirected(e.from, e.to, e);
-      if (e.bidirectional) this.addDirected(e.to, e.from, e);
-      // A teleporter / zipline / rope may be faster than running the straight line, which
-      // would make the straight-line heuristic overestimate. Scale the heuristic down by the
-      // worst such edge so A* stays optimal. Ordinary edges (every Ascent edge) never touch
-      // this: the scale stays exactly 1.
-      if (e.kind === "teleporter" || e.kind === "zipline" || e.kind === "rope") {
-        const a = this.zones.get(e.from)!;
+      this.addDirected(e.from, e.to, e, false);
+      if (e.bidirectional) this.addDirected(e.to, e.from, e, true);
+    }
+    // The straight-line heuristic must never overestimate. A teleporter is faster than
+    // running its straight line, and a measured route between two anchors can be marginally
+    // shorter than the line between the two callouts — scale the heuristic by the worst case.
+    for (const [from, list] of this.adj) {
+      const a = this.zones.get(from)!;
+      for (const e of list) {
         const b = this.zones.get(e.to)!;
-        for (const [time, speed] of [[e.runTimeMs, this.speeds.run], [e.walkTimeMs, this.speeds.walk]] as const) {
-          const straightMs = distance3(a.position, b.position) / speed;
-          if (straightMs > 0) this.heuristicScale = Math.min(this.heuristicScale, time / straightMs);
-        }
+        const units = distance3(a.position, b.position);
+        if (units <= 0) continue;
+        this.heuristicScale = Math.min(this.heuristicScale, e.runTimeMs / (units / this.speeds.run), e.walkTimeMs / (units / this.speeds.walk));
       }
     }
   }
 
-  private addDirected(from: string, to: string, e: NavEdge): void {
+  /** Where a player stands in a zone: its measured anchor, else the callout position. */
+  standPosition(zoneId: string): Vec3 {
+    const z = this.zones.get(zoneId);
+    if (!z) throw new Error(`unknown zone: ${zoneId}`);
+    return z.anchor ?? z.position;
+  }
+
+  private addDirected(from: string, to: string, e: NavEdge, reverse: boolean): void {
     const list = this.adj.get(from);
     if (!list) throw new Error(`edge from unknown zone: ${from}`);
     if (!this.zones.has(to)) throw new Error(`edge to unknown zone: ${to}`);
-    list.push({ to, distanceUnits: e.distanceUnits, runTimeMs: e.runTimeMs, walkTimeMs: e.walkTimeMs });
+    // Which polyline this direction follows: the edge's own route, its dedicated way back,
+    // the same route reversed, or — with no measured route — the straight segment.
+    const route: EdgeRoute | undefined = reverse ? e.routeReverse ?? e.route : e.route;
+    const reversed = reverse && !e.routeReverse;
+    let waypoints: Vec3[];
+    let distanceUnits = e.distanceUnits;
+    let runTimeMs = e.runTimeMs;
+    let walkTimeMs = e.walkTimeMs;
+    if (route && route.waypoints.length >= 2) {
+      waypoints = route.waypoints.map(toVec);
+      if (reversed) waypoints.reverse();
+      distanceUnits = Math.round(route.lengthMeters * this.unitsPerMeter);
+      runTimeMs = route.runTimeMs;
+      walkTimeMs = route.walkTimeMs;
+    } else {
+      waypoints = [{ ...this.standPosition(from) }, { ...this.standPosition(to) }];
+    }
+    const traversal: EdgeTraversal = {
+      from, to, waypoints, lengthUnits: polylineLength(waypoints), runTimeMs, walkTimeMs,
+      ...(e.kind ? { kind: e.kind } : {}),
+      walkable: !!route,
+    };
+    list.push({ to, distanceUnits, runTimeMs, walkTimeMs, traversal });
+  }
+
+  /** The directed traversal from one zone to an adjacent one (fastest if several), or null. */
+  traversal(from: string, to: string): EdgeTraversal | null {
+    let best: AdjEntry | null = null;
+    for (const e of this.adj.get(from) ?? []) {
+      if (e.to === to && (!best || e.runTimeMs < best.runTimeMs)) best = e;
+    }
+    return best ? best.traversal : null;
   }
 
   hasZone(id: string): boolean {

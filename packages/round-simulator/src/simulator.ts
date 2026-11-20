@@ -45,7 +45,7 @@ import {
   patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, TRACER_CUE_CONFIDENCE,
 } from "./situational.js";
-import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
+import type { ActionCommand, BeliefState, DecisionPolicy, MoveMode, TeammateTransit } from "./policy-contract.js";
 import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 
@@ -426,7 +426,10 @@ export class RoundSimulator {
       if (this.cfg.recordTracks) {
         tracks.push({
           tick: state.tick, elapsedMs: state.elapsedMs,
-          players: state.players.map((p) => ({ id: p.id, side: p.side, x: p.position.x, y: p.position.y, z: p.position.z, alive: p.alive })),
+          players: state.players.map((p) => {
+            const t = this.trackPosition(p);
+            return { id: p.id, side: p.side, x: t.x, y: t.y, z: t.z, alive: p.alive };
+          }),
         });
       }
 
@@ -646,8 +649,7 @@ export class RoundSimulator {
     const from = this.spatial.getZone(p.zoneId);
     const next = this.spatial.getZone(p.path[p.pathIndex]!);
     if (!from || !next) return undefined;
-    const speed = p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC;
-    const edgeMs = (dist3(from.position, next.position) / speed) * 1000;
+    const edgeMs = this.edgeTravelMs(from.id, next.id, p.moveMode);
     // Standing at a fire's edge: it enters the next zone when the fire is out.
     const waitMs = this.edgeWaiting.get(p.id);
     return {
@@ -741,11 +743,48 @@ export class RoundSimulator {
   }
 
   /**
-   * Discrete zone-hop movement: a player occupies its current zone center until it has
-   * spent the edge's traversal time, then hops to the next zone. This keeps players ON
-   * real zones (never straight-lining across the map between distant centers), so
-   * perception and engagement only use genuine zone sightlines. facing points at the next
-   * zone while travelling.
+   * How long the edge between two adjacent zones takes. The map's edge decides: its measured
+   * walkable route when it has one (navgraph `edge.route`, route length at the map's run/walk
+   * speed), else the edge's own time (a teleporter's fixed time, a flagged straight link). Only
+   * for two zones with no edge between them does it fall back to the straight line between
+   * their centres. This is the same number pathfinding uses to choose the route.
+   */
+  private edgeTravelMs(fromId: string, toId: string, mode: MoveMode): number {
+    const t = this.spatial.edgeTraversal(fromId, toId);
+    if (t) return mode === "run" ? t.runTimeMs : t.walkTimeMs;
+    const from = this.spatial.getZone(fromId), to = this.spatial.getZone(toId);
+    if (!from || !to) return 0;
+    return (dist3(from.position, to.position) / (mode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC)) * 1000;
+  }
+
+  /**
+   * Where the player IS on the map this tick, for the recorded track: travelling, the point
+   * that far along the edge's walkable polyline (so a mover follows the real floor around
+   * walls instead of cutting straight between zone centres); standing, the zone's walkable
+   * anchor. `p.position` deliberately stays the zone's logical centre — perception, combat
+   * range and every policy derive the zone from it (nearest-zone), so those stay zone-level.
+   */
+  private trackPosition(p: SimPlayer): SimPlayer["position"] {
+    const zone = this.spatial.getZone(p.zoneId);
+    // moved off its zone centre by something other than walking (not the case today): as is
+    if (!zone || p.position.x !== zone.position.x || p.position.y !== zone.position.y || p.position.z !== zone.position.z) return p.position;
+    // (a player killed mid-edge stops advancing, so its track stays where it fell)
+    if (p.pathIndex < p.path.length && p.edgeProgressMs > 0) {
+      const nextId = p.path[p.pathIndex]!;
+      const edgeMs = this.edgeTravelMs(p.zoneId, nextId, p.moveMode);
+      const at = edgeMs > 0 ? this.spatial.pointAlongEdge(p.zoneId, nextId, p.edgeProgressMs / edgeMs) : null;
+      if (at) return at.position;
+    }
+    return this.spatial.standPosition(p.zoneId);
+  }
+
+  /**
+   * Zone-hop movement on measured routes: a player belongs to its current zone until it has
+   * spent the edge's traversal time, then enters the next zone. The time is the edge's walkable
+   * route (edgeTravelMs), and the recorded track shows the player moving continuously along
+   * that route's polyline (trackPosition). Logically the player stays ON real zones — never
+   * between them — so perception and engagement only use genuine zone sightlines. facing
+   * points at the next zone while travelling.
    */
   private stepMovement(p: SimPlayer, dtMs: number, trace?: Tracer, targetZone?: string, world?: MoveWorld): void {
     if (p.pathIndex >= p.path.length) return;
@@ -754,7 +793,7 @@ export class RoundSimulator {
     if (!nextZone || !fromZone) return;
     p.facing = { x: nextZone.position.x - fromZone.position.x, y: nextZone.position.y - fromZone.position.y };
     const speed = p.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC;
-    const edgeMs = (dist3(fromZone.position, nextZone.position) / speed) * 1000;
+    const edgeMs = this.edgeTravelMs(fromZone.id, nextZone.id, p.moveMode);
     p.edgeProgressMs += dtMs;
     if (p.edgeProgressMs >= edgeMs) {
       // Fire on the route ahead: cross, wait at the edge, or re-route (passFireEdge).
