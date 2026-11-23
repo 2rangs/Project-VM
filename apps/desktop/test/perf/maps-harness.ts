@@ -14,7 +14,28 @@ const q = new URLSearchParams(location.search);
 const map = q.get('map') ?? 'ascent';
 const frames = Number(q.get('frames') ?? 360);
 
+/** ?mode=figures: a lineup of every role / pose on a flat floor, for looking at the models (no map). */
+async function figures(): Promise<unknown> {
+  const W = 1800, H = 700;
+  const canvas = document.createElement('canvas'); document.body.appendChild(canvas); document.body.style.margin = '0';
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); renderer.setSize(W, H); renderer.setPixelRatio(1);
+  renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9fb4c4);
+  scene.add(new THREE.HemisphereLight(0xdcecff, 0x4a4036, 1.6)); const sun = new THREE.DirectionalLight(0xffe7cc, 2.2); sun.position.set(-3, 6, 4); scene.add(sun);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 20), new THREE.MeshStandardMaterial({ color: 0x59606a })); floor.rotation.x = -Math.PI / 2; scene.add(floor);
+  const poses: Partial<AnimInput>[] = [{ headingRad: 0, aimYawRad: 0, shotsMs: [10_000] }, { moving: true, moveMode: 'run' }, { crouched: true, shotsMs: [9_800] }, { plant: { startMs: 9_000, endMs: 13_000 } }, { abilityMs: [9_800] }, { shotsMs: [8_500], tMs: 11_700 }, { deathMs: 9_900, tMs: 10_700 }, { speedUUps: 330, headingRad: 0, travelRad: 0, aimYawRad: 1.0 }];
+  const roles = ['controller', 'initiator', 'sentinel', 'duelist'] as const;
+  const accent = 0x3fd0ff;
+  poses.forEach((pz, c) => roles.forEach((role, r) => {
+    const op = buildOperator(role, r % 2 ? 0xff4655 : accent); setOperatorWeapon(op, WEAPON_CLASSES[(c + r) % WEAPON_CLASSES.length]!, r % 2 ? 0xff4655 : accent);
+    poseOperator(op, selectAnimState({ tMs: 10_000, alive: true, weapon: op.weaponCls, ...pz }), pz.tMs ?? 10_000, r * 1.3);
+    op.root.position.set(c * 1.9 - 6.6, 0, r * 1.5 - 2.25); op.root.rotation.y += Math.PI * 0.35; scene.add(op.root);
+  }));
+  const cam = new THREE.PerspectiveCamera(32, W / H, 0.1, 100); cam.position.set(-4, 5.2, 14.5); cam.lookAt(-0.5, 0.7, 0); renderer.render(scene, cam);
+  return { figures: poses.length * roles.length };
+}
 async function run(): Promise<unknown> {
+  if (q.get('mode') === 'figures') return figures();
   const t0 = performance.now();
   const [glbBuf, nav] = await Promise.all([
     fetch(`/glb/${map}.glb`).then((r) => { if (!r.ok) throw new Error(`no ${map}.glb`); return r.arrayBuffer(); }),

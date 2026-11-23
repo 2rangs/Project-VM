@@ -38,6 +38,12 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const url = `http://127.0.0.1:${server.address().port}`;
 
+if (process.env.FIGURES) { // node test/perf.maps.mjs with FIGURES=/path/out.png: one lineup screenshot of every role and pose
+  const app = await electron.launch({ executablePath: electronPath, args: [path.join(work, 'main.cjs')], env: { ...process.env, PV_HARNESS_URL: url } });
+  const page = await app.firstWindow(); await page.goto(`${url}/index.html?mode=figures`);
+  await page.waitForFunction(() => window.__perf || window.__perfError, null, { timeout: 60000 });
+  console.log(await page.evaluate(() => window.__perf ?? window.__perfError)); await page.screenshot({ path: process.env.FIGURES }); await app.close(); server.close(); process.exit(0);
+}
 const results = [];
 for (const m of maps) {
   const app = await electron.launch({ executablePath: electronPath, args: [path.join(work, 'main.cjs')], env: { ...process.env, PV_HARNESS_URL: url } });

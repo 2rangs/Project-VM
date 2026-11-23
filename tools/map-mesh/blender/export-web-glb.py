@@ -327,7 +327,9 @@ def calibrate(a, bvh, sp, zmin, zmax):
         calib["priorAgrees"] = c == pc and (best_c == pc or cands[best_c][0] == cands[pc][0])
     else:
         c = best_c
-    dz = cands[c][2] if zones else 0.0
+    # The roadmap nodes are measured on this very .blend (z = Blender z × 100), so with a roadmap the vertical offset is 0
+    # by construction; zone-centre heights are NOT reliable floors on every map (Sunset's callouts sit ~4 m off).
+    dz = 0.0 if (nodes and sp["prior"]) else (cands[c][2] if zones else 0.0)
 
     # refine the offset against the roadmap nodes (a fixed sample), then solve dz as their median residual
     rng = random.Random(7)
@@ -360,7 +362,7 @@ def calibrate(a, bvh, sp, zmin, zmax):
         t = best[1]
     if sample:
         r = [x for x in node_residuals(t, dz) if x is not None and abs(x) < 60]
-        if r:
+        if r and abs(float(np.median(r))) < 30:
             dz -= float(np.median(r))
     calib["chosen"] = {"swap": c[0], "sx": c[1], "sy": c[2], "offsetUU": [t[0], t[1]], "dzUU": round(dz, 1),
                        "zonesOnAFloor": cands[c][0], "zonesTotal": len(zones), "nodesSampled": len(sample)}
