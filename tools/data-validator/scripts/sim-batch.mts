@@ -20,6 +20,15 @@
 //   --compare FILE     a prior report JSON (e.g. docs/research/SIM_BASELINE_2026-11-18.json) to diff
 //                      against — the report gains Δ-vs-baseline + improved/worsened columns
 //   --no-validate      only write the SimRun bundle + print the summary; skip sim:validate
+//   --abilities        agent abilities on (default off — as the desktop game plays today)
+//   --mirror           both teams league-average players (every attribute and trait at the
+//                      fallback 0.6) instead of real rosters. Every batch before 2026-11-23 ran this
+//                      way by accident (team ids were read as `t.id`, which game-data does not have),
+//                      so use --mirror to reproduce those older numbers.
+//
+// Teams: real game-data rosters (`simulatableTeamRefs`, 46 teams), paired in a fixed order —
+// match i plays teams[2i mod n] vs teams[2i+1 mod n]. The MatchConfig is otherwise what the desktop
+// Match Day sends with default options (no tuning, abilities off, opponent memory on).
 //
 // Players are side-named (atk1..atk5 / def1..def5) by the round simulator, so the per-round roster
 // is constant; buyTiers come from the match-runner's per-team BuyDecision for the round's attacker.
@@ -29,7 +38,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runMatch, type MatchConfig, type TeamSlot } from "../../../packages/match-runner/src/index.ts";
+import { runMatch, simulatableTeamRefs, type MatchConfig, type TeamRef, type TeamSlot } from "../../../packages/match-runner/src/index.ts";
 import { toSimGameEvents } from "../../../packages/round-simulator/src/index.ts";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
@@ -61,14 +70,17 @@ function rosterFor(): Record<string, "attack" | "defense"> {
   return r;
 }
 
-/** Fixed sample of team pairs from game-data (labels only — the sim players are side-named). */
-async function loadTeamPairs(): Promise<Array<{ id: string; name: string }>> {
-  try {
-    const gd = await import("../../../packages/game-data/src/index.ts");
-    const teams = (gd.listSimulatableTeams?.() ?? []).map((t: { id: string; name: string }) => ({ id: t.id, name: t.name }));
-    if (teams.length >= 2) return teams;
-  } catch { /* fall through to synthetic labels */ }
-  return Array.from({ length: 8 }, (_, i) => ({ id: `team-${i + 1}`, name: `Team ${i + 1}` }));
+/**
+ * The teams a batch plays. Real rosters by default; `mirror` gives two ids game-data does not know,
+ * which the match-runner plays with league-average players (the pre-2026-11-23 batch condition).
+ */
+function batchTeams(mirror: boolean): TeamRef[] {
+  // The id is the literal string the old batches' `${undefined}` produced: the match id
+  // ("undefined-vs-undefined") seeds every round, so --mirror reproduces those runs exactly.
+  if (mirror) return [{ id: "undefined", name: "Mirror A" }, { id: "undefined", name: "Mirror B" }];
+  const teams = simulatableTeamRefs();
+  if (teams.length < 2) throw new Error("sim:batch: game-data has fewer than two simulatable teams");
+  return teams;
 }
 
 async function main(): Promise<void> {
@@ -83,21 +95,23 @@ async function main(): Promise<void> {
   const comparePath = args["compare"] !== undefined ? resolvePath(String(args["compare"])) : undefined;
   const doValidate = args["no-validate"] !== true;
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
+  const mirror = args["mirror"] === true;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
   if (outPath === `${reportPrefix}.json`) {
     console.error(`sim:batch: --out and --report would both write ${outPath}; choose distinct paths`); process.exit(2);
   }
 
-  const teams = await loadTeamPairs();
-  const pairFor = (i: number): [{ id: string; name: string }, { id: string; name: string }] =>
+  const teams = batchTeams(mirror);
+  const rosters = mirror ? "league-average mirror" : `real rosters (${teams.length} teams)`;
+  const pairFor = (i: number): [TeamRef, TeamRef] =>
     [teams[(2 * i) % teams.length]!, teams[(2 * i + 1) % teams.length]!];
 
   const rounds: unknown[] = [];
   const reasonCounts: Record<string, number> = {};
   let attackRoundWins = 0, totalRounds = 0, pistolRounds = 0, pistolAttackWins = 0, otMatches = 0;
 
-  console.error(`sim:batch: simulating ${matches} match(es) on ${map}, seeds ${seedStart}..${seedStart + matches - 1}`);
+  console.error(`sim:batch: simulating ${matches} match(es) on ${map}, seeds ${seedStart}..${seedStart + matches - 1}, ${rosters}${enableAbilities ? ", abilities on" : ""}`);
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
@@ -125,7 +139,7 @@ async function main(): Promise<void> {
   const bundle = {
     meta: {
       synthetic: true,
-      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map})`,
+      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""})`,
       rounds: rounds.length, matches, map, seedStart,
       generatedAt: new Date().toISOString(),
     },

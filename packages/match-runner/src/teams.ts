@@ -8,7 +8,7 @@
  *   round-simulator's per-side skill, so stronger rosters shoot better — a real-data signal
  *   without touching PV-4's SimState (per-player skills are a later, finer pass).
  */
-import { getTeam, getPlayer } from "@pv/game-data";
+import { getTeam, getPlayer, listSimulatableTeams } from "@pv/game-data";
 import { AVERAGE_SKILLS, type CombatSkills } from "@pv/combat-engine";
 import { AVERAGE_TRAITS, type TacticalTraits } from "@pv/round-simulator";
 import { NEUTRAL_PROFILE, type PlayerProfile } from "@pv/shared-types";
@@ -28,6 +28,15 @@ const SKILL_KEYS: ReadonlyArray<keyof CombatSkills> = [
 export function resolveTeamRef(id: string): TeamRef {
   const team = getTeam(id);
   return { id, name: team?.name ?? id };
+}
+
+/**
+ * Every game-data team with a full roster, as the `TeamRef` a MatchConfig takes. game-data keys
+ * teams by `teamId` (there is no `id` field): reading `t.id` gives `undefined`, which resolves to
+ * no team and silently plays both sides with league-average players. Build team refs here.
+ */
+export function simulatableTeamRefs(): TeamRef[] {
+  return listSimulatableTeams().map((t) => ({ id: t.teamId, name: t.name ?? t.teamId }));
 }
 
 /** Whether game-data knows this team (has a roster). */

@@ -394,6 +394,12 @@ policies (about 3,440 rounds) runs in about three minutes — roughly 55 ms per 
 ## 7. Balance — 160-match validation
 
 `tools/data-validator/scripts/sim-batch.mts --matches 160` (seeds 1..160, Ascent), judged against VCT priors.
+
+> **Condition note (2026-11-23).** Every number in this section was measured with both teams at
+> league-average ratings: `sim-batch` read team ids as `t.id`, which game-data does not have, so no
+> roster was ever loaded (`--mirror` reproduces these runs exactly). With real rosters the same 160
+> matches pass 6 of 8 and the attack win rate is 0.460 (seeds 1–160) / 0.484 (161–320) — see
+> `SIM_BASELINE_2026-11-23.md`.
 Through the whole movement work (every row of §7.4 but the last) no walking speed, duel odds or other constant
 was retuned. The last step is a calibration of two constants, done at the user's request and described in §7.2.
 
