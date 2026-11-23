@@ -3,6 +3,35 @@
 Written 2026-11-23 at wrap-up. Branch is on top of main `bcc3458`, **not pushed, not merged**.
 The task is **not finished**: the code for goals 1–3 exists, the validation, tests and docs of goals 5–8 do not.
 
+## Per-map status (updated as each map lands)
+
+Definition of done per map: (1) roadmap with no unreachable zone, (2) sight table, (3) derived tactics pass
+`spatial-engine/test/tactics.test.ts`, (4) `<map>.objects.json` (drops with fall height, ropes / ziplines /
+teleporters as typed links, doors, breakables), (5) own-geometry real-roster batch in range (attack 0.42–0.58,
+elimination ~0.60–0.75, detonation ≤ ~0.15). Last update: 2026-11-23, after merging `a9c993a`.
+
+| Map | Roadmap gaps | Sight table | Tactics tests | objects.json | Real-roster batch (own geometry) | Done |
+|---|---|---|---|---|---|---|
+| Ascent | none | yes | pass | pending | queued (160, default geometry; gate ≥6/8, attack 0.455 ± 0.02) | no |
+| Abyss | `a-secret`, `b-danger` — in progress | yes | pass | pending | after the gap fix | no |
+| Bind | none (teleporter walk bug fixed `60ef687`) | yes | pass | pending | queued (60) | no |
+| Breeze | none | yes | pass | pending | queued (60) | no |
+| Fracture | none | yes | pass | pending | queued (60) | no |
+| Haven | none (`b-site` fixed `b0ed5ed`) | yes, rebuilt | pass | pending | queued (60) | no |
+| Icebox | `a-nest` (rope) — in progress | yes | pass | pending | after the gap fix | no |
+| Lotus | none | yes | pass | pending | queued (60) | no |
+| Pearl | none (five anchors fixed `b0ed5ed`) | yes, rebuilt | pass | pending | queued (60) | no |
+| Split | `mid-vent` (rope) — in progress | yes | pass | pending | after the gap fix | no |
+| Sunset | none | yes | pass | pending | queued (60) | no |
+
+Every batch before 2026-11-23 in this note was a league-average mirror (`sim-batch --mirror`); the numbers
+further down are that condition and are kept only as the "before". Real rosters are the default now.
+
+Open cross-session items: (a) a duel winner is free again on the next 100 ms tick whatever the duel's
+`timeToKillMs` (`round-simulator/src/simulator.ts`, the `busy` set in the combat loop) — reported to the
+engine-truth session, which owns that loop; (b) ropes are not yet links, which is why Icebox A Nest and Split
+Mid Vent are unreachable.
+
 ## Commits, oldest first
 
 | Commit | What | Verified |
