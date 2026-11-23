@@ -43,10 +43,16 @@ async function main() {
 
   // shell + Match Day (default route). The language persists in localStorage across
   // launches, so pin the default (Korean) first — screenshots and docs are Korean.
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the start menu; the match engine and dev tools are under Quick Match.
+  const enterSandbox = async () => {
+    await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
+    await page.getByTestId('start-quick-match').click();
+    await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  };
+  await enterSandbox();
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await enterSandbox();
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
   // The live view remembers its mode; start from the default (tactical map) on every run.

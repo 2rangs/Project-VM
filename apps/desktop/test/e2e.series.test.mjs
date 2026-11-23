@@ -163,10 +163,16 @@ async function main() {
   }
 
   // ── Korean (default) ──
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the start menu; the series screen is under Quick Match.
+  const enterSandbox = async () => {
+    await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
+    await page.getByTestId('start-quick-match').click();
+    await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  };
+  await enterSandbox();
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await enterSandbox();
   await resize(1280, 800);
   const ko = await playSeries({ lang: 'ko', shots: { veto: 'desktop-veto.png', summary: 'desktop-series-summary.png' } });
   assert.ok(/밴픽 기록/.test(ko.summaryTxt) && /승리/.test(ko.summaryTxt), 'series summary renders in Korean');
