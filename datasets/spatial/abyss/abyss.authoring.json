@@ -1,6 +1,126 @@
 {
   "mapId": "abyss",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "zoneAnchorsNote": "Game uu. A zone listed here is measured from this floor point instead of from its callout, because the callout's own floor was not chosen by the snap. See tools/map-mesh/README.md.",
+  "zoneAnchors": {
+    "b-danger": {
+      "x": -5850,
+      "y": 700,
+      "z": 494,
+      "smallFloor": true,
+      "basis": "Game metres (x, y, z). Callout (-58.50, 7.00, z 6.25); on this map callouts sit 1.23 m above their floor (median, MAD 0.27), so its floor is at about 5.0 m. Directly under it is the ledge Shell_5_AtkPathBLedgeB (x -59.18..-57.72, y 3.85..10.10, top z 5.56) on the west face of Shell_5_AtkPathBWaterTower (x -57.94..-50.00, y 3.00..10.94, z -4.09..20.56): 38 walk cells (9.5 m2), 1.5 m wide and 6.5 m long, floor z 4.48..5.54, 4.94 at the callout. 38 cells is under the 40-cell floor the snap accepts, so the zone was placed on the next surface in reach: the water tower's roof (z 16.15, 161 cells, x -56.75..-50.75), 1.75 m away in x,y and 9.9 m above the callout. Anchor = the callout's own x,y at the ledge's measured floor height. The ledge is an island of the walk grid: its north end (-58.25, 10.00, z 4.53) is 2.5 m edge-to-edge from the B-side floor at (-58.25, 13.00, z 3.90) and its south end (-58.75, 4.00, z 5.54) 2.5 m from the floor at (-58.75, 1.00, z 6.01); no triangle of any object lies in either gap except the tower wall. It is entered and left by a jump over the void: the two gaps are the traversals b-danger-north / b-danger-south in this file.",
+      "provenance": "measured-on-mesh (object names, extents, heights, gaps); manual-approx (that the gaps are crossed by a jump: game knowledge)"
+    }
+  },
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
+    {
+      "id": "a-secret-west",
+      "name": "Jump A Link ledge <-> A Secret",
+      "kind": "jump",
+      "bidirectional": true,
+      "travelTimeMs": 378,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 3025,
+        "y": -3850,
+        "z": 1000
+      },
+      "b": {
+        "x": 3275,
+        "y": -3850,
+        "z": 949
+      },
+      "zones": [
+        "a-link",
+        "a-secret"
+      ],
+      "objectNames": [],
+      "basis": "Game metres. A Secret is the ledge Shell_1_DefPathA_LedgeA (x 32.75..41.21, y -39.32..-36.63; 43 walk cells, floor z 8.43..9.49), an island of the walk grid. a = the last cell of the 10.00 m floor west of it, b = the ledge's first cell: 2.0 m edge to edge (2.5 m cell to cell), the ledge 0.51 m lower.",
+      "provenance": "measured-on-mesh (the ledge, the two cells, the gap, the height difference; no triangle of any object lies in the gap); manual-approx (that the gap is crossed by a jump, in both directions, and the travel time = cell-to-cell distance / 6.75 m/s run speed: game knowledge, not measured)"
+    },
+    {
+      "id": "a-secret-north",
+      "name": "Jump A Security floor <-> A Secret",
+      "kind": "jump",
+      "bidirectional": true,
+      "travelTimeMs": 450,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 4075,
+        "y": -3400,
+        "z": 800
+      },
+      "b": {
+        "x": 4075,
+        "y": -3700,
+        "z": 848
+      },
+      "zones": [
+        "a-security",
+        "a-secret"
+      ],
+      "objectNames": [],
+      "basis": "Game metres. a = the last cell of the 8.00 m floor north of the ledge Shell_1_DefPathA_LedgeA, b = the ledge's northern cell: 2.5 m edge to edge (3.0 m cell to cell), the ledge 0.48 m higher.",
+      "provenance": "measured-on-mesh (the ledge, the two cells, the gap, the height difference; no triangle of any object lies in the gap); manual-approx (that the gap is crossed by a jump, in both directions, and the travel time = cell-to-cell distance / 6.75 m/s run speed: game knowledge, not measured)"
+    },
+    {
+      "id": "b-danger-north",
+      "name": "Jump B Main floor <-> B Danger",
+      "kind": "jump",
+      "bidirectional": true,
+      "travelTimeMs": 454,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -5825,
+        "y": 1300,
+        "z": 390
+      },
+      "b": {
+        "x": -5825,
+        "y": 1000,
+        "z": 453
+      },
+      "zones": [
+        "b-main",
+        "b-danger"
+      ],
+      "objectNames": [],
+      "basis": "Game metres. B Danger is the ledge Shell_5_AtkPathBLedgeB (38 walk cells, floor z 4.48..5.54) on the west face of Shell_5_AtkPathBWaterTower, an island of the walk grid. a = the last cell of the floor north of it, b = the ledge's northern cell: 2.5 m edge to edge (3.0 m cell to cell), the ledge 0.63 m higher.",
+      "provenance": "measured-on-mesh (the ledge, the two cells, the gap, the height difference; no triangle of any object lies in the gap); manual-approx (that the gap is crossed by a jump, in both directions, and the travel time = cell-to-cell distance / 6.75 m/s run speed: game knowledge, not measured)"
+    },
+    {
+      "id": "b-danger-south",
+      "name": "Jump B Site floor <-> B Danger",
+      "kind": "jump",
+      "bidirectional": true,
+      "travelTimeMs": 450,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -5875,
+        "y": 100,
+        "z": 601
+      },
+      "b": {
+        "x": -5875,
+        "y": 400,
+        "z": 554
+      },
+      "zones": [
+        "b-site",
+        "b-danger"
+      ],
+      "objectNames": [],
+      "basis": "Game metres. a = the last cell of the floor south of the ledge Shell_5_AtkPathBLedgeB, b = the ledge's southern cell: 2.5 m edge to edge (3.0 m cell to cell), the ledge 0.47 m lower.",
+      "provenance": "measured-on-mesh (the ledge, the two cells, the gap, the height difference; no triangle of any object lies in the gap); manual-approx (that the gap is crossed by a jump, in both directions, and the travel time = cell-to-cell distance / 6.75 m/s run speed: game knowledge, not measured)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    }
+  ],
   "mechanics": [
     {
       "kind": "fall-off",
@@ -12,9 +132,10 @@
     {
       "kind": "jump-shortcut",
       "name": "Jump gaps between platforms (e.g. mid, B danger)",
-      "represented": false,
-      "engineNeeds": "one-way/jump edges with a fall-risk cost; only drops the walk grid could see are encoded",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (the two ledges and their gaps); manual-approx (that they are crossed by a jump, and the mid gap: general game knowledge)",
+      "measured": "A Secret = ledge Shell_1_DefPathA_LedgeA (x 32.75..41.21, y -39.32..-36.63; 43 walk cells, floor z 8.43..9.49): 2.0 m edge-to-edge from the 10.00 m floor to its west (island cell (32.75, -38.50, 9.49) <-> (30.25, -38.50, 10.00)) and 2.5 m from the A-site-side floor to its north ((40.75, -37.00, 8.48) <-> (40.75, -34.00, 8.00)); no triangle in either gap. B Danger = ledge Shell_5_AtkPathBLedgeB (38 walk cells, floor z 4.48..5.54): 2.5 m gaps north and south (see zoneAnchors.b-danger). Both zones are walk-grid islands; game metres.",
+      "how": "four roadmap links kind=jump between measured cells (traversals in this file) join the A Secret and B Danger ledges to the floors beside them; the fall risk of a missed jump and the mid gap are NOT modelled"
     }
   ]
 }

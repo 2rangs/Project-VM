@@ -180,16 +180,23 @@
   },
   "b-danger": {
    "onMesh": true,
-   "snapDistXY_m": 1.75,
-   "floorZ_uu": 1615.1,
+   "snapDistXY_m": 0.25,
+   "floorZ_uu": 494.6,
    "calloutZ_uu": 625.0,
    "repGame_uu": [
-    -5675.0,
+    -5825.0,
     700.0,
-    1615.1
+    494.6
    ],
-   "component": 144,
-   "onMainComponent": false
+   "component": 111,
+   "onMainComponent": false,
+   "anchorAuthored": true,
+   "authoredAnchor_uu": [
+    -5850,
+    700,
+    494
+   ],
+   "calloutToAnchorXY_m": 0.25
   },
   "b-link": {
    "onMesh": true,
