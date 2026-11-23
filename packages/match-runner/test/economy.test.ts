@@ -106,14 +106,14 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
     expect(b.loadoutValue - bare.loadoutValue).toBeGreaterThan(4_000);
   });
 
-  it("ultimate readiness changes buy timing: a broke team saves without ults and buys with five ready", () => {
-    const noUlt = buy(eco(five(1_000), [], 1), { abilities: true });
-    const ults = buy(eco(five(1_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
+  it("ultimate readiness changes buy timing: a team on 2000 each saves without ults and buys with five ready", () => {
+    const noUlt = buy(eco(five(2_000), [], 1), { abilities: true });
+    const ults = buy(eco(five(2_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
     expect(noUlt.plan).toBe("eco");
     expect(ults.plan).not.toBe("eco");
     expect(ults.cost).toBeGreaterThan(noUlt.cost);
     // With abilities off an ultimate does nothing in the sim, so it does not move the buy.
-    const off = buy(eco(five(1_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
+    const off = buy(eco(five(2_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
     expect(off.plan).toBe(noUlt.plan);
   });
 

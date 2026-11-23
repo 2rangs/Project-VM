@@ -100,6 +100,9 @@ async function main(): Promise<void> {
   const doValidate = args["no-validate"] !== true;
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
   const mirror = args["mirror"] === true;
+  // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default VCT fit).
+  const economy = args["belief-beta"] !== undefined
+    ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : undefined;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
   if (outPath === `${reportPrefix}.json`) {
@@ -119,7 +122,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     for (const r of m.rounds) {

@@ -10,7 +10,7 @@
  * Buy. The team call is the plan that maximises J = E[P(win the map)] over this round and a two-round
  * lookahead (@pv/economy-engine `lookaheadValue`), with the round-win belief fitted to real VCT
  * loadouts (`roundWinBelief`). Candidate plans: max (full buy, or a force when not everyone reaches a
- * rifle), half (SMG + light shield), light (sidearm + light shield), eco (save everything), and keep
+ * rifle), half (SMG + light shield), light (a light shield on the Classic), eco (save everything), and keep
  * (the bonus round: carried guns, no new weapons).
  * Inside a plan each player buys from their own credits; a rich player drops a rifle to a poor one
  * when the second rifle is worth more than the dropper's own utility and shield; the star (highest
@@ -33,7 +33,7 @@ import {
   utilityKitCost,
   weaponPrice,
 } from "@pv/game-rules";
-import { lookaheadValue, mapOver, mapWinProbability, roundWinBelief, vctTierForLoadout, type IncomeRules, type LookaheadTeam } from "@pv/economy-engine";
+import { SIM_ROUND_WIN_BELIEF, lookaheadValue, mapOver, mapWinProbability, roundWinBelief, vctTierForLoadout, type IncomeRules, type LookaheadTeam, type WinBeliefParams } from "@pv/economy-engine";
 
 // ---------------------------------------------------------------------------------------------
 // Types
@@ -172,6 +172,11 @@ export interface EconomyOptions {
    * what is earned meanwhile.
    */
   readonly ultPointsPerRoundPrior: number;
+  /**
+   * The team's round-win belief curve P = σ(β·(g(own) − g(opp))), g(v) = 1 − exp(−v/τ). See
+   * docs/ECONOMY_MODEL.md for the VCT fit (β 4.12, τ 10000) and the fit on this simulator's rounds.
+   */
+  readonly winBelief: WinBeliefParams;
 }
 
 export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
@@ -181,6 +186,7 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
   survivalPriorLost: 0.12,
   survivalPriorRounds: 4,
   ultPointsPerRoundPrior: 1.4,
+  winBelief: SIM_ROUND_WIN_BELIEF,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -285,7 +291,7 @@ const LADDER: readonly Package[] = [
   { weapon: DEFAULT_WEAPON, armor: 0, util: false },
 ];
 const HALF_START = LADDER.findIndex((p) => p.weapon === SMG && p.armor === LIGHT_PTS);
-const LIGHT_START = LADDER.findIndex((p) => p.weapon === SIDEARM && p.armor === LIGHT_PTS);
+const LIGHT_START = LADDER.findIndex((p) => p.weapon === DEFAULT_WEAPON && p.armor === LIGHT_PTS);
 
 interface Slot {
   readonly index: number;
@@ -550,7 +556,7 @@ function score(
   const [a, b] = scoreline;
   const w = futureWeight(side.traits, o);
   return cands.map((c) => {
-    const winNow = roundWinBelief(c.value, opp.value);
+    const winNow = roundWinBelief(c.value, opp.value, o.winBelief);
     // A held ultimate is fielded next round; using it now restarts the charge, and the points earned
     // over the lookahead (a held, full ultimate wastes them) are counted as that share of an ultimate.
     const progress = Math.min(1, (LOOKAHEAD_DEPTH * ultRate(side.eco, o)) / meanUltCost(side.ctx));
@@ -566,6 +572,7 @@ function score(
         depth: LOOKAHEAD_DEPTH,
         rules: INCOME,
         futureWeight: w,
+        belief: o.winBelief,
       });
     };
     const j = winNow * after(true) + (1 - winNow) * after(false);
