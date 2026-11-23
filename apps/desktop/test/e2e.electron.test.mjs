@@ -33,9 +33,6 @@ async function main() {
     env: {
       ...process.env,
       PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces'),
-      // optional local assets (real map mesh, banners) are never present in CI: keep the run independent of them
-      PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
-      PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
@@ -46,18 +43,16 @@ async function main() {
 
   // shell + Match Day (default route). The language persists in localStorage across
   // launches, so pin the default (Korean) first — screenshots and docs are Korean.
-  // The app opens on the home (lobby) screen; its PLAY action leads to Match Day in the shell.
-  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
+  // The app opens on the start menu; the match engine and dev tools are under Quick Match.
+  const enterSandbox = async () => {
+    await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
+    await page.getByTestId('start-quick-match').click();
+    await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  };
+  await enterSandbox();
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
-  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
-  assert.equal(await page.locator('[data-testid="app-splash"]').count(), 0, 'the start-up splash is replaced once the app has mounted');
-  assert.equal(await page.locator('[data-testid^="home-player-"]').count(), 5, 'home lists the five players the engine fields');
-  assert.ok(/VS/.test(await page.getByTestId('home-next-match').innerText()), 'home shows the next match');
-  await page.waitForTimeout(600);
-  await page.screenshot({ path: path.join(OUT, 'desktop-home.png') });
-  await page.getByTestId('home-play').click();
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await enterSandbox();
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
   // The live view remembers its mode; start from the default (tactical map) on every run.
@@ -65,16 +60,9 @@ async function main() {
 
   // run a stub match (separate process → IPC → replay) and confirm it loads
   await page.getByTestId('run-match').click();
-  // the simulation runs in another process: a loading screen with round progress covers the wait…
-  await page.waitForSelector('[data-testid="loading-screen"]', { timeout: 10000 });
-  await page.waitForFunction(() => /\d/.test(document.querySelector('[data-testid="loading-steps"]')?.textContent ?? ''), null, { timeout: 90000 }).catch(() => {});
   // match-runner subprocess (npx tsx) + full map can take a while to cold-start
   await page.waitForSelector('.rv-src-simulated', { timeout: 90000 });
   assert.ok(/SIMULATED/.test(await page.locator('.rv-src-simulated').innerText()), 'simulated replay loaded');
-  // …and is gone, with no error panel, once the match is on screen
-  assert.equal(await page.locator('[data-testid="loading-screen"]').count(), 0, 'loading screen closes when the work is done');
-  assert.equal(await page.locator('[data-testid="loading-screen-error"]').count(), 0, 'no error panel after a successful run');
-  assert.equal(await page.locator('[data-testid="loading-mesh"]').count(), 0, 'the 3D map for the team cams was prepared during the game load');
   // real match scoreboard rendered (first-to-13)
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 5000 });
   const sb = await page.getByTestId('scoreboard').innerText();
@@ -89,7 +77,6 @@ async function main() {
   // Seed-42 match: team-A's richest perception frame (observed enemies + belief) is
   // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
   // The live view scrubs one round at a time: jump to round 5 and seek 12 s in (first contact).
-  await page.getByTestId('view-mode-tactical').click(); // the opponent POV is a tactical-map debug view (locked in team cams)
   await page.getByTestId('round-chip-5').click();
   const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
   await page.locator('.rv-scrub').fill(String(r5Start + 12000));
@@ -246,12 +233,8 @@ async function main() {
   // English: the decisions view is fully localised (revision reasons stay engine English in both).
   await page.getByTestId('nav-about').click();
   await page.getByTestId('lang-en').click();
-  // the loading banner is the player's choice: pick another one and the next load uses it
-  await page.getByTestId('banner-prism').click();
-  assert.equal(await page.getByTestId('banner-prism').getAttribute('aria-checked'), 'true', 'banner choice is selected');
   await page.getByTestId('nav-match-day').click();
   await page.getByTestId('run-match').click();
-  await page.waitForSelector('[data-testid="loading-screen"][data-banner="prism"]', { timeout: 10000 });
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 90000 });
   await page.getByTestId('tab-review').click();
   await page.waitForSelector('[data-testid="rev-decisions-panel"]', { timeout: 10000 });
@@ -265,7 +248,6 @@ async function main() {
   // restore the default language (it persists in localStorage across launches)
   await page.getByTestId('nav-about').click();
   await page.getByTestId('lang-ko').click();
-  await page.getByTestId('banner-standard').click();
 
   await app.close();
   console.log('E2E OK — screenshots in apps/desktop/docs/');

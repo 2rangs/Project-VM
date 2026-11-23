@@ -68,8 +68,15 @@ installed, the renderer still runs in plain-browser mode (`window.pv` absent →
 
 ## Screens & data sources
 
+The app opens on a **start menu** (New career · Continue · Load · Settings · Quick Match · Quit);
+no engine runs until a match is played. A career is the calendar loop described in
+[`docs/CAREER_MODE.md`](../../docs/CAREER_MODE.md): Home (Continue), Inbox, Schedule, Standings
+and the manager's match days through the series screen with the career world's players. The
+screens below the career group are also reachable without a career under **Quick Match**.
+
 | Screen | Status | Data |
 |---|---|---|
+| **Start menu · New career · Home · Inbox · Schedule · Standings** | working (career) | `@pv/career` calendar / competition / inbox (`screens/career/*`, `career/session.ts`); AI series through `scripts/career-sim.mts` (match-runner, separate process) or the quick estimate; save slots in `<userData>/saves` |
 | **Match Day** | working (REAL sim) | `@pv/match-runner` in a separate process (one-shot map or interactive round-by-round session with tactical timeouts and coach orders); real team select; coach note from a real PV-3 trace. While a match is on, the screen is the full-window **live match view** — tactical map / team cams, our team's fog of war, belief overlay, navigation developer view |
 | **Match Day → Review (post-match)** | working (REAL sim) | match-runner summary + replay: round results, **round decisions** (each team's read, call, plan changes), economy timeline, timeout log, MVP, ground-truth replay |
 | **Series · Map veto** | working (REAL engine) | `@pv/match-runner` series layer (`createSeriesSession`): Bo1/Bo3/Bo5, step-by-step veto vs the AI, per-map mastery + scouting, maps played through Match Day |
@@ -79,7 +86,7 @@ installed, the renderer still runs in plain-browser mode (`window.pv` absent →
 | **Agent Select** | working (data) | PV-1 `ascent-comps` (win rates + CI, role templates) |
 | **Dev → Decision Debugger** | working | real PV-3 `@pv/decision-debugger` traces (Handoff §21) |
 | **About** | working | pre-release real-names disclaimer; language switch |
-| Inbox / Schedule / Finance / Transfers / Training / Scouting | 준비 중 | — |
+| Finance / Transfers / Training | 준비 중 | — (club operations: hook API in `docs/CAREER_MODE.md` §6) |
 
 Data fixtures are copied from PV-1/PV-2 branches; see `src/data/README.md` and
 `test/fixtures/traces/README.md` for exact sources. All values are
