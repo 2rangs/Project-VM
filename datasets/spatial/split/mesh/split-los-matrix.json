@@ -7,7 +7,7 @@
   "los_cell": 2.0,
   "seed": 20261119
  },
- "occluderTriangles": 1870921,
+ "occluderTriangles": 1868049,
  "eyePointsPerZone": {
   "attacker-spawn": 12,
   "defender-spawn": 12,
@@ -532,7 +532,7 @@
    "b-stairs": 0.069,
    "mid-bottom": 0.0,
    "mid-mail": 0.208,
-   "mid-top": 0.09,
+   "mid-top": 0.049,
    "mid-vent": 0.0
   },
   "mid-bottom": {
@@ -558,7 +558,7 @@
    "b-tower": 0.0,
    "mid-mail": 0.028,
    "mid-top": 0.75,
-   "mid-vent": 0.188
+   "mid-vent": 0.16
   },
   "mid-mail": {
    "attacker-spawn": 0.0,
@@ -582,7 +582,7 @@
    "b-stairs": 0.0,
    "b-tower": 0.208,
    "mid-bottom": 0.028,
-   "mid-top": 0.458,
+   "mid-top": 0.431,
    "mid-vent": 0.056
   },
   "mid-top": {
@@ -605,10 +605,10 @@
    "b-rafters": 0.0,
    "b-site": 0.0,
    "b-stairs": 0.0,
-   "b-tower": 0.09,
+   "b-tower": 0.049,
    "mid-bottom": 0.75,
-   "mid-mail": 0.458,
-   "mid-vent": 0.222
+   "mid-mail": 0.431,
+   "mid-vent": 0.264
   },
   "mid-vent": {
    "attacker-spawn": 0.0,
@@ -631,9 +631,9 @@
    "b-site": 0.0,
    "b-stairs": 0.0,
    "b-tower": 0.0,
-   "mid-bottom": 0.188,
+   "mid-bottom": 0.16,
    "mid-mail": 0.056,
-   "mid-top": 0.222
+   "mid-top": 0.264
   }
  },
  "straightLine_m": {

@@ -1,12 +1,27 @@
 {
   "mapId": "haven",
-  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py and tools/map-mesh/pipeline/measure_map.py. Everything here is manual-approx unless an entry states its own provenance.",
+  "zoneAnchors": {
+    "b-site": {
+      "x": 1668,
+      "y": -9040,
+      "z": 300,
+      "basis": "Game metres (x, y, z). The valorant-api callout (18.85, -92.31, z 7.00) sits on the ROOF of the site's central structure: objects Terminal_0_BombSiteBUnit / Terminal_0_BombsiteBUnitB (footprint x 14.0..24.0 m, y -96.0..-89.0 m, walls z 3.03..7.00 m, top 7.01 m). That roof is a 10 m x 7 m walkable island of 267 grid cells, 4.0 m above the site floor Floor_17_BsiteGrateFloor (z 3.00 m): nothing walks onto it, so the zone could only be left by a drop. The site floor itself is open and on the main walk component all the way round the structure. Anchor = the standable site-floor cell nearest the callout: 2.89 m away in x,y, in the corner between the two blocks on the Mid Courtyard side. Alternatives measured (zone visibility to mid-courtyard / b-back / c-link, walk metres to mid-courtyard / b-back): this cell 0.24 / 0.05 / 0.04, 24.4 / 22.0; front centre (18.68, -88.40) 0.23 / 0.01 / 0.00, 22.0 / 24.8; back centre (18.68, -96.40) 0.01 / 0.63 / 0.25, 36.7 / 12.6; west side (13.18, -92.40) 0.37 / 0.13 / 0.07, 27.8 / 17.2; east side (24.68, -92.40) 0.00 / 0.32 / 0.08, 28.5 / 16.6. The structure hides one half of the site from any single point.",
+      "provenance": "measured-on-mesh"
+    }
+  },
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    }
+  ],
   "mechanics": [
     {
       "kind": "layout",
       "name": "Three sites A/B/C",
       "represented": false,
-      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md \u00a76)",
+      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md §6)",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
     }
   ]

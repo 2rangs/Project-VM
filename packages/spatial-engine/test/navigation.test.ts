@@ -238,13 +238,7 @@ describe("navigation: Ascent", () => {
 // ---- Phase 4: the tactical layer's travel times are navigation path costs ----
 
 /** Zones the walk grid cannot reach on each map (NAVIGATION_ENGINE.md §1) — unreachable, never bridged. */
-const ROADMAP_GAPS: Partial<Record<MapId, string[]>> = {
-  abyss: ["a-secret", "b-danger"],
-  haven: ["b-site"],
-  icebox: ["a-nest"],
-  pearl: ["a-link", "b-link", "defender-water", "mid-plaza"],
-  split: ["mid-vent"],
-};
+const ROADMAP_GAPS: Partial<Record<MapId, string[]>> = {};
 
 describe("tactical travel time = navigation path cost", () => {
   const spawns = new Set(ascent.zones.filter((z) => z.transit === false).map((z) => z.id));
@@ -310,7 +304,6 @@ const sightSummary: string[] = [];
 /** Nearby zone sightlines that the measured point-to-point table does not confirm (see the test). */
 const SIGHTLINE_DISAGREEMENTS: Partial<Record<MapId, string[]>> = {
   ascent: ["a-window~a-site"],                                        // hand-authored line; no standing point of A Window sees one of A Site
-  pearl: ["b-club~b-ramp", "b-club~mid-plaza", "b-club~mid-shops"],   // B Club's callout is stacked on Mid Shops' (wrong floor)
 };
 
 describe.each(MAP_IDS.map((id) => [id] as const))("navigation roadmap: %s", (id: MapId) => {

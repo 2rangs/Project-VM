@@ -1,0 +1,241 @@
+{
+ "mapId": "fracture",
+ "schemaVersion": "1.0.0",
+ "note": "Gameplay objects as points and types, game uu (100 uu = 1 m); no surfaces. drops: the roadmap's one-way drops (from/to are roadmap nodes of <map>.nav.json; fallMeters = height lost). traversals: one per roadmap link, in the roadmap's link order (from/to are the roadmap nodes the link joins; ropes also name bottom/top and whether from->to ascends; soundSource / soundSourceExit are the points its sound is emitted from at the entry and the exit, soundRadiusUu is null and soundVerified false until a value is measured). doors / breakables: position on the floor in the opening, zones = the zone of the nearest roadmap point on each side of the opening (one zone for a prop; gates, where present, is the zone-graph edge the door is attached to), defaultState open/closed/intact/unknown. notLocated: mechanics known for the map that no scene object or floor measurement could place. ultOrbs: orb positions, empty where the scene has no orb object. Every entry states its own provenance.",
+ "provenance": "measured-on-mesh (positions: scene object bounding boxes and walk-grid cells; drops and the zones: the navigation roadmap); manual-approx (travel times and speeds, default states, and the reading of which scene object is which gameplay object)",
+ "roadmapBounds": {
+  "min": {
+   "x": 3021,
+   "y": -6717,
+   "z": 34
+  },
+  "max": {
+   "x": 13921,
+   "y": 4633,
+   "z": 1003
+  }
+ },
+ "counts": {
+  "drops": 47,
+  "traversals": 3,
+  "doors": 0,
+  "breakables": 0,
+  "ultOrbs": 0,
+  "notLocated": 2
+ },
+ "drops": [
+  {"from":{"x":12171,"y":-1417,"z":250},"to":{"x":12171,"y":-1367,"z":51},"fallMeters":1.99,"fromZone":"attacker-bridge","toZone":"attacker-bridge","fromNode":770,"toNode":834},
+  {"from":{"x":6671,"y":683,"z":891},"to":{"x":6671,"y":733,"z":482},"fallMeters":4.09,"fromZone":"defender-spawn","toZone":"a-rope","fromNode":25,"toNode":24},
+  {"from":{"x":10071,"y":-5217,"z":1003},"to":{"x":10071,"y":-5167,"z":503},"fallMeters":5.0,"fromZone":"b-tower","toZone":"b-arcade","fromNode":27,"toNode":26},
+  {"from":{"x":8321,"y":-4767,"z":750},"to":{"x":8321,"y":-4717,"z":613},"fallMeters":1.37,"fromZone":"b-site","toZone":"b-site","fromNode":835,"toNode":836},
+  {"from":{"x":5471,"y":33,"z":588},"to":{"x":5471,"y":-17,"z":526},"fallMeters":0.62,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":837,"toNode":838},
+  {"from":{"x":10021,"y":2583,"z":851},"to":{"x":10021,"y":2633,"z":673},"fallMeters":1.78,"fromZone":"a-drop","toZone":"a-drop","fromNode":839,"toNode":840},
+  {"from":{"x":7921,"y":-4767,"z":741},"to":{"x":7921,"y":-4717,"z":550},"fallMeters":1.91,"fromZone":"b-site","toZone":"b-generator","fromNode":841,"toNode":842},
+  {"from":{"x":8321,"y":-4817,"z":750},"to":{"x":8371,"y":-4817,"z":670},"fallMeters":0.8,"fromZone":"b-site","toZone":"b-site","fromNode":843,"toNode":844},
+  {"from":{"x":8171,"y":-4767,"z":749},"to":{"x":8171,"y":-4717,"z":550},"fallMeters":1.99,"fromZone":"b-site","toZone":"b-generator","fromNode":680,"toNode":845},
+  {"from":{"x":5871,"y":-117,"z":407},"to":{"x":5871,"y":-167,"z":345},"fallMeters":0.62,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":846,"toNode":648},
+  {"from":{"x":8621,"y":3833,"z":960},"to":{"x":8571,"y":3833,"z":545},"fallMeters":4.15,"fromZone":"a-site","toZone":"a-site","fromNode":688,"toNode":847},
+  {"from":{"x":8221,"y":-4767,"z":749},"to":{"x":8221,"y":-4717,"z":550},"fallMeters":1.99,"fromZone":"b-site","toZone":"b-generator","fromNode":806,"toNode":848},
+  {"from":{"x":4321,"y":-67,"z":465},"to":{"x":4321,"y":-117,"z":396},"fallMeters":0.69,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":849,"toNode":850},
+  {"from":{"x":5271,"y":33,"z":589},"to":{"x":5271,"y":-17,"z":524},"fallMeters":0.65,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":851,"toNode":852},
+  {"from":{"x":8571,"y":3883,"z":900},"to":{"x":8571,"y":3833,"z":545},"fallMeters":3.55,"fromZone":"a-site","toZone":"a-site","fromNode":853,"toNode":847},
+  {"from":{"x":7871,"y":4233,"z":903},"to":{"x":7821,"y":4233,"z":545},"fallMeters":3.58,"fromZone":"a-site","toZone":"a-site","fromNode":676,"toNode":854},
+  {"from":{"x":13371,"y":333,"z":447},"to":{"x":13321,"y":333,"z":294},"fallMeters":1.53,"fromZone":"a-gate","toZone":"attacker-bridge","fromNode":855,"toNode":856},
+  {"from":{"x":6871,"y":683,"z":891},"to":{"x":6871,"y":733,"z":501},"fallMeters":3.9,"fromZone":"defender-spawn","toZone":"a-rope","fromNode":832,"toNode":857},
+  {"from":{"x":7871,"y":4383,"z":903},"to":{"x":7821,"y":4383,"z":545},"fallMeters":3.58,"fromZone":"a-site","toZone":"a-site","fromNode":773,"toNode":858},
+  {"from":{"x":12421,"y":-1417,"z":250},"to":{"x":12421,"y":-1367,"z":129},"fallMeters":1.21,"fromZone":"attacker-bridge","toZone":"attacker-bridge","fromNode":724,"toNode":859},
+  {"from":{"x":8371,"y":3883,"z":902},"to":{"x":8371,"y":3833,"z":545},"fallMeters":3.57,"fromZone":"a-site","toZone":"a-site","fromNode":860,"toNode":573},
+  {"from":{"x":8921,"y":2983,"z":855},"to":{"x":8921,"y":2933,"z":552},"fallMeters":3.03,"fromZone":"a-drop","toZone":"a-site","fromNode":861,"toNode":862},
+  {"from":{"x":7221,"y":683,"z":891},"to":{"x":7221,"y":733,"z":557},"fallMeters":3.34,"fromZone":"defender-spawn","toZone":"a-rope","fromNode":863,"toNode":864},
+  {"from":{"x":7671,"y":683,"z":891},"to":{"x":7671,"y":733,"z":554},"fallMeters":3.37,"fromZone":"defender-spawn","toZone":"a-rope","fromNode":673,"toNode":865},
+  {"from":{"x":9921,"y":2583,"z":852},"to":{"x":9921,"y":2633,"z":714},"fallMeters":1.38,"fromZone":"a-drop","toZone":"a-drop","fromNode":866,"toNode":867},
+  {"from":{"x":5721,"y":-117,"z":408},"to":{"x":5721,"y":-167,"z":345},"fallMeters":0.63,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":868,"toNode":869},
+  {"from":{"x":8471,"y":3883,"z":901},"to":{"x":8471,"y":3833,"z":545},"fallMeters":3.56,"fromZone":"a-site","toZone":"a-site","fromNode":870,"toNode":871},
+  {"from":{"x":7871,"y":4433,"z":903},"to":{"x":7821,"y":4433,"z":545},"fallMeters":3.58,"fromZone":"a-site","toZone":"a-site","fromNode":872,"toNode":873},
+  {"from":{"x":8021,"y":-4767,"z":749},"to":{"x":8021,"y":-4717,"z":550},"fallMeters":1.99,"fromZone":"b-site","toZone":"b-generator","fromNode":875,"toNode":876},
+  {"from":{"x":6021,"y":-167,"z":348},"to":{"x":6071,"y":-167,"z":109},"fallMeters":2.39,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":877,"toNode":878},
+  {"from":{"x":7571,"y":4483,"z":759},"to":{"x":7571,"y":4433,"z":545},"fallMeters":2.14,"fromZone":"a-site","toZone":"a-site","fromNode":880,"toNode":881},
+  {"from":{"x":8971,"y":2783,"z":854},"to":{"x":8921,"y":2783,"z":554},"fallMeters":3.0,"fromZone":"a-drop","toZone":"a-site","fromNode":882,"toNode":883},
+  {"from":{"x":7871,"y":-5067,"z":750},"to":{"x":7821,"y":-5067,"z":550},"fallMeters":2.0,"fromZone":"b-site","toZone":"b-site","fromNode":884,"toNode":885},
+  {"from":{"x":5171,"y":-167,"z":346},"to":{"x":5171,"y":-217,"z":86},"fallMeters":2.6,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":886,"toNode":887},
+  {"from":{"x":7471,"y":4283,"z":650},"to":{"x":7521,"y":4283,"z":546},"fallMeters":1.04,"fromZone":"a-site","toZone":"a-site","fromNode":888,"toNode":889},
+  {"from":{"x":7921,"y":-4917,"z":749},"to":{"x":7871,"y":-4917,"z":554},"fallMeters":1.95,"fromZone":"b-site","toZone":"b-site","fromNode":890,"toNode":891},
+  {"from":{"x":5321,"y":-117,"z":406},"to":{"x":5321,"y":-167,"z":344},"fallMeters":0.62,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":892,"toNode":644},
+  {"from":{"x":4721,"y":-117,"z":402},"to":{"x":4721,"y":-167,"z":341},"fallMeters":0.61,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":894,"toNode":895},
+  {"from":{"x":7821,"y":4483,"z":888},"to":{"x":7821,"y":4433,"z":545},"fallMeters":3.43,"fromZone":"a-site","toZone":"a-site","fromNode":896,"toNode":873},
+  {"from":{"x":7721,"y":4483,"z":835},"to":{"x":7721,"y":4433,"z":545},"fallMeters":2.9,"fromZone":"a-site","toZone":"a-site","fromNode":897,"toNode":898},
+  {"from":{"x":13371,"y":533,"z":440},"to":{"x":13321,"y":533,"z":338},"fallMeters":1.02,"fromZone":"a-gate","toZone":"a-gate","fromNode":899,"toNode":900},
+  {"from":{"x":7071,"y":683,"z":891},"to":{"x":7071,"y":733,"z":537},"fallMeters":3.54,"fromZone":"defender-spawn","toZone":"a-rope","fromNode":902,"toNode":903},
+  {"from":{"x":13371,"y":583,"z":442},"to":{"x":13321,"y":583,"z":342},"fallMeters":1.0,"fromZone":"a-gate","toZone":"a-gate","fromNode":904,"toNode":905},
+  {"from":{"x":9971,"y":-3217,"z":400},"to":{"x":9971,"y":-3167,"z":280},"fallMeters":1.2,"fromZone":"b-arcade","toZone":"b-arcade","fromNode":906,"toNode":907},
+  {"from":{"x":8671,"y":-6267,"z":917},"to":{"x":8671,"y":-6217,"z":747},"fallMeters":1.7,"fromZone":"b-site","toZone":"b-site","fromNode":908,"toNode":909},
+  {"from":{"x":7471,"y":683,"z":891},"to":{"x":7471,"y":733,"z":552},"fallMeters":3.39,"fromZone":"defender-spawn","toZone":"a-rope","fromNode":910,"toNode":911},
+  {"from":{"x":4021,"y":83,"z":611},"to":{"x":3971,"y":83,"z":429},"fallMeters":1.82,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":914,"toNode":915}
+ ],
+ "traversals": [
+  {
+   "id": "attacker-zipline",
+   "name": "Zipline between the two attacker sides",
+   "kind": "zipline",
+   "bidirectional": true,
+   "travelTimeMs": 11260,
+   "from": {
+    "x": 4871,
+    "y": -917,
+    "z": 243
+   },
+   "to": {
+    "x": 12471,
+    "y": -917,
+    "z": 145
+   },
+   "fromNode": 22,
+   "toNode": 23,
+   "zones": [
+    "attacker-spawn",
+    "attacker-bridge"
+   ],
+   "lengthMeters": 76.01,
+   "soundSource": {
+    "x": 4871,
+    "y": -917,
+    "z": 243
+   },
+   "soundSourceExit": {
+    "x": 12471,
+    "y": -917,
+    "z": 145
+   },
+   "objectNames": [
+    "Shell_0_ZipLineStrip2",
+    "Shell_0_ZipLineStrip3"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Two floor strips on one line (y -9.3): Shell_0_ZipLineStrip2 at the attacker spawn (x 47.01..50.76, y -10.54..-8.32, z 1.65..3.03) and Shell_0_ZipLineStrip3 on the far side (x 121.57..127.77, y -10.41..-8.19, z 0.34..2.47). a, b = the main-floor cells at the middle of each strip, 76.0 m apart. The cable itself is not an object of the scene.",
+   "note": "attackers cross under the map to the far side",
+   "provenance": "measured-on-mesh (the two strip objects and the cells; length 76.01 m); manual-approx (that the strips are the two ends of the zipline; travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "a-rope",
+   "name": "A Rope",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 610,
+   "from": {
+    "x": 6671,
+    "y": 733,
+    "z": 482
+   },
+   "to": {
+    "x": 6671,
+    "y": 683,
+    "z": 891
+   },
+   "fromNode": 24,
+   "toNode": 25,
+   "zones": [
+    "a-rope",
+    "defender-spawn"
+   ],
+   "lengthMeters": 4.12,
+   "bottom": {
+    "x": 6671,
+    "y": 733,
+    "z": 482
+   },
+   "top": {
+    "x": 6671,
+    "y": 683,
+    "z": 891
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 6671,
+    "y": 733,
+    "z": 482
+   },
+   "soundSourceExit": {
+    "x": 6671,
+    "y": 683,
+    "z": 891
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderC"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC (x,y 66.54, 7.48; housing z 12.96..13.40). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. Both ends are on the main floor: the rope is a short cut.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.12 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "b-tower-rope",
+   "name": "B Tower rope",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 744,
+   "from": {
+    "x": 10071,
+    "y": -5167,
+    "z": 503
+   },
+   "to": {
+    "x": 10071,
+    "y": -5217,
+    "z": 1003
+   },
+   "fromNode": 26,
+   "toNode": 27,
+   "zones": [
+    "b-arcade",
+    "b-tower"
+   ],
+   "lengthMeters": 5.02,
+   "bottom": {
+    "x": 10071,
+    "y": -5167,
+    "z": 503
+   },
+   "top": {
+    "x": 10071,
+    "y": -5217,
+    "z": 1003
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 10071,
+    "y": -5167,
+    "z": 503
+   },
+   "soundSourceExit": {
+    "x": 10071,
+    "y": -5217,
+    "z": 1003
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderC.001"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.001 (x,y 100.79, -51.72; housing z 14.21..14.65). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. Both ends are on the main floor: the rope is a short cut.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 5.02 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  }
+ ],
+ "doors": [],
+ "breakables": [],
+ "ultOrbs": [],
+ "notLocated": [
+  {
+   "name": "Ultimate orbs",
+   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+  },
+  {
+   "name": "Second attacker zipline",
+   "reason": "a third strip, Shell_0_ZipLineStrip2.001 (x 123.99..127.75, y -5.54..-3.32), lies on the far side 5 m from the located line, but no matching strip or cable exists at the attacker spawn end, so its other end is unknown."
+  }
+ ],
+ "generatedBy": "tools/map-mesh/pipeline/objects_map.py"
+}

@@ -1,0 +1,70 @@
+{
+ "mapId": "sunset",
+ "schemaVersion": "1.0.0",
+ "note": "Gameplay objects as points and types, game uu (100 uu = 1 m); no surfaces. drops: the roadmap's one-way drops (from/to are roadmap nodes of <map>.nav.json; fallMeters = height lost). traversals: one per roadmap link, in the roadmap's link order (from/to are the roadmap nodes the link joins; ropes also name bottom/top and whether from->to ascends; soundSource / soundSourceExit are the points its sound is emitted from at the entry and the exit, soundRadiusUu is null and soundVerified false until a value is measured). doors / breakables: position on the floor in the opening, zones = the zone of the nearest roadmap point on each side of the opening (one zone for a prop; gates, where present, is the zone-graph edge the door is attached to), defaultState open/closed/intact/unknown. notLocated: mechanics known for the map that no scene object or floor measurement could place. ultOrbs: orb positions, empty where the scene has no orb object. Every entry states its own provenance.",
+ "provenance": "measured-on-mesh (positions: scene object bounding boxes and walk-grid cells; drops and the zones: the navigation roadmap); manual-approx (travel times and speeds, default states, and the reading of which scene object is which gameplay object)",
+ "roadmapBounds": {
+  "min": {
+   "x": -5900,
+   "y": -5775,
+   "z": -38
+  },
+  "max": {
+   "x": 6650,
+   "y": 5975,
+   "z": 500
+  }
+ },
+ "counts": {
+  "drops": 27,
+  "traversals": 0,
+  "doors": 0,
+  "breakables": 0,
+  "ultOrbs": 0,
+  "notLocated": 2
+ },
+ "drops": [
+  {"from":{"x":1400,"y":2325,"z":302},"to":{"x":1350,"y":2325,"z":104},"fallMeters":1.98,"fromZone":"a-alley","toZone":"a-link","fromNode":843,"toNode":844},
+  {"from":{"x":1000,"y":-3525,"z":500},"to":{"x":950,"y":-3525,"z":200},"fallMeters":3.0,"fromZone":"b-boba","toZone":"b-market","fromNode":734,"toNode":845},
+  {"from":{"x":800,"y":-4075,"z":399},"to":{"x":750,"y":-4075,"z":200},"fallMeters":1.99,"fromZone":"b-boba","toZone":"b-market","fromNode":846,"toNode":847},
+  {"from":{"x":1400,"y":2425,"z":302},"to":{"x":1400,"y":2475,"z":102},"fallMeters":2.0,"fromZone":"a-alley","toZone":"a-link","fromNode":848,"toNode":849},
+  {"from":{"x":1500,"y":2425,"z":302},"to":{"x":1500,"y":2475,"z":100},"fallMeters":2.02,"fromZone":"a-alley","toZone":"a-link","fromNode":850,"toNode":851},
+  {"from":{"x":3000,"y":-425,"z":500},"to":{"x":2950,"y":-425,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":852,"toNode":853},
+  {"from":{"x":3000,"y":-775,"z":500},"to":{"x":2950,"y":-775,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":854,"toNode":855},
+  {"from":{"x":3000,"y":525,"z":500},"to":{"x":2950,"y":525,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":856,"toNode":857},
+  {"from":{"x":2200,"y":2675,"z":300},"to":{"x":2150,"y":2675,"z":202},"fallMeters":0.98,"fromZone":"a-alley","toZone":"a-link","fromNode":747,"toNode":858},
+  {"from":{"x":3000,"y":875,"z":473},"to":{"x":2950,"y":875,"z":372},"fallMeters":1.01,"fromZone":"mid-top","toZone":"mid-top","fromNode":859,"toNode":860},
+  {"from":{"x":1950,"y":2375,"z":300},"to":{"x":1950,"y":2425,"z":173},"fallMeters":1.27,"fromZone":"a-alley","toZone":"a-link","fromNode":861,"toNode":862},
+  {"from":{"x":1000,"y":-3825,"z":496},"to":{"x":950,"y":-3825,"z":200},"fallMeters":2.96,"fromZone":"b-boba","toZone":"b-market","fromNode":733,"toNode":863},
+  {"from":{"x":1050,"y":-3575,"z":500},"to":{"x":1100,"y":-3575,"z":400},"fallMeters":1.0,"fromZone":"b-boba","toZone":"b-boba","fromNode":864,"toNode":865},
+  {"from":{"x":1600,"y":2425,"z":289},"to":{"x":1550,"y":2425,"z":105},"fallMeters":1.84,"fromZone":"a-alley","toZone":"a-link","fromNode":866,"toNode":867},
+  {"from":{"x":3000,"y":325,"z":500},"to":{"x":2950,"y":325,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":868,"toNode":869},
+  {"from":{"x":3000,"y":625,"z":500},"to":{"x":2950,"y":625,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":870,"toNode":871},
+  {"from":{"x":3000,"y":-225,"z":500},"to":{"x":2950,"y":-225,"z":400},"fallMeters":1.0,"fromZone":"mid-top","toZone":"mid-top","fromNode":872,"toNode":873},
+  {"from":{"x":1000,"y":-3575,"z":500},"to":{"x":950,"y":-3575,"z":200},"fallMeters":3.0,"fromZone":"b-boba","toZone":"b-market","fromNode":874,"toNode":875},
+  {"from":{"x":1050,"y":-3475,"z":500},"to":{"x":1100,"y":-3475,"z":400},"fallMeters":1.0,"fromZone":"b-boba","toZone":"b-boba","fromNode":876,"toNode":877},
+  {"from":{"x":1800,"y":-5325,"z":403},"to":{"x":1750,"y":-5325,"z":300},"fallMeters":1.03,"fromZone":"b-boba","toZone":"b-boba","fromNode":878,"toNode":879},
+  {"from":{"x":3000,"y":225,"z":500},"to":{"x":2950,"y":225,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":880,"toNode":881},
+  {"from":{"x":3000,"y":975,"z":421},"to":{"x":2950,"y":975,"z":324},"fallMeters":0.97,"fromZone":"mid-top","toZone":"mid-top","fromNode":882,"toNode":883},
+  {"from":{"x":3000,"y":-325,"z":500},"to":{"x":2950,"y":-325,"z":401},"fallMeters":0.99,"fromZone":"mid-top","toZone":"mid-top","fromNode":884,"toNode":885},
+  {"from":{"x":1800,"y":2425,"z":291},"to":{"x":1850,"y":2425,"z":124},"fallMeters":1.67,"fromZone":"a-alley","toZone":"a-link","fromNode":886,"toNode":887},
+  {"from":{"x":2100,"y":2375,"z":300},"to":{"x":2100,"y":2425,"z":201},"fallMeters":0.99,"fromZone":"a-alley","toZone":"a-link","fromNode":888,"toNode":889},
+  {"from":{"x":1800,"y":-5625,"z":403},"to":{"x":1750,"y":-5625,"z":300},"fallMeters":1.03,"fromZone":"b-boba","toZone":"b-boba","fromNode":890,"toNode":891},
+  {"from":{"x":1800,"y":-5475,"z":403},"to":{"x":1750,"y":-5475,"z":300},"fallMeters":1.03,"fromZone":"b-boba","toZone":"b-boba","fromNode":892,"toNode":893}
+ ],
+ "traversals": [],
+ "doors": [],
+ "breakables": [],
+ "ultOrbs": [],
+ "notLocated": [
+  {
+   "name": "Ultimate orbs",
+   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+  },
+  {
+   "name": "Mechanical door at B Market / Mid",
+   "reason": "the door and its switch are moving actors and not in the static scene: among the 60+ objects named *Door* none is a mechanical or switch door (they are decorative house doors and gates), and no object name matches Switch / Button / Breaker."
+  }
+ ],
+ "generatedBy": "tools/map-mesh/pipeline/objects_map.py"
+}

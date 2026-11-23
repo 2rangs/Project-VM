@@ -36,9 +36,9 @@
  },
  "provenance": "measured-on-mesh",
  "summary": {
-  "edges": 31,
+  "edges": 33,
   "withWalkableRoute": 30,
-  "flaggedStraight": 1,
+  "flaggedStraight": 3,
   "walkingSegmentsRayChecked": 116,
   "walkingSegmentsHittingGeometry": 0
  },
@@ -1472,6 +1472,24 @@
    "bidirectional": true,
    "kind": "zipline",
    "straightMeters": 89.02,
+   "status": "straight",
+   "reason": "special traversal (no walking route applies)"
+  },
+  {
+   "from": "a-rope",
+   "to": "defender-spawn",
+   "bidirectional": true,
+   "kind": "rope",
+   "straightMeters": 30.69,
+   "status": "straight",
+   "reason": "special traversal (no walking route applies)"
+  },
+  {
+   "from": "b-arcade",
+   "to": "b-tower",
+   "bidirectional": true,
+   "kind": "rope",
+   "straightMeters": 18.31,
    "status": "straight",
    "reason": "special traversal (no walking route applies)"
   }

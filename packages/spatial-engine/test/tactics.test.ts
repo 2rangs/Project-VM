@@ -1,0 +1,134 @@
+// Per-map tactical data derived from the map (src/tactics.ts). These tests FAIL when a map's
+// derived data cannot be played: a site nobody reaches, a site whose defenders cannot see the
+// way in, a plant point nobody can watch.
+import { describe, expect, it } from "vitest";
+import { MAP_IDS, MAPS, SpatialEngine, deriveMapTactics, loadMapData, loadMapTactics, type MapId } from "../src/index.js";
+
+function engineOf(id: MapId): SpatialEngine {
+  const l = loadMapData(id);
+  return new SpatialEngine(l.data, { transform: l.transform, nav: l.nav, visibility: l.visibility });
+}
+
+describe("derived tactics: Ascent reproduces the tables the policy used to carry", () => {
+  const t = loadMapTactics("ascent");
+  it("defender starts, aims and smokes", () => {
+    expect(t.defenderStarts).toEqual(["a-site", "a-site", "b-site", "b-site", "mid-courtyard"]);
+    expect(t.aim).toEqual({ "a-site": "a-main", "b-site": "b-main", "mid-courtyard": "mid-top" });
+    expect(t.smokes["a-site"]).toEqual(["a-main", "a-rafters", "a-wine"]);
+    expect(t.smokes["b-site"]).toEqual(["b-main", "b-boathouse"]);
+    expect(t.smokes["mid-courtyard"]).toEqual(["mid-top"]);
+    expect(t.mid?.zone).toBe("mid-courtyard");
+  });
+  it("only the mid aim and the smoke lists are hand-authored; the rest is the rules' own answer", () => {
+    const derived = deriveMapTactics(engineOf("ascent"), {});
+    expect(derived.defenderStarts).toEqual(t.defenderStarts);
+    expect(derived.sites.map((s) => [s.zone, s.mainEntry])).toEqual([["a-site", "a-main"], ["b-site", "b-main"]]);
+    expect(derived.mid?.zone).toBe("mid-courtyard");
+    expect(derived.authored).toEqual([]);
+    expect(t.authored.length).toBeGreaterThan(0);
+  });
+});
+
+describe.each(MAP_IDS.map((id) => [id] as const))("derived tactics: %s", (id: MapId) => {
+  const engine = engineOf(id);
+  const nav = engine.nav!;
+  const t = deriveMapTactics(engine, loadMapData(id).tactics ?? {});
+  const zoneIds = new Set(loadMapData(id).data.zones.map((z) => z.id as string));
+
+  it("one playable site per site letter, reached by both sides", () => {
+    expect(t.sites.map((s) => s.site)).toEqual([...MAPS[id].sites]);
+    for (const s of t.sites) {
+      expect(zoneIds.has(s.zone), s.zone).toBe(true);
+      expect(s.attackTravelMs, `${s.zone} attack`).not.toBeNull();
+      expect(s.defenseTravelMs, `${s.zone} defence`).not.toBeNull();
+      expect(s.mainEntry, `${s.zone} main entry`).not.toBeNull();
+      expect(s.entries[0]).toBe(s.mainEntry);
+      for (const z of [...s.entries, ...s.smokes]) expect(zoneIds.has(z), z).toBe(true);
+      expect(s.smokes[0]).toBe(s.mainEntry);
+      expect(t.aim[s.zone]).toBeDefined();
+    }
+  });
+
+  it("five defender starts, every site held, each start a real zone with somewhere to stand", () => {
+    expect(t.defenderStarts).toHaveLength(5);
+    for (const z of t.defenderStarts) {
+      expect(zoneIds.has(z), z).toBe(true);
+      expect(nav.zoneNodes(z).length, `${z} standing points`).toBeGreaterThan(0);
+    }
+    for (const s of t.sites) expect(t.defenderStarts, `${s.zone} is held`).toContain(s.zone);
+    if (t.mid) expect(zoneIds.has(t.mid.zone)).toBe(true);
+  });
+
+  it("every site has defender spots that see the way in it watches", () => {
+    for (const s of t.sites) {
+      const aim = t.aim[s.zone]!;
+      const spots = nav.zoneNodes(s.zone).filter((n) => nav.sightInto(n, aim) > 0);
+      expect(spots.length, `${s.zone}: spots that see ${aim}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("every point of a site can be watched from another point of the site or of its entries", () => {
+    for (const s of t.sites) {
+      const watchers = [s.zone, ...s.entries].flatMap((z) => [...nav.zoneNodes(z)]);
+      for (const p of nav.zoneNodes(s.zone)) {
+        expect(watchers.some((w) => w !== p && nav.nodesVisible(w, p)), `${s.zone} node ${p} is seen by nobody`).toBe(true);
+      }
+    }
+  });
+});
+
+describe.each(MAP_IDS.map((id) => [id] as const))("named spots: %s", (id: MapId) => {
+  const engine = engineOf(id);
+  const nav = engine.nav!;
+  const t = deriveMapTactics(engine, loadMapData(id).tactics ?? {});
+
+  it("holding spots: on the floor of their site, see the way in they are for, an off-angle among them", () => {
+    for (const s of t.sites) {
+      const seeing = new Set(s.entries.flatMap((e) => nav.zoneNodes(s.zone).filter((n) => nav.sightInto(n, e) > 0)));
+      expect(s.holdSpots.length, `${s.zone}: ${s.holdSpots.length} spots of ${seeing.size} candidates`).toBeGreaterThanOrEqual(Math.min(6, seeing.size > 6 ? 4 : 1));
+      expect(new Set(s.holdSpots.map((h) => h.id)).size).toBe(s.holdSpots.length);
+      expect(new Set(s.holdSpots.map((h) => h.node)).size).toBe(s.holdSpots.length);
+      for (const h of s.holdSpots) {
+        expect(nav.nodeZone(h.node)).toBe(s.zone);
+        expect(nav.distanceToWalkable(h.position)).toBeLessThanOrEqual(1);
+        expect(s.entries).toContain(h.watches);
+        expect(nav.sightInto(h.node, h.watches), h.id).toBeGreaterThan(0);
+        for (const [e, c] of Object.entries(h.sees)) expect(nav.sightInto(h.node, e), `${h.id} sees ${e}`).toBe(c);
+        expect(h.provenance).toBe("derived");
+      }
+    }
+  });
+
+  it("plant spots: default, safe and open, each on the plantable area; safe is the least exposed", () => {
+    for (const s of t.sites) {
+      expect(s.plantSpots.map((p) => p.kind)).toEqual(["default", "safe", "open"]);
+      for (const p of s.plantSpots) {
+        expect(engine.isPointPlantable(p.position), `${s.zone} ${p.kind}`).toBe(true);
+        expect(engine.plantZoneAt(p.position)?.zoneId).toBe(s.zone);
+      }
+      const [, safe, open] = s.plantSpots;
+      expect(safe!.exposure).toBeLessThanOrEqual(open!.exposure);
+      for (const p of s.plantSpots) expect(p.exposure).toBeGreaterThanOrEqual(safe!.exposure);
+    }
+  });
+});
+
+describe("named spots: Ascent has at least six holding spots per site", () => {
+  it("six or more, with standard and off-angle kinds", () => {
+    for (const s of loadMapTactics("ascent").sites) {
+      expect(s.holdSpots.length, s.zone).toBeGreaterThanOrEqual(6);
+      expect(s.holdSpots.some((h) => h.kind === "off-angle"), s.zone).toBe(true);
+    }
+  });
+});
+
+describe("three-site maps", () => {
+  it.each(["haven", "lotus"] as const)("%s: site C is derived like A and B, and a defender starts on it", (id) => {
+    const t = loadMapTactics(id);
+    const c = t.sites.find((s) => s.site === "C")!;
+    expect(c.zone).toBe("c-site");
+    expect(c.attackTravelMs).not.toBeNull();
+    expect(t.defenderStarts).toContain("c-site");
+    expect(t.mid === null || !t.defenderStarts.includes(t.mid.zone)).toBe(true); // the third site takes the mid's place
+  });
+});

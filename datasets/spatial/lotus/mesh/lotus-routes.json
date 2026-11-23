@@ -37,9 +37,9 @@
  "provenance": "measured-on-mesh",
  "summary": {
   "edges": 40,
-  "withWalkableRoute": 40,
-  "flaggedStraight": 0,
-  "walkingSegmentsRayChecked": 165,
+  "withWalkableRoute": 39,
+  "flaggedStraight": 1,
+  "walkingSegmentsRayChecked": 146,
   "walkingSegmentsHittingGeometry": 0
  },
  "zoneAnchors": {
@@ -1729,144 +1729,13 @@
    "status": "route"
   },
   {
-   "from": "a-drop",
+   "from": "a-hut",
    "to": "a-top",
    "bidirectional": true,
-   "kind": "walk",
-   "straightMeters": 11.43,
-   "route": {
-    "waypoints": [
-     [
-      9526,
-      6094,
-      300
-     ],
-     [
-      9226,
-      6394,
-      300
-     ],
-     [
-      8676,
-      6344,
-      300
-     ],
-     [
-      8276,
-      4944,
-      300
-     ],
-     [
-      7276,
-      4794,
-      300
-     ],
-     [
-      7376,
-      4094,
-      300
-     ],
-     [
-      8076,
-      3894,
-      300
-     ],
-     [
-      8326,
-      3844,
-      306
-     ],
-     [
-      8576,
-      3794,
-      400
-     ],
-     [
-      8776,
-      3744,
-      396
-     ],
-     [
-      8876,
-      3044,
-      399
-     ],
-     [
-      8926,
-      2794,
-      498
-     ],
-     [
-      8926,
-      2594,
-      500
-     ],
-     [
-      9426,
-      2744,
-      501
-     ],
-     [
-      9576,
-      4544,
-      675
-     ],
-     [
-      9276,
-      5044,
-      675
-     ]
-    ],
-    "lengthMeters": 97.12,
-    "drops": 0,
-    "validated": true,
-    "minClearanceCells": 0,
-    "gridPathMeters": 103.59,
-    "raySegments": 15,
-    "raySegmentsBlocked": 0
-   },
-   "routeReverse": {
-    "waypoints": [
-     [
-      9276,
-      5044,
-      675
-     ],
-     [
-      8926,
-      5044,
-      674
-     ],
-     [
-      8926,
-      5094,
-      300
-     ],
-     [
-      8726,
-      6394,
-      300
-     ],
-     [
-      9376,
-      6344,
-      300
-     ],
-     [
-      9526,
-      6094,
-      300
-     ]
-    ],
-    "lengthMeters": 29.86,
-    "drops": 1,
-    "validated": true,
-    "minClearanceCells": 0,
-    "gridPathMeters": 32.59,
-    "raySegments": 4,
-    "raySegmentsBlocked": 0
-   },
-   "status": "route"
+   "kind": "rope",
+   "straightMeters": 13.53,
+   "status": "straight",
+   "reason": "special traversal (no walking route applies)"
   },
   {
    "from": "b-site",

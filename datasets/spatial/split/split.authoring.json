@@ -1,13 +1,215 @@
 {
   "mapId": "split",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "geometryNote": "dropObjectRegex: scene objects left out of the walk grid and the occluders. BalconyScaffolding_0_LightFixtureA.007 (x 20.97..25.25, y -53.67..-51.48, z 4.29..6.48) hangs under the floor of the Mid Top -> Vent doorway (Shell_6_VentRoomDoorFrameADU, x 20.79..24.72, y -52.03..-51.45; floors Floor_9_MidToVentRampE and Shell_6_VentRoomGroundADU both at z 6.50). Its sloped upper faces were sampled as floor and merged with the real floor into one layer whose mean height lay below the slab, so the slab itself counted as a body-height obstacle and every cell of the doorway (y -52.4..-51.9) was blocked: Mid Vent (232 walk cells at z 6.50) became an island. No triangle of any object lies in the doorway between 0.5 and 1.5 m above the floor (box x 22.0..23.6, y -52.4..-51.6, z 7.0..8.0: 0 triangles).",
+  "geometry": {
+    "dropObjectRegex": "^BalconyScaffolding_0_LightFixtureA\\.007$"
+  },
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
+    {
+      "id": "vent-rope-1",
+      "name": "Vent pit rope to Mid Vent (south)",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 602,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 3268,
+        "y": -5540,
+        "z": 249
+      },
+      "b": {
+        "x": 3218,
+        "y": -5490,
+        "z": 649
+      },
+      "zones": [
+        "mid-vent",
+        "mid-vent"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA.002"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.002 (x,y 32.71, -55.15; housing z 9.06..9.52). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.06 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "vent-rope-2",
+      "name": "Vent pit rope to Mid Vent (north)",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 596,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 3268,
+        "y": -5240,
+        "z": 250
+      },
+      "b": {
+        "x": 3218,
+        "y": -5240,
+        "z": 650
+      },
+      "zones": [
+        "mid-vent",
+        "mid-vent"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA.003"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.003 (x,y 32.70, -52.40; housing z 9.06..9.52). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.03 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "ramps-rope-1",
+      "name": "Vent pit rope to A Ramps side (south)",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 612,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 3568,
+        "y": -6190,
+        "z": 250
+      },
+      "b": {
+        "x": 3668,
+        "y": -6190,
+        "z": 651
+      },
+      "zones": [
+        "mid-vent",
+        "a-tower"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA (x,y 35.91, -62.08; housing z 8.96..9.41). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.13 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "ramps-rope-2",
+      "name": "Vent pit rope to A Ramps side (north)",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 613,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 3568,
+        "y": -5940,
+        "z": 250
+      },
+      "b": {
+        "x": 3668,
+        "y": -5940,
+        "z": 651
+      },
+      "zones": [
+        "mid-vent",
+        "a-tower"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA.001"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.001 (x,y 35.90, -59.41; housing z 8.96..9.41). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.13 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "b-tower-rope",
+      "name": "B Tower rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 620,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -232,
+        "y": -5390,
+        "z": 500
+      },
+      "b": {
+        "x": -182,
+        "y": -5390,
+        "z": 916
+      },
+      "zones": [
+        "b-tower",
+        "b-tower"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA.004"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.004 (x,y -2.52, -54.04; housing z 13.43..13.88). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is a 224-cell floor at z 5.00 that is an island of the walk grid; the top is the B Tower floor.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.19 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "sewer-rope-1",
+      "name": "A Sewer rope (south)",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 600,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 6068,
+        "y": -3140,
+        "z": -94
+      },
+      "b": {
+        "x": 6168,
+        "y": -3140,
+        "z": 299
+      },
+      "zones": [
+        "a-sewer",
+        "a-lobby"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA.005"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.005 (x,y 60.75, -31.49; housing z 5.48..6.04). a = the walk cell at its foot, b = the nearest cell of the floor it reaches.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.05 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "sewer-rope-2",
+      "name": "A Sewer rope (north)",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 607,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 6068,
+        "y": -2840,
+        "z": -99
+      },
+      "b": {
+        "x": 6168,
+        "y": -2840,
+        "z": 299
+      },
+      "zones": [
+        "a-sewer",
+        "a-lobby"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA.006"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.006 (x,y 60.75, -28.52; housing z 5.48..6.04). a = the walk cell at its foot, b = the nearest cell of the floor it reaches.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.10 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    }
+  ],
   "mechanics": [
     {
       "kind": "rope",
       "name": "Vertical ropes (A Sewer/Ramps side, Mid Vent, B Tower)",
-      "represented": false,
-      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "seven roadmap links kind=rope between measured cells (traversals in this file): two pairs in the vent pit, B Tower, a pair in A Sewer. The 'on rope' state is NOT modelled"
     }
   ]
 }

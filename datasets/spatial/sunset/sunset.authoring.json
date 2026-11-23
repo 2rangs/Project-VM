@@ -1,6 +1,16 @@
 {
   "mapId": "sunset",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    },
+    {
+      "name": "Mechanical door at B Market / Mid",
+      "reason": "the door and its switch are moving actors and not in the static scene: among the 60+ objects named *Door* none is a mechanical or switch door (they are decorative house doors and gates), and no object name matches Switch / Button / Breaker."
+    }
+  ],
   "mechanics": [
     {
       "kind": "door",

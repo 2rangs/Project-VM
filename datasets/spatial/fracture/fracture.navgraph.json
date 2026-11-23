@@ -1542,11 +1542,42 @@
       "destructible": null,
       "distanceUnits": 8861,
       "distanceMeters": 88.61,
-      "runTimeMs": 13127,
-      "walkTimeMs": 26061,
-      "provenance": "manual-approx (authored zipline under the map; straight-line length at run speed (real zipline speed not measured))",
+      "runTimeMs": 11260,
+      "walkTimeMs": 11260,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'attacker-zipline' in the authoring file",
       "kind": "zipline",
       "note": "attackers cross under the map to the far side",
+      "traversal": "attacker-zipline",
+      "routeStatus": "straight (special traversal (no walking route applies))"
+    },
+    {
+      "from": "a-rope",
+      "to": "defender-spawn",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3058,
+      "distanceMeters": 30.58,
+      "runTimeMs": 610,
+      "walkTimeMs": 610,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-rope' in the authoring file",
+      "kind": "rope",
+      "traversal": "a-rope",
+      "routeStatus": "straight (special traversal (no walking route applies))"
+    },
+    {
+      "from": "b-arcade",
+      "to": "b-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1823,
+      "distanceMeters": 18.23,
+      "runTimeMs": 744,
+      "walkTimeMs": 744,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'b-tower-rope' in the authoring file",
+      "kind": "rope",
+      "traversal": "b-tower-rope",
       "routeStatus": "straight (special traversal (no walking route applies))"
     }
   ],
@@ -2002,6 +2033,12 @@
       "b": "attacker-spawn",
       "attenuation": 0.4,
       "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-rope",
+      "b": "defender-spawn",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
     }
   ],
   "routes": {
@@ -2009,7 +2046,9 @@
     "source": "tools/map-mesh/pipeline/route_map.py",
     "edgesWithWalkableRoute": 30,
     "edgesFlaggedStraight": [
-      "attacker-spawn->attacker-bridge"
+      "attacker-spawn->attacker-bridge",
+      "a-rope->defender-spawn",
+      "b-arcade->b-tower"
     ],
     "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
   },
@@ -2018,8 +2057,8 @@
       "kind": "zipline",
       "name": "Ziplines under the map joining the two attacker sides",
       "represented": true,
-      "how": "bidirectional edge kind=zipline (travel time = straight line at run speed, an estimate)",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "how": "one roadmap link kind=zipline between measured cells (traversal attacker-zipline); the second line is not located (see objectsNotLocated)",
+      "provenance": "measured-on-mesh (strip objects, cells); manual-approx (that the strips are its ends; travel time)"
     },
     {
       "kind": "layout",
@@ -2031,9 +2070,9 @@
     {
       "kind": "rope",
       "name": "Vertical ropes (A Rope, B Tower)",
-      "represented": false,
-      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state (reduced accuracy, audible)",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "two roadmap links kind=rope between measured cells (traversals a-rope, b-tower-rope). The 'on rope' state is NOT modelled"
     },
     {
       "kind": "layout",
@@ -2047,10 +2086,12 @@
     "edgeKinds": {
       "walk": 28,
       "drop": 2,
-      "zipline": 1
+      "zipline": 1,
+      "rope": 2
     },
     "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [],
     "doorsNotAttached": [],
     "zonesOnMainWalkComponent": "22/22"
   },

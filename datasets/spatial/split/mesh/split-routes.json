@@ -36,10 +36,10 @@
  },
  "provenance": "measured-on-mesh",
  "summary": {
-  "edges": 28,
-  "withWalkableRoute": 27,
-  "flaggedStraight": 1,
-  "walkingSegmentsRayChecked": 111,
+  "edges": 30,
+  "withWalkableRoute": 28,
+  "flaggedStraight": 2,
+  "walkingSegmentsRayChecked": 113,
   "walkingSegmentsHittingGeometry": 0
  },
  "zoneAnchors": {
@@ -362,6 +362,40 @@
     "minClearanceCells": 0,
     "gridPathMeters": 15.67,
     "raySegments": 4,
+    "raySegmentsBlocked": 0
+   },
+   "status": "route"
+  },
+  {
+   "from": "mid-top",
+   "to": "mid-vent",
+   "bidirectional": true,
+   "kind": "walk",
+   "straightMeters": 13.73,
+   "route": {
+    "waypoints": [
+     [
+      2018,
+      -4590,
+      650
+     ],
+     [
+      2468,
+      -5440,
+      648
+     ],
+     [
+      3168,
+      -5340,
+      650
+     ]
+    ],
+    "lengthMeters": 16.69,
+    "drops": 0,
+    "validated": true,
+    "minClearanceCells": 1,
+    "gridPathMeters": 17.78,
+    "raySegments": 2,
     "raySegmentsBlocked": 0
    },
    "status": "route"
@@ -1380,13 +1414,22 @@
    "status": "route"
   },
   {
-   "from": "a-ramps",
-   "to": "mid-vent",
+   "from": "mid-vent",
+   "to": "a-tower",
    "bidirectional": true,
-   "kind": "approx-link",
-   "straightMeters": 12.99,
+   "kind": "rope",
+   "straightMeters": 20.16,
    "status": "straight",
-   "reason": "no walkable route on the grid"
+   "reason": "special traversal (no walking route applies)"
+  },
+  {
+   "from": "a-sewer",
+   "to": "a-lobby",
+   "bidirectional": true,
+   "kind": "rope",
+   "straightMeters": 19.65,
+   "status": "straight",
+   "reason": "special traversal (no walking route applies)"
   }
  ]
 }

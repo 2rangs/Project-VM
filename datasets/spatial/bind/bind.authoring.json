@@ -1,24 +1,122 @@
 {
   "mapId": "bind",
-  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
-  "specialEdges": [
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py and the measurements made on the scene.",
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
     {
-      "from": "a-teleporter",
-      "to": "b-exit",
-      "bidirectional": false,
+      "id": "a-teleporter",
+      "name": "A Short teleporter -> B Short",
       "kind": "teleporter",
+      "bidirectional": false,
       "travelTimeMs": 1500,
-      "basis": "authored one-way teleporter; 1.5 s travel is an estimate",
-      "note": "A Short teleporter exits at B Short (B Exit room)"
+      "a": {
+        "x": 9437,
+        "y": 451,
+        "z": 204
+      },
+      "b": {
+        "x": 8887,
+        "y": -1999,
+        "z": 504
+      },
+      "zones": [
+        "a-teleporter",
+        "b-exit"
+      ],
+      "soundSource": {
+        "x": 9452,
+        "y": 460,
+        "z": 390
+      },
+      "objectNames": [
+        "KingdomTech_1_TeleporterFrame.002",
+        "TeleporterReceiver_4_FloorGrating"
+      ],
+      "note": "A Short teleporter exits at B Short (B Exit room)",
+      "basis": "Game metres. Entry = frame KingdomTech_1_TeleporterFrame.002 (x 91.58..97.46, y 4.16..5.05, z 2.00..5.75): a = the walk cell under the middle of the frame. Arrival = the closed room with floor TeleporterReceiver_4_FloorGrating (x 84.13..93.84, y -24.21..-15.89, z 5.04), left through the door frame KingdomTech_1_TeleporterFrame.003: b = the cell at the middle of that floor. soundSource = middle of the entry frame.",
+      "provenance": "measured-on-mesh (entry frame, arrival room, the two cells); manual-approx (1.5 s travel time is an estimate; which entry leads to which room: game knowledge)"
     },
     {
-      "from": "b-teleporter",
-      "to": "a-exit",
-      "bidirectional": false,
+      "id": "b-teleporter",
+      "name": "B Long teleporter -> A Lobby",
       "kind": "teleporter",
+      "bidirectional": false,
       "travelTimeMs": 1500,
-      "basis": "authored one-way teleporter; 1.5 s travel is an estimate",
-      "note": "B Long teleporter exits at A Lobby side (A Exit room)"
+      "a": {
+        "x": 9037,
+        "y": -7349,
+        "z": 309
+      },
+      "b": {
+        "x": 7637,
+        "y": 5501,
+        "z": 100
+      },
+      "zones": [
+        "b-teleporter",
+        "a-exit"
+      ],
+      "soundSource": {
+        "x": 9046,
+        "y": -7342,
+        "z": 490
+      },
+      "objectNames": [
+        "KingdomTech_1_TeleporterFrame.001",
+        "TeleporterReceiver_4_FloorGrating.001"
+      ],
+      "note": "B Long teleporter exits at A Lobby side (A Exit room)",
+      "basis": "Game metres. Entry = frame KingdomTech_1_TeleporterFrame.001 (x 87.52..93.40, y -73.87..-72.97, z 3.00..6.75): a = the walk cell under the middle of the frame. Arrival = the closed room with floor TeleporterReceiver_4_FloorGrating.001 (x 71.71..81.42, y 50.88..59.21, z 1.01), left through the door frame KingdomTech_1_TeleporterFrame: b = the cell at the middle of that floor. soundSource = middle of the entry frame.",
+      "provenance": "measured-on-mesh (entry frame, arrival room, the two cells); manual-approx (1.5 s travel time is an estimate; which entry leads to which room: game knowledge)"
+    }
+  ],
+  "objectsNote": "Game uu. Doors and breakables located on the scene: position is on the floor in the opening, normal the horizontal direction through it. Read by tools/map-mesh/pipeline/objects_map.py.",
+  "objects": [
+    {
+      "id": "b-exit-door",
+      "name": "B Short teleporter exit door",
+      "kind": "teleporter-exit-door",
+      "position": {
+        "x": 8887,
+        "y": -2449,
+        "z": 507
+      },
+      "normal": [
+        0,
+        1
+      ],
+      "defaultState": "closed",
+      "objectNames": [
+        "KingdomTech_1_TeleporterFrame.003"
+      ],
+      "basis": "Game metres. Frame KingdomTech_1_TeleporterFrame.003 (x 86.08..91.95, y -25.04..-24.14, z 5.00..8.75) in the south wall of the arrival room; the walk grid passes it at x 87.1..91.1 (8 cells). Position = the cell in the middle of the passage. The door leaves are not separate objects in the scene.",
+      "provenance": "measured-on-mesh (frame object, passage, floor height); manual-approx (that the frame holds the arrival room's exit door and that it is closed until someone arrives: game knowledge)"
+    },
+    {
+      "id": "a-exit-door",
+      "name": "A Lobby teleporter exit door",
+      "kind": "teleporter-exit-door",
+      "position": {
+        "x": 7637,
+        "y": 5051,
+        "z": 105
+      },
+      "normal": [
+        0,
+        1
+      ],
+      "defaultState": "closed",
+      "objectNames": [
+        "KingdomTech_1_TeleporterFrame"
+      ],
+      "basis": "Game metres. Frame KingdomTech_1_TeleporterFrame (x 73.48..79.35, y 49.96..50.85, z 1.00..4.75) in the south wall of the arrival room; the walk grid passes it at x 74.9..78.4 (7 cells). Position = the cell in the middle of the passage. The door leaves are not separate objects in the scene.",
+      "provenance": "measured-on-mesh (frame object, passage, floor height); manual-approx (that the frame holds the arrival room's exit door and that it is closed until someone arrives: game knowledge)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
     }
   ],
   "mechanics": [
@@ -26,8 +124,8 @@
       "kind": "teleporter",
       "name": "Two one-way teleporters (A Short -> B Short, B Long -> A Lobby)",
       "represented": true,
-      "how": "one-way edges kind=teleporter with their own travel time; no sound link (the map-wide teleporter audio cue and the exit door are NOT modelled)",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "how": "two one-way roadmap links between measured points (traversals in this file), each with its own travel time; the zone graph carries one edge kind=teleporter per link, no sound link (the map-wide teleporter audio cue is NOT modelled; the exit doors are listed in bind.objects.json but not simulated)",
+      "provenance": "measured-on-mesh (entry frames, arrival rooms); manual-approx (which entry leads where, travel time: general game knowledge)"
     },
     {
       "kind": "layout",

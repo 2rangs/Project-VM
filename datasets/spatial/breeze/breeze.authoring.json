@@ -1,6 +1,66 @@
 {
   "mapId": "breeze",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
+    {
+      "id": "hall-rope",
+      "name": "A Shop <-> Mid Hall rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 702,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 2725,
+        "y": 2600,
+        "z": 537
+      },
+      "b": {
+        "x": 2825,
+        "y": 2600,
+        "z": 1000
+      },
+      "zones": [
+        "a-shop",
+        "mid-hall"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderA"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA (x,y 27.48, 25.96; housing z 14.18..14.63). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. Both ends are on the main floor: the rope is a short cut.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.74 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    }
+  ],
+  "objectsNote": "Game uu. Doors and breakables located on the scene: position is on the floor in the opening, normal the horizontal direction through it. Read by tools/map-mesh/pipeline/objects_map.py.",
+  "objects": [
+    {
+      "id": "hall-hatch",
+      "name": "Sliding hatch (A_Tunnel)",
+      "kind": "sliding-hatch",
+      "position": {
+        "x": 3898,
+        "y": 1702,
+        "z": 751
+      },
+      "defaultState": "unknown",
+      "objectNames": [
+        "Prop_0_SlidingDoorA",
+        "Prop_0_SlidingDoorB"
+      ],
+      "basis": "Game metres. Two horizontal leaves, Prop_0_SlidingDoorA (x 37.90..39.41, y 15.53..18.50, z 7.51..7.74) and Prop_0_SlidingDoorB (x 38.85..40.05, y 15.53..18.51, same z): a 2.2 m x 3.0 m hatch lying flat. Position = centre of the pair at its underside.",
+      "provenance": "measured-on-mesh (the two objects); manual-approx (that this is the hatch of the one-way chute named in mechanics: object names and collection Foxtrot_Art_A_Tunnel only)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    },
+    {
+      "name": "Mid Wood Doors / A Hall mechanical door",
+      "reason": "moving door actors are not in the static scene; no object name matches a mechanical or switch door (searched Mech / Switch / Button / Shutter / Gate); the wooden mid doors are static frames."
+    }
+  ],
   "mechanics": [
     {
       "kind": "door",
@@ -15,6 +75,13 @@
       "represented": false,
       "engineNeeds": "one-way edge; only drops the walk grid could see are encoded (check the 'drop' edges)",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "rope",
+      "name": "Vertical rope between A Shop and Mid Hall",
+      "represented": true,
+      "how": "one roadmap link kind=rope (traversal hall-rope). The 'on rope' state is NOT modelled",
+      "provenance": "measured-on-mesh (ascender object, cells); manual-approx (travel time)"
     }
   ]
 }

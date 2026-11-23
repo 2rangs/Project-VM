@@ -36,9 +36,9 @@
  },
  "provenance": "measured-on-mesh",
  "summary": {
-  "edges": 41,
+  "edges": 42,
   "withWalkableRoute": 40,
-  "flaggedStraight": 1,
+  "flaggedStraight": 2,
   "walkingSegmentsRayChecked": 198,
   "walkingSegmentsHittingGeometry": 0
  },
@@ -2238,10 +2238,19 @@
    "from": "a-pipes",
    "to": "a-nest",
    "bidirectional": true,
-   "kind": "approx-link",
+   "kind": "rope",
    "straightMeters": 8.21,
    "status": "straight",
-   "reason": "no walkable route on the grid"
+   "reason": "special traversal (no walking route applies)"
+  },
+  {
+   "from": "a-nest",
+   "to": "a-site",
+   "bidirectional": true,
+   "kind": "zipline",
+   "straightMeters": 23.99,
+   "status": "straight",
+   "reason": "special traversal (no walking route applies)"
   }
  ]
 }

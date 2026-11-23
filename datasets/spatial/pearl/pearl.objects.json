@@ -1,0 +1,76 @@
+{
+ "mapId": "pearl",
+ "schemaVersion": "1.0.0",
+ "note": "Gameplay objects as points and types, game uu (100 uu = 1 m); no surfaces. drops: the roadmap's one-way drops (from/to are roadmap nodes of <map>.nav.json; fallMeters = height lost). traversals: one per roadmap link, in the roadmap's link order (from/to are the roadmap nodes the link joins; ropes also name bottom/top and whether from->to ascends; soundSource / soundSourceExit are the points its sound is emitted from at the entry and the exit, soundRadiusUu is null and soundVerified false until a value is measured). doors / breakables: position on the floor in the opening, zones = the zone of the nearest roadmap point on each side of the opening (one zone for a prop; gates, where present, is the zone-graph edge the door is attached to), defaultState open/closed/intact/unknown. notLocated: mechanics known for the map that no scene object or floor measurement could place. ultOrbs: orb positions, empty where the scene has no orb object. Every entry states its own provenance.",
+ "provenance": "measured-on-mesh (positions: scene object bounding boxes and walk-grid cells; drops and the zones: the navigation roadmap); manual-approx (travel times and speeds, default states, and the reading of which scene object is which gameplay object)",
+ "roadmapBounds": {
+  "min": {
+   "x": -475,
+   "y": -5976,
+   "z": 200
+  },
+  "max": {
+   "x": 11175,
+   "y": 6474,
+   "z": 1126
+  }
+ },
+ "counts": {
+  "drops": 37,
+  "traversals": 0,
+  "doors": 0,
+  "breakables": 0,
+  "ultOrbs": 0,
+  "notLocated": 1
+ },
+ "drops": [
+  {"from":{"x":5425,"y":-826,"z":700},"to":{"x":5375,"y":-826,"z":635},"fallMeters":0.65,"fromZone":"b-link","toZone":"b-link","fromNode":842,"toNode":890},
+  {"from":{"x":2625,"y":3124,"z":1000},"to":{"x":2625,"y":3174,"z":811},"fallMeters":1.89,"fromZone":"a-restaurant","toZone":"a-restaurant","fromNode":900,"toNode":714},
+  {"from":{"x":1975,"y":-2526,"z":850},"to":{"x":1975,"y":-2576,"z":659},"fallMeters":1.91,"fromZone":"b-club","toZone":"b-club","fromNode":901,"toNode":704},
+  {"from":{"x":2275,"y":-826,"z":1000},"to":{"x":2275,"y":-876,"z":800},"fallMeters":2.0,"fromZone":"mid-shops","toZone":"mid-shops","fromNode":902,"toNode":710},
+  {"from":{"x":5425,"y":-1076,"z":700},"to":{"x":5375,"y":-1076,"z":625},"fallMeters":0.75,"fromZone":"b-link","toZone":"b-link","fromNode":903,"toNode":885},
+  {"from":{"x":2375,"y":-2526,"z":933},"to":{"x":2375,"y":-2576,"z":650},"fallMeters":2.83,"fromZone":"b-club","toZone":"b-club","fromNode":904,"toNode":905},
+  {"from":{"x":1925,"y":-2526,"z":850},"to":{"x":1925,"y":-2576,"z":679},"fallMeters":1.71,"fromZone":"b-club","toZone":"b-club","fromNode":906,"toNode":907},
+  {"from":{"x":2675,"y":-2526,"z":949},"to":{"x":2675,"y":-2576,"z":651},"fallMeters":2.98,"fromZone":"b-club","toZone":"b-club","fromNode":716,"toNode":908},
+  {"from":{"x":5325,"y":-1576,"z":574},"to":{"x":5325,"y":-1626,"z":463},"fallMeters":1.11,"fromZone":"b-link","toZone":"b-link","fromNode":750,"toNode":909},
+  {"from":{"x":6825,"y":-2876,"z":700},"to":{"x":6825,"y":-2926,"z":250},"fallMeters":4.5,"fromZone":"b-tower","toZone":"b-site","fromNode":817,"toNode":910},
+  {"from":{"x":6775,"y":-3326,"z":690},"to":{"x":6825,"y":-3326,"z":251},"fallMeters":4.39,"fromZone":"b-tower","toZone":"b-site","fromNode":911,"toNode":768},
+  {"from":{"x":5425,"y":-976,"z":700},"to":{"x":5375,"y":-976,"z":624},"fallMeters":0.76,"fromZone":"b-link","toZone":"b-link","fromNode":912,"toNode":913},
+  {"from":{"x":2625,"y":-2426,"z":946},"to":{"x":2625,"y":-2376,"z":850},"fallMeters":0.96,"fromZone":"b-club","toZone":"b-club","fromNode":914,"toNode":915},
+  {"from":{"x":6175,"y":1924,"z":597},"to":{"x":6175,"y":1974,"z":500},"fallMeters":0.97,"fromZone":"mid-connector","toZone":"a-link","fromNode":916,"toNode":917},
+  {"from":{"x":5325,"y":-1326,"z":625},"to":{"x":5275,"y":-1326,"z":523},"fallMeters":1.02,"fromZone":"b-link","toZone":"b-link","fromNode":918,"toNode":919},
+  {"from":{"x":6775,"y":-3276,"z":690},"to":{"x":6825,"y":-3276,"z":251},"fallMeters":4.39,"fromZone":"b-tower","toZone":"b-site","fromNode":920,"toNode":827},
+  {"from":{"x":2325,"y":3124,"z":1000},"to":{"x":2325,"y":3174,"z":919},"fallMeters":0.81,"fromZone":"a-restaurant","toZone":"a-restaurant","fromNode":921,"toNode":922},
+  {"from":{"x":8225,"y":5324,"z":350},"to":{"x":8225,"y":5374,"z":200},"fallMeters":1.5,"fromZone":"a-dugout","toZone":"a-dugout","fromNode":924,"toNode":925},
+  {"from":{"x":1775,"y":-2526,"z":850},"to":{"x":1775,"y":-2576,"z":742},"fallMeters":1.08,"fromZone":"b-club","toZone":"b-club","fromNode":926,"toNode":927},
+  {"from":{"x":1975,"y":-826,"z":1000},"to":{"x":1975,"y":-876,"z":800},"fallMeters":2.0,"fromZone":"mid-shops","toZone":"mid-shops","fromNode":928,"toNode":705},
+  {"from":{"x":6775,"y":-3226,"z":690},"to":{"x":6825,"y":-3226,"z":251},"fallMeters":4.39,"fromZone":"b-tower","toZone":"b-site","fromNode":929,"toNode":896},
+  {"from":{"x":6875,"y":-2876,"z":700},"to":{"x":6875,"y":-2926,"z":250},"fallMeters":4.5,"fromZone":"b-tower","toZone":"b-site","fromNode":769,"toNode":930},
+  {"from":{"x":2425,"y":-826,"z":1000},"to":{"x":2425,"y":-876,"z":800},"fallMeters":2.0,"fromZone":"mid-shops","toZone":"mid-shops","fromNode":931,"toNode":932},
+  {"from":{"x":-225,"y":-526,"z":1126},"to":{"x":-175,"y":-526,"z":1000},"fallMeters":1.26,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":933,"toNode":934},
+  {"from":{"x":6675,"y":-3476,"z":690},"to":{"x":6675,"y":-3526,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":935,"toNode":936},
+  {"from":{"x":6475,"y":-3076,"z":690},"to":{"x":6425,"y":-3076,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":937,"toNode":938},
+  {"from":{"x":2525,"y":3124,"z":1000},"to":{"x":2525,"y":3174,"z":851},"fallMeters":1.49,"fromZone":"a-restaurant","toZone":"a-restaurant","fromNode":939,"toNode":940},
+  {"from":{"x":2525,"y":-2526,"z":946},"to":{"x":2525,"y":-2576,"z":651},"fallMeters":2.95,"fromZone":"b-club","toZone":"b-club","fromNode":941,"toNode":942},
+  {"from":{"x":6775,"y":-3026,"z":690},"to":{"x":6825,"y":-3026,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":943,"toNode":944},
+  {"from":{"x":2825,"y":3124,"z":1000},"to":{"x":2875,"y":3124,"z":800},"fallMeters":2.0,"fromZone":"a-restaurant","toZone":"a-restaurant","fromNode":945,"toNode":946},
+  {"from":{"x":6775,"y":-3476,"z":690},"to":{"x":6825,"y":-3476,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":947,"toNode":948},
+  {"from":{"x":6475,"y":-3476,"z":690},"to":{"x":6425,"y":-3476,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":949,"toNode":950},
+  {"from":{"x":1875,"y":-826,"z":1000},"to":{"x":1875,"y":-876,"z":833},"fallMeters":1.67,"fromZone":"mid-shops","toZone":"mid-shops","fromNode":951,"toNode":952},
+  {"from":{"x":6775,"y":-3126,"z":690},"to":{"x":6825,"y":-3126,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":953,"toNode":954},
+  {"from":{"x":2825,"y":2824,"z":1000},"to":{"x":2875,"y":2824,"z":795},"fallMeters":2.05,"fromZone":"mid-top","toZone":"a-restaurant","fromNode":956,"toNode":957},
+  {"from":{"x":6475,"y":-3176,"z":690},"to":{"x":6425,"y":-3176,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":958,"toNode":959},
+  {"from":{"x":6475,"y":-2926,"z":690},"to":{"x":6425,"y":-2926,"z":250},"fallMeters":4.4,"fromZone":"b-tower","toZone":"b-site","fromNode":960,"toNode":961}
+ ],
+ "traversals": [],
+ "doors": [],
+ "breakables": [],
+ "ultOrbs": [],
+ "notLocated": [
+  {
+   "name": "Ultimate orbs",
+   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+  }
+ ],
+ "generatedBy": "tools/map-mesh/pipeline/objects_map.py"
+}
