@@ -1104,10 +1104,29 @@ export class RoundSimulator {
       cmd?.aimZone ??
       (cmd && (cmd.kind === "hold" || cmd.kind === "peek") ? cmd.targetZone : undefined) ??
       this.defaultHoldZone(p, originOf);
-    // an attacker guarding the planted spike looks at the spike, wherever in the zone it lies
+    // An attacker guarding the planted spike watches the way the retake comes in — the choke the
+    // defenders enter the spike's zone through (the neighbour on the shortest path from their
+    // origin), the same rule a pre-plant holder uses for its entry — and keeps the spike in view
+    // too when both fit in its field of view (it then looks between them). Looking only at the
+    // spike left every retaker arriving from outside the cone: the retaker saw first in 85% of
+    // post-plant duels (2026-11-23 measurement, ENGINE_TRUTH.md §4).
     const spike = this.spikeWatched;
     if (spike && p.side === "attack" && cmd?.aimZone === spike.zoneId) {
       const sx = spike.position.x - p.position.x, sy = spike.position.y - p.position.y;
+      const entry = this.retakeEntryOf(spike.zoneId, originOf);
+      const ez = entry ? this.spatial.getZone(entry) : undefined;
+      if (ez) {
+        const ex = ez.position.x - p.position.x, ey = ez.position.y - p.position.y;
+        if (ex !== 0 || ey !== 0) {
+          const ae = Math.atan2(ey, ex), as = Math.atan2(sy, sx);
+          const sep = Math.abs(Math.atan2(Math.sin(as - ae), Math.cos(as - ae)));
+          if ((sx !== 0 || sy !== 0) && sep <= 2 * HALF_FOV_RAD) {
+            const mid = ae + Math.atan2(Math.sin(as - ae), Math.cos(as - ae)) / 2;
+            p.facing = { x: Math.cos(mid), y: Math.sin(mid) };
+          } else p.facing = { x: ex, y: ey };
+          return;
+        }
+      }
       if (sx !== 0 || sy !== 0) { p.facing = { x: sx, y: sy }; return; }
     }
     if (!hintZone || hintZone === p.zoneId) return;
@@ -1117,6 +1136,20 @@ export class RoundSimulator {
     if (dx === 0 && dy === 0) return;
     p.facing = { x: dx, y: dy };
   }
+
+  /** The zone the defenders enter `zoneId` through on a retake: the predecessor on defender-spawn → zone. */
+  private retakeEntryOf(zoneId: string, originOf: Record<Side, string>): string | undefined {
+    const key = `retake>${zoneId}`;
+    if (!this.retakeEntry.has(key)) {
+      // where a retake comes from: the defenders' spawn side (every map has a "defender-spawn"),
+      // else where the defenders started this round
+      const from = this.spatial.getZone("defender-spawn") ? "defender-spawn" : originOf.defense;
+      const r = from && from !== zoneId ? this.spatial.findPath(from, zoneId) : null;
+      this.retakeEntry.set(key, r && r.path.length >= 2 ? r.path[r.path.length - 2] : undefined);
+    }
+    return this.retakeEntry.get(key);
+  }
+  private readonly retakeEntry = new Map<string, string | undefined>();
 
   /** The zone an enemy would enter this player's zone from: the predecessor on enemy-origin → here. */
   private defaultHoldZone(p: SimPlayer, originOf: Record<Side, string>): string | undefined {
