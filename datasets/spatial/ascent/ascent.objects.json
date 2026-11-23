@@ -20,6 +20,7 @@
   "traversals": 0,
   "doors": 2,
   "breakables": 0,
+  "ultOrbs": 0,
   "notLocated": 2
  },
  "drops": [

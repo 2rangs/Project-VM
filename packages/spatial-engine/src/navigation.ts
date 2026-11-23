@@ -7,7 +7,8 @@
 // wall — and when there is no path the answer is UNREACHABLE, never a straight line.
 import type { Vec2, Vec3 } from "./types.js";
 
-export type NavEdgeKind = "walk" | "drop" | "teleporter" | "zipline" | "rope";
+/** "walk" and "drop" are measured floor; every other kind is a link with its own fixed travel time. */
+export type NavEdgeKind = "walk" | "drop" | "teleporter" | "zipline" | "rope" | "jump";
 export type MovementMode = "run" | "walk";
 /**
  * FASTEST: time only. SAFEST: strongly avoids zones the caller marks dangerous. STEALTH: like

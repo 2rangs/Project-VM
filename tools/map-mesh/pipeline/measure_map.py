@@ -257,6 +257,8 @@ def prepare(mp, derived, raw, authoring, zone_list, debug=False):
     # on top of a structure, or inside a building's footprint. The zone is then snapped from that
     # point, and its height counts even on a map whose callout heights are not usable. Everything
     # else (the crop, the transform evidence, the callout residuals) still uses the raw callout.
+    # An anchor marked "smallFloor": true may stand on a walk component below min_component (a
+    # ledge of a few square metres that the callout names); without the mark those are ignored.
     anchor_ov = authoring.get("zoneAnchors", {})
     unknown = sorted(set(anchor_ov) - set(zid))
     if unknown:
@@ -267,7 +269,8 @@ def prepare(mp, derived, raw, authoring, zone_list, debug=False):
         ov = anchor_ov.get(zid[i])
         src = np.array([ov["x"], ov["y"], ov["z"]], dtype=np.float64) / 100.0 if ov else c
         dxy = np.hypot(xyz[:, 0] - src[0], xyz[:, 1] - src[1])
-        cand = np.nonzero(big & (dxy <= P["snap_radius"]))[0]
+        eligible = np.ones(len(label), dtype=bool) if (ov and ov.get("smallFloor")) else big
+        cand = np.nonzero(eligible & (dxy <= P["snap_radius"]))[0]
         if cand.size == 0:
             snaps[zid[i]] = {"onMesh": False, "note": f"no walkable cell within {P['snap_radius']} m of the callout"}
             continue

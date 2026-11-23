@@ -96,6 +96,10 @@ $PY -I tools/map-mesh/pipeline/nav_map.py --map bind --derived $D/bind
 for i in 0 1 2 3 4 5; do $PY -I tools/map-mesh/pipeline/vis_map.py --map bind --derived $D/bind --part $i/6 & done; wait
 $PY -I tools/map-mesh/pipeline/vis_map.py --map bind --derived $D/bind --merge 6
 
+# 4e. gameplay objects as points (drops, ropes / ziplines / teleporters / jumps, doors, breakables)
+#     -> datasets/spatial/bind/bind.objects.json   (JSON -> JSON, no geometry needed; --all for every map)
+python3 -I tools/map-mesh/pipeline/objects_map.py bind
+
 # 5. independent orientation check from named collections
 python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-landmark-check.json
 ```
@@ -113,7 +117,23 @@ python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-l
   (`{zone id: {x, y, z, basis}}`, game uu) names the floor point a zone stands on where its callout is not on that
   floor (Haven B Site: the label is on the roof of the site's central structure; Pearl: five labels inside building
   footprints / stacked). The zone keeps the callout's x,y as its position; only its anchor and height move. A map
-  without the key is measured exactly as before
+  without the key is measured exactly as before. `"smallFloor": true` on an anchor lets it stand on a walk component
+  under 10 m2 (Abyss B Danger: a 9.5 m2 ledge), which the snap otherwise ignores
+- the same file's `traversals` are the ropes, ziplines, teleporters and jump gaps measured on the scene:
+  `{id, kind, a, b, zones, bidirectional, travelTimeMs, objectNames, basis, provenance}` with `a` / `b` the walk
+  cells at the two ends (game uu). `nav_map.py` makes each end a roadmap node and joins them with a `link` of that
+  kind (the navigator treats every kind other than walk / drop as a fixed-time link); `build_map.py` adds one
+  zone-graph edge per traversal that joins two zones not joined directly. The ends are found from the object's
+  bounding box (ropes: `Kingdom_0_VertAscender*`; Bind: `KingdomTech_1_TeleporterFrame*`; Fracture:
+  `Shell_0_ZipLineStrip*`) and the walk cells under it. Travel time is length / 6.75 m/s, an assumption, except
+  Bind's 1.5 s. `geometry.dropObjectRegex` leaves named scene objects out of the walk grid and the occluders
+  (Split: a light fixture under the vent doorway's floor that made the doorway read as blocked)
+- `objects` (doors, hatches, breakable props: `{id, kind, position, normal?, defaultState, objectNames, basis}`),
+  `objectsNotLocated` and `ultOrbs` in the same file feed `pipeline/objects_map.py`, which writes
+  `<map>.objects.json`: every roadmap drop with its fall height, one entry per roadmap link with its sound source
+  points, the doors / breakables with the zone on each side, and what could not be located and why. Moving actors
+  (switch doors, rotating doors, ultimate orbs) are not part of the static scenes; they are listed as not located
+  rather than guessed
 
 Key finding: every scene is a plain export, **game_uu = 100 * (x, -y, z)** of Blender
 coordinates. The 6.6 m-RMS affine recorded for Ascent came from coarse region anchors; the

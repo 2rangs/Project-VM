@@ -154,6 +154,25 @@ def build(mp):
         add(mk_edge(a, b, meters, s.get("bidirectional", True),
                     "manual-approx (" + s.get("basis", "authored; straight-line length") + ")",
                     s["kind"], run_ms=s.get("travelTimeMs"), note=s.get("note")))
+    # 3b. traversals measured on the map (ropes, ziplines, teleporters, jumps: both end points are
+    #     in the authoring file and become roadmap nodes in nav_map.py). The zone graph gets one edge
+    #     per traversal that joins two zones it does not join directly yet.
+    roadmap_only = []
+    for t in authoring.get("traversals", []):
+        a, b = t["zones"]
+        if a not in by_id or b not in by_id:
+            raise ValueError(f"{mp}: traversal {t['id']} references unknown zone {a} / {b}")
+        both = t["bidirectional"]
+        have = lambda p, q: any(v == q for v, _ in adj[p])
+        if a == b or (have(a, b) and (not both or have(b, a))):
+            roadmap_only.append(t["id"])
+            continue
+        meters = dist3(by_id[a]["position"], by_id[b]["position"]) / 100.0
+        e = mk_edge(a, b, meters, both,
+                    f"manual-approx (travel time); measured-on-mesh end points: traversal '{t['id']}' in the authoring file",
+                    t["kind"], run_ms=t["travelTimeMs"], note=t.get("note"))
+        e["traversal"] = t["id"]
+        add(e)
     # 4. doors on existing edges
     doors_missing = []
     for dr in authoring.get("doors", []):
@@ -259,6 +278,7 @@ def build(mp):
             "edgeKinds": kinds,
             "approxLinks": fallback,
             "zonesWithoutMeasuredSightlines": unmeasured,
+            **({"traversalsOnRoadmapOnly": roadmap_only} if authoring.get("traversals") else {}),
             "doorsNotAttached": [f"{dr['name']} ({dr['a']}<->{dr['b']}: no such edge in the measured graph)" for dr in doors_missing],
             "zonesOnMainWalkComponent": f"{grid['zonesOnMainWalkComponent']}/{grid['zonesTotal']}",
         },

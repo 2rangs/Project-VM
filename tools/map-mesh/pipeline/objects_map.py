@@ -129,7 +129,7 @@ def build(mp):
                       "the reading of which scene object is which gameplay object)",
         "roadmapBounds": {"min": {"x": min(xs), "y": min(ys), "z": min(zs)}, "max": {"x": max(xs), "y": max(ys), "z": max(zs)}},
         "counts": {"drops": len(drops), "traversals": len(traversals), "doors": len(doors), "breakables": len(breakables),
-                   "notLocated": len(authoring.get("objectsNotLocated", []))},
+                   "ultOrbs": len(authoring.get("ultOrbs", [])), "notLocated": len(authoring.get("objectsNotLocated", []))},
         "drops": drops, "traversals": traversals, "doors": doors, "breakables": breakables,
         "ultOrbs": authoring.get("ultOrbs", []),
         "notLocated": authoring.get("objectsNotLocated", []),
