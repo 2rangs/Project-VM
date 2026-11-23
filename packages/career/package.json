@@ -1,0 +1,26 @@
+{
+  "name": "@pv/career",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Career world: generated players and staff (regens), seasons (intake, development, decline, retirement, signings) and save/load. Pure TS core; ./game-data builds the starting world from @pv/game-data (Node only).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./game-data": "./src/game-data.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@pv/game-data": "workspace:*"
+  },
+  "devDependencies": {
+    "@pv/match-runner": "workspace:*",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.9"
+  }
+}
