@@ -6,6 +6,7 @@
 // import, so the order always matches the engine); handles come from the desktop's names file.
 import rosters from '../../../../../packages/game-data/data/rosters.json';
 import playerNames from '../../data/player_names.json';
+import agents from '../../../../../packages/game-data/data/agents.json';
 
 const handleById = new Map<string, string>(
   (playerNames as { players: Array<{ playerId: string; handle: string }> }).players.map((p) => [p.playerId, p.handle]),
@@ -18,4 +19,29 @@ export function rosterHandles(teamId: string | undefined): string[] {
     const id = roster?.[i]?.playerId;
     return (id && handleById.get(id)) || `P${i + 1}`;
   });
+}
+
+/** game-data player ids of a team's first `count` rostered players (the slots the engine fields). */
+export function rosterPlayerIds(teamId: string | undefined, count = 5): string[] {
+  const roster = teamId ? (rosters as Record<string, Array<{ playerId: string }>>)[teamId] : undefined;
+  return (roster ?? []).slice(0, count).map((r) => r.playerId);
+}
+
+/**
+ * The agent each engine slot plays. Mirrors @pv/match-runner `ASCENT_COMP` (both teams field this
+ * fixed comp; slot i plays agent i) — the comp is not exported to the app, so it is repeated here.
+ */
+export const COMP_SLUGS = ['omen', 'sova', 'kayo', 'killjoy', 'jett'] as const;
+
+export interface SlotAgent { readonly name: string; readonly role: 'Duelist' | 'Initiator' | 'Controller' | 'Sentinel' }
+const FALLBACK: Record<string, SlotAgent> = { kayo: { name: 'KAY/O', role: 'Initiator' } };
+const agentBySlug = new Map((agents as Array<{ slug: string; name: string; role: string }>).map((a) => [a.slug.replace(/[^a-z]/g, ''), a]));
+
+/** Agent name and role for engine slot 1..5 (name from game-data, never translated). */
+export function agentOfSlot(slot: number): SlotAgent | null {
+  const slug = COMP_SLUGS[slot - 1];
+  if (!slug) return null;
+  const a = agentBySlug.get(slug);
+  if (a && /^(Duelist|Initiator|Controller|Sentinel)$/.test(a.role)) return { name: a.name, role: a.role as SlotAgent['role'] };
+  return FALLBACK[slug] ?? null;
 }

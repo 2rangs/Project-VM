@@ -333,8 +333,8 @@ export class CamStage3D {
   }
 
   /**
-   * Swap the blockout for a real map mesh (a GLB already in scene coordinates — see
-   * tools/map-mesh/blender/export-web-glb.py). Returns false and keeps the blockout on failure.
+   * Swap the blockout for the real map mesh prepared by `assets.ts` (parsed, in scene coordinates,
+   * ray-cast index built). Attaching is cheap; `warmUp` then uploads it and compiles the shaders.
    */
   async setMapGlb(data: ArrayBuffer): Promise<boolean> {
     try {
@@ -373,6 +373,39 @@ export class CamStage3D {
       console.warn('[cams] map mesh failed to load, using the blockout', e);
       return false;
     }
+  }
+
+  /** Attach a map mesh already prepared by assets.ts (preloaded during the game load). */
+  setMapScene(root: THREE.Object3D): void {
+    if (this.glb === root) return;
+    if (this.glb) this.scene.remove(this.glb);
+    root.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    this.lightForMap(root);
+    this.mapGroup.visible = false;
+    this.glb = root;
+    this.scene.add(root);
+    this.groundCache.clear();
+    this.perf.map = 'glb';
+    this.lastSig = '';
+  }
+
+  /**
+   * Upload geometry and compile shaders now (one render into a 1 × 1 viewport), so the first real
+   * frame after switching to the cams is not the one that pays for it.
+   */
+  warmUp(): void {
+    const renderer = this.renderer;
+    if (!renderer) return;
+    for (const f of [...this.allies, ...this.enemies]) f.group.visible = true;
+    renderer.setScissorTest(true);
+    renderer.setViewport(0, 0, 1, 1); renderer.setScissor(0, 0, 1, 1);
+    this.camera.aspect = 1; this.camera.updateProjectionMatrix();
+    renderer.render(this.scene, this.camera);
+    renderer.render(this.viewModel.scene, this.viewModel.camera);
+    renderer.setScissorTest(false);
+    renderer.setClearColor(0x000000, 0); renderer.clear();
+    for (const f of [...this.allies, ...this.enemies]) f.group.visible = false;
+    this.lastSig = '';
   }
 
   /**

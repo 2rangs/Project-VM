@@ -7,3 +7,5 @@ dist/
 real-*.json
 # real map meshes for the 3D team cams (third-party map geometry — never commit)
 assets/maps/
+# user-supplied loading banners (third-party media — never commit)
+assets/banners/

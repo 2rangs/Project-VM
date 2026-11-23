@@ -29,6 +29,9 @@ async function main() {
     env: {
       ...process.env,
       PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces'),
+      // optional local assets (real map mesh, banners) are never present in CI: keep the run independent of them
+      PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
+      PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
@@ -163,9 +166,12 @@ async function main() {
   }
 
   // ── Korean (default) ──
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the home (lobby) screen; enter the shell through its PLAY action.
+  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
+  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
+  await page.getByTestId('home-play').click();
   await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
   await resize(1280, 800);
   const ko = await playSeries({ lang: 'ko', shots: { veto: 'desktop-veto.png', summary: 'desktop-series-summary.png' } });

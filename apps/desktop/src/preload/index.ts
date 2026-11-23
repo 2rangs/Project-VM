@@ -46,6 +46,8 @@ const bridge: PvBridge = {
   saveWrite: (slot: SaveSlot, text: string) => ipcRenderer.invoke(IPC.saveWrite, slot, text),
   saveDelete: (slot: SaveSlot) => ipcRenderer.invoke(IPC.saveDelete, slot),
   quit: () => ipcRenderer.invoke(IPC.appQuit),
+  listBanners: () => ipcRenderer.invoke(IPC.bannerList),
+  loadBannerFile: (pack: string, file: string) => ipcRenderer.invoke(IPC.bannerFile, pack, file),
   platform: process.platform,
   isElectron: true,
 };

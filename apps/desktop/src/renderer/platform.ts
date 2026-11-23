@@ -59,6 +59,8 @@ const browserBridge: PvBridge = {
   async saveWrite(slot, text) { localStorage.setItem(`pv-save-${slot}`, text); },
   async saveDelete(slot) { try { localStorage.removeItem(`pv-save-${slot}`); } catch { /* */ } },
   async quit() { window.close(); },
+  async listBanners() { return []; },
+  async loadBannerFile() { return null; },
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };

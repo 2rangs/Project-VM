@@ -1,0 +1,135 @@
+/* Loading screens (src/renderer/loading). Self-contained; colours match the live match view. */
+.pvl { --pl-bg: #0f1923; --pl-ink: #ece8e1; --pl-muted: #7e8a94; --pl-line: #2c3a47; --pl-accent: #ff4655; --pl-ally: #4be3c9;
+  --pl-font: "DIN Condensed", "Bahnschrift SemiCondensed", "Roboto Condensed", "Arial Narrow", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  display: grid; place-items: center; color: var(--pl-ink); background: radial-gradient(120% 90% at 50% 0%, #15232f 0%, var(--pl-bg) 55%, #0b131b 100%); }
+.pvl-area { position: absolute; inset: 0; z-index: 5; }
+.pvl-window { position: fixed; inset: 0; z-index: 60; }
+.pvl-card { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(420px, calc(100% - 48px)); text-align: center; }
+.pvl-kicker { display: inline-flex; gap: 6px; font-family: var(--pl-font); font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--pl-muted); }
+.pvl-kicker i { font-style: normal; color: var(--pl-accent); }
+.pvl-title { font-family: var(--pl-font); font-size: 28px; line-height: 1.1; letter-spacing: .06em; text-transform: uppercase; }
+.pvl-detail { font-size: 13px; color: #a9b3ba; }
+.pvl-bar { position: relative; width: 100%; height: 6px; margin-top: 8px; background: #ffffff1c; overflow: hidden; transform: skewX(-18deg); }
+.pvl-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--pl-ink); transition: width .25s ease-out; }
+.pvl-bar.indeterminate i { width: 32%; animation: pvl-slide 1.3s ease-in-out infinite; }
+.pvl-steps { min-height: 18px; font-family: var(--pl-font); font-size: 15px; letter-spacing: .08em; color: #a9b3ba; font-variant-numeric: tabular-nums; }
+@keyframes pvl-slide { 0% { left: -32%; } 100% { left: 100%; } }
+
+.pvl-mark { display: block; overflow: visible; }
+.pvl-m { fill: var(--pl-ink); transform-origin: 24px 24px; animation: pvl-fold 1.6s cubic-bezier(.6, 0, .3, 1) infinite; }
+.pvl-m.b { animation-delay: .12s; } .pvl-m.c { animation-delay: .24s; fill: var(--pl-accent); } .pvl-m.d { animation-delay: .36s; }
+@keyframes pvl-fold { 0%, 100% { transform: scale(.55); opacity: .35; } 45%, 60% { transform: scale(1); opacity: 1; } }
+
+.pvl-error .pvl-card { align-items: stretch; text-align: left; padding: 18px 20px; background: #0b131bf0; border: 1px solid var(--pl-line); border-top: 3px solid var(--pl-accent); }
+.pvl-error .pvl-title { font-size: 22px; }
+.pvl-msg { margin: 0; font-size: 13px; line-height: 1.5; color: #ffd0d4; word-break: break-word; user-select: text; }
+.pvl-actions { display: flex; gap: 8px; margin-top: 6px; }
+.pvl-btn { height: 32px; padding: 0 14px; background: transparent; color: var(--pl-ink); border: 1px solid var(--pl-line); cursor: pointer; font-family: var(--pl-font); font-size: 14px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.pvl-btn:hover { border-color: var(--pl-ink); } .pvl-btn.primary { background: var(--pl-accent); border-color: var(--pl-accent); color: #fff; }
+
+.pvl-inline { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: #0b131bd9; border: 1px solid #2c3a47; color: #a9b3ba; font-size: 11px; white-space: nowrap; }
+.pvl-inline .pvl-mark { flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pvl-m { animation: none; opacity: 1; transform: none; }
+  .pvl-bar.indeterminate i { animation: none; left: 0; width: 100%; opacity: .4; }
+}
+
+/* ── streak banner (StreakBanner.tsx): five layers that build up, then burst ─────────────── */
+.pvk { display: block; overflow: visible; }
+.pvk-l { transform-origin: 60px 60px; transform-box: view-box; opacity: 0; transform: scale(.7); }
+/* staged: driven by progress — a layer pops in when its step is reached */
+.pvk.staged .pvk-l { transition: opacity .18s ease-out, transform .32s cubic-bezier(.2, 1.6, .4, 1); }
+.pvk.staged .pvk-l.on { opacity: 1; transform: scale(1); }
+.pvk.staged[data-stage="5"] { animation: pvk-ace 1.2s ease-in-out infinite; }
+/* loop: no progress to report — play 1 → 5, hold, reset */
+.pvk.loop .pvk-l { animation: 3.4s cubic-bezier(.2, 1.4, .4, 1) infinite; }
+.pvk.loop .pvk-l1 { animation-name: pvk-s1; } .pvk.loop .pvk-l2 { animation-name: pvk-s2; } .pvk.loop .pvk-l3 { animation-name: pvk-s3; }
+.pvk.loop .pvk-l4 { animation-name: pvk-s4; } .pvk.loop .pvk-l5 { animation-name: pvk-s5; }
+@keyframes pvk-s1 { 0% { opacity: 0; transform: scale(.7); } 6%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s2 { 0%, 16% { opacity: 0; transform: scale(.7); } 22%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s3 { 0%, 32% { opacity: 0; transform: scale(.7); } 38%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s4 { 0%, 48% { opacity: 0; transform: scale(.7); } 54%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s5 { 0%, 64% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.12); } 76%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-ace { 50% { filter: brightness(1.35); } }
+/* the five-step counter under the banner */
+.pvl-pips { display: inline-flex; gap: 4px; margin-top: -2px; }
+.pvl-pips i { width: 16px; height: 4px; background: #ffffff1c; transform: skewX(-18deg); transition: background .15s; }
+.pvl-pips i.on { background: var(--pl-ink); }
+.pvl-pips.loop i { animation: pvl-pip 3.4s linear infinite; }
+.pvl-pips.loop i:nth-child(2) { animation-delay: .54s; } .pvl-pips.loop i:nth-child(3) { animation-delay: 1.09s; }
+.pvl-pips.loop i:nth-child(4) { animation-delay: 1.63s; } .pvl-pips.loop i:nth-child(5) { animation-delay: 2.18s; }
+@keyframes pvl-pip { 0%, 4% { background: #ffffff1c; } 6%, 60% { background: var(--pl-ink); } 100% { background: #ffffff1c; } }
+
+/* ── banner picker (About / settings) ── */
+.pvl-picker { margin: 14px 0; max-width: 640px; }
+.pvl-picker-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.pvl-picker-head span { font-size: 12px; color: #8b98a9; }
+.pvl-picker-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pvl-picker-grid button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px 10px; background: #0f1923; border: 1px solid #2c3a47; color: #a9b3ba; cursor: pointer; font: inherit; font-size: 12px; }
+.pvl-picker-grid button:hover { border-color: #5b6b78; }
+.pvl-picker-grid button.on { border-color: #ece8e1; color: #ece8e1; box-shadow: inset 0 -3px 0 #ff4655; }
+.pvl-picker-grid button:focus-visible { outline: 2px solid #ece8e1; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pvk.loop .pvk-l, .pvl-pips.loop i, .pvk.staged[data-stage="5"] { animation: none; }
+  .pvk.loop .pvk-l { opacity: 1; transform: none; } .pvl-pips.loop i { background: var(--pl-ink); }
+}
+
+/* ── match load screen (MatchLoadScreen.tsx): two line-ups facing each other, map name, VS ── */
+.pvm { --pl-bg: #0f1923; --pl-ink: #ece8e1; --pl-muted: #7e8a94; --pl-line: #2c3a47; --pl-accent: #ff4655; --pl-ally: #4be3c9;
+  --pl-font: "DIN Condensed", "Bahnschrift SemiCondensed", "Roboto Condensed", "Arial Narrow", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  position: fixed; inset: 0; z-index: 60; display: grid; grid-template-columns: minmax(220px, 380px) minmax(0, 1fr) minmax(220px, 380px); gap: 24px; align-items: center;
+  padding: 32px 48px; color: var(--pl-ink); overflow: hidden;
+  background: linear-gradient(90deg, #4be3c920 0%, #00000000 26%, #00000000 74%, #ff465524 100%), radial-gradient(90% 80% at 50% 30%, #1b2c3a 0%, var(--pl-bg) 60%, #0b131b 100%); }
+.pvm-team header { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--pl-line); position: relative; }
+.pvm-team header::before, .pvm-team header::after { content: ""; position: absolute; bottom: -2px; width: 4px; height: 4px; background: currentColor; }
+.pvm-team header::before { left: 0; } .pvm-team header::after { right: 0; }
+.pvm-team header span { font-family: var(--pl-font); font-size: 15px; letter-spacing: .42em; text-transform: uppercase; }
+.pvm-team header b { font-family: var(--pl-font); font-size: 22px; letter-spacing: .08em; text-transform: uppercase; color: var(--pl-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pvm-team.ally header { color: var(--pl-ally); } .pvm-team.enemy header { color: var(--pl-accent); }
+.pvm-team ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.pvm-team li { display: grid; grid-template-columns: 56px minmax(0, 1fr); grid-template-rows: 44px auto; column-gap: 0; row-gap: 3px; border-left: 4px solid var(--pl-ally); padding-left: 6px; }
+.pvm-team.enemy li { border-left: 0; border-right: 4px solid var(--pl-accent); padding: 0 6px 0 0; grid-template-columns: minmax(0, 1fr) 56px; }
+.pvm-tile { grid-row: 1; display: grid; place-items: center; background: #16212c; color: var(--pl-ally); }
+.pvm-team.enemy .pvm-tile { grid-column: 2; color: var(--pl-accent); }
+.pvm-card { grid-row: 1; position: relative; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; overflow: hidden; font-family: var(--pl-font);
+  background: linear-gradient(100deg, #147a6c 0%, #1c2a37 62%); }
+.pvm-team.enemy .pvm-card { grid-column: 1; grid-row: 1; flex-direction: row-reverse; background: linear-gradient(260deg, #8f1f2b 0%, #1c2a37 62%); }
+.pvm-card i { font-style: normal; font-size: 26px; line-height: 1; color: #ffffff; opacity: .9; }
+.pvm-card em { font-style: normal; font-size: 30px; letter-spacing: .1em; text-transform: uppercase; color: #ffffff; opacity: .16; white-space: nowrap; }
+.pvm-name { grid-column: 1 / -1; display: flex; font-family: var(--pl-font); font-size: 19px; letter-spacing: .05em; text-transform: uppercase; line-height: 1.1; }
+.pvm-agent { grid-column: 1 / -1; margin-top: -2px; font-size: 11px; color: var(--pl-muted); }
+.pvm-team.enemy .pvm-name, .pvm-team.enemy .pvm-agent { justify-content: flex-end; text-align: right; }
+.pvm-team li { grid-template-rows: 44px auto auto; }
+.pvm-mid { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; text-align: center; }
+.pvm-mid h1 { margin: 0; font-family: var(--pl-font); font-size: clamp(64px, 11vw, 168px); line-height: .9; letter-spacing: .02em; text-transform: uppercase; color: var(--pl-ink); }
+.pvm-mid p { margin: 0 0 12px; font-family: var(--pl-font); font-size: 16px; letter-spacing: .4em; text-transform: uppercase; color: #a9b3ba; }
+.pvm-vs { position: relative; display: grid; place-items: center; margin: 8px 0 20px; }
+.pvm-vs strong { position: absolute; bottom: -18px; font-family: var(--pl-font); font-size: 44px; letter-spacing: .06em; line-height: 1; color: var(--pl-ink); text-shadow: 0 2px 0 #0b131b; }
+.pvm-mid .pvl-bar { width: min(420px, 80%); margin-top: 18px; }
+@media (max-width: 1400px), (max-height: 800px) {
+  .pvm { padding: 20px 28px; gap: 16px; } .pvm-team ol { gap: 8px; } .pvm-team li { grid-template-rows: 36px auto auto; }
+  .pvm-card em { font-size: 24px; } .pvm-card i { font-size: 22px; } .pvm-name { font-size: 16px; } .pvm-team header { margin-bottom: 10px; }
+}
+
+.pvl-picker-note { margin: 8px 0 0; font-size: 12px; color: #8b98a9; }
+.pvk-local { background: transparent; }
+
+/* layered kill banner (user-supplied frame / ring / emblem / pip images) */
+.pvk-layered { position: relative; display: block; }
+.pvk-layered img { position: absolute; pointer-events: none; }
+.pvk-frame { left: 50%; top: 52%; height: 96%; transform: translate(-50%, -50%); opacity: .95; }
+.pvk-ring { left: 50%; top: 52%; width: 70%; transform: translate(-50%, -50%); animation: pvk-ring-in .45s cubic-bezier(.2, 1.5, .4, 1); }
+.pvk-emblem { left: 50%; top: 52%; height: 40%; transform: translate(-50%, -50%); animation: pvk-emblem-in .35s cubic-bezier(.2, 1.6, .4, 1); }
+.pvk-pip { width: 12%; transform: translate(-50%, -50%) scale(.6); opacity: .18; transition: opacity .15s, transform .25s cubic-bezier(.2, 1.6, .4, 1); }
+.pvk-pip.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+@keyframes pvk-ring-in { from { transform: translate(-50%, -50%) scale(.6) rotate(-60deg); opacity: 0; } }
+@keyframes pvk-emblem-in { from { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pvk-ring, .pvk-emblem { animation: none; } }
+
+/* game art on the match load screen (valorant-api.com, runtime only) */
+.pvm-splash { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .28; z-index: -1; filter: saturate(.8); }
+.pvm { isolation: isolate; }
+.pvm::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0f1923cc 0%, #0f192355 30%, #0f192355 70%, #0f1923cc 100%); }
+.pvm-tile { overflow: hidden; } .pvm-tile img { width: 100%; height: 100%; object-fit: cover; }
