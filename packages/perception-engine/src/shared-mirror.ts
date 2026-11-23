@@ -118,6 +118,12 @@ export interface PlayerState {
   readonly alive: boolean;
   readonly weapon: WeaponState | null;
   readonly behaviorState: string;
+  /**
+   * The zone the simulation has this player in. When given it is used as is; otherwise the zone
+   * is looked up from the position. A mover knows which roadmap segment it is on, so its own zone
+   * is exact where a nearest-point lookup could pick a zone on the far side of a wall.
+   */
+  readonly zoneId?: string;
   // NOTE: the real PlayerState has more fields (inventory, abilities, credits, ...).
   // perception-engine deliberately reads only the perceivable ones above.
 }

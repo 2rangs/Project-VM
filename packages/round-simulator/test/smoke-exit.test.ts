@@ -82,7 +82,9 @@ describe("smoke is passable — and what happens on the far side follows from wh
   it("counterfactual — the holder looks away: nobody was holding the edge, so nobody saw first", () => {
     const d = need(run({ holderAim: "a-rafters" }).duel);
     expect(d.smokeExit).toEqual({ attacker: true, defender: false, watched: false });
-    expect(d.firstSight).toBe("mutual");
+    // With real positions a holder facing A Rafters has the entry outside its field of view: it is
+    // not the one who sees first (zone-centre positions used to make this exactly "mutual").
+    expect(["mutual", "attacker"]).toContain(d.firstSight);
     expect(d.defenderPreAim).toBe(false);
   });
 

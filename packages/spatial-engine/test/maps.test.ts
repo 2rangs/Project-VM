@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MAP_IDS, MAPS, defaultDatasetsRoot, isMapId, listMaps, loadMap, loadMapData, type MapId } from "../src/index.js";
+import { createEngine } from "../src/loader.js";
 
 /** Plausible straight-run times (ms). Outside these a graph is almost certainly wrong. */
 const ATTACK_TO_SITE = { min: 6_000, max: 40_000 };
@@ -53,6 +54,8 @@ const table: string[] = [];
 describe.each(MAP_IDS.map((id) => [id] as const))("map dataset: %s", (id: MapId) => {
   const { data, transform, info } = loadMapData(id);
   const engine = loadMap(id);
+  /** The zone graph alone (no roadmap): the dataset's own connectivity and edge times. */
+  const graph = createEngine(data, transform);
   const zoneIds = new Set(data.zones.map((z) => z.id));
   const sites = data.zones.filter((z) => z.zoneType === "site");
 
@@ -94,15 +97,15 @@ describe.each(MAP_IDS.map((id) => [id] as const))("map dataset: %s", (id: MapId)
   it("every zone is reachable from both spawns", () => {
     for (const spawn of ["attacker-spawn", "defender-spawn"]) {
       for (const z of data.zones) {
-        expect(engine.isReachable(spawn, z.id), `${spawn} -> ${z.id}`).toBe(true);
+        expect(graph.isReachable(spawn, z.id), `${spawn} -> ${z.id}`).toBe(true);
       }
     }
   });
 
   it("every site is reachable within plausible run times from each spawn", () => {
     for (const s of sites) {
-      const atk = engine.shortestTravelTimeMs("attacker-spawn", s.id)!;
-      const def = engine.shortestTravelTimeMs("defender-spawn", s.id)!;
+      const atk = graph.shortestTravelTimeMs("attacker-spawn", s.id)!;
+      const def = graph.shortestTravelTimeMs("defender-spawn", s.id)!;
       expect(atk, `attackers -> ${s.id}`).toBeGreaterThanOrEqual(ATTACK_TO_SITE.min);
       expect(atk, `attackers -> ${s.id}`).toBeLessThanOrEqual(ATTACK_TO_SITE.max);
       expect(def, `defenders -> ${s.id}`).toBeGreaterThanOrEqual(DEFENSE_TO_SITE.min);

@@ -452,6 +452,7 @@ function toPerceptionWorldForView(state: SimState, activeAbilities: readonly Abi
     position: p.position, velocity: { x: 0, y: 0, z: 0 }, facing: p.facing,
     health: p.health, armor: p.armor, alive: p.alive, weapon: null,
     behaviorState: p.pathIndex < p.path.length && !stationaryIds?.has(p.id) ? (p.moveMode === "run" ? "running" : "walking") : "still",
+    zoneId: p.zoneId,
   }));
   return {
     matchId: state.matchId, roundId: state.roundId, roundNumber: 1, tick: state.tick,

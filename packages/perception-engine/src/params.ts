@@ -17,6 +17,11 @@ export interface PerceptionParams {
      */
     readonly sameZoneAlwaysVisible: boolean;
     /**
+     * Decide sight from where the two bodies stand (the map's measured node-to-node line of
+     * sight) when the map carries that data. false = always use the zone sightline table.
+     */
+    readonly positionalSight?: boolean;
+    /**
      * Probability (0..1) of FAILING to detect a geometrically-visible enemy that is
      * farther than `uncertainBeyondFraction` of max view distance. Default 0 →
      * perception is fully deterministic. When > 0, a seeded Rng must be injected.
@@ -73,6 +78,7 @@ export const DEFAULT_PARAMS: PerceptionParams = {
     halfFovDeg: 55,
     maxViewDistanceUnits: 4500,
     sameZoneAlwaysVisible: true,
+    positionalSight: true,
     detectionMissProbability: 0,
     uncertainBeyondFraction: 0.85,
   },

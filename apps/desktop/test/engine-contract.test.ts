@@ -95,3 +95,34 @@ test('minThrowRates changes the simulation (same seed, different floor → diffe
   const sig = (m: RawMatch) => JSON.stringify(m.rounds.map((r) => [r.winner, r.reason, r.kills]));
   assert.notEqual(sig(base), sig(floored), 'a 0.5/s throw floor on both teams must alter round outcomes');
 });
+
+test('run-match output carries positions for every player and the navigation trace (no app-side shim)', { skip }, () => {
+  const raw = runMatch({ ...TEAMS, seed: 7, recordPerception: false });
+  const r = raw.rounds[0];
+  const moves = r.replayEvents.filter((e) => e.kind === 'move') as Array<{ playerId: string; timeMs: number; from: { x: number; y: number }; to: { x: number; y: number } }>;
+  // every player has a position from the first instant, also those who never leave their spot
+  const atStart = new Set(moves.filter((m) => m.timeMs === 0 && m.from.x === m.to.x && m.from.y === m.to.y).map((m) => m.playerId));
+  assert.equal(atStart.size, 10, 'a spawn position per player');
+  // continuous movement: consecutive samples, never a jump between zone centres
+  const longest = moves.reduce((m, e) => Math.max(m, Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y)), 0);
+  assert.ok(longest > 0 && longest <= 120, `longest recorded step ${longest.toFixed(0)} uu is one tick of movement`);
+
+  // the navigation trace: planned paths with their waypoints, route and reason
+  for (const round of raw.rounds) assert.ok(Array.isArray(round.nav) && round.nav.length > 0, `R${round.roundNumber} has a navigation trace`);
+  const all = raw.rounds.flatMap((x) => x.nav ?? []);
+  const planned = all.filter((e) => e.kind === 'planned' || e.kind === 'replanned');
+  assert.ok(planned.length > 100);
+  for (const e of planned.slice(0, 200)) {
+    assert.ok(e.waypoints && e.waypoints.length >= 1, 'planned path has waypoints');
+    assert.ok(e.from && e.zones && e.zones.length >= 1);
+    assert.equal(typeof e.pathLength, 'number');
+    assert.equal(typeof e.estimatedTravelMs, 'number');
+    assert.ok(['FASTEST', 'SAFEST', 'STEALTH', 'TACTICAL'].includes(e.preference ?? ''));
+  }
+  assert.ok(planned.some((e) => e.intent), 'the order behind a move is recorded');
+  const prefs = new Set(planned.map((e) => e.preference));
+  assert.ok(prefs.has('FASTEST') && prefs.size >= 2, `routes are chosen by intent (${[...prefs].join(', ')})`);
+  // the summary the live view reads keeps it per round
+  const { summary } = mergeMatch(raw);
+  assert.equal(summary.rounds[0].nav?.length, raw.rounds[0].nav?.length);
+});

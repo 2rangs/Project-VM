@@ -2,6 +2,13 @@
 
 **Date:** 2026-11-19 · **Branch:** `claude/maps-data-df31bb` · builds on `docs/research/MAPS_DATA.md`.
 
+> **Status (2026-11-20): the runtime part of this document is superseded.** Players no longer move along the
+> per-edge polylines described in §4. They move on the navigation roadmap (`<map>.nav.json`), with a real
+> position every tick — see `docs/research/NAVIGATION_ENGINE.md`. What is still current here: the edge routes
+> themselves (§1–§3, §5), which remain the zone graph's edge lengths and times and the strategic layer of the
+> navigation engine, and the reproduce steps (§7). §4's `trackPosition()` and the "deviation" note, and the
+> 160-match table of §6, describe the engine as it was on 2026-11-19 and are kept as a record.
+
 **Problem.** Movement was zone-to-zone: a player sat on a zone centre for the *straight-line* time to the next
 centre, then jumped there. Viewers interpolated between centres in a straight line, so players were drawn
 walking through walls, and travel time ignored the real path.

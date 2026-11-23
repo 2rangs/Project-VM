@@ -1,5 +1,11 @@
 # PROJECT V — Architecture (Simulation Core)
 
+> **Status (2026-11-20).** This document describes the simulation-core foundation — four packages — and the two
+> rules everything else is built on: the information boundary (§4) and determinism (§5). Those still hold as
+> written. The repository has since grown to nineteen packages and a desktop app; for the whole system as it is
+> now (package map, dependency graph, the order a round is computed in, data flow, processes) see
+> `docs/ARCHITECTURE.integrated.md`. §1 and §2 below show the core's own layout, not the whole monorepo.
+>
 > Scope of this document: the P0 simulation-core foundation delivered by the PV-3
 > (Simulation Core) agent. It covers the four packages that package work owns and how
 > they fit the structure in Handoff §17 and §23. It is **not** the whole-game
@@ -23,9 +29,9 @@ project-v/
     └── world-state/         # world construction, immutable updates, serialize, observe
 ```
 
-`packages/spatial-engine/` (PV-4) and the other engines in Handoff §23 are intentionally
-absent. The workspace glob is `packages/*`, so they are picked up automatically when
-added — no root change needed (Handoff §29: do not introduce structure before it is used).
+The other engines of Handoff §23 (spatial, perception, combat, ability, round simulator, match runner, …) have
+since been added under `packages/` and are left out of this tree on purpose: this document covers the core. The
+workspace glob is `packages/*`, so they were picked up without a root change.
 
 Tooling: **pnpm** workspaces + **Vitest** + **TypeScript** (strict). Node ≥ 20.
 
@@ -107,8 +113,10 @@ could not perceive. This core enforces it **structurally**, not by convention:
 - An `ObservedEnemy` is a strict subset of `PlayerState`: last-seen position + coarse
   `HealthBand`, and **no** fields for live position, exact HP, inventory, velocity or
   intent. The leak is therefore not representable in the type a decision maker holds.
-- Line-of-sight/sound is delegated to a pluggable `VisibilityOracle` (PV-4 spatial-engine
-  will implement it). The default `BLIND_ORACLE` reveals nothing, so a mis-wire
+- Line-of-sight/sound is delegated to a pluggable `VisibilityOracle`. In the running game the
+  round simulator produces observations through `@pv/perception-engine` (field of view, range,
+  line of sight between real positions, smoke, hearing) and hands policies a `PolicyView` built
+  from them — the same boundary, implemented by the engines that came later. The default `BLIND_ORACLE` reveals nothing, so a mis-wire
   **under-informs** the AI rather than leaking truth — it fails safe.
 
 ```

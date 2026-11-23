@@ -65,6 +65,38 @@ valorant-api 라이선스가 **불명확**하므로, 게임 데이터 카탈로�
 Riot 파생 생성 데이터(`datasets/catalog/release-*/`)는 **gitignore**하여 로컬 재생성한다(§3 권고 2·3 적용).
 스키마(`datasets/catalog/schema/`)와 테스트 픽스처는 PV-1이 작성(합성 가짜 이름)한 것이라 커밋한다.
 
+### 2.0b 맵 지오메트리 파생물 — 내비게이션 로드맵 커밋 결정 (DECISION, 2026-11-20)
+
+**사용자 결정(2026-11-20, 오케스트레이터 전달):** 사용자가 제공한 Blender 맵에서 파생한 **내비게이션
+로드맵 11개(`datasets/spatial/<map>/<map>.nav.json`)를 저장소에 커밋한다.** 메시와 워크 그리드는 계속
+git 밖에 둔다.
+
+- **커밋 대상(11개 맵, 합계 약 1.1 MB):** abyss, ascent, bind, breeze, fracture, haven, icebox, lotus, pearl,
+  split, sunset 의 `<map>.nav.json`. 생성기는 `tools/map-mesh/pipeline/nav_map.py`.
+- **파일에 들어 있는 것 — 점과 선분뿐:**
+  - `nodes` — 서 있을 수 있는 지점. `[x, y, 바닥 z, 벽까지 여유(clearance), 구역 인덱스]`. 최소 간격 2.5 m
+    (바닥 약 6 m² 당 한 점).
+  - `edges` — 두 지점을 잇는 보행 가능 선분. `[a, b, 반폭(half-width)]`.
+  - `drops` — 한 방향 낙하 선분. `links` — 텔레포터·집라인 같은 특수 이동(구역 그래프에서 저작).
+  - `zones`, `anchors`(구역별 기준 지점), `params`, `stats`(생성 시 검증 수치).
+- **들어 있지 않은 것:** 삼각형·정점 버퍼·면·법선·재질·텍스처, 워크 그리드 셀, 복셀, 높이맵 — 즉 맵의
+  **표면(surface)** 은 어떤 형태로도 없다. 이 파일만으로 맵 메시를 복원할 수 없다.
+- **계속 git 밖(변경 없음):** Blender 원본, 추출 메시(`mesh.npz`), 워크 그리드(`walkable.json`,
+  `footprint.npz`), 그 밖의 표면 지오메트리. 저장소 밖 로컬 파생 디렉터리에서만 생성·사용하고 커밋하지 않는다.
+- **권리 상태는 그대로:** 맵 IP는 Riot. 위 표의 "사용자 Blender 맵" 행(재배포 unknown, 내부 개발용 한정
+  권장)은 바뀌지 않는다. 이 결정은 **내부 개발 저장소에 파생 좌표를 두는 것**에 대한 것이며 재배포 허가가
+  아니다. **⚠ 출시·공개 배포 전 재검토 필수.**
+- **앱 사본:** `apps/desktop/src/data/sim/ascent.nav.json` 은 `datasets/spatial/ascent/ascent.nav.json` 의
+  사본(앱 번들 입력)으로 같은 결정의 적용을 받는다.
+- **시야 표도 같은 결정에 포함 (사용자 확인, 2026-11-20):** `datasets/spatial/ascent/ascent.vis.json` 과
+  그 앱 사본 `apps/desktop/src/data/sim/ascent.vis.json` 도 커밋 상태로 유지한다. 로드맵 지점 쌍 사이의
+  시야 여부를 **쌍당 1비트**로 담은 표(147 KB)로, 좌표나 표면은 없고 `ascent.nav.json` 의 지점 번호만
+  참조한다. 생성기는 `tools/map-mesh/pipeline/vis_map.py`. 나머지 10개 맵의 `.vis.json` 은 아직 생성하지
+  않았으며, 생성하면 같은 범위(지점 쌍당 1비트, 표면 없음)로 커밋할 수 있다. 권리 상태와 출시 전 재검토
+  조건은 로드맵과 동일하다.
+
+상세: `docs/research/NAVIGATION_ENGINE.md` §3.
+
 ### 2.1 VCT Reference / vctstats (PV-2 확정 예정)
 - **VCT Reference:** `/terms` 미열람 → 라이선스 **UNVERIFIED**. PV-2가 약관 원문 확인 후 확정.
 - **vctstats:** 저장소 LICENSE 미열람 → **UNVERIFIED**. PV-2 확인.
@@ -85,3 +117,5 @@ Riot 파생 생성 데이터(`datasets/catalog/release-*/`)는 **gitignore**하�
 ---
 
 *변경 이력: v1.0 (2026-11-18, PV-1) — 5개 저장소 LICENSE 직접 확인, 나머지 분류.*
+*v1.1 (2026-11-20) — §2.0b 추가: 내비게이션 로드맵(`<map>.nav.json`, 점·선분) 커밋 결정 기록. 메시·워크 그리드는 계속 git 밖.*
+*v1.2 (2026-11-20) — §2.0b: 지점 간 시야 표(`<map>.vis.json`, 쌍당 1비트)도 같은 결정에 포함됨을 기록.*

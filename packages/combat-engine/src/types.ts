@@ -69,8 +69,13 @@ export type HitLocation = "head" | "body" | "leg";
 export interface EngagePosture {
   /** Already aiming at the expected angle when the fight starts (huge first-shot edge). */
   readonly preAim: boolean;
-  /** Moving when the fight starts (accuracy penalty; VALORANT punishes moving fire). */
+  /**
+   * Moving when the fight starts (accuracy penalty; VALORANT punishes moving fire). The penalty
+   * lasts until the shooter has stopped — see CombatParams.accuracy.stopMs.
+   */
   readonly moving: boolean;
+  /** How it was moving at contact (default "run"): a walker stops sooner than a runner. */
+  readonly pace?: "run" | "walk";
   /** ms after t0 before this side first perceives the enemy (info advantage = smaller). */
   readonly seesEnemyAtMs: number;
   /** Remaining blind time (ms) from a flash at t0; delays and degrades fire. */

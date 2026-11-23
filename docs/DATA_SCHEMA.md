@@ -180,6 +180,20 @@ length/time the edge had before the route replaced them), top-level `routes` sum
 its `distanceMeters` / `runTimeMs` / `walkTimeMs` are the route's. See `docs/research/MAP_ROUTES.md`.
 See `docs/research/MAPS_DATA.md`.
 
+Navigation data (`datasets/spatial/<map>/`, loaded by `loadMap` when present; see
+`docs/research/NAVIGATION_ENGINE.md` §3):
+- `<map>.nav.json` — the roadmap players move on, all eleven maps. `zones[]` (ids), `nodes[]` =
+  `[x, y, z, clearance, zoneIndex]` in game uu (stand points, ≥ 2.5 m apart), `edges[]` = `[a, b, halfWidth]`
+  (walkable both ways), `drops[]` = `[from, to]` (one way), `links[]` = `{ from, to, kind, travelTimeMs,
+  bidirectional }` (teleporter / zipline), `anchors` (zone id → node index: where a player in that zone
+  stands), `zonesWithoutAnchor`, `params`, `stats` (the generator's checks, incl. `edgesHittingGeometry` and
+  `zonePairsReachableOnGrid`). Provenance `measured-on-mesh`.
+- `<map>.vis.json` — line of sight between roadmap nodes, Ascent only so far. `nodes` (count; must equal the
+  roadmap's), `rangeUnits` (pairs beyond it are untested and 0), `bitsBase64` — one bit per unordered pair
+  `(i < j)`, upper triangle row-major, MSB first, 1 = visible. Provenance `measured-on-mesh`.
+Both hold points, segments and bits only; no mesh, grid or other surface is committed (`docs/LICENSE_AUDIT.md`
+§2.0b).
+
 ## Provenance — `provenance.schema.json`  (README §13.3)
 Attached to every record. Key fields: `sourceId`, `sourceUrl`, `gamePatch`, `retrievedAt`,
 `evidenceType` (observed/decoded/derived/inferred/simulated), `confidence`, `verified`,

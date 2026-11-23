@@ -10,6 +10,7 @@
  * The SpatialQuery and (optional) EconomyEvaluator are CONSTRUCTION dependencies — the
  * per-decision input is only the PolicyView (no WorldState; DECISION-004).
  */
+import { annotateRoutes } from "./route-intent.js";
 import type {
   ActionCommand,
   DecisionPolicy,
@@ -122,8 +123,15 @@ export interface PolicyTuning {
   readonly throwProfileBeta: number;
   /** Lanchester κ: fighting-strength multiplier of the side holding the ground (the planted spike; before the plant, the sites). */
   readonly postPlantHolderEdge: number;
-  /** A side plays on only when its Lanchester win chance is at least this: the defense's retake, the attack's hit before the plant. */
+  /** The defense plays the retake only when its Lanchester win chance is at least this; below it, it saves. */
   readonly retakeMinWinChance: number;
+  /**
+   * The attack plays the round out before the plant only when its Lanchester win chance is at
+   * least this; below it, it saves. Default 0.09 (κ = 1: 1v3 0.10 plays, 2v5 0.14 plays, 1v4 0.06
+   * saves) — lower than the defense's retake threshold, calibrated so that rounds run out the
+   * clock as often as in real play (docs/STAT_OUTCOME_MATRIX.md §3.6).
+   */
+  readonly attackSaveMinWinChance: number;
   /** Odds a hero-play lone defender (aggression ≥ 0.75) still accepts. */
   readonly heroMinWinChance: number;
   /**
@@ -139,6 +147,7 @@ export const DEFAULT_POLICY_TUNING: PolicyTuning = {
   throwProfileBeta: 3,
   postPlantHolderEdge: 1,
   retakeMinWinChance: 0.15,
+  attackSaveMinWinChance: 0.09,
   heroMinWinChance: 0.08,
   saveMinWeaponValue: 1900,
 };
@@ -615,10 +624,13 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * (retakeViable): before the spike is down the attack still has to take a held site, so by
    * Lanchester's square law its chance is
    *     P(hit) = A² / (A² + κ · D²)       A attackers, D defenders alive, κ = holder edge
-   * and below tuning.retakeMinWinChance the round is called lost: the survivors fall back to their
-   * own spawn by the route of least exposure and keep their weapons, and the clock runs out. With
-   * κ = 1 and a 0.15 threshold: 1v2 0.20 play · 2v4 0.20 play · 2v5 0.14 save · 1v3 0.10 save. A
-   * lone hero-play profile (aggression ≥ HERO_AGGRESSION) accepts tuning.heroMinWinChance.
+   * and below tuning.attackSaveMinWinChance the round is called lost: the survivors fall back to
+   * their own spawn by the route of least exposure and keep their weapons, and the clock runs out.
+   * With κ = 1 and the 0.09 threshold: 1v2 0.20 play · 2v4 0.20 play · 2v5 0.14 play · 1v3 0.10
+   * play · 1v4 0.06 save · 1v5 0.04 save. The attack's threshold is its own tunable, separate from
+   * the defense's retake threshold: before the plant the attack still holds the spike and the
+   * choice of site, and real rounds rarely run out the clock. A lone hero-play profile
+   * (aggression ≥ HERO_AGGRESSION) accepts tuning.heroMinWinChance if that is lower still.
    * Saving only makes sense with something to save: the round is given up only if a survivor holds
    * a weapon worth at least tuning.saveMinWeaponValue (default: the smallest loss bonus — what the
    * team gets for losing anyway). A pistol or a cheap SMG is not worth a round; they play it out.
@@ -640,7 +652,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const t = this.tuning;
       const hero = alive.length === 1 && profileFor(alive[0]!.id, this.profiles).aggression >= HERO_AGGRESSION;
       const chance = lanchesterWinChance(alive.length, enemies, t.postPlantHolderEdge);
-      const floor = hero ? t.heroMinWinChance : t.retakeMinWinChance;
+      const floor = hero ? Math.min(t.heroMinWinChance, t.attackSaveMinWinChance) : t.attackSaveMinWinChance;
       if (chance >= floor) return null;
       const price = this.options.weaponPrice;
       const worthSaving = !price || alive.some((p) => (price(String(p.weapon?.weaponId ?? "")) ?? 0) >= t.saveMinWeaponValue);
@@ -1278,7 +1290,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   /**
    * DEFENSE pre-plant: the exit-kill chase — the third posture of the throw model (see `throws`).
    * The defense reads the same kill feed as the attack: once the attack's chance to still take a
-   * site, A² / (A² + κ · D²), is below tuning.retakeMinWinChance, the round is won by standing
+   * site, A² / (A² + κ · D²), is below tuning.attackSaveMinWinChance, the round is won by standing
    * still — the attackers will save (commitAttackSave) and the clock does the rest. Leaving the
    * angle to run them down is exactly what a throw is: giving up a winning posture to go hunting.
    * So it follows the same proportional-hazards process as the post-plant throws,
@@ -1297,7 +1309,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const quarry = ATTACK_FALLBACK_ZONE as ZoneId;
     if (alive.length === 0 || attackers == null || attackers <= 0 || !this.spatial.getZoneMeta(quarry)) return commands.slice();
     const t = this.tuning;
-    const won = lanchesterWinChance(attackers, alive.length, t.postPlantHolderEdge) < t.retakeMinWinChance;
+    const won = lanchesterWinChance(attackers, alive.length, t.postPlantHolderEdge) < t.attackSaveMinWinChance;
     const contact = view.observation.visibleEnemies.some((e) => e.currentlyVisible);
     if (won && !contact) {
       for (const p of alive) {
@@ -1659,6 +1671,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (!ordered) commands = this.commitDefenseRotation(view, plan, commands);
     commands = this.commitDefenseChase(view, plan, commands, rng);
     commands = this.commitDefuser(view, commands, rng);
+
+    // Route intent: every move order says how it wants to get there (route-intent.ts).
+    commands = annotateRoutes(view, strategy, roleOf, commands);
 
     const decision: PolicyDecision = { strategy, roles, commands };
     const trace: TeamRoundTrace = {

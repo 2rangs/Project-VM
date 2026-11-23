@@ -49,6 +49,16 @@ export interface ActionCommand {
    * entry choke. Optional; a policy that omits it keeps the default-choke behaviour.
    */
   readonly aimZone?: ZoneId;
+  /**
+   * How the route to `targetZone` should be chosen. The policy picks the goal and the purpose;
+   * the navigation layer finds the path. Default FASTEST.
+   */
+  readonly routePreference?: "FASTEST" | "SAFEST" | "STEALTH" | "TACTICAL";
+  /**
+   * Extra cost of passing through a zone (>= 0), from the team's BELIEF — seen / heard /
+   * suspected enemies, utility, teammates' lanes. Never true enemy positions. Ignored by FASTEST.
+   */
+  readonly zoneCosts?: Readonly<Record<string, number>>;
 }
 
 /**

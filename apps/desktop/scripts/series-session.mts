@@ -53,7 +53,7 @@ const series: SeriesSession = createSeriesSession(
     teamB: { ...cfg.teamB, history: film(cfg.teamB, 2) },
     format: cfg.format ?? 'bo3',
     seed,
-    match: { recordPerception: true },
+    match: { recordPerception: true, recordTracks: true }, // positions + navigation trace for the live view
   },
   { aiTeams: ['B'] },
 );
@@ -80,6 +80,7 @@ function compactRound(ctx: SeriesGameContext, r: ReturnType<MatchSession['playNe
     replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
     decisions: r.decisions ? { plans: byUi(ctx, r.decisions.plans), opponentReadBefore: byUi(ctx, r.decisions.opponentReadBefore), observed: r.decisions.observed } : null,
+    nav: r.navTrace ?? null,
   };
 }
 function uiState(ctx: SeriesGameContext, s: ReturnType<MatchSession['state']>) {

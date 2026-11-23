@@ -20,6 +20,16 @@ export interface CombatParams {
     readonly pointBlank: number;
     /** Multiplier on hit chance when firing while moving (before skill.movement offset). */
     readonly movingPenalty: number;
+    /**
+     * Stopping time (ms): how long after it first perceives the enemy a shooter who was moving at
+     * contact needs to stand still, from a run and from a walk, at movement skill 0.5. Shots fired
+     * before that are moving shots (movingPenalty, headshot.movingMultiplier, and a moving target
+     * for the opponent); shots after it are standing shots. Movement skill scales it ×1.4 (skill 0)
+     * … ×0.6 (skill 1): a good mover counter-strafes. Infinity = the shooter never stops.
+     * It is the time until a player caught on the move fights like a set one — feet planted and
+     * aim settled — not the bare deceleration of the body, so it is longer than a counter-strafe.
+     */
+    readonly stopMs: { readonly run: number; readonly walk: number };
     /** Multiplier on hit chance while flash-blinded. */
     readonly flashedAccuracy: number;
     /** First-shot accuracy bonus (added) when pre-aiming. */
@@ -51,6 +61,8 @@ export const DEFAULT_PARAMS: CombatParams = {
   accuracy: {
     pointBlank: 0.9,
     movingPenalty: 0.55,
+    // calibrated on 160 Ascent matches (docs/STAT_OUTCOME_MATRIX.md §2.7); walk = run × walk speed / run speed
+    stopMs: { run: 700, walk: 350 },
     flashedAccuracy: 0.15,
     preAimFirstShotBonus: 0.15,
     rangeFalloffPerMeter: 0.012,
@@ -71,4 +83,6 @@ export interface CombatCalibration {
   readonly hitChanceScale?: number;
   readonly headshotScale?: number;
   readonly reactionScale?: number;
+  /** Multiplier on accuracy.stopMs (the time a moving shooter needs to stop). Infinity = never stops. */
+  readonly stopTimeScale?: number;
 }

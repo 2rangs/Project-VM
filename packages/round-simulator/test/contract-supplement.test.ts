@@ -5,16 +5,15 @@ import {
   RoundSimulator, buildPolicyView, makeSyntheticRound, SpatialQueryAdapter,
   type ActionCommand, type DecisionPolicy, type PolicyDecision, type PolicyView, type SimPlayer, type SimState,
 } from "../src/index.js";
-import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, NO_ABILITIES, scenePos } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
 const weapons = loadWeapons();
 
 function mk(id: string, side: "attack" | "defense", zoneId: string, facing = { x: 1, y: 0 }): SimPlayer {
-  const z = spatial.getZone(zoneId)!;
   return {
     id, teamId: side === "attack" ? "attackers" : "defenders", side, agentId: "a",
-    position: { ...z.position }, zoneId, facing, health: 100, armor: 50, alive: true, weaponId: "Vandal",
+    position: { ...scenePos(spatial, zoneId) }, zoneId, facing, health: 100, armor: 50, alive: true, weaponId: "Vandal",
     skills: AVERAGE_SKILLS, abilities: [{ abilityId: "omen:Ability2", chargesRemaining: 1, lastUsedAtMs: null }],
     ultimatePoints: 3, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run",
   };
@@ -70,8 +69,8 @@ describe("executeAtMs (teamwork timing)", () => {
     }).runRound(makeSyntheticRound(spatial));
     // first frame where any attacker has left the spawn's standing point (tracks follow the
     // walkable route continuously, so this is the first tick of movement)
-    const spawn = spatial.standPosition("attacker-spawn");
-    const moved = r.tracks!.find((f) => f.players.some((p) => p.id.startsWith("atk") && (p.x !== spawn.x || p.y !== spawn.y)));
+    const start = new Map(r.tracks![0]!.players.map((p) => [p.id, p]));
+    const moved = r.tracks!.find((f) => f.players.some((p) => p.id.startsWith("atk") && (p.x !== start.get(p.id)!.x || p.y !== start.get(p.id)!.y)));
     return moved ? moved.elapsedMs : Infinity;
   }
 

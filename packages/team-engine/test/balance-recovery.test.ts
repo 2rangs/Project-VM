@@ -196,39 +196,52 @@ describe("attack save: a lost round is given up only for gear worth keeping", ()
   const saves = (r: ReturnType<typeof decide>) => r.decision.commands.length > 0 && r.decision.commands.every((c) => c.sourceActionId?.startsWith("attack-save"));
   const down = (alive: number, enemies: number, weaponId = "vandal") => attackView(SPAWN, { knownEnemyAliveCount: enemies }, alive, weaponId);
 
-  it("1v3 before the plant is saved (Lanchester 0.10 < 0.15) and the plan records why", () => {
-    const r = decide(down(1, 3));
+  it("1v4 before the plant is saved (Lanchester 0.06 < 0.09) and the plan records why", () => {
+    const r = decide(down(1, 4));
     expect(saves(r)).toBe(true);
     expect(r.trace.finalStrategy).toBe("save");
-    expect(r.trace.plan.revisions.at(-1)!.reason).toMatch(/round lost 1v3.*Lanchester 0\.10/);
+    expect(r.trace.plan.revisions.at(-1)!.reason).toMatch(/round lost 1v4.*Lanchester 0\.06/);
   });
-  it("counterfactual — one enemy fewer (1v2, 0.20): the round is played", () => {
+  it("counterfactual — one enemy fewer (1v3, 0.10): the round is played", () => {
+    expect(saves(decide(down(1, 3)))).toBe(false);
     expect(saves(decide(down(1, 2)))).toBe(false);
   });
-  it("2v4 plays (0.20), 2v5 saves (0.14)", () => {
+  it("2v4 (0.20) and 2v5 (0.14) are played; the attack's threshold is its own pre-match option", () => {
     expect(saves(decide(down(2, 4)))).toBe(false);
-    expect(saves(decide(down(2, 5)))).toBe(true);
+    expect(saves(decide(down(2, 5)))).toBe(false);
+    // a cautious team: the old shared threshold — 1v3 and 2v5 are given up
+    const cautious = () => { const p = new TeamDecisionPolicy(ascent); p.setTuning({ attackSaveMinWinChance: 0.15 }); return p; };
+    expect(saves(decide(down(1, 3), cautious()))).toBe(true);
+    expect(saves(decide(down(2, 5), cautious()))).toBe(true);
+    expect(saves(decide(down(2, 4), cautious()))).toBe(false);
+    // the defense's retake threshold does not move the attack's save
+    const p = new TeamDecisionPolicy(ascent); p.setTuning({ retakeMinWinChance: 0.5 });
+    expect(saves(decide(down(1, 3), p))).toBe(false);
   });
-  it("counterfactual — same 1v3 with a gun the loss bonus buys back: nothing to save, play it out", () => {
+  it("counterfactual — same 1v4 with a gun the loss bonus buys back: nothing to save, play it out", () => {
     const price = (id: string) => ({ vandal: 2900, spectre: 1600, classic: 0 })[id];
     const withPrices = () => new TeamDecisionPolicy(ascent, { weaponPrice: price });
-    expect(saves(decide(down(1, 3, "vandal"), withPrices()))).toBe(true);
-    expect(saves(decide(down(1, 3, "spectre"), withPrices()))).toBe(false);
-    expect(saves(decide(down(1, 3, "classic"), withPrices()))).toBe(false);
+    expect(saves(decide(down(1, 4, "vandal"), withPrices()))).toBe(true);
+    expect(saves(decide(down(1, 4, "spectre"), withPrices()))).toBe(false);
+    expect(saves(decide(down(1, 4, "classic"), withPrices()))).toBe(false);
     // The value a team still saves is a pre-match option.
     const thrifty = withPrices();
     thrifty.setTuning({ saveMinWeaponValue: 1500 });
-    expect(saves(decide(down(1, 3, "spectre"), thrifty))).toBe(true);
+    expect(saves(decide(down(1, 4, "spectre"), thrifty))).toBe(true);
   });
-  it("counterfactual — a hero-play last man takes the 1v3", () => {
+  it("counterfactual — on a cautious team, a hero-play last man still takes the 1v3", () => {
     const view = down(1, 3);
     const policy = new TeamDecisionPolicy(ascent);
-    policy.setProfiles(new Map([[String(view.teammates[0]!.id), profile(view.teammates[0]!.id, 0.9)]]));
-    expect(saves(decide(view, policy))).toBe(false);
+    policy.setTuning({ attackSaveMinWinChance: 0.15 });
+    expect(saves(decide(view, policy))).toBe(true);
+    const hero = new TeamDecisionPolicy(ascent);
+    hero.setTuning({ attackSaveMinWinChance: 0.15 });
+    hero.setProfiles(new Map([[String(view.teammates[0]!.id), profile(view.teammates[0]!.id, 0.9)]]));
+    expect(saves(decide(view, hero))).toBe(false);
   });
   it("the save holds through one pick and is lifted when the man count is even again", () => {
     const policy = new TeamDecisionPolicy(ascent);
-    expect(saves(decide(down(1, 3), policy))).toBe(true);
+    expect(saves(decide(down(1, 4), policy))).toBe(true);
     expect(saves(decide({ ...down(1, 2), timeRemainingMs: 94_000 }, policy))).toBe(true);
     const even = decide({ ...down(1, 1), timeRemainingMs: 93_000 }, policy);
     expect(saves(even)).toBe(false);

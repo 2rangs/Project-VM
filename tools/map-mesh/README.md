@@ -62,7 +62,8 @@ options to reach full connectivity.
 
 The Ascent steps above are kept as the record of how Ascent was calibrated. For every other
 map — and for an Ascent control run — use the map-agnostic scripts. Geometry stays outside
-the repo; only numbers and the schematic PNG are committed. Full method, evidence and
+the repo; only numbers, the schematic PNG, the roadmap (points and segments) and the visibility bits are
+committed — no mesh, no walk grid (`docs/LICENSE_AUDIT.md` §2.0b). Full method, evidence and
 caveats: `docs/research/MAPS_DATA.md`.
 
 ```bash
@@ -88,6 +89,13 @@ $PY -I tools/map-mesh/pipeline/render_map.py --map bind --derived $D/bind
 $PY -I tools/map-mesh/pipeline/route_map.py --map bind --derived $D/bind
 python3 -I tools/map-processor/build_map.py bind          # Ascent: python3 -I tools/map-processor/apply_routes.py ascent
 
+# 4c. navigation roadmap (what the simulator moves players on) -> datasets/spatial/bind/bind.nav.json
+$PY -I tools/map-mesh/pipeline/nav_map.py --map bind --derived $D/bind
+
+# 4d. line of sight between roadmap points -> datasets/spatial/bind/bind.vis.json   (Ascent: ~2 min on six cores)
+for i in 0 1 2 3 4 5; do $PY -I tools/map-mesh/pipeline/vis_map.py --map bind --derived $D/bind --part $i/6 & done; wait
+$PY -I tools/map-mesh/pipeline/vis_map.py --map bind --derived $D/bind --merge 6
+
 # 5. independent orientation check from named collections
 python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-landmark-check.json
 ```
@@ -96,6 +104,9 @@ python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-l
 - `pipeline/measure_map.py` — the measurement stage (reuses `los/los.py`'s tested ray/triangle core)
 - `pipeline/route_map.py`  — A* + string-pull + exact cell-by-cell validation of one polyline per edge
   (`docs/research/MAP_ROUTES.md`); writes `<derived>/walkable.json` for the optional local tests
+- `pipeline/nav_map.py`    — the navigation roadmap: stand points and walkable segments, each segment walked
+  cell by cell and ray-checked; reaches exactly what the walk grid reaches (`docs/research/NAVIGATION_ENGINE.md` §3)
+- `pipeline/vis_map.py`    — one line-of-sight bit per pair of roadmap points (Ascent only so far)
 - `pipeline/render_map.py`, `pipeline/pngdraw.py` — dependency-free PNG schematic
 - `../map-processor/mapzones.py` — callout -> zone rule; `../map-processor/build_map.py` — rules + provenance
 
