@@ -309,6 +309,15 @@
 - 테스트: core 259/4 todo, round-simulator 121, match-runner 70, spatial-engine 265(+22 skip), ability-engine 21, combat-engine 21, 데스크톱 typecheck·build·단위·엔진·e2e·시리즈 e2e 통과.
 - 남은 한계: 위치 기반 시야는 Ascent만(타 맵은 구역 시야), 13개 직선 연결(텔레포터·로프 등), 스킬 on 모드 공격 과다, 계획 변경 사유 현지화, 스카우팅 효과 검출 불가.
 
+### 15차 main 머지 (2026-11-23) — 10개 맵 시야 표 · 생성 선수/스태프
+- 합친 브랜치: `claude/nav-engine`(`3aadf2d`), `claude/loving-meninsky-767c08`(`c73e72d`, `75e2764`).
+- 시야: Ascent 외 10개 맵의 `<map>.vis.json`(지점 쌍당 1비트, 라이선스 감사 §2.0b에 기록). `MatchConfig.geometry: "own"`(옵트인)으로 맵을 자기 지형·로드맵·시야로 시뮬레이션. 기본값은 여전히 Ascent 지형.
+  - 자기 지형 60경기씩: 공격 승률 0.39(Haven)–0.575(Sunset). Haven 수비 0.61, Split·Sunset 전멸 비율 0.36·0.46. 원인은 전술 계층(수비 배치·조준 구역·설치 후 위치)이 Ascent 것이라는 점 — 맵별 전술 데이터, Haven C 사이트, Haven/Pearl 원본 데이터 수정이 필요(`docs/research/NAVIGATION_ENGINE.md` §7.5).
+- 생성 선수·스태프(`packages/career`, 상세 `docs/GENERATED_PEOPLE.md`): 역할 평균 프로필 × 잠재력 × 나이 곡선 + 노이즈로 능력치 생성, CA/PA, 지역별 국적 분포, 오리지널 이름·핸들(실존 핸들 1,227개와 충돌 금지), 코치·분석관·스카우트, `advanceSeason`(성장·쇠퇴·은퇴·유입·영입), 저장/불러오기, `MatchConfig.rosters`(미지정 시 기존과 바이트 동일). 데스크톱 스카우팅 화면(신규 유망주·FA·스태프, ko/en).
+- 검증(Ascent 160경기·3,383R): judged **8/8**, 공격 0.521, 피스톨 0.528 — 14차와 동일.
+- 테스트: core 259/4 todo, career 15, round-simulator 121, match-runner 86, spatial-engine 278(+22 skip), ability-engine 21, combat-engine 21, 데스크톱 typecheck·build·단위·엔진·e2e·시리즈 e2e 통과(e2e는 부하 중 스크린샷 타임아웃이 있어 단독 재실행으로 통과).
+- 남은 것: 맵별 전술 데이터, 경기일·시리즈가 커리어 월드 로스터·스태프를 아직 쓰지 않음, 계약·연봉·이적 없음, 성장 상수 미보정.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
