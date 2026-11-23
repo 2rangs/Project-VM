@@ -477,6 +477,7 @@ export interface SimConfig {
    * Attrition: share of the damage a duel's survivor took that carries into its next fight
    * (0 = every duel at full health, 1 = all of it). Below 1 stands in for what the sim does not
    * model between fights (cover, heals, disengaging).
+   * Default 0.4 (fitted on real rosters; ENGINE_TRUTH.md §4).
    */
   readonly damageCarryover: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
@@ -499,6 +500,10 @@ export const DEFAULT_CONFIG: SimConfig = {
   slowSpeedMultiplier: 0.5, // manual-approx (no catalog value)
   crossfirePenaltyMs: 60, // Hick–Hyman slope (ms/bit); calibrated on 160 Ascent matches (8/8 judged)
   infoWindowMs: 2000,
-  damageCarryover: 0, // off by default: full attrition needs defensive stall utility to stay balanced
+  // VALORANT has no health regeneration, so the physical value is 1; the missing 0.6 stands for what
+  // the sim does not model between fights (cover, falling back, stall utility the default
+  // abilities-off game has none of). Fitted on real rosters, seeds 1–160 (8/8 judged, attack 0.501),
+  // confirmed on 161–320 and 321–480 — docs/ENGINE_TRUTH.md §4.
+  damageCarryover: 0.4,
   peekerAdvantageMs: 180,
 };
