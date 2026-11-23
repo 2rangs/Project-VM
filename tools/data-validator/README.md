@@ -83,12 +83,21 @@ simulator to real VCT?" check and the way PV-3/PV-4 measure improvements against
 npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20            # writes reports/sim-batch.{json,md}
 #   options: --matches N  --seed-start S  --map NAME  --max-rounds R  --era all|patch>=9
 #            --out FILE (SimRun bundle)  --report PREFIX  --no-validate (bundle + summary only)
+#            --abilities (agent abilities on; default off, as the desktop game plays today)
+#            --mirror (both teams league-average players instead of real rosters — see below)
 #   --compare FILE : diff against a prior report JSON — report gains Base / Δ / Move (↑ better /
 #                    ↓ worse) columns and an "N improved, N worsened" summary. Use this after each
 #                    PV-3/PV-4 fix to judge it against the committed baseline:
 npx tsx tools/data-validator/scripts/sim-batch.mts --matches 20 \
   --compare docs/research/SIM_BASELINE_2026-11-18.json
 ```
+**Teams.** Matches are played by real game-data rosters (46 teams, `simulatableTeamRefs()`), match
+i pairing teams[2i mod n] vs teams[2i+1 mod n]; the rest of the MatchConfig is what the desktop Match
+Day sends with default options. Every batch before 2026-11-23 — including the committed baselines and
+the "8/8, attack 0.521" result in `docs/research/NAVIGATION_ENGINE.md` §7 — read team ids as `t.id`,
+a field game-data does not have, so both sides played league-average players. `--mirror` keeps that
+condition and reproduces those runs exactly (same match ids, same seeds).
+
 "improved" = the sim value moved **closer to the real VCT target** than the baseline was. A metric
 absent from the baseline is `＋ new`; reported-only metrics show Δ but no direction.
 It prints a summary (attack win rate, pistol win rate, round-end reason distribution) to stderr and

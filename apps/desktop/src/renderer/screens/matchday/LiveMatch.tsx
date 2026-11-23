@@ -12,7 +12,6 @@
 // ours sees them. (The fog POV can be switched to the opponent for debugging, as before.)
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Replay } from '@pv/replay-engine';
-import { valorantApiMinimap } from '@pv/replay-viewer';
 import type { MatchSummary, SessionState, TeamOrder, TimeoutLogEntry } from '../../../shared/ipc.ts';
 import { ASCENT_TRANSFORM } from '../../../shared/ascent-transform.ts';
 import navgraph from '../../../data/sim/ascent.navgraph.json';
@@ -34,8 +33,10 @@ import { usePlayback } from '../../matchday/usePlayback.ts';
 import { MatchStage, type StageView } from './MatchStage.ts';
 import { CamStage3D, type CamView } from './CamStage3D.ts';
 import { buildBlockout } from '../../matchday/world3d.ts';
-import { bridge } from '../../platform.ts';
-import { AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
+import { AgentTag, AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { Icon, STATE_ICON } from './Icons.tsx';
+import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
@@ -239,8 +240,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     stageRef.current = stage;
     let alive = true;
     void stage.init(host).then(async () => {
-      const url = await valorantApiMinimap('Ascent');
-      const ok = await stage.setMap(url);
+      await preloadMatchAssets(); // normally already settled: the loading screen waited for it
+      const ok = await stage.setMap(preparedMinimapUrl());
       if (alive) setMapOk(ok);
     });
     const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
@@ -250,30 +251,31 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // three.js stage for the cams: created the first time the cams are opened, then kept.
+  // three.js stage for the cams: created with the screen (not on the first switch to the cams) and
+  // given the map mesh the loading screen already prepared, so opening the cams starts no load.
   const host3dRef = useRef<HTMLDivElement>(null);
   const camStageRef = useRef<CamStage3D | null>(null);
+  const assets = useMatchAssets();
   const [mapMesh, setMapMesh] = useState<'blockout' | 'glb'>('blockout');
   useEffect(() => {
     const host = host3dRef.current;
-    if (mode !== 'cams' || !host || camStageRef.current) return;
+    if (!host) return;
     const stage = new CamStage3D(nav, blockout);
     stage.init(host);
     camStageRef.current = stage;
     (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
-    void bridge.loadMapMesh('ascent').then(async (bytes) => {
-      if (!bytes || camStageRef.current !== stage) return;
-      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-      if (await stage.setMapGlb(buf)) setMapMesh('glb');
-    }).catch(() => { /* keep the blockout */ });
-  }, [mode]);
-  useEffect(() => {
-    const host = host3dRef.current;
-    if (!host) return;
-    const ro = new ResizeObserver(() => camStageRef.current?.resize(host.clientWidth, host.clientHeight));
+    void preloadMatchAssets(); // no-op when the loading screen has done it; covers re-opening the view
+    const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
     ro.observe(host);
-    return () => { ro.disconnect(); camStageRef.current?.destroy(); camStageRef.current = null; };
+    return () => { ro.disconnect(); stage.destroy(); camStageRef.current = null; };
   }, []);
+  useEffect(() => {
+    const stage = camStageRef.current; const root = preparedMesh();
+    if (!stage || assets.mesh !== 'ready' || !root) return;
+    stage.setMapScene(root);
+    stage.warmUp();
+    setMapMesh('glb');
+  }, [assets.mesh]);
 
   useEffect(() => {
     let lastSig = '';
@@ -342,11 +344,12 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       )}
       {preRound && !session!.ordersOpen && (
         <div className="mdx-result neutral" data-testid="pre-match">
-          <span className="mdx-result-kicker">{teams.A.name} vs {teams.B.name}</span>
-          <strong>{t('mdx.pre.title')}</strong>
+          <span className="mdx-result-kicker">{t('mdx.pre.title')}</span>
+          <div className="mdx-versus"><b className="ally">{teams.A.name}</b><i>VS</i><b className="enemy">{teams.B.name}</b></div>
           <span className="mdx-result-hint">{t('mdx.pre.hint')}</span>
         </div>
       )}
+      {session?.busy && !session.ordersOpen && <div className="mdx-loadchip center"><LoadingInline label={t('load.round', { n: session.state.roundNumber })} testId="loading-round" /></div>}
       {toast && <div className="mdx-toast" role="status">{toast}</div>}
       {session?.error && <div className="mdx-toast err" role="alert">⚠ {session.error}</div>}
       {replay && tl.rounds.length > 0 && !tl.hasTracks && <div className="mdx-toast warn">{t('mdx.noTracks')}</div>}
@@ -409,6 +412,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
             <div className="mdx-mapcol">
               <div className="mdx-map" ref={setViewEl('map')} data-testid="tactical-map">
                 {overlays}
+                {mapOk === null && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.map')} testId="loading-map" /></div>}
                 {mapOk === false && <span className="mdx-maphint">{t('mdx.mapOffline')}</span>}
                 <label className="mdx-ctl check mdx-debugctl" title={t('mdx.graph.hint')}>
                   <input type="checkbox" checked={showGraph} onChange={(e) => setShowGraph(e.target.checked)} data-testid="debug-graph" />
@@ -439,13 +443,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                   <button key={key} className={`mdx-mon st-${state} ${focus === key ? 'focus' : ''}`} ref={setViewEl(key)}
                     onClick={() => setFocus(focus === key ? null : key)} data-testid={`cam-${slot}`} aria-pressed={focus === key}
                     title={focus === key ? t('mdx.cam.unfocus') : t('mdx.cam.focus')}>
-                    <span className="mdx-osd tl"><b>CAM {String(slot).padStart(2, '0')}</b>{unit ? nameOf(unit.id) : handles[OUR_TEAM][slot - 1]}</span>
+                    <span className="mdx-osd tl"><b>CAM {String(slot).padStart(2, '0')}</b>{unit ? nameOf(unit.id) : handles[OUR_TEAM][slot - 1]}<AgentTag slot={slot} t={t} /></span>
                     <span className="mdx-osd tr">
                       {state === 'dead' ? <em className="lost">{t('mdx.cam.offline')}</em> : <em className="live"><i />{t('mdx.cam.live')}</em>}
                       {round ? `R${round.roundNum} ${formatClock(playback.tMs - round.startMs).padStart(4, '0')}` : ''}
                     </span>
                     <span className="mdx-osd bl">
-                      {unit ? <><i className={`mdx-statedot st-${state}`} />{statusText(t, unit.status, zoneName, nameOf)}</> : t('mdx.waiting')}
+                      {unit ? <><Icon name={STATE_ICON[state] ?? 'hold'} size={12} className={`mdx-stateicon st-${state}`} />{statusText(t, unit.status, zoneName, nameOf)}</> : t('mdx.waiting')}
                     </span>
                     <span className="mdx-osd br">
                       {unit && unit.pose.alive ? <>{zoneName(unit.pose.zone)}{unit.view.enemies.length > 0 && <em className="contact">{t('mdx.cam.contact', { n: unit.view.enemies.length })}</em>}</> : ''}
@@ -467,7 +471,11 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                 <span className="mdx-osd tr"><em className="live"><i />{t('mdx.cam.live')}</em></span>
                 <span className="mdx-osd bl">{frame ? t('mdx.cam.teamLine', { seen: frame.seen.length, ghosts: frame.ghosts.length, sounds: frame.sounds.length }) : t('mdx.waiting')}</span>
               </button>
-              <div className="mdx-wall-overlay">{overlays}</div>
+              <div className="mdx-wall-overlay">
+                {overlays}
+                {assets.mesh === 'loading' && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.mesh')} testId="loading-mesh" /></div>}
+                {assets.mesh === 'failed' && <div className="mdx-loadchip corner"><span className="pvl-inline" data-testid="mesh-failed">{t('load.assets.meshFailed')}</span></div>}
+              </div>
             </div>
             <EnemyPanel t={t} frame={frame} teamName={teams[enemyTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(enemyTeam)}>
               <KillFeed t={t} frame={frame} nameOf={nameOf} zoneName={zoneName} />

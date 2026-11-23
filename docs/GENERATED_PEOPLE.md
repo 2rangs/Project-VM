@@ -145,10 +145,9 @@ AI teams pick academy prospects and sign free agents using these estimates, so a
 
 ## 9. Not done
 
-- **Match Day and Series still play the dataset rosters.** The world's squads are not yet passed through `MatchConfig.rosters` / `teamStaffInputs` from the desktop. The desktop world only knows the 402 rated players, and the worker resolves rosters from game-data.
-- **No real schedule.** Playing time comes from status (starter/bench/academy/free), not from matches actually played. Development does not read match performance.
+- ~~Match Day and Series still play the dataset rosters~~ / ~~no real schedule~~ — done in career mode (`docs/CAREER_MODE.md`): career fixtures pass the world's fives and analysts to every series, and `advanceSeason(world, { mapsPlayed })` develops league players on the maps they really played. The Quick Match sandbox still uses dataset rosters, and development still does not read match performance (only minutes).
 - **No contracts, wages, transfer fees, reputation or player agency.** Signings are needs-driven (a roster under five, an academy promotion), and there are no trades between teams.
 - **No new teams.** The set of teams is fixed, so retired teams' slots are never refilled.
-- **The user's team has no scout.** The desktop shows the scout-less (widest) estimate band because the app has no "my team" yet.
+- ~~The user's team has no scout~~ — in a career the Scouting screen uses the manager's own scout; the Quick Match sandbox still shows the scout-less band.
 - **Nothing to calibrate the development constants against.** Development, decline and retirement constants are design values with no data behind them (the curves are named in `CAREER_MODEL`, `SEASON_MODEL`, `STAFF_MODEL`, `SCOUT_MODEL`). Real players' ages are estimates.
 - **Unrated real players (825 in game-data) never develop.** They have no attributes, count as league average (0.6) for squad decisions, and age out over time.

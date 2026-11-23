@@ -9,6 +9,8 @@ import type { MonitorStatus } from '../../matchday/monitor.ts';
 import { formatClock, roundMarks } from '../../matchday/monitor.ts';
 import { isAlive, teamPlayers, type MatchTimeline, type RoundTimeline, type TeamSlot } from '../../matchday/timeline.ts';
 import { TEMPOS, type Tempo, type ViewMode } from '../../matchday/prefs.ts';
+import { agentOfSlot } from '../../matchday/roster.ts';
+import { Icon, ROLE_ICON, STATE_ICON, type IconName } from './Icons.tsx';
 
 export type NameOf = (id: string) => string;
 export type ZoneName = (id: string | null | undefined) => string;
@@ -24,6 +26,13 @@ export function statusText(t: TFn, s: MonitorStatus, zoneName: ZoneName, nameOf:
     case 'moving': return t(s.moveMode === 'walk' ? 'mdx.state.walking' : 'mdx.state.moving', { zone: zoneName(s.toZone) });
     default: return t('mdx.state.holding', { zone: zoneName(s.zone) });
   }
+}
+
+/** Role glyph + agent name for an engine slot (identity label; the role name is the tooltip). */
+export function AgentTag({ slot, t }: { slot: number; t: TFn }) {
+  const agent = agentOfSlot(slot);
+  if (!agent) return null;
+  return <span className="mdx-agent" title={t(`mdx.role.${agent.role}`)}><Icon name={ROLE_ICON[agent.role]} size={11} />{agent.name}</span>;
 }
 
 // ── top bar ────────────────────────────────────────────────────────────────────────────────
@@ -59,7 +68,9 @@ export function TopHud({
   return (
     <header className="mdx-top">
       <div className="mdx-top-left">
-        <button className="mdx-btn ghost" onClick={onExit} data-testid="md-exit" title={t('mdx.exit.hint')}>◂ {t('mdx.exit')}</button>
+        <button className="mdx-crumb" onClick={onExit} data-testid="md-exit" title={t('mdx.exit.hint')}>
+          <Icon name="back" size={12} /><span>{t('mdx.exit')}</span><i>//</i><b>{t('mdx.crumb.match')}</b>
+        </button>
         <div className="mdx-seg" role="tablist" aria-label={t('mdx.mode.label')} data-testid="view-mode">
           <button role="tab" aria-selected={mode === 'tactical'} className={mode === 'tactical' ? 'on' : ''} onClick={() => onMode('tactical')} data-testid="view-mode-tactical">{t('mdx.mode.tactical')}</button>
           <button role="tab" aria-selected={mode === 'cams'} className={mode === 'cams' ? 'on' : ''} onClick={() => onMode('cams')} data-testid="view-mode-cams">{t('mdx.mode.cams')}</button>
@@ -69,7 +80,7 @@ export function TopHud({
       <div className="mdx-score" data-testid="scoreboard">
         <div className="mdx-team ally">
           <span className="mdx-team-name">{teams[ally].name}</span>
-          <span className="mdx-team-meta"><span className="mdx-sidetag">{side(ally)}</span><Pips alive={sit?.alive[ally] ?? 5} team="ally" /></span>
+          <span className="mdx-team-meta"><span className="mdx-sidetag"><Icon name={ally === attacker ? 'attack' : 'defense'} size={11} />{side(ally)}</span><Pips alive={sit?.alive[ally] ?? 5} team="ally" /></span>
         </div>
         <b className="mdx-pts ally">{score[ally]}</b>
         <div className={`mdx-clock ${spikeOn ? 'spike' : ''} ${spikeOn && (sit!.spike.remainingMs ?? 0) < 10000 ? 'urgent' : ''}`}>
@@ -79,12 +90,12 @@ export function TopHud({
             {phase === 'overtime' && <em>{t('mdx.phase.ot')}</em>}
             {matchPoint && phase !== 'overtime' && <em className="hot">{t('mdx.phase.matchPoint')}</em>}
           </span>
-          <strong className="mdx-clock-time">{spikeOn && <i className="mdx-spikeicon" aria-hidden />}{sit && !nextRound ? formatClock(sit.clockMs) : formatClock(100000)}</strong>
+          <strong className="mdx-clock-time">{spikeOn && <Icon name="spike" size={18} />}{sit && !nextRound ? formatClock(sit.clockMs) : formatClock(100000)}</strong>
         </div>
         <b className="mdx-pts enemy">{score[enemy]}</b>
         <div className="mdx-team enemy">
           <span className="mdx-team-name">{teams[enemy].name}</span>
-          <span className="mdx-team-meta"><Pips alive={sit?.alive[enemy] ?? 5} team="enemy" /><span className="mdx-sidetag">{side(enemy)}</span></span>
+          <span className="mdx-team-meta"><Pips alive={sit?.alive[enemy] ?? 5} team="enemy" /><span className="mdx-sidetag"><Icon name={enemy === attacker ? 'attack' : 'defense'} size={11} />{side(enemy)}</span></span>
         </div>
       </div>
 
@@ -137,14 +148,14 @@ export function AllyPanel({ t, frame, teamName, nameOf, zoneName, bank, onPick, 
   return (
     <aside className="mdx-panel ally" data-testid="ally-panel">
       <TeamHead tone="ally" name={teamName} sub={frame ? buyLine(t, round, frame.team) : t('mdx.waiting')}
-        right={bank ? <><span className="mdx-credits">{bank.credits.toLocaleString()}</span><span className="mdx-ult">{t('mdx.ult', { n: bank.ultPoints })}</span></> : null} />
+        right={bank ? <><span className="mdx-credits"><Icon name="credits" size={12} />{bank.credits.toLocaleString()}</span><span className="mdx-ult"><Icon name="ult" size={10} />{t('mdx.ult', { n: bank.ultPoints })}</span></> : null} />
       <ul className="mdx-rows">
         {(frame?.units ?? []).map((u) => (
           <li key={u.slot} className={`mdx-row ally st-${u.status.state} ${focusId === u.id ? 'focus' : ''}`} onClick={onPick ? () => onPick(u) : undefined} data-clickable={onPick ? '' : undefined}>
             <span className="mdx-slot">{u.slot}</span>
             <span className="mdx-row-main">
-              <b className="mdx-name">{nameOf(u.id)}</b>
-              <span className="mdx-status">{statusText(t, u.status, zoneName, nameOf)}</span>
+              <span className="mdx-nameline"><b className="mdx-name">{nameOf(u.id)}</b><AgentTag slot={u.slot} t={t} /></span>
+              <span className="mdx-status"><Icon name={STATE_ICON[u.status.state] ?? 'hold'} size={11} />{statusText(t, u.status, zoneName, nameOf)}</span>
             </span>
             <span className="mdx-row-side">
               <span className="mdx-weapon">{u.pose.alive ? weapon : '✕'}</span>
@@ -170,7 +181,7 @@ export function EnemyPanel({ t, frame, teamName, nameOf, zoneName, bank, childre
   return (
     <aside className="mdx-panel enemy" data-testid="enemy-panel">
       <TeamHead tone="enemy" name={teamName} sub={frame ? buyLine(t, round, enemy) : t('mdx.waiting')}
-        right={bank ? <><span className="mdx-credits">{bank.credits.toLocaleString()}</span><span className="mdx-ult">{t('mdx.ult', { n: bank.ultPoints })}</span></> : null} />
+        right={bank ? <><span className="mdx-credits"><Icon name="credits" size={12} />{bank.credits.toLocaleString()}</span><span className="mdx-ult"><Icon name="ult" size={10} />{t('mdx.ult', { n: bank.ultPoints })}</span></> : null} />
       <ul className="mdx-rows">
         {players.map((p) => {
           const alive = isAlive(p, frame!.tMs);
@@ -183,7 +194,7 @@ export function EnemyPanel({ t, frame, teamName, nameOf, zoneName, bank, childre
             <li key={p.slot} className={`mdx-row enemy ${alive ? '' : 'st-dead'} ${known?.visible && alive ? 'st-fighting' : ''}`}>
               <span className="mdx-slot">{p.slot}</span>
               <span className="mdx-row-main">
-                <b className="mdx-name">{nameOf(p.id)}</b>
+                <span className="mdx-nameline"><b className="mdx-name">{nameOf(p.id)}</b><AgentTag slot={p.slot} t={t} /></span>
                 <span className="mdx-status">{intel}</span>
               </span>
               <span className="mdx-row-side"><span className="mdx-weapon">{alive ? weapon : '✕'}</span></span>
@@ -197,7 +208,7 @@ export function EnemyPanel({ t, frame, teamName, nameOf, zoneName, bank, childre
 }
 
 export function KillFeed({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; frame: Frame | null; nameOf: NameOf; zoneName: ZoneName; limit?: number }) {
-  if (!frame) return <div className="mdx-feed" data-testid="event-feed"><div className="mdx-feedhead">{t('mdx.feed')}</div><p className="mdx-empty">{t('mdx.feed.empty')}</p></div>;
+  if (!frame) return <div className="mdx-feed" data-testid="event-feed"><div className="mdx-feedhead"><i>//</i>{t('mdx.feed')}</div><p className="mdx-empty">{t('mdx.feed.empty')}</p></div>;
   const { round, tMs, team } = frame;
   type Item = { tMs: number; node: ReactNode; key: string };
   const items: Item[] = frame.kills.map((k, i) => ({
@@ -205,18 +216,18 @@ export function KillFeed({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; fr
     node: (
       <>
         <b className={k.killerTeam === team ? 'ally' : 'enemy'}>{k.killerId ? nameOf(k.killerId) : '—'}</b>
-        <i className="mdx-killicon" aria-label={t('mdx.feed.killed')} />
+        <Icon name="kill" size={12} className="mdx-killmark" title={t('mdx.feed.killed')} />
         <b className={k.victimTeam === team ? 'ally' : 'enemy'}>{nameOf(k.victimId)}</b>
         {k.zone && <span className="mdx-feed-zone">{zoneName(k.zone)}</span>}
       </>
     ),
   }));
-  if (round.plant && tMs >= round.plant.tMs) items.push({ tMs: round.plant.tMs, key: 'plant', node: <><i className="mdx-spikeicon" aria-hidden /><span className="mdx-feed-note">{t('mdx.feed.plant', { name: round.plant.playerId ? nameOf(round.plant.playerId) : '—', site: round.plant.site ?? '?' })}</span></> });
-  if (round.defuse && tMs >= round.defuse.tMs) items.push({ tMs: round.defuse.tMs, key: 'defuse', node: <><i className="mdx-spikeicon safe" aria-hidden /><span className="mdx-feed-note">{t('mdx.feed.defuse', { name: round.defuse.playerId ? nameOf(round.defuse.playerId) : '—' })}</span></> });
+  if (round.plant && tMs >= round.plant.tMs) items.push({ tMs: round.plant.tMs, key: 'plant', node: <><Icon name="spike" size={13} className="hot" /><span className="mdx-feed-note">{t('mdx.feed.plant', { name: round.plant.playerId ? nameOf(round.plant.playerId) : '—', site: round.plant.site ?? '?' })}</span></> });
+  if (round.defuse && tMs >= round.defuse.tMs) items.push({ tMs: round.defuse.tMs, key: 'defuse', node: <><Icon name="spike" size={13} className="safe" /><span className="mdx-feed-note">{t('mdx.feed.defuse', { name: round.defuse.playerId ? nameOf(round.defuse.playerId) : '—' })}</span></> });
   items.sort((a, b) => b.tMs - a.tMs);
   return (
     <div className="mdx-feed" data-testid="event-feed">
-      <div className="mdx-feedhead">{t('mdx.feed')}</div>
+      <div className="mdx-feedhead"><i>//</i>{t('mdx.feed')}</div>
       {items.length === 0 && <p className="mdx-empty">{t('mdx.feed.empty')}</p>}
       <ol>
         {items.slice(0, limit).map((it) => (
@@ -229,21 +240,21 @@ export function KillFeed({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; fr
 
 /** What the team knows about the enemy right now: contacts, remembered sightings, sound cues. */
 export function IntelPanel({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; frame: Frame | null; nameOf: NameOf; zoneName: ZoneName; limit?: number }) {
-  const rows: Array<{ key: string; cls: string; sq: boolean; text: string; right: string }> = [];
+  const rows: Array<{ key: string; cls: string; icon: IconName; text: string; right: string }> = [];
   if (frame) {
-    for (const e of frame.seen) rows.push({ key: `s${e.id}`, cls: 'enemy', sq: true, text: t('mdx.intel.row.visible', { name: nameOf(e.id) }), right: zoneName(e.zone) });
-    for (const g of frame.ghosts) rows.push({ key: `g${g.id}`, cls: 'enemy', sq: true, text: t('mdx.intel.row.ghost', { name: nameOf(g.id), s: Math.round(g.ageMs / 1000) }), right: zoneName(g.zone) });
+    for (const e of frame.seen) rows.push({ key: `s${e.id}`, cls: 'enemy', icon: 'eye', text: t('mdx.intel.row.visible', { name: nameOf(e.id) }), right: zoneName(e.zone) });
+    for (const g of frame.ghosts) rows.push({ key: `g${g.id}`, cls: 'enemy', icon: 'lastSeen', text: t('mdx.intel.row.ghost', { name: nameOf(g.id), s: Math.round(g.ageMs / 1000) }), right: zoneName(g.zone) });
     for (const s of frame.sounds) {
       if (s.kind !== 'footstep' && s.ageMs > 3000) continue;
-      rows.push({ key: `a${s.zone}${s.kind}`, cls: '', sq: false, text: t(s.kind === 'footstep' ? 'mdx.sound.footstep' : s.kind === 'gunfire' ? 'mdx.sound.gunfire' : 'mdx.sound.other'), right: zoneName(s.zone) });
+      rows.push({ key: `a${s.zone}${s.kind}`, cls: 'sound', icon: s.kind === 'gunfire' ? 'gunfire' : 'footstep', text: t(s.kind === 'footstep' ? 'mdx.sound.footstep' : s.kind === 'gunfire' ? 'mdx.sound.gunfire' : 'mdx.sound.other'), right: zoneName(s.zone) });
     }
   }
   return (
     <div className="mdx-intel" data-testid="intel-panel">
-      <div className="mdx-feedhead">{t('mdx.intel')}</div>
+      <div className="mdx-feedhead"><i>//</i>{t('mdx.intel')}</div>
       {rows.length === 0 && <p className="mdx-empty">{t('mdx.intel.empty')}</p>}
       <ul>
-        {rows.slice(0, limit).map((r) => <li key={r.key}><i className={r.sq ? 'sq' : ''} /><span className={r.cls}>{r.text}</span><span>{r.right}</span></li>)}
+        {rows.slice(0, limit).map((r) => <li key={r.key} className={r.cls}><Icon name={r.icon} size={12} /><span>{r.text}</span><span>{r.right}</span></li>)}
       </ul>
     </div>
   );
@@ -267,7 +278,7 @@ export function Banners({ t, frame, nameOf, viewTeam }: { t: TFn; frame: Frame |
       {spike.phase === 'planting' && <div className="mdx-banner spike soft">{t('mdx.spike.planting')}</div>}
       {planted && (
         <div className={`mdx-banner spike ${(spike.remainingMs ?? 0) < 10000 ? 'urgent' : ''}`} data-testid="spike-banner">
-          <i className="mdx-spikeicon" aria-hidden />
+          <Icon name="spike" size={16} className="hot" />
           <span>{t('mdx.spike.planted', { site: spike.site ?? '?' })}</span>
           <strong>{formatClock(spike.remainingMs ?? 0)}</strong>
           <i className="mdx-banner-bar" style={{ width: `${Math.max(0, Math.min(100, ((spike.remainingMs ?? 0) / 45000) * 100))}%` }} />
@@ -275,7 +286,7 @@ export function Banners({ t, frame, nameOf, viewTeam }: { t: TFn; frame: Frame |
       )}
       {clutch && (
         <div className={`mdx-banner clutch ${clutch.team === viewTeam ? 'ally' : 'enemy'}`} data-testid="clutch-banner">
-          <strong>1 v {clutch.versus}</strong>
+          <Icon name="fight" size={14} /><strong>1 v {clutch.versus}</strong>
           <span>{t('mdx.clutch', { name: nameOf(clutch.playerId) })}</span>
         </div>
       )}
@@ -346,13 +357,13 @@ export function BottomBar({
   return (
     <footer className="mdx-bottom">
       <div className="mdx-transport">
-        <button className="mdx-play" onClick={onToggle} disabled={!round} data-testid="playpause" aria-label={playing ? t('mdx.pause') : t('mdx.play')}>
-          {playing ? <i className="mdx-ico-pause" /> : <i className="mdx-ico-play" />}
+        <button className="mdx-play" onClick={onToggle} disabled={!round} data-testid="playpause" data-playing={playing ? '' : undefined} aria-label={playing ? t('mdx.pause') : t('mdx.play')}>
+          <Icon name={playing ? 'pause' : 'play'} size={18} />
         </button>
         <div className="mdx-seg small icons" aria-label={t('mdx.events')}>
-          <button onClick={onPrevEvent} disabled={!round} data-testid="prev-event" title={t('mdx.prevEvent')} aria-label={t('mdx.prevEvent')}><i className="mdx-ico-prev" /></button>
-          <button onClick={onNextEvent} disabled={!round} data-testid="next-event" title={t('mdx.nextEvent')} aria-label={t('mdx.nextEvent')}><i className="mdx-ico-next" /></button>
-          <button onClick={onSkipEnd} disabled={!round} data-testid="skip-end" title={t('mdx.skipEnd')} aria-label={t('mdx.skipEnd')}><i className="mdx-ico-end" /></button>
+          <button onClick={onPrevEvent} disabled={!round} data-testid="prev-event" title={t('mdx.prevEvent')} aria-label={t('mdx.prevEvent')}><Icon name="prev" size={13} /></button>
+          <button onClick={onNextEvent} disabled={!round} data-testid="next-event" title={t('mdx.nextEvent')} aria-label={t('mdx.nextEvent')}><Icon name="next" size={13} /></button>
+          <button onClick={onSkipEnd} disabled={!round} data-testid="skip-end" title={t('mdx.skipEnd')} aria-label={t('mdx.skipEnd')}><Icon name="end" size={13} /></button>
         </div>
         <div className="mdx-seg small" aria-label={t('mdx.tempo')}>
           {TEMPOS.map((v) => (
@@ -398,7 +409,7 @@ export function BottomBar({
             <>
               <button className="mdx-btn warn" onClick={onTimeout} data-testid="call-timeout"
                 disabled={session!.busy || session!.ordersOpen || st.timeoutsRemaining.A <= 0 || st.timeoutActive.A}>
-                <span>{st.timeoutActive.A ? t('mdx.timeout.active') : t('mdx.timeout')}</span>
+                <Icon name="timeout" size={14} /><span>{st.timeoutActive.A ? t('mdx.timeout.active') : t('mdx.timeout')}</span>
                 <span className="mdx-tokens">{[0, 1].map((i) => <i key={i} className={i < st.timeoutsRemaining.A ? 'on' : ''} />)}</span>
               </button>
               <label className="mdx-ctl check"><input type="checkbox" checked={autoPlay} onChange={(e) => onAutoPlay(e.target.checked)} data-testid="auto-play" />{t('mdx.auto')}</label>

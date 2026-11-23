@@ -3,6 +3,7 @@
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
+import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot, SaveSlotInfo } from './career.ts';
 
 export const IPC = {
   /** renderer → main (invoke): start a simulation, resolves with the result replay. */
@@ -28,6 +29,21 @@ export const IPC = {
   seriesStop: 'pv:series:stop',
   /** renderer → main (invoke): read the optional local map mesh (assets/maps/<map>.glb); null when absent. */
   mapMesh: 'pv:asset:map-mesh',
+  // [career] background simulation of a day's AI fixtures + save slots (src/main/career-host.ts)
+  /** renderer → main (invoke): play a batch of AI series through the engine; resolves with outcomes. */
+  careerSim: 'pv:career:sim',
+  /** main → renderer (event): progress of the batch in flight. */
+  careerSimProgress: 'pv:career:sim-progress',
+  saveList: 'pv:save:list',
+  saveRead: 'pv:save:read',
+  saveWrite: 'pv:save:write',
+  saveDelete: 'pv:save:delete',
+  /** renderer → main (invoke): quit the app (start menu). */
+  appQuit: 'pv:app:quit',
+  /** renderer → main (invoke): list the user's own loading-banner packs (assets/banners/<name>/<n>.<ext>). */
+  bannerList: 'pv:asset:banner-list',
+  /** renderer → main (invoke): read one file of a banner pack; null when absent. */
+  bannerFile: 'pv:asset:banner-file',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -113,6 +129,13 @@ export interface SessionReply {
   result?: SessionResultSummary;
 }
 
+/** A folder of the user's own banner media: one file per build-up stage (1 = first step … 5, optional 6). */
+export interface LocalBannerPack {
+  id: string; files: Record<number, string>;
+  /** Layered kill banner (frame / ring / emblem / pip images): composited by the app, one pip per step. */
+  layers?: { frame: string; ring: string; emblem: string; pip: string };
+}
+
 export interface SimRunRequest {
   mapId: string;
   seed: number;
@@ -186,6 +209,8 @@ export interface SimProgress {
   phase: 'start' | 'round' | 'done' | 'error';
   pct: number; // 0..1
   round?: number;
+  /** Score after `round`, when the runner reports it (loading screen counter). */
+  score?: { A: number; B: number };
   message?: string;
 }
 
@@ -216,6 +241,16 @@ export interface PvBridge {
   seriesStop(): Promise<void>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
+  // [career]
+  careerSimulate(reqs: CareerSimRequest[], onProgress: (p: CareerSimProgress) => void): Promise<CareerSimOutcome[]>;
+  saveList(): Promise<SaveSlotInfo[]>;
+  saveRead(slot: SaveSlot): Promise<string | null>;
+  saveWrite(slot: SaveSlot, text: string): Promise<void>;
+  saveDelete(slot: SaveSlot): Promise<void>;
+  quit(): Promise<void>;
+  /** User-supplied loading banners (never shipped, never in git): pack name → stage (1..6) → file name. */
+  listBanners(): Promise<LocalBannerPack[]>;
+  loadBannerFile(pack: string, file: string): Promise<Uint8Array | null>;
   readonly platform: string;
   readonly isElectron: true;
 }

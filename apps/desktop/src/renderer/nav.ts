@@ -1,10 +1,20 @@
 // Left-nav structure. `soon` = placeholder (DECISION-001: club ops come later);
-// `dev` = developer-only tooling. `group`/item labels are i18n keys resolved in the
-// view (nav.group.*, nav.<id>), so the menu localizes with the active language.
-export interface NavItem { id: string; icon: string; soon?: boolean; dev?: boolean }
+// `dev` = developer-only tooling; `career` = only while a career is open (hidden in the Quick
+// Match sandbox). `group`/item labels are i18n keys resolved in the view (nav.group.*,
+// nav.<id>), so the menu localizes with the active language.
+export interface NavItem { id: string; icon: string; soon?: boolean; dev?: boolean; career?: boolean }
 export interface NavGroup { label: string; items: NavItem[] }
 
 export const NAV: NavGroup[] = [
+  {
+    label: 'CAREER',
+    items: [
+      { id: 'home', icon: '⌂', career: true }, // the Continue hub (screens/career/HomeScreen.tsx)
+      { id: 'inbox', icon: '✉', career: true },
+      { id: 'schedule', icon: '▦', career: true },
+      { id: 'standings', icon: '≡', career: true },
+    ],
+  },
   {
     label: 'MATCH',
     items: [
@@ -19,16 +29,14 @@ export const NAV: NavGroup[] = [
     items: [
       { id: 'squad', icon: '👥' },
       { id: 'opponent', icon: '◎' },
-      { id: 'inbox', icon: '✉', soon: true },
-      { id: 'schedule', icon: '▦', soon: true },
     ],
   },
   {
     label: 'CLUB',
     items: [
-      { id: 'finance', icon: '$', soon: true },
-      { id: 'transfers', icon: '⇄', soon: true },
-      { id: 'training', icon: '◳', soon: true },
+      { id: 'finance', icon: '$' }, // club ops: budget, ledger, wage list (screens/club/FinanceScreen.tsx)
+      { id: 'transfers', icon: '⇄' }, // club ops: search, offers, window (screens/club/TransfersScreen.tsx)
+      { id: 'training', icon: '◳' }, // club ops: weekly + individual focus (screens/club/TrainingScreen.tsx)
       { id: 'scouting', icon: '🔍' }, // career world: new prospects, free agents, staff (screens/ScoutingScreen.tsx)
     ],
   },

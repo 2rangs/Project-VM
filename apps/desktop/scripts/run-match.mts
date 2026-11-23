@@ -30,6 +30,9 @@ const res = runMatch({
   recordTracks: true,
   ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
   ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
+}, {
+  // one machine-readable progress line per round; the parent turns it into the loading screen's counter
+  onRound: (r, score) => { process.stderr.write(`PVPROGRESS ${JSON.stringify({ round: r.roundNumber, score })}\n`); },
 });
 
 process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);

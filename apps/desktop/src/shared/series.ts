@@ -15,6 +15,11 @@ export interface SeriesStartRequest {
   analyst: number;
   /** Study the opponent before the series. */
   scouting: boolean;
+  /**
+   * [career] Today's five per team from the career world (generated players included), passed to
+   * every map as MatchConfig.rosters. Omitted → the dataset rosters.
+   */
+  rosters?: { A?: Array<{ playerId: string; attributes: unknown; hasRatings: boolean }>; B?: Array<{ playerId: string; attributes: unknown; hasRatings: boolean }> };
 }
 
 export interface MasteryComponentView { value: number; uncertainty: number }

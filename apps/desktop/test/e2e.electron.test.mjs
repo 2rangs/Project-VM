@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { clubStep } from './e2e-club-step.mjs';
 
 // Playwright is not a dependency of this app: point PLAYWRIGHT_REQUIRE_BASE at any
 // directory whose node_modules has `playwright` (no browser download is needed).
@@ -43,10 +44,16 @@ async function main() {
 
   // shell + Match Day (default route). The language persists in localStorage across
   // launches, so pin the default (Korean) first — screenshots and docs are Korean.
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the start menu; the match engine and dev tools are under Quick Match.
+  const enterSandbox = async () => {
+    await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
+    await page.getByTestId('start-quick-match').click();
+    await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  };
+  await enterSandbox();
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await enterSandbox();
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
   // The live view remembers its mode; start from the default (tactical map) on every run.
@@ -215,6 +222,10 @@ async function main() {
   await page.getByTestId('career-tab-staff').click();
   assert.ok(await page.locator('[data-testid="dt-row"]').count() > 0, 'staff are listed');
   await page.getByTestId('career-reset').click(); // leave a fresh world behind
+
+  // Club operations: an offer to a free agent is accepted and he joins the roster.
+  const signed = await clubStep(page, OUT);
+  console.log(`club ops: signed ${signed}`);
 
   // Decision Debugger (Dev) — pick the scenario with exclusions
   await page.getByTestId('nav-dev-debugger').click();

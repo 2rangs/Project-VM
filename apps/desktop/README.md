@@ -68,8 +68,15 @@ installed, the renderer still runs in plain-browser mode (`window.pv` absent →
 
 ## Screens & data sources
 
+The app opens on a **start menu** (New career · Continue · Load · Settings · Quick Match · Quit);
+no engine runs until a match is played. A career is the calendar loop described in
+[`docs/CAREER_MODE.md`](../../docs/CAREER_MODE.md): Home (Continue), Inbox, Schedule, Standings
+and the manager's match days through the series screen with the career world's players. The
+screens below the career group are also reachable without a career under **Quick Match**.
+
 | Screen | Status | Data |
 |---|---|---|
+| **Start menu · New career · Home · Inbox · Schedule · Standings** | working (career) | `@pv/career` calendar / competition / inbox (`screens/career/*`, `career/session.ts`); AI series through `scripts/career-sim.mts` (match-runner, separate process) or the quick estimate; save slots in `<userData>/saves` |
 | **Match Day** | working (REAL sim) | `@pv/match-runner` in a separate process (one-shot map or interactive round-by-round session with tactical timeouts and coach orders); real team select; coach note from a real PV-3 trace. While a match is on, the screen is the full-window **live match view** — tactical map / team cams, our team's fog of war, belief overlay, navigation developer view |
 | **Match Day → Review (post-match)** | working (REAL sim) | match-runner summary + replay: round results, **round decisions** (each team's read, call, plan changes), economy timeline, timeout log, MVP, ground-truth replay |
 | **Series · Map veto** | working (REAL engine) | `@pv/match-runner` series layer (`createSeriesSession`): Bo1/Bo3/Bo5, step-by-step veto vs the AI, per-map mastery + scouting, maps played through Match Day |
@@ -79,7 +86,7 @@ installed, the renderer still runs in plain-browser mode (`window.pv` absent →
 | **Agent Select** | working (data) | PV-1 `ascent-comps` (win rates + CI, role templates) |
 | **Dev → Decision Debugger** | working | real PV-3 `@pv/decision-debugger` traces (Handoff §21) |
 | **About** | working | pre-release real-names disclaimer; language switch |
-| Inbox / Schedule / Finance / Transfers / Training / Scouting | 준비 중 | — |
+| Finance / Transfers / Training | 준비 중 | — (club operations: hook API in `docs/CAREER_MODE.md` §6) |
 
 Data fixtures are copied from PV-1/PV-2 branches; see `src/data/README.md` and
 `test/fixtures/traces/README.md` for exact sources. All values are
@@ -87,6 +94,54 @@ Data fixtures are copied from PV-1/PV-2 branches; see `src/data/README.md` and
 user decision for pre-release internal development only — license / name /
 likeness rights must be re-reviewed before any launch. The `.vrf` sample players
 (non-pro) stay anonymous (`player_N`).
+
+## Home (lobby)
+
+![Home](docs/desktop-home.png)
+
+The app opens on a full-window lobby (`src/renderer/screens/home/`). It follows the design
+language of the game's 5.08 interface refresh as published — less ornament, higher contrast, one
+clear call to action, symmetric team presentation with a VS, `NN // LABEL` section heads and a
+centred trapezoid PLAY tab — re-drawn with this project's own icon set (`screens/matchday/Icons.tsx`);
+no game artwork, logo or icon is used.
+
+| Block | Data |
+|---|---|
+| Next match + **PLAY** | our club / opponent / map: the same defaults Match Day opens with (`HOME_CLUB`, `HOME_OPPONENT` in `HomeScreen.tsx`). PLAY, the top-bar tab and the Series button lead to Match Day and Series |
+| Starting five | the first five players of our club's game-data roster — the slots the engine fields — with the agent of their slot (and that agent's role) and 1–20 estimates (overall = mean of aim, reaction, positioning, impact, trading, consistency) |
+| Opponent five | the opponent's first five roster players, with the slot's agent and overall estimate; opens Opponent Report |
+| Club | attack / defense win rate, maps on record and most-played maps from `team_profiles.json` |
+| Career | season and population from the career world (`career/store.ts`); optional `inbox` / `calendar` props let the career shell add its previews |
+| Go to | every working screen of the manager shell |
+
+`홈` in the left nav returns to it. There is no scheduled fixture list yet, so "next match" is the
+default pairing, not a calendar entry.
+
+## Loading screens
+
+One original design (`src/renderer/loading/`: CSS + inline SVG, no game assets) covers every wait:
+
+| Wait | What is shown |
+|---|---|
+| App start | a static splash in `index.html` (visible before any script runs), replaced when React mounts; if the app never mounts a help line appears after 12 s |
+| One-shot match simulation | `LoadingScreen` with **round and score** as they are played (`run-match.mts` writes one `PVPROGRESS` line per round → `SimProgress.round/score`; the bar is the leader's score out of 13) |
+| Interactive session start | `LoadingScreen` until the session answers |
+| Next round of a session | an inline chip on the stage ("라운드 N 시뮬레이션 중…") |
+| Series preparation / quick-simulated series map | `LoadingScreen` with `맵 n/m`; the series worker replies once per map, so there is no per-round counter here |
+| Season advance (Scouting) | `LoadingScreen`; the work is synchronous, so the screen is painted first and the season runs on the next tick |
+| Live-view assets (3D map mesh for the team cams, minimap image) | **prepared during the game load**: `screens/matchday/assets.ts` starts with the simulation / session start and the loading screen waits for it ("3D 맵 · 맵 이미지 준비 중…", capped at 20 s). The cams' renderer is created with the live view and warmed up, so switching to the team cams starts no load. Inline chips remain only for the case of re-opening the view before the preload has settled; a mesh that fails to parse says so and the blockout is used |
+
+The emblem on every loading screen is a **streak banner** (`loading/StreakBanner.tsx`): it builds
+up in five steps — core, ring, cap and ticks, wings, outer ring, burst — the way a shooter's kill
+banner escalates from one kill to five. With real progress the steps follow the work (20 % each,
+with a five-pip counter); without it the banner loops 1 → 5. Four original variants (스탠다드 /
+프리즘 / 포지 / 시그널) can be chosen in **정보 → 로딩 배너**; the choice is stored in `localStorage`
+(`pv-loading-banner`). They are drawn for this project — the game's own kill banners are
+third-party artwork and are not shipped or downloaded.
+
+Rules: a loader is rendered only while its work is pending (it owns no timers, so it cannot outlive
+the work), the inline chips never take input, and a failure turns the same surface into a message
+with **다시 시도 / 닫기** instead of a spinner. Usage is documented at the top of `loading/Loading.tsx`.
 
 ## Match Day
 
@@ -116,6 +171,13 @@ button back into the match. Look and layout follow tactical-shooter spectator-HU
 (top-centre score and round clock, rosters left/right, kill feed, spike timer, angular panels,
 ally teal / enemy red); no Riot logo, font, icon or screen is copied. Team colours are always
 doubled by shape (ally circle, enemy diamond, sound ring, spike hexagon).
+
+Icons are an original set (`screens/matchday/Icons.tsx`): solid single-colour glyphs on a 24 px
+grid with 45° terminals, in the spirit of the game's published iconography guide but drawn for
+this project — none of the game's icons, role symbols or logo are reproduced. The top-left
+breadcrumb (`로비 // 경기`), `//` section labels and the symmetric VS card before round 1 follow
+the same language. Each player carries their engine slot's agent name and role glyph (the fixed
+comp the match-runner fields, mirrored in `matchday/roster.ts`).
 
 Two view modes, switched with the toggle top-left (or `M`); the choice, the playback tempo and
 the belief overlay persist in `localStorage` (`pv-matchday-view`):

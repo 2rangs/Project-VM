@@ -4,8 +4,8 @@ import { observedTendencies, runMatch, renderDecisionTrace, type MatchConfig } f
 
 const teams = listSimulatableTeams();
 const base: MatchConfig = {
-  teamA: { id: teams[0]!.id, name: teams[0]!.name ?? "A" },
-  teamB: { id: teams[1]!.id, name: teams[1]!.name ?? "B" },
+  teamA: { id: teams[0]!.teamId, name: teams[0]!.name ?? "A" },
+  teamB: { id: teams[1]!.teamId, name: teams[1]!.name ?? "B" },
   map: "Ascent",
   seed: 21,
 };

@@ -4,7 +4,7 @@
 // it with its own camera pose (no per-monitor WebGL context, no render targets). The scene is
 // built once — the map (real GLB when installed, navgraph blockout otherwise), ten pooled
 // player figures, sound beacons and the spike — and per monitor only visibility flags and the
-// camera change. Rendering is capped at CAMS_FPS; the 2D map and the HUD keep their own pace.
+// camera change. Rendering follows the display (every animation frame, capped at CAMS_FPS).
 //
 // What a monitor may show is decided by the Frame (matchday/frame.ts): teammates always, an
 // enemy figure only while THAT player sees it, a sound beacon only if THAT player heard it.
@@ -15,9 +15,16 @@ import type { NavModel, Vec3 } from '../../matchday/nav.ts';
 import type { Frame } from '../../matchday/frame.ts';
 import { EYE_HEIGHT_M, firstPersonPose, toScene, type Blockout } from '../../matchday/world3d.ts';
 import { firingAt } from '../../matchday/monitor.ts';
+import { HeadingSmoother } from '../../matchday/heading.ts';
+import { animateOperator, buildOperator, buildWeapon, isSidearm, modelMaterials, roleForSlot, weaponClassOf, type ModelMaterials, type Operator, type Role, type WeaponClass } from './models.ts';
 import { C, FONT } from '../../matchday/theme.ts';
 
-export const CAMS_FPS = 30;
+/** Upper bound on 3D wall renders per second: the display's own rate up to a 144 Hz panel. */
+export const CAMS_FPS = 144;
+/** Outdoor sky / haze for the real map mesh (the blockout keeps the dark tactical look). */
+const SKY = 0xa9c3d6;
+
+
 
 export interface CamView {
   readonly key: string;
@@ -56,73 +63,25 @@ function textSprite(text: string, color: string, px = 44): THREE.Sprite {
   return sprite;
 }
 
-// ── original, procedurally built models (no game character / weapon assets) ─────────────────
-// A stylised operator: dark fatigues, team-coloured armour plates and visor, generic rifle. The
-// identity of a player comes from our own data (team colour, handle label), not from a model.
-
-const box = (w: number, h: number, d: number, mat: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-  m.position.set(x, y, z);
-  return m;
-};
-
-/** A generic rifle or pistol silhouette pointing along +X, grip at the origin. */
-function buildWeapon(dark: THREE.Material, metal: THREE.Material, pistol: boolean): THREE.Group {
-  const g = new THREE.Group();
-  if (pistol) {
-    g.add(box(0.2, 0.05, 0.035, metal, 0.07, 0.045, 0), box(0.05, 0.12, 0.035, dark, 0, -0.02, 0));
-  } else {
-    g.add(
-      box(0.46, 0.075, 0.05, dark, 0.14, 0.03, 0),      // receiver
-      box(0.3, 0.035, 0.035, metal, 0.5, 0.04, 0),      // barrel
-      box(0.2, 0.06, 0.055, dark, 0.34, 0.03, 0),       // handguard
-      box(0.22, 0.09, 0.045, dark, -0.18, 0.0, 0),      // stock
-      box(0.06, 0.16, 0.04, metal, 0.12, -0.08, 0),     // magazine
-      box(0.05, 0.11, 0.04, dark, -0.01, -0.07, 0),     // grip
-      box(0.1, 0.03, 0.03, metal, 0.12, 0.085, 0),      // sight
-    );
-  }
-  return g;
-}
+// ── figures and the first-person view model ────────────────────────────────────────────────
+// Original models (./models.ts): role-shaped tactical operators and our own weapon family. The
+// identity of a player comes from our data (team colour, handle label), not from a model.
 
 class Figure {
   readonly group = new THREE.Group();
-  private readonly legL = new THREE.Group();
-  private readonly legR = new THREE.Group();
-  private readonly body = new THREE.Group();
+  private readonly op: Operator;
   private readonly marker: THREE.Mesh | null = null;
   private label: THREE.Sprite | null = null;
   private labelText = '';
+  private weapon: THREE.Group | null = null;
+  private weaponCls: WeaponClass | null = null;
+  private readonly gunMats: ModelMaterials;
 
-  constructor(private readonly color: number, private readonly enemy: boolean) {
-    const cloth = new THREE.MeshStandardMaterial({ color: 0x2a3440, roughness: 0.9 });
-    const dark = new THREE.MeshStandardMaterial({ color: 0x141b22, roughness: 0.6 });
-    const metal = new THREE.MeshStandardMaterial({ color: 0x4a545e, roughness: 0.4, metalness: 0.5 });
-    const plate = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35, roughness: 0.55 });
-    const glow = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.2, roughness: 0.3 });
-
-    for (const [leg, z] of [[this.legL, 0.11], [this.legR, -0.11]] as const) {
-      leg.position.set(0, 0.86, z);
-      leg.add(box(0.17, 0.46, 0.17, cloth, 0, -0.23, 0), box(0.15, 0.42, 0.15, cloth, 0, -0.64, 0), box(0.26, 0.09, 0.16, dark, 0.04, -0.82, 0), box(0.1, 0.12, 0.17, plate, 0.06, -0.44, 0));
-      this.group.add(leg);
-    }
-    this.body.position.y = 0.86;
-    this.body.add(
-      box(0.24, 0.5, 0.4, cloth, 0, 0.3, 0),                 // torso
-      box(0.27, 0.3, 0.36, plate, 0.02, 0.36, 0),            // chest plate
-      box(0.16, 0.34, 0.3, dark, -0.17, 0.32, 0),            // pack
-      box(0.2, 0.1, 0.16, plate, 0, 0.56, 0.27), box(0.2, 0.1, 0.16, plate, 0, 0.56, -0.27), // shoulders
-      box(0.36, 0.1, 0.1, cloth, 0.16, 0.42, 0.24), box(0.4, 0.1, 0.1, cloth, 0.2, 0.4, -0.2), // arms forward
-      box(0.1, 0.1, 0.12, dark, 0, 0.6, 0),                  // neck
-    );
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), dark);
-    head.position.set(0.01, 0.76, 0); head.scale.set(1, 1.08, 0.95);
-    this.body.add(head, box(0.1, 0.07, 0.22, glow, 0.11, 0.76, 0));
-    const weapon = buildWeapon(dark, metal, false);
-    weapon.position.set(0.22, 0.4, 0);
-    this.body.add(weapon);
-    this.group.add(this.body);
-
+  constructor(private readonly color: number, private readonly enemy: boolean, role: Role) {
+    this.op = buildOperator(role, color);
+    this.gunMats = modelMaterials(color);
+    this.group.add(this.op.root);
+    this.setWeapon('rifle');
     if (enemy) {
       // The engine's sightlines are zone-to-zone, so on the real mesh an enemy it counts as seen
       // can stand behind a wall. The body obeys depth; this spotted-contact marker never hides.
@@ -132,6 +91,16 @@ class Figure {
       this.group.add(m);
     }
     this.group.visible = false;
+  }
+
+  /** Carry the model for this weapon class (long guns in both hands, sidearms in the trigger hand). */
+  setWeapon(cls: WeaponClass): void {
+    if (cls === this.weaponCls) return;
+    if (this.weapon) this.op.gunMount.remove(this.weapon);
+    const w = buildWeapon(cls, this.gunMats);
+    if (isSidearm(cls)) w.position.set(0.02, 0.0, 0.0);
+    this.op.gunMount.add(w);
+    this.weapon = w; this.weaponCls = cls;
   }
 
   setLabel(text: string): void {
@@ -150,69 +119,103 @@ class Figure {
     this.group.rotation.y = Math.atan2(-dirZ, dirX);
   }
 
-  /** Walk cycle while moving (leg swing + slight bob); `tMs` is match time, so it pauses with playback. */
+  /** Walk cycle while moving, idle sway while standing; `tMs` is match time, so it pauses with playback. */
   animate(moving: boolean, tMs: number, phase: number): void {
-    const swing = moving ? Math.sin(tMs / 110 + phase) * 0.55 : 0;
-    this.legL.rotation.z = swing; this.legR.rotation.z = -swing;
-    this.body.position.y = 0.86 + (moving ? Math.abs(Math.sin(tMs / 110 + phase)) * 0.03 : 0);
+    animateOperator(this.op, moving, tMs, phase);
     if (this.marker) this.marker.rotation.y = tMs / 400;
   }
 }
 
+/** A capsule between two points (view-model space). */
+function capsuleBetween(a: THREE.Vector3, b: THREE.Vector3, r: number, mat: THREE.Material): THREE.Mesh {
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, Math.max(0.001, a.distanceTo(b) - r), 4, 12), mat);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  return m;
+}
+
 /**
- * First-person view model: generic gloved hands holding a generic rifle or pistol, drawn in its
- * own tiny scene on top of each monitor. Bobs while the player moves and kicks while they fire.
+ * A gloved hand at `wrist` with its sleeved forearm running back to `elbow` (the weapon's hold
+ * frame: +X forward, +Y up, +Z to the viewer's right; the camera sits behind and above the grip).
  */
-class ViewModel {
+function viewArm(mats: ModelMaterials, wrist: readonly [number, number, number], elbow: readonly [number, number, number]): THREE.Group {
+  const g = new THREE.Group();
+  const w = new THREE.Vector3(...wrist), e = new THREE.Vector3(...elbow);
+  const dir = e.clone().sub(w).normalize();
+  const cuffAt = w.clone().addScaledVector(dir, 0.06);
+  const glove = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 10), mats.trim);
+  glove.position.copy(w); glove.scale.set(1.25, 0.8, 1);
+  const cuff = capsuleBetween(cuffAt, cuffAt.clone().addScaledVector(dir, 0.03), 0.046, mats.glow);
+  const sleeve = capsuleBetween(cuffAt.clone().addScaledVector(dir, 0.03), e, 0.05, mats.cloth);
+  g.add(glove, cuff, sleeve);
+  return g;
+}
+
+/**
+ * First-person view model: our own gloved hands holding the team's weapon class, drawn in its own
+ * tiny scene on top of each monitor. Bobs while the player moves and kicks while they fire.
+ */
+export class ViewModel {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(50, 1, 0.01, 10);
   private readonly rig = new THREE.Group();
-  private readonly rifle: THREE.Group;
-  private readonly pistol: THREE.Group;
+  private readonly hold = new THREE.Group();
+  private readonly guns = new Map<WeaponClass, THREE.Group>();
   private readonly flash: THREE.Mesh;
-  private readonly supportHand: THREE.Object3D;
+  private readonly arms = new Map<WeaponClass, THREE.Group>();
+  private readonly mats: ModelMaterials;
+  private cls: WeaponClass | null = null;
 
   constructor(accent: number) {
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x29323b, 1.6));
-    const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(-1, 2, 1); this.scene.add(key);
-    const dark = new THREE.MeshStandardMaterial({ color: 0x161c23, roughness: 0.55 });
-    const metal = new THREE.MeshStandardMaterial({ color: 0x55606b, roughness: 0.35, metalness: 0.6 });
-    const glove = new THREE.MeshStandardMaterial({ color: 0x232c36, roughness: 0.85 });
-    const band = new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 0.5 });
+    this.scene.add(new THREE.HemisphereLight(0xe8f1ff, 0x3a3128, 1.4));
+    const key = new THREE.DirectionalLight(0xffe7cc, 1.6); key.position.set(-1, 2, 1); this.scene.add(key);
+    const rim = new THREE.DirectionalLight(0x9fc4ff, 0.6); rim.position.set(1, 0.5, -1); this.scene.add(rim);
+    this.mats = modelMaterials(accent, 'duelist');
     // weapons are modelled along +X; the view looks down −Z
-    const hold = new THREE.Group(); hold.rotation.y = Math.PI / 2;
-    this.rifle = buildWeapon(dark, metal, false);
-    this.pistol = buildWeapon(dark, metal, true);
+    this.hold.rotation.y = Math.PI / 2;
     this.flash = new THREE.Mesh(new THREE.OctahedronGeometry(0.05), new THREE.MeshBasicMaterial({ color: 0xffe9a8 }));
-    hold.add(this.rifle, this.pistol, this.flash);
-    const hand = (x: number, y: number): THREE.Group => {
-      const g = new THREE.Group();
-      g.add(box(0.09, 0.08, 0.09, glove), box(0.1, 0.035, 0.1, band, -0.02, -0.06, 0), box(0.08, 0.3, 0.085, glove, -0.03, -0.22, 0.02));
-      g.position.set(x, y, 0.015);
-      return g;
-    };
-    const trigger = hand(-0.01, -0.07); trigger.rotation.z = -0.25;
-    const support = hand(0.34, -0.02); support.rotation.z = 0.35;
-    this.supportHand = support;
-    hold.add(trigger, support);
-    this.rig.add(hold);
+    this.hold.add(this.flash);
+    this.rig.add(this.hold);
     this.scene.add(this.rig);
+    this.setWeapon('rifle');
   }
 
+  private setWeapon(cls: WeaponClass): void {
+    if (cls === this.cls) return;
+    for (const g of this.guns.values()) g.visible = false;
+    let g = this.guns.get(cls);
+    if (!g) { g = buildWeapon(cls, modelMaterials(this.accentOf())); this.hold.add(g); this.guns.set(cls, g); }
+    g.visible = true;
+    for (const a of this.arms.values()) a.visible = false;
+    let arms = this.arms.get(cls);
+    if (!arms) {
+      const fg = g.userData.foregrip as [number, number, number];
+      arms = new THREE.Group();
+      arms.add(viewArm(this.mats, [-0.005, -0.035, 0.03], [-0.3, -0.22, 0.16]));           // trigger hand on the grip
+      if (!isSidearm(cls)) arms.add(viewArm(this.mats, [fg[0], fg[1] + 0.025, -0.035], [fg[0] - 0.32, -0.24, -0.22])); // support hand on the handguard
+      this.hold.add(arms); this.arms.set(cls, arms);
+    }
+    arms.visible = true;
+    this.cls = cls;
+  }
+  private accentOf(): number { return (this.mats.glow as THREE.MeshStandardMaterial).color.getHex(); }
+
   /** `kick` 0..1 = recoil right now; `flash` = muzzle flash visible. */
-  update(pistol: boolean, moving: boolean, tMs: number, kick: number, flash: boolean): void {
-    this.rifle.visible = !pistol; this.pistol.visible = pistol; this.supportHand.visible = !pistol;
+  update(cls: WeaponClass, moving: boolean, tMs: number, kick: number, flash: boolean): void {
+    this.setWeapon(cls);
+    const side = isSidearm(cls);
     const bobX = moving ? Math.cos(tMs / 190) * 0.008 : 0;
     const bobY = moving ? Math.abs(Math.sin(tMs / 190)) * 0.012 : Math.sin(tMs / 1300) * 0.002;
-    this.rig.position.set(0.17 + bobX, -0.2 - bobY + kick * 0.012, -0.5 + kick * 0.05);
+    const back = cls === 'sniper' ? -0.62 : side ? -0.38 : -0.5;
+    this.rig.position.set((side ? 0.12 : 0.17) + bobX, (side ? -0.15 : -0.2) - bobY + kick * 0.012, back + kick * 0.05);
     this.rig.rotation.set(kick * 0.09, -0.06, 0);
+    const mz = this.guns.get(cls)!.userData.muzzle as [number, number, number];
     this.flash.visible = flash;
-    this.flash.position.set(pistol ? 0.2 : 0.68, 0.045, 0);
+    this.flash.position.set(mz[0] + 0.02, mz[1], 0);
     this.flash.scale.setScalar(0.8 + ((tMs * 7) % 5) / 6);
   }
 }
 
-const PISTOLS = /^(classic|shorty|frenzy|ghost|sheriff)$/i;
 export class CamStage3D {
   private renderer: THREE.WebGLRenderer | null = null;
   private readonly scene = new THREE.Scene();
@@ -228,6 +231,10 @@ export class CamStage3D {
   private readonly ray = new THREE.Raycaster();
   private readonly groundCache = new Map<string, number>();
   private lastRender = 0;
+  private readonly heading = new HeadingSmoother();
+  private readonly sun = new THREE.DirectionalLight(0xffe2bf, 2.4);
+  private readonly hemi = new THREE.HemisphereLight(0xdcecff, 0x1a242e, 1.25);
+  private clear = BG;
   private lastSig = '';
   private samples: number[] = [];
   private host: HTMLElement | null = null;
@@ -236,14 +243,13 @@ export class CamStage3D {
 
   constructor(private readonly nav: NavModel, blockout: Blockout) {
     this.scene.fog = new THREE.Fog(BG, 18, 110);
-    this.scene.add(new THREE.HemisphereLight(0xdcecff, 0x1a242e, 1.25));
-    const sun = new THREE.DirectionalLight(0xfff2dd, 1.1);
-    sun.position.set(40, 80, 20);
-    this.scene.add(sun, this.mapGroup, this.labelGroup);
+    this.sun.intensity = 1.1; this.sun.color.set(0xfff2dd);
+    this.sun.position.set(40, 80, 20);
+    this.scene.add(this.hemi, this.sun, this.sun.target, this.mapGroup, this.labelGroup);
     this.buildBlockout(blockout);
     for (let i = 0; i < 5; i++) {
-      this.allies.push(new Figure(C.ally, false));
-      this.enemies.push(new Figure(C.enemy, true));
+      this.allies.push(new Figure(C.ally, false, roleForSlot(i + 1)));
+      this.enemies.push(new Figure(C.enemy, true, roleForSlot(i + 1)));
       this.scene.add(this.allies[i].group, this.enemies[i].group);
     }
     const beaconMat = new THREE.MeshBasicMaterial({ color: C.sound, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide, fog: false });
@@ -266,6 +272,12 @@ export class CamStage3D {
     renderer.autoClear = false;
     renderer.info.autoReset = false; // count triangles/calls across all monitors of one wall render
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    // The map and the sun never move: the shadow map is drawn once when the mesh loads, not per frame.
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = false;
     mount.appendChild(renderer.domElement);
     this.renderer = renderer;
   }
@@ -321,8 +333,8 @@ export class CamStage3D {
   }
 
   /**
-   * Swap the blockout for a real map mesh (a GLB already in scene coordinates — see
-   * tools/map-mesh/blender/export-web-glb.py). Returns false and keeps the blockout on failure.
+   * Swap the blockout for the real map mesh prepared by `assets.ts` (parsed, in scene coordinates,
+   * ray-cast index built). Attaching is cheap; `warmUp` then uploads it and compiles the shaders.
    */
   async setMapGlb(data: ArrayBuffer): Promise<boolean> {
     try {
@@ -333,17 +345,25 @@ export class CamStage3D {
         const m = o as THREE.Mesh;
         if (!m.isMesh) return;
         const src = m.material as THREE.MeshStandardMaterial;
-        m.material = new THREE.MeshStandardMaterial({ color: src?.color ?? new THREE.Color(0x8a8f96), roughness: 0.95, metalness: 0, side: THREE.DoubleSide, vertexColors: !!m.geometry.getAttribute('color') });
-        m.geometry.computeVertexNormals();
+        // Colour comes from the vertex colours the export painted from each material's albedo.
+        // Flat shading keeps walls, steps and edges crisp on the decimated mesh.
+        m.material = new THREE.MeshStandardMaterial({ color: src?.color ?? new THREE.Color(0x8a8f96), roughness: 0.9, metalness: 0, side: THREE.DoubleSide, vertexColors: !!m.geometry.getAttribute('color'), flatShading: true });
+        m.castShadow = true; m.receiveShadow = true;
+        m.geometry.computeVertexNormals(); // the GLB carries no normals; shadow bias and lighting need them
         (m.geometry as THREE.BufferGeometry & { boundsTree?: MeshBVH }).boundsTree = new MeshBVH(m.geometry);
         m.raycast = acceleratedRaycast;
         m.matrixAutoUpdate = false; m.updateMatrix();
         tris += (m.geometry.index ? m.geometry.index.count : m.geometry.getAttribute('position').count) / 3;
       });
       root.updateMatrixWorld(true);
+      this.lightForMap(root);
+      // Compile the lit, shadowed map shaders before the mesh is shown (parallel compile where the
+      // driver supports it), so the first frame with the real map does not stall playback.
+      this.scene.add(root);
+      root.visible = true;
+      if (this.renderer) await this.renderer.compileAsync(this.scene, this.camera).catch(() => { /* compile on first draw */ });
       this.mapGroup.visible = false;
       this.glb = root;
-      this.scene.add(root);
       this.groundCache.clear();
       this.perf.map = 'glb';
       this.lastSig = '';
@@ -353,6 +373,62 @@ export class CamStage3D {
       console.warn('[cams] map mesh failed to load, using the blockout', e);
       return false;
     }
+  }
+
+  /** Attach a map mesh already prepared by assets.ts (preloaded during the game load). */
+  setMapScene(root: THREE.Object3D): void {
+    if (this.glb === root) return;
+    if (this.glb) this.scene.remove(this.glb);
+    root.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    this.lightForMap(root);
+    this.mapGroup.visible = false;
+    this.glb = root;
+    this.scene.add(root);
+    this.groundCache.clear();
+    this.perf.map = 'glb';
+    this.lastSig = '';
+  }
+
+  /**
+   * Upload geometry and compile shaders now (one render into a 1 × 1 viewport), so the first real
+   * frame after switching to the cams is not the one that pays for it.
+   */
+  warmUp(): void {
+    const renderer = this.renderer;
+    if (!renderer) return;
+    for (const f of [...this.allies, ...this.enemies]) f.group.visible = true;
+    renderer.setScissorTest(true);
+    renderer.setViewport(0, 0, 1, 1); renderer.setScissor(0, 0, 1, 1);
+    this.camera.aspect = 1; this.camera.updateProjectionMatrix();
+    renderer.render(this.scene, this.camera);
+    renderer.render(this.viewModel.scene, this.viewModel.camera);
+    renderer.setScissorTest(false);
+    renderer.setClearColor(0x000000, 0); renderer.clear();
+    for (const f of [...this.allies, ...this.enemies]) f.group.visible = false;
+    this.lastSig = '';
+  }
+
+  /**
+   * Daylight for the real map: sky-blue hemisphere over a warm bounce, a low warm sun whose static
+   * shadow map covers the whole mesh (drawn once — see init), and a haze the colour of the sky.
+   */
+  private lightForMap(root: THREE.Object3D): void {
+    const box = new THREE.Box3().setFromObject(root);
+    const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
+    const r = Math.max(size.x, size.z) / 2 + 4;
+    this.hemi.color.set(0xcfe3f5); this.hemi.groundColor.set(0x6e5a44); this.hemi.intensity = 1.15;
+    this.sun.color.set(0xffe2bf); this.sun.intensity = 2.4;
+    this.sun.position.set(c.x - r * 0.55, c.y + r * 0.9, c.z + r * 0.35);
+    this.sun.target.position.copy(c); this.sun.target.updateMatrixWorld();
+    this.sun.castShadow = true;
+    const cam = this.sun.shadow.camera;
+    cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r; cam.near = 1; cam.far = r * 4;
+    cam.updateProjectionMatrix();
+    this.sun.shadow.mapSize.set(4096, 4096);
+    this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.03;
+    this.scene.fog = new THREE.Fog(SKY, 35, 160);
+    this.clear = SKY;
+    if (this.renderer) this.renderer.shadowMap.needsUpdate = true;
   }
 
   /** Floor height (scene metres) under a game position: the navgraph height on the blockout, a downward ray on the real mesh. */
@@ -392,12 +468,17 @@ export class CamStage3D {
     // scene state shared by all monitors
     const t = frame.tMs;
     for (const f of [...this.allies, ...this.enemies]) f.group.visible = false;
+    const buys = frame.round.summary?.buys;
+    const ourGun = weaponClassOf(buys?.[frame.team]?.weapon);
+    const theirGun = weaponClassOf(buys?.[frame.team === 'A' ? 'B' : 'A']?.weapon);
     const allyBy = new Map<string, Figure>();
     for (const u of frame.units) {
       const fig = this.allies[u.slot - 1]; if (!fig) continue;
       const s = toScene(u.pose.pos);
-      fig.place(s.x, this.groundY(u.pose.pos), s.z, Math.cos(u.facingRad), Math.sin(u.facingRad));
+      const yaw = this.heading.get(u.id, u.facingRad, t);
+      fig.place(s.x, this.groundY(u.pose.pos), s.z, Math.cos(yaw), Math.sin(yaw));
       fig.setLabel(opts.nameOf(u.id));
+      fig.setWeapon(ourGun);
       fig.animate(u.pose.moving, t, u.slot * 1.3);
       allyBy.set(u.id, fig);
     }
@@ -405,6 +486,7 @@ export class CamStage3D {
     for (const e of frame.seen) {
       const fig = this.enemies[e.slot - 1]; if (!fig) continue;
       fig.setLabel(opts.nameOf(e.id));
+      fig.setWeapon(theirGun);
       fig.animate(false, t, e.slot);
       enemyBy.set(e.id, { fig, seenBy: e.seenBy });
     }
@@ -419,12 +501,11 @@ export class CamStage3D {
       this.spikeLight.intensity = 6 + 22 * (1 - (t % period) / period);
     }
 
-    const pistol = PISTOLS.test(frame.round.summary?.buys[frame.team].weapon ?? '');
     renderer.setScissorTest(true);
     for (const view of views) {
       const me = frame.units.find((u) => u.id === view.followId);
       if (!me || !me.pose.alive) continue; // dead: the monitor shows "signal lost" (DOM), nothing is rendered
-      const eye = firstPersonPose(me.pose.pos, me.facingRad, this.groundY(me.pose.pos));
+      const eye = firstPersonPose(me.pose.pos, this.heading.get(me.id, me.facingRad, t), this.groundY(me.pose.pos));
       for (const [id, fig] of allyBy) {
         const u = frame.units.find((x) => x.id === id)!;
         // players of one zone share its centre in the engine: a teammate inside arm's reach would fill the lens
@@ -459,12 +540,12 @@ export class CamStage3D {
       const y = hostH - (view.y + view.h);
       renderer.setViewport(view.x, y, view.w, view.h);
       renderer.setScissor(view.x, y, view.w, view.h);
-      renderer.setClearColor(BG, 1);
+      renderer.setClearColor(this.clear, 1);
       renderer.clear();
       renderer.render(this.scene, this.camera);
       // first-person view model on top (own depth range)
       const firing = firingAt(frame.round.kills, me.id, t);
-      this.viewModel.update(pistol, me.pose.moving, t, firing.kick, firing.flash);
+      this.viewModel.update(ourGun, me.pose.moving, t, firing.kick, firing.flash);
       this.viewModel.camera.aspect = view.w / view.h;
       this.viewModel.camera.updateProjectionMatrix();
       renderer.clearDepth();

@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { AVERAGE_SKILLS } from "@pv/combat-engine";
-import { listSimulatableTeams } from "@pv/game-data";
-import { applyRoundForm, FORM_SIGMA_MAX, rosterProfiles, rosterTraits } from "../src/teams.js";
-import { runMatch, type MatchConfig } from "../src/index.js";
+import { applyRoundForm, FORM_SIGMA_MAX, rosterProfiles, rosterSkills, rosterTraits } from "../src/teams.js";
+import { isKnownTeam, runMatch, simulatableTeamRefs, type MatchConfig } from "../src/index.js";
 
 describe("round form — normal distribution sized by consistency", () => {
   it("a perfectly consistent player is always exactly on level", () => {
@@ -24,7 +23,7 @@ describe("round form — normal distribution sized by consistency", () => {
 
 describe("real ratings → traits and profiles", () => {
   it("every simulatable team yields five in-range traits and profiles", () => {
-    const team = listSimulatableTeams()[0]!;
+    const team = simulatableTeamRefs()[0]!;
     const traits = rosterTraits(team.id, 5);
     const profiles = rosterProfiles(team.id, 5);
     expect(traits).toHaveLength(5);
@@ -42,11 +41,28 @@ describe("real ratings → traits and profiles", () => {
   });
 });
 
+describe("team refs for batches and tests", () => {
+  it("every simulatable team ref resolves to a game-data team", () => {
+    const refs = simulatableTeamRefs();
+    expect(refs.length).toBeGreaterThanOrEqual(2);
+    for (const r of refs) {
+      expect(typeof r.id).toBe("string");
+      expect(isKnownTeam(r.id)).toBe(true);
+    }
+  });
+  it("real rosters are not all league average (a ref that lost its id would be)", () => {
+    const refs = simulatableTeamRefs();
+    const rated = refs.filter((r) => rosterSkills(r.id, 5).some((s) => s.aim !== AVERAGE_SKILLS.aim));
+    expect(rated.length).toBeGreaterThan(refs.length / 2);
+    expect(new Set(refs.map((r) => JSON.stringify(rosterSkills(r.id, 5)))).size).toBeGreaterThan(1);
+  });
+});
+
 describe("pre-match options", () => {
-  const teams = listSimulatableTeams();
+  const teams = simulatableTeamRefs();
   const base: MatchConfig = {
-    teamA: { id: teams[0]!.id, name: teams[0]!.name ?? "A" },
-    teamB: { id: teams[1]!.id, name: teams[1]!.name ?? "B" },
+    teamA: teams[0]!,
+    teamB: teams[1]!,
     map: "Ascent",
     seed: 11,
     maxRounds: 12,

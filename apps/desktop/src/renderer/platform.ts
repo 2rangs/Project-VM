@@ -6,8 +6,17 @@ import { fromSimEventLog, type SimEvent } from '@pv/replay-engine';
 import { StubRunner } from '../shared/sim.ts';
 import { ASCENT_TRANSFORM } from '../shared/ascent-transform.ts';
 import type { PvBridge, SimProgress, SimResult, SimRunRequest } from '../shared/ipc.ts';
+import { SAVE_SLOTS, type SaveSlot, type SaveSlotInfo } from '../shared/career.ts';
 import traceScenario01 from '../../test/fixtures/traces/trace-scenario-01.json';
 import traceScenario04 from '../../test/fixtures/traces/trace-scenario-04.json';
+
+function lsMeta(slot: SaveSlot): SaveSlotInfo['meta'] {
+  try {
+    const text = localStorage.getItem(`pv-save-${slot}`);
+    const m = text ? /"meta":(\{[^{}]*\})/.exec(text.slice(0, 4096)) : null;
+    return m ? JSON.parse(m[1]!) : null;
+  } catch { return null; }
+}
 
 const FALLBACK_TRACES: Record<string, unknown> = {
   'trace-scenario-01': traceScenario01,
@@ -43,6 +52,15 @@ const browserBridge: PvBridge = {
   async seriesCmd() { throw new Error('series requires Electron'); },
   async seriesStop() { /* no-op */ },
   async loadMapMesh() { return null; }, // browser fallback: the cams use the navgraph blockout
+  // [career] no engine process in the browser: the career falls back to the quick estimate.
+  async careerSimulate() { throw new Error('engine simulation requires Electron'); },
+  async saveList() { return SAVE_SLOTS.map((slot) => ({ slot, meta: lsMeta(slot) })); },
+  async saveRead(slot) { try { return localStorage.getItem(`pv-save-${slot}`); } catch { return null; } },
+  async saveWrite(slot, text) { localStorage.setItem(`pv-save-${slot}`, text); },
+  async saveDelete(slot) { try { localStorage.removeItem(`pv-save-${slot}`); } catch { /* */ } },
+  async quit() { window.close(); },
+  async listBanners() { return []; },
+  async loadBannerFile() { return null; },
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };

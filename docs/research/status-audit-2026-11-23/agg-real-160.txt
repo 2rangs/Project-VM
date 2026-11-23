@@ -1,0 +1,101 @@
+matches 160 rounds 3349 OT 14
+attack win 0.4595
+95% CI half-width ± 0.017
+ phase pistol 320 0.481
+ phase regulation 2951 0.455
+ phase overtime 78 0.538
+reasons Counter({'elimination': 2439, 'spikeDefused': 437, 'spikeDetonation': 266, 'timeExpired': 207})
+plant rate 0.525 plant zones Counter({'b-site': 934, 'a-site': 823})
+ post-plant atk win on a-site 0.74 823
+ post-plant atk win on b-site 0.761 934
+ objective a-site: n=1668 share=0.498 atkwin=0.412 plant=0.493
+ objective b-site: n=1681 share=0.502 atkwin=0.507 plant=0.556
+attack strategies [('aExecute', 1009), ('bExecute', 970), ('midControl', 622), ('fakeAtoB', 317), ('fakeBtoA', 264), ('save', 167)]
+defense strategies [('retake', 1737), ('stackB', 709), ('stackA', 660), ('defaultHold', 180), ('aggroPush', 63)]
+feint rounds 625 atk revisions/round n=3349 mean=0.256 sd=0.482 min=0.000 p50=0.000 p90=1.000 max=2.000 def revisions n=3349 mean=2.702 sd=1.933 min=1.000 p50=2.000 p90=6.000 max=11.000
+def rotations w/ count>0 5722 per round 1.71
+round duration s n=3349 mean=47.504 sd=30.444 min=13.000 p50=37.900 p90=100.100 max=130.600
+plant time s n=1757 mean=38.223 sd=22.875 min=18.500 p50=24.400 p90=77.700 max=85.500
+survivors atk n=3349 mean=1.513 sd=1.734 min=0.000 p50=1.000 p90=4.000 max=5.000 
+survivors def n=3349 mean=1.891 sd=1.881 min=0.000 p50=1.000 p90=5.000 max=5.000
+kills/round n=3349 mean=6.596 sd=1.427 min=3.000 p50=6.000 p90=9.000 max=9.000
+first kill by attack 0.44 ; side winning round after first kill 0.699
+first kill time s n=3349 mean=30.596 sd=22.987 min=11.800 p50=14.500 p90=70.100 max=98.300
+1vX situations 3246 rate 0.969 won by clutcher 0.072
+  1v2: n=600 win=0.248
+  1v3: n=816 win=0.076
+  1v4: n=952 win=0.022
+  1v5: n=878 win=0.003
+per-player distance/round (uu) n=28143 mean=12029.695 sd=6128.325 min=1269.142 p50=9849.663 p90=21682.574 max=59112.116
+attacker distance/round n=16745 mean=11396.596 sd=4917.734 min=7170.773 p50=9476.476 p90=21278.795 max=52118.131
+defender distance/round n=11398 mean=12959.792 sd=7466.450 min=1269.142 p50=12015.762 p90=22019.452 max=59112.116
+path/straight ratio (planned, straight>500uu) n=117771 mean=1.226 sd=0.246 min=1.000 p50=1.182 p90=1.480 max=5.741
+ratio >2.0 share 0.0148 ratio>3 0.0001
+navTrace totals {'planned': 117792} per round {'planned': 35.172}
+rounds with unreachable 0
+rounds with blocked 0
+long idle runs (>=3.5s) per round n=3349 mean=4.010 sd=3.594 min=0.000 p50=3.000 p90=9.000 max=16.000
+max idle (s) attackers n=16695 mean=18.700 sd=21.394 min=0.100 p50=8.800 p90=51.400 max=83.000
+overlap (<30uu, same floor) tick-share 0.00417 rounds with any overlap 1341
+min pair distance per round n=3349 mean=39.775 sd=24.563 min=0.097 p50=52.457 p90=63.380 max=74.357
+deaths while moving 0.637
+rounds where attackers reached target site 2195 0.655
+first attacker on site s n=2195 mean=31.165 sd=22.307 min=13.500 p50=18.000 p90=72.500 max=78.000
+  first on a-site s n=1010 mean=29.271 sd=19.761 min=16.500 p50=18.500 p90=69.500 max=76.500
+  first on b-site s n=1185 mean=32.779 sd=24.151 min=13.500 p50=14.500 p90=73.000 max=78.000
+last-first arrival spread s n=1755 mean=0.970 sd=0.900 min=0.000 p50=0.500 p90=3.000 max=3.500 arrivedN dist Counter({5: 870, 4: 499, 3: 386, 2: 287, 1: 153})
+defender setups@15s distinct 103 of 3032 entropy bits 4.19 top [(('a-site', 'a-site', 'b-site', 'b-site', 'mid-courtyard'), 822), (('defender-spawn', 'defender-spawn'), 400), (('a-site', 'mid-cubby', 'mid-market', 'mid-market'), 389)]
+attacker layouts@30s distinct 29 of 1979 entropy 3.9 top [(('a-lobby', 'b-lobby', 'b-lobby', 'b-lobby', 'b-lobby'), 311), (('a-lobby', 'a-lobby', 'a-lobby', 'a-lobby', 'b-lobby'), 296), (('b-lobby', 'b-lobby', 'b-lobby', 'b-lobby', 'b-lobby'), 194)]
+distinct attacker zone routes 28 top [('attacker-spawn>a-lobby', 2315), ('attacker-spawn>b-lobby', 2300), ('b-lobby>b-main>b-site', 1681), ('a-lobby>a-main>a-site', 1668), ('a-main>a-site', 1023), ('b-main>b-site', 790), ('a-lobby>attacker-spawn', 647), ('b-lobby>attacker-spawn', 619)]
+per-team as attacker: n, A-share, atkwin
+  1001 84 0.51 0.51
+  1034 67 0.54 0.33
+  11058 94 0.52 0.48
+  11060 71 0.62 0.56
+  1119 84 0.52 0.39
+  1120 47 0.57 0.66
+  11328 85 0.46 0.55
+  1184 61 0.46 0.39
+  11981 85 0.45 0.49
+  120 77 0.43 0.35
+  12010 88 0.56 0.45
+  12685 61 0.39 0.59
+  12694 87 0.52 0.57
+  13576 62 0.45 0.39
+  13581 91 0.51 0.3
+  13790 60 0.52 0.53
+  14 84 0.48 0.48
+  14419 65 0.48 0.45
+  17 84 0.56 0.68
+  188 50 0.56 0.4
+  2 84 0.42 0.42
+  2059 63 0.6 0.54
+  2355 84 0.5 0.29
+  2359 38 0.5 0.71
+  2406 84 0.52 0.27
+  2593 44 0.48 0.5
+  278 87 0.47 0.43
+  397 75 0.45 0.44
+  4050 84 0.49 0.35
+  427 51 0.55 0.71
+  466 84 0.54 0.29
+  474 40 0.47 0.78
+  4915 85 0.41 0.4
+  5248 70 0.53 0.53
+  5448 84 0.5 0.37
+  6199 62 0.56 0.56
+  624 85 0.53 0.53
+  6961 64 0.55 0.42
+  7035 84 0.48 0.49
+  731 56 0.45 0.45
+  7386 88 0.47 0.51
+  8185 73 0.41 0.62
+  8304 84 0.48 0.42
+  878 75 0.48 0.4
+  8877 76 0.5 0.3
+  918 58 0.55 0.38
+attack win per 20-match block [0.476, 0.482, 0.505, 0.473, 0.396, 0.467, 0.405, 0.471] sd 0.036
+per-match atk win n=160 mean=0.454 sd=0.158 min=0.071 p50=0.469 p90=0.682 max=0.792
+rounds/match n=160 mean=20.931 sd=4.152 min=13.000 p50=21.000 p90=24.000 max=44.000 score margin n=160 mean=5.556 sd=2.981 min=2.000 p50=5.000 p90=10.000 max=13.000
+ms/match n=160 mean=8286.607 sd=3385.020 min=1775.450 p50=8214.793 p90=11855.412 max=26925.031 rss MB max 271
+ability events 0

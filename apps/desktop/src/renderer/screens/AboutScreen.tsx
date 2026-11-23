@@ -1,6 +1,7 @@
 import { RATINGS_DISCLAIMER, TEAMS_DISCLAIMER } from '../data.ts';
 import { Disclaimer } from '../ui.tsx';
 import { useLang } from '../i18n/index.tsx';
+import { BannerPicker } from '../loading/BannerPicker.tsx'; // [loading] choose the loading banner
 
 export function AboutScreen() {
   const { t, lang, setLang } = useLang();
@@ -13,6 +14,8 @@ export function AboutScreen() {
         <button className={lang === 'ko' ? 'on' : ''} onClick={() => setLang('ko')} data-testid="lang-ko">{t('about.langKo')}</button>
         <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} data-testid="lang-en">{t('about.langEn')}</button>
       </div>
+
+      <BannerPicker />
 
       <Disclaimer text={t('about.disclaimer')} />
       <p className="muted">{t('about.intro')}</p>

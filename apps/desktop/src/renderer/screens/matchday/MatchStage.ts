@@ -19,6 +19,7 @@ import { findPlayer, formationOffset } from '../../matchday/timeline.ts';
 import { PERCEPTION } from '../../matchday/visibility.ts';
 import { C, FONT } from '../../matchday/theme.ts';
 import type { NavDebugFrame, Roadmap } from '../../matchday/navdebug.ts';
+import { HeadingSmoother } from '../../matchday/heading.ts';
 
 export interface StageView {
   readonly key: string;
@@ -105,6 +106,7 @@ export class MatchStage {
   private texture: Texture | null = null;
   private zoneBox = { u0: 0, v0: 0, u1: 1, v1: 1 };
   private roadmap: Roadmap | null = null;
+  private readonly heading = new HeadingSmoother();
 
   /** The engine's navigation roadmap, for the developer overlay. */
   setRoadmap(roadmap: Roadmap | null): void {
@@ -125,6 +127,9 @@ export class MatchStage {
     await this.app.init({
       width: Math.max(1, mount.clientWidth), height: Math.max(1, mount.clientHeight),
       backgroundAlpha: 0, antialias: true, autoDensity: true,
+      // No free-running ticker: the playback loop updates the scene and then draws it (render()),
+      // so every displayed frame holds that frame's positions — no doubled or skipped frames.
+      autoStart: false,
       resolution: Math.min(2, globalThis.devicePixelRatio || 1),
     });
     if (this.destroyed) { try { this.app.destroy(true); } catch { /* noop */ } return; }
@@ -135,7 +140,7 @@ export class MatchStage {
   get isReady(): boolean { return this.ready; }
 
   resize(w: number, h: number): void {
-    if (this.ready && w > 0 && h > 0) this.app.renderer.resize(w, h);
+    if (this.ready && w > 0 && h > 0) { this.app.renderer.resize(w, h); this.app.render(); }
   }
 
   /** Load the map image; without it the stage draws the zone schematic on its own. */
@@ -146,6 +151,7 @@ export class MatchStage {
       if (this.destroyed) return false;
       this.texture = tex as Texture;
       for (const n of this.nodes.values()) { n.mapDim.texture = this.texture; n.mapLit.texture = this.texture; }
+      if (this.ready) this.app.render();
       return true;
     } catch { return false; }
   }
@@ -181,9 +187,11 @@ export class MatchStage {
     const unit = view.followId ? frame?.units.find((u) => u.id === view.followId) : undefined;
     if (unit) {
       // Monitor: the player sits in the lower third looking up; ~52 m of map fit the height.
+      // The radar turns with the player's eased heading, not the engine's snapping one.
       const scale = view.h / (5200 * Math.abs(this.transform.xMultiplier));
-      const du = Math.sin(unit.facingRad) * this.transform.xMultiplier;
-      const dv = Math.cos(unit.facingRad) * this.transform.yMultiplier;
+      const heading = this.heading.get(`${view.key}:${unit.id}`, unit.facingRad, frame!.tMs);
+      const du = Math.sin(heading) * this.transform.xMultiplier;
+      const dv = Math.cos(heading) * this.transform.yMultiplier;
       const rot = -Math.PI / 2 - Math.atan2(dv, du);
       const { u, v } = this.project(unit.pose.pos);
       return { cx, cy: view.y + view.h * 0.7, cu: u, cv: v, scale, rot, cos: Math.cos(rot), sin: Math.sin(rot) };
@@ -213,6 +221,7 @@ export class MatchStage {
       }
       this.drawView(node, view, frame, opts);
     }
+    this.app.render();
   }
 
   private drawView(node: ViewNode, view: StageView, frame: Frame | null, opts: StageOptions): void {
