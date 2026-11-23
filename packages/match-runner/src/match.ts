@@ -135,6 +135,10 @@ export interface MatchConfig {
    * RoundStats) for the validator. Passive: outcomes are identical with and without it. Default false.
    */
   readonly collectStats?: boolean;
+  /** Gaze model (round-simulator SimConfig.gaze; docs/ENGINE_TRUTH.md §8). Default off. */
+  readonly gaze?: boolean;
+  /** Sound detail: landings off drops, gunfire masking (SimConfig.soundDetail; ENGINE_TRUTH §9). Default off. */
+  readonly soundDetail?: boolean;
   /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
@@ -579,7 +583,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

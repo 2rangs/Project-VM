@@ -29,13 +29,13 @@ export interface ResolveOptions {
   readonly calibration?: CombatCalibration;
 }
 
-function initState(c: Combatant, seed: number, p: CombatParams, cal: CombatCalibration): FighterState {
+function initState(c: Combatant, seed: number, p: CombatParams, cal: CombatCalibration, distanceMeters: number): FighterState {
   return {
     c,
     health: c.health,
     armor: c.armor,
     ammo: c.ammo ?? c.weapon.magazineSize,
-    nextFireAt: readyDelayMs(c, p, cal),
+    nextFireAt: readyDelayMs(c, p, cal, distanceMeters),
     shotsFired: 0,
     shotsHit: 0,
     rng: mulberry32(deriveSeed(seed, c.id)),
@@ -59,8 +59,8 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
   const p = opts.params ?? DEFAULT_PARAMS;
   const cal = opts.calibration ?? {};
   const states: Record<PlayerId, FighterState> = {
-    [duel.a.id]: initState(duel.a, seed, p, cal),
-    [duel.b.id]: initState(duel.b, seed, p, cal),
+    [duel.a.id]: initState(duel.a, seed, p, cal, duel.distanceMeters),
+    [duel.b.id]: initState(duel.b, seed, p, cal, duel.distanceMeters),
   };
   const order: [FighterState, FighterState] = [states[duel.a.id], states[duel.b.id]];
   const opponentOf = (s: FighterState): FighterState => (s === order[0] ? order[1] : order[0]);

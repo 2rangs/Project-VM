@@ -172,7 +172,12 @@ export interface BuildViewOptions {
   readonly transitOf?: (p: SimPlayer) => TeammateTransit | undefined;
   /** Players on a route but standing still this tick (waiting at a hazard's edge): they make no footsteps. */
   readonly stationaryIds?: { has(id: string): boolean };
+  /** Distance-rule sounds made since the last decision (landings), with their reach (sound detail). */
+  readonly extraSounds?: NonNullable<PWorldExtras["extraSounds"]>;
+  /** Loud sounds in the masking window (gunfire), for sound masking (sound detail). */
+  readonly maskers?: NonNullable<PWorldExtras["maskers"]>;
 }
+type PWorldExtras = { extraSounds?: ReadonlyArray<{ kind: "landing"; position: { x: number; y: number; z: number }; teamId?: string; radiusUnits: number; levelDb: number }>; maskers?: ReadonlyArray<{ position: { x: number; y: number; z: number }; levelDb: number }> };
 
 /**
  * Perception parameters for a round: the defaults, with the footstep audio range taken from the
@@ -312,7 +317,11 @@ export function buildPolicyView(
   dtMs = 0,
   opts: BuildViewOptions = {},
 ): PolicyView {
-  const result = perception.perceive(toPerceptionWorldForView(state, opts.activeAbilities, opts.stationaryIds));
+  const result = perception.perceive({
+    ...toPerceptionWorldForView(state, opts.activeAbilities, opts.stationaryIds),
+    ...(opts.extraSounds ? { extraSounds: opts.extraSounds } : {}),
+    ...(opts.maskers ? { maskers: opts.maskers } : {}),
+  });
   const teamId = side === "attack" ? "attackers" : "defenders";
   const team = result.teams.get(teamId);
   const teammates = state.players.filter((p) => p.side === side).map((p) => toTeammate(p, opts.transitOf?.(p)));
