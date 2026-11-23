@@ -129,7 +129,16 @@ async function main(): Promise<void> {
         roundNumber: r.roundNumber,
         map,
         roster: rosterFor(),
-        buyTiers: { attack: r.buys[atk].tier, defense: r.buys[def].tier },
+        match: i,
+        // VCT buy tiers from the team loadout value (eco < 5000, semi 5000–20000, full >= 20000;
+        // pistol rounds stay "pistol"), the definition the real economy-matchup table uses.
+        buyTiers: { attack: r.buys[atk].vctTier, defense: r.buys[def].vctTier },
+        // The team's own call (pistol / full / half / force / eco / bonus) and what it bought.
+        plans: { attack: r.buys[atk].tier, defense: r.buys[def].tier },
+        econ: {
+          attack: { value: r.buys[atk].loadoutValue, drops: r.buys[atk].drops, pickups: r.pickups.filter((p) => p.team === atk).length },
+          defense: { value: r.buys[def].loadoutValue, drops: r.buys[def].drops, pickups: r.pickups.filter((p) => p.team === def).length },
+        },
         events: toSimGameEvents({ events: r.events, winner: r.winnerSide, reason: r.reason } as never),
       });
       totalRounds++;

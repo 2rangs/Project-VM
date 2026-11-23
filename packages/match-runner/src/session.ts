@@ -106,7 +106,7 @@ export function createMatchSession(config: MatchConfig, options: MatchSessionOpt
     if (!losingStreak && !matchPoint) return;
     // Change the plan: save when broke, else force; switch strategy by side.
     const attacking = s.attacker === team;
-    const call = eco.credits < 2000 ? "save" : "force";
+    const call = eco.credits / eco.players.length < 2000 ? "save" : "force"; // mean credits per player
     const order: TeamOrder = {
       economy: call,
       strategy: attacking ? "default" : "aggroPush", // regroup on attack, apply pressure on defense

@@ -36,7 +36,11 @@ function isPistolRound(view: PolicyView): boolean {
 }
 
 function isEco(view: PolicyView): boolean {
-  return !isPistolRound(view) && view.economy.credits <= ECO_BANK_THRESHOLD;
+  if (isPistolRound(view)) return false;
+  // The match runner's per-player economy says what the team actually bought; without it, a bank
+  // threshold stands in.
+  if (view.economy.buyCall !== undefined) return view.economy.buyCall === "eco";
+  return view.economy.credits <= ECO_BANK_THRESHOLD;
 }
 
 const v2 = (v: Vector3) => ({ x: v.x, y: v.y });
