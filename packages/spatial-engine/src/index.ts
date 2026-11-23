@@ -13,3 +13,5 @@ export { Navigator, NavBlockers } from "./navigation.js";
 export type { NavVisibility, NavData, NavEdgeKind, NavWaypoint, NavigationRequest, NavigationResult, MovementMode, RoutePreference } from "./navigation.js";
 export { deriveMapTactics, siteLetterOf } from "./tactics.js";
 export type { MapTactics, SiteTactics, MapTacticsOverrides } from "./tactics.js";
+export { deriveSiteSpots } from "./spots.js";
+export type { HoldSpot, PlantSpot, SiteSpots, SpotCover } from "./spots.js";

@@ -77,6 +77,51 @@ describe.each(MAP_IDS.map((id) => [id] as const))("derived tactics: %s", (id: Ma
   });
 });
 
+describe.each(MAP_IDS.map((id) => [id] as const))("named spots: %s", (id: MapId) => {
+  const engine = engineOf(id);
+  const nav = engine.nav!;
+  const t = deriveMapTactics(engine, loadMapData(id).tactics ?? {});
+
+  it("holding spots: on the floor of their site, see the way in they are for, an off-angle among them", () => {
+    for (const s of t.sites) {
+      const seeing = new Set(s.entries.flatMap((e) => nav.zoneNodes(s.zone).filter((n) => nav.sightInto(n, e) > 0)));
+      expect(s.holdSpots.length, `${s.zone}: ${s.holdSpots.length} spots of ${seeing.size} candidates`).toBeGreaterThanOrEqual(Math.min(6, seeing.size > 6 ? 4 : 1));
+      expect(new Set(s.holdSpots.map((h) => h.id)).size).toBe(s.holdSpots.length);
+      expect(new Set(s.holdSpots.map((h) => h.node)).size).toBe(s.holdSpots.length);
+      for (const h of s.holdSpots) {
+        expect(nav.nodeZone(h.node)).toBe(s.zone);
+        expect(nav.distanceToWalkable(h.position)).toBeLessThanOrEqual(1);
+        expect(s.entries).toContain(h.watches);
+        expect(nav.sightInto(h.node, h.watches), h.id).toBeGreaterThan(0);
+        for (const [e, c] of Object.entries(h.sees)) expect(nav.sightInto(h.node, e), `${h.id} sees ${e}`).toBe(c);
+        expect(h.provenance).toBe("derived");
+      }
+    }
+  });
+
+  it("plant spots: default, safe and open, each on the plantable area; safe is the least exposed", () => {
+    for (const s of t.sites) {
+      expect(s.plantSpots.map((p) => p.kind)).toEqual(["default", "safe", "open"]);
+      for (const p of s.plantSpots) {
+        expect(engine.isPointPlantable(p.position), `${s.zone} ${p.kind}`).toBe(true);
+        expect(engine.plantZoneAt(p.position)?.zoneId).toBe(s.zone);
+      }
+      const [, safe, open] = s.plantSpots;
+      expect(safe!.exposure).toBeLessThanOrEqual(open!.exposure);
+      for (const p of s.plantSpots) expect(p.exposure).toBeGreaterThanOrEqual(safe!.exposure);
+    }
+  });
+});
+
+describe("named spots: Ascent has at least six holding spots per site", () => {
+  it("six or more, with standard and off-angle kinds", () => {
+    for (const s of loadMapTactics("ascent").sites) {
+      expect(s.holdSpots.length, s.zone).toBeGreaterThanOrEqual(6);
+      expect(s.holdSpots.some((h) => h.kind === "off-angle"), s.zone).toBe(true);
+    }
+  });
+});
+
 describe("three-site maps", () => {
   it.each(["haven", "lotus"] as const)("%s: site C is derived like A and B, and a defender starts on it", (id) => {
     const t = loadMapTactics(id);
