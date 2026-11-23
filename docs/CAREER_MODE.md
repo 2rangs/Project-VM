@@ -81,25 +81,44 @@ fixtures are played in. 30 group series + 7 playoff series per stage; 74 per sea
 
 ## 4. Simulating other teams' series
 
-AI-vs-AI series are simulated when the day they are on is left.
+AI-vs-AI series are simulated when the day they are on is left. Two modes (Settings; default **quick**):
 
-- **Full engine (default in Electron):** each series is sent to a long-lived tsx subprocess
-  (`scripts/career-sim.mts`) and played by `runSeries` — veto and every map — with both teams'
-  career fives and analysts, scouting off. One series at a time, never on the UI thread; the
-  renderer gets progress after each series. Per-player kills/deaths are read from the engine's
-  kill events (`atk1..5` / `def1..5` are roster order of the attacking / defending slot). Measured
-  ≈ 10–25 s per Bo3 on this Mac, so a full season of AI series is ~20–30 minutes of background
-  time spread over its match days.
-- **Quick estimate** (setting, browser build, tests, and the fallback when an engine batch fails —
-  the Home screen then says so): `quickSeries` plays rounds from the two fives' ability:
-  `P(round) = sigmoid(2.5 · (s_home − s_away + comfort_home,map − comfort_away,map))`, `s` = mean
-  current ability of the five, `comfort` a stable per-team, per-map lean (σ 0.01). Maps are first
-  to 13 with a 2-round lead. Kills are spread by ability (`exp(8·(ca − team mean))` + noise). It
-  exists to keep the calendar fast; it is not the engine.
+- **Quick estimate (default, the browser build, the instant result, tests and the fallback when an
+  engine batch fails — Home then says so):** `quickSeries` plays rounds from the two fives' ability
+  *today* (readiness applied, §4a):
+  `P(round) = sigmoid(5.4 · (s_home − s_away + comfort_home,map − comfort_away,map))`, `s` = mean
+  current ability of the five, `comfort` a stable per-team, per-map lean (σ 0.01). The slope is
+  **fitted to the engine** (`tools/career/calibrate-quick-sim.mts`: 48 engine maps between career
+  fives of the four regions, ability-difference sd 0.052, maximum likelihood on rounds → 5.39; the
+  first version's 2.5 was a guess and was too flat). Maps are first to 13 with a 2-round lead;
+  kills are spread by ability (`exp(8·(ca − team mean))` + noise).
+- **Full engine (Settings):** each series goes to a long-lived tsx subprocess
+  (`scripts/career-sim.mts`) and is played by `runSeries` — veto and every map — with both teams'
+  career fives (readiness applied), analysts and map practice, scouting off. One series at a time,
+  never on the UI thread; the renderer gets progress after each series (the match-day
+  `LoadingScreen` in a box on Home). Per-player kills/deaths come from the engine's kill events
+  (`scripts/kill-lines.mts`).
+
+**Time per season** (`tools/career/season-timing.mts`, this Mac): 74 series per season (11–14 are
+the manager's), 63 of them AI. Quick: **0.3 s for the whole season** including the calendar, the club
+layer and the inbox. Full engine: 2.5 maps and **2.6 s per series** (6-series sample, process
+already warm) → **≈ 2.8 minutes of background simulation per season**. (An earlier figure of 10–25 s
+per series included process start-up and was wrong for a warm host.)
 
 **Form** per player, updated per map played:
-`perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown — the manager's own
-series records map scores only), `form ← form + 0.25·(perf − form)`, 0.5 = par.
+`perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. The manager's own series now carries engine K/D too.
+
+## 4a. Lineup and match readiness
+
+Before the manager's match the lineup screen shows the squad (roster + academy) with CA estimate,
+form, maps, **fatigue**, **sharpness** and **readiness**; the chosen five are kept for later matches
+(`career.lineup`). Readiness `R = (1 − 0.25·max(0, f − 0.3)) · (1 − 0.08·(1 − s))` scales each
+ability attribute toward the league floor for that match, `x' = floor + R·(x − floor)` — no flat
+bonus. `f` is the club layer's training fatigue plus 0.03 per map played; `s` is sharpness
+(`s ← s + 0.2·(1 − s)` per map, `exp(−days/30)` fade, 0.6 at the start). The engine's rosters
+(`SeriesStartRequest.rosters`, the background sim) and the quick estimate both read `x'`. Map
+practice from the training plan is added to the team's map records for mastery
+(`SeriesStartRequest.practice` → series `mapRecords`; docs/CLUB_OPERATIONS.md §5, §7a).
 
 ## 5. Saves
 
@@ -132,7 +151,9 @@ registerCareerHook({
 ```
 
 - Hooks run synchronously inside the day step, in `order` then `id`; the core's own hook
-  (`career`, order 0) handles the board objective and monthly reports.
+  (`career`, order 0) handles the board objective and monthly reports; the **club layer**
+  (`club`, order 10, docs/CLUB_OPERATIONS.md §7) runs contracts, finance, transfers and training
+  on the same calendar and inbox.
 - Randomness only from `ctx.rng(label)` (seeded by career seed, hook id, date, label); saved state
   only through `ctx.ext(init)` (plain JSON in `career.ext[id]`). Both keep saves deterministic.
 - Inbox drafts: `{ category, key, params?, from, options?, ref?, text? }`. The desktop renders
@@ -147,19 +168,16 @@ registerCareerHook({
 - **Competition:** no Kickoff, Masters or Champions; single- instead of double-elimination
   playoffs; no promotion/relegation; only the manager's region has a league — other regions'
   players develop on the status estimate of minutes.
-- **Matches:** the manager's series records map scores but not per-player K/D (the series view
-  does not carry it), so their form uses round share only. Lineups are always the roster's first
-  five; there is no lineup or substitution choice before a match. Every map is simulated on Ascent
-  geometry (`SIMULATED_GEOMETRY`), as everywhere in the series layer.
-- **World:** no injuries (the engine has none); AI squads change only in `advanceSeason`; the
-  manager's squad also changes there automatically (signings/releases by the scout's estimate)
-  until the club-operations session adds contracts and transfers. No board confidence or sacking.
-- **UI:** the loading surface is a simple `CareerProgress` with the same props as the match-day
-  session's `LoadingScreen` (not on main yet) — swap it in when that lands. Opponent Report and
-  Tactics still read the dataset, not the career world. The Match Day sandbox (Quick Match) uses
-  dataset rosters; only the career path passes world rosters.
-- **Performance:** a full-engine season is ~20–30 minutes of background simulation; there is no
-  parallelism (one heavy job at a time on this machine by design).
+- **Matches:** every map is simulated on Ascent geometry (`SIMULATED_GEOMETRY`) as everywhere in the
+  series layer; no substitutions during a series; fatigue is one number per player.
+- **World:** no injuries (the engine has none); AI squads change in `advanceSeason` and the AI
+  market; no board confidence or sacking beyond the board's money messages. After contracts
+  expire the manager's squad is not refilled (below five players the lineup cannot be confirmed;
+  Home does not warn yet).
+- **UI:** Opponent Report and Tactics still read the dataset, not the career world. The Quick
+  Match sandbox uses dataset rosters; only the career path passes world rosters.
+- **Performance:** the full-engine mode is ≈ 2.8 minutes of background time per season; there is
+  no parallelism (one heavy job at a time on this machine by design).
 
 ## 8. Tests
 
@@ -173,7 +191,12 @@ registerCareerHook({
 - `apps/desktop/test/career-mode.test.ts` (`test:unit`): the manager's series mapped into the
   fixture home/away, standings and minutes; every inbox message of a season renders in ko and en
   with no raw keys or placeholders; desktop save round trip.
-- `apps/desktop/test/e2e.career.test.mjs` (`test:e2e:career`, Electron): start menu → new career →
-  board question → first match day → the series through the engine → recorded → in the standings →
-  the next Continue plays AI series through the engine in the background → main menu → Continue
-  reproduces the saved day and standings.
+- `packages/career/test/club.test.ts`: contracts, three seeded seasons inside careers (economy bands,
+  determinism), counterfactual transfers, loans, expiry and renewal, training focus → development,
+  map practice → mastery continuity.
+- `career-mode.test.ts` also covers: the manager's squad untouched by the season loop; lineup
+  choice; the readiness formula (checked against its stated numbers); fatigue and sharpness after
+  maps.
+- `apps/desktop/test/e2e.career.test.mjs` (`test:e2e:career`, Electron) and `e2e.club.test.mjs`
+  (`test:e2e:club`): the whole loop — see docs/CLUB_OPERATIONS.md §7b. `tools/career/*.mts` are the
+  calibration and timing scripts (heavy; run through `heavy-run.sh`).
