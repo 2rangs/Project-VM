@@ -20,6 +20,8 @@ export interface SeriesStartRequest {
    * every map as MatchConfig.rosters. Omitted → the dataset rosters.
    */
   rosters?: { A?: Array<{ playerId: string; attributes: unknown; hasRatings: boolean }>; B?: Array<{ playerId: string; attributes: unknown; hasRatings: boolean }> };
+  /** [career] Training map practice per team (map → playerId → game-equivalents) → map mastery. */
+  practice?: { A?: Record<string, Record<string, number>>; B?: Record<string, Record<string, number>> };
 }
 
 export interface MasteryComponentView { value: number; uncertainty: number }
@@ -82,6 +84,8 @@ export interface SeriesGameView {
   winner: SeriesTeam;
   score: Record<SeriesTeam, number>;
   overtime: boolean;
+  /** [career] Kills / deaths per player id (only when the series was given rosters). */
+  players?: Record<string, { k: number; d: number }>;
 }
 export interface ScoutedPlayerView { handle: string | null; role: string | null; rating: number | null; threat: number; tag: 'danger' | 'liability' | null }
 export interface SeriesView {

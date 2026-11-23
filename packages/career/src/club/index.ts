@@ -18,7 +18,7 @@ export {
 } from "./transfers.ts";
 export {
   FOCUS_GROUPS, TEAM_FOCI, INDIV_FOCI, GROUP_OF, weeklyVector, nextFatigue, trainingWeek, exposureShares, focusFactors, seasonFocus,
-  setTrainingPlan, setIndividualFocus, practiceAdjustedRecords, defaultPlan, type MapRecordLike,
+  setTrainingPlan, setIndividualFocus, practiceAdjustedRecords, withPractice, defaultPlan, type MapRecordLike,
 } from "./training.ts";
 export {
   initClub, reconcileContracts, clubOnDay, clubOnMonth, clubSeasonEnd, clubBeforeSeasonEnd, clubAfterSeasonAdvance,

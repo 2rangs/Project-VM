@@ -7,7 +7,7 @@ import { useSyncExternalStore } from 'react';
 import { bridge, runtime } from '../platform.ts';
 import type { CareerSimProgress, CareerSimRequest, SaveSlot } from '../../shared/career.ts';
 import {
-  answerInbox, buildDesktopWorld, drainClubOutbox, syncClubInbox, type World, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
+  answerInbox, buildDesktopWorld, drainClubOutbox, matchRoster, setLineup, syncClubInbox, type World, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
   recordResult, serializeCareer, type BatchSimulator, type CareerState, type ContinueResult, type Outcome,
   type SeriesOutcome, type SeriesRequest,
 } from './world.ts';
@@ -113,12 +113,11 @@ export function closeCareer(): void { notify({ career: null, slot: null, lastSto
 // --- simulation ---------------------------------------------------------------------------------------
 
 function toSimRequest(career: CareerState, r: SeriesRequest): CareerSimRequest {
+  // Today's five with readiness applied (fatigue, sharpness) and the team's map practice.
   const side = (s: SeriesRequest['home']) => ({
     teamId: s.teamId, name: s.name, analyst: s.analyst,
-    roster: s.lineup.map((id) => {
-      const p = career.world.players[id]!;
-      return { playerId: p.playerId, attributes: p.attributes, hasRatings: p.hasRatings };
-    }),
+    roster: matchRoster(career, s.lineup),
+    practice: career.world.club?.training.mapPractice[s.teamId] ?? {},
   });
   return { fixtureId: r.fixtureId, seed: r.seed, format: r.format, home: side(r.home), away: side(r.away) };
 }
@@ -161,6 +160,14 @@ export function updateCareerWorld(fn: (w: World) => World): void {
   c.world = fn(c.world);
   drainClubOutbox(c);
   syncClubInbox(c);
+  notify();
+  void writeSlot();
+}
+
+/** The manager's starting five for the next match. */
+export function chooseLineup(ids: string[]): void {
+  if (!snap.career) return;
+  setLineup(snap.career, ids);
   notify();
   void writeSlot();
 }

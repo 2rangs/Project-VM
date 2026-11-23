@@ -9,8 +9,10 @@ export interface CareerSimSide {
   teamId: string;
   name: string;
   analyst: number;
-  /** Today's five, in lineup order. */
+  /** Today's five, in lineup order (attributes already scaled by match readiness). */
   roster: SimRosterPlayer[];
+  /** Training map practice (map → playerId → game-equivalents) added to the team's map records. */
+  practice?: Record<string, Record<string, number>>;
 }
 
 export interface CareerSimRequest {

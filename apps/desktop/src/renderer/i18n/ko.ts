@@ -1066,4 +1066,12 @@ export const ko: Record<string, string> = {
   "club.focusHint.tactics": "한 맵을 스크림합니다. 주전들의 맵 연습 경기 수가 늘어 맵 숙련도의 연속성(C)이 오릅니다. 그 주는 개인 성장이 없습니다.",
   "club.focusHint.rest": "휴식: 피로가 크게 회복됩니다. 피로가 30%를 넘으면 훈련 효율이 떨어집니다.",
   "club.training.note": "훈련은 능력치를 직접 올리지 않습니다. 시즌 말 성장 공식의 배율(F)과 맵 숙련도 입력만 바꿉니다 (docs/CLUB_OPERATIONS.md §5).",
+  "lineup.title": "오늘의 선발 5인",
+  "lineup.hint": "스쿼드(로스터 + 아카데미)에서 5명을 고르세요. 선택은 저장되어 다음 경기에도 쓰입니다.",
+  "lineup.fatigue": "피로",
+  "lineup.sharpness": "경기 감각",
+  "lineup.readiness": "준비도",
+  "lineup.academy": "아카데미",
+  "lineup.formula": "준비도 R = (1 − 0.25·max(0, 피로 − 0.3)) · (1 − 0.08·(1 − 경기 감각)). 이 경기에서 능력치는 리그 최저치 쪽으로 x' = 최저 + R·(x − 최저)만큼 낮아집니다. 맵을 뛸 때마다 피로가 오르고 경기 감각이 붙으며, 경기가 없으면 감각이 떨어집니다.",
+  "lineup.confirm": "이 5명으로 밴픽 진행 ({n}/5)",
 };

@@ -5,7 +5,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { worldFromGameData } from "../src/game-data.ts";
 import {
   answerInbox, batchOf, continueCareer, dayAgenda, deserializeCareer, groupStandings, newCareer, quickSeries,
-  recordResult, registerCareerHook, serializeCareer, seriesRequest, weekday,
+  recordResult, registerCareerHook, serializeCareer, seriesRequest, weekday, setLineup, lineupFor, readiness, matchAttributes,
+  lineupStrength, fatigueOf, sharpnessOf, MATCH_READINESS,
   type CareerState, type ContinueResult, type World,
 } from "../src/index.ts";
 
@@ -163,5 +164,58 @@ describe("hooks", () => {
       expect(seen.seasonEnd).toBe(1);
       expect(seen.seasonStart).toBe(1);
     } finally { off(); }
+  });
+});
+
+describe("lineup and readiness", () => {
+  it("the manager's chosen five play (a bench player too), and their minutes are credited", async () => {
+    const c = career(55);
+    const md = await playUntil(c, (r) => r.stop === "matchDay");
+    const t = c.world.teams[c.userTeamId]!;
+    const squad = [...t.roster, ...t.academy];
+    const bench = squad.find((id) => !lineupFor(c, c.userTeamId).includes(id))!;
+    expect(bench).toBeDefined();
+    const five = [bench, ...lineupFor(c, c.userTeamId).slice(0, 4)];
+    setLineup(c, five);
+    expect(() => setLineup(c, five.slice(0, 4))).toThrow();
+    const req = seriesRequest(c, md.fixture!);
+    const ours = req.home.teamId === c.userTeamId ? req.home.lineup : req.away.lineup;
+    expect([...ours].sort()).toEqual([...five].sort());
+    playUserMatch(c, md);
+    expect(c.stats[bench]!.maps).toBeGreaterThan(0);
+    expect(c.stats[bench]!.lastPlayed).toBe(c.date);
+  });
+
+  it("fatigue and sharpness scale the attributes for a match by the stated formula", async () => {
+    const c = career(56);
+    const id = lineupFor(c, c.userTeamId)[0]!;
+    const p = c.world.players[id]!;
+    const fresh = readiness(c, id);
+    // R = (1 − 0.25·max(0, f − 0.3)) · (1 − 0.08·(1 − s)) with the starting values.
+    const M = MATCH_READINESS;
+    expect(fresh).toBeCloseTo((1 - M.fatigueCost * Math.max(0, fatigueOf(c.world, id) - M.fatigueFree)) * (1 - M.sharpCost * (1 - sharpnessOf(c, id))), 10);
+    const before = lineupStrength(c, lineupFor(c, c.userTeamId));
+    c.world.club!.training.exposure[id] = { mechanics: 0, utility: 0, teamplay: 0, weeks: 0, fatigue: 0.9 };
+    const tired = readiness(c, id);
+    expect(tired).toBeLessThan(fresh);
+    expect(tired).toBeCloseTo((1 - M.fatigueCost * 0.6) * (1 - M.sharpCost * (1 - sharpnessOf(c, id))), 10);
+    const attrs = matchAttributes(c, p)!;
+    const k = "aim";
+    const lo = c.world.calibration.min[k];
+    const x = (p.attributes![k] as { value: number }).value;
+    expect((attrs[k] as { value: number }).value).toBeCloseTo(lo + tired * (x - lo), 3);
+    expect(lineupStrength(c, lineupFor(c, c.userTeamId))).toBeLessThan(before);
+  });
+
+  it("maps played raise fatigue and sharpness", async () => {
+    const c = career(57);
+    const md = await playUntil(c, (r) => r.stop === "matchDay");
+    const ours = lineupFor(c, c.userTeamId);
+    const f0 = fatigueOf(c.world, ours[0]!);
+    const s0 = sharpnessOf(c, ours[0]!);
+    playUserMatch(c, md);
+    const maps = c.stats[ours[0]!]!.maps;
+    expect(fatigueOf(c.world, ours[0]!)).toBeCloseTo(Math.min(1, f0 + MATCH_READINESS.mapLoad * maps), 4);
+    expect(sharpnessOf(c, ours[0]!)).toBeGreaterThan(s0);
   });
 });

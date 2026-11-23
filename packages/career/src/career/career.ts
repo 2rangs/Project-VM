@@ -19,6 +19,7 @@ import { advanceSeason } from "../season.ts";
 import { clubCareerHook, drainClubOutbox, syncClubInbox } from "../club/career-hook.ts";
 import { seasonFocus } from "../club/training.ts";
 import { newProspects, startingFive, teamStaffInputs } from "../world.ts";
+import { applyMatchLoad } from "./readiness.ts";
 import { toScale200, estimateAbility, teamScout } from "../scouting.ts";
 import type { World } from "../model.ts";
 import { deriveSeed, mulberry32 } from "../rng.ts";
@@ -181,12 +182,36 @@ export function dayAgenda(state: CareerState): DayAgenda {
   };
 }
 
+/**
+ * A team's five for its next match: the manager's chosen lineup (players still in the squad) for
+ * the user's club, topped up in roster order; the roster's first five for everyone else.
+ */
+export function lineupFor(state: CareerState, teamId: string): string[] {
+  const t = state.world.teams[teamId];
+  if (!t) return [];
+  if (teamId !== state.userTeamId || !state.lineup) return startingFive(state.world, teamId).map((p) => p.playerId);
+  const squad = [...t.roster, ...t.academy].filter((id) => state.world.players[id]);
+  const chosen = state.lineup.filter((id) => squad.includes(id)).slice(0, 5);
+  for (const id of squad) { if (chosen.length >= 5) break; if (!chosen.includes(id)) chosen.push(id); }
+  return chosen;
+}
+
+/** The manager picks today's five from the squad (roster + academy). */
+export function setLineup(state: CareerState, ids: readonly string[]): void {
+  const t = state.world.teams[state.userTeamId]!;
+  const squad = new Set([...t.roster, ...t.academy]);
+  const uniq = [...new Set(ids)];
+  if (uniq.length !== 5) throw new Error("a lineup is five players");
+  for (const id of uniq) if (!squad.has(id)) throw new Error(`${id} is not in the squad`);
+  state.lineup = uniq;
+}
+
 /** A fixture as a simulation request: today's five per side and each side's analyst. */
 export function seriesRequest(state: CareerState, f: Fixture): SeriesRequest {
   if (!f.home || !f.away) throw new Error(`fixture ${f.id} has no teams yet`);
   const side = (id: string) => ({
     teamId: id, name: teamName(state, id),
-    lineup: startingFive(state.world, id).map((p) => p.playerId),
+    lineup: lineupFor(state, id),
     analyst: teamStaffInputs(state.world, id).analyst,
   });
   return { fixtureId: f.id, seed: deriveSeed(state.seed, `series:${f.id}`), format: f.format, home: side(f.home), away: side(f.away) };
@@ -222,6 +247,8 @@ export function recordResult(state: CareerState, fixtureId: string, outcome: Ser
   f.result = { ...outcome, mapsWon: [outcome.mapsWon[0], outcome.mapsWon[1]], maps: outcome.maps.map((m) => ({ ...m, score: [m.score[0], m.score[1]] as const })) };
   creditPlayers(state, outcome.lineups.home, f, true);
   creditPlayers(state, outcome.lineups.away, f, false);
+  applyMatchLoad(state, outcome.lineups.home, outcome.maps.length);
+  applyMatchLoad(state, outcome.lineups.away, outcome.maps.length);
   if (isUserFixture(state, f)) {
     const home = f.home === state.userTeamId;
     const won = outcome.winner === state.userTeamId;

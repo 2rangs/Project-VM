@@ -4,7 +4,8 @@
 // career has contracts, finances, transfers and training.
 //
 //   onCareerStart  initClub: contracts and finances for every club; the manager's club is the user's
-//   onDay          clubOnDayMut (windows, bids expiring, Monday training + AI market round)
+//   onDay          clubOnDayMut for the day that begins (windows, bids expiring, Monday training +
+//                  AI market round)
 //   onMonth        clubOnMonthMut (ledger, board checks, contracts-expiring notice)
 //   onSeasonEnd    clubBeforeSeasonEndMut with the career's real standings (loans back, prize
 //                  money, expiring contracts). career.ts then runs advanceSeason with the season's
@@ -16,6 +17,7 @@ import type { World } from "../model.ts";
 import { REGIONS } from "../regions.ts";
 import type { CareerHook } from "../career/hooks.ts";
 import { postInbox } from "../career/inbox.ts";
+import { addDays } from "../career/calendar.ts";
 import { stageDone, stagePlacings, STAGES } from "../career/schedule.ts";
 import type { CareerState } from "../career/types.ts";
 import { regionOrder } from "./finance.ts";
@@ -79,7 +81,9 @@ export const clubCareerHook: CareerHook = {
   onDay(_w, date, ctx) {
     const state = ctx.career;
     if (!state.world.club) return;
-    clubOnDayMut(state.world, date);
+    // The career is leaving `date`; the club's day step takes the day that begins (club.date ends
+    // up equal to the career date after the step).
+    clubOnDayMut(state.world, addDays(date, 1));
     after(state);
   },
   onMonth(_w, date, ctx) {

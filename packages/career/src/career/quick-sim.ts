@@ -9,6 +9,7 @@
 //   a map       = rounds until one team has 13 with a 2-round lead (overtime past 12–12)
 //   map order   = the pool shuffled per fixture; a series ends when one side has won enough maps
 import { caOf } from "../season.ts";
+import { matchAttributes } from "./readiness.ts";
 import { UNRATED_ABILITY } from "../scouting.ts";
 import { deriveSeed, mulberry32, normal, streamFor } from "../rng.ts";
 import type { CareerState, MapResult, SeriesOutcome, SeriesRequest, SeriesSimulator } from "./types.ts";
@@ -33,7 +34,9 @@ export function lineupStrength(career: CareerState, lineup: readonly string[]): 
   let sum = 0;
   for (const id of lineup) {
     const p = w.players[id];
-    sum += p ? p.ca ?? caOf(w, p) ?? UNRATED_ABILITY : UNRATED_ABILITY;
+    // Today's ability: readiness (fatigue, sharpness) applied to the attributes (career/readiness.ts).
+    const attrs = p ? matchAttributes(career, p) : null;
+    sum += p ? (attrs ? caOf(w, { ...p, attributes: attrs }) : p.ca) ?? UNRATED_ABILITY : UNRATED_ABILITY;
   }
   // A short roster plays with empty seats filled by the league's unrated level.
   return (sum + UNRATED_ABILITY * Math.max(0, 5 - lineup.length)) / Math.max(5, lineup.length);

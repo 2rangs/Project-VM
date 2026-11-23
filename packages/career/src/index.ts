@@ -26,5 +26,6 @@ export * from "./career/schedule.ts";
 export * from "./career/career.ts";
 export * from "./career/quick-sim.ts";
 export * from "./career/save.ts";
+export * from "./career/readiness.ts";
 // One inbox (career/inbox.ts), one date helper (career/calendar.ts) and one teamStrength
 // (club/market.ts, re-exported by career/schedule.ts) for the whole package.
