@@ -4,6 +4,7 @@ import { DataTable, Rating, Flag, SourceTag, Disclaimer, type Column } from '../
 import { useT } from '../i18n/index.tsx';
 import { useWorld } from '../career/store.ts';
 import { scoutedAbility, type World, type WorldPlayer } from '../career/world.ts';
+import { ContractPanel } from './club/ContractPanel.tsx';
 
 const DATASET = new Map(players().map((p) => [p.playerId, p]));
 
@@ -64,6 +65,7 @@ export function PlayerDetail({ p, w }: { p: SquadRow; w: World }) {
           {t('career.caPa', { caLo: est.caLo, caHi: est.caHi, paLo: est.paLo, paHi: est.paHi })}
         </div>
       </div>
+      <ContractPanel playerId={p.playerId} />
       <div className="agentpool">
         <div className="muted small">{t('squad.agentPool', { n: p.agentPool.length })}</div>
         <div className="chips">{p.agentPool.slice(0, 14).map((a) => <span key={a} className="chip">{a}</span>)}{p.agentPool.length > 14 && <span className="chip muted">+{p.agentPool.length - 14}</span>}</div>

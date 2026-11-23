@@ -1,0 +1,32 @@
+/* club operations: finance, transfers, training, contract panel */
+.club-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--line); background:#1b2230; color:inherit; cursor:pointer; font-size:12px; }
+.club-btn.primary { border-color:var(--accent); background:#1f6feb33; }
+.club-btn.danger { border-color:#ff7b7288; color:#ff7b72; }
+.club-actions { display:flex; gap:6px; margin-top:6px; }
+.club-clock { display:inline-flex; gap:6px; align-items:center; margin-left:auto; }
+.fin-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:8px; margin:8px 0; }
+.fin-card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+.fin-card.warn { border-color:#f0b42988; }
+.fin-value { font-size:18px; font-weight:700; margin:2px 0; }
+.wage-bar { height:6px; background:#1b2230; border-radius:3px; margin:4px 0 10px; overflow:hidden; }
+.wage-fill { height:100%; background:#2ea043; } .wage-fill.over { background:#f85149; }
+.neg { color:#ff7b72; } .pos { color:#7ee787; }
+.club-msgs { display:flex; flex-direction:column; gap:8px; }
+.club-msg { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+.club-msg.k-board { border-left:3px solid #f0b429; } .club-msg.k-transfer { border-left:3px solid var(--accent); }
+.window-pill { font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+.window-pill.open { color:#7ee787; border-color:#2ea04388; }
+.tr-filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+.tr-filters input[type=number] { width:80px; margin-left:4px; }
+.tr-filters select, .tr-filters input, .offer-form input, .club select { background:#121922; color:var(--fg); border:1px solid var(--line); border-radius:5px; padding:2px 5px; }
+.offer-list { display:flex; flex-direction:column; gap:8px; }
+.offer-row { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
+.offer-form { display:flex; flex-direction:column; gap:6px; margin-top:10px; padding-top:8px; border-top:1px solid var(--line); }
+.of-row { display:grid; grid-template-columns:90px 1fr 60px; gap:6px; align-items:center; font-size:12px; }
+.offer-status { font-size:12px; padding:4px 0; }
+.offer-status.st-completed, .offer-status.st-accepted { color:#7ee787; }
+.offer-status.st-rejected, .offer-status.st-expired { color:#ff7b72; }
+.offer-status.st-countered { color:#f0b429; }
+.contract-panel { margin-top:12px; display:flex; flex-direction:column; gap:4px; }
+.star { color:#f0b429; }
+.focus-tabs { flex-wrap:wrap; }

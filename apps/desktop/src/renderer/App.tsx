@@ -37,6 +37,9 @@ import { ScheduleScreen } from './screens/career/ScheduleScreen.tsx';
 import { StandingsScreen } from './screens/career/StandingsScreen.tsx';
 import { CareerMatch } from './screens/career/CareerMatch.tsx';
 import './screens/career/career.css';
+import { FinanceScreen } from './screens/club/FinanceScreen.tsx'; // [club-ops]
+import { TransfersScreen } from './screens/club/TransfersScreen.tsx'; // [club-ops]
+import { TrainingScreen } from './screens/club/TrainingScreen.tsx'; // [club-ops]
 
 export type DetailPanel = { title: string; body: ReactNode } | null;
 
@@ -123,6 +126,9 @@ export default function App() {
           {route === 'veto' && <SeriesScreen ctx={ctx} />}
           {route === 'squad' && <SquadScreen setDetail={setDetail} />}
           {route === 'scouting' && <ScoutingScreen setDetail={setDetail} />}
+          {route === 'finance' && <FinanceScreen setDetail={setDetail} />}
+          {route === 'transfers' && <TransfersScreen setDetail={setDetail} />}
+          {route === 'training' && <TrainingScreen setDetail={setDetail} />}
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}

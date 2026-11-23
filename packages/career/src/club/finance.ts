@@ -116,6 +116,8 @@ export function initFinances(w: World, date: string): void {
   setSeasonBudgets(w, date, false);
   for (const id of Object.keys(w.teams).sort()) {
     const f = club.finances[id]!;
+    // The board accepts the payroll the club starts with: the first wage budget covers it.
+    f.wageBudget = Math.max(f.wageBudget, roundTo(wageBill(w, id).total * (1 + M.wageTolerance / 2), M.wageStep));
     f.balance = roundTo(M.initialReserveYears * annualCosts(w, id), M.feeStep);
     f.transferBudget = roundTo(M.transferShare * Math.max(0, f.balance - M.transferReserveYears * annualCosts(w, id)), M.feeStep);
   }
