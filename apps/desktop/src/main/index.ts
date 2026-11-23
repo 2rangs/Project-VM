@@ -6,6 +6,7 @@ import { app, BrowserWindow, ipcMain, utilityProcess, type UtilityProcess } from
 import { readFile, readdir } from 'node:fs/promises';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createInterface, type Interface as ReadlineInterface } from 'node:readline';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -222,13 +223,15 @@ async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron
 }
 
 // Optional real map mesh for the 3D team cams: apps/desktop/assets/maps/<map>.glb (gitignored —
-// map geometry is third-party IP and is never committed). Absent → null → navgraph blockout.
+// map geometry is third-party IP and is never committed), else the shared local asset store
+// ~/ProjectV-assets/maps/glb/<map>.glb that tools/map-mesh/blender/export-web-glb.py writes to, so
+// every checkout and worktree finds it. Absent → null → navgraph blockout.
 ipcMain.handle(IPC.mapMesh, async (_e, mapId: string): Promise<Uint8Array | null> => {
   const safe = path.basename(String(mapId)).replace(/[^a-zA-Z0-9_-]/g, '');
   // app path is apps/desktop under electron-vite dev, but out/main when Electron is given the built entry.
   const dirs = process.env.PV_MAP_ASSETS_DIR
     ? [process.env.PV_MAP_ASSETS_DIR]
-    : [path.join(app.getAppPath(), 'assets', 'maps'), path.join(dirname, '..', '..', 'assets', 'maps')];
+    : [path.join(app.getAppPath(), 'assets', 'maps'), path.join(dirname, '..', '..', 'assets', 'maps'), path.join(os.homedir(), 'ProjectV-assets', 'maps', 'glb')];
   for (const dir of dirs) {
     try { return new Uint8Array(await readFile(path.join(dir, `${safe}.glb`))); } catch { /* try the next location */ }
   }
