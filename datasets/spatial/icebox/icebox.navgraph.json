@@ -2012,13 +2012,29 @@
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1713,
-      "distanceMeters": 17.13,
-      "runTimeMs": 2537,
-      "walkTimeMs": 5037,
-      "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)",
-      "kind": "approx-link",
-      "routeStatus": "straight (no walkable route on the grid)"
+      "distanceUnits": 821,
+      "distanceMeters": 8.21,
+      "runTimeMs": 700,
+      "walkTimeMs": 700,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-nest-rope' in the authoring file",
+      "kind": "rope",
+      "traversal": "a-nest-rope",
+      "routeStatus": "straight (special traversal (no walking route applies))"
+    },
+    {
+      "from": "a-nest",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2344,
+      "distanceMeters": 23.44,
+      "runTimeMs": 3556,
+      "walkTimeMs": 3556,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-zipline' in the authoring file",
+      "kind": "zipline",
+      "traversal": "a-zipline",
+      "routeStatus": "straight (special traversal (no walking route applies))"
     }
   ],
   "sightlines": [
@@ -2635,6 +2651,12 @@
       "b": "b-orange",
       "attenuation": 0.3,
       "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-nest",
+      "b": "a-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
     }
   ],
   "routes": {
@@ -2642,7 +2664,8 @@
     "source": "tools/map-mesh/pipeline/route_map.py",
     "edgesWithWalkableRoute": 40,
     "edgesFlaggedStraight": [
-      "a-pipes->a-nest"
+      "a-pipes->a-nest",
+      "a-nest->a-site"
     ],
     "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
   },
@@ -2650,28 +2673,32 @@
     {
       "kind": "rope",
       "name": "Vertical ropes (A Nest / A Rafters, B Yellow container, Mid Boiler)",
-      "represented": false,
-      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "four roadmap links kind=rope between measured cells (traversals in this file): A Nest, the two ropes of the far A platform, B Yellow. The 'on rope' state (exposed, cannot ADS) is NOT modelled. No ascender object exists at Mid Boiler in this scene (see objectsNotLocated)"
     },
     {
       "kind": "zipline",
       "name": "Horizontal zipline across A site",
-      "represented": false,
-      "engineNeeds": "zipline edge with its own speed and exposure",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "one roadmap link kind=zipline between the two platforms (traversal a-zipline); its exposure is NOT modelled"
     }
   ],
   "dataQuality": {
     "edgeKinds": {
       "walk": 32,
       "drop": 8,
-      "approx-link": 1
+      "rope": 1,
+      "zipline": 1
     },
-    "approxLinks": [
-      "a-pipes<->a-nest"
-    ],
+    "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [
+      "a-rafters-rope-east",
+      "a-rafters-rope-west",
+      "b-yellow-rope"
+    ],
     "doorsNotAttached": [],
     "zonesOnMainWalkComponent": "24/25"
   },
