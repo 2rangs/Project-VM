@@ -87,8 +87,17 @@ async function main() {
   await page.getByTestId('nav-home').click();
 
   // ── Continue → first match day ──
-  await page.getByTestId('home-continue').click();
-  await page.waitForSelector('[data-testid="home-matchday"]', { timeout: LONG });
+  // (an AI club may bid for one of our players on the way: that is a question, answered by rejecting)
+  const toMatchDay = async () => {
+    for (let i = 0; i < 20; i++) {
+      if (await page.getByTestId('home-matchday').count()) return;
+      if (await page.getByTestId('home-awaiting').count()) { await answerInbox(page); continue; }
+      await page.getByTestId('home-continue').click();
+      await page.waitForSelector('[data-testid="home-matchday"], [data-testid="home-awaiting"]', { timeout: LONG });
+    }
+    throw new Error('no match day reached');
+  };
+  await toMatchDay();
   const matchDate = await page.getByTestId('home-date').innerText();
   assert.ok(matchDate >= '2026-02-01', `first match day is in February (${matchDate})`);
   const fatigueBefore = readSave().world.club.training.exposure;
