@@ -19,6 +19,7 @@ import { useT, strategyLabel } from '../i18n/index.tsx';
 import { LiveMatch } from './matchday/LiveMatch.tsx';
 import { MatchHub } from './matchday/MatchHub.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx';
+import { preloadMatchAssets } from './matchday/assets.ts';
 
 /**
  * [series] Optional: this Match Day plays the NEXT MAP of a live series (teams, map and seed come
@@ -43,6 +44,9 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   // Loading screen state for a one-shot run: latest round/score from the runner, and a failure message.
   const [simStep, setSimStep] = useState<{ round: number; a: number; b: number } | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+  // 'assets' = the simulation / session is ready and the live view's assets (3D map, minimap) are being finished
+  const [loadPhase, setLoadPhase] = useState<'work' | 'assets' | null>(null);
+  const [sessPreparing, setSessPreparing] = useState(false);
   const [dismissedSessError, setDismissedSessError] = useState<string | null>(null);
   const [trace, setTrace] = useState<DecisionTrace | null>(null);
   const [match, setMatch] = useState<MatchSummary | null>(null);
@@ -96,7 +100,9 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   // (Auto-play now lives in LiveMatch: it advances once the round has been watched.)
 
   async function runMatch() {
-    setRunning(true); setPct(0); setLog([]); setMatch(null); setSimStep(null); setRunError(null);
+    setRunning(true); setPct(0); setLog([]); setMatch(null); setSimStep(null); setRunError(null); setLoadPhase('work');
+    // the live view's assets (3D map for the team cams, minimap) load alongside the simulation
+    const assets = preloadMatchAssets();
     try {
       const res = await bridge.runSimulation(
         { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB), options: matchOptions(), ...(series ? { seriesGame: true } : {}) },
@@ -106,16 +112,24 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
           if (p.message) setLog((l) => [...l.slice(-3), p.message!]);
         },
       );
+      setLoadPhase('assets');
+      await assets;
       ctx.setReplay(res.replay as Replay);
       setMatch(res.match ?? null);
       setSource(res.source);
       setTab('match'); setImmersive(true);
-    } catch (e) { setRunError((e as Error).message); setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
+    } catch (e) { setRunError((e as Error).message); setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); setLoadPhase(null); }
   }
 
   async function startInteractive() {
     setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner'); setImmersive(true);
-    await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions(), ...(series ? { seriesGame: true } : {}) });
+    setSessPreparing(true); setLoadPhase('work');
+    const assets = preloadMatchAssets();
+    try {
+      await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions(), ...(series ? { seriesGame: true } : {}) });
+      setLoadPhase('assets');
+      await assets;
+    } finally { setSessPreparing(false); setLoadPhase(null); }
   }
   async function callTimeout() { await sess.callTimeout('A'); setOrdersOpen(true); }
   async function confirmOrders(order: TeamOrder) { await sess.setOrders('A', order); setOrdersOpen(false); }
@@ -126,7 +140,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
 
   // Live view: full-window, replaces the shell while a match is being played or watched.
   const liveAvailable = interactive ? sess.active : !!replay && source !== '';
-  if (immersive && tab === 'match' && liveAvailable) {
+  if (immersive && tab === 'match' && liveAvailable && !sessPreparing) {
     return (
       <>
       {/* [series] the live view replaces the setup screen, so the way back to the series lives here too */}
@@ -158,7 +172,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   }
 
   // Loading / failure surfaces: shown only while the work is pending or until the error is dismissed.
-  const sessStarting = interactive && sess.busy && !sess.active;
+  const sessStarting = interactive && (sessPreparing || (sess.busy && !sess.active));
   const sessStartError = interactive && !sess.active && sess.error && sess.error !== dismissedSessError ? sess.error : null;
   const versus = `${teamA} vs ${teamB}`;
 
@@ -166,12 +180,13 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
     <div className="matchday">
       {running && (
         <LoadingScreen cover="window" title={t('load.sim.title')} detail={`${versus} · Ascent`}
-          progress={simStep ? pct : null} steps={simStep ? t('load.sim.steps', { n: simStep.round, a: simStep.a, b: simStep.b }) : t('load.sim.starting')} />
+          progress={loadPhase === 'assets' ? 1 : simStep ? pct : null}
+          steps={loadPhase === 'assets' ? t('load.assets.preparing') : simStep ? t('load.sim.steps', { n: simStep.round, a: simStep.a, b: simStep.b }) : t('load.sim.starting')} />
       )}
       {!running && runError && (
         <LoadingScreen cover="window" title={t('load.sim.failed')} error={runError} onRetry={() => { void runMatch(); }} onDismiss={() => setRunError(null)} />
       )}
-      {sessStarting && <LoadingScreen cover="window" title={t('load.session.title')} detail={`${versus} · Ascent`} steps={t('load.session.steps')} />}
+      {sessStarting && <LoadingScreen cover="window" title={t('load.session.title')} detail={`${versus} · Ascent`} steps={loadPhase === 'assets' ? t('load.assets.preparing') : t('load.session.steps')} />}
       {!sessStarting && sessStartError && (
         <LoadingScreen cover="window" title={t('load.session.failed')} error={sessStartError} onRetry={() => { void startInteractive(); }} onDismiss={() => setDismissedSessError(sessStartError)} />
       )}

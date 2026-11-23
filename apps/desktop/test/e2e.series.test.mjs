@@ -163,9 +163,12 @@ async function main() {
   }
 
   // ── Korean (default) ──
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the home (lobby) screen; enter the shell through its PLAY action.
+  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
+  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
+  await page.getByTestId('home-play').click();
   await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
   await resize(1280, 800);
   const ko = await playSeries({ lang: 'ko', shots: { veto: 'desktop-veto.png', summary: 'desktop-series-summary.png' } });

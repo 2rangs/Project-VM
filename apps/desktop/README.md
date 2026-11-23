@@ -88,6 +88,46 @@ user decision for pre-release internal development only — license / name /
 likeness rights must be re-reviewed before any launch. The `.vrf` sample players
 (non-pro) stay anonymous (`player_N`).
 
+## Home (lobby)
+
+![Home](docs/desktop-home.png)
+
+The app opens on a full-window lobby (`src/renderer/screens/home/`). It follows the design
+language of the game's 5.08 interface refresh as published — less ornament, higher contrast, one
+clear call to action, symmetric team presentation with a VS, `NN // LABEL` section heads and a
+centred trapezoid PLAY tab — re-drawn with this project's own icon set (`screens/matchday/Icons.tsx`);
+no game artwork, logo or icon is used.
+
+| Block | Data |
+|---|---|
+| Next match + **PLAY** | our club / opponent / map: the same defaults Match Day opens with (`HOME_CLUB`, `HOME_OPPONENT` in `HomeScreen.tsx`). PLAY, the top-bar tab and the Series button lead to Match Day and Series |
+| Starting five | the first five players of our club's game-data roster — the slots the engine fields — with the agent of their slot (and that agent's role) and 1–20 estimates (overall = mean of aim, reaction, positioning, impact, trading, consistency) |
+| Opponent five | the opponent's first five roster players, with the slot's agent and overall estimate; opens Opponent Report |
+| Club | attack / defense win rate, maps on record and most-played maps from `team_profiles.json` |
+| Career | season and population from the career world (`career/store.ts`); optional `inbox` / `calendar` props let the career shell add its previews |
+| Go to | every working screen of the manager shell |
+
+`홈` in the left nav returns to it. There is no scheduled fixture list yet, so "next match" is the
+default pairing, not a calendar entry.
+
+## Loading screens
+
+One original design (`src/renderer/loading/`: CSS + inline SVG, no game assets) covers every wait:
+
+| Wait | What is shown |
+|---|---|
+| App start | a static splash in `index.html` (visible before any script runs), replaced when React mounts; if the app never mounts a help line appears after 12 s |
+| One-shot match simulation | `LoadingScreen` with **round and score** as they are played (`run-match.mts` writes one `PVPROGRESS` line per round → `SimProgress.round/score`; the bar is the leader's score out of 13) |
+| Interactive session start | `LoadingScreen` until the session answers |
+| Next round of a session | an inline chip on the stage ("라운드 N 시뮬레이션 중…") |
+| Series preparation / quick-simulated series map | `LoadingScreen` with `맵 n/m`; the series worker replies once per map, so there is no per-round counter here |
+| Season advance (Scouting) | `LoadingScreen`; the work is synchronous, so the screen is painted first and the season runs on the next tick |
+| Map image / 3D map mesh in the live view | inline chips in the corner of the stage; a mesh that fails to load says so and the blockout is used |
+
+Rules: a loader is rendered only while its work is pending (it owns no timers, so it cannot outlive
+the work), the inline chips never take input, and a failure turns the same surface into a message
+with **다시 시도 / 닫기** instead of a spinner. Usage is documented at the top of `loading/Loading.tsx`.
+
 ## Match Day
 
 ### Pre-match options (match setup)

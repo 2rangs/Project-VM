@@ -43,9 +43,17 @@ async function main() {
 
   // shell + Match Day (default route). The language persists in localStorage across
   // launches, so pin the default (Korean) first — screenshots and docs are Korean.
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the home (lobby) screen; its PLAY action leads to Match Day in the shell.
+  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
+  await page.waitForSelector('[data-testid="home-screen"]', { timeout: 20000 });
+  assert.equal(await page.locator('[data-testid="app-splash"]').count(), 0, 'the start-up splash is replaced once the app has mounted');
+  assert.equal(await page.locator('[data-testid^="home-player-"]').count(), 5, 'home lists the five players the engine fields');
+  assert.ok(/VS/.test(await page.getByTestId('home-next-match').innerText()), 'home shows the next match');
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: path.join(OUT, 'desktop-home.png') });
+  await page.getByTestId('home-play').click();
   await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
   await page.waitForTimeout(800);
   await page.screenshot({ path: path.join(OUT, 'desktop-shell.png') });
@@ -63,6 +71,7 @@ async function main() {
   // …and is gone, with no error panel, once the match is on screen
   assert.equal(await page.locator('[data-testid="loading-screen"]').count(), 0, 'loading screen closes when the work is done');
   assert.equal(await page.locator('[data-testid="loading-screen-error"]').count(), 0, 'no error panel after a successful run');
+  assert.equal(await page.locator('[data-testid="loading-mesh"]').count(), 0, 'the 3D map for the team cams was prepared during the game load');
   // real match scoreboard rendered (first-to-13)
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 5000 });
   const sb = await page.getByTestId('scoreboard').innerText();
@@ -233,8 +242,12 @@ async function main() {
   // English: the decisions view is fully localised (revision reasons stay engine English in both).
   await page.getByTestId('nav-about').click();
   await page.getByTestId('lang-en').click();
+  // the loading banner is the player's choice: pick another one and the next load uses it
+  await page.getByTestId('banner-prism').click();
+  assert.equal(await page.getByTestId('banner-prism').getAttribute('aria-checked'), 'true', 'banner choice is selected');
   await page.getByTestId('nav-match-day').click();
   await page.getByTestId('run-match').click();
+  await page.waitForSelector('[data-testid="loading-screen"][data-banner="prism"]', { timeout: 10000 });
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 90000 });
   await page.getByTestId('tab-review').click();
   await page.waitForSelector('[data-testid="rev-decisions-panel"]', { timeout: 10000 });
@@ -248,6 +261,7 @@ async function main() {
   // restore the default language (it persists in localStorage across launches)
   await page.getByTestId('nav-about').click();
   await page.getByTestId('lang-ko').click();
+  await page.getByTestId('banner-standard').click();
 
   await app.close();
   console.log('E2E OK — screenshots in apps/desktop/docs/');

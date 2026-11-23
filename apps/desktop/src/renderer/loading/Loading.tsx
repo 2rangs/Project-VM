@@ -1,6 +1,7 @@
 // Loading screens for anything that takes long enough to notice. One original design used
-// everywhere (CSS + inline SVG, no game assets): a split diamond that folds open, a `//` label,
-// and — when the work can report progress — a segmented bar with a counter.
+// everywhere (CSS + inline SVG, no game assets): a streak banner that builds up in five steps
+// (StreakBanner.tsx — the player picks the variant), a `//` label, and — when the work can report
+// progress — a bar with a counter.
 //
 // Usage
 //   <LoadingScreen title={t('load.sim.title')} detail="NRG vs Team Heretics" progress={0.4} steps="R11 · 5–5" />
@@ -14,6 +15,7 @@
 // own, so it cannot outlive the work), and pass `error` instead of leaving it up on failure.
 import type { ReactNode } from 'react';
 import { useT } from '../i18n/index.tsx';
+import { StreakBanner, useLoadingBanner, type BannerStage } from './StreakBanner.tsx';
 import './loading.css';
 
 export function LoadingMark({ size = 56 }: { size?: number }) {
@@ -47,6 +49,9 @@ export interface LoadingScreenProps {
 export function LoadingScreen({ title, detail, progress, steps, error, onRetry, onDismiss, cover = 'area', testId = 'loading-screen' }: LoadingScreenProps) {
   const t = useT();
   const pct = progress == null ? null : Math.round(Math.min(1, Math.max(0, progress)) * 100);
+  const banner = useLoadingBanner();
+  // with real progress the banner builds 1 → 5 as the work advances; otherwise it loops
+  const stage: BannerStage = pct == null ? 'loop' : (Math.min(5, Math.floor(pct / 20) + 1) as BannerStage);
   if (error) {
     return (
       <div className={`pvl pvl-${cover} pvl-error`} role="alert" data-testid={`${testId}-error`}>
@@ -63,9 +68,10 @@ export function LoadingScreen({ title, detail, progress, steps, error, onRetry, 
     );
   }
   return (
-    <div className={`pvl pvl-${cover}`} role="status" aria-live="polite" aria-busy="true" data-testid={testId}>
+    <div className={`pvl pvl-${cover}`} role="status" aria-live="polite" aria-busy="true" data-testid={testId} data-banner={banner}>
       <div className="pvl-card">
-        <LoadingMark />
+        <StreakBanner variant={banner} stage={stage} />
+        <span className={`pvl-pips ${stage === 'loop' ? 'loop' : ''}`} aria-hidden>{[1, 2, 3, 4, 5].map((n) => <i key={n} className={stage !== 'loop' && stage >= n ? 'on' : ''} />)}</span>
         <span className="pvl-kicker"><i>//</i>{t('load.kicker')}</span>
         <strong className="pvl-title">{title}</strong>
         {detail && <span className="pvl-detail">{detail}</span>}

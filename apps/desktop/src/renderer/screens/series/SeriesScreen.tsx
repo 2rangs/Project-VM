@@ -13,6 +13,7 @@ import { usesBorrowedGeometry, vetoLogLine } from '../../series/view.ts';
 import { MatchDayScreen } from '../MatchDayScreen.tsx';
 import { VetoBoard } from './VetoBoard.tsx';
 import './series.css';
+import { LoadingScreen } from '../../loading/Loading.tsx'; // [loading]
 
 /** Pause before each AI veto step, so its choice is seen as it happens. */
 const AI_REVEAL_MS = Number((globalThis as { PV_VETO_REVEAL_MS?: number }).PV_VETO_REVEAL_MS ?? 900);
@@ -70,6 +71,7 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
   const [scouting, setScouting] = useState(true);
   const [inGame, setInGame] = useState(false);
   const [quickBusy, setQuickBusy] = useState(false);
+  const [quickError, setQuickError] = useState<string | null>(null); // [loading] a failed quick map shows a message, not a spinner
   const view = ser.view;
   const refOf = (name: string) => { const x = allTeams.find((y) => y.name === name); return { id: x?.teamId ?? name, name }; };
 
@@ -93,11 +95,11 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
   }
   /** Play the next map in one go without opening Match Day. */
   async function quickGame() {
-    setQuickBusy(true);
+    setQuickBusy(true); setQuickError(null);
     try {
       const res = await bridge.runSimulation({ mapId: 'ascent', seed, rounds: 13, seriesGame: true }, () => {});
       ctx.setReplay(res.replay as Replay);
-    } catch { /* surfaced by the refresh below */ }
+    } catch (e) { setQuickError((e as Error).message); }
     await ser.refresh();
     setQuickBusy(false);
   }
@@ -124,6 +126,13 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
 
   return (
     <div className="ser-wrap" data-testid="series-screen" data-phase={view?.phase ?? 'setup'}>
+      {/* [loading] series preparation and a quick-simulated map get a loading screen; a failure gets a message */}
+      {!view && ser.busy && <LoadingScreen cover="window" title={t('load.series.preparing')} detail={`${teamA} vs ${teamB}`} steps={t('ser.setup.preparing')} testId="loading-series" />}
+      {quickBusy && view && (
+        <LoadingScreen cover="window" title={t('load.sim.title')} detail={`${view.teams.A.name} vs ${view.teams.B.name}${view.nextGame ? ` · ${view.nextGame.map}` : ''}`}
+          steps={view.nextGame ? t('load.series.steps', { n: view.nextGame.gameNumber, m: view.format.games }) : null} testId="loading-series-game" />
+      )}
+      {!quickBusy && quickError && <LoadingScreen cover="window" title={t('load.sim.failed')} error={quickError} onRetry={() => { void quickGame(); }} onDismiss={() => setQuickError(null)} />}
       <h2 className="ser-title">{t('ser.title')} {view && <span className="pill">{t(`ser.format.${view.format.games === 1 ? 'bo1' : view.format.games === 3 ? 'bo3' : 'bo5'}`)}</span>}</h2>
 
       {/* ── setup ── */}

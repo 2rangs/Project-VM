@@ -11,6 +11,7 @@ import {
   type World, type WorldStaff,
 } from '../career/world.ts';
 import { GenTag, PlayerDetail, squadRow, type SquadRow } from './SquadScreen.tsx';
+import { LoadingScreen } from '../loading/Loading.tsx'; // [loading]
 
 type Tab = 'prospects' | 'free' | 'staff';
 
@@ -41,6 +42,8 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
   const t = useT();
   const w = useWorld();
   const [tab, setTab] = useState<Tab>('prospects');
+  const [advancing, setAdvancing] = useState(false); // [loading]
+  const [advanceError, setAdvanceError] = useState<string | null>(null);
   const pop = populationSummary(w);
   const last = w.history[w.history.length - 1];
 
@@ -67,13 +70,23 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
   const staff = Object.values(w.staff);
   const openPlayer = (p: SquadRow) => setDetail({ title: `${p.handle} · ${p.role}`, body: <PlayerDetail p={p} w={w} /> });
 
+  // [loading] advancing a season is synchronous work: paint the loading screen first, then run it.
+  function advance() {
+    setDetail(null); setAdvancing(true); setAdvanceError(null);
+    setTimeout(() => {
+      try { advanceWorld(); } catch (e) { setAdvanceError((e as Error).message); } finally { setAdvancing(false); }
+    }, 60);
+  }
+
   return (
     <div className="pad scouting" data-testid="career-screen">
+      {advancing && <LoadingScreen cover="window" title={t('load.season.title')} detail={t('load.season.detail', { from: w.season, to: w.season + 1 })} steps={t('load.season.steps')} testId="loading-season" />}
+      {!advancing && advanceError && <LoadingScreen cover="window" title={t('load.season.failed')} error={advanceError} onRetry={advance} onDismiss={() => setAdvanceError(null)} />}
       <h2>{t('career.title')} <span className="muted small" data-testid="career-season">{t('career.season', { season: w.season })}</span></h2>
       <div className="career-bar">
         <span className="small">{t('career.population', { players: pop.players, gen: pop.generated, staff: pop.staff })}</span>
         {last && <span className="small muted">{t('career.lastIntake', { season: last.season, n: last.newPlayers.length, retired: last.retiredPlayers.length, signed: last.signings.length })}</span>}
-        <button className="career-advance" onClick={() => { setDetail(null); advanceWorld(); }} data-testid="career-advance">{t('career.advance')}</button>
+        <button className="career-advance" onClick={advance} disabled={advancing} data-testid="career-advance">{t('career.advance')}</button>
         <button className="career-reset" onClick={() => { setDetail(null); resetWorld(); }} data-testid="career-reset">{t('career.reset')}</button>
       </div>
       <div className="md-tabs">

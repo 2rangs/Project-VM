@@ -12,7 +12,6 @@
 // ours sees them. (The fog POV can be switched to the opponent for debugging, as before.)
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Replay } from '@pv/replay-engine';
-import { valorantApiMinimap } from '@pv/replay-viewer';
 import type { MatchSummary, SessionState, TeamOrder, TimeoutLogEntry } from '../../../shared/ipc.ts';
 import { ASCENT_TRANSFORM } from '../../../shared/ascent-transform.ts';
 import navgraph from '../../../data/sim/ascent.navgraph.json';
@@ -34,7 +33,7 @@ import { usePlayback } from '../../matchday/usePlayback.ts';
 import { MatchStage, type StageView } from './MatchStage.ts';
 import { CamStage3D, type CamView } from './CamStage3D.ts';
 import { buildBlockout } from '../../matchday/world3d.ts';
-import { bridge } from '../../platform.ts';
+import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
 import { AgentTag, AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
 import { LoadingInline } from '../../loading/Loading.tsx';
@@ -241,8 +240,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     stageRef.current = stage;
     let alive = true;
     void stage.init(host).then(async () => {
-      const url = await valorantApiMinimap('Ascent');
-      const ok = await stage.setMap(url);
+      await preloadMatchAssets(); // normally already settled: the loading screen waited for it
+      const ok = await stage.setMap(preparedMinimapUrl());
       if (alive) setMapOk(ok);
     });
     const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
@@ -252,34 +251,31 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // three.js stage for the cams: created the first time the cams are opened, then kept.
+  // three.js stage for the cams: created with the screen (not on the first switch to the cams) and
+  // given the map mesh the loading screen already prepared, so opening the cams starts no load.
   const host3dRef = useRef<HTMLDivElement>(null);
   const camStageRef = useRef<CamStage3D | null>(null);
+  const assets = useMatchAssets();
   const [mapMesh, setMapMesh] = useState<'blockout' | 'glb'>('blockout');
-  // 'loading' while the optional real mesh is being read and parsed; 'failed' → blockout stays, with a note
-  const [meshLoad, setMeshLoad] = useState<'idle' | 'loading' | 'done' | 'failed'>('idle');
   useEffect(() => {
     const host = host3dRef.current;
-    if (mode !== 'cams' || !host || camStageRef.current) return;
+    if (!host) return;
     const stage = new CamStage3D(nav, blockout);
     stage.init(host);
     camStageRef.current = stage;
     (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
-    setMeshLoad('loading');
-    void bridge.loadMapMesh('ascent').then(async (bytes) => {
-      if (camStageRef.current !== stage) return;
-      if (!bytes) { setMeshLoad('done'); return; } // no mesh installed: the blockout is the map
-      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-      if (await stage.setMapGlb(buf)) { setMapMesh('glb'); setMeshLoad('done'); } else setMeshLoad('failed');
-    }).catch(() => { setMeshLoad('failed'); });
-  }, [mode]);
-  useEffect(() => {
-    const host = host3dRef.current;
-    if (!host) return;
-    const ro = new ResizeObserver(() => camStageRef.current?.resize(host.clientWidth, host.clientHeight));
+    void preloadMatchAssets(); // no-op when the loading screen has done it; covers re-opening the view
+    const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
     ro.observe(host);
-    return () => { ro.disconnect(); camStageRef.current?.destroy(); camStageRef.current = null; };
+    return () => { ro.disconnect(); stage.destroy(); camStageRef.current = null; };
   }, []);
+  useEffect(() => {
+    const stage = camStageRef.current; const root = preparedMesh();
+    if (!stage || assets.mesh !== 'ready' || !root) return;
+    stage.setMapScene(root);
+    stage.warmUp();
+    setMapMesh('glb');
+  }, [assets.mesh]);
 
   useEffect(() => {
     let lastSig = '';
@@ -477,8 +473,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
               </button>
               <div className="mdx-wall-overlay">
                 {overlays}
-                {meshLoad === 'loading' && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.mesh')} testId="loading-mesh" /></div>}
-                {meshLoad === 'failed' && <div className="mdx-loadchip corner"><span className="pvl-inline" data-testid="mesh-failed">{t('load.assets.meshFailed')}</span></div>}
+                {assets.mesh === 'loading' && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.mesh')} testId="loading-mesh" /></div>}
+                {assets.mesh === 'failed' && <div className="mdx-loadchip corner"><span className="pvl-inline" data-testid="mesh-failed">{t('load.assets.meshFailed')}</span></div>}
               </div>
             </div>
             <EnemyPanel t={t} frame={frame} teamName={teams[enemyTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(enemyTeam)}>

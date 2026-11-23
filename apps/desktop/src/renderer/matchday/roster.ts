@@ -21,6 +21,12 @@ export function rosterHandles(teamId: string | undefined): string[] {
   });
 }
 
+/** game-data player ids of a team's first `count` rostered players (the slots the engine fields). */
+export function rosterPlayerIds(teamId: string | undefined, count = 5): string[] {
+  const roster = teamId ? (rosters as Record<string, Array<{ playerId: string }>>)[teamId] : undefined;
+  return (roster ?? []).slice(0, count).map((r) => r.playerId);
+}
+
 /**
  * The agent each engine slot plays. Mirrors @pv/match-runner `ASCENT_COMP` (both teams field this
  * fixed comp; slot i plays agent i) — the comp is not exported to the app, so it is repeated here.

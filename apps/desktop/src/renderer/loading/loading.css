@@ -34,3 +34,44 @@
   .pvl-m { animation: none; opacity: 1; transform: none; }
   .pvl-bar.indeterminate i { animation: none; left: 0; width: 100%; opacity: .4; }
 }
+
+/* ── streak banner (StreakBanner.tsx): five layers that build up, then burst ─────────────── */
+.pvk { display: block; overflow: visible; }
+.pvk-l { transform-origin: 60px 60px; transform-box: view-box; opacity: 0; transform: scale(.7); }
+/* staged: driven by progress — a layer pops in when its step is reached */
+.pvk.staged .pvk-l { transition: opacity .18s ease-out, transform .32s cubic-bezier(.2, 1.6, .4, 1); }
+.pvk.staged .pvk-l.on { opacity: 1; transform: scale(1); }
+.pvk.staged[data-stage="5"] { animation: pvk-ace 1.2s ease-in-out infinite; }
+/* loop: no progress to report — play 1 → 5, hold, reset */
+.pvk.loop .pvk-l { animation: 3.4s cubic-bezier(.2, 1.4, .4, 1) infinite; }
+.pvk.loop .pvk-l1 { animation-name: pvk-s1; } .pvk.loop .pvk-l2 { animation-name: pvk-s2; } .pvk.loop .pvk-l3 { animation-name: pvk-s3; }
+.pvk.loop .pvk-l4 { animation-name: pvk-s4; } .pvk.loop .pvk-l5 { animation-name: pvk-s5; }
+@keyframes pvk-s1 { 0% { opacity: 0; transform: scale(.7); } 6%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s2 { 0%, 16% { opacity: 0; transform: scale(.7); } 22%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s3 { 0%, 32% { opacity: 0; transform: scale(.7); } 38%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s4 { 0%, 48% { opacity: 0; transform: scale(.7); } 54%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-s5 { 0%, 64% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.12); } 76%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes pvk-ace { 50% { filter: brightness(1.35); } }
+/* the five-step counter under the banner */
+.pvl-pips { display: inline-flex; gap: 4px; margin-top: -2px; }
+.pvl-pips i { width: 16px; height: 4px; background: #ffffff1c; transform: skewX(-18deg); transition: background .15s; }
+.pvl-pips i.on { background: var(--pl-ink); }
+.pvl-pips.loop i { animation: pvl-pip 3.4s linear infinite; }
+.pvl-pips.loop i:nth-child(2) { animation-delay: .54s; } .pvl-pips.loop i:nth-child(3) { animation-delay: 1.09s; }
+.pvl-pips.loop i:nth-child(4) { animation-delay: 1.63s; } .pvl-pips.loop i:nth-child(5) { animation-delay: 2.18s; }
+@keyframes pvl-pip { 0%, 4% { background: #ffffff1c; } 6%, 60% { background: var(--pl-ink); } 100% { background: #ffffff1c; } }
+
+/* ── banner picker (About / settings) ── */
+.pvl-picker { margin: 14px 0; max-width: 640px; }
+.pvl-picker-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.pvl-picker-head span { font-size: 12px; color: #8b98a9; }
+.pvl-picker-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pvl-picker-grid button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px 10px; background: #0f1923; border: 1px solid #2c3a47; color: #a9b3ba; cursor: pointer; font: inherit; font-size: 12px; }
+.pvl-picker-grid button:hover { border-color: #5b6b78; }
+.pvl-picker-grid button.on { border-color: #ece8e1; color: #ece8e1; box-shadow: inset 0 -3px 0 #ff4655; }
+.pvl-picker-grid button:focus-visible { outline: 2px solid #ece8e1; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pvk.loop .pvk-l, .pvl-pips.loop i, .pvk.staged[data-stage="5"] { animation: none; }
+  .pvk.loop .pvk-l { opacity: 1; transform: none; } .pvl-pips.loop i { background: var(--pl-ink); }
+}

@@ -9,8 +9,6 @@
 // What a monitor may show is decided by the Frame (matchday/frame.ts): teammates always, an
 // enemy figure only while THAT player sees it, a sound beacon only if THAT player heard it.
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import type { NavModel, Vec3 } from '../../matchday/nav.ts';
 import type { Frame } from '../../matchday/frame.ts';
 import { EYE_HEIGHT_M, firstPersonPose, toScene, type Blockout } from '../../matchday/world3d.ts';
@@ -321,38 +319,37 @@ export class CamStage3D {
   }
 
   /**
-   * Swap the blockout for a real map mesh (a GLB already in scene coordinates — see
-   * tools/map-mesh/blender/export-web-glb.py). Returns false and keeps the blockout on failure.
+   * Swap the blockout for the real map mesh prepared by `assets.ts` (parsed, in scene coordinates,
+   * ray-cast index built). Attaching is cheap; `warmUp` then uploads it and compiles the shaders.
    */
-  async setMapGlb(data: ArrayBuffer): Promise<boolean> {
-    try {
-      const gltf = await new GLTFLoader().parseAsync(data, '');
-      const root = gltf.scene;
-      let tris = 0;
-      root.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (!m.isMesh) return;
-        const src = m.material as THREE.MeshStandardMaterial;
-        m.material = new THREE.MeshStandardMaterial({ color: src?.color ?? new THREE.Color(0x8a8f96), roughness: 0.95, metalness: 0, side: THREE.DoubleSide, vertexColors: !!m.geometry.getAttribute('color') });
-        m.geometry.computeVertexNormals();
-        (m.geometry as THREE.BufferGeometry & { boundsTree?: MeshBVH }).boundsTree = new MeshBVH(m.geometry);
-        m.raycast = acceleratedRaycast;
-        m.matrixAutoUpdate = false; m.updateMatrix();
-        tris += (m.geometry.index ? m.geometry.index.count : m.geometry.getAttribute('position').count) / 3;
-      });
-      root.updateMatrixWorld(true);
-      this.mapGroup.visible = false;
-      this.glb = root;
-      this.scene.add(root);
-      this.groundCache.clear();
-      this.perf.map = 'glb';
-      this.lastSig = '';
-      console.info(`[cams] map mesh loaded: ${Math.round(tris).toLocaleString()} triangles`);
-      return true;
-    } catch (e) {
-      console.warn('[cams] map mesh failed to load, using the blockout', e);
-      return false;
-    }
+  setMapScene(root: THREE.Object3D): void {
+    if (this.glb === root) return;
+    if (this.glb) this.scene.remove(this.glb);
+    this.mapGroup.visible = false;
+    this.glb = root;
+    this.scene.add(root);
+    this.groundCache.clear();
+    this.perf.map = 'glb';
+    this.lastSig = '';
+  }
+
+  /**
+   * Upload geometry and compile shaders now (one render into a 1 × 1 viewport), so the first real
+   * frame after switching to the cams is not the one that pays for it.
+   */
+  warmUp(): void {
+    const renderer = this.renderer;
+    if (!renderer) return;
+    for (const f of [...this.allies, ...this.enemies]) f.group.visible = true;
+    renderer.setScissorTest(true);
+    renderer.setViewport(0, 0, 1, 1); renderer.setScissor(0, 0, 1, 1);
+    this.camera.aspect = 1; this.camera.updateProjectionMatrix();
+    renderer.render(this.scene, this.camera);
+    renderer.render(this.viewModel.scene, this.viewModel.camera);
+    renderer.setScissorTest(false);
+    renderer.setClearColor(0x000000, 0); renderer.clear();
+    for (const f of [...this.allies, ...this.enemies]) f.group.visible = false;
+    this.lastSig = '';
   }
 
   /** Floor height (scene metres) under a game position: the navgraph height on the blockout, a downward ray on the real mesh. */

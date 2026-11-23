@@ -23,11 +23,12 @@ import { DevScreen } from './screens/DevScreen.tsx';
 import { AboutScreen } from './screens/AboutScreen.tsx';
 import { Placeholder } from './screens/Placeholder.tsx';
 import { SeriesScreen } from './screens/series/SeriesScreen.tsx'; // [series]
+import { HomeScreen } from './screens/home/HomeScreen.tsx'; // [home] full-window lobby, the first screen
 
 export type DetailPanel = { title: string; body: ReactNode } | null;
 
 export default function App() {
-  const [route, setRoute] = useState('match-day');
+  const [route, setRoute] = useState('home');
   const [replay, setReplay] = useState<Replay | null>(null);
   const [detail, setDetail] = useState<DetailPanel>(null);
   const t = useT();
@@ -68,6 +69,7 @@ export default function App() {
         </nav>
 
         <main className="maincontent" data-testid={`screen-${route}`}>
+          {route === 'home' && <HomeScreen go={(r) => { setDetail(null); setRoute(r); }} />}
           {route === 'match-day' && <MatchDayScreen ctx={ctx} />}
           {route === 'veto' && <SeriesScreen ctx={ctx} />}
           {route === 'squad' && <SquadScreen setDetail={setDetail} />}

@@ -38,6 +38,12 @@ const PATHS = {
   move: 'M2 9h10V3l10 9-10 9v-6H2z',
   fight: 'M3 3h4l5 6 5-6h4v4l-6 5 6 5v4h-4l-5-6-5 6H3v-4l6-5-6-5z',
   dead: 'M4 2l8 8 8-8 2 2-8 8 8 8-2 2-8-8-8 8-2-2 8-8-8-8z',
+  // ── destinations (home screen tiles) ──
+  home: 'M12 2l10 9h-3v11h-5v-7h-4v7H5V11H2z',
+  tactics: 'M2 2h20v20H2z M5 5v14h14V5z M7 16l4-4 2 2 4-6v8z',
+  squad: 'M12 1l4 4-4 4-4-4z M4 12l4 4-4 4-4-4z M20 12l4 4-4 4-4-4z M12 11l4 4-4 4-4-4z',
+  series: 'M2 3h9v4H6v3h5v4H6v3h5v4H2z M13 9h9v6h-9z',
+  info: 'M10 2h4v4h-4z M10 9h4v13h-4z',
   // ── roles (our own glyphs: blade / pulse / ring / wall) ──
   duelist: 'M19 2h3v3L9 18l-3-3z M2 17l3-3 5 5-3 3z M4 4l5 5-2 2-3-4z',
   initiator: 'M12 1l3 6-3 3-3-3z M23 12l-6 3-3-3 3-3z M12 23l-3-6 3-3 3 3z M1 12l6-3 3 3-3 3z',
