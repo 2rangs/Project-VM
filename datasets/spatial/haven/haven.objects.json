@@ -1,0 +1,48 @@
+{
+ "mapId": "haven",
+ "schemaVersion": "1.0.0",
+ "note": "Gameplay objects as points and types, game uu (100 uu = 1 m); no surfaces. drops: the roadmap's one-way drops (from/to are roadmap nodes of <map>.nav.json; fallMeters = height lost). traversals: one per roadmap link, in the roadmap's link order (from/to are the roadmap nodes the link joins; ropes also name bottom/top and whether from->to ascends; soundSource / soundSourceExit are the points its sound is emitted from at the entry and the exit, soundRadiusUu is null and soundVerified false until a value is measured). doors / breakables: position on the floor in the opening, zones = the zone of the nearest roadmap point on each side of the opening (one zone for a prop; gates, where present, is the zone-graph edge the door is attached to), defaultState open/closed/intact/unknown. notLocated: mechanics known for the map that no scene object or floor measurement could place. ultOrbs: orb positions, empty where the scene has no orb object. Every entry states its own provenance.",
+ "provenance": "measured-on-mesh (positions: scene object bounding boxes and walk-grid cells; drops and the zones: the navigation roadmap); manual-approx (travel times and speeds, default states, and the reading of which scene object is which gameplay object)",
+ "roadmapBounds": {
+  "min": {
+   "x": -3582,
+   "y": -14190,
+   "z": 0
+  },
+  "max": {
+   "x": 7368,
+   "y": -1840,
+   "z": 950
+  }
+ },
+ "counts": {
+  "drops": 9,
+  "traversals": 0,
+  "doors": 0,
+  "breakables": 0,
+  "ultOrbs": 0,
+  "notLocated": 1
+ },
+ "drops": [
+  {"from":{"x":1818,"y":-12690,"z":488},"to":{"x":1818,"y":-12640,"z":301},"fallMeters":1.87,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":641,"toNode":797},
+  {"from":{"x":3818,"y":-13590,"z":521},"to":{"x":3768,"y":-13590,"z":302},"fallMeters":2.19,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":672,"toNode":798},
+  {"from":{"x":3768,"y":-13840,"z":698},"to":{"x":3718,"y":-13840,"z":301},"fallMeters":3.97,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":671,"toNode":799},
+  {"from":{"x":1918,"y":-12690,"z":562},"to":{"x":1918,"y":-12640,"z":301},"fallMeters":2.61,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":800,"toNode":801},
+  {"from":{"x":218,"y":-3540,"z":200},"to":{"x":218,"y":-3590,"z":130},"fallMeters":0.7,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":802,"toNode":803},
+  {"from":{"x":-2382,"y":-6790,"z":200},"to":{"x":-2432,"y":-6790,"z":100},"fallMeters":1.0,"fromZone":"c-cubby","toZone":"c-cubby","fromNode":804,"toNode":805},
+  {"from":{"x":-2382,"y":-6840,"z":200},"to":{"x":-2432,"y":-6840,"z":100},"fallMeters":1.0,"fromZone":"c-cubby","toZone":"c-cubby","fromNode":806,"toNode":807},
+  {"from":{"x":-2382,"y":-6540,"z":200},"to":{"x":-2432,"y":-6540,"z":100},"fallMeters":1.0,"fromZone":"c-cubby","toZone":"c-cubby","fromNode":808,"toNode":809},
+  {"from":{"x":-2382,"y":-6590,"z":200},"to":{"x":-2432,"y":-6590,"z":100},"fallMeters":1.0,"fromZone":"c-cubby","toZone":"c-cubby","fromNode":810,"toNode":811}
+ ],
+ "traversals": [],
+ "doors": [],
+ "breakables": [],
+ "ultOrbs": [],
+ "notLocated": [
+  {
+   "name": "Ultimate orbs",
+   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+  }
+ ],
+ "generatedBy": "tools/map-mesh/pipeline/objects_map.py"
+}

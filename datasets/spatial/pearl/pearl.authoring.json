@@ -39,6 +39,12 @@
       "provenance": "measured-on-mesh (object names, heights, floor extent, cell); manual-approx (that this named floor is the callout's zone)"
     }
   },
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    }
+  ],
   "mechanics": [
     {
       "kind": "none",

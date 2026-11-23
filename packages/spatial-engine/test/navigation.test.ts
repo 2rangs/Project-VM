@@ -238,11 +238,7 @@ describe("navigation: Ascent", () => {
 // ---- Phase 4: the tactical layer's travel times are navigation path costs ----
 
 /** Zones the walk grid cannot reach on each map (NAVIGATION_ENGINE.md §1) — unreachable, never bridged. */
-const ROADMAP_GAPS: Partial<Record<MapId, string[]>> = {
-  abyss: ["a-secret", "b-danger"],
-  icebox: ["a-nest"],
-  split: ["mid-vent"],
-};
+const ROADMAP_GAPS: Partial<Record<MapId, string[]>> = {};
 
 describe("tactical travel time = navigation path cost", () => {
   const spawns = new Set(ascent.zones.filter((z) => z.transit === false).map((z) => z.id));

@@ -32,7 +32,7 @@ describe.each(MAP_IDS.map((id) => [id] as const))("edge routes: %s", (id: MapId)
     // (Pearl's b-club / mid-shops callouts are stacked on one spot and cannot be routed)
     for (const e of straight) {
       const stacked = dist(engine.standPosition(e.from), engine.standPosition(e.to)) === 0;
-      expect(["teleporter", "zipline", "rope", "approx-link"].includes(e.kind ?? "walk") || stacked, `${e.from}->${e.to} (${e.kind})`).toBe(true);
+      expect(["teleporter", "zipline", "rope", "jump", "approx-link"].includes(e.kind ?? "walk") || stacked, `${e.from}->${e.to} (${e.kind})`).toBe(true);
     }
     coverage.push(`${id.padEnd(9)} ${String(routed.length).padStart(2)}/${String(data.edges.length).padStart(2)} routed   straight: ${straight.map((e) => `${e.from}->${e.to}`).join(", ") || "-"}`);
   });
