@@ -1,13 +1,14 @@
 // Club operations: contracts, finance over several seasons, transfer decisions (counterfactual),
 // loans, renewals and expiry, training focus → development direction, map practice → mastery,
-// and the hook API with the local driver.
+// and the club layer running inside real careers (career mode's calendar, inbox and season end).
 import { describe, it, expect, beforeAll } from "vitest";
 import { mapMastery } from "@pv/match-runner";
 import { getTeamMapRecords } from "@pv/game-data";
 import { worldFromGameData } from "../src/game-data.ts";
 import {
   CLUB_MODEL, ABILITY_KEYS, MECHANICAL_KEYS, advanceSeason, answerCounter, askingPrice, clubAnswer, clubSalary, clubSeasonEnd,
-  createLocalDriver, estimateAbility, focusFactors, initClub, makeOffer, marketWage, playerAnswer, playerUtility,
+  answerInbox, batchOf, continueCareer, newCareer, quickSeries, recordResult, seriesRequest, type CareerState,
+  estimateAbility, focusFactors, initClub, makeOffer, marketWage, playerAnswer, playerUtility,
   practiceAdjustedRecords, releasePlayer, reputations, seasonFocus, serializeWorld, setIndividualFocus, setTrainingPlan, teamScout, teamStrength,
   trainingWeek, wageBill, weeklyVector, windowStatus, type World, type WorldPlayer, type RatedAttr, type OfferTerms,
 } from "../src/index.ts";
@@ -268,22 +269,37 @@ describe("training", () => {
   });
 });
 
-describe("economy over three seasons (seeded)", () => {
-  let driver: ReturnType<typeof createLocalDriver>;
+describe("economy over three seasons (seeded, inside a career)", () => {
   const snapshots: World[] = [];
-  beforeAll(() => {
-    driver = createLocalDriver(club);
-    snapshots.push(driver.world);
-    for (let s = 0; s < 3; s++) { driver.advanceToNextSeason(); snapshots.push(driver.world); }
-  }, 300_000);
+  let career: CareerState;
+  const sim = batchOf(quickSeries);
+  /** Play a career on (board: playoffs; bids for our players: rejected; our matches: quick estimate). */
+  async function playSeasons(c: CareerState, seasons: number, onSeason?: (w: World) => void, maxDays = Infinity): Promise<void> {
+    const start = c.date;
+    const target = c.season.season + seasons;
+    while (c.season.season < target) {
+      const r = await continueCareer(c, sim);
+      if (r.stop === "message") for (const m of r.items!) answerInbox(c, m.id, m.ref?.offerId ? "reject" : m.options![0]!.id);
+      else if (r.stop === "matchDay") {
+        const q = seriesRequest(c, r.fixture!);
+        recordResult(c, q.fixtureId, { ...quickSeries(q, c), source: "user", lineups: { home: q.home.lineup, away: q.away.lineup } });
+      } else if (r.stop === "seasonEnd") { await continueCareer(c, sim); onSeason?.(c.world); }
+      if (r.date > start && (new Date(r.date).getTime() - new Date(start).getTime()) / 864e5 > maxDays) return;
+    }
+  }
+  beforeAll(async () => {
+    career = newCareer(structuredClone(base), { seed: SEED, manager: { name: "T", nationality: "kr" }, userTeamId: user });
+    snapshots.push(structuredClone(career.world));
+    await playSeasons(career, 3, (w) => snapshots.push(structuredClone(w)));
+  }, 600_000);
 
-  it("is deterministic", () => {
-    const again = createLocalDriver(club);
-    again.advanceDays(60);
-    const first = createLocalDriver(club);
-    first.advanceDays(60);
-    expect(serializeWorld(again.world)).toBe(serializeWorld(first.world));
-  });
+  it("is deterministic", async () => {
+    const a = newCareer(structuredClone(base), { seed: SEED, manager: { name: "T", nationality: "kr" }, userTeamId: user });
+    const b = newCareer(structuredClone(base), { seed: SEED, manager: { name: "T", nationality: "kr" }, userTeamId: user });
+    await playSeasons(a, 1, undefined, 60);
+    await playSeasons(b, 1, undefined, 60);
+    expect(serializeWorld(a.world)).toBe(serializeWorld(b.world));
+  }, 120_000);
 
   it("no club goes infinitely rich or broke, and budgets stay in plausible bands", () => {
     for (const w of snapshots) {
@@ -319,15 +335,17 @@ describe("economy over three seasons (seeded)", () => {
     for (const f of Object.values(final.club!.finances)) expect(f.monthly.length).toBeGreaterThan(0);
   });
 
-  it("the user's ledger records the months, prize money and board messages reach the inbox hook", () => {
+  it("the user's ledger records the months, prize money and board messages reach the career inbox", () => {
     const f = snapshots[3]!.club!.finances[user]!;
     const kinds = new Set(f.ledger.map((e) => e.kind));
     for (const k of ["stipend", "sponsorship", "wages", "staffWages", "operations", "prize"]) expect(kinds.has(k as never), k).toBe(true);
-    const titles = driver.inbox.map((m) => m.title.en);
+    const club = career.inbox.filter((m) => m.source === "club");
+    const titles = club.map((m) => m.text!.en.title);
     expect(titles.some((t) => t.includes("budget set"))).toBe(true);
     expect(titles.some((t) => t.includes("Transfer window open"))).toBe(true);
     expect(titles.some((t) => t.includes("prize money"))).toBe(true);
-    for (const m of driver.inbox) { expect(m.title.ko.length).toBeGreaterThan(0); expect(m.body.en.length).toBeGreaterThan(0); }
+    for (const m of club) { expect(m.text!.ko.title.length).toBeGreaterThan(0); expect(m.text!.en.body!.length).toBeGreaterThan(0); }
+    expect(career.world.club!.outbox).toHaveLength(0); // everything reached the career inbox
   });
 
   it("the wage bill is a sensible share of income", () => {

@@ -8,42 +8,19 @@
 import { createInterface } from 'node:readline';
 import { runSeries, type SeriesResult } from '../../../packages/match-runner/src/index.ts';
 import type { RosterPlayer } from '../../../packages/match-runner/src/teams.ts';
+import { getTeamMapRecords } from '../../../packages/game-data/src/index.ts';
+import { withPractice } from '../../../packages/career/src/club/training.ts';
+import { killLines } from './kill-lines.mts';
 import type { CareerSimOutcome, CareerSimRequest } from '../src/shared/career.ts';
 
-/**
- * Kills / deaths per player from the engine's kill events. In a round the attacking slot's players
- * are `atk1..5` and the defenders `def1..5`, in roster order, so `atk3` is index 2 of the attacking
- * team's five.
- */
-function killLines(res: SeriesResult, req: CareerSimRequest, gameIdx: number): Record<string, { k: number; d: number }> {
-  const g = res.games[gameIdx]!;
-  const out: Record<string, { k: number; d: number }> = {};
-  const lineup = { A: req.home.roster.map((p) => p.playerId), B: req.away.roster.map((p) => p.playerId) };
-  const teamOfSlot = (slot: 'A' | 'B'): 'A' | 'B' => (g.slots.A === slot ? 'A' : 'B');
-  for (const id of [...lineup.A, ...lineup.B]) out[id] = { k: 0, d: 0 };
-  for (const r of g.match.rounds) {
-    const atkTeam = teamOfSlot(r.attacker);
-    const defTeam = atkTeam === 'A' ? 'B' : 'A';
-    const who = (pid: string | null | undefined): string | null => {
-      const m = /^(atk|def)(\d)$/.exec(pid ?? '');
-      if (!m) return null;
-      const team = m[1] === 'atk' ? atkTeam : defTeam;
-      return lineup[team][Number(m[2]) - 1] ?? null;
-    };
-    for (const e of r.replay.events as Array<{ kind?: string; killer?: string | null; victim?: string }>) {
-      if (e.kind !== 'kill') continue;
-      const k = who(e.killer); const v = who(e.victim);
-      if (k && out[k]) out[k].k += 1;
-      if (v && out[v]) out[v].d += 1;
-    }
-  }
-  return out;
-}
+/** The team's map records with its training map practice added (mastery continuity C). */
+const records = (side: CareerSimRequest['home']) =>
+  (side.practice && Object.keys(side.practice).length ? { mapRecords: withPractice(getTeamMapRecords(side.teamId), side.practice) as ReturnType<typeof getTeamMapRecords> } : {});
 
 function play(req: CareerSimRequest): CareerSimOutcome {
   const res = runSeries({
-    teamA: { id: req.home.teamId, name: req.home.name, scouting: false, staff: { analyst: req.home.analyst }, roster: req.home.roster as RosterPlayer[] },
-    teamB: { id: req.away.teamId, name: req.away.name, scouting: false, staff: { analyst: req.away.analyst }, roster: req.away.roster as RosterPlayer[] },
+    teamA: { id: req.home.teamId, name: req.home.name, scouting: false, staff: { analyst: req.home.analyst }, roster: req.home.roster as RosterPlayer[], ...records(req.home) },
+    teamB: { id: req.away.teamId, name: req.away.name, scouting: false, staff: { analyst: req.away.analyst }, roster: req.away.roster as RosterPlayer[], ...records(req.away) },
     format: req.format,
     seed: req.seed,
   });
@@ -51,8 +28,8 @@ function play(req: CareerSimRequest): CareerSimOutcome {
     fixtureId: req.fixtureId,
     winner: res.winner === 'A' ? req.home.teamId : req.away.teamId,
     mapsWon: [res.score.A, res.score.B],
-    maps: res.games.map((g, i) => ({
-      map: g.map, score: [g.score.A, g.score.B], ...(g.match.wentToOvertime ? { overtime: true } : {}), players: killLines(res, req, i),
+    maps: res.games.map((g) => ({
+      map: g.map, score: [g.score.A, g.score.B], ...(g.match.wentToOvertime ? { overtime: true } : {}), players: killLines(g, req.home.roster.map((p) => p.playerId), req.away.roster.map((p) => p.playerId)),
     })),
   };
 }

@@ -1,13 +1,13 @@
 // The open career in the renderer: one CareerState (@pv/career), the save slot it belongs to, and
 // the Continue loop. AI fixtures are played by the full engine in another process
-// (bridge.careerSimulate → scripts/career-sim.mts) unless the manager chose the quick estimate
-// (or there is no Electron); a failed engine batch falls back to the quick estimate for that day.
+// (bridge.careerSimulate → scripts/career-sim.mts) when the manager chose it in Settings; by
+// default the calibrated quick estimate plays them; a failed engine batch falls back to the quick estimate for that day.
 // The career autosaves into its slot whenever Continue stops and after the manager's own match.
 import { useSyncExternalStore } from 'react';
 import { bridge, runtime } from '../platform.ts';
 import type { CareerSimProgress, CareerSimRequest, SaveSlot } from '../../shared/career.ts';
 import {
-  answerInbox, buildDesktopWorld, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
+  answerInbox, buildDesktopWorld, drainClubOutbox, matchRoster, setLineup, syncClubInbox, type World, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
   recordResult, serializeCareer, type BatchSimulator, type CareerState, type ContinueResult, type Outcome,
   type SeriesOutcome, type SeriesRequest,
 } from './world.ts';
@@ -16,8 +16,12 @@ import { FIXTURES } from './fixtures.ts';
 export type SimMode = 'engine' | 'quick';
 const SIM_KEY = 'pv-career-sim';
 
+/**
+ * How other teams' series are played: the calibrated quick estimate by default (a whole season of
+ * AI series in seconds), the full engine when the manager chooses it in Settings (~20 min/season).
+ */
 export function simMode(): SimMode {
-  try { return localStorage.getItem(SIM_KEY) === 'quick' ? 'quick' : 'engine'; } catch { return 'engine'; }
+  try { return localStorage.getItem(SIM_KEY) === 'engine' ? 'engine' : 'quick'; } catch { return 'quick'; }
 }
 export function setSimMode(m: SimMode): void {
   try { localStorage.setItem(SIM_KEY, m); } catch { /* no storage */ }
@@ -113,12 +117,11 @@ export function closeCareer(): void { notify({ career: null, slot: null, lastSto
 // --- simulation ---------------------------------------------------------------------------------------
 
 function toSimRequest(career: CareerState, r: SeriesRequest): CareerSimRequest {
+  // Today's five with readiness applied (fatigue, sharpness) and the team's map practice.
   const side = (s: SeriesRequest['home']) => ({
     teamId: s.teamId, name: s.name, analyst: s.analyst,
-    roster: s.lineup.map((id) => {
-      const p = career.world.players[id]!;
-      return { playerId: p.playerId, attributes: p.attributes, hasRatings: p.hasRatings };
-    }),
+    roster: matchRoster(career, s.lineup),
+    practice: career.world.club?.training.mapPractice[s.teamId] ?? {},
   });
   return { fixtureId: r.fixtureId, seed: r.seed, format: r.format, home: side(r.home), away: side(r.away) };
 }
@@ -152,6 +155,25 @@ export async function continueGame(): Promise<ContinueResult | null> {
     notify({ busy: null, error: (e as Error).message });
     return null;
   }
+}
+
+/** A club action on the career's world (pure: World in, World out); messages reach the inbox. */
+export function updateCareerWorld(fn: (w: World) => World): void {
+  const c = snap.career;
+  if (!c) return;
+  c.world = fn(c.world);
+  drainClubOutbox(c);
+  syncClubInbox(c);
+  notify();
+  void writeSlot();
+}
+
+/** The manager's starting five for the next match. */
+export function chooseLineup(ids: string[]): void {
+  if (!snap.career) return;
+  setLineup(snap.career, ids);
+  notify();
+  void writeSlot();
 }
 
 export function answer(itemId: string, option: string): void {

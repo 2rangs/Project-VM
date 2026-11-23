@@ -68,3 +68,32 @@ Design doc: `docs/CAREER_MODE.md` (flow, calendar, competition, sim, saves, hook
 4. Swap `CareerProgress` for the match-day `LoadingScreen` when it lands.
 5. Lineup choice before a match; per-player K/D from the manager's series; Kickoff/Masters,
    double elimination; other regions' leagues.
+
+---
+
+## Update: club operations integrated (second task)
+
+Merged `origin/claude/remaining-work-final-push-fa1459` (297143b) and integrated the club layer.
+Done (commits 8050d2f, 763d174, c6bd559, then the wip/docs commits):
+- Club hook adapter: `packages/career/src/club/career-hook.ts` (`clubCareerHook`, run by `career.ts`
+  after the core hook). The club's own `CareerHooks`/local driver, `ClubClock` buttons,
+  `DEFAULT_USER_TEAM`, `withClub` and the `club*` aliases are gone. One `InboxItem`, one date
+  helper set (career/calendar.ts), one `teamStrength` (club/market.ts).
+- `advanceSeason({ managedTeams })`: the season loop does not touch the manager's squad.
+- Lineup choice before each match (squad with form/fatigue/sharpness/readiness), readiness formula
+  `R = (1 − 0.25·max(0, f − 0.3))·(1 − 0.08·(1 − s))` scaling attributes toward the floor,
+  K/D from the manager's series, map practice → mastery records (`withPractice`) for the series
+  and the background sim.
+- AI sim: quick formula calibrated to the engine (slope 5.39, 48 engine maps) is the default;
+  full engine optional. Measured: quick season 0.3 s; engine 2.6 s/series ≈ 2.8 min/season
+  (the earlier "20–30 min" was wrong).
+- Unscheduled lobby `screens/home` deleted; career loading uses the match-day `LoadingScreen`.
+- Verified: `packages/career` vitest 49/49, desktop typecheck, build, `test:unit` 58/58.
+
+Verified (heavy-run.sh): `test:e2e:career` passes — "signed rion, played 0–2 on 2026-02-06 with a
+chosen five; 5 engine-played AI series; season 2026 played out, contract expired, season 2027
+open" (first run failed at the first match day because a bid question stopped Continue; the test
+now answers it); `test:e2e:club` (starts a career first) passes. Not re-run: the edited
+`test:e2e` and `test:e2e:series` (start-menu edits; `test:e2e` no longer has a club step), the
+full match-runner suite. Known gaps: below five players after expiries the lineup cannot be
+confirmed (no Home warning); the manager's squad is never auto-refilled.

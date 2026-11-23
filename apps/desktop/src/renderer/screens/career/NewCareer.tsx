@@ -12,7 +12,7 @@ import { buildDesktopWorld, leagueTeams, regionTeams, scoutedAbility, teamStreng
 import { startNewCareer, useCareer } from '../../career/session.ts';
 import { Flag } from '../../ui.tsx';
 import { GenTag } from '../SquadScreen.tsx';
-import { CareerProgress } from './CareerProgress.tsx';
+import { LoadingScreen } from '../../loading/Loading.tsx';
 
 /** Nationalities offered for the manager (ISO codes; names come from Intl in the active language). */
 const NATIONS = ['kr', 'jp', 'cn', 'tw', 'th', 'ph', 'id', 'vn', 'sg', 'my', 'au', 'in', 'us', 'ca', 'br', 'ar', 'cl', 'mx', 'co', 'pe',
@@ -84,7 +84,7 @@ export function NewCareer({ onCancel }: { onCancel: () => void }) {
   const league = world && teamId ? leagueTeams(world, region, teamId) : world ? regionTeams(world, region).slice(0, 12) : [];
   const nameOk = name.trim().length >= 2 && name.trim().length <= 32;
 
-  if (cs.busy?.kind === 'create') return <CareerProgress title={t('nc.generating')} detail={t('nc.generatingDetail', { seed })} />;
+  if (cs.busy?.kind === 'create') return <LoadingScreen cover="window" testId="career-progress" title={t('nc.generating')} detail={t('nc.generatingDetail', { seed })} />;
 
   return (
     <div className="nc" data-testid="new-career" data-step={step}>

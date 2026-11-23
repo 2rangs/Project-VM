@@ -12,7 +12,7 @@
 import type { World, WorldPlayer } from "../model.ts";
 import { advanceSeason } from "../season.ts";
 import { estimateAbility, teamScout } from "../scouting.ts";
-import { addDays, dayOfWeek, monthKey, monthOf, seasonEndDate, seasonStartDate, windowStatus } from "./calendar.ts";
+import { dayOfWeek, monthKey, monthOf, seasonEndDate, seasonStartDate, windowStatus } from "./calendar.ts";
 import { CLUB_MODEL } from "./constants.ts";
 import { book, initFinances, monthlyFinance, seasonEndFinance, setSeasonBudgets, wageBill } from "./finance.ts";
 import { clubSalary, marketContract, marketWage, reputations, staffContract, startingYears } from "./market.ts";
@@ -38,7 +38,7 @@ export function initClub(world: World, opts: InitClubOptions): World {
   const date = opts.date ?? seasonStartDate(w.season);
   const club: ClubState = {
     version: 1, date, userTeamId: opts.userTeamId, contracts: {}, finances: {}, offers: [], loans: [], transfers: [],
-    shortlist: [], training: emptyTraining(), messages: [], aiBuys: {}, nextId: 1,
+    shortlist: [], training: emptyTraining(), outbox: [], aiBuys: {}, nextId: 1,
   };
   w.club = club;
   const rep = reputations(w);
@@ -217,11 +217,14 @@ function renewAi(w: World, p: WorldPlayer, c: Contract, rep: number): boolean {
   return true;
 }
 
-/** After the season loop advanced: contracts for its signings, training reset, the new budgets. Mutates `w`. */
-export function clubAfterSeasonAdvanceMut(w: World): void {
+/**
+ * After the season loop advanced: contracts for its signings, training reset, the new budgets.
+ * `date` is the new season's first day on the career calendar (default: seasonStartDate).
+ * Mutates `w`.
+ */
+export function clubAfterSeasonAdvanceMut(w: World, date: string = seasonStartDate(w.season)): void {
   const club = w.club;
   if (!club) return;
-  const date = seasonStartDate(w.season);
   club.date = date;
   resetTrainingSeason(club.training);
   reconcileContracts(w, date);
@@ -230,15 +233,15 @@ export function clubAfterSeasonAdvanceMut(w: World): void {
 }
 
 /**
- * The whole season end in one call: before → advanceSeason (with the season's training focus) →
- * after. A shell that runs advanceSeason itself calls clubBeforeSeasonEnd, then
- * advanceSeason(world, { focus: seasonFocus(world) }), then clubAfterSeasonAdvance.
+ * The whole season end in one call (tests; career mode runs the three steps itself around its own
+ * advanceSeason): before → advanceSeason (training focus; the user's squad left to its manager) →
+ * after.
  */
 export function clubSeasonEnd(world: World, ctx: SeasonEndContext = {}): World {
   if (!world.club) return advanceSeason(world);
   const w = clone(world);
   clubBeforeSeasonEndMut(w, ctx);
-  const next = advanceSeason(w, { focus: seasonFocus(w) });
+  const next = advanceSeason(w, { focus: seasonFocus(w), ...(w.club!.userTeamId ? { managedTeams: [w.club!.userTeamId] } : {}) });
   clubAfterSeasonAdvanceMut(next);
   return next;
 }
@@ -254,6 +257,3 @@ export function clubAfterSeasonAdvance(world: World): World {
   clubAfterSeasonAdvanceMut(w);
   return w;
 }
-
-/** Advance the club date by days (the local driver's day step: onDay, and onMonth on the 1st). */
-export function nextDay(date: string): string { return addDays(date, 1); }
