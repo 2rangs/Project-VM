@@ -27,7 +27,11 @@ const res = runMatch({
   seed: cfg.seed ?? 1,
   recordPerception: cfg.recordPerception ?? true,
 }, {
-  onRound: (r) => { eventsWithSpawns.set(r.roundNumber, withSpawnMoves(r.replay.events as unknown as Record<string, unknown>[])); },
+  onRound: (r, score) => {
+    eventsWithSpawns.set(r.roundNumber, withSpawnMoves(r.replay.events as unknown as Record<string, unknown>[]));
+    // one machine-readable progress line per round; the parent turns it into the loading screen's counter
+    process.stderr.write(`PVPROGRESS ${JSON.stringify({ round: r.roundNumber, score })}\n`);
+  },
 });
 
 process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);

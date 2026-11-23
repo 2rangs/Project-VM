@@ -123,8 +123,17 @@ function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebC
     child.stderr.on('data', (d) => {
       errBuf += String(d);
       // run-match.mts logs round progress to stderr; drop npx/npm bootstrap noise.
-      const msg = String(d).split('\n').map((l) => l.trim())
-        .filter((l) => l && !/^npm (warn|notice)/i.test(l)).join(' ').slice(0, 120);
+      const lines = String(d).split('\n').map((l) => l.trim());
+      for (const l of lines) {
+        if (!l.startsWith('PVPROGRESS ')) continue;
+        try {
+          const p = JSON.parse(l.slice(11)) as { round: number; score: { A: number; B: number } };
+          // first to 13: the leader's score is the best available estimate of how far along the map is
+          const pct = Math.min(0.98, Math.max(p.score.A, p.score.B) / 13);
+          sender.send(IPC.simProgress, { runId, phase: 'round', pct, round: p.round, score: p.score } satisfies SimProgress);
+        } catch { /* ignore a torn line */ }
+      }
+      const msg = lines.filter((l) => l && !l.startsWith('PVPROGRESS ') && !/^npm (warn|notice)/i.test(l)).join(' ').slice(0, 120);
       if (msg) sender.send(IPC.simProgress, { runId, phase: 'round', pct: 0.5, message: msg } satisfies SimProgress);
     });
     child.on('error', (e) => { clearTimeout(timeout); reject(e); });

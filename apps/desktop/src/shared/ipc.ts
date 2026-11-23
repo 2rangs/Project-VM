@@ -104,6 +104,8 @@ export interface SimProgress {
   phase: 'start' | 'round' | 'done' | 'error';
   pct: number; // 0..1
   round?: number;
+  /** Score after `round`, when the runner reports it (loading screen counter). */
+  score?: { A: number; B: number };
   message?: string;
 }
 

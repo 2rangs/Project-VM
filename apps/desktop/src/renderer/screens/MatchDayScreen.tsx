@@ -18,6 +18,7 @@ import { useMatchSession } from '../useMatchSession.ts';
 import { useT, strategyLabel } from '../i18n/index.tsx';
 import { LiveMatch } from './matchday/LiveMatch.tsx';
 import { MatchHub } from './matchday/MatchHub.tsx';
+import { LoadingScreen } from '../loading/Loading.tsx';
 
 export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const t = useT();
@@ -25,6 +26,10 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [running, setRunning] = useState(false);
   const [pct, setPct] = useState(0);
   const [log, setLog] = useState<string[]>([]);
+  // Loading screen state for a one-shot run: latest round/score from the runner, and a failure message.
+  const [simStep, setSimStep] = useState<{ round: number; a: number; b: number } | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [dismissedSessError, setDismissedSessError] = useState<string | null>(null);
   const [trace, setTrace] = useState<DecisionTrace | null>(null);
   const [match, setMatch] = useState<MatchSummary | null>(null);
   const [source, setSource] = useState<string>('');
@@ -53,17 +58,21 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   // (Auto-play now lives in LiveMatch: it advances once the round has been watched.)
 
   async function runMatch() {
-    setRunning(true); setPct(0); setLog([]); setMatch(null);
+    setRunning(true); setPct(0); setLog([]); setMatch(null); setSimStep(null); setRunError(null);
     try {
       const res = await bridge.runSimulation(
         { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB) },
-        (p) => { setPct(p.pct); if (p.message) setLog((l) => [...l.slice(-3), p.message!]); },
+        (p) => {
+          setPct(p.pct);
+          if (p.round != null && p.score) setSimStep({ round: p.round, a: p.score.A, b: p.score.B });
+          if (p.message) setLog((l) => [...l.slice(-3), p.message!]);
+        },
       );
       ctx.setReplay(res.replay as Replay);
       setMatch(res.match ?? null);
       setSource(res.source);
       setTab('match'); setImmersive(true);
-    } catch (e) { setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
+    } catch (e) { setRunError((e as Error).message); setLog((l) => [...l, `⚠ ${(e as Error).message}`]); } finally { setRunning(false); }
   }
 
   async function startInteractive() {
@@ -100,8 +109,24 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
     );
   }
 
+  // Loading / failure surfaces: shown only while the work is pending or until the error is dismissed.
+  const sessStarting = interactive && sess.busy && !sess.active;
+  const sessStartError = interactive && !sess.active && sess.error && sess.error !== dismissedSessError ? sess.error : null;
+  const versus = `${teamA} vs ${teamB}`;
+
   return (
     <div className="matchday">
+      {running && (
+        <LoadingScreen cover="window" title={t('load.sim.title')} detail={`${versus} · Ascent`}
+          progress={simStep ? pct : null} steps={simStep ? t('load.sim.steps', { n: simStep.round, a: simStep.a, b: simStep.b }) : t('load.sim.starting')} />
+      )}
+      {!running && runError && (
+        <LoadingScreen cover="window" title={t('load.sim.failed')} error={runError} onRetry={() => { void runMatch(); }} onDismiss={() => setRunError(null)} />
+      )}
+      {sessStarting && <LoadingScreen cover="window" title={t('load.session.title')} detail={`${versus} · Ascent`} steps={t('load.session.steps')} />}
+      {!sessStarting && sessStartError && (
+        <LoadingScreen cover="window" title={t('load.session.failed')} error={sessStartError} onRetry={() => { void startInteractive(); }} onDismiss={() => setDismissedSessError(sessStartError)} />
+      )}
       <div className="md-main">
         <div className="md-teamsel">
           <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={busyControls || sess.active} data-testid="team-a">

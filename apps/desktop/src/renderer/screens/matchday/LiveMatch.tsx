@@ -35,6 +35,7 @@ import { buildBlockout } from '../../matchday/world3d.ts';
 import { bridge } from '../../platform.ts';
 import { AgentTag, AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
+import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
@@ -245,6 +246,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const host3dRef = useRef<HTMLDivElement>(null);
   const camStageRef = useRef<CamStage3D | null>(null);
   const [mapMesh, setMapMesh] = useState<'blockout' | 'glb'>('blockout');
+  // 'loading' while the optional real mesh is being read and parsed; 'failed' → blockout stays, with a note
+  const [meshLoad, setMeshLoad] = useState<'idle' | 'loading' | 'done' | 'failed'>('idle');
   useEffect(() => {
     const host = host3dRef.current;
     if (mode !== 'cams' || !host || camStageRef.current) return;
@@ -252,11 +255,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     stage.init(host);
     camStageRef.current = stage;
     (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
+    setMeshLoad('loading');
     void bridge.loadMapMesh('ascent').then(async (bytes) => {
-      if (!bytes || camStageRef.current !== stage) return;
+      if (camStageRef.current !== stage) return;
+      if (!bytes) { setMeshLoad('done'); return; } // no mesh installed: the blockout is the map
       const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-      if (await stage.setMapGlb(buf)) setMapMesh('glb');
-    }).catch(() => { /* keep the blockout */ });
+      if (await stage.setMapGlb(buf)) { setMapMesh('glb'); setMeshLoad('done'); } else setMeshLoad('failed');
+    }).catch(() => { setMeshLoad('failed'); });
   }, [mode]);
   useEffect(() => {
     const host = host3dRef.current;
@@ -335,6 +340,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
           <span className="mdx-result-hint">{t('mdx.pre.hint')}</span>
         </div>
       )}
+      {session?.busy && !session.ordersOpen && <div className="mdx-loadchip center"><LoadingInline label={t('load.round', { n: session.state.roundNumber })} testId="loading-round" /></div>}
       {toast && <div className="mdx-toast" role="status">{toast}</div>}
       {session?.error && <div className="mdx-toast err" role="alert">⚠ {session.error}</div>}
       {replay && tl.rounds.length > 0 && !tl.hasTracks && <div className="mdx-toast warn">{t('mdx.noTracks')}</div>}
@@ -363,6 +369,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
             <div className="mdx-mapcol">
               <div className="mdx-map" ref={setViewEl('map')} data-testid="tactical-map">
                 {overlays}
+                {mapOk === null && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.map')} testId="loading-map" /></div>}
                 {mapOk === false && <span className="mdx-maphint">{t('mdx.mapOffline')}</span>}
                 <label className="mdx-ctl check mdx-debugctl" title={t('mdx.graph.hint')}>
                   <input type="checkbox" checked={showGraph} onChange={(e) => setShowGraph(e.target.checked)} data-testid="debug-graph" />
@@ -420,7 +427,11 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                 <span className="mdx-osd tr"><em className="live"><i />{t('mdx.cam.live')}</em></span>
                 <span className="mdx-osd bl">{frame ? t('mdx.cam.teamLine', { seen: frame.seen.length, ghosts: frame.ghosts.length, sounds: frame.sounds.length }) : t('mdx.waiting')}</span>
               </button>
-              <div className="mdx-wall-overlay">{overlays}</div>
+              <div className="mdx-wall-overlay">
+                {overlays}
+                {meshLoad === 'loading' && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.mesh')} testId="loading-mesh" /></div>}
+                {meshLoad === 'failed' && <div className="mdx-loadchip corner"><span className="pvl-inline" data-testid="mesh-failed">{t('load.assets.meshFailed')}</span></div>}
+              </div>
             </div>
             <EnemyPanel t={t} frame={frame} teamName={teams[enemyTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(enemyTeam)}>
               <KillFeed t={t} frame={frame} nameOf={nameOf} zoneName={zoneName} />

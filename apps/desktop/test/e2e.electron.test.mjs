@@ -47,9 +47,15 @@ async function main() {
 
   // run a stub match (separate process → IPC → replay) and confirm it loads
   await page.getByTestId('run-match').click();
+  // the simulation runs in another process: a loading screen with round progress covers the wait…
+  await page.waitForSelector('[data-testid="loading-screen"]', { timeout: 10000 });
+  await page.waitForFunction(() => /\d/.test(document.querySelector('[data-testid="loading-steps"]')?.textContent ?? ''), null, { timeout: 90000 }).catch(() => {});
   // match-runner subprocess (npx tsx) + full map can take a while to cold-start
   await page.waitForSelector('.rv-src-simulated', { timeout: 90000 });
   assert.ok(/SIMULATED/.test(await page.locator('.rv-src-simulated').innerText()), 'simulated replay loaded');
+  // …and is gone, with no error panel, once the match is on screen
+  assert.equal(await page.locator('[data-testid="loading-screen"]').count(), 0, 'loading screen closes when the work is done');
+  assert.equal(await page.locator('[data-testid="loading-screen-error"]').count(), 0, 'no error panel after a successful run');
   // real match scoreboard rendered (first-to-13)
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 5000 });
   const sb = await page.getByTestId('scoreboard').innerText();
