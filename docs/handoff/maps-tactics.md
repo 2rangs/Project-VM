@@ -12,17 +12,17 @@ elimination ~0.60–0.75, detonation ≤ ~0.15). Last update: 2026-11-23, after 
 
 | Map | Roadmap gaps | Sight table | Tactics tests | objects.json | Real-roster batch (own geometry) | Done |
 |---|---|---|---|---|---|---|
-| Ascent | none | yes | pass | pending | queued (160, default geometry; gate ≥6/8, attack 0.455 ± 0.02) | no |
-| Abyss | `a-secret`, `b-danger` — in progress | yes | pass | pending | after the gap fix | no |
-| Bind | none (teleporter walk bug fixed `60ef687`) | yes | pass | pending | queued (60) | no |
-| Breeze | none | yes | pass | pending | queued (60) | no |
-| Fracture | none | yes | pass | pending | queued (60) | no |
-| Haven | none (`b-site` fixed `b0ed5ed`) | yes, rebuilt | pass | pending | queued (60) | no |
-| Icebox | `a-nest` (rope) — in progress | yes | pass | pending | after the gap fix | no |
-| Lotus | none | yes | pass | pending | queued (60) | no |
-| Pearl | none (five anchors fixed `b0ed5ed`) | yes, rebuilt | pass | pending | queued (60) | no |
-| Split | `mid-vent` (rope) — in progress | yes | pass | pending | after the gap fix | no |
-| Sunset | none | yes | pass | pending | queued (60) | no |
+| Ascent | none | yes | pass | `3da5f8d` | 160, default geometry: attack 0.455, elim 0.728, det 0.085, defuse 0.136, 6/8 — gate held | no |
+| Abyss | none (`99427ea`, jump links) | yes | pass | committed | not run since the fix | no |
+| Bind | none | yes | pass | being rebuilt | 60: 0.502 / 0.751 / 0.135 / 0.083, 5/8 — **in range** | no |
+| Breeze | none | yes | pass | committed (`202d8b5`) | 60, before the rope link: 0.522 / 0.764 / 0.085 / 0.122, 6/8 — in range (elim 0.014 over) | no |
+| Fracture | none | yes | pass | committed (`a52a61b`) | 60, before the rope links: 0.482 / 0.540 / 0.279 / 0.155, 6/8 — detonation high | no |
+| Haven | none | yes | pass | being rebuilt | 60: 0.489 / 0.416 / 0.236 / 0.288, 4/8 — elimination low, detonation high | no |
+| Icebox | none (`a42c3a7`, rope + zipline) | yes | pass | committed | not run since the fix | no |
+| Lotus | none | yes | pass | committed (`0f7041c`) | 60, before the rope link: 0.493 / 0.475 / 0.204 / 0.255, 4/8 — elimination low, detonation high | no |
+| Pearl | none | yes | pass | being rebuilt | 60: 0.421 / 0.585 / 0.212 / 0.170, 3/8 — detonation high | no |
+| Split | none (`fecde40`) | yes | pass | committed | not run since the fix | no |
+| Sunset | none | yes | pass | being rebuilt | 60: 0.519 / 0.582 / 0.202 / 0.174, 4/8 — detonation high | no |
 
 ### Map data for the pro-technique backlog (`docs/research/PRO_TECHNIQUES_BACKLOG.md`, MAP-1…MAP-6)
 
