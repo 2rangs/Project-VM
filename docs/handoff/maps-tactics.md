@@ -24,6 +24,22 @@ elimination ~0.60–0.75, detonation ≤ ~0.15). Last update: 2026-11-23, after 
 | Split | `mid-vent` (rope) — in progress | yes | pass | pending | after the gap fix | no |
 | Sunset | none | yes | pass | pending | queued (60) | no |
 
+### Map data for the pro-technique backlog (`docs/research/PRO_TECHNIQUES_BACKLOG.md`, MAP-1…MAP-6)
+
+What exists, for the engine session. All of it is the same for the eleven maps unless stated.
+
+| Item | Data | State | Where |
+|---|---|---|---|
+| MAP-1 | Named holding spots per site (standard + off-angle per entry): position, entries seen, exposure, cover grade | **done, all 11 maps** (`fc74531`), derived; ≥ 6 per site on Ascent. `cover` is a ranking of measured exposure, not a body-cover measurement | `loadMapTactics(id).sites[i].holdSpots` (`spatial-engine/src/spots.ts`) |
+| MAP-5 | Plant spots default / safe / open per site, as points on the plantable area | **done, all 11 maps** (`fc74531`), derived | `…sites[i].plantSpots` |
+| MAP-3 | Drop edges with fall height | in progress (with `<map>.objects.json`) | `datasets/spatial/<map>/<map>.objects.json` → `drops` |
+| MAP-3 | Jump spots (airtime, what they see) | **not available** — the roadmap has no jump model; Abyss's jump gaps are the open question of its two roadmap gaps | — |
+| MAP-4 / MS-09 | Ropes, ziplines, teleporters as typed links with entry/exit points and sound source positions | in progress; sound radius left `null`, `soundVerified: false` (no measured value) | `<map>.objects.json` → `traversals`; `<map>.nav.json` → `links` |
+| EC-05 | Ult orb positions | in progress — only if the scene has identifiable orb objects; otherwise listed under `notLocated` | `<map>.objects.json` → `ultOrbs` |
+| DF-05 | Off-angle spots | covered by MAP-1 (`kind: "off-angle"`) | as MAP-1 |
+| MAP-2 | Lineup throw points | **not available** — needs own measurement in custom games; nothing derivable from the tables | — |
+| MAP-6 / UT-03 | One-way smoke spots | **not available** — smokes are zone-level in the engine; candidates could be derived from the sight table once smokes are positional | — |
+
 Every batch before 2026-11-23 in this note was a league-average mirror (`sim-batch --mirror`); the numbers
 further down are that condition and are kept only as the "before". Real rosters are the default now.
 
