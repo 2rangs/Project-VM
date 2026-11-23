@@ -20,6 +20,7 @@ import type { TeamMapRecord } from "@pv/game-data";
 import { deriveSeed } from "@pv/round-simulator";
 import type { OpponentPrior } from "@pv/team-engine";
 import type { MatchConfig, Side, TeamRef, TeamSlot } from "./match.js";
+import type { RosterPlayer } from "./teams.js";
 import { createMatchSession, type MatchSession, type MatchSessionResult } from "./session.js";
 import { gamePlanPrior, type GamePlan, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
 import { leagueMasteryReference, mapMastery, masteryEngineInputs, type MapMastery } from "./mastery.js";
@@ -67,6 +68,12 @@ export interface SeriesTeamConfig extends TeamRef {
   readonly gamePlan?: GamePlan;
   /** THIS team's observable past games, most recent last — what the opponent can scout. */
   readonly history?: readonly TeamGameLog[];
+  /**
+   * [career] Today's players (game-data-shaped, e.g. a career world's starting five, generated
+   * players included), passed to every game as MatchConfig.rosters for this team's slot. Also the
+   * mastery lineup when `lineup` is not given. Default: the game-data roster.
+   */
+  readonly roster?: readonly RosterPlayer[];
 }
 
 export interface SeriesConfig {
@@ -192,7 +199,8 @@ export function prepareSeries(config: SeriesConfig): SeriesPreparation {
   for (const t of TEAMS) {
     mastery[t] = {};
     for (const map of pool) {
-      mastery[t][map] = mapMastery({ teamId: cfg[t].id, map, ...(cfg[t].lineup ? { lineup: cfg[t].lineup } : {}), ...(cfg[t].mapRecords ? { records: cfg[t].mapRecords } : {}) });
+      const lineup = cfg[t].lineup ?? cfg[t].roster?.map((p) => p.playerId);
+      mastery[t][map] = mapMastery({ teamId: cfg[t].id, map, ...(lineup ? { lineup } : {}), ...(cfg[t].mapRecords ? { records: cfg[t].mapRecords } : {}) });
     }
   }
 
@@ -304,6 +312,10 @@ export function createSeriesSession(config: SeriesConfig, options: SeriesSession
       seed: deriveSeed(config.seed, `game:${gameNumber}:${mapKey(vm.map)}`),
       teamInputs: { [slots.A]: perTeam.A.inputs, [slots.B]: perTeam.B.inputs } as Record<TeamSlot, TeamMatchInputs>,
       series: context,
+      // [career] the teams' own players, when given (absent → game-data rosters, byte-identical).
+      ...(cfg.A.roster || cfg.B.roster
+        ? { rosters: { ...(cfg.A.roster ? { [slots.A]: cfg.A.roster } : {}), ...(cfg.B.roster ? { [slots.B]: cfg.B.roster } : {}) } as Partial<Record<TeamSlot, readonly RosterPlayer[]>> }
+        : {}),
     };
     const session = createMatchSession(matchConfig, { aiTeams: TEAMS.filter((t) => aiTeams.has(t)).map((t) => slots[t]) });
     open = { context, session, mastery: { A: perTeam.A.mastery, B: perTeam.B.mastery }, inputs: { A: perTeam.A.inputs, B: perTeam.B.inputs } };

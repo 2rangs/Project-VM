@@ -1,0 +1,460 @@
+// Career mode's day loop (FM's "Continue"):
+//
+//   continueCareer(state, sim)
+//     leave today:   the manager's match must be played and answers given first; the day's other
+//                    fixtures are simulated; hooks run (onDay, onMonth); the date moves on
+//     then, day by day, stop at the first day that needs the manager:
+//                    · their match day                      → "matchDay"
+//                    · an inbox item waiting for an answer  → "message"
+//                    · the season's last day (review)       → "seasonEnd"
+//
+// Leaving the season's last day runs the season transition: review, hooks.onSeasonEnd,
+// advanceSeason (with the maps each league player really played), the new schedule,
+// hooks.onSeasonStart and the board's new objective.
+//
+// `sim` plays the day's AI fixtures: synchronous (quickSeries) or a Promise (the desktop sends them
+// to the match engine in another process). Fixture seeds come from (career seed, fixture id), so a
+// result never depends on the order fixtures are played in.
+import { advanceSeason } from "../season.ts";
+import { newProspects, startingFive, teamStaffInputs } from "../world.ts";
+import { toScale200, estimateAbility, teamScout } from "../scouting.ts";
+import type { World } from "../model.ts";
+import { deriveSeed, mulberry32 } from "../rng.ts";
+import { addDays, isMonthStart, monthOf, type IsoDate } from "./calendar.ts";
+import { careerHooks, type CareerHook, type HookContext } from "./hooks.ts";
+import { awaitingAnswer, postInbox, type InboxDraft, type InboxItem } from "./inbox.ts";
+import {
+  buildSeason, careerStartDate, drawNextStage, groupStageDone, groupStandings, GROUPS, resolvePlayoffs,
+  stageDone, stagePlacings, STAGES, teamStrength,
+} from "./schedule.ts";
+import type { CareerState, Fixture, Manager, SeasonSummary, SeriesOutcome, SeriesRequest, StageId } from "./types.ts";
+
+export const CAREER_MODE = {
+  /** Form update rate per map (see PlayerSeasonLine.form). */
+  formRate: 0.25,
+  /** Days a single Continue may cover before it stops anyway (safety). */
+  maxDaysPerContinue: 400,
+} as const;
+
+export type StopReason = "matchDay" | "message" | "seasonEnd" | "limit";
+
+export interface ContinueResult {
+  readonly stop: StopReason;
+  readonly date: IsoDate;
+  readonly daysAdvanced: number;
+  readonly fixture?: Fixture;
+  readonly items?: readonly InboxItem[];
+  readonly simulated: number;
+}
+
+export type Outcome = Omit<SeriesOutcome, "lineups">;
+/** Plays a batch of series (one day's AI fixtures). May be async. */
+export type BatchSimulator = (reqs: readonly SeriesRequest[], career: CareerState) => Outcome[] | Promise<Outcome[]>;
+
+export interface CareerRuntime {
+  /** Hooks beyond the registered ones (tests). */
+  readonly hooks?: readonly CareerHook[];
+  /** Called after each day is left (the desktop autosaves / shows progress here). */
+  readonly onDayEnd?: (state: CareerState) => void | Promise<void>;
+  /** Called before a day's AI fixtures are played. */
+  readonly onSimulate?: (reqs: readonly SeriesRequest[], state: CareerState) => void;
+}
+
+// --- hook plumbing ----------------------------------------------------------------------------------
+
+function hookCtx(state: CareerState, hook: CareerHook): HookContext {
+  return {
+    career: state,
+    world: state.world,
+    date: state.date,
+    post: (draft: InboxDraft) => postInbox(state, draft, hook.id),
+    rng: (label: string) => mulberry32(deriveSeed(state.seed, `hook:${hook.id}:${state.date}:${label}`)),
+    ext: <T,>(init: () => T): T => {
+      if (!(hook.id in state.ext)) state.ext[hook.id] = init();
+      return state.ext[hook.id] as T;
+    },
+  };
+}
+
+function runHooks(state: CareerState, rt: CareerRuntime | undefined, fn: (h: CareerHook, ctx: HookContext) => void): void {
+  for (const h of [coreHook, ...careerHooks(rt?.hooks ?? [])]) fn(h, hookCtx(state, h));
+}
+
+// --- creating a career --------------------------------------------------------------------------------
+
+export interface NewCareerOptions {
+  readonly seed: number;
+  readonly manager: Manager;
+  readonly userTeamId: string;
+}
+
+export function newCareer(world: World, opts: NewCareerOptions, rt?: CareerRuntime): CareerState {
+  const team = world.teams[opts.userTeamId];
+  if (!team) throw new Error(`unknown team ${opts.userTeamId}`);
+  const seed = opts.seed >>> 0;
+  const season = buildSeason(world, team.region, team.teamId, world.season, seed);
+  const state: CareerState = {
+    version: 1, seed, manager: { ...opts.manager }, userTeamId: team.teamId, region: team.region,
+    date: careerStartDate(world.season), world, season, stats: {}, inbox: [], nextInboxId: 0, history: [], objective: null, ext: {},
+  };
+  postInbox(state, { category: "board", key: "welcome", from: "board", params: { team: team.name, manager: state.manager.name } });
+  seasonOpeningMail(state);
+  runHooks(state, rt, (h, ctx) => h.onCareerStart?.(state.world, ctx));
+  return state;
+}
+
+const teamName = (state: CareerState, id: string | null): string => (id ? state.world.teams[id]?.name ?? id : "?");
+
+function strengthRank(state: CareerState): number {
+  const ranked = [...state.season.teams].sort((a, b) => teamStrength(state.world, b) - teamStrength(state.world, a) || a.localeCompare(b));
+  return ranked.indexOf(state.userTeamId) + 1;
+}
+
+/** The board's expectation from where the squad ranks in the league. */
+export function suggestedObjective(state: CareerState): "title" | "playoffs" | "midtable" {
+  const r = strengthRank(state);
+  return r <= 2 ? "title" : r <= 7 ? "playoffs" : "midtable";
+}
+
+function seasonOpeningMail(state: CareerState): void {
+  const w = state.world;
+  const s1 = state.season.stages[0]!;
+  const group = GROUPS.find((g) => s1.groups[g].includes(state.userTeamId)) ?? "alpha";
+  const first = nextUserFixture(state);
+  postInbox(state, {
+    category: "board", key: "board.objective", from: "board",
+    params: { season: state.season.season, suggested: suggestedObjective(state), rank: strengthRank(state), teams: state.season.teams.length },
+    options: [{ id: "title" }, { id: "playoffs" }, { id: "midtable" }],
+  });
+  postInbox(state, {
+    category: "competition", key: "league.schedule", from: "league",
+    params: { season: state.season.season, group, teams: state.season.teams.length, date: first?.date ?? "", opponent: first ? teamName(state, first.home === state.userTeamId ? first.away : first.home) : "" },
+    ...(first ? { ref: { fixtureId: first.id } } : {}),
+  });
+  const five = startingFive(w, state.userTeamId);
+  postInbox(state, {
+    category: "squad", key: "squad.overview", from: "headCoach",
+    params: { starters: five.map((p) => p.handle ?? p.playerId).join(", "), rank: strengthRank(state), teams: state.season.teams.length },
+  });
+  const pros = newProspects(w).filter((p) => p.region === state.region);
+  if (pros.length) {
+    const scout = teamScout(w, state.userTeamId);
+    const best = [...pros].sort((a, b) => (estimateAbility(w, scout, b).pa ?? 0) - (estimateAbility(w, scout, a).pa ?? 0) || a.playerId.localeCompare(b.playerId))[0]!;
+    postInbox(state, {
+      category: "scouting", key: "scouting.prospects", from: "scout",
+      params: { n: pros.length, best: best.handle ?? best.playerId, pa: toScale200(estimateAbility(w, scout, best).pa) ?? 0 },
+      ref: { playerId: best.playerId },
+    });
+  }
+}
+
+// --- queries ------------------------------------------------------------------------------------------
+
+export const isUserFixture = (state: CareerState, f: Fixture): boolean => f.home === state.userTeamId || f.away === state.userTeamId;
+
+/** The manager's next unplayed fixture (teams known), if any this season. */
+export function nextUserFixture(state: CareerState): Fixture | null {
+  return state.season.fixtures.find((f) => !f.result && f.date >= state.date && isUserFixture(state, f)) ?? null;
+}
+
+export interface DayAgenda {
+  readonly date: IsoDate;
+  readonly userFixture: Fixture | null;
+  readonly aiFixtures: Fixture[];
+  readonly awaiting: InboxItem[];
+  readonly seasonEnd: boolean;
+}
+
+export function dayAgenda(state: CareerState): DayAgenda {
+  const today = state.season.fixtures.filter((f) => f.date === state.date && !f.result && f.home && f.away);
+  return {
+    date: state.date,
+    userFixture: today.find((f) => isUserFixture(state, f)) ?? null,
+    aiFixtures: today.filter((f) => !isUserFixture(state, f)),
+    awaiting: awaitingAnswer(state),
+    seasonEnd: state.date === state.season.end && !state.season.ended,
+  };
+}
+
+/** A fixture as a simulation request: today's five per side and each side's analyst. */
+export function seriesRequest(state: CareerState, f: Fixture): SeriesRequest {
+  if (!f.home || !f.away) throw new Error(`fixture ${f.id} has no teams yet`);
+  const side = (id: string) => ({
+    teamId: id, name: teamName(state, id),
+    lineup: startingFive(state.world, id).map((p) => p.playerId),
+    analyst: teamStaffInputs(state.world, id).analyst,
+  });
+  return { fixtureId: f.id, seed: deriveSeed(state.seed, `series:${f.id}`), format: f.format, home: side(f.home), away: side(f.away) };
+}
+
+// --- results ------------------------------------------------------------------------------------------
+
+function creditPlayers(state: CareerState, lineup: readonly string[], f: Fixture, home: boolean): void {
+  const r = f.result!;
+  for (const id of lineup) {
+    const line = (state.stats[id] ??= { maps: 0, mapsWon: 0, roundsWon: 0, roundsLost: 0, kills: 0, deaths: 0, form: 0.5 });
+    for (const m of r.maps) {
+      const [mine, theirs] = home ? m.score : [m.score[1], m.score[0]];
+      line.maps += 1;
+      if (mine > theirs) line.mapsWon += 1;
+      line.roundsWon += mine; line.roundsLost += theirs;
+      const share = mine + theirs > 0 ? mine / (mine + theirs) : 0.5;
+      const kd = m.players?.[id];
+      if (kd) { line.kills += kd.k; line.deaths += kd.d; }
+      const perf = kd && kd.k + kd.d > 0 ? 0.5 * share + 0.5 * (kd.k / (kd.k + kd.d)) : share;
+      line.form = Math.round((line.form + CAREER_MODE.formRate * (perf - line.form)) * 10000) / 10000;
+    }
+  }
+}
+
+/** Record a played series: standings, playing time and form, the bracket, inbox, hooks. */
+export function recordResult(state: CareerState, fixtureId: string, outcome: SeriesOutcome, rt?: CareerRuntime): Fixture {
+  const f = state.season.fixtures.find((x) => x.id === fixtureId);
+  if (!f) throw new Error(`unknown fixture ${fixtureId}`);
+  if (f.result) throw new Error(`fixture ${fixtureId} already has a result`);
+  if (!f.home || !f.away) throw new Error(`fixture ${fixtureId} has no teams yet`);
+  if (outcome.winner !== f.home && outcome.winner !== f.away) throw new Error(`winner ${outcome.winner} is not in fixture ${fixtureId}`);
+  f.result = { ...outcome, mapsWon: [outcome.mapsWon[0], outcome.mapsWon[1]], maps: outcome.maps.map((m) => ({ ...m, score: [m.score[0], m.score[1]] as const })) };
+  creditPlayers(state, outcome.lineups.home, f, true);
+  creditPlayers(state, outcome.lineups.away, f, false);
+  if (isUserFixture(state, f)) {
+    const home = f.home === state.userTeamId;
+    const won = outcome.winner === state.userTeamId;
+    const [a, b] = home ? outcome.mapsWon : [outcome.mapsWon[1], outcome.mapsWon[0]];
+    postInbox(state, {
+      category: "result", key: won ? "result.win" : "result.loss", from: "analyst",
+      params: {
+        opponent: teamName(state, home ? f.away : f.home), score: `${a}–${b}`,
+        maps: outcome.maps.map((m) => `${m.map} ${home ? m.score[0] : m.score[1]}–${home ? m.score[1] : m.score[0]}`).join(", "),
+      },
+      ref: { fixtureId: f.id },
+    });
+  }
+  for (const nf of resolvePlayoffs(state.season)) {
+    if (isUserFixture(state, nf)) {
+      postInbox(state, {
+        category: "competition", key: "competition.nextRound", from: "league",
+        params: { round: String(nf.round), opponent: teamName(state, nf.home === state.userTeamId ? nf.away : nf.home), date: nf.date, stage: nf.stage },
+        ref: { fixtureId: nf.id },
+      });
+    }
+  }
+  runHooks(state, rt, (h, ctx) => h.onMatchResult?.(state.world, f, ctx));
+  return f;
+}
+
+/** Play today's AI fixtures with `sim`. */
+export async function simulateToday(state: CareerState, sim: BatchSimulator, rt?: CareerRuntime): Promise<number> {
+  const ag = dayAgenda(state);
+  if (ag.aiFixtures.length === 0) return 0;
+  const reqs = ag.aiFixtures.map((f) => seriesRequest(state, f));
+  rt?.onSimulate?.(reqs, state);
+  const outs = await sim(reqs, state);
+  reqs.forEach((req, i) => recordResult(state, req.fixtureId, { ...outs[i]!, lineups: { home: req.home.lineup, away: req.away.lineup } }, rt));
+  return reqs.length;
+}
+
+// --- leaving a day ------------------------------------------------------------------------------------
+
+function stageEvents(state: CareerState): void {
+  const season = state.season;
+  for (const stage of season.stages) {
+    if (!stage.start) continue;
+    // Group stage just finished today: who goes through.
+    const groupDone = groupStageDone(season, stage.id);
+    const flag = `groups:${season.season}:${stage.id}`;
+    const core = (state.ext.career ??= { flags: [] as string[] }) as { flags: string[] };
+    if (groupDone && !core.flags.includes(flag)) {
+      core.flags.push(flag);
+      const g = GROUPS.find((x) => stage.groups[x].includes(state.userTeamId))!;
+      const rank = groupStandings(season, stage.id, g).findIndex((r) => r.teamId === state.userTeamId) + 1;
+      postInbox(state, { category: "competition", key: rank <= 4 ? "competition.qualified" : "competition.eliminated", from: "league", params: { stage: stage.id, rank, group: g } });
+    }
+    const doneFlag = `champion:${season.season}:${stage.id}`;
+    if (stageDone(season, stage.id) && !core.flags.includes(doneFlag)) {
+      core.flags.push(doneFlag);
+      const placings = stagePlacings(season, stage.id);
+      stage.champion = placings[0]!;
+      postInbox(state, { category: "competition", key: "competition.champion", from: "league", params: { stage: stage.id, team: teamName(state, stage.champion), place: placings.indexOf(state.userTeamId) + 1 } });
+      const drawn = drawNextStage(season, state.seed);
+      if (drawn) {
+        const s2 = season.stages.find((s) => s.id === drawn)!;
+        const g = GROUPS.find((x) => s2.groups[x].includes(state.userTeamId)) ?? "alpha";
+        const first = nextUserFixture(state);
+        postInbox(state, {
+          category: "competition", key: "competition.drawn", from: "league",
+          params: { stage: drawn, group: g, date: first?.date ?? "", opponent: first ? teamName(state, first.home === state.userTeamId ? first.away : first.home) : "" },
+          ...(first ? { ref: { fixtureId: first.id } } : {}),
+        });
+      }
+    }
+  }
+}
+
+function objectiveMet(objective: string | null, finish: Partial<Record<StageId, number>>): boolean | undefined {
+  if (!objective) return undefined;
+  const places = STAGES.map((s) => finish[s] ?? 99);
+  if (objective === "title") return places.some((p) => p === 1);
+  if (objective === "playoffs") return places.every((p) => p <= 8);
+  return places.some((p) => p <= 8);
+}
+
+function seasonFinish(state: CareerState): { finish: Partial<Record<StageId, number>>; champions: Partial<Record<StageId, string>>; met: boolean | undefined } {
+  const finish: Partial<Record<StageId, number>> = {};
+  const champions: Partial<Record<StageId, string>> = {};
+  for (const s of STAGES) {
+    if (!stageDone(state.season, s)) continue;
+    const pl = stagePlacings(state.season, s);
+    finish[s] = pl.indexOf(state.userTeamId) + 1; champions[s] = pl[0]!;
+  }
+  return { finish, champions, met: objectiveMet(state.objective, finish) };
+}
+
+/** Arriving on the season's last day: the board's review. */
+function seasonReviewMail(state: CareerState): void {
+  const { finish, met } = seasonFinish(state);
+  postInbox(state, {
+    category: "season", key: "season.review", from: "board",
+    params: { season: state.season.season, stage1: finish.stage1 ?? 0, stage2: finish.stage2 ?? 0, objective: state.objective ?? "none", met: met === undefined ? "none" : met ? "yes" : "no" },
+  });
+}
+
+/** The season's last day is left: review → onSeasonEnd → advanceSeason → new season. */
+function endSeason(state: CareerState, rt?: CareerRuntime): void {
+  const season = state.season;
+  const { finish, champions, met } = seasonFinish(state);
+  const summary: SeasonSummary = { season: season.season, champions, userFinish: finish, ...(state.objective ? { objective: state.objective } : {}), ...(met !== undefined ? { objectiveMet: met } : {}) };
+  state.history.push(summary);
+  season.ended = true;
+  runHooks(state, rt, (h, ctx) => h.onSeasonEnd?.(state.world, season.season, ctx));
+
+  // Playing time: the real count for every player of a league team (0 for those who never played);
+  // players elsewhere keep the status estimate.
+  const mapsPlayed: Record<string, number> = {};
+  for (const tid of season.teams) for (const pid of state.world.teams[tid]?.roster ?? []) mapsPlayed[pid] = 0;
+  for (const [pid, line] of Object.entries(state.stats)) mapsPlayed[pid] = line.maps;
+  const before = new Set(state.world.teams[state.userTeamId]?.roster ?? []);
+  state.world = advanceSeason(state.world, { mapsPlayed });
+  const rec = state.world.history[state.world.history.length - 1]!;
+  const team = state.world.teams[state.userTeamId]!;
+  const name = (id: string) => state.world.players[id]?.handle ?? state.world.retired.find((r) => r.id === id)?.label ?? id;
+  const joined = team.roster.filter((id) => !before.has(id));
+  const left = [...before].filter((id) => !team.roster.includes(id));
+  postInbox(state, {
+    category: "squad", key: "squad.changes", from: "headCoach",
+    params: { season: state.world.season, joined: joined.map(name).join(", ") || "—", left: left.map(name).join(", ") || "—", retired: rec.retiredPlayers.length },
+  });
+  state.season = buildSeason(state.world, state.region, state.userTeamId, state.world.season, state.seed);
+  state.stats = {};
+  state.objective = null;
+  seasonOpeningMail(state);
+  runHooks(state, rt, (h, ctx) => h.onSeasonStart?.(state.world, state.world.season, ctx));
+}
+
+/**
+ * Leave today: requires the manager's match played and answers given; plays nothing itself
+ * (call simulateToday first). Runs the day's hooks, stage bookkeeping, the season transition on
+ * the season's last day, and moves the date on.
+ */
+export function endDay(state: CareerState, rt?: CareerRuntime): void {
+  const ag = dayAgenda(state);
+  if (ag.userFixture) throw new Error("play today's match first");
+  if (ag.aiFixtures.length) throw new Error("today's fixtures are not played yet");
+  if (ag.awaiting.length) throw new Error("answer the waiting messages first");
+  stageEvents(state);
+  runHooks(state, rt, (h, ctx) => h.onDay?.(state.world, state.date, ctx));
+  if (isMonthStart(state.date)) runHooks(state, rt, (h, ctx) => h.onMonth?.(state.world, state.date, ctx));
+  const seasonEnd = state.date === state.season.end && !state.season.ended;
+  if (seasonEnd) endSeason(state, rt);
+  state.date = addDays(state.date, 1);
+  if (state.date === state.season.end) seasonReviewMail(state);
+}
+
+/** Answer an inbox item (routes the answer to the hook that posted it). */
+export function answerInbox(state: CareerState, itemId: string, answer: string, rt?: CareerRuntime): void {
+  const item = state.inbox.find((m) => m.id === itemId);
+  if (!item) throw new Error(`unknown inbox item ${itemId}`);
+  if (!item.options?.some((o) => o.id === answer)) throw new Error(`"${answer}" is not an option of ${itemId}`);
+  item.answer = answer;
+  item.read = true;
+  for (const h of [coreHook, ...careerHooks(rt?.hooks ?? [])]) {
+    if (h.id === item.source) h.onAnswer?.(state.world, item, answer, hookCtx(state, h));
+  }
+}
+
+export function markRead(state: CareerState, itemId: string): void {
+  const item = state.inbox.find((m) => m.id === itemId);
+  if (item) item.read = true;
+}
+
+/** FM's Continue: leave today, then advance day by day until something needs the manager. */
+export async function continueCareer(state: CareerState, sim: BatchSimulator, rt?: CareerRuntime): Promise<ContinueResult> {
+  let simulated = 0;
+  let days = 0;
+  const stopIfNeeded = (first: boolean): ContinueResult | null => {
+    const ag = dayAgenda(state);
+    if (ag.userFixture) return { stop: "matchDay", date: state.date, daysAdvanced: days, fixture: ag.userFixture, simulated };
+    if (ag.awaiting.length) return { stop: "message", date: state.date, daysAdvanced: days, items: ag.awaiting, simulated };
+    if (!first && ag.seasonEnd) return { stop: "seasonEnd", date: state.date, daysAdvanced: days, simulated };
+    return null;
+  };
+  // Today: the manager's match and answers block leaving it.
+  const blocked = stopIfNeeded(true);
+  if (blocked) return blocked;
+  while (days < CAREER_MODE.maxDaysPerContinue) {
+    simulated += await simulateToday(state, sim, rt);
+    endDay(state, rt);
+    days += 1;
+    await rt?.onDayEnd?.(state);
+    const stop = stopIfNeeded(false);
+    if (stop) return stop;
+  }
+  return { stop: "limit", date: state.date, daysAdvanced: days, simulated };
+}
+
+/** A synchronous series simulator as a batch simulator. */
+export const batchOf = (one: (req: SeriesRequest, career: CareerState) => Outcome): BatchSimulator =>
+  (reqs, career) => reqs.map((r) => one(r, career));
+
+// --- the core hook: the board's objective and monthly staff reports -----------------------------------
+
+const coreHook: CareerHook = {
+  id: "career",
+  order: 0,
+  onAnswer(_w, item, answer, ctx) {
+    if (item.key === "board.objective") {
+      ctx.career.objective = answer;
+      ctx.post({ category: "board", key: "board.objectiveSet", from: "board", params: { objective: answer } });
+    }
+  },
+  onMonth(w, date, ctx) {
+    const state = ctx.career;
+    if (state.season.ended || monthOf(date) === 9) return;
+    // Head coach: who is in form and who is not (from maps actually played this season).
+    const lines = (w.teams[state.userTeamId]?.roster ?? []).map((id) => ({ id, line: state.stats[id] })).filter((x) => x.line && x.line.maps > 0);
+    if (lines.length >= 2) {
+      const sorted = [...lines].sort((a, b) => b.line!.form - a.line!.form || a.id.localeCompare(b.id));
+      const label = (id: string) => w.players[id]?.handle ?? id;
+      ctx.post({
+        category: "staff", key: "staff.formReport", from: "headCoach",
+        params: { best: label(sorted[0]!.id), bestForm: Math.round(sorted[0]!.line!.form * 100), worst: label(sorted[sorted.length - 1]!.id), worstForm: Math.round(sorted[sorted.length - 1]!.line!.form * 100) },
+        ref: { playerId: sorted[0]!.id },
+      });
+    }
+    // Scout: the free agent in the region the scout rates highest right now.
+    const scout = teamScout(w, state.userTeamId);
+    const free = Object.values(w.players).filter((p) => p.status === "free" && p.region === state.region && p.hasRatings);
+    if (free.length) {
+      const est = (p: typeof free[number]) => estimateAbility(w, scout, p);
+      const best = [...free].sort((a, b) => (est(b).ca ?? 0) - (est(a).ca ?? 0) || a.playerId.localeCompare(b.playerId))[0]!;
+      const core = ctx.ext(() => ({ flags: [] as string[] })) as { flags: string[]; lastFreeAgent?: string };
+      if (core.lastFreeAgent === best.playerId) return;
+      core.lastFreeAgent = best.playerId;
+      ctx.post({
+        category: "scouting", key: "scouting.freeAgent", from: "scout",
+        params: { player: best.handle ?? best.playerId, ca: toScale200(est(best).ca) ?? 0, pa: toScale200(est(best).pa) ?? 0, age: best.age },
+        ref: { playerId: best.playerId },
+      });
+    }
+  },
+};

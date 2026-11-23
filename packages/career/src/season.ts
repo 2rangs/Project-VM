@@ -335,15 +335,25 @@ export function openSeason(w: World, season: number, rec: SeasonRecord = emptyRe
   return rec;
 }
 
+export interface AdvanceSeasonOptions {
+  /**
+   * Maps each player actually played in the season just ended (career mode passes the real count
+   * for every player of its league). Players not listed fall back to the status estimate
+   * (`seasonMaps`).
+   */
+  readonly mapsPlayed?: Readonly<Record<string, number>>;
+}
+
 /** End the current season and open the next. Returns a new World. */
-export function advanceSeason(world: World): World {
+export function advanceSeason(world: World, opts: AdvanceSeasonOptions = {}): World {
   const w = clone(world);
   const ending = w.season;
   const season = ending + 1;
   const rec = emptyRecord(w, season);
 
   // 1. development (from the season just played)
-  const maps = new Map(Object.values(w.players).map((p) => [p.playerId, seasonMaps(w, p)]));
+  const played = opts.mapsPlayed ?? {};
+  const maps = new Map(Object.values(w.players).map((p) => [p.playerId, played[p.playerId] ?? seasonMaps(w, p)]));
   for (const p of Object.values(w.players)) developPlayer(w, p, maps.get(p.playerId)!, coachDevelopment(w, p.teamId), ending);
   for (const s of Object.values(w.staff)) developStaff(s);
 

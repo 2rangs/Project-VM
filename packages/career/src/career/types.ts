@@ -20,6 +20,8 @@ export interface MapResult {
   /** Rounds won: [home, away]. */
   readonly score: readonly [number, number];
   readonly overtime?: boolean;
+  /** Kills / deaths per player id on this map, when the simulator reports them. */
+  readonly players?: Readonly<Record<string, { readonly k: number; readonly d: number }>>;
 }
 
 export interface SeriesOutcome {
@@ -82,9 +84,12 @@ export interface PlayerSeasonLine {
   mapsWon: number;
   roundsWon: number;
   roundsLost: number;
+  kills: number;
+  deaths: number;
   /**
-   * Form: exponentially-weighted round share of the maps played (0.5 = even), updated per map:
-   *   form ← form + FORM_RATE · (roundsWon / roundsPlayed − form)
+   * Form (0..1, 0.5 = par), exponentially weighted over the maps played:
+   *   perf  = ½ · roundsWon / roundsPlayed + ½ · k / (k + d)      (round share alone without K/D)
+   *   form ← form + formRate · (perf − form)
    */
   form: number;
 }
