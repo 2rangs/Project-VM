@@ -109,6 +109,11 @@ python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-l
 - `pipeline/vis_map.py`    — one line-of-sight bit per pair of roadmap points (all eleven maps)
 - `pipeline/render_map.py`, `pipeline/pngdraw.py` — dependency-free PNG schematic
 - `../map-processor/mapzones.py` — callout -> zone rule; `../map-processor/build_map.py` — rules + provenance
+- `datasets/spatial/<map>/<map>.authoring.json` — per-map hand corrections read by the stages above. `zoneAnchors`
+  (`{zone id: {x, y, z, basis}}`, game uu) names the floor point a zone stands on where its callout is not on that
+  floor (Haven B Site: the label is on the roof of the site's central structure; Pearl: five labels inside building
+  footprints / stacked). The zone keeps the callout's x,y as its position; only its anchor and height move. A map
+  without the key is measured exactly as before
 
 Key finding: every scene is a plain export, **game_uu = 100 * (x, -y, z)** of Blender
 coordinates. The 6.6 m-RMS affine recorded for Ascent came from coarse region anchors; the

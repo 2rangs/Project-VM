@@ -252,16 +252,29 @@ def prepare(mp, derived, raw, authoring, zone_list, debug=False):
                      "calloutsAtFloorHeight(±0.3m)": round(float(np.mean([r[1] for r in rows])), 1)})
 
     # ------------------------------------------------------------------ zone representatives
+    # A map's authoring file may name the floor point a zone stands on ("zoneAnchors": {zone id:
+    # {x, y, z in game uu, basis}}) where the callout itself is not on that floor — a label placed
+    # on top of a structure, or inside a building's footprint. The zone is then snapped from that
+    # point, and its height counts even on a map whose callout heights are not usable. Everything
+    # else (the crop, the transform evidence, the callout residuals) still uses the raw callout.
+    anchor_ov = authoring.get("zoneAnchors", {})
+    unknown = sorted(set(anchor_ov) - set(zid))
+    if unknown:
+        raise ValueError(f"{mp}: zoneAnchors names unknown zone(s) {unknown}")
     rep = np.full(Z, -1, dtype=np.int64)
     snaps = {}
     for i, c in enumerate(cz):
-        dxy = np.hypot(xyz[:, 0] - c[0], xyz[:, 1] - c[1])
+        ov = anchor_ov.get(zid[i])
+        src = np.array([ov["x"], ov["y"], ov["z"]], dtype=np.float64) / 100.0 if ov else c
+        dxy = np.hypot(xyz[:, 0] - src[0], xyz[:, 1] - src[1])
         cand = np.nonzero(big & (dxy <= P["snap_radius"]))[0]
         if cand.size == 0:
             snaps[zid[i]] = {"onMesh": False, "note": f"no walkable cell within {P['snap_radius']} m of the callout"}
             continue
         score = dxy[cand].copy()
-        if z_informative:
+        if ov:
+            score += 0.7 * np.abs(xyz[cand, 2] - src[2])
+        elif z_informative:
             score += 0.7 * np.abs(xyz[cand, 2] - (c[2] + z_offset))
         score += np.where(label[cand] == main_label, 0.0, 3.0)
         k = int(cand[np.argmin(score)])
@@ -276,6 +289,12 @@ def prepare(mp, derived, raw, authoring, zone_list, debug=False):
             "component": int(label[k]),
             "onMainComponent": bool(label[k] == main_label),
         }
+        if ov:
+            snaps[zid[i]].update({
+                "anchorAuthored": True,
+                "authoredAnchor_uu": [ov["x"], ov["y"], ov["z"]],
+                "calloutToAnchorXY_m": round(float(np.hypot(xyz[k, 0] - c[0], xyz[k, 1] - c[1])), 2),
+            })
     placed = [i for i in range(Z) if rep[i] >= 0]
 
     return SimpleNamespace(**{k: v for k, v in locals().items() if k not in ("a", "SimpleNamespace")})

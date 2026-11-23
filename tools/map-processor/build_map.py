@@ -112,7 +112,11 @@ def build(mp):
     callout_pos = {z["id"]: dict(z["position"]) for z in zones}     # before z is snapped to the floor
     for z in zones:
         s = snaps.get(z["id"], {})
-        if s.get("onMesh"):
+        if s.get("onMesh") and s.get("anchorAuthored"):
+            z["position"]["z"] = s["floorZ_uu"]
+            z["positionProvenance"] = ("x,y: valorant-api callout; z: measured-on-mesh (floor at the zone's authored anchor — "
+                                       "the callout is not on its zone's floor, see zoneAnchors in the authoring file)")
+        elif s.get("onMesh"):
             z["position"]["z"] = s["floorZ_uu"]
             z["positionProvenance"] = "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)"
         else:
