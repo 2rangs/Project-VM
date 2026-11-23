@@ -187,4 +187,6 @@ export interface World {
   nextGenId: number;
   history: SeasonRecord[];
   retired: RetiredRecord[];
+  /** Club operations (contracts, finance, transfers, training) once a career has started them. */
+  club?: import("./club/types.ts").ClubState;
 }

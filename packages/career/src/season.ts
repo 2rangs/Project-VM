@@ -19,7 +19,7 @@ import { compositeOf } from "./calibration.ts";
 import { generatePlayer, generateStaff, staffQuality, STAFF_MODEL } from "./generate.ts";
 import {
   ABILITY_KEYS, STAFF_ROLES,
-  type RatedAttr, type SeasonRecord, type StaffRole, type World, type WorldPlayer, type WorldStaff, type WorldTeam,
+  type AbilityKey, type RatedAttr, type SeasonRecord, type StaffRole, type World, type WorldPlayer, type WorldStaff, type WorldTeam,
 } from "./model.ts";
 import { REGIONS, type Region } from "./regions.ts";
 import { estimateAbility, teamScout, UNRATED_ABILITY } from "./scouting.ts";
@@ -88,10 +88,11 @@ function coachDevelopment(w: World, teamId: string | null): number {
 
 /**
  * One season of development for a player aged t:
- *   x' = x + clamp(r(t) · P · C · (1 + σ·z), 0, 1) · (peak − x) − λ·max(0, t + 1 − D)
- * clamped to [real min, peak]. r = maturity-curve closing rate, P = playing time, C = coach.
+ *   x' = x + clamp(r(t) · P · C · F · (1 + σ·z), 0, 1) · (peak − x) − λ·max(0, t + 1 − D)
+ * clamped to [real min, peak]. r = maturity-curve closing rate, P = playing time, C = coach,
+ * F = training focus factor of the attribute (club/training.ts; 1 without a training plan).
  */
-export function developPlayer(w: World, p: WorldPlayer, maps: number, coachDev: number, season: number): void {
+export function developPlayer(w: World, p: WorldPlayer, maps: number, coachDev: number, season: number, focus?: Partial<Record<AbilityKey, number>>): void {
   const cal = w.calibration;
   const attrs = p.attributes;
   if (!p.hasRatings || !attrs) return;
@@ -102,7 +103,8 @@ export function developPlayer(w: World, p: WorldPlayer, maps: number, coachDev: 
     const slot = attrs[k] as RatedAttr | undefined;
     if (!slot || typeof slot.value !== "number") continue;
     const peak = p.peak?.[k] ?? slot.value;
-    const growth = clamp(closingRate(p.age, k) * P * C * (1 + CAREER_MODEL.developmentNoise * normal(rng)), 0, 1);
+    const F = focus?.[k] ?? 1;
+    const growth = clamp(closingRate(p.age, k) * P * C * F * (1 + CAREER_MODEL.developmentNoise * normal(rng)), 0, 1);
     const grown = slot.value + growth * Math.max(0, peak - slot.value);
     const next = clamp(grown - declineLoss(p.age, k), cal.min[k], Math.max(cal.min[k], peak));
     slot.value = r4(next);
@@ -335,8 +337,13 @@ export function openSeason(w: World, season: number, rec: SeasonRecord = emptyRe
   return rec;
 }
 
+export interface AdvanceOptions {
+  /** Training focus factors per player (club/training.ts seasonFocus); absent → F = 1. */
+  readonly focus?: Readonly<Record<string, Partial<Record<AbilityKey, number>>>>;
+}
+
 /** End the current season and open the next. Returns a new World. */
-export function advanceSeason(world: World): World {
+export function advanceSeason(world: World, opts: AdvanceOptions = {}): World {
   const w = clone(world);
   const ending = w.season;
   const season = ending + 1;
@@ -344,7 +351,7 @@ export function advanceSeason(world: World): World {
 
   // 1. development (from the season just played)
   const maps = new Map(Object.values(w.players).map((p) => [p.playerId, seasonMaps(w, p)]));
-  for (const p of Object.values(w.players)) developPlayer(w, p, maps.get(p.playerId)!, coachDevelopment(w, p.teamId), ending);
+  for (const p of Object.values(w.players)) developPlayer(w, p, maps.get(p.playerId)!, coachDevelopment(w, p.teamId), ending, opts.focus?.[p.playerId]);
   for (const s of Object.values(w.staff)) developStaff(s);
 
   // 2. aging
