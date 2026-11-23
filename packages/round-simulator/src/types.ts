@@ -269,9 +269,9 @@ export interface CommandTraceEvent {
   readonly toZone?: string;
   readonly abilityId?: string;
   /**
-   * Outcome / rejection reason. For "plant": "started" | "planting" | "notPlantableZone" |
+   * Outcome / rejection reason. For "plant": "started" | "planting" | "notPlantableZone" | "notOnPlantArea" |
    * "noCarrier" | "notCarrier" | "dead". For "ability": "used" | "noSlot" | "unavailable" |
-   * "noSpec". For "defuse": "started" | "notOnSpikeZone" | "dead". For "issued": "deferred"
+   * "noSpec". For "defuse": "started" | "notAtSpike" (beyond DEFUSE_REACH_UNITS) | "dead". For "issued": "deferred"
    * when held by executeAtMs, else "active".
    */
   readonly result?: string;

@@ -53,7 +53,9 @@ describe("ability cues: a cast leaves evidence for whoever can physically observ
     const sight = by(cues, "sight")[0]!;
     expect(sight.zoneId).toBe("a-main"); // the smoke; the caster is in A lobby, unseen and unheard
     expect(sight.zonePosition).toEqual(centre("a-main"));
-    expect(mapChanges.find((m) => m.note === "smoke:enemy:a-main")!.approxPosition).toEqual(centre("a-main"));
+    // the map change places the smoke where it landed: on A main's floor, the side facing the thrower
+    const at = mapChanges.find((m) => m.note === "smoke:enemy:a-main")!.approxPosition;
+    expect(spatial.nav!.zoneAt(at)).toBe("a-main");
     expect(by(cues, "sound")).toHaveLength(0); // no sound path from A lobby to A site
   });
 

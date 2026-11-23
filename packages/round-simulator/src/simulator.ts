@@ -4,6 +4,8 @@ import {
   DEFAULT_PARAMS as PERCEPTION_PARAMS,
   facingAngleTo,
   lineOfSight,
+  EYE_HEIGHT_UNITS,
+  type SightOccluder,
   type SightPoint,
   type PlayerState as PPlayerState,
   type WorldState as PWorldState,
@@ -25,7 +27,7 @@ import {
   visionBlockerIsSmoke,
   activeGroundPatches,
   deployedEffects,
-  visionBlockedZones,
+  visionOccluders,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
@@ -73,6 +75,12 @@ const CROSSFIRE_SAME_LINE_WEIGHT = 0.2;
 
 /** How far from the corner a peeking player is when first contact happens (world units; ≈3 m). */
 const PEEK_CORNER_DISTANCE = 300;
+
+/**
+ * How near the planted spike a defender must be to defuse it (uu, ≈1.5 m from body centre to the
+ * device; manual-approx — VALORANT requires standing over the spike to interact with it).
+ */
+export const DEFUSE_REACH_UNITS = 150;
 
 const SURPRISE_DELAY_MS = 300; // reaction penalty for the side that did not see first
 // Passable hazard (molly / area-denial): a fire patch is a disc on the route (situational.ts
@@ -167,7 +175,7 @@ export class RoundSimulator {
   /** The round's movement executor: the only thing that changes a player's position. */
   private mover!: MovementExecutor;
   /** Vision blockers in force this tick (refreshed after abilities advance; see lineOf). */
-  private sightBlockers: { smokedPairs: Array<[string, string]> } = { smokedPairs: [] };
+  private sightBlockers: readonly SightOccluder[] = [];
 
   /**
    * Is the line between two points clear? The ONE sight rule (perception-engine `lineOfSight`):
@@ -179,7 +187,7 @@ export class RoundSimulator {
     return lineOfSight(this.spatial, a, b, {
       positionalSight: PERCEPTION_PARAMS.vision.positionalSight !== false,
       sameZoneAlwaysVisible: PERCEPTION_PARAMS.vision.sameZoneAlwaysVisible,
-      ...(throughSmoke ? {} : { smokedPairs: this.sightBlockers.smokedPairs }),
+      ...(throughSmoke ? {} : { occluders: this.sightBlockers }),
     });
   }
 
@@ -194,7 +202,8 @@ export class RoundSimulator {
   runRound(initial: SimState): RoundResult {
     const state = initial;
     // perception is smoke/wall aware so deployed abilities actually block line of sight
-    const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke, params: roundPerceptionParams() });
+    // Smokes block sight as volumes at their landing points (vision.ts SightOccluder), inside a zone too.
+    const perception = new PerceptionEngine(this.spatial, { isSmoke: visionBlockerIsSmoke, params: roundPerceptionParams(), smokeVolumes: true });
     const abilityEngine = new AbilityEngine(this.spatial);
     const spatialQuery = new SpatialQueryAdapter(this.spatial);
     // Each side's starting zone (mode of its players' tick-0 zones), used as the structural
@@ -235,6 +244,7 @@ export class RoundSimulator {
     const patchExposure = new Map<string, number>();
     const burnUntil = new Map<string, number>();
     const lastHop = new Map<string, { fromZone: string; tick: number }>();
+    let eyeInside = new Map<string, SightOccluder>(); // player → the smoke its eye is in (last tick)
     const rerouteTried = new Set<string>();
     const stackWait = new Map<string, { zone: string; sinceMs: number }>();
     const stackStats = { waits: 0, ticks: 0, timeouts: 0 };
@@ -329,6 +339,12 @@ export class RoundSimulator {
             ...this.spotIntent(p, cmd, state),
             hazards,
           }, hooks);
+        } else if (cmd?.kind === "plant" && !this.isMoving(p) && state.spike.carrierId === p.id && this.spatial.isPlantableZone(p.zoneId) && !this.onPlantArea(p)) {
+          // Told to plant inside the site but not on its plant area: step onto it first.
+          this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: { kind: "plant" }, hazards }, hooks);
+        } else if (cmd?.kind === "defuse" && !this.isMoving(p) && (state.spike.phase === "planted" || state.spike.phase === "defusing") && state.spike.position && state.spike.zoneId && !this.inDefuseReach(p, state.spike.position)) {
+          // Told to defuse but not over the spike: walk to it.
+          this.mover.setGoal(p, { zoneId: state.spike.zoneId, mode: "run", spot: { kind: "at", position: state.spike.position }, hazards }, hooks);
         } else if (cmd && cmd.kind === "hold" && !this.isMoving(p)) {
           // A holder told what to watch stands where it can see it: if its spot does not, it shifts
           // to one of its zone that does (a few steps; the zone does not change).
@@ -395,15 +411,19 @@ export class RoundSimulator {
         // — never the whole map. ASSUMPTION (manual-approx): no throw arc / flight time.
         const isMovement = spec.effectTypes.includes("movement");
         let origin = p.position;
+        let effectZone: string | undefined;
         if (!isMovement && cmd.targetZone) {
           const tz = this.spatial.getZone(cmd.targetZone);
           if (tz) {
-            const inReach = spec.rangeUnits != null ? dist3(p.position, tz.position) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
+            // Where it lands: the floor of the target zone nearest the thrower (landingPoint).
+            const landing = this.landingPoint(p, tz.id, cmd.aimZone);
+            const inReach = spec.rangeUnits != null ? dist3(p.position, landing) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
             if (!inReach) {
               trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
               continue;
             }
-            origin = { ...tz.position };
+            origin = landing;
+            effectZone = tz.id;
           }
         }
         // flash/concuss (blind) and suppress (ability-silence) hit enemies in range + LoS of the
@@ -414,17 +434,14 @@ export class RoundSimulator {
         // recon: a frozen snapshot of the enemies the device can see when it lands — it becomes the
         // team's call on them (intel), usable for a pre-aimed swing while it is fresh.
         const snapshotEnemies = spec.effectTypes.includes("recon") ? this.reconTargets(state, p, spec.radiusUnits, origin) : undefined;
-        // A ground patch thrown from a neighbouring zone lands on the doorway between the two — the
-        // part of the target zone the thrower can reach, and the entry it denies. Thrown into the
-        // caster's own zone, or onto a zone it only sees, it lands in the middle of the zone.
-        const targetZoneId = this.spatial.nearestZone(origin).id;
-        const isGround = spec.effectType === "molly" || spec.effectType === "slow";
-        const doorToZoneId = isGround && targetZoneId !== p.zoneId && this.adjacent(p.zoneId, targetZoneId) ? p.zoneId : undefined;
+        // Every effect sits where it landed: a fire / slow patch is a disc around the landing point
+        // (thrown from the neighbouring zone that is the doorway — the entry it denies), a smoke a
+        // sphere around it. No zone-centre placement and no doorway special case.
         abilityEngine.use(spec, {
           instanceId: `${p.id}:${abilityId}:${state.tick}`,
           abilityId, ownerId: p.id, teamId: p.teamId,
           origin, startedAtMs: state.elapsedMs,
-          ...(doorToZoneId ? { doorToZoneId } : {}),
+          ...(effectZone ? { zoneId: effectZone } : {}),
         }, { affectedPlayerIds, snapshotEnemies });
         if (snapshotEnemies && snapshotEnemies.length > 0) {
           let m = intel.get(p.side);
@@ -462,7 +479,20 @@ export class RoundSimulator {
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
-      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel, cues, lastHop);
+      // Smoke exits: an eye that was inside a smoke volume last tick and is out of it now.
+      const smokeExits = new Map<string, SightOccluder>();
+      const insideNow = new Map<string, SightOccluder>();
+      if (this.sightBlockers.length > 0 || eyeInside.size > 0) {
+        for (const p of state.players) {
+          if (!p.alive) continue;
+          const eye = { x: p.position.x, y: p.position.y, z: p.position.z + EYE_HEIGHT_UNITS };
+          const inside = this.sightBlockers.find((o) => dist3(eye, o.center) <= o.radius);
+          if (inside) insideNow.set(p.id, inside);
+          else if (eyeInside.has(p.id)) smokeExits.set(p.id, eyeInside.get(p.id)!);
+        }
+      }
+      eyeInside = insideNow;
+      this.resolveEngagements(state, sight, abilityEngine, engaged, events, this.cfg.traceCommands ? engagementTrace : null, castBusyUntil, intel, cues, smokeExits);
       this.recordIntel(state, sight, intel, abilityEngine);
 
       // 5b. molly / area-denial: a fire PATCH (a disc on the route through its zone), not a burning
@@ -482,9 +512,9 @@ export class RoundSimulator {
       for (const h of fireNow) {
         if (h.doorToZoneId !== null) continue;
         const r = h.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS;
-        // The patch is a disc around the point it was thrown at — the zone's standing point. Who
-        // is on it is decided by where each body really is, not by the zone it is in.
-        const centre = this.spatial.standPosition(h.zoneId);
+        // The patch is a disc around the point it landed on. Who is on it is decided by where each
+        // body really is, not by the zone it is in.
+        const centre = h.center;
         for (const p of state.players) {
           if (!p.alive || Math.abs(p.position.z - centre.z) > 200) continue;
           const ox = p.position.x - centre.x, oy = p.position.y - centre.y;
@@ -607,9 +637,33 @@ export class RoundSimulator {
 
   // ---- helpers ----
 
+  /**
+   * Where a thrown / placed ability aimed at a zone lands: the point of that zone's floor nearest
+   * the thrower (the roadmap node of the zone closest to it), i.e. the side of the zone that faces
+   * the throw — the doorway a patch denies, the edge of a position a smoke cuts off from the
+   * thrower's approach, the entry a flash pops over. When the order names a zone to screen off
+   * (`aimZone`), the side facing THAT zone instead (a cover smoke on the zone a teammate steps
+   * into, cutting the far zone's sight onto it). A map without a roadmap: the zone's centre.
+   * Geometric rule (no throw arc or lineup data); the command carries only zones.
+   */
+  private landingPoint(p: SimPlayer, zoneId: string, screenZone?: string): { x: number; y: number; z: number } {
+    const nav = this.spatial.nav;
+    const screen = screenZone && screenZone !== zoneId ? this.spatial.getZone(screenZone) : undefined;
+    // the side of the zone that faces the screened zone (aimZone), else the side facing the thrower
+    const from = screen ? this.spatial.standPosition(screen.id) : p.position;
+    if ((screen || p.zoneId !== zoneId) && nav) {
+      const n = nav.locateInZone(from, zoneId, Number.POSITIVE_INFINITY);
+      if (n !== null && nav.zoneAt(nav.nodePosition(n)) !== null) {
+        const at = nav.nodePosition(n);
+        return { x: at.x, y: at.y, z: at.z };
+      }
+    }
+    const z = this.spatial.getZone(zoneId)!;
+    return p.zoneId === zoneId ? { ...p.position } : { ...z.position };
+  }
+
   private refreshSightBlockers(abilityEngine: AbilityEngine): void {
-    const zones = visionBlockedZones(abilityEngine);
-    this.sightBlockers = { smokedPairs: zones.flatMap((z) => this.spatial.visibleZonesFrom(z).map((n): [string, string] => [z, n])) };
+    this.sightBlockers = visionOccluders(abilityEngine);
   }
 
   /** Damage a body takes crossing a fire patch right now (its chord, capped by the burn time left). */
@@ -629,12 +683,12 @@ export class RoundSimulator {
     const out: Array<{ center: { x: number; y: number; z: number }; radius: number; costMs: number }> = [];
     for (const h of fire) {
       if (h.doorToZoneId !== null) continue;
-      out.push({ center: this.spatial.standPosition(h.zoneId), radius: h.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS, costMs: h.remainingMs });
+      out.push({ center: h.center, radius: h.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS, costMs: h.remainingMs });
     }
     for (const sl of slow) {
       if (sl.doorToZoneId !== null) continue;
       const radius = sl.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS;
-      out.push({ center: this.spatial.standPosition(sl.zoneId), radius, costMs: slowFieldDelayMs(radius, RUN_UNITS_PER_SEC, this.cfg.slowSpeedMultiplier) });
+      out.push({ center: sl.center, radius, costMs: slowFieldDelayMs(radius, RUN_UNITS_PER_SEC, this.cfg.slowSpeedMultiplier) });
     }
     return out;
   }
@@ -685,7 +739,7 @@ export class RoundSimulator {
       const key = `${patch.instanceId}|${p.id}`;
       if (!w.rerouteTried.has(key)) {
         w.rerouteTried.add(key);
-        const centre = this.spatial.standPosition(patch.zoneId);
+        const centre = patch.center;
         const r = patch.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS;
         const enters = (): boolean => this.mover.remainingWaypoints(p).some((wp) => Math.hypot(wp.position.x - centre.x, wp.position.y - centre.y) <= r && Math.abs(wp.position.z - centre.z) <= 200);
         if (this.mover.replan(p, hooks) === "SUCCESS" && !enters()) return false;
@@ -737,7 +791,7 @@ export class RoundSimulator {
    */
   private passPatchRim(p: SimPlayer, next: { x: number; y: number; z: number }, w: MoveWorld, hooks: MoverHooks): boolean {
     const crossesRim = (h: GroundPatch): boolean => {
-      const c = this.spatial.standPosition(h.zoneId);
+      const c = h.center;
       if (Math.abs(next.z - c.z) > 200) return false;
       const r = h.radiusUnits || DEFAULT_PATCH_RADIUS_UNITS;
       return Math.hypot(p.position.x - c.x, p.position.y - c.y) > r && Math.hypot(next.x - c.x, next.y - c.y) <= r;
@@ -1082,7 +1136,7 @@ export class RoundSimulator {
     castBusyUntil: ReadonlyMap<string, number>,
     intel: TeamIntel,
     cues: ShotCue[],
-    lastHop: ReadonlyMap<string, { fromZone: string; tick: number }>,
+    smokeExits: ReadonlyMap<string, SightOccluder>,
   ): void {
     const alive = state.players.filter((p) => p.alive);
     // A blinded player sees nothing: it has no first sight, holds no angle and is not a second gun.
@@ -1090,24 +1144,16 @@ export class RoundSimulator {
     const sees = (viewerId: string, targetId: string): boolean =>
       !blind(viewerId) &&
       (sight.players.get(viewerId)?.visibleEnemies.some((e) => e.currentlyVisible && e.playerId === targetId) ?? false);
-    // Smoke is not a wall: a player can walk through it, but has no sight until it is out. A hop
-    // across a smoke-cut sightline (the map has a sightline between the two zones, and a vision
-    // blocker currently cuts it) is an EXIT FROM SMOKE on the tick it lands.
-    const blockedZones = visionBlockedZones(abilityEngine);
-    const smokedPairs: Array<[string, string]> = blockedZones.flatMap((z) => this.spatial.visibleZonesFrom(z).map((n): [string, string] => [z, n]));
-    const exitedSmokeFrom = (p: SimPlayer): string | null => {
-      if (smokedPairs.length === 0) return null;
-      const hop = lastHop.get(p.id);
-      if (!hop || hop.tick !== state.tick) return null;
-      return this.spatial.hasLineOfSight(hop.fromZone, p.zoneId) && !this.spatial.hasLineOfSight(hop.fromZone, p.zoneId, { smokedPairs }) ? hop.fromZone : null;
-    };
-    // Holding the smoke's edge: stationary, not blind, and the zone the pusher comes out of lies
+    // Smoke is not a wall: a player can walk through it, but has no sight while its eye is inside.
+    // A body whose eye was inside a smoke volume last tick and is out of it now has just come OUT
+    // OF THE SMOKE (smokeExits, measured after movement each tick); the smoke is the edge it left.
+    const exitedSmokeFrom = (p: SimPlayer): SightOccluder | null => smokeExits.get(p.id) ?? null;
+    // Holding the smoke's edge: stationary, not blind, and the smoke the pusher comes out of lies
     // inside the holder's field of view. Such a holder sees the pusher appear before the pusher,
     // whose eye is still inside, sees anything.
-    const watchesEdge = (holder: SimPlayer, edgeZone: string): boolean => {
+    const watchesEdge = (holder: SimPlayer, edge: SightOccluder): boolean => {
       if (this.isMoving(holder) || blind(holder.id)) return false;
-      const z = this.spatial.getZone(edgeZone);
-      return !!z && facingAngleTo(holder.facing, holder.position, z.position) <= HALF_FOV_RAD;
+      return facingAngleTo(holder.facing, holder.position, edge.center) <= HALF_FOV_RAD;
     };
     // Info freshness — exponential decay (half-life model): a call on an enemy that has not left
     // its zone is worth w = 2^(−Δt / halfLife) ∈ (0,1]. Trading stat stretches the half-life
@@ -1372,12 +1418,13 @@ export class RoundSimulator {
         const result = !p.alive ? "dead"
           : s.carrierId !== p.id ? "notCarrier"
           : !this.spatial.isPlantableZone(p.zoneId) ? "notPlantableZone"
+          : !this.onPlantArea(p) ? "notOnPlantArea"
           : s.phase === "planting" ? "planting" : "started";
         trace({ playerId: p.id, phase: "plant", fromZone: p.zoneId, result }, `plant:${p.id}:${result}:${p.zoneId}`);
       } else if (c?.kind === "defuse") {
         const result = !p.alive ? "dead"
           : !(s.phase === "planted" || s.phase === "defusing") ? "notPlanted"
-          : p.zoneId !== s.zoneId ? "notOnSpikeZone"
+          : !s.position || !this.inDefuseReach(p, s.position) ? "notAtSpike"
           : s.phase === "defusing" ? "defusing" : "started";
         trace({ playerId: p.id, phase: "defuse", fromZone: p.zoneId, result }, `defuse:${p.id}:${result}:${p.zoneId}`);
       }
@@ -1387,7 +1434,7 @@ export class RoundSimulator {
     // plant
     if (s.phase === "carried" || s.phase === "planting") {
       const carrier = s.carrierId ? state.players.find((p) => p.id === s.carrierId && p.alive) : null;
-      const planting = carrier && !this.steppingOut.has(carrier.id) && !this.mover.isMoving(carrier) && readyCommand(commands.get(carrier.id), state.elapsedMs)?.kind === "plant" && this.spatial.isPlantableZone(carrier.zoneId);
+      const planting = carrier && !this.steppingOut.has(carrier.id) && !this.mover.isMoving(carrier) && readyCommand(commands.get(carrier.id), state.elapsedMs)?.kind === "plant" && this.onPlantArea(carrier);
       if (planting && carrier) {
         if (s.phase === "carried") { s.phase = "planting"; s.plantProgressMs = 0; events.push({ kind: "plantStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId }); }
         s.plantProgressMs += dtMs;
@@ -1412,7 +1459,8 @@ export class RoundSimulator {
         return;
       }
       // defuse
-      const defuser = state.players.find((p) => p.alive && p.side === "defense" && p.zoneId === s.zoneId && !this.steppingOut.has(p.id) && !this.mover.isMoving(p) && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
+      const spikeAt = s.position;
+      const defuser = spikeAt && state.players.find((p) => p.alive && p.side === "defense" && this.inDefuseReach(p, spikeAt) && !this.steppingOut.has(p.id) && !this.mover.isMoving(p) && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
       if (defuser) {
         if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = 0; s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
         if (s.defuserId && !state.players.find((p) => p.id === s.defuserId)?.alive) {
@@ -1432,6 +1480,27 @@ export class RoundSimulator {
         if (prev) events.push({ kind: "defuseInterrupted", tick: state.tick, elapsedMs: state.elapsedMs, actor: prev });
       }
     }
+  }
+
+  /**
+   * On the site's plant area: inside the map's plant polygon (`isPointPlantable`). A plantable zone
+   * the map draws no polygon for falls back to the zone (so a map without plant data still plays).
+   */
+  private onPlantArea(p: SimPlayer): boolean {
+    if (!this.spatial.isPlantableZone(p.zoneId)) return this.spatial.isPointPlantable(p.position);
+    let drawn = this.polygonZones.get(p.zoneId);
+    if (drawn === undefined) {
+      const z = this.spatial.getZone(p.zoneId)!;
+      drawn = this.spatial.plantZoneAt(z.position) !== null || this.spatial.plantZoneAt(this.spatial.standPosition(z.id)) !== null;
+      this.polygonZones.set(p.zoneId, drawn);
+    }
+    return drawn ? this.spatial.isPointPlantable(p.position) : true;
+  }
+  private readonly polygonZones = new Map<string, boolean>();
+
+  /** Close enough to the planted spike to defuse it (same floor, within DEFUSE_REACH_UNITS). */
+  private inDefuseReach(p: SimPlayer, spike: { x: number; y: number; z: number }): boolean {
+    return Math.abs(p.position.z - spike.z) <= 120 && Math.hypot(p.position.x - spike.x, p.position.y - spike.y) <= DEFUSE_REACH_UNITS;
   }
 
   private checkEnd(state: SimState): { winner: Side; reason: RoundEndReason } | null {

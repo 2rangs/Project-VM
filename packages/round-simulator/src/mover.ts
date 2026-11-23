@@ -64,6 +64,9 @@ export type SpotIntent =
   | { readonly kind: "see"; readonly zone: string }
   | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
 
+/** A body this close (uu) to an "at" spot's point already stands at it. */
+const AT_SPOT_TOLERANCE_UNITS = 100;
+
 /** Share of a spot's score that is the player's own preference (so teammates spread out the same way every time). */
 const SPOT_JITTER = 0.25;
 
@@ -422,7 +425,14 @@ export class MovementExecutor {
       if (p.zoneId === goal.zoneId) return "SUCCESS"; // already standing there
     }
     m.goal = goal;
-    const respot = goal.spot?.kind === "see" && !this.seesFromSpot(p, goal.spot);
+    // Standing in the goal zone already keeps the spot — unless it does not serve the new intent:
+    // a "see" spot that does not see, a plant spot off the zone's plant area, an "at" spot away
+    // from its point.
+    const sp = goal.spot;
+    const respot = sp?.kind === "see" ? !this.seesFromSpot(p, sp)
+      : sp?.kind === "plant" ? this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId)
+      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > AT_SPOT_TOLERANCE_UNITS
+      : false;
     if (!respot && p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {
       // already standing in the goal zone: stay on the spot it holds
       m.failure = null;
@@ -431,6 +441,18 @@ export class MovementExecutor {
     }
     return this.plan(p, m, "planned", hooks);
   }
+
+  /** Whether any floor of the zone lies on a plant polygon (a map may draw none). */
+  private zoneHasPlantArea(zoneId: string): boolean {
+    let v = this.plantAreaZones.get(zoneId);
+    if (v === undefined) {
+      const z = this.spatial.getZone(zoneId);
+      v = !!z && (this.spatial.plantZoneAt(z.position) !== null || this.spatial.plantZoneAt(this.spatial.standPosition(zoneId)) !== null);
+      this.plantAreaZones.set(zoneId, v);
+    }
+    return v;
+  }
+  private readonly plantAreaZones = new Map<string, boolean>();
 
   private startNodes(m: Mover): number[] {
     if (m.index < m.waypoints.length) {
