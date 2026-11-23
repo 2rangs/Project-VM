@@ -222,6 +222,7 @@ export class RoundSimulator {
     // Navigation: every player takes its own standing spot; from here on only the executor moves them.
     this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
     this.mover.reset(state.players);
+    this.spikeRunner = null;
     this.publishZones(state);
     const navEvents: NavTraceEvent[] = [];
     const engaged = new Set<string>(); // pair keys already resolved
@@ -899,7 +900,11 @@ export class RoundSimulator {
   private spotIntent(p: SimPlayer, cmd: ActionCommand, state: SimState): { spot?: SpotIntent } {
     const s = state.spike, targetZone = cmd.targetZone!;
     if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: { kind: "plant" } };
-    if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.zoneId === targetZone && s.position) return { spot: { kind: "at", position: s.position } };
+    if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.zoneId === targetZone && s.position) {
+      // One defender goes to the spike; the others cover it: each takes, of the spots that see the
+      // spike, the one the rest of the map sees least — nearest its own way in.
+      return { spot: this.spikeRunnerOf(state) === p.id ? { kind: "at", position: s.position } : { kind: "see", point: s.position } };
+    }
     if (this.cfg.coverSpots && cmd.aimZone && cmd.aimZone !== targetZone) return { spot: { kind: "hold", watchZone: cmd.aimZone } };
     const watch = this.watchIntent(p, cmd.aimZone, targetZone, state);
     return watch ? { spot: watch } : {};
@@ -919,6 +924,24 @@ export class RoundSimulator {
     if (p.side === "attack") return planted && s.zoneId === aimZone && s.position ? { kind: "see", point: s.position } : null;
     return !planted && aimZone !== standZone ? { kind: "see", zone: aimZone } : null;
   }
+
+  /**
+   * The defender who goes to the planted spike: the living defender nearest to it when the question
+   * first comes up after the plant, kept until it dies (then the nearest of those left).
+   */
+  private spikeRunnerOf(state: SimState): string | null {
+    const pos = state.spike.position;
+    if (!pos) return null;
+    const alive = state.players.filter((q) => q.alive && q.side === "defense");
+    if (this.spikeRunner && alive.some((q) => q.id === this.spikeRunner)) return this.spikeRunner;
+    let best: string | null = null, bestD = Infinity;
+    for (const q of alive) {
+      const d = dist3(q.position, pos);
+      if (d < bestD || (d === bestD && best !== null && q.id < best)) { bestD = d; best = q.id; }
+    }
+    return (this.spikeRunner = best);
+  }
+  private spikeRunner: string | null = null;
 
   /** The planted spike, while it is down (what a guarding attacker faces). */
   private spikeWatched: { zoneId: string; position: { x: number; y: number; z: number } } | null = null;
