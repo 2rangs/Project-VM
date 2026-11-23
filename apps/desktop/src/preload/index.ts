@@ -7,6 +7,7 @@ import {
   type SessionState, type SimProgress, type SimResult, type SimRunRequest, type TeamOrder, type TeamSlot,
 } from '../shared/ipc.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
+import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot } from '../shared/career.ts';
 
 const cmd = (c: SessionCommand): Promise<SessionReply> => ipcRenderer.invoke(IPC.sessionCmd, c);
 
@@ -34,6 +35,17 @@ const bridge: PvBridge = {
   seriesCmd: (c: SeriesCommand): Promise<SeriesReply> => ipcRenderer.invoke(IPC.seriesCmd, c),
   seriesStop: () => ipcRenderer.invoke(IPC.seriesStop),
   loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
+  // [career]
+  async careerSimulate(reqs: CareerSimRequest[], onProgress: (p: CareerSimProgress) => void): Promise<CareerSimOutcome[]> {
+    const handler = (_e: unknown, p: CareerSimProgress) => onProgress(p);
+    ipcRenderer.on(IPC.careerSimProgress, handler);
+    try { return await ipcRenderer.invoke(IPC.careerSim, reqs); } finally { ipcRenderer.removeListener(IPC.careerSimProgress, handler); }
+  },
+  saveList: () => ipcRenderer.invoke(IPC.saveList),
+  saveRead: (slot: SaveSlot) => ipcRenderer.invoke(IPC.saveRead, slot),
+  saveWrite: (slot: SaveSlot, text: string) => ipcRenderer.invoke(IPC.saveWrite, slot, text),
+  saveDelete: (slot: SaveSlot) => ipcRenderer.invoke(IPC.saveDelete, slot),
+  quit: () => ipcRenderer.invoke(IPC.appQuit),
   platform: process.platform,
   isElectron: true,
 };

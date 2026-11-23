@@ -7,7 +7,7 @@ import type { ScreenCtx } from '../../App.tsx';
 import { bridge, runtime } from '../../platform.ts';
 import { teams } from '../../data.ts';
 import { useT } from '../../i18n/index.tsx';
-import type { SeriesFormat, SeriesTeam, SeriesView } from '../../../shared/series.ts';
+import type { SeriesFormat, SeriesStartRequest, SeriesTeam, SeriesView } from '../../../shared/series.ts';
 import { useSeries } from '../../series/useSeries.ts';
 import { usesBorrowedGeometry, vetoLogLine } from '../../series/view.ts';
 import { MatchDayScreen } from '../MatchDayScreen.tsx';
@@ -58,20 +58,49 @@ function SeriesScore({ view }: { view: SeriesView }) {
   );
 }
 
-export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
+/**
+ * [career] This series is a fixture of the manager's career: teams, format, seed, analyst and the
+ * five players per side come from the career world, and the finished series is handed back.
+ */
+export interface CareerSeriesFixture {
+  teamA: { id: string; name: string };
+  teamB: { id: string; name: string };
+  format: SeriesFormat;
+  seed: number;
+  /** Our analyst's quality from the career staff. */
+  analyst: number;
+  rosters: NonNullable<SeriesStartRequest['rosters']>;
+  /** e.g. "Stage 1 · Group Alpha · Round 2". */
+  label: string;
+  onFinished: (view: SeriesView) => void | Promise<void>;
+  onBack: () => void;
+}
+
+export function SeriesScreen({ ctx, fixture }: { ctx: ScreenCtx; fixture?: CareerSeriesFixture }) {
   const t = useT();
   const ser = useSeries();
-  const allTeams = useMemo(() => teams().sort((a, b) => a.name.localeCompare(b.name)), []);
-  const [teamA, setTeamA] = useState('NRG');
-  const [teamB, setTeamB] = useState('Team Heretics');
-  const [format, setFormat] = useState<SeriesFormat>('bo3');
-  const [seed, setSeed] = useState(7);
-  const [analyst, setAnalyst] = useState(0.7);
+  const allTeams = useMemo(() => {
+    const list = teams().sort((a, b) => a.name.localeCompare(b.name));
+    // [career] a fixture team may be missing from the dataset list; the selects stay locked anyway.
+    for (const x of fixture ? [fixture.teamA, fixture.teamB] : []) if (!list.some((y) => y.name === x.name)) list.push({ teamId: x.id, name: x.name } as (typeof list)[number]);
+    return list;
+  }, [fixture]);
+  const [teamA, setTeamA] = useState(fixture?.teamA.name ?? 'NRG');
+  const [teamB, setTeamB] = useState(fixture?.teamB.name ?? 'Team Heretics');
+  const [format, setFormat] = useState<SeriesFormat>(fixture?.format ?? 'bo3');
+  const [seed, setSeed] = useState(fixture?.seed ?? 7);
+  const [analyst, setAnalyst] = useState(fixture?.analyst ?? 0.7);
+  const [recording, setRecording] = useState(false);
+  const locked = !!fixture;
   const [scouting, setScouting] = useState(true);
   const [inGame, setInGame] = useState(false);
   const [quickBusy, setQuickBusy] = useState(false);
   const view = ser.view;
-  const refOf = (name: string) => { const x = allTeams.find((y) => y.name === name); return { id: x?.teamId ?? name, name }; };
+  const refOf = (name: string) => {
+    if (fixture && name === fixture.teamA.name) return fixture.teamA;
+    if (fixture && name === fixture.teamB.name) return fixture.teamB;
+    const x = allTeams.find((y) => y.name === name); return { id: x?.teamId ?? name, name };
+  };
 
   // The AI makes its veto choices one at a time, each after a short pause.
   const aiPending = view?.phase === 'veto' && view.veto.pending?.ai === true;
@@ -83,7 +112,7 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
   }, [aiPending, aiStepNo, ser.busy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function start() {
-    await ser.start({ teamA: refOf(teamA), teamB: refOf(teamB), format, seed, analyst, scouting });
+    await ser.start({ teamA: refOf(teamA), teamB: refOf(teamB), format, seed, analyst, scouting, ...(fixture ? { rosters: fixture.rosters } : {}) });
   }
   /** Back from Match Day: if the map was left unfinished it is played out, then the series view refreshes. */
   async function returnFromGame() {
@@ -125,29 +154,35 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
   return (
     <div className="ser-wrap" data-testid="series-screen" data-phase={view?.phase ?? 'setup'}>
       <h2 className="ser-title">{t('ser.title')} {view && <span className="pill">{t(`ser.format.${view.format.games === 1 ? 'bo1' : view.format.games === 3 ? 'bo3' : 'bo5'}`)}</span>}</h2>
+      {fixture && (
+        <div className="ser-geonote" data-testid="series-career-fixture">
+          🏆 <b>{fixture.label}</b> · {t('career.match.fromWorld')}
+          {!view && <button className="ord-cancel" style={{ marginLeft: 12 }} onClick={fixture.onBack} data-testid="series-career-back">{t('career.match.back')}</button>}
+        </div>
+      )}
 
       {/* ── setup ── */}
       {!view && (
         <div className="ser-setup" data-testid="series-setup">
           <div className="ser-setuprow">
             <label>{t('ser.setup.our')}
-              <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={ser.busy} data-testid="series-team-a">
+              <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={ser.busy || locked} data-testid="series-team-a">
                 {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
               </select>
             </label>
             <span className="vs">vs</span>
             <label>{t('ser.setup.opp')}
-              <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={ser.busy} data-testid="series-team-b">
+              <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={ser.busy || locked} data-testid="series-team-b">
                 {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
               </select>
             </label>
-            <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={ser.busy} data-testid="series-seed" /></label>
+            <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={ser.busy || locked} data-testid="series-seed" /></label>
           </div>
           <div className="ser-setuprow">
             <span>{t('ser.setup.format')}</span>
             <div className="md-modetoggle" data-testid="series-format">
               {(['bo1', 'bo3', 'bo5'] as const).map((f) => (
-                <button key={f} className={format === f ? 'on' : ''} onClick={() => setFormat(f)} disabled={ser.busy} data-testid={`series-format-${f}`}>{t(`ser.format.${f}`)}</button>
+                <button key={f} className={format === f ? 'on' : ''} onClick={() => setFormat(f)} disabled={ser.busy || locked} data-testid={`series-format-${f}`}>{t(`ser.format.${f}`)}</button>
               ))}
             </div>
           </div>
@@ -159,7 +194,7 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
             </label>
             <label className="md-opt">
               <b>{t('ser.opt.analyst')}</b>
-              <input type="range" min={0} max={1} step={0.1} value={analyst} onChange={(e) => setAnalyst(Number(e.target.value))} disabled={ser.busy || !scouting} data-testid="series-opt-analyst" />
+              <input type="range" min={0} max={1} step={0.1} value={analyst} onChange={(e) => setAnalyst(Number(e.target.value))} disabled={ser.busy || !scouting || locked} data-testid="series-opt-analyst" />
               <span className="ser-analystval">{analyst.toFixed(1)}</span>
               <span className="muted small">{t('ser.opt.analyst.hint')}</span>
             </label>
@@ -229,7 +264,13 @@ export function SeriesScreen({ ctx }: { ctx: ScreenCtx }) {
               </table>
             </div>
           )}
-          <button className="ord-cancel ser-reset" onClick={() => void ser.stop()} data-testid="series-reset">{view.phase === 'finished' ? t('ser.new') : t('ser.abandon')}</button>
+          {fixture && view.phase === 'finished' && (
+            <button className="md-run" disabled={recording} data-testid="series-career-record"
+              onClick={async () => { setRecording(true); try { await fixture.onFinished(view); } finally { setRecording(false); } await ser.stop(); }}>
+              {t('career.match.record')}
+            </button>
+          )}
+          {!(fixture && view.phase === 'finished') && <button className="ord-cancel ser-reset" onClick={() => void ser.stop()} data-testid="series-reset">{view.phase === 'finished' ? t('ser.new') : t('ser.abandon')}</button>}
         </>
       )}
       {view && view.phase === 'veto' && <button className="ord-cancel ser-reset" onClick={() => void ser.stop()} data-testid="series-reset">{t('ser.abandon')}</button>}

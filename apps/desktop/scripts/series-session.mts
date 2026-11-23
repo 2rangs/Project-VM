@@ -21,6 +21,7 @@ import {
   type MatchSession, type SeriesGameContext, type SeriesGameResult, type SeriesSession, type TeamGameLog,
 } from '../../../packages/match-runner/src/index.ts';
 import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
+import type { RosterPlayer } from '../../../packages/match-runner/src/teams.ts';
 
 type Team = 'A' | 'B';
 interface Cfg {
@@ -28,6 +29,8 @@ interface Cfg {
   format?: 'bo1' | 'bo3' | 'bo5'; seed?: number; analyst?: number; scouting?: boolean;
   /** Recent games simulated per team as its scoutable film (no real per-round history exists). */
   filmGames?: number;
+  /** [career] Today's five per team (career world); every map and the film use them. */
+  rosters?: { A?: RosterPlayer[]; B?: RosterPlayer[] };
 }
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 const seed = cfg.seed ?? 1;
@@ -35,13 +38,13 @@ const pool = DEFAULT_MAP_POOL;
 const other = (t: Team): Team => (t === 'A' ? 'B' : 'A');
 
 // --- scoutable film: each team's last few games against other teams (simulated, deterministic) ---
-function film(team: { id: string; name: string }, salt: number): TeamGameLog[] {
+function film(team: { id: string; name: string }, salt: number, roster?: RosterPlayer[]): TeamGameLog[] {
   const n = Math.max(0, Math.min(6, cfg.filmGames ?? Number(process.env.PV_SERIES_FILM ?? 2)));
   const others = listSimulatableTeams().filter((t) => t.teamId !== cfg.teamA.id && t.teamId !== cfg.teamB.id);
   const logs: TeamGameLog[] = [];
   for (let k = 0; k < n && others.length > 0; k++) {
     const opp = others[(salt * 7 + k * 3 + seed) % others.length]!;
-    const r = runMatch({ teamA: team, teamB: { id: opp.teamId, name: opp.name ?? opp.teamId }, map: pool[(k + salt) % pool.length]!, seed: seed * 31 + salt * 1000 + k });
+    const r = runMatch({ teamA: team, teamB: { id: opp.teamId, name: opp.name ?? opp.teamId }, map: pool[(k + salt) % pool.length]!, seed: seed * 31 + salt * 1000 + k, ...(roster ? { rosters: { A: roster } } : {}) });
     logs.push(teamGameLog(r, 'A'));
   }
   return logs;
@@ -49,8 +52,8 @@ function film(team: { id: string; name: string }, salt: number): TeamGameLog[] {
 process.stderr.write('series-session: preparing scouting film\n');
 const series: SeriesSession = createSeriesSession(
   {
-    teamA: { ...cfg.teamA, scouting: cfg.scouting ?? true, staff: { analyst: cfg.analyst ?? 0.5 }, history: film(cfg.teamA, 1) },
-    teamB: { ...cfg.teamB, history: film(cfg.teamB, 2) },
+    teamA: { ...cfg.teamA, scouting: cfg.scouting ?? true, staff: { analyst: cfg.analyst ?? 0.5 }, history: film(cfg.teamA, 1, cfg.rosters?.A), ...(cfg.rosters?.A ? { roster: cfg.rosters.A } : {}) },
+    teamB: { ...cfg.teamB, history: film(cfg.teamB, 2, cfg.rosters?.B), ...(cfg.rosters?.B ? { roster: cfg.rosters.B } : {}) },
     format: cfg.format ?? 'bo3',
     seed,
     match: { recordPerception: true, recordTracks: true }, // positions + navigation trace for the live view

@@ -19,6 +19,8 @@ import {
 // [series]
 import { SeriesHost } from './series-host.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
+// [career]
+import { registerCareerIpc } from './career-host.ts';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 // electron-vite lays out: out/main/index.js, out/main/sim-worker.js, out/preload/index.mjs
@@ -58,6 +60,10 @@ function sessionScript(): string { return process.env.PV_SESSION_SCRIPT ?? path.
 // [series]
 function seriesScript(): string { return process.env.PV_SERIES_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'series-session.mts'); }
 const seriesHost = new SeriesHost(seriesScript, repoRoot);
+// [career] background simulation of AI fixtures + save slots
+function careerSimScript(): string { return process.env.PV_CAREER_SIM_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'career-sim.mts'); }
+const disposeCareer = registerCareerIpc({ script: careerSimScript, cwd: repoRoot });
+app.on('will-quit', () => { disposeCareer(); seriesHost.dispose(); });
 
 // --- interactive match session: one long-lived tsx subprocess hosting a stateful
 //     @pv/match-runner MatchSession, driven over a line-delimited JSON protocol.

@@ -1,6 +1,6 @@
 // A generated player plays a real match through match-runner (MatchConfig.rosters).
 import { describe, it, expect } from "vitest";
-import { runMatch } from "@pv/match-runner";
+import { runMatch, runSeries } from "@pv/match-runner";
 import { rosterSkills } from "../../match-runner/src/teams.ts";
 import { worldFromGameData } from "../src/game-data.ts";
 import { advanceSeason, startingFive, type RatedAttr } from "../src/index.ts";
@@ -31,5 +31,21 @@ describe("generated players in a match", () => {
     });
     expect(["A", "B"]).toContain(m.winner);
     expect(Math.max(m.score.A, m.score.B)).toBeGreaterThanOrEqual(13);
+  });
+
+  it("plays a career lineup through a series (SeriesTeamConfig.roster → every game's rosters)", () => {
+    const w = worldFromGameData(7);
+    const teams = Object.values(w.teams).filter((t) => t.roster.length >= 5).sort((a, b) => a.teamId.localeCompare(b.teamId));
+    const [a, b] = [teams[0]!, teams[1]!];
+    const fiveA = startingFive(w, a.teamId);
+    const fiveB = startingFive(w, b.teamId);
+    const r = runSeries({
+      teamA: { id: a.teamId, name: a.name, scouting: false, roster: fiveA },
+      teamB: { id: b.teamId, name: b.name, scouting: false, roster: fiveB },
+      format: "bo1", seed: 3,
+    });
+    const g = r.games[0]!;
+    expect(g.match.config.rosters?.[g.slots.A]?.map((p) => p.playerId)).toEqual(fiveA.map((p) => p.playerId));
+    expect(g.match.config.rosters?.[g.slots.B]?.map((p) => p.playerId)).toEqual(fiveB.map((p) => p.playerId));
   });
 });
