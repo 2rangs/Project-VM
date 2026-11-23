@@ -24,6 +24,7 @@ import { AgentSelectScreen } from './screens/AgentSelectScreen.tsx';
 import { DevScreen } from './screens/DevScreen.tsx';
 import { AboutScreen } from './screens/AboutScreen.tsx';
 import { Placeholder } from './screens/Placeholder.tsx';
+import { Icon, NAV_ICONS } from './screens/matchday/Icons.tsx'; // [icons] one glyph set for the whole shell
 import { SeriesScreen } from './screens/series/SeriesScreen.tsx'; // [series]
 // [career]
 import { closeCareer, saveCareer, useCareer } from './career/session.ts';
@@ -106,7 +107,7 @@ export default function App() {
                   onClick={() => go(it.id)}
                   data-testid={`nav-${it.id}`}
                 >
-                  <span className="nav-ico">{it.icon}</span>{t(`nav.${it.id}`)}
+                  <span className="nav-ico">{NAV_ICONS[it.id] ? <Icon name={NAV_ICONS[it.id]} size={15} /> : it.icon}</span>{t(`nav.${it.id}`)}
                   {it.id === 'inbox' && unread > 0 && <span className="nav-badge" data-testid="inbox-unread">{unread}</span>}
                   {it.soon && <span className="soon-tag">{t('nav.soon')}</span>}
                   {it.dev && <span className="dev-tag">{t('nav.dev')}</span>}
@@ -126,9 +127,9 @@ export default function App() {
           {route === 'veto' && <SeriesScreen ctx={ctx} />}
           {route === 'squad' && <SquadScreen setDetail={setDetail} />}
           {route === 'scouting' && <ScoutingScreen setDetail={setDetail} />}
-          {route === 'finance' && <FinanceScreen setDetail={setDetail} />}
-          {route === 'transfers' && <TransfersScreen setDetail={setDetail} />}
-          {route === 'training' && <TrainingScreen setDetail={setDetail} />}
+          {route === 'finance' && c && <FinanceScreen setDetail={setDetail} />}
+          {route === 'transfers' && c && <TransfersScreen setDetail={setDetail} />}
+          {route === 'training' && c && <TrainingScreen setDetail={setDetail} />}
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}

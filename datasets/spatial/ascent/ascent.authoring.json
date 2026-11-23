@@ -1,0 +1,77 @@
+{
+  "mapId": "ascent",
+  "note": "Hand-authored inputs measured on the scene. Ascent's zone graph is hand-authored (ascent.source.json) and is not built from this file; it is read by tools/map-mesh/pipeline/objects_map.py.",
+  "objectsNote": "Game uu. Doors and breakables located on the scene: position is on the floor in the opening, normal the horizontal direction through it. Read by tools/map-mesh/pipeline/objects_map.py.",
+  "objects": [
+    {
+      "id": "a-door",
+      "name": "A Link Door",
+      "kind": "switch-door",
+      "position": {
+        "x": 4865,
+        "y": -5995,
+        "z": 394
+      },
+      "normal": [
+        1,
+        0
+      ],
+      "defaultState": "open",
+      "gates": [
+        "a-site",
+        "a-garden"
+      ],
+      "objectNames": [
+        "ABombsite_0_KingdomDoor",
+        "TreeRoom_3_ArchwayC"
+      ],
+      "basis": "Game metres. The opening in wall Shell_10_CastleWallB (x 48.00..49.13) between the tree room (TreeRoom_0_Ground, x 30.52..48.04, y -64.00..-55.98, z 4.00) and the A-site level (AGRound_4_GardenLevel, x 48.00..71.00): archway TreeRoom_3_ArchwayC x 47.92..48.95, y -62.20..-57.81, and the door assembly ABombsite_0_KingdomDoor x 48.14..49.23, y -64.14..-55.86, z 4.00..8.26. The walk grid passes the wall line only at y -61.45..-58.45 (6 cells, 3.0 m), floor z 3.92..3.99. Position = middle of that passage. The door leaf itself is not a separate object in the scene; no switch object was identified.",
+      "provenance": "measured-on-mesh (objects, passage, floor height); manual-approx (that this opening is the switch door the zone graph carries on a-site<->a-garden, and its default state: ascent.source.json)"
+    },
+    {
+      "id": "b-door",
+      "name": "B Link Door",
+      "kind": "switch-door",
+      "position": {
+        "x": -1200,
+        "y": -6350,
+        "z": 92
+      },
+      "normal": [
+        0,
+        1
+      ],
+      "defaultState": "open",
+      "gates": [
+        "mid-link",
+        "b-site"
+      ],
+      "switch": {
+        "position": {
+          "x": -904,
+          "y": -6298,
+          "z": 178
+        },
+        "objectNames": [
+          "BreakerBoxA"
+        ],
+        "provenance": "measured-on-mesh (object position: a 0.24 x 0.10 x 0.33 m box on the market-side wall 0.7 m above the floor, 3 m from the opening); manual-approx (that it is this door's switch)"
+      },
+      "objectNames": [
+        "BMainInreriorArchwayB_0"
+      ],
+      "basis": "Game metres. Archway BMainInreriorArchwayB_0 (x -14.89..-9.11, y -64.19..-62.81, z 1.00..9.13) in the wall between the market room (Shell_5_MarketGround, y -63.81..-47.00) and the B-site floor (Switchhouse_0_Ground, y -87.00..-63.00). The walk grid passes the wall line at x -13.85..-10.35 (7 cells, 3.5 m), floor z 0.91..0.94. Position = middle of that passage. The door leaf is not a separate object in the scene.",
+      "provenance": "measured-on-mesh (objects, passage, floor height); manual-approx (that this archway is the switch door the zone graph carries on mid-link<->b-site, and its default state: ascent.source.json)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    },
+    {
+      "name": "A Link Door switch",
+      "reason": "no switch object was identified near the A door opening (searched Switch / Breaker / Button / Panel / Lever within 3 m); the B door's BreakerBoxA has no counterpart there."
+    }
+  ]
+}

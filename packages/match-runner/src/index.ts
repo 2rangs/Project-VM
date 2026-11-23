@@ -32,7 +32,7 @@ export type {
   AttackStrategyOrder,
   DefenseStrategyOrder,
 } from "./orders.js";
-export { resolveTeamRef, teamSkills, isKnownTeam, simulatableTeamRefs, type RosterPlayer } from "./teams.js";
+export { resolveTeamRef, teamSkills, rosterSkills, isKnownTeam, simulatableTeamRefs, type RosterPlayer } from "./teams.js";
 export {
   newTeamEconomy,
   decideBuy,

@@ -36,9 +36,9 @@
  },
  "provenance": "measured-on-mesh",
  "summary": {
-  "edges": 33,
+  "edges": 35,
   "withWalkableRoute": 31,
-  "flaggedStraight": 2,
+  "flaggedStraight": 4,
   "walkingSegmentsRayChecked": 128,
   "walkingSegmentsHittingGeometry": 0
  },
@@ -99,9 +99,9 @@
    "z": 1200
   },
   "b-danger": {
-   "x": -5675,
+   "x": -5825,
    "y": 700,
-   "z": 1615
+   "z": 495
   },
   "b-link": {
    "x": -1975,
@@ -1592,20 +1592,38 @@
    "status": "route"
   },
   {
+   "from": "a-link",
+   "to": "a-secret",
+   "bidirectional": true,
+   "kind": "jump",
+   "straightMeters": 17.25,
+   "status": "straight",
+   "reason": "no walkable route on the grid"
+  },
+  {
    "from": "a-security",
    "to": "a-secret",
    "bidirectional": true,
-   "kind": "approx-link",
+   "kind": "jump",
    "straightMeters": 14.23,
    "status": "straight",
    "reason": "no walkable route on the grid"
   },
   {
-   "from": "b-nest",
+   "from": "b-main",
    "to": "b-danger",
    "bidirectional": true,
-   "kind": "approx-link",
-   "straightMeters": 18.05,
+   "kind": "jump",
+   "straightMeters": 16.15,
+   "status": "straight",
+   "reason": "no walkable route on the grid"
+  },
+  {
+   "from": "b-site",
+   "to": "b-danger",
+   "bidirectional": true,
+   "kind": "jump",
+   "straightMeters": 23.62,
    "status": "straight",
    "reason": "no walkable route on the grid"
   }

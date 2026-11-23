@@ -1,0 +1,749 @@
+{
+ "mapId": "icebox",
+ "schemaVersion": "1.0.0",
+ "note": "Gameplay objects as points and types, game uu (100 uu = 1 m); no surfaces. drops: the roadmap's one-way drops (from/to are roadmap nodes of <map>.nav.json; fallMeters = height lost). traversals: one per roadmap link, in the roadmap's link order (from/to are the roadmap nodes the link joins; ropes also name bottom/top and whether from->to ascends; soundSource / soundSourceExit are the points its sound is emitted from at the entry and the exit, soundRadiusUu is null and soundVerified false until a value is measured). doors / breakables: position on the floor in the opening, zones = the zone of the nearest roadmap point on each side of the opening (one zone for a prop; gates, where present, is the zone-graph edge the door is attached to), defaultState open/closed/intact/unknown. notLocated: mechanics known for the map that no scene object or floor measurement could place. ultOrbs: orb positions, empty where the scene has no orb object. Every entry states its own provenance.",
+ "provenance": "measured-on-mesh (positions: scene object bounding boxes and walk-grid cells; drops and the zones: the navigation roadmap); manual-approx (travel times and speeds, default states, and the reading of which scene object is which gameplay object)",
+ "roadmapBounds": {
+  "min": {
+   "x": -11675,
+   "y": -5725,
+   "z": -349
+  },
+  "max": {
+   "x": 4625,
+   "y": 7125,
+   "z": 906
+  }
+ },
+ "counts": {
+  "drops": 287,
+  "traversals": 5,
+  "doors": 0,
+  "breakables": 9,
+  "ultOrbs": 0,
+  "notLocated": 2
+ },
+ "drops": [
+  {"from":{"x":-11225,"y":-1325,"z":227},"to":{"x":-11225,"y":-1375,"z":166},"fallMeters":0.61,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1545,"toNode":1559},
+  {"from":{"x":4575,"y":-3725,"z":614},"to":{"x":4625,"y":-3725,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1620,"toNode":1594},
+  {"from":{"x":75,"y":-3475,"z":614},"to":{"x":75,"y":-3425,"z":544},"fallMeters":0.7,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1641,"toNode":1592},
+  {"from":{"x":1925,"y":-3575,"z":614},"to":{"x":1925,"y":-3525,"z":543},"fallMeters":0.71,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1465,"toNode":1642},
+  {"from":{"x":2025,"y":-3575,"z":614},"to":{"x":2025,"y":-3525,"z":540},"fallMeters":0.74,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1383,"toNode":1643},
+  {"from":{"x":1325,"y":-3575,"z":614},"to":{"x":1325,"y":-3625,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1590,"toNode":1644},
+  {"from":{"x":4575,"y":-3725,"z":614},"to":{"x":4575,"y":-3675,"z":535},"fallMeters":0.79,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1620,"toNode":1645},
+  {"from":{"x":-7475,"y":1825,"z":445},"to":{"x":-7425,"y":1825,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1168,"toNode":1171},
+  {"from":{"x":2125,"y":-5475,"z":614},"to":{"x":2125,"y":-5425,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1624,"toNode":1646},
+  {"from":{"x":125,"y":-5575,"z":614},"to":{"x":125,"y":-5625,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1625,"toNode":1647},
+  {"from":{"x":-3625,"y":-2575,"z":298},"to":{"x":-3575,"y":-2575,"z":105},"fallMeters":1.93,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1648,"toNode":1237},
+  {"from":{"x":-6175,"y":875,"z":570},"to":{"x":-6125,"y":875,"z":100},"fallMeters":4.7,"fromZone":"a-nest","toZone":"a-pipes","fromNode":26,"toNode":25},
+  {"from":{"x":-1575,"y":2725,"z":495},"to":{"x":-1575,"y":2675,"z":297},"fallMeters":1.98,"fromZone":"b-kitchen","toZone":"b-kitchen","fromNode":1649,"toNode":1281},
+  {"from":{"x":125,"y":-5575,"z":614},"to":{"x":125,"y":-5525,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1625,"toNode":1650},
+  {"from":{"x":4575,"y":-5375,"z":614},"to":{"x":4625,"y":-5375,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1651,"toNode":1652},
+  {"from":{"x":25,"y":-5575,"z":614},"to":{"x":25,"y":-5625,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1653,"toNode":1654},
+  {"from":{"x":4575,"y":-5325,"z":614},"to":{"x":4625,"y":-5325,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1621,"toNode":1655},
+  {"from":{"x":-5325,"y":-3725,"z":830},"to":{"x":-5275,"y":-3725,"z":636},"fallMeters":1.94,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1656,"toNode":1215},
+  {"from":{"x":-7475,"y":1775,"z":445},"to":{"x":-7425,"y":1775,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1393,"toNode":1657},
+  {"from":{"x":-6125,"y":3575,"z":570},"to":{"x":-6075,"y":3575,"z":207},"fallMeters":3.63,"fromZone":"a-site","toZone":"a-site","fromNode":30,"toNode":1658},
+  {"from":{"x":2675,"y":-5425,"z":614},"to":{"x":2675,"y":-5375,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1659,"toNode":1660},
+  {"from":{"x":4425,"y":-5375,"z":614},"to":{"x":4425,"y":-5425,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1661,"toNode":1662},
+  {"from":{"x":2675,"y":-5475,"z":614},"to":{"x":2675,"y":-5525,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1663,"toNode":1664},
+  {"from":{"x":-2725,"y":5925,"z":385},"to":{"x":-2725,"y":5875,"z":285},"fallMeters":1.0,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":1665,"toNode":1639},
+  {"from":{"x":-11325,"y":-2825,"z":100},"to":{"x":-11325,"y":-2875,"z":-111},"fallMeters":2.11,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1666,"toNode":1431},
+  {"from":{"x":1525,"y":1925,"z":533},"to":{"x":1525,"y":1875,"z":100},"fallMeters":4.33,"fromZone":"b-hall","toZone":"b-site","fromNode":1667,"toNode":33},
+  {"from":{"x":-9325,"y":-2825,"z":104},"to":{"x":-9325,"y":-2875,"z":-48},"fallMeters":1.52,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1668,"toNode":1669},
+  {"from":{"x":-1575,"y":2675,"z":297},"to":{"x":-1575,"y":2625,"z":155},"fallMeters":1.42,"fromZone":"b-kitchen","toZone":"b-snow-pile","fromNode":1281,"toNode":1670},
+  {"from":{"x":4525,"y":-5375,"z":614},"to":{"x":4525,"y":-5425,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1671,"toNode":1672},
+  {"from":{"x":-11375,"y":-2775,"z":100},"to":{"x":-11375,"y":-2825,"z":-73},"fallMeters":1.73,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1673,"toNode":1674},
+  {"from":{"x":-6175,"y":825,"z":570},"to":{"x":-6125,"y":825,"z":100},"fallMeters":4.7,"fromZone":"a-nest","toZone":"a-pipes","fromNode":1675,"toNode":1542},
+  {"from":{"x":775,"y":-3525,"z":614},"to":{"x":775,"y":-3475,"z":533},"fallMeters":0.81,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1676,"toNode":1316},
+  {"from":{"x":-7175,"y":125,"z":499},"to":{"x":-7175,"y":175,"z":299},"fallMeters":2.0,"fromZone":"a-belt","toZone":"a-belt","fromNode":1677,"toNode":1678},
+  {"from":{"x":-3175,"y":-2775,"z":304},"to":{"x":-3175,"y":-2725,"z":101},"fallMeters":2.03,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1246,"toNode":1679},
+  {"from":{"x":4525,"y":-3725,"z":614},"to":{"x":4525,"y":-3775,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1680,"toNode":1681},
+  {"from":{"x":4325,"y":-5375,"z":614},"to":{"x":4325,"y":-5425,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1682,"toNode":1683},
+  {"from":{"x":525,"y":2125,"z":492},"to":{"x":475,"y":2125,"z":101},"fallMeters":3.91,"fromZone":"b-hall","toZone":"b-orange","fromNode":1684,"toNode":1062},
+  {"from":{"x":-3525,"y":3275,"z":451},"to":{"x":-3525,"y":3325,"z":230},"fallMeters":2.21,"fromZone":"mid-boiler","toZone":"a-screen","fromNode":1685,"toNode":993},
+  {"from":{"x":-4475,"y":-3175,"z":402},"to":{"x":-4475,"y":-3225,"z":241},"fallMeters":1.61,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1686,"toNode":1227},
+  {"from":{"x":1025,"y":-3575,"z":614},"to":{"x":1025,"y":-3625,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1555,"toNode":1687},
+  {"from":{"x":2225,"y":-5475,"z":614},"to":{"x":2225,"y":-5525,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1688,"toNode":1689},
+  {"from":{"x":-7475,"y":1525,"z":445},"to":{"x":-7425,"y":1525,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1690,"toNode":1170},
+  {"from":{"x":-10925,"y":-2775,"z":100},"to":{"x":-10925,"y":-2825,"z":-164},"fallMeters":2.64,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1691,"toNode":1119},
+  {"from":{"x":-5175,"y":-3325,"z":530},"to":{"x":-5175,"y":-3275,"z":101},"fallMeters":4.29,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1692,"toNode":1396},
+  {"from":{"x":1625,"y":1925,"z":533},"to":{"x":1625,"y":1875,"z":100},"fallMeters":4.33,"fromZone":"b-hall","toZone":"b-site","fromNode":1332,"toNode":1693},
+  {"from":{"x":-10725,"y":-3025,"z":-66},"to":{"x":-10675,"y":-3025,"z":-219},"fallMeters":1.53,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1121,"toNode":1694},
+  {"from":{"x":-7925,"y":725,"z":445},"to":{"x":-7875,"y":725,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1613,"toNode":1695},
+  {"from":{"x":-2875,"y":-2825,"z":277},"to":{"x":-2875,"y":-2775,"z":108},"fallMeters":1.69,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1255,"toNode":1697},
+  {"from":{"x":25,"y":-5575,"z":614},"to":{"x":25,"y":-5525,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1653,"toNode":1698},
+  {"from":{"x":-4975,"y":-2725,"z":294},"to":{"x":-4975,"y":-2675,"z":113},"fallMeters":1.81,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1699,"toNode":1700},
+  {"from":{"x":325,"y":-5575,"z":614},"to":{"x":325,"y":-5625,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1701,"toNode":1306},
+  {"from":{"x":-7425,"y":325,"z":595},"to":{"x":-7425,"y":375,"z":100},"fallMeters":4.95,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1702,"toNode":1703},
+  {"from":{"x":275,"y":-3525,"z":614},"to":{"x":275,"y":-3575,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1466,"toNode":1704},
+  {"from":{"x":-3125,"y":2925,"z":451},"to":{"x":-3125,"y":2875,"z":100},"fallMeters":3.51,"fromZone":"mid-boiler","toZone":"mid-pallet","fromNode":1477,"toNode":1705},
+  {"from":{"x":-1875,"y":2725,"z":443},"to":{"x":-1925,"y":2725,"z":291},"fallMeters":1.52,"fromZone":"b-kitchen","toZone":"b-snow-pile","fromNode":1706,"toNode":1707},
+  {"from":{"x":-3625,"y":-2775,"z":373},"to":{"x":-3575,"y":-2775,"z":300},"fallMeters":0.73,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1708,"toNode":1709},
+  {"from":{"x":825,"y":2625,"z":498},"to":{"x":775,"y":2625,"z":100},"fallMeters":3.98,"fromZone":"b-hall","toZone":"b-site","fromNode":1710,"toNode":465},
+  {"from":{"x":4475,"y":-3725,"z":614},"to":{"x":4475,"y":-3775,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1711,"toNode":1712},
+  {"from":{"x":2775,"y":-5425,"z":614},"to":{"x":2775,"y":-5375,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1713,"toNode":1714},
+  {"from":{"x":225,"y":-3525,"z":614},"to":{"x":225,"y":-3575,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1568,"toNode":1715},
+  {"from":{"x":1775,"y":2075,"z":508},"to":{"x":1825,"y":2075,"z":100},"fallMeters":4.08,"fromZone":"b-hall","toZone":"b-site","fromNode":1716,"toNode":1337},
+  {"from":{"x":-9775,"y":-4125,"z":834},"to":{"x":-9775,"y":-4175,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1717,"toNode":1718},
+  {"from":{"x":-8625,"y":-3825,"z":834},"to":{"x":-8625,"y":-3875,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1138,"toNode":1719},
+  {"from":{"x":-7275,"y":75,"z":598},"to":{"x":-7225,"y":75,"z":499},"fallMeters":0.99,"fromZone":"a-belt","toZone":"a-belt","fromNode":1720,"toNode":1721},
+  {"from":{"x":-10075,"y":-4375,"z":834},"to":{"x":-10025,"y":-4375,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1722,"toNode":1723},
+  {"from":{"x":-9175,"y":-5175,"z":834},"to":{"x":-9175,"y":-5125,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1724,"toNode":1725},
+  {"from":{"x":-7275,"y":175,"z":598},"to":{"x":-7225,"y":175,"z":299},"fallMeters":2.99,"fromZone":"a-belt","toZone":"a-belt","fromNode":1726,"toNode":1178},
+  {"from":{"x":-7375,"y":2525,"z":200},"to":{"x":-7375,"y":2475,"z":100},"fallMeters":1.0,"fromZone":"a-site","toZone":"a-site","fromNode":1174,"toNode":1727},
+  {"from":{"x":-7725,"y":-3825,"z":838},"to":{"x":-7725,"y":-3875,"z":735},"fallMeters":1.03,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1161,"toNode":1728},
+  {"from":{"x":-7975,"y":575,"z":534},"to":{"x":-7925,"y":575,"z":445},"fallMeters":0.89,"fromZone":"a-belt","toZone":"a-belt","fromNode":1729,"toNode":1154},
+  {"from":{"x":-8125,"y":-2975,"z":217},"to":{"x":-8175,"y":-2975,"z":51},"fallMeters":1.66,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1147,"toNode":1730},
+  {"from":{"x":-4625,"y":-3175,"z":399},"to":{"x":-4625,"y":-3225,"z":241},"fallMeters":1.58,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1731,"toNode":1394},
+  {"from":{"x":-25,"y":-4375,"z":631},"to":{"x":25,"y":-4375,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1732,"toNode":1733},
+  {"from":{"x":-9325,"y":-3225,"z":-199},"to":{"x":-9375,"y":-3225,"z":-344},"fallMeters":1.45,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1471,"toNode":1734},
+  {"from":{"x":-5925,"y":-3175,"z":242},"to":{"x":-5925,"y":-3125,"z":100},"fallMeters":1.42,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1735,"toNode":1736},
+  {"from":{"x":-6325,"y":-3175,"z":243},"to":{"x":-6325,"y":-3125,"z":100},"fallMeters":1.43,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1737,"toNode":1738},
+  {"from":{"x":-4625,"y":-2775,"z":300},"to":{"x":-4575,"y":-2775,"z":154},"fallMeters":1.46,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1739,"toNode":1740},
+  {"from":{"x":-9975,"y":-4275,"z":834},"to":{"x":-9975,"y":-4325,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1741,"toNode":1742},
+  {"from":{"x":-9575,"y":-3325,"z":-221},"to":{"x":-9575,"y":-3275,"z":-349},"fallMeters":1.28,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1129,"toNode":1743},
+  {"from":{"x":-7975,"y":-1125,"z":179},"to":{"x":-7975,"y":-1075,"z":100},"fallMeters":0.79,"fromZone":"a-belt","toZone":"a-belt","fromNode":1150,"toNode":1744},
+  {"from":{"x":-7925,"y":675,"z":445},"to":{"x":-7875,"y":675,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1451,"toNode":1745},
+  {"from":{"x":-10075,"y":-3325,"z":-196},"to":{"x":-10075,"y":-3275,"z":-328},"fallMeters":1.32,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1126,"toNode":1746},
+  {"from":{"x":2225,"y":-5475,"z":614},"to":{"x":2225,"y":-5425,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1688,"toNode":1747},
+  {"from":{"x":1075,"y":-3575,"z":614},"to":{"x":1075,"y":-3625,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1748,"toNode":1749},
+  {"from":{"x":75,"y":-3525,"z":614},"to":{"x":75,"y":-3575,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1304,"toNode":1750},
+  {"from":{"x":-7475,"y":2625,"z":200},"to":{"x":-7525,"y":2625,"z":107},"fallMeters":0.93,"fromZone":"a-site","toZone":"a-site","fromNode":1751,"toNode":1752},
+  {"from":{"x":-9325,"y":-2925,"z":-52},"to":{"x":-9375,"y":-2925,"z":-256},"fallMeters":2.04,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1132,"toNode":1753},
+  {"from":{"x":-9325,"y":-2975,"z":-77},"to":{"x":-9275,"y":-2975,"z":-177},"fallMeters":1.0,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1754,"toNode":1755},
+  {"from":{"x":-8625,"y":-2825,"z":106},"to":{"x":-8625,"y":-2875,"z":-13},"fallMeters":1.19,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1756,"toNode":1757},
+  {"from":{"x":3075,"y":-3625,"z":614},"to":{"x":3075,"y":-3575,"z":540},"fallMeters":0.74,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1758,"toNode":1759},
+  {"from":{"x":3925,"y":-3675,"z":614},"to":{"x":3925,"y":-3625,"z":535},"fallMeters":0.79,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1760,"toNode":1761},
+  {"from":{"x":-3475,"y":-2775,"z":300},"to":{"x":-3475,"y":-2725,"z":130},"fallMeters":1.7,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1241,"toNode":1762},
+  {"from":{"x":-25,"y":-5425,"z":630},"to":{"x":25,"y":-5425,"z":526},"fallMeters":1.04,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1764,"toNode":1765},
+  {"from":{"x":3775,"y":-3675,"z":614},"to":{"x":3775,"y":-3625,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1766,"toNode":1371},
+  {"from":{"x":1875,"y":-3575,"z":614},"to":{"x":1875,"y":-3625,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1338,"toNode":1767},
+  {"from":{"x":4375,"y":-5375,"z":614},"to":{"x":4375,"y":-5325,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1622,"toNode":1768},
+  {"from":{"x":-11675,"y":-2775,"z":100},"to":{"x":-11675,"y":-2825,"z":-21},"fallMeters":1.21,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1769,"toNode":1114},
+  {"from":{"x":-7925,"y":425,"z":445},"to":{"x":-7875,"y":425,"z":154},"fallMeters":2.91,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1770,"toNode":1771},
+  {"from":{"x":-6275,"y":2525,"z":200},"to":{"x":-6275,"y":2475,"z":100},"fallMeters":1.0,"fromZone":"a-site","toZone":"a-site","fromNode":1772,"toNode":1773},
+  {"from":{"x":-7125,"y":-25,"z":600},"to":{"x":-7125,"y":25,"z":499},"fallMeters":1.01,"fromZone":"a-belt","toZone":"a-belt","fromNode":1774,"toNode":1775},
+  {"from":{"x":-5325,"y":-3225,"z":240},"to":{"x":-5275,"y":-3225,"z":101},"fallMeters":1.39,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1776,"toNode":1777},
+  {"from":{"x":-6625,"y":-3175,"z":241},"to":{"x":-6625,"y":-3125,"z":100},"fallMeters":1.41,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1506,"toNode":1778},
+  {"from":{"x":-7375,"y":-3175,"z":242},"to":{"x":-7375,"y":-3125,"z":100},"fallMeters":1.42,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1172,"toNode":1779},
+  {"from":{"x":-4925,"y":-3225,"z":241},"to":{"x":-4925,"y":-3275,"z":101},"fallMeters":1.4,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1780,"toNode":1219},
+  {"from":{"x":-7925,"y":1375,"z":444},"to":{"x":-7875,"y":1375,"z":100},"fallMeters":3.44,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1781,"toNode":1158},
+  {"from":{"x":-3025,"y":2925,"z":451},"to":{"x":-3025,"y":2875,"z":100},"fallMeters":3.51,"fromZone":"mid-boiler","toZone":"mid-pallet","fromNode":1253,"toNode":1782},
+  {"from":{"x":-10925,"y":-1325,"z":231},"to":{"x":-10925,"y":-1375,"z":102},"fallMeters":1.29,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1783,"toNode":1120},
+  {"from":{"x":875,"y":-3525,"z":614},"to":{"x":875,"y":-3575,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1784,"toNode":1785},
+  {"from":{"x":-7475,"y":1975,"z":445},"to":{"x":-7425,"y":1975,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-site","fromNode":1786,"toNode":1787},
+  {"from":{"x":-7925,"y":575,"z":445},"to":{"x":-7875,"y":575,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1154,"toNode":1788},
+  {"from":{"x":-4525,"y":-2875,"z":401},"to":{"x":-4525,"y":-2825,"z":187},"fallMeters":2.14,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1789,"toNode":1790},
+  {"from":{"x":-7075,"y":-3775,"z":834},"to":{"x":-7075,"y":-3825,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1184,"toNode":1791},
+  {"from":{"x":-9025,"y":-5225,"z":834},"to":{"x":-9025,"y":-5175,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1792,"toNode":1793},
+  {"from":{"x":-4625,"y":-3175,"z":399},"to":{"x":-4675,"y":-3175,"z":300},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1731,"toNode":1794},
+  {"from":{"x":2825,"y":-3625,"z":614},"to":{"x":2825,"y":-3575,"z":548},"fallMeters":0.66,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1795,"toNode":1796},
+  {"from":{"x":-3475,"y":2925,"z":451},"to":{"x":-3475,"y":2875,"z":100},"fallMeters":3.51,"fromZone":"mid-boiler","toZone":"mid-pallet","fromNode":1797,"toNode":1798},
+  {"from":{"x":-7275,"y":-775,"z":258},"to":{"x":-7275,"y":-825,"z":101},"fallMeters":1.57,"fromZone":"a-belt","toZone":"a-belt","fromNode":1799,"toNode":1800},
+  {"from":{"x":-6175,"y":-5275,"z":834},"to":{"x":-6175,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1801,"toNode":1802},
+  {"from":{"x":-3625,"y":-2275,"z":198},"to":{"x":-3575,"y":-2275,"z":101},"fallMeters":0.97,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1804,"toNode":1805},
+  {"from":{"x":-5175,"y":-3225,"z":240},"to":{"x":-5175,"y":-3275,"z":101},"fallMeters":1.39,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1807,"toNode":1396},
+  {"from":{"x":-3375,"y":3275,"z":451},"to":{"x":-3375,"y":3325,"z":256},"fallMeters":1.95,"fromZone":"mid-boiler","toZone":"a-screen","fromNode":1808,"toNode":1809},
+  {"from":{"x":2225,"y":-3575,"z":614},"to":{"x":2225,"y":-3525,"z":535},"fallMeters":0.79,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1810,"toNode":1811},
+  {"from":{"x":-7075,"y":125,"z":499},"to":{"x":-7025,"y":125,"z":100},"fallMeters":3.99,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1812,"toNode":1813},
+  {"from":{"x":-7975,"y":525,"z":557},"to":{"x":-7925,"y":525,"z":445},"fallMeters":1.12,"fromZone":"a-belt","toZone":"a-belt","fromNode":1814,"toNode":1815},
+  {"from":{"x":525,"y":1975,"z":492},"to":{"x":475,"y":1975,"z":101},"fallMeters":3.91,"fromZone":"b-hall","toZone":"b-orange","fromNode":1816,"toNode":1817},
+  {"from":{"x":3475,"y":-3675,"z":614},"to":{"x":3475,"y":-3625,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1818,"toNode":1819},
+  {"from":{"x":1775,"y":2025,"z":504},"to":{"x":1825,"y":2025,"z":100},"fallMeters":4.04,"fromZone":"b-hall","toZone":"b-site","fromNode":1820,"toNode":1382},
+  {"from":{"x":-3325,"y":3325,"z":422},"to":{"x":-3375,"y":3325,"z":256},"fallMeters":1.66,"fromZone":"mid-boiler","toZone":"a-screen","fromNode":1821,"toNode":1809},
+  {"from":{"x":-3425,"y":3575,"z":248},"to":{"x":-3425,"y":3625,"z":139},"fallMeters":1.09,"fromZone":"a-screen","toZone":"mid-boiler","fromNode":1822,"toNode":1823},
+  {"from":{"x":-7925,"y":-3775,"z":834},"to":{"x":-7925,"y":-3825,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1824,"toNode":1825},
+  {"from":{"x":-7925,"y":-3175,"z":241},"to":{"x":-7925,"y":-3125,"z":109},"fallMeters":1.32,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1826,"toNode":1827},
+  {"from":{"x":-5775,"y":-3175,"z":242},"to":{"x":-5775,"y":-3125,"z":100},"fallMeters":1.42,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1828,"toNode":1829},
+  {"from":{"x":-7625,"y":-3175,"z":242},"to":{"x":-7625,"y":-3125,"z":100},"fallMeters":1.42,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1830,"toNode":1831},
+  {"from":{"x":525,"y":2225,"z":492},"to":{"x":475,"y":2225,"z":101},"fallMeters":3.91,"fromZone":"b-hall","toZone":"b-orange","fromNode":1832,"toNode":1833},
+  {"from":{"x":-10125,"y":-3325,"z":-194},"to":{"x":-10125,"y":-3275,"z":-322},"fallMeters":1.28,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1834,"toNode":1835},
+  {"from":{"x":-9625,"y":-3325,"z":-218},"to":{"x":-9625,"y":-3275,"z":-346},"fallMeters":1.28,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1836,"toNode":1837},
+  {"from":{"x":-10675,"y":-3325,"z":-168},"to":{"x":-10675,"y":-3275,"z":-294},"fallMeters":1.26,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1122,"toNode":1838},
+  {"from":{"x":-4925,"y":-3325,"z":533},"to":{"x":-4925,"y":-3275,"z":101},"fallMeters":4.32,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1839,"toNode":1219},
+  {"from":{"x":-7075,"y":175,"z":299},"to":{"x":-7025,"y":175,"z":100},"fallMeters":1.99,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1840,"toNode":1841},
+  {"from":{"x":-3275,"y":2925,"z":451},"to":{"x":-3275,"y":2875,"z":100},"fallMeters":3.51,"fromZone":"mid-boiler","toZone":"mid-pallet","fromNode":1539,"toNode":1842},
+  {"from":{"x":-975,"y":-3075,"z":101},"to":{"x":-975,"y":-3125,"z":-313},"fallMeters":4.14,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1843,"toNode":1844},
+  {"from":{"x":-9475,"y":-4025,"z":834},"to":{"x":-9425,"y":-4025,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1846,"toNode":1847},
+  {"from":{"x":1425,"y":1925,"z":533},"to":{"x":1425,"y":1875,"z":100},"fallMeters":4.33,"fromZone":"b-hall","toZone":"b-site","fromNode":1848,"toNode":1849},
+  {"from":{"x":-7025,"y":1025,"z":572},"to":{"x":-7025,"y":1075,"z":100},"fallMeters":4.72,"fromZone":"a-nest","toZone":"a-pipes","fromNode":27,"toNode":1850},
+  {"from":{"x":-5275,"y":-3325,"z":535},"to":{"x":-5275,"y":-3275,"z":101},"fallMeters":4.34,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1852,"toNode":1853},
+  {"from":{"x":-5475,"y":-3125,"z":188},"to":{"x":-5475,"y":-3075,"z":100},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1854,"toNode":1855},
+  {"from":{"x":-1675,"y":-3075,"z":391},"to":{"x":-1725,"y":-3075,"z":75},"fallMeters":3.16,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1856,"toNode":1857},
+  {"from":{"x":-7275,"y":3475,"z":570},"to":{"x":-7325,"y":3475,"z":207},"fallMeters":3.63,"fromZone":"a-site","toZone":"a-site","fromNode":1858,"toNode":1859},
+  {"from":{"x":-4975,"y":-3225,"z":241},"to":{"x":-4975,"y":-3275,"z":101},"fallMeters":1.4,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1860,"toNode":1861},
+  {"from":{"x":-2975,"y":-2825,"z":279},"to":{"x":-2975,"y":-2775,"z":107},"fallMeters":1.72,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1862,"toNode":1863},
+  {"from":{"x":-10825,"y":-2825,"z":114},"to":{"x":-10875,"y":-2825,"z":-176},"fallMeters":2.9,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1865,"toNode":1866},
+  {"from":{"x":775,"y":2825,"z":481},"to":{"x":725,"y":2825,"z":101},"fallMeters":3.8,"fromZone":"b-hall","toZone":"b-site","fromNode":1867,"toNode":1868},
+  {"from":{"x":-8625,"y":-5275,"z":834},"to":{"x":-8625,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1869,"toNode":1870},
+  {"from":{"x":-6725,"y":-5275,"z":834},"to":{"x":-6725,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1871,"toNode":1872},
+  {"from":{"x":-5275,"y":-3625,"z":637},"to":{"x":-5275,"y":-3575,"z":527},"fallMeters":1.1,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1873,"toNode":1874},
+  {"from":{"x":-5225,"y":-3725,"z":636},"to":{"x":-5175,"y":-3725,"z":525},"fallMeters":1.11,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1875,"toNode":1876},
+  {"from":{"x":-3625,"y":-3175,"z":503},"to":{"x":-3575,"y":-3175,"z":299},"fallMeters":2.04,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1877,"toNode":1878},
+  {"from":{"x":-8875,"y":-2775,"z":100},"to":{"x":-8875,"y":-2825,"z":-59},"fallMeters":1.59,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1879,"toNode":1880},
+  {"from":{"x":-9275,"y":-3125,"z":-145},"to":{"x":-9225,"y":-3125,"z":-289},"fallMeters":1.44,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1881,"toNode":1882},
+  {"from":{"x":-4275,"y":-2375,"z":232},"to":{"x":-4325,"y":-2375,"z":100},"fallMeters":1.32,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1883,"toNode":1884},
+  {"from":{"x":-4875,"y":-2725,"z":297},"to":{"x":-4875,"y":-2675,"z":111},"fallMeters":1.86,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1885,"toNode":1886},
+  {"from":{"x":-11025,"y":-3225,"z":-180},"to":{"x":-11025,"y":-3175,"z":-264},"fallMeters":0.84,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1887,"toNode":1888},
+  {"from":{"x":-2675,"y":-3025,"z":228},"to":{"x":-2625,"y":-3025,"z":92},"fallMeters":1.36,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1889,"toNode":1890},
+  {"from":{"x":-6275,"y":-5275,"z":834},"to":{"x":-6275,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1891,"toNode":1892},
+  {"from":{"x":-3625,"y":-2375,"z":232},"to":{"x":-3575,"y":-2375,"z":101},"fallMeters":1.31,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1893,"toNode":1894},
+  {"from":{"x":-4275,"y":-2775,"z":373},"to":{"x":-4325,"y":-2775,"z":205},"fallMeters":1.68,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1895,"toNode":1896},
+  {"from":{"x":4525,"y":-5325,"z":614},"to":{"x":4525,"y":-5275,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1897,"toNode":1898},
+  {"from":{"x":-5275,"y":5975,"z":248},"to":{"x":-5275,"y":5925,"z":176},"fallMeters":0.72,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":1899,"toNode":1900},
+  {"from":{"x":-7475,"y":1675,"z":445},"to":{"x":-7425,"y":1675,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1901,"toNode":1902},
+  {"from":{"x":-9225,"y":-2825,"z":102},"to":{"x":-9225,"y":-2875,"z":-163},"fallMeters":2.65,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1903,"toNode":1904},
+  {"from":{"x":-9025,"y":-3875,"z":834},"to":{"x":-9025,"y":-3925,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1905,"toNode":1906},
+  {"from":{"x":-25,"y":-4675,"z":631},"to":{"x":25,"y":-4675,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1907,"toNode":1908},
+  {"from":{"x":775,"y":2725,"z":491},"to":{"x":775,"y":2675,"z":100},"fallMeters":3.91,"fromZone":"b-hall","toZone":"b-site","fromNode":1909,"toNode":1910},
+  {"from":{"x":-25,"y":-4075,"z":631},"to":{"x":25,"y":-4075,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1911,"toNode":1912},
+  {"from":{"x":-6525,"y":-25,"z":600},"to":{"x":-6525,"y":25,"z":100},"fallMeters":5.0,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1913,"toNode":1914},
+  {"from":{"x":-8225,"y":-3225,"z":64},"to":{"x":-8225,"y":-3175,"z":-51},"fallMeters":1.15,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1915,"toNode":1916},
+  {"from":{"x":-7175,"y":-3175,"z":242},"to":{"x":-7175,"y":-3125,"z":100},"fallMeters":1.42,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1917,"toNode":1918},
+  {"from":{"x":-7925,"y":1325,"z":444},"to":{"x":-7875,"y":1325,"z":100},"fallMeters":3.44,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1919,"toNode":1920},
+  {"from":{"x":-1625,"y":-3075,"z":461},"to":{"x":-1575,"y":-3075,"z":101},"fallMeters":3.6,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1923,"toNode":1924},
+  {"from":{"x":-4325,"y":-3175,"z":402},"to":{"x":-4325,"y":-3225,"z":241},"fallMeters":1.61,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1925,"toNode":1926},
+  {"from":{"x":-8125,"y":-2875,"z":241},"to":{"x":-8175,"y":-2875,"z":101},"fallMeters":1.4,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1927,"toNode":1928},
+  {"from":{"x":-9875,"y":-4225,"z":834},"to":{"x":-9875,"y":-4275,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1929,"toNode":1930},
+  {"from":{"x":-4625,"y":-2925,"z":400},"to":{"x":-4675,"y":-2925,"z":300},"fallMeters":1.0,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1931,"toNode":1932},
+  {"from":{"x":-3325,"y":2925,"z":451},"to":{"x":-3325,"y":2875,"z":100},"fallMeters":3.51,"fromZone":"mid-boiler","toZone":"mid-pallet","fromNode":1933,"toNode":1934},
+  {"from":{"x":-10125,"y":-4625,"z":834},"to":{"x":-10125,"y":-4575,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1935,"toNode":1936},
+  {"from":{"x":-6625,"y":-5275,"z":834},"to":{"x":-6625,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1937,"toNode":1938},
+  {"from":{"x":-5275,"y":-3025,"z":243},"to":{"x":-5325,"y":-3025,"z":100},"fallMeters":1.43,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1939,"toNode":1940},
+  {"from":{"x":-7975,"y":-5275,"z":835},"to":{"x":-7975,"y":-5225,"z":735},"fallMeters":1.0,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1941,"toNode":1942},
+  {"from":{"x":1125,"y":2825,"z":481},"to":{"x":1175,"y":2825,"z":101},"fallMeters":3.8,"fromZone":"b-hall","toZone":"b-site","fromNode":1943,"toNode":1944},
+  {"from":{"x":-8025,"y":-5275,"z":834},"to":{"x":-8025,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1945,"toNode":1946},
+  {"from":{"x":-6525,"y":-3125,"z":242},"to":{"x":-6475,"y":-3125,"z":103},"fallMeters":1.39,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1947,"toNode":1948},
+  {"from":{"x":525,"y":2375,"z":492},"to":{"x":525,"y":2425,"z":102},"fallMeters":3.9,"fromZone":"b-hall","toZone":"b-site","fromNode":1949,"toNode":1950},
+  {"from":{"x":-6175,"y":-3825,"z":832},"to":{"x":-6175,"y":-3875,"z":735},"fallMeters":0.97,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1951,"toNode":1952},
+  {"from":{"x":-1675,"y":-2975,"z":185},"to":{"x":-1725,"y":-2975,"z":95},"fallMeters":0.9,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":1954,"toNode":1955},
+  {"from":{"x":-7425,"y":-3825,"z":838},"to":{"x":-7425,"y":-3875,"z":735},"fallMeters":1.03,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1956,"toNode":1957},
+  {"from":{"x":4275,"y":-5375,"z":614},"to":{"x":4275,"y":-5325,"z":528},"fallMeters":0.86,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1958,"toNode":1959},
+  {"from":{"x":-25,"y":-3875,"z":632},"to":{"x":25,"y":-3875,"z":526},"fallMeters":1.06,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1960,"toNode":1961},
+  {"from":{"x":-4275,"y":-2225,"z":182},"to":{"x":-4325,"y":-2225,"z":100},"fallMeters":0.82,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1962,"toNode":1963},
+  {"from":{"x":-5325,"y":-3575,"z":702},"to":{"x":-5275,"y":-3575,"z":527},"fallMeters":1.75,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1964,"toNode":1874},
+  {"from":{"x":-6225,"y":2525,"z":200},"to":{"x":-6175,"y":2525,"z":100},"fallMeters":1.0,"fromZone":"a-site","toZone":"a-site","fromNode":1965,"toNode":1966},
+  {"from":{"x":-8325,"y":-3225,"z":41},"to":{"x":-8325,"y":-3175,"z":-77},"fallMeters":1.18,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1967,"toNode":1968},
+  {"from":{"x":-8825,"y":-3225,"z":-83},"to":{"x":-8825,"y":-3175,"z":-202},"fallMeters":1.19,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1969,"toNode":1970},
+  {"from":{"x":-7075,"y":-425,"z":600},"to":{"x":-7075,"y":-475,"z":320},"fallMeters":2.8,"fromZone":"a-belt","toZone":"a-belt","fromNode":1971,"toNode":1972},
+  {"from":{"x":-8675,"y":-2825,"z":101},"to":{"x":-8725,"y":-2825,"z":-20},"fallMeters":1.21,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1973,"toNode":1974},
+  {"from":{"x":-6925,"y":-775,"z":417},"to":{"x":-6925,"y":-825,"z":100},"fallMeters":3.17,"fromZone":"a-belt","toZone":"a-belt","fromNode":1975,"toNode":1976},
+  {"from":{"x":3025,"y":-5425,"z":614},"to":{"x":3025,"y":-5475,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1977,"toNode":1978},
+  {"from":{"x":2025,"y":-5475,"z":614},"to":{"x":2025,"y":-5525,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1979,"toNode":1980},
+  {"from":{"x":-8025,"y":-3775,"z":834},"to":{"x":-8025,"y":-3825,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1981,"toNode":1982},
+  {"from":{"x":-25,"y":-5225,"z":631},"to":{"x":25,"y":-5225,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1983,"toNode":1984},
+  {"from":{"x":-25,"y":-4175,"z":631},"to":{"x":25,"y":-4175,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1985,"toNode":1986},
+  {"from":{"x":-4275,"y":-3225,"z":521},"to":{"x":-4325,"y":-3225,"z":241},"fallMeters":2.8,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1987,"toNode":1926},
+  {"from":{"x":-8225,"y":-5275,"z":834},"to":{"x":-8225,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1988,"toNode":1989},
+  {"from":{"x":-9925,"y":-3325,"z":-204},"to":{"x":-9925,"y":-3275,"z":-332},"fallMeters":1.28,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1990,"toNode":1991},
+  {"from":{"x":-8225,"y":-3825,"z":853},"to":{"x":-8225,"y":-3875,"z":735},"fallMeters":1.18,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1992,"toNode":1993},
+  {"from":{"x":-6975,"y":-3175,"z":241},"to":{"x":-6975,"y":-3125,"z":100},"fallMeters":1.41,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":1994,"toNode":1995},
+  {"from":{"x":-4125,"y":5875,"z":306},"to":{"x":-4175,"y":5875,"z":241},"fallMeters":0.65,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":1996,"toNode":1997},
+  {"from":{"x":-5025,"y":-3325,"z":533},"to":{"x":-5025,"y":-3275,"z":101},"fallMeters":4.32,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1998,"toNode":1999},
+  {"from":{"x":-3325,"y":-2775,"z":303},"to":{"x":-3325,"y":-2725,"z":103},"fallMeters":2.0,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":2000,"toNode":2001},
+  {"from":{"x":-7125,"y":-775,"z":325},"to":{"x":-7125,"y":-825,"z":100},"fallMeters":2.25,"fromZone":"a-belt","toZone":"a-belt","fromNode":2002,"toNode":2003},
+  {"from":{"x":-7475,"y":-775,"z":166},"to":{"x":-7475,"y":-825,"z":100},"fallMeters":0.66,"fromZone":"a-belt","toZone":"a-belt","fromNode":2004,"toNode":2005},
+  {"from":{"x":-25,"y":-5125,"z":631},"to":{"x":25,"y":-5125,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2006,"toNode":2007},
+  {"from":{"x":-1675,"y":-2925,"z":190},"to":{"x":-1725,"y":-2925,"z":103},"fallMeters":0.87,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":2008,"toNode":2009},
+  {"from":{"x":-6825,"y":-775,"z":464},"to":{"x":-6825,"y":-825,"z":100},"fallMeters":3.64,"fromZone":"a-belt","toZone":"a-belt","fromNode":2010,"toNode":2011},
+  {"from":{"x":-5325,"y":-5425,"z":770},"to":{"x":-5275,"y":-5425,"z":525},"fallMeters":2.45,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2012,"toNode":2013},
+  {"from":{"x":-3625,"y":-3025,"z":454},"to":{"x":-3575,"y":-3025,"z":300},"fallMeters":1.54,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2014,"toNode":2015},
+  {"from":{"x":1075,"y":2675,"z":492},"to":{"x":1125,"y":2675,"z":100},"fallMeters":3.92,"fromZone":"b-hall","toZone":"b-site","fromNode":2016,"toNode":2017},
+  {"from":{"x":1075,"y":2625,"z":498},"to":{"x":1125,"y":2625,"z":100},"fallMeters":3.98,"fromZone":"b-hall","toZone":"b-site","fromNode":2018,"toNode":2019},
+  {"from":{"x":-9575,"y":-5025,"z":834},"to":{"x":-9575,"y":-4975,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2020,"toNode":2021},
+  {"from":{"x":-7325,"y":325,"z":595},"to":{"x":-7275,"y":325,"z":100},"fallMeters":4.95,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1423,"toNode":2022},
+  {"from":{"x":-25,"y":-5075,"z":628},"to":{"x":25,"y":-5075,"z":526},"fallMeters":1.02,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2023,"toNode":2024},
+  {"from":{"x":-8475,"y":-3825,"z":834},"to":{"x":-8425,"y":-3825,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2025,"toNode":2026},
+  {"from":{"x":-6475,"y":-25,"z":600},"to":{"x":-6475,"y":25,"z":100},"fallMeters":5.0,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2027,"toNode":2028},
+  {"from":{"x":-11125,"y":-2825,"z":103},"to":{"x":-11125,"y":-2875,"z":-149},"fallMeters":2.52,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2029,"toNode":2030},
+  {"from":{"x":-7325,"y":575,"z":539},"to":{"x":-7275,"y":575,"z":100},"fallMeters":4.39,"fromZone":"a-belt","toZone":"a-pipes","fromNode":1176,"toNode":2031},
+  {"from":{"x":-25,"y":-3775,"z":631},"to":{"x":25,"y":-3775,"z":526},"fallMeters":1.05,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2032,"toNode":2033},
+  {"from":{"x":-7175,"y":-3825,"z":844},"to":{"x":-7175,"y":-3875,"z":735},"fallMeters":1.09,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2035,"toNode":2036},
+  {"from":{"x":-2925,"y":2875,"z":455},"to":{"x":-2925,"y":2825,"z":100},"fallMeters":3.55,"fromZone":"mid-boiler","toZone":"mid-blue","fromNode":2038,"toNode":2039},
+  {"from":{"x":-8325,"y":-5275,"z":834},"to":{"x":-8325,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2040,"toNode":2041},
+  {"from":{"x":-4725,"y":-2725,"z":299},"to":{"x":-4725,"y":-2675,"z":109},"fallMeters":1.9,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2042,"toNode":2043},
+  {"from":{"x":-8875,"y":-3825,"z":834},"to":{"x":-8875,"y":-3875,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2044,"toNode":2045},
+  {"from":{"x":-8825,"y":-5225,"z":834},"to":{"x":-8825,"y":-5175,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2047,"toNode":2048},
+  {"from":{"x":1125,"y":2525,"z":521},"to":{"x":1175,"y":2525,"z":100},"fallMeters":4.21,"fromZone":"b-hall","toZone":"b-site","fromNode":2049,"toNode":2050},
+  {"from":{"x":-7925,"y":925,"z":445},"to":{"x":-7875,"y":925,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2051,"toNode":2052},
+  {"from":{"x":-5625,"y":-3175,"z":241},"to":{"x":-5625,"y":-3125,"z":100},"fallMeters":1.41,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":2053,"toNode":2054},
+  {"from":{"x":-3525,"y":3475,"z":225},"to":{"x":-3525,"y":3525,"z":159},"fallMeters":0.66,"fromZone":"a-screen","toZone":"mid-boiler","fromNode":2055,"toNode":2056},
+  {"from":{"x":-7225,"y":-3825,"z":843},"to":{"x":-7225,"y":-3875,"z":735},"fallMeters":1.08,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2057,"toNode":2058},
+  {"from":{"x":-6825,"y":-425,"z":600},"to":{"x":-6825,"y":-475,"z":433},"fallMeters":1.67,"fromZone":"a-belt","toZone":"a-belt","fromNode":2059,"toNode":2060},
+  {"from":{"x":-7825,"y":325,"z":595},"to":{"x":-7825,"y":375,"z":100},"fallMeters":4.95,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2061,"toNode":2062},
+  {"from":{"x":-4125,"y":5675,"z":231},"to":{"x":-4175,"y":5675,"z":169},"fallMeters":0.62,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":2063,"toNode":2064},
+  {"from":{"x":-10075,"y":-4725,"z":834},"to":{"x":-10025,"y":-4725,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2065,"toNode":2066},
+  {"from":{"x":-7675,"y":-5275,"z":834},"to":{"x":-7675,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2067,"toNode":2068},
+  {"from":{"x":-7375,"y":-5275,"z":834},"to":{"x":-7375,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2069,"toNode":2070},
+  {"from":{"x":-6425,"y":3425,"z":625},"to":{"x":-6425,"y":3375,"z":207},"fallMeters":4.18,"fromZone":"a-site","toZone":"a-site","fromNode":2071,"toNode":2072},
+  {"from":{"x":-7575,"y":325,"z":595},"to":{"x":-7575,"y":375,"z":100},"fallMeters":4.95,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2073,"toNode":2074},
+  {"from":{"x":-7075,"y":-5275,"z":834},"to":{"x":-7075,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2075,"toNode":2076},
+  {"from":{"x":-7025,"y":-775,"z":369},"to":{"x":-7025,"y":-825,"z":100},"fallMeters":2.69,"fromZone":"a-belt","toZone":"a-belt","fromNode":2077,"toNode":2078},
+  {"from":{"x":-7325,"y":-5275,"z":834},"to":{"x":-7325,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2079,"toNode":2080},
+  {"from":{"x":-7625,"y":-5275,"z":834},"to":{"x":-7625,"y":-5225,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2081,"toNode":2082},
+  {"from":{"x":-7125,"y":-5275,"z":836},"to":{"x":-7125,"y":-5225,"z":735},"fallMeters":1.01,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2083,"toNode":2084},
+  {"from":{"x":-2675,"y":-2825,"z":244},"to":{"x":-2625,"y":-2825,"z":108},"fallMeters":1.36,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":2085,"toNode":2086},
+  {"from":{"x":-6975,"y":-425,"z":600},"to":{"x":-6975,"y":-475,"z":365},"fallMeters":2.35,"fromZone":"a-belt","toZone":"a-belt","fromNode":2087,"toNode":2088},
+  {"from":{"x":-6675,"y":-3825,"z":832},"to":{"x":-6675,"y":-3875,"z":735},"fallMeters":0.97,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2089,"toNode":2090},
+  {"from":{"x":-7925,"y":1125,"z":445},"to":{"x":-7875,"y":1125,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2091,"toNode":2092},
+  {"from":{"x":1125,"y":2725,"z":491},"to":{"x":1175,"y":2725,"z":100},"fallMeters":3.91,"fromZone":"b-hall","toZone":"b-site","fromNode":2093,"toNode":2094},
+  {"from":{"x":-6475,"y":-3775,"z":838},"to":{"x":-6475,"y":-3825,"z":735},"fallMeters":1.03,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2095,"toNode":2096},
+  {"from":{"x":-1675,"y":-2925,"z":424},"to":{"x":-1725,"y":-2925,"z":103},"fallMeters":3.21,"fromZone":"attacker-spawn","toZone":"b-garage","fromNode":2097,"toNode":2009},
+  {"from":{"x":-7325,"y":-425,"z":600},"to":{"x":-7325,"y":-475,"z":205},"fallMeters":3.95,"fromZone":"a-belt","toZone":"a-belt","fromNode":2098,"toNode":2099},
+  {"from":{"x":-6425,"y":-3775,"z":836},"to":{"x":-6425,"y":-3825,"z":735},"fallMeters":1.01,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2100,"toNode":2101},
+  {"from":{"x":-7675,"y":325,"z":595},"to":{"x":-7675,"y":375,"z":100},"fallMeters":4.95,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2102,"toNode":2103},
+  {"from":{"x":-9425,"y":-5075,"z":834},"to":{"x":-9375,"y":-5075,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2104,"toNode":2105},
+  {"from":{"x":-9775,"y":-4925,"z":834},"to":{"x":-9725,"y":-4925,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2106,"toNode":2107},
+  {"from":{"x":-5275,"y":-2825,"z":243},"to":{"x":-5325,"y":-2825,"z":100},"fallMeters":1.43,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":2108,"toNode":2109},
+  {"from":{"x":-7525,"y":-425,"z":600},"to":{"x":-7525,"y":-475,"z":114},"fallMeters":4.86,"fromZone":"a-belt","toZone":"a-belt","fromNode":2110,"toNode":2111},
+  {"from":{"x":-4275,"y":-3175,"z":503},"to":{"x":-4325,"y":-3175,"z":402},"fallMeters":1.01,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2112,"toNode":1925},
+  {"from":{"x":-6925,"y":-25,"z":600},"to":{"x":-6925,"y":25,"z":101},"fallMeters":4.99,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2113,"toNode":2114},
+  {"from":{"x":-6775,"y":-3825,"z":838},"to":{"x":-6775,"y":-3875,"z":735},"fallMeters":1.03,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2115,"toNode":2116},
+  {"from":{"x":-7225,"y":-425,"z":600},"to":{"x":-7225,"y":-475,"z":251},"fallMeters":3.49,"fromZone":"a-belt","toZone":"a-belt","fromNode":2117,"toNode":2118},
+  {"from":{"x":-9925,"y":-4825,"z":834},"to":{"x":-9925,"y":-4775,"z":735},"fallMeters":0.99,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2119,"toNode":2120},
+  {"from":{"x":-6575,"y":-2825,"z":241},"to":{"x":-6575,"y":-2775,"z":100},"fallMeters":1.41,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":2122,"toNode":2123},
+  {"from":{"x":-7475,"y":-425,"z":600},"to":{"x":-7475,"y":-475,"z":137},"fallMeters":4.63,"fromZone":"a-belt","toZone":"a-belt","fromNode":2124,"toNode":2125},
+  {"from":{"x":-5275,"y":-2825,"z":243},"to":{"x":-5275,"y":-2775,"z":100},"fallMeters":1.43,"fromZone":"attacker-spawn","toZone":"a-belt","fromNode":2108,"toNode":2126},
+  {"from":{"x":1125,"y":2425,"z":533},"to":{"x":1175,"y":2425,"z":101},"fallMeters":4.32,"fromZone":"b-hall","toZone":"b-site","fromNode":2127,"toNode":2128},
+  {"from":{"x":-6975,"y":-25,"z":600},"to":{"x":-6975,"y":25,"z":101},"fallMeters":4.99,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2129,"toNode":2130},
+  {"from":{"x":-7925,"y":1025,"z":445},"to":{"x":-7875,"y":1025,"z":100},"fallMeters":3.45,"fromZone":"a-belt","toZone":"a-pipes","fromNode":2131,"toNode":2132},
+  {"from":{"x":3775,"y":-5425,"z":614},"to":{"x":3775,"y":-5475,"z":526},"fallMeters":0.88,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2134,"toNode":1628},
+  {"from":{"x":-10825,"y":-2825,"z":114},"to":{"x":-10825,"y":-2875,"z":-63},"fallMeters":1.77,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":1865,"toNode":2135},
+  {"from":{"x":-7975,"y":-2875,"z":242},"to":{"x":-8025,"y":-2875,"z":101},"fallMeters":1.41,"fromZone":"attacker-spawn","toZone":"attacker-spawn","fromNode":2138,"toNode":2139}
+ ],
+ "traversals": [
+  {
+   "id": "a-nest-rope",
+   "name": "A Nest rope",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 700,
+   "from": {
+    "x": -6125,
+    "y": 875,
+    "z": 100
+   },
+   "to": {
+    "x": -6175,
+    "y": 875,
+    "z": 570
+   },
+   "fromNode": 25,
+   "toNode": 26,
+   "zones": [
+    "a-pipes",
+    "a-nest"
+   ],
+   "lengthMeters": 4.73,
+   "bottom": {
+    "x": -6125,
+    "y": 875,
+    "z": 100
+   },
+   "top": {
+    "x": -6175,
+    "y": 875,
+    "z": 570
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": -6125,
+    "y": 875,
+    "z": 100
+   },
+   "soundSourceExit": {
+    "x": -6175,
+    "y": 875,
+    "z": 570
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderC"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC (x,y -61.04, 8.79; housing z 8.97..9.48). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The floor reached is the Nest platform: 119 walk cells at z 5.70, an island of the walk grid (nothing walks onto it), 4.70 m above the ground floor. The Nest callout (-66.50, 9.00, z 16.75) is above this platform; no floor exists at the callout's height (3 cells at z 16.86).",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.73 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "a-zipline",
+   "name": "A site zipline (Nest <-> Rafters platform)",
+   "kind": "zipline",
+   "bidirectional": true,
+   "travelTimeMs": 3556,
+   "from": {
+    "x": -7025,
+    "y": 1025,
+    "z": 572
+   },
+   "to": {
+    "x": -7025,
+    "y": 3425,
+    "z": 571
+   },
+   "fromNode": 27,
+   "toNode": 28,
+   "zones": [
+    "a-nest",
+    "a-site"
+   ],
+   "lengthMeters": 24.0,
+   "soundSource": {
+    "x": -7025,
+    "y": 1025,
+    "z": 572
+   },
+   "soundSourceExit": {
+    "x": -7025,
+    "y": 3425,
+    "z": 571
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderB.001",
+    "Kingdom_0_VertAscenderB"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Two ascender housings at the same x and height: Kingdom_0_VertAscenderB.001 (-70.30, 10.38, z 7.72..8.00) over the Nest platform and Kingdom_0_VertAscenderB (-70.30, 34.05, z 7.73..8.04) over the platform on the far side of A site (127 walk cells at z 5.70, also an island). a, b = the platform cells under the two housings, 24.0 m apart.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 24.00 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable zipline: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "a-rafters-rope-east",
+   "name": "A site rope (screen side) to the far platform",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 569,
+   "from": {
+    "x": -6025,
+    "y": 3575,
+    "z": 200
+   },
+   "to": {
+    "x": -6125,
+    "y": 3575,
+    "z": 570
+   },
+   "fromNode": 29,
+   "toNode": 30,
+   "zones": [
+    "a-site",
+    "a-site"
+   ],
+   "lengthMeters": 3.83,
+   "bottom": {
+    "x": -6025,
+    "y": 3575,
+    "z": 200
+   },
+   "top": {
+    "x": -6125,
+    "y": 3575,
+    "z": 570
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": -6025,
+    "y": 3575,
+    "z": 200
+   },
+   "soundSourceExit": {
+    "x": -6125,
+    "y": 3575,
+    "z": 570
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderC.001"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.001 (x,y -60.45, 35.79; housing z 8.85..9.29). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The floor reached is the 127-cell platform at z 5.70 (see a-zipline).",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 3.84 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "a-rafters-rope-west",
+   "name": "A site rope (back side) to the far platform",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 568,
+   "from": {
+    "x": -7375,
+    "y": 3575,
+    "z": 200
+   },
+   "to": {
+    "x": -7275,
+    "y": 3575,
+    "z": 570
+   },
+   "fromNode": 31,
+   "toNode": 32,
+   "zones": [
+    "a-site",
+    "a-site"
+   ],
+   "lengthMeters": 3.83,
+   "bottom": {
+    "x": -7375,
+    "y": 3575,
+    "z": 200
+   },
+   "top": {
+    "x": -7275,
+    "y": 3575,
+    "z": 570
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": -7375,
+    "y": 3575,
+    "z": 200
+   },
+   "soundSourceExit": {
+    "x": -7275,
+    "y": 3575,
+    "z": 570
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderC.002"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.002 (x,y -73.52, 35.79; housing z 8.86..9.29). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The floor reached is the 127-cell platform at z 5.70 (see a-zipline).",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 3.83 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "b-yellow-rope",
+   "name": "B Yellow rope",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 1175,
+   "from": {
+    "x": 1525,
+    "y": 1875,
+    "z": 100
+   },
+   "to": {
+    "x": 1525,
+    "y": 1875,
+    "z": 893
+   },
+   "fromNode": 33,
+   "toNode": 34,
+   "zones": [
+    "b-site",
+    "b-site"
+   ],
+   "lengthMeters": 7.93,
+   "bottom": {
+    "x": 1525,
+    "y": 1875,
+    "z": 100
+   },
+   "top": {
+    "x": 1525,
+    "y": 1875,
+    "z": 893
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 1525,
+    "y": 1875,
+    "z": 100
+   },
+   "soundSourceExit": {
+    "x": 1525,
+    "y": 1875,
+    "z": 893
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderC.003"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.003 (x,y 15.07, 18.98; housing z 8.45..9.08). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The rope passes a 5.3 m level that is on the main floor anyway and ends at a 24-cell floor at z 8.93 directly under the housing; that upper floor is an island of the walk grid.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 7.93 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  }
+ ],
+ "doors": [],
+ "breakables": [
+  {
+   "id": "bottle-000",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -766,
+    "y": -2953,
+    "z": 237
+   },
+   "zones": [
+    "attacker-spawn"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-001",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -775,
+    "y": -2935,
+    "z": 236
+   },
+   "zones": [
+    "attacker-spawn"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.001"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-002",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -2140,
+    "y": -840,
+    "z": 96
+   },
+   "zones": [
+    "b-green"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.002"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-003",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -2147,
+    "y": -847,
+    "z": 99
+   },
+   "zones": [
+    "b-green"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.003"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-004",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -1462,
+    "y": -2894,
+    "z": 192
+   },
+   "zones": [
+    "attacker-spawn"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.004"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-005",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": 2583,
+    "y": 2346,
+    "z": 589
+   },
+   "zones": [
+    "b-site"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.005"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-006",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": 256,
+    "y": 3702,
+    "z": 1062
+   },
+   "zones": [
+    "b-hall"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.006"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-007",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -4520,
+    "y": 5971,
+    "z": 312
+   },
+   "zones": [
+    "defender-spawn"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.007"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  },
+  {
+   "id": "bottle-008",
+   "name": "Pre-round breakable bottle",
+   "kind": "breakable-prop",
+   "position": {
+    "x": -4520,
+    "y": 5951,
+    "z": 318
+   },
+   "zones": [
+    "defender-spawn"
+   ],
+   "defaultState": "intact",
+   "objectNames": [
+    "Bottle_0_PreRound_Breakable.008"
+   ],
+   "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+  }
+ ],
+ "ultOrbs": [],
+ "notLocated": [
+  {
+   "name": "Ultimate orbs",
+   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+  },
+  {
+   "name": "Mid Boiler rope",
+   "reason": "the authored mechanics named a rope at Mid Boiler; the scene has six ascender objects (Kingdom_0_VertAscender*): four at A site, one horizontal pair there, one at B Yellow — none near Mid Boiler (-33.75, 29.25)."
+  }
+ ],
+ "generatedBy": "tools/map-mesh/pipeline/objects_map.py"
+}

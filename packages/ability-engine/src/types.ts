@@ -118,6 +118,8 @@ export interface AbilityUsage {
   readonly teamId: string;
   readonly origin: Vec3;
   readonly startedAtMs: number;
+  /** The zone the effect is in (the zone it was aimed at). Absent → the zone nearest `origin`. */
+  readonly zoneId?: string;
   /**
    * Ground patches only: the neighbouring zone whose connection with the effect's zone the patch
    * lies ON (a doorway). Absent → the patch lies in the middle of its zone.

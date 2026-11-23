@@ -1,14 +1,100 @@
 {
   "mapId": "fracture",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
-  "specialEdges": [
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
     {
-      "from": "attacker-spawn",
-      "to": "attacker-bridge",
-      "bidirectional": true,
+      "id": "attacker-zipline",
+      "name": "Zipline between the two attacker sides",
       "kind": "zipline",
-      "basis": "authored zipline under the map; straight-line length at run speed (real zipline speed not measured)",
+      "bidirectional": true,
+      "travelTimeMs": 11260,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 4871,
+        "y": -917,
+        "z": 243
+      },
+      "b": {
+        "x": 12471,
+        "y": -917,
+        "z": 145
+      },
+      "zones": [
+        "attacker-spawn",
+        "attacker-bridge"
+      ],
+      "objectNames": [
+        "Shell_0_ZipLineStrip2",
+        "Shell_0_ZipLineStrip3"
+      ],
+      "basis": "Game metres. Two floor strips on one line (y -9.3): Shell_0_ZipLineStrip2 at the attacker spawn (x 47.01..50.76, y -10.54..-8.32, z 1.65..3.03) and Shell_0_ZipLineStrip3 on the far side (x 121.57..127.77, y -10.41..-8.19, z 0.34..2.47). a, b = the main-floor cells at the middle of each strip, 76.0 m apart. The cable itself is not an object of the scene.",
+      "provenance": "measured-on-mesh (the two strip objects and the cells; length 76.01 m); manual-approx (that the strips are the two ends of the zipline; travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured)",
       "note": "attackers cross under the map to the far side"
+    },
+    {
+      "id": "a-rope",
+      "name": "A Rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 610,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 6671,
+        "y": 733,
+        "z": 482
+      },
+      "b": {
+        "x": 6671,
+        "y": 683,
+        "z": 891
+      },
+      "zones": [
+        "a-rope",
+        "defender-spawn"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderC"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC (x,y 66.54, 7.48; housing z 12.96..13.40). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. Both ends are on the main floor: the rope is a short cut.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.12 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "b-tower-rope",
+      "name": "B Tower rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 744,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 10071,
+        "y": -5167,
+        "z": 503
+      },
+      "b": {
+        "x": 10071,
+        "y": -5217,
+        "z": 1003
+      },
+      "zones": [
+        "b-arcade",
+        "b-tower"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderC.001"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.001 (x,y 100.79, -51.72; housing z 14.21..14.65). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. Both ends are on the main floor: the rope is a short cut.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 5.02 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    },
+    {
+      "name": "Second attacker zipline",
+      "reason": "a third strip, Shell_0_ZipLineStrip2.001 (x 123.99..127.75, y -5.54..-3.32), lies on the far side 5 m from the located line, but no matching strip or cable exists at the attacker spawn end, so its other end is unknown."
     }
   ],
   "mechanics": [
@@ -16,8 +102,8 @@
       "kind": "zipline",
       "name": "Ziplines under the map joining the two attacker sides",
       "represented": true,
-      "how": "bidirectional edge kind=zipline (travel time = straight line at run speed, an estimate)",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "how": "one roadmap link kind=zipline between measured cells (traversal attacker-zipline); the second line is not located (see objectsNotLocated)",
+      "provenance": "measured-on-mesh (strip objects, cells); manual-approx (that the strips are its ends; travel time)"
     },
     {
       "kind": "layout",
@@ -29,9 +115,9 @@
     {
       "kind": "rope",
       "name": "Vertical ropes (A Rope, B Tower)",
-      "represented": false,
-      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state (reduced accuracy, audible)",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "two roadmap links kind=rope between measured cells (traversals a-rope, b-tower-rope). The 'on rope' state is NOT modelled"
     },
     {
       "kind": "layout",

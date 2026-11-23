@@ -1,6 +1,6 @@
-import type { AbilityState } from "@pv/perception-engine";
+import { DEFAULT_SMOKE_RADIUS_UNITS, type AbilityState } from "@pv/perception-engine";
 import type { AbilityEngine } from "./engine.js";
-import type { RevealSnapshot } from "./types.js";
+import type { RevealSnapshot, Vec3 } from "./types.js";
 
 /**
  * Adapters bridging ability effects into the other engines. They never expose live
@@ -28,6 +28,7 @@ export function toPerceptionAbilityStates(engine: AbilityEngine): AbilityState[]
       abilityId: e.effectType === "wall" ? "wall" : "smoke", // matches visionBlockerIsSmoke
       origin: e.origin,
       expiresAtMs: e.expiresAtMs,
+      radiusUnits: e.radiusUnits > 0 ? e.radiusUnits : null,
     });
   }
   return out;
@@ -60,6 +61,8 @@ export interface GroundPatch {
   readonly abilityId: string;
   readonly effectType: "molly" | "slow";
   readonly zoneId: string;
+  /** The point the patch landed on: the centre of its disc. */
+  readonly center: Vec3;
   /**
    * The neighbouring zone whose doorway with `zoneId` the patch lies on, or null when it lies in
    * the middle of the zone. A doorway patch is crossed by whoever passes between the two zones; a
@@ -80,6 +83,7 @@ export function activeGroundPatches(engine: AbilityEngine, kind: "molly" | "slow
     abilityId: e.abilityId,
     effectType: kind,
     zoneId: e.zoneId,
+    center: e.origin,
     doorToZoneId: e.doorToZoneId,
     teamId: e.teamId,
     radiusUnits: e.radiusUnits,
@@ -123,7 +127,23 @@ export function deployedEffects(engine: AbilityEngine, nowMs: number): DeployedE
   }));
 }
 
-/** Zones whose incident (smokeable) sightlines are currently cut by a vision blocker. */
+/** Fallback radius (uu, ≈4 m) of a vision blocker whose catalog record carries none (manual-approx). */
+export const DEFAULT_OCCLUDER_RADIUS_UNITS = DEFAULT_SMOKE_RADIUS_UNITS;
+
+/**
+ * Vision blockers in force as VOLUMES: a sphere of the effect's radius around the point it landed
+ * on (perception-engine SightOccluder). This is how a smoke cuts sight — the line between two eyes
+ * passing through it, wherever they stand. (A wall is approximated the same way until walls carry
+ * their own geometry.)
+ */
+export function visionOccluders(engine: AbilityEngine): Array<{ center: Vec3; radius: number }> {
+  return engine.activeEffects().filter((e) => e.blocksVision).map((e) => ({
+    center: e.origin,
+    radius: e.radiusUnits > 0 ? e.radiusUnits : DEFAULT_OCCLUDER_RADIUS_UNITS,
+  }));
+}
+
+/** Zones whose incident (smokeable) sightlines are currently cut by a vision blocker (legacy zone rule). */
 export function visionBlockedZones(engine: AbilityEngine): string[] {
   return engine.activeEffects().filter((e) => e.blocksVision).map((e) => e.zoneId);
 }

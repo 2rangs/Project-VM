@@ -56,6 +56,7 @@ export type SoundKind =
   | "abilityCast"
   | "spikePlant"
   | "spikeDefuse"
+  | "landing"
   | "other";
 
 export interface SoundObservation {
@@ -103,6 +104,8 @@ export interface AbilityState {
   readonly abilityId: string;
   readonly origin: Vector3;
   readonly expiresAtMs: number | null;
+  /** Radius of the deployed effect (world units), when known — a smoke's volume (PROJECT V extension). */
+  readonly radiusUnits?: number | null;
 }
 
 export interface PlayerState {
@@ -203,5 +206,12 @@ export interface WorldState {
   readonly spike: SpikeState;
   readonly activeAbilities: readonly AbilityState[];
   readonly events: readonly GameEvent[];
+  /**
+   * PROJECT V extension — sounds the simulation made this window that are not events or running
+   * steps: a landing off a drop (kind "landing", with its own audible radius). Optional.
+   */
+  readonly extraSounds?: readonly { readonly kind: SoundKind; readonly position: Vector3; readonly teamId?: string; readonly radiusUnits: number; readonly levelDb: number }[];
+  /** PROJECT V extension — loud sounds (gunfire) in the masking window, for sound masking. Optional. */
+  readonly maskers?: readonly { readonly position: Vector3; readonly levelDb: number }[];
   // NOTE: real WorldState also has `environment` and `economy`; perception ignores them.
 }

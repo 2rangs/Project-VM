@@ -201,7 +201,7 @@ export interface AudibleZone {
 // ---- Multi-map additions (optional fields; Ascent's dataset does not carry them) ----
 
 /** How an edge is traversed. Absent = an ordinary walkable connection. */
-export type EdgeKind = "walk" | "drop" | "teleporter" | "zipline" | "rope" | "approx-link";
+export type EdgeKind = "walk" | "drop" | "teleporter" | "zipline" | "rope" | "jump" | "approx-link";
 
 /** A map mechanic and whether the navgraph can express it. */
 export interface MapMechanic {

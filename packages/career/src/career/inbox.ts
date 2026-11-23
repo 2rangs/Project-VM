@@ -31,7 +31,7 @@ export interface InboxItem {
   /** The module that posted it (core: "career"); answers are routed back to its hook. */
   readonly source: string;
   /** Things the UI can link to (a fixture, a player, a team). */
-  readonly ref?: { fixtureId?: string; playerId?: string; teamId?: string; staffId?: string };
+  readonly ref?: { fixtureId?: string; playerId?: string; teamId?: string; staffId?: string; offerId?: string; route?: string };
   readonly options?: readonly InboxOption[];
   answer?: string;
   read: boolean;

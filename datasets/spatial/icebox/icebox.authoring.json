@@ -1,22 +1,6 @@
 {
   "mapId": "icebox",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
-  "mechanics": [
-    {
-      "kind": "rope",
-      "name": "Vertical ropes (A Nest / A Rafters, B Yellow container, Mid Boiler)",
-      "represented": false,
-      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
-    },
-    {
-      "kind": "zipline",
-      "name": "Horizontal zipline across A site",
-      "represented": false,
-      "engineNeeds": "zipline edge with its own speed and exposure",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
-    }
-  ],
   "zoneOverrides": {
     "mid-pallet": {
       "zoneType": "mid",
@@ -26,5 +10,308 @@
       "zoneType": "mid",
       "note": "manual-approx: Icebox's mid lane"
     }
-  }
+  },
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
+    {
+      "id": "a-nest-rope",
+      "name": "A Nest rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 700,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -6125,
+        "y": 875,
+        "z": 100
+      },
+      "b": {
+        "x": -6175,
+        "y": 875,
+        "z": 570
+      },
+      "zones": [
+        "a-pipes",
+        "a-nest"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderC"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC (x,y -61.04, 8.79; housing z 8.97..9.48). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The floor reached is the Nest platform: 119 walk cells at z 5.70, an island of the walk grid (nothing walks onto it), 4.70 m above the ground floor. The Nest callout (-66.50, 9.00, z 16.75) is above this platform; no floor exists at the callout's height (3 cells at z 16.86).",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 4.73 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "a-zipline",
+      "name": "A site zipline (Nest <-> Rafters platform)",
+      "kind": "zipline",
+      "bidirectional": true,
+      "travelTimeMs": 3556,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -7025,
+        "y": 1025,
+        "z": 572
+      },
+      "b": {
+        "x": -7025,
+        "y": 3425,
+        "z": 572
+      },
+      "zones": [
+        "a-nest",
+        "a-site"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderB.001",
+        "Kingdom_0_VertAscenderB"
+      ],
+      "basis": "Game metres. Two ascender housings at the same x and height: Kingdom_0_VertAscenderB.001 (-70.30, 10.38, z 7.72..8.00) over the Nest platform and Kingdom_0_VertAscenderB (-70.30, 34.05, z 7.73..8.04) over the platform on the far side of A site (127 walk cells at z 5.70, also an island). a, b = the platform cells under the two housings, 24.0 m apart.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 24.00 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable zipline: object name and game knowledge)"
+    },
+    {
+      "id": "a-rafters-rope-east",
+      "name": "A site rope (screen side) to the far platform",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 569,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -6025,
+        "y": 3575,
+        "z": 200
+      },
+      "b": {
+        "x": -6125,
+        "y": 3575,
+        "z": 570
+      },
+      "zones": [
+        "a-site",
+        "a-site"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderC.001"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.001 (x,y -60.45, 35.79; housing z 8.85..9.29). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The floor reached is the 127-cell platform at z 5.70 (see a-zipline).",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 3.84 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "a-rafters-rope-west",
+      "name": "A site rope (back side) to the far platform",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 568,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": -7375,
+        "y": 3575,
+        "z": 200
+      },
+      "b": {
+        "x": -7275,
+        "y": 3575,
+        "z": 570
+      },
+      "zones": [
+        "a-site",
+        "a-site"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderC.002"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.002 (x,y -73.52, 35.79; housing z 8.86..9.29). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The floor reached is the 127-cell platform at z 5.70 (see a-zipline).",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 3.83 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    },
+    {
+      "id": "b-yellow-rope",
+      "name": "B Yellow rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 1175,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 1525,
+        "y": 1875,
+        "z": 100
+      },
+      "b": {
+        "x": 1525,
+        "y": 1875,
+        "z": 893
+      },
+      "zones": [
+        "b-site",
+        "b-site"
+      ],
+      "objectNames": [
+        "Kingdom_0_VertAscenderC.003"
+      ],
+      "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderC.003 (x,y 15.07, 18.98; housing z 8.45..9.08). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The rope passes a 5.3 m level that is on the main floor anyway and ends at a 24-cell floor at z 8.93 directly under the housing; that upper floor is an island of the walk grid.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 7.93 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    }
+  ],
+  "objectsNote": "Game uu. Doors and breakables located on the scene: position is on the floor in the opening, normal the horizontal direction through it. Read by tools/map-mesh/pipeline/objects_map.py.",
+  "objects": [
+    {
+      "id": "bottle-000",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -766,
+        "y": -2953,
+        "z": 237
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-001",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -775,
+        "y": -2935,
+        "z": 236
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.001"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-002",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -2140,
+        "y": -840,
+        "z": 96
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.002"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-003",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -2147,
+        "y": -847,
+        "z": 99
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.003"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-004",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -1462,
+        "y": -2894,
+        "z": 192
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.004"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-005",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": 2583,
+        "y": 2346,
+        "z": 589
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.005"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-006",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": 256,
+        "y": 3702,
+        "z": 1062
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.006"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-007",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -4520,
+        "y": 5971,
+        "z": 312
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.007"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    },
+    {
+      "id": "bottle-008",
+      "name": "Pre-round breakable bottle",
+      "kind": "breakable-prop",
+      "position": {
+        "x": -4520,
+        "y": 5951,
+        "z": 318
+      },
+      "defaultState": "intact",
+      "objectNames": [
+        "Bottle_0_PreRound_Breakable.008"
+      ],
+      "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    },
+    {
+      "name": "Mid Boiler rope",
+      "reason": "the authored mechanics named a rope at Mid Boiler; the scene has six ascender objects (Kingdom_0_VertAscender*): four at A site, one horizontal pair there, one at B Yellow — none near Mid Boiler (-33.75, 29.25)."
+    }
+  ],
+  "mechanics": [
+    {
+      "kind": "rope",
+      "name": "Vertical ropes (A Nest / A Rafters, B Yellow container, Mid Boiler)",
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "four roadmap links kind=rope between measured cells (traversals in this file): A Nest, the two ropes of the far A platform, B Yellow. The 'on rope' state (exposed, cannot ADS) is NOT modelled. No ascender object exists at Mid Boiler in this scene (see objectsNotLocated)"
+    },
+    {
+      "kind": "zipline",
+      "name": "Horizontal zipline across A site",
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "one roadmap link kind=zipline between the two platforms (traversal a-zipline); its exposure is NOT modelled"
+    }
+  ]
 }

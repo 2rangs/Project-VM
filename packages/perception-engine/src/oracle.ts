@@ -8,7 +8,7 @@ import type {
   WorldState,
 } from "./shared-mirror.js";
 import { DEFAULT_PARAMS, type PerceptionParams } from "./params.js";
-import { canSee, type VisionContext } from "./vision.js";
+import { canSee, type SightOccluder, type VisionContext } from "./vision.js";
 import { collectSoundSources, hearSounds } from "./hearing.js";
 
 /**
@@ -46,18 +46,46 @@ export interface OracleOptions {
   readonly params?: PerceptionParams;
   /** Classifies an active ability as a vision-blocking smoke. Default: id contains "smoke". */
   readonly isSmoke?: (a: AbilityState) => boolean;
+  /**
+   * Smokes block sight as a VOLUME (a sphere of the ability's radius at its landing point,
+   * vision.ts SightOccluder) instead of by the zone rule. Default false (legacy zone rule).
+   */
+  readonly smokeVolumes?: boolean;
+  /** Smoke radius (uu) when an active smoke carries none (manual-approx; catalog smokes are 3.35–4.1 m). */
+  readonly defaultSmokeRadiusUnits?: number;
 }
+
+/** Fallback smoke radius (uu, ≈4 m) — only for a smoke whose catalog record has no radius. */
+export const DEFAULT_SMOKE_RADIUS_UNITS = 400;
 
 export class SpatialPerceptionOracle implements VisibilityOracle {
   private readonly spatial: SpatialEngine;
   private readonly params: PerceptionParams;
   private readonly isSmoke: (a: AbilityState) => boolean;
   private readonly smokeCache = new WeakMap<object, ReadonlyArray<readonly [string, string]>>();
+  private readonly volumeCache = new WeakMap<object, readonly SightOccluder[]>();
+  private readonly smokeVolumes: boolean;
+  private readonly defaultSmokeRadius: number;
 
   constructor(spatial: SpatialEngine, opts: OracleOptions = {}) {
     this.spatial = spatial;
     this.params = opts.params ?? DEFAULT_PARAMS;
     this.isSmoke = opts.isSmoke ?? ((a) => a.abilityId.toLowerCase().includes("smoke"));
+    this.smokeVolumes = opts.smokeVolumes ?? false;
+    this.defaultSmokeRadius = opts.defaultSmokeRadiusUnits ?? DEFAULT_SMOKE_RADIUS_UNITS;
+  }
+
+  /** Active smokes as volumes (cached per world). */
+  occluders(world: WorldState): readonly SightOccluder[] {
+    const cached = this.volumeCache.get(world);
+    if (cached) return cached;
+    const out: SightOccluder[] = [];
+    for (const ab of world.activeAbilities) {
+      if (!this.isSmoke(ab)) continue;
+      out.push({ center: ab.origin, radius: ab.radiusUnits && ab.radiusUnits > 0 ? ab.radiusUnits : this.defaultSmokeRadius });
+    }
+    this.volumeCache.set(world, out);
+    return out;
   }
 
   /** Zone-id pairs blocked by active smokes (incident smokeable sightlines). Cached per world. */
@@ -75,6 +103,7 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
   }
 
   private visionContext(world: WorldState): VisionContext {
+    if (this.smokeVolumes) return { spatial: this.spatial, params: this.params, smokedPairs: [], occluders: this.occluders(world) };
     return { spatial: this.spatial, params: this.params, smokedPairs: this.smokedPairs(world) };
   }
 
@@ -84,6 +113,6 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
 
   hearableSounds(observer: PlayerState, world: WorldState): readonly SoundObservation[] {
     const sources = collectSoundSources(world, this.params);
-    return hearSounds(observer.position, sources, this.spatial, this.params, world.timeRemainingMs, observer.teamId);
+    return hearSounds(observer.position, sources, this.spatial, this.params, world.timeRemainingMs, observer.teamId, world.maskers);
   }
 }

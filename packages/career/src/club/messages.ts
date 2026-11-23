@@ -1,6 +1,7 @@
 // Inbox messages of the club layer, in Korean and English. Money is formatted in USD.
 import { CLUB_MODEL } from "./constants.ts";
-import type { ClubState, InboxItem, InboxKind, Text } from "./types.ts";
+import type { InboxCategory, InboxDraft } from "../career/inbox.ts";
+import type { ClubState, InboxKind, Text } from "./types.ts";
 
 export function money(v: number): string {
   const sign = v < 0 ? "-" : "";
@@ -54,8 +55,9 @@ export const MSG = {
   }),
   incoming: (handle: string, team: string, fee: number) => ({
     kind: "transfer" as InboxKind, route: "transfers",
+    options: [{ id: "accept", label: { en: "Accept the bid", ko: "제안 수락" } }, { id: "reject", label: { en: "Reject the bid", ko: "제안 거절" } }],
     title: T(`${team}의 ${handle} 영입 제안`, `${team} bid for ${handle}`),
-    body: T(`${team}이(가) ${handle}에 대해 ${money(fee)}을 제시했습니다. ${CLUB_MODEL.offerExpiryDays}일 안에 답해야 합니다.`, `${team} offered ${money(fee)} for ${handle}. Answer within ${CLUB_MODEL.offerExpiryDays} days.`),
+    body: T(`${team}이(가) ${handle}에 대해 ${money(fee)}을 제시했습니다. ${CLUB_MODEL.offerExpiryDays}일 안에 여기나 이적 화면에서 답하세요. 답하지 않으면 제안은 소멸합니다.`, `${team} offered ${money(fee)} for ${handle}. Answer here or in Transfers within ${CLUB_MODEL.offerExpiryDays} days; an unanswered bid lapses.`),
   }),
   sold: (handle: string, team: string, fee: number) => ({
     kind: "transfer" as InboxKind, route: "transfers",
@@ -77,10 +79,24 @@ export const MSG = {
   }),
 } as const;
 
-/** Add a message to the club inbox (capped) and return it. */
-export function pushMessage(club: ClubState, date: string, m: { kind: InboxKind; title: Text; body: Text; route?: string }): InboxItem {
-  const item: InboxItem = { id: `club-${club.nextId++}`, date, kind: m.kind, title: m.title, body: m.body, ...(m.route ? { route: m.route } : {}) };
-  club.messages.push(item);
-  if (club.messages.length > CLUB_MODEL.maxMessages) club.messages.splice(0, club.messages.length - CLUB_MODEL.maxMessages);
-  return item;
+const CATEGORY: Record<InboxKind, InboxCategory> = { finance: "finance", board: "board", transfer: "transfer", contract: "transfer", training: "training" };
+const FROM: Record<InboxKind, string> = { finance: "board", board: "board", transfer: "director", contract: "director", training: "headCoach" };
+
+/**
+ * Queue a message for the manager's inbox (career mode posts it on the next drain). Club messages
+ * carry their own ko/en text; `key` names the message kind for the UI. `date` is kept for callers
+ * that queue outside the day loop; the inbox stamps the career date when it is posted.
+ */
+export function pushMessage(
+  club: ClubState, _date: string,
+  m: { kind: InboxKind; title: Text; body: Text; route?: string; options?: InboxDraft["options"]; offerId?: string; playerId?: string },
+): InboxDraft {
+  const draft: InboxDraft = {
+    category: CATEGORY[m.kind], key: `club.${m.kind}`, from: FROM[m.kind],
+    text: { en: { title: m.title.en, body: m.body.en }, ko: { title: m.title.ko, body: m.body.ko } },
+    ...(m.route || m.offerId || m.playerId ? { ref: { ...(m.route ? { route: m.route } : {}), ...(m.offerId ? { offerId: m.offerId } : {}), ...(m.playerId ? { playerId: m.playerId } : {}) } } : {}),
+    ...(m.options ? { options: m.options } : {}),
+  };
+  club.outbox.push(draft);
+  return draft;
 }

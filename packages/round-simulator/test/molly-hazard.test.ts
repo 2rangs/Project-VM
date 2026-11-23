@@ -56,13 +56,16 @@ describe("molly / area-denial as a passable hazard", () => {
         commands: v.teammates.filter((p) => p.alive).map((p) => v.timeRemainingMs > 59000 ? { playerId: p.id, kind: "useAbility" as const, abilityId: "brimstone:Ability1", targetZone: "a-site" } : { playerId: p.id, kind: "hold" as const }),
       }),
     };
-    const centre = spatial.standPosition("a-site");
-    const onPatch = { x: centre.x + 1, y: centre.y, z: centre.z };
+    // The patch lands on the floor of A site nearest the thrower (round-simulator landingPoint).
+    const thrower = mk("def", "defense", "b-site", "brimstone:Ability1");
+    const nav = spatial.nav!;
+    const landing = nav.nodePosition(nav.locateInZone(thrower.position, "a-site", Number.POSITIVE_INFINITY)!);
+    const onPatch = { x: landing.x + 1, y: landing.y, z: landing.z };
     const state: SimState = {
       matchId: "m", roundId: "r", mapId: "ascent", tick: 0, elapsedMs: 0, timeRemainingMs: 60000,
-      // the attacker stands where the patch will land — the middle of the zone, one step off its
-      // callout (a player set down ON a callout is given a covered spot of the zone instead)
-      players: [{ ...mk("atk", "attack", "a-site"), position: onPatch }, mk("def", "defense", "b-site", "brimstone:Ability1")],
+      // the attacker stands where the patch will land, one step off the node (a player set down ON
+      // a callout is given a covered spot of the zone instead)
+      players: [{ ...mk("atk", "attack", "a-site"), position: onPatch }, thrower],
       spike: { phase: "carried", carrierId: "atk", zoneId: null, position: null, plantProgressMs: 0, defuseProgressMs: 0, defuserId: null, detonateAtElapsedMs: null },
     };
     const r = new RoundSimulator({

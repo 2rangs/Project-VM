@@ -13,7 +13,10 @@ the engine navigates on a sparse ROADMAP derived from it:
           the solid triangles at body height. Each carries its half-width: how far a body
           may stray sideways and still be on walkable floor.
   drops   one-way edges across a ledge.
-  links   authored special traversals (teleporter, zipline) with their own travel time.
+  links   special traversals (teleporter, zipline, rope, jump) with their own travel time. A
+          traversal measured on the map (authoring "traversals": both end points in game uu) links
+          the two roadmap nodes at those points; an authored special edge without measured end
+          points still links the two zone anchors.
 
 Output (numeric only): datasets/spatial/<map>/<map>.nav.json
 
@@ -71,6 +74,28 @@ def main():
     reach = np.isfinite(d_all)
     zone_of = np.where(own_walk >= 0, own_walk, own_all)
 
+    # ---------------- measured traversals: both end points become roadmap nodes
+    def snap_point(p, what):
+        q = np.array([p["x"], p["y"], p["z"]], dtype=np.float64) / 100.0
+        dxy = np.hypot(c.xyz[:, 0] - q[0], c.xyz[:, 1] - q[1])
+        cand = np.nonzero((dxy <= 1.0) & (np.abs(c.xyz[:, 2] - q[2]) <= 0.75))[0]
+        if cand.size == 0:
+            raise ValueError(f"{mp}: traversal {what}: no walk cell within 1 m / 0.75 m height of {p}")
+        return int(cand[np.argmin(dxy[cand] + 0.7 * np.abs(c.xyz[cand, 2] - q[2]))])
+
+    traversals = []      # (grid node a, grid node b, kind, ms, bidirectional)
+    for t in authoring.get("traversals", []):
+        na, nb = snap_point(t["a"], t["id"] + ".a"), snap_point(t["b"], t["id"] + ".b")
+        traversals.append((na, nb, t["kind"], int(t["travelTimeMs"]), bool(t["bidirectional"])))
+        # floor reached only through a traversal is still floor a player can stand on
+        d_t, _ = G.dijkstra((grid.walk, grid.drop), {na: 0, nb: 0}, grid.n)
+        fresh = np.isfinite(d_t) & ~reach
+        if fresh.any():
+            za, zb = (zone_index[z] for z in t["zones"])
+            d_a, _ = G.dijkstra((grid.walk, grid.drop), {na: 0}, grid.n)
+            zone_of = np.where(fresh, np.where(np.isfinite(d_a), za, zb), zone_of)
+            reach = reach | fresh
+
     # ---------------- nodes: anchors first, then widest-clearance-first with a minimum spacing
     S = N["spacing"]
     hash_ = {}
@@ -100,6 +125,9 @@ def main():
 
     for n in sorted(anchors.values()):
         add_node(n)
+    for na, nb, *_ in traversals:
+        add_node(na)
+        add_node(nb)
     cand = np.nonzero(reach)[0]
     order = cand[np.lexsort((cand, -clear[cand].astype(np.int64)))]
     for u in order.tolist():
@@ -247,8 +275,10 @@ def main():
         adj = roadmap_adj(extra)
 
     # ---------------- authored special links between zone anchors
-    links = []
+    links = list(traversals)
     for e in nav["edges"]:
+        if "traversal" in e:
+            continue         # measured: already linked between its own end points
         if e.get("kind") in ("teleporter", "zipline", "rope") and e["from"] in anchors and e["to"] in anchors:
             links.append((anchors[e["from"]], anchors[e["to"]], e["kind"], e["runTimeMs"], e["bidirectional"]))
 
@@ -267,6 +297,15 @@ def main():
             if g_ok != r_ok:
                 unreachable.append(f"{za}->{zb} grid={g_ok} roadmap={r_ok}")
     ray_bad = sum(1 for (p, q) in edges if not seg_ok(p, q))
+    with_links = None
+    if traversals:
+        ladj = roadmap_adj(extra)
+        for p, q, _, _, both in links:
+            ladj[p].append((q, 0.0))
+            if both:
+                ladj[q].append((p, 0.0))
+        with_links = sum(1 for za, na in anchors.items() for zb, nb in anchors.items()
+                         if za != zb and rm_dist(ladj, na, nb, 1e9) < math.inf)
 
     # ---------------- write
     index = {u: i for i, u in enumerate(rm)}
@@ -293,6 +332,7 @@ def main():
             "zonePairsReachableOnGrid": sum(1 for v in grid_reach.values() if v),
             "zonePairsTotal": len(grid_reach),
             "roadmapDisagreesWithGrid": unreachable,
+            **({"zonePairsReachableWithLinks": with_links} if with_links is not None else {}),
         },
     }
     path = os.path.join(ddir, f"{mp}.nav.json")
@@ -303,7 +343,7 @@ def main():
     s = out["stats"]
     print(f"[nav] {mp}: nodes={s['nodes']} edges={s['edges']} drops={s['drops']} links={s['links']} "
           f"ray-bad={ray_bad} zone pairs reachable {s['zonePairsReachableOnGrid']}/{s['zonePairsTotal']} "
-          f"disagree={len(unreachable)} size={os.path.getsize(path) // 1024} KB ({time.time() - t0:.0f} s)", flush=True)
+          f"{'' if with_links is None else f'(with links {with_links}) '}disagree={len(unreachable)} size={os.path.getsize(path) // 1024} KB ({time.time() - t0:.0f} s)", flush=True)
     for u_ in unreachable[:8]:
         print("[nav]   disagree:", u_)
 

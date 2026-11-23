@@ -22,7 +22,12 @@
 //   --compare FILE     a prior report JSON (e.g. docs/research/SIM_BASELINE_2026-11-18.json) to diff
 //                      against — the report gains Δ-vs-baseline + improved/worsened columns
 //   --no-validate      only write the SimRun bundle + print the summary; skip sim:validate
+//   --tuning JSON      MatchConfig.tuning for every match (pre-match engine options, e.g. '{"damageCarryover":0.5}')
+//   --sound            sound detail on (SimConfig.soundDetail: landings off drops, gunfire masking)
+//   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
+//   --teams-only       print the paired teams' first-five combat skills as JSON and exit (the
+//                      roster check in tests/test_sim_batch_runner.py uses it)
 //   --mirror           both teams league-average players (every attribute and trait at the
 //                      fallback 0.6) instead of real rosters. Every batch before 2026-11-23 ran this
 //                      way by accident (team ids were read as `t.id`, which game-data does not have),
@@ -32,16 +37,22 @@
 // match i plays teams[2i mod n] vs teams[2i+1 mod n]. The MatchConfig is otherwise what the desktop
 // Match Day sends with default options (no tuning, abilities off, opponent memory on).
 //
+// Report-only engine metrics (engine-metrics.mts: first kill, flawless, force buys, round duration,
+// site arrival spread, path diversity, body overlap, crowd counters, outcome by strength gap) are
+// written next to the report as <report>.engine.json and appended to <report>.md. They are never
+// judged and never change the exit code.
+//
 // Players are side-named (atk1..atk5 / def1..def5) by the round simulator, so the per-round roster
 // is constant; buyTiers come from the match-runner's per-team BuyDecision for the round's attacker.
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runMatch, simulatableTeamRefs, type MatchConfig, type TeamRef, type TeamSlot } from "../../../packages/match-runner/src/index.ts";
+import { rosterSkills, runMatch, simulatableTeamRefs, type MatchConfig, type TeamRef, type TeamSlot } from "../../../packages/match-runner/src/index.ts";
 import { toSimGameEvents } from "../../../packages/round-simulator/src/index.ts";
+import { EngineMetrics, renderEngineMetrics } from "./engine-metrics.mts";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const TOOL_DIR = resolve(SCRIPT_DIR, "..");       // tools/data-validator
@@ -85,6 +96,23 @@ function batchTeams(mirror: boolean): TeamRef[] {
   return teams;
 }
 
+/** Mean combat skill of a team's first five (what the round fields). */
+function strengthOf(team: TeamRef): number {
+  const five = rosterSkills(team.id, 5);
+  const vals = five.flatMap((s) => Object.values(s) as number[]);
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+/**
+ * Real rosters must actually reach the engine: if every player of every team comes out at the
+ * league-average fallback, the team ids are not being resolved (the pre-2026-11-23 bug). Fail loudly.
+ */
+function assertRealRosters(teams: readonly TeamRef[]): void {
+  const values = new Set<number>();
+  for (const t of teams) for (const s of rosterSkills(t.id, 5)) for (const v of Object.values(s) as number[]) values.add(v);
+  if (values.size <= 1) throw new Error(`sim:batch: real-roster mode but every rating is ${[...values][0]} — team ids are not resolving to rosters`);
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const matches = Number(args["matches"] ?? 20);
@@ -100,9 +128,10 @@ async function main(): Promise<void> {
   const doValidate = args["no-validate"] !== true;
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
   const mirror = args["mirror"] === true;
-  // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default VCT fit).
+  // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default sim fit).
   const economy = args["belief-beta"] !== undefined
     ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : undefined;
+  const tuning = typeof args["tuning"] === "string" ? JSON.parse(args["tuning"]) : undefined;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
   if (outPath === `${reportPrefix}.json`) {
@@ -110,6 +139,11 @@ async function main(): Promise<void> {
   }
 
   const teams = batchTeams(mirror);
+  if (!mirror) assertRealRosters(teams);
+  if (args["teams-only"] === true) {
+    process.stdout.write(JSON.stringify({ mirror, teams: teams.map((t) => ({ id: t.id, name: t.name, firstFive: rosterSkills(t.id, 5) })) }) + "\n");
+    return;
+  }
   const rosters = mirror ? "league-average mirror" : `real rosters (${teams.length} teams)`;
   const pairFor = (i: number): [TeamRef, TeamRef] =>
     [teams[(2 * i) % teams.length]!, teams[(2 * i + 1) % teams.length]!];
@@ -117,17 +151,20 @@ async function main(): Promise<void> {
   const rounds: unknown[] = [];
   const reasonCounts: Record<string, number> = {};
   let attackRoundWins = 0, totalRounds = 0, pistolRounds = 0, pistolAttackWins = 0, otMatches = 0;
+  const metrics = new EngineMetrics();
 
   console.error(`sim:batch: simulating ${matches} match(es) on ${map}${ownGeometry ? " (its own geometry)" : map.toLowerCase() === "ascent" ? "" : " (on Ascent's geometry)"}, seeds ${seedStart}..${seedStart + matches - 1}, ${rosters}${enableAbilities ? ", abilities on" : ""}`);
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
+    const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };
     for (const r of m.rounds) {
       const atk: TeamSlot = r.attacker;
       const def: TeamSlot = atk === "A" ? "B" : "A";
+      metrics.add({ record: r, attackStrength: strength[atk], defenseStrength: strength[def] });
       rounds.push({
         roundNumber: r.roundNumber,
         map,
@@ -155,7 +192,7 @@ async function main(): Promise<void> {
   const bundle = {
     meta: {
       synthetic: true,
-      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""})`,
+      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""}${args["gaze"] === true ? ", gaze model" : ""}${args["sound"] === true ? ", sound detail" : ""})`,
       rounds: rounds.length, matches, map, seedStart,
       generatedAt: new Date().toISOString(),
     },
@@ -175,11 +212,19 @@ async function main(): Promise<void> {
   }
   console.error(`  wrote SimRun bundle   : ${outPath.replace(REPO_ROOT + "/", "")}`);
 
+  const engine = metrics.report();
+  const engineMd = renderEngineMetrics(engine);
+  mkdirSync(dirname(reportPrefix), { recursive: true });
+  writeFileSync(`${reportPrefix}.engine.json`, JSON.stringify(engine, null, 2));
+  console.error(engineMd);
+  const appendEngine = () => { if (existsSync(`${reportPrefix}.md`)) appendFileSync(`${reportPrefix}.md`, engineMd); };
+
   if (!doValidate) return;
   console.error(`\nsim:batch: running sim:validate (era=${era}${comparePath ? `, compare=${comparePath.replace(REPO_ROOT + "/", "")}` : ""}) ...`);
   const res = spawnSync("node", [join(TOOL_DIR, "scripts", "sim-validate.mjs"),
     "--logs", outPath, "--era", era, "--out", reportPrefix, "--stdout",
     ...(comparePath ? ["--compare", comparePath] : [])], { cwd: REPO_ROOT, stdio: "inherit" });
+  appendEngine();
   process.exit(res.status ?? 1);
 }
 

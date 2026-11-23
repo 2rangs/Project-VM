@@ -23,6 +23,7 @@ import {
   type MatchRoundPlayer,
   type MatchRoundTeam,
   type NavTraceEvent,
+  type RoundStats,
 } from "@pv/round-simulator";
 import { lossBonusTierFor, type TeamEconomyState } from "@pv/economy-engine";
 import {
@@ -137,6 +138,15 @@ export interface MatchConfig {
    */
   readonly recordTracks?: boolean;
   /**
+   * Collect report-only movement / crowd measurements per round (RoundRecord.stats, round-simulator
+   * RoundStats) for the validator. Passive: outcomes are identical with and without it. Default false.
+   */
+  readonly collectStats?: boolean;
+  /** Gaze model (round-simulator SimConfig.gaze; docs/ENGINE_TRUTH.md §8). Default off. */
+  readonly gaze?: boolean;
+  /** Sound detail: landings off drops, gunfire masking (SimConfig.soundDetail; ENGINE_TRUTH §9). Default off. */
+  readonly soundDetail?: boolean;
+  /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
    * coordinate ATTACKER utility to execute, so enabling it makes defense dominant (attack win
@@ -212,6 +222,8 @@ export interface RoundRecord {
    * it is what the navigation debug view draws.
    */
   readonly navTrace?: readonly NavTraceEvent[];
+  /** Report-only movement / crowd measurements of the round; present only when `collectStats` is on. */
+  readonly stats?: RoundStats;
 }
 
 /**
@@ -610,7 +622,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);
@@ -710,6 +722,7 @@ export class MatchEngine {
         matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
       }),
       ...(result.navTrace ? { navTrace: result.navTrace } : {}),
+      ...(result.stats ? { stats: result.stats } : {}),
     };
     this.rounds.push(record);
     this.options.onRound?.(record, { ...score });

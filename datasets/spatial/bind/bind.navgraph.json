@@ -1650,9 +1650,10 @@
       "distanceMeters": 23.3,
       "runTimeMs": 1500,
       "walkTimeMs": 1500,
-      "provenance": "manual-approx (authored one-way teleporter; 1.5 s travel is an estimate)",
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-teleporter' in the authoring file",
       "kind": "teleporter",
       "note": "A Short teleporter exits at B Short (B Exit room)",
+      "traversal": "a-teleporter",
       "routeStatus": "straight (special traversal (no walking route applies))"
     },
     {
@@ -1665,9 +1666,10 @@
       "distanceMeters": 131.83,
       "runTimeMs": 1500,
       "walkTimeMs": 1500,
-      "provenance": "manual-approx (authored one-way teleporter; 1.5 s travel is an estimate)",
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'b-teleporter' in the authoring file",
       "kind": "teleporter",
       "note": "B Long teleporter exits at A Lobby side (A Exit room)",
+      "traversal": "b-teleporter",
       "routeStatus": "straight (special traversal (no walking route applies))"
     }
   ],
@@ -2100,8 +2102,8 @@
       "kind": "teleporter",
       "name": "Two one-way teleporters (A Short -> B Short, B Long -> A Lobby)",
       "represented": true,
-      "how": "one-way edges kind=teleporter with their own travel time; no sound link (the map-wide teleporter audio cue and the exit door are NOT modelled)",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "how": "two one-way roadmap links between measured points (traversals in this file), each with its own travel time; the zone graph carries one edge kind=teleporter per link, no sound link (the map-wide teleporter audio cue is NOT modelled; the exit doors are listed in bind.objects.json but not simulated)",
+      "provenance": "measured-on-mesh (entry frames, arrival rooms); manual-approx (which entry leads where, travel time: general game knowledge)"
     },
     {
       "kind": "layout",
@@ -2119,6 +2121,7 @@
     },
     "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [],
     "doorsNotAttached": [],
     "zonesOnMainWalkComponent": "24/24"
   },

@@ -2,30 +2,15 @@
 // Training screens show. Pure (no React) so node:test can load it. Everything a screen shows of
 // another club's player comes through the user's scout (ranges), never the true CA/PA.
 import {
-  createLocalDriver, initClub, playerValue, scoutedAbility, seasonFocus, suggestedTerms, wageBill, windowStatus,
+  playerValue, scoutedAbility, seasonFocus, suggestedTerms, wageBill, windowStatus,
   exposureShares, CLUB_MODEL,
   type Contract, type IndivFocus, type OfferKind, type TransferOffer, type World, type WorldPlayer,
 } from './world.ts';
 
 export { clubSeasonEnd } from './world.ts';
 
-/** The club a fresh desktop career manages until the shell's start menu picks one: NRG, Match Day's default team. */
-export const DEFAULT_USER_TEAM = '1034';
-
-/** A world with the club layer started (contracts, finances, budgets). */
-export function withClub(w: World): World {
-  if (w.club) return w;
-  const id = w.teams[DEFAULT_USER_TEAM] ? DEFAULT_USER_TEAM : Object.keys(w.teams).sort()[0] ?? null;
-  return initClub(w, { userTeamId: id, date: `${w.season}-01-05` });
-}
-
-/** Advance the club calendar n days with the local driver (onDay / onMonth / season end). */
-export function advanceClubDays(w: World, n: number): World {
-  const d = createLocalDriver(w);
-  d.advanceDays(n);
-  return d.world;
-}
-
+// The manager's club is the career's (start menu → new career); the club layer starts with the
+// career (career mode's built-in club hook) and runs on its calendar.
 export const userTeamId = (w: World): string | null => w.club?.userTeamId ?? null;
 
 export interface FinanceSummary {

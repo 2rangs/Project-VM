@@ -1,28 +1,16 @@
-// Date helpers (YYYY-MM-DD strings, UTC) and the transfer-window calendar.
+// The transfer-window calendar. Dates are the career calendar's ISO strings (career/calendar.ts —
+// the one date helper of the package); the season's first and last day are career mode's.
+import { addDays, daysBetween, isoDate, monthOf, weekday, yearOf } from "../career/calendar.ts";
 import { CLUB_MODEL } from "./constants.ts";
 
-const parse = (d: string): Date => new Date(`${d}T00:00:00Z`);
-const fmt = (t: Date): string => t.toISOString().slice(0, 10);
-
-export function addDays(date: string, n: number): string {
-  const t = parse(date);
-  t.setUTCDate(t.getUTCDate() + n);
-  return fmt(t);
-}
-
-export function daysBetween(a: string, b: string): number {
-  return Math.round((parse(b).getTime() - parse(a).getTime()) / 86_400_000);
-}
-
+export { addDays, daysBetween, monthOf, yearOf };
 /** 0 = Sunday … 6 = Saturday. */
-export const dayOfWeek = (date: string): number => parse(date).getUTCDay();
-export const yearOf = (date: string): number => Number(date.slice(0, 4));
-export const monthOf = (date: string): number => Number(date.slice(5, 7));
+export const dayOfWeek = weekday;
 export const monthKey = (date: string): string => date.slice(0, 7);
-export const isFirstOfMonth = (date: string): boolean => date.slice(8, 10) === "01";
 
-export const seasonStartDate = (season: number): string => `${season}-${CLUB_MODEL.seasonStart}`;
-export const seasonEndDate = (season: number): string => `${season}-${CLUB_MODEL.seasonEnd}`;
+/** A career's first day of a season, and the season's last day (career/schedule.ts SCHEDULE_MODEL). */
+export const seasonStartDate = (season: number): string => isoDate(season, CLUB_MODEL.seasonStart[0], CLUB_MODEL.seasonStart[1]);
+export const seasonEndDate = (season: number): string => isoDate(season, CLUB_MODEL.seasonEnd[0], CLUB_MODEL.seasonEnd[1]);
 
 export interface WindowStatus {
   readonly open: boolean;

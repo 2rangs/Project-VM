@@ -1,23 +1,12 @@
 // Club-operations state. It lives in `World.club` (optional), so a save carries it and
 // `advanceSeason` (which clones the world) keeps it. All plain data.
 import type { StaffRole } from "../model.ts";
+import type { InboxDraft } from "../career/inbox.ts";
 
 /** A bilingual string (the desktop shows `ko` or `en`). */
 export interface Text { readonly ko: string; readonly en: string }
 
 export type InboxKind = "finance" | "board" | "transfer" | "contract" | "training";
-
-/** An inbox item. Posted through the shell's inbox hook and kept in `club.messages`. */
-export interface InboxItem {
-  readonly id: string;
-  /** YYYY-MM-DD. */
-  readonly date: string;
-  readonly kind: InboxKind;
-  readonly title: Text;
-  readonly body: Text;
-  /** Optional link target for the shell (e.g. "transfers", "finance"). */
-  readonly route?: string;
-}
 
 export type SquadRole = "starter" | "rotation" | "academy" | "staff";
 
@@ -180,7 +169,11 @@ export interface ClubState {
   transfers: TransferRecord[];
   shortlist: string[];
   training: TrainingState;
-  messages: InboxItem[];
+  /**
+   * Inbox drafts the club layer wrote and the career has not posted yet (career mode's one inbox,
+   * career/inbox.ts). The career's club hook drains it into the manager's inbox; normally empty.
+   */
+  outbox: InboxDraft[];
   /** AI purchases per team in the current window: `${windowKey}` → teamId → count. */
   aiBuys: Record<string, Record<string, number>>;
   nextId: number;

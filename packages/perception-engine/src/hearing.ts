@@ -17,6 +17,41 @@ export interface SoundSource {
   readonly loudness: number;
   /** Team of the player who made the sound, when a player made it (footsteps). */
   readonly teamId?: string;
+  /** Distance-rule sounds (footstep, landing): heard by every enemy within this radius. Default: the footstep radius. */
+  readonly radiusUnits?: number;
+  /** Source level (dB re the reference distance) — what masking compares. Default: the kind's level. */
+  readonly levelDb?: number;
+}
+
+/**
+ * Sound masking (signal detection, deterministic form): a quiet cue is not picked out when a louder
+ * sound reaches the same listener in the same window and is louder there by more than the margin:
+ *     masked ⇔ max over maskers [L_m − 20·log10(d_m / d₀)] − [L_c − 20·log10(d_c / d₀)] > M
+ * (inverse-square spreading in dB; d clamped to d₀). Levels, d₀ and M are params.hearing.masking.
+ */
+export function isMasked(listener: Vector3, cue: { position: Vector3; levelDb: number }, maskers: readonly { position: Vector3; levelDb: number }[] | undefined, params: PerceptionParams): boolean {
+  if (!maskers || maskers.length === 0) return false;
+  const m = params.hearing.masking;
+  const at = (pos: Vector3, level: number) => level - 20 * Math.log10(Math.max(m.refDistanceUnits, Math.hypot(pos.x - listener.x, pos.y - listener.y, pos.z - listener.z)) / m.refDistanceUnits);
+  const cueAt = at(cue.position, cue.levelDb);
+  for (const k of maskers) if (at(k.position, k.levelDb) - cueAt > m.marginDb) return true;
+  return false;
+}
+
+/**
+ * Landing off a drop of height h (uu): silent below the threshold h₀ (a walked step-down); above it
+ * the impact is loud and its reach grows with the fall — impact energy ∝ h (v² = 2gh), and under
+ * inverse-square spreading the radius at which it falls to a given level ∝ √energy:
+ *     radius(h) = footstepRadius · √(h / h₀),   level(h) = L_step + 10·log10(h / h₀)   (h ≥ h₀)
+ * h₀ is manual-approx (params.hearing.landing.silentBelowUnits) until checked in game.
+ */
+export function landingSound(heightUnits: number, params: PerceptionParams): { radiusUnits: number; levelDb: number } | null {
+  const h0 = params.hearing.landing.silentBelowUnits;
+  if (heightUnits < h0) return null;
+  return {
+    radiusUnits: params.hearing.footstepRadiusUnits * Math.sqrt(heightUnits / h0),
+    levelDb: params.hearing.masking.footstepDb + 10 * Math.log10(heightUnits / h0),
+  };
 }
 
 /**
@@ -36,6 +71,7 @@ const LOUDNESS: Record<SoundKind, number> = {
   footstep: 0.8,
   spikePlant: 0.75,
   spikeDefuse: 0.75,
+  landing: 0.8,
   abilityCast: 0.7,
   reload: 0.5,
   other: 0.5,
@@ -68,6 +104,10 @@ export function collectSoundSources(world: WorldState, params: PerceptionParams)
     if (classifyMovement(p, params) === "run") {
       sources.push({ kind: "footstep", position: p.position, loudness: LOUDNESS.footstep, teamId: p.teamId });
     }
+  }
+
+  for (const s of world.extraSounds ?? []) {
+    sources.push({ kind: s.kind, position: s.position, loudness: LOUDNESS[s.kind] ?? LOUDNESS.other, teamId: s.teamId, radiusUnits: s.radiusUnits, levelDb: s.levelDb });
   }
 
   const minTick = world.tick - Math.max(0, params.hearing.eventWindowTicks - 1);
@@ -142,20 +182,22 @@ export function hearSounds(
   params: PerceptionParams,
   atMs: number,
   observerTeamId?: string,
+  maskers?: readonly { position: Vector3; levelDb: number }[],
 ): SoundObservation[] {
   const observerZone = spatial.nearestZone(observerPos).id;
   const out: SoundObservation[] = [];
 
   for (const src of sources) {
     const srcZone = spatial.nearestZone(src.position);
-    if (src.kind === "footstep") {
+    if (src.kind === "footstep" || src.kind === "landing") {
       if (observerTeamId !== undefined && src.teamId === observerTeamId) continue; // own team's steps
       const dx = src.position.x - observerPos.x, dy = src.position.y - observerPos.y, dz = src.position.z - observerPos.z;
       const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      const radius = params.hearing.footstepRadiusUnits;
+      const radius = src.radiusUnits ?? params.hearing.footstepRadiusUnits;
       if (d > radius) continue;
+      if (isMasked(observerPos, { position: src.position, levelDb: src.levelDb ?? params.hearing.masking.footstepDb }, maskers, params)) continue;
       out.push({
-        kind: "footstep",
+        kind: src.kind,
         approxPosition: { x: srcZone.position.x, y: srcZone.position.y, z: srcZone.position.z },
         heardAtMs: atMs,
         confidence: Number(footstepConfidence(d, radius).toFixed(3)),

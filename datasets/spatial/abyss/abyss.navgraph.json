@@ -263,13 +263,13 @@
       "position": {
         "x": -5850,
         "y": 700,
-        "z": 1615.1
+        "z": 494.6
       },
-      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor at the zone's authored anchor — the callout is not on its zone's floor, see zoneAnchors in the authoring file)",
       "anchor": {
-        "x": -5675,
+        "x": -5825,
         "y": 700,
-        "z": 1615
+        "z": 495
       }
     },
     {
@@ -1613,6 +1613,21 @@
       }
     },
     {
+      "from": "a-link",
+      "to": "a-secret",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1711,
+      "distanceMeters": 17.11,
+      "runTimeMs": 378,
+      "walkTimeMs": 378,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-secret-west' in the authoring file",
+      "kind": "jump",
+      "traversal": "a-secret-west",
+      "routeStatus": "straight (no walkable route on the grid)"
+    },
+    {
       "from": "a-security",
       "to": "a-secret",
       "bidirectional": true,
@@ -1620,24 +1635,41 @@
       "destructible": null,
       "distanceUnits": 1427,
       "distanceMeters": 14.27,
-      "runTimeMs": 2114,
-      "walkTimeMs": 4198,
-      "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)",
-      "kind": "approx-link",
+      "runTimeMs": 450,
+      "walkTimeMs": 450,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-secret-north' in the authoring file",
+      "kind": "jump",
+      "traversal": "a-secret-north",
       "routeStatus": "straight (no walkable route on the grid)"
     },
     {
-      "from": "b-nest",
+      "from": "b-main",
       "to": "b-danger",
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1879,
-      "distanceMeters": 18.79,
-      "runTimeMs": 2784,
-      "walkTimeMs": 5528,
-      "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)",
-      "kind": "approx-link",
+      "distanceUnits": 1628,
+      "distanceMeters": 16.28,
+      "runTimeMs": 454,
+      "walkTimeMs": 454,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'b-danger-north' in the authoring file",
+      "kind": "jump",
+      "traversal": "b-danger-north",
+      "routeStatus": "straight (no walkable route on the grid)"
+    },
+    {
+      "from": "b-site",
+      "to": "b-danger",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2357,
+      "distanceMeters": 23.57,
+      "runTimeMs": 450,
+      "walkTimeMs": 450,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'b-danger-south' in the authoring file",
+      "kind": "jump",
+      "traversal": "b-danger-south",
       "routeStatus": "straight (no walkable route on the grid)"
     }
   ],
@@ -1768,6 +1800,14 @@
       "type": "angle",
       "smokeable": true,
       "visibility": 0.146,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-danger",
+      "b": "b-nest",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.021,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
     },
     {
@@ -2073,6 +2113,12 @@
       "provenance": "derived-by-rule"
     },
     {
+      "a": "a-link",
+      "b": "a-secret",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
       "a": "a-secret",
       "b": "a-security",
       "attenuation": 0.2,
@@ -2080,7 +2126,13 @@
     },
     {
       "a": "b-danger",
-      "b": "b-nest",
+      "b": "b-main",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-danger",
+      "b": "b-site",
       "attenuation": 0.2,
       "provenance": "derived-by-rule"
     }
@@ -2090,8 +2142,10 @@
     "source": "tools/map-mesh/pipeline/route_map.py",
     "edgesWithWalkableRoute": 31,
     "edgesFlaggedStraight": [
+      "a-link->a-secret",
       "a-security->a-secret",
-      "b-nest->b-danger"
+      "b-main->b-danger",
+      "b-site->b-danger"
     ],
     "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
   },
@@ -2106,22 +2160,21 @@
     {
       "kind": "jump-shortcut",
       "name": "Jump gaps between platforms (e.g. mid, B danger)",
-      "represented": false,
-      "engineNeeds": "one-way/jump edges with a fall-risk cost; only drops the walk grid could see are encoded",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (the two ledges and their gaps); manual-approx (that they are crossed by a jump, and the mid gap: general game knowledge)",
+      "measured": "A Secret = ledge Shell_1_DefPathA_LedgeA (x 32.75..41.21, y -39.32..-36.63; 43 walk cells, floor z 8.43..9.49): 2.0 m edge-to-edge from the 10.00 m floor to its west (island cell (32.75, -38.50, 9.49) <-> (30.25, -38.50, 10.00)) and 2.5 m from the A-site-side floor to its north ((40.75, -37.00, 8.48) <-> (40.75, -34.00, 8.00)); no triangle in either gap. B Danger = ledge Shell_5_AtkPathBLedgeB (38 walk cells, floor z 4.48..5.54): 2.5 m gaps north and south (see zoneAnchors.b-danger). Both zones are walk-grid islands; game metres.",
+      "how": "four roadmap links kind=jump between measured cells (traversals in this file) join the A Secret and B Danger ledges to the floors beside them; the fall risk of a missed jump and the mid gap are NOT modelled"
     }
   ],
   "dataQuality": {
     "edgeKinds": {
       "walk": 26,
       "drop": 5,
-      "approx-link": 2
+      "jump": 4
     },
-    "approxLinks": [
-      "a-security<->a-secret",
-      "b-nest<->b-danger"
-    ],
+    "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [],
     "doorsNotAttached": [],
     "zonesOnMainWalkComponent": "21/23"
   },

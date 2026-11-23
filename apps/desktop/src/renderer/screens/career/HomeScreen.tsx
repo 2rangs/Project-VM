@@ -6,7 +6,7 @@ import { Flag } from '../../ui.tsx';
 import { continueGame, useCareer } from '../../career/session.ts';
 import { dayAgenda, groupStandings, GROUPS, nextUserFixture, scoutedAbility, startingFive, type CareerState } from '../../career/world.ts';
 import { fixtureLabel, inboxText, opponentOf, teamName, userScore } from '../../career/view.ts';
-import { CareerProgress } from './CareerProgress.tsx';
+import { LoadingScreen } from '../../loading/Loading.tsx';
 
 export function ContinueButton({ big }: { big?: boolean }) {
   const { t } = useLang();
@@ -31,12 +31,15 @@ export function SimProgressBar() {
   const sim = cs.busy.sim;
   const running = sim && sim.current;
   return (
-    <CareerProgress inline
-      title={running ? t('home.sim.title', { date: cs.busy.date ?? '' }) : t('home.sim.days', { date: cs.busy.date ?? '' })}
-      detail={running ? `${sim!.current!.home} vs ${sim!.current!.away}` : undefined}
-      progress={sim && sim.total ? sim.done / sim.total : null}
-      steps={sim && sim.total ? t('home.sim.steps', { done: sim.done, total: sim.total }) : null}
-    />
+    // The match-day session's loading surface, in a box on Home (the rest of Home stays visible).
+    <div className="home-sim">
+      <LoadingScreen cover="area" testId="career-progress"
+        title={running ? t('home.sim.title', { date: cs.busy.date ?? '' }) : t('home.sim.days', { date: cs.busy.date ?? '' })}
+        detail={running ? `${sim!.current!.home} vs ${sim!.current!.away}` : undefined}
+        progress={sim && sim.total ? sim.done / sim.total : null}
+        steps={sim && sim.total ? t('home.sim.steps', { done: sim.done, total: sim.total }) : null}
+      />
+    </div>
   );
 }
 

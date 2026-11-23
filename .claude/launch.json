@@ -1,0 +1,1 @@
+{ "version": "0.0.1", "configurations": [ { "name": "renderer-browser", "runtimeExecutable": "bash", "runtimeArgs": ["-lc", "source ~/.nvm/nvm.sh >/dev/null; nvm use 22.13.1 >/dev/null; cd apps/desktop && npx vite --config vite.browser.config.ts"], "port": 5199 } ] }
