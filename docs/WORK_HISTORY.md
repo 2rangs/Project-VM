@@ -321,7 +321,7 @@
 ### 16차 main 머지 (2026-11-23) — 최종 통합과 정리(작업 일시 정지)
 - 별도 세션이 `claude/final-merge`로 nav-engine·club-ops·career-shell·sim-batch-real-rosters·matchday-uiux를 합쳐 main `5e35ff8`에 푸시.
 - 이 통합 세션이 그 위에 빠진 커밋을 합침: career-shell(테스트·`CAREER_MODE.md`·인계서, e2e 진입점을 시작 메뉴로), club-ops(재정·이적·훈련 화면, 계약 패널, 인계서), nav-engine(`27bac33` 리테이크 위치).
-- **정정:** 13–15차의 "8/8"은 `sim-batch` 팀 id 버그로 **평균 선수 미러 경기**였다(`6bfb689`). 실제 로스터: 6/8, 공격 0.460(시드 1–160) / 0.484(161–320). 이 정리 시점 측정: WRAPUP_REAL_RESULT.
+- **정정:** 13–15차의 "8/8"은 `sim-batch` 팀 id 버그로 **평균 선수 미러 경기**였다(`6bfb689`). 실제 로스터: 6/8, 공격 0.460(시드 1–160) / 0.484(161–320). 이 정리 시점 측정(시드 1–160): 6/8, 공격 0.455, 피스톨 0.444. 데스크톱 e2e·시리즈·커리어·구단 운영 e2e 통과.
 - 문서: `docs/HANDOFF.md`(현재 상태 정본으로 재작성), `docs/DEVELOPMENT_PROCESS.md`(신규), `docs/research/STATUS_AUDIT_2026-11-23.md`(독립 진단, 신규).
 - 미완성 브랜치: `claude/nav-engine` `11ec870`(Haven/Pearl 원본 데이터 수정, 미검증).
 

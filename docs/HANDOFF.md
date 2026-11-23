@@ -46,7 +46,7 @@ cd apps/desktop && npm run dev                     # 데스크톱(Electron)
 |---|---|---|---|
 | 미러(예전 기준) | 8/8 | 0.521 | 시드 161–320도 8/8(0.535) |
 | **실제 로스터(현재 기본)** | **6/8** | **0.460** | 시드 161–320: 6/8, 0.484. 해체 적고 시간 초과 많음 |
-| 실제 로스터, 이 정리 시점 main | WRAPUP_REAL_RESULT | | 이 문서 커밋 직전 측정 |
+| 실제 로스터, 이 정리 시점 main | 6/8 | 0.455 | 피스톨 0.444, 전멸 0.728, 해체 0.136, 폭발 0.085, 시간 초과 0.051 |
 
 - 스킬 OFF, Ascent 한 맵, 평균 미러에서만 보정됐다. **모든 보정 상수를 실제 로스터 조건에서 다시 봐야 한다**(감사 보고서 P0).
 - 능력치 영향은 크다: 최상위 vs 최하위 로스터 24전 24승(감사 실측).
@@ -110,4 +110,4 @@ main에 들어갔지만 미완성인 것:
 | ability-engine / combat-engine | 21 / 21 통과 |
 | 데스크톱 typecheck·build | 통과 |
 | 데스크톱 test:unit / test:matchday / test:engine | 58 / 34 / 4 통과 |
-| e2e / series / career / club | WRAPUP_E2E_RESULT |
+| e2e / series / career / club | 모두 통과(공용 잠금으로 하나씩 실행) |
