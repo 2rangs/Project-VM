@@ -1,0 +1,31 @@
+{
+  "mapId": "split",
+  "mapUuid": "d960549e-485c-e861-8d71-aa9d1aed12a2",
+  "patchVersion": "UNVERIFIED",
+  "description": "Game-world <-> minimap coordinate transform for Split, verbatim from valorant-api.com/v1/maps (read 2026-11-19). Same axis-swapped convention as Ascent.",
+  "units": {
+    "gameUnit": "Unreal unit (uu)",
+    "unitsPerMeter": 100
+  },
+  "transform": {
+    "xMultiplier": 7.8e-05,
+    "yMultiplier": -7.8e-05,
+    "xScalarToAdd": 0.842188,
+    "yScalarToAdd": 0.697578,
+    "forward": {
+      "minimapX": "gameY * xMultiplier + xScalarToAdd",
+      "minimapY": "gameX * yMultiplier + yScalarToAdd"
+    },
+    "inverse": {
+      "gameY": "(minimapX - xScalarToAdd) / xMultiplier",
+      "gameX": "(minimapY - yScalarToAdd) / yMultiplier"
+    }
+  },
+  "provenance": {
+    "sourceId": "valorant-api-maps",
+    "sourceUrl": "https://valorant-api.com/v1/maps",
+    "retrievedAt": "2026-11-19",
+    "evidenceType": "decoded",
+    "verified": true
+  }
+}

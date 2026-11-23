@@ -2,6 +2,7 @@
 // names and payload shapes in one typed module is what the "IPC contract" unit
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
+import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
 
 export const IPC = {
   /** renderer → main (invoke): start a simulation, resolves with the result replay. */
@@ -18,6 +19,13 @@ export const IPC = {
   sessionCmd: 'pv:session:cmd',
   /** renderer → main (invoke): stop + dispose the live session. */
   sessionStop: 'pv:session:stop',
+  // [series] best-of-N series + map veto (scripts/series-session.mts; see ./series.ts)
+  /** renderer → main (invoke): start a series (prepares mastery / scouting); resolves with the view. */
+  seriesStart: 'pv:series:start',
+  /** renderer → main (invoke): one veto command (view / chooseVeto / aiStep). */
+  seriesCmd: 'pv:series:cmd',
+  /** renderer → main (invoke): stop + dispose the series. */
+  seriesStop: 'pv:series:stop',
   /** renderer → main (invoke): read the optional local map mesh (assets/maps/<map>.glb); null when absent. */
   mapMesh: 'pv:asset:map-mesh',
 } as const;
@@ -38,6 +46,46 @@ export interface SessionStartRequest {
   teamA: { id: string; name: string }; teamB: { id: string; name: string };
   /** Teams driven by the AI (the human team is excluded). Default ['B']. */
   aiTeams?: TeamSlot[];
+  /** Pre-match options (opponent memory, minimum throw rates). Omitted = engine defaults. */
+  options?: MatchOptions;
+  /** [series] Play the NEXT MAP of the live series round by round (teams / map / seed come from the series). */
+  seriesGame?: boolean;
+}
+
+// ── Pre-match options a team / organiser chooses (match-runner MatchConfig subset).
+//    The physics tunables in MatchConfig.tuning are deliberately NOT exposed here. ──
+export interface MatchOptions {
+  /** Cross-round opponent memory. Default true; false = every round is played like the first. */
+  opponentMemory?: boolean;
+  /** Minimum throw rates (/s of holding a post-plant posture), keyed by game-data team / player id. */
+  minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> };
+}
+
+// ── Round decisions: WHY a round went the way it did. Mirrors match-runner
+//    RoundRecord.decisions (PlanSummary / OpponentRead from @pv/team-engine). ──
+export type SiteKey = 'A' | 'B';
+/** One mid-round call change. `atMs` is the round clock REMAINING; `reason` is engine English. */
+export interface PlanRevision { atMs: number; from: string; to: string; reason: string }
+export interface PlanSummary {
+  opening: string; strategy: string;
+  /** Zone id the attack is trying to plant on ("a-site"), or null. */
+  objective: string | null;
+  /** Zone id shown first on a fake, or null. */
+  feint: string | null;
+  revisions: PlanRevision[];
+}
+export interface TendencyEstimate { probability: Record<SiteKey, number>; confidence: number; samples: number }
+export interface OpponentRead { attackSite: TendencyEstimate; defenseSite: TendencyEstimate }
+export interface RoundObserved {
+  plantSite: SiteKey | null;
+  firstContactSite: SiteKey | null;
+  /** Defenders the attackers killed on each site. */
+  defendersMet: Partial<Record<SiteKey, number>>;
+}
+export interface RoundDecisions {
+  plans: Record<TeamSlot, PlanSummary | null>;
+  opponentReadBefore: Record<TeamSlot, OpponentRead | null>;
+  observed: RoundObserved;
 }
 export interface TeamEconomyState { credits: number; ultPoints: number; consecutiveLosses?: number }
 export interface SessionState {
@@ -72,6 +120,34 @@ export interface SimRunRequest {
   /** Full-match team refs (match-runner). Optional; stub/round-sim ignore them. */
   teamA?: { id: string; name: string };
   teamB?: { id: string; name: string };
+  /** Pre-match options (match-runner only; the stub / round-sim fallback ignore them). */
+  options?: MatchOptions;
+  /** [series] Play the NEXT MAP of the live series in one go (teams / map / seed come from the series). */
+  seriesGame?: boolean;
+}
+
+/**
+ * One thing the engine's navigation layer did for one player (mirrors @pv/round-simulator
+ * NavTraceEvent). `elapsedMs` is ROUND-relative. Positions are game units.
+ */
+export interface NavTraceEvent {
+  tick: number;
+  elapsedMs: number;
+  kind: 'planned' | 'replanned' | 'blocked' | 'unreachable';
+  playerId: string;
+  goalZone: string;
+  reason?: string;
+  pathLength?: number;
+  estimatedTravelMs?: number;
+  preference?: string;
+  /** The order behind the move (the policy's sourceActionId): what the route is for. */
+  intent?: string;
+  from?: { x: number; y: number; z: number };
+  waypoints?: Array<{ x: number; y: number; z: number }>;
+  zones?: string[];
+  /** Zones the planner was told to avoid, from the team's belief. */
+  avoided?: Array<{ zoneId: string; cost: number }>;
+  hazards?: Array<{ x: number; y: number; z: number; radius: number }>;
 }
 
 /** Per-round summary from @pv/match-runner (real economy / ultimate / score). */
@@ -87,6 +163,10 @@ export interface MatchRoundSummary {
   kills: { A: number; B: number };
   economy: { A: { credits: number; ultPoints: number }; B: { credits: number; ultPoints: number } };
   buys: { A: { tier: string; weapon: string }; B: { tier: string; weapon: string } };
+  /** Plans, pre-round opponent reads and observations. Absent on engines that predate it. */
+  decisions?: RoundDecisions | null;
+  /** Navigation trace of the round (developer view). Absent when the engine recorded none. */
+  nav?: NavTraceEvent[] | null;
 }
 
 export interface MatchSummary {
@@ -97,6 +177,8 @@ export interface MatchSummary {
   score: { A: number; B: number };
   wentToOvertime: boolean;
   rounds: MatchRoundSummary[];
+  /** The pre-match options the match was played with (echoed by the match scripts). */
+  options?: MatchOptions;
 }
 
 export interface SimProgress {
@@ -130,6 +212,10 @@ export interface PvBridge {
   sessionPlayNextRound(): Promise<{ round: Record<string, unknown>; state: SessionState }>;
   sessionResult(): Promise<SessionResultSummary>;
   sessionStop(): Promise<void>;
+  // [series]
+  seriesStart(req: SeriesStartRequest): Promise<SeriesView>;
+  seriesCmd(cmd: SeriesCommand): Promise<SeriesReply>;
+  seriesStop(): Promise<void>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
   readonly platform: string;

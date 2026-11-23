@@ -43,7 +43,10 @@ export default defineConfig({
   },
   renderer: {
     root: path.resolve(here, 'src/renderer'),
-    resolve: { alias },
+    // The shared ReplayViewer source lives in ../replay-viewer and imports react /
+    // pixi.js; resolve those from THIS app's node_modules so the build needs no
+    // install in apps/replay-viewer and the renderer never bundles two Reacts.
+    resolve: { alias, dedupe: ['react', 'react-dom', 'pixi.js'] },
     plugins: [react()],
     build: {
       rollupOptions: { input: path.resolve(here, 'src/renderer/index.html') },

@@ -11,7 +11,7 @@ import type { Replay } from '@pv/replay-engine';
 import type { ScreenCtx } from '../App.tsx';
 import { bridge, runtime } from '../platform.ts';
 import { parseTrace, type DecisionTrace } from '../../shared/trace.ts';
-import type { MatchSummary, TeamOrder } from '../../shared/ipc.ts';
+import type { MatchOptions, MatchSummary, TeamOrder } from '../../shared/ipc.ts';
 import { teams } from '../data.ts';
 import { ReviewPanel } from './ReviewPanel.tsx';
 import { useMatchSession } from '../useMatchSession.ts';
@@ -20,7 +20,21 @@ import { LiveMatch } from './matchday/LiveMatch.tsx';
 import { MatchHub } from './matchday/MatchHub.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx';
 
-export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
+/**
+ * [series] Optional: this Match Day plays the NEXT MAP of a live series (teams, map and seed come
+ * from the series; our team is always shown as team A). Nothing else about the screen changes.
+ */
+export interface MatchDaySeriesGame {
+  teamA: string; teamB: string;
+  /** Banner text: which map of the series this is. */
+  label: string;
+  /** Extra line under the banner (e.g. the geometry note). */
+  note?: string;
+  returnLabel: string;
+  onReturn: () => void;
+}
+
+export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: MatchDaySeriesGame }) {
   const t = useT();
   const [mode, setMode] = useState<'oneshot' | 'interactive'>('oneshot');
   const [running, setRunning] = useState(false);
@@ -34,8 +48,8 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [match, setMatch] = useState<MatchSummary | null>(null);
   const [source, setSource] = useState<string>('');
   const allTeams = useMemo(() => teams().sort((a, b) => a.name.localeCompare(b.name)), []);
-  const [teamA, setTeamA] = useState('NRG');
-  const [teamB, setTeamB] = useState('Team Heretics');
+  const [teamA, setTeamA] = useState(series?.teamA ?? 'NRG');
+  const [teamB, setTeamB] = useState(series?.teamB ?? 'Team Heretics');
   const [seed, setSeed] = useState(42);
   // Full-window live view (matchday/LiveMatch). Opens when a match starts; closing it returns
   // to the shell (MatchHub) without stopping the session.
@@ -43,6 +57,10 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const [tab, setTab] = useState<'match' | 'review'>('match');
   const [autoPlay, setAutoPlay] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
+  // Pre-match options (a team's / organiser's choice). Engine physics tunables are not exposed.
+  const [optsOpen, setOptsOpen] = useState(false);
+  const [opponentMemory, setOpponentMemory] = useState(true);
+  const [minThrow, setMinThrow] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const sess = useMatchSession();
 
   const interactive = mode === 'interactive';
@@ -50,7 +68,27 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const replay = ctx.replay;
   const refOf = (name: string) => { const x = allTeams.find((y) => y.name === name); return { id: x?.teamId ?? name, name }; };
   const lastRound = matchForView?.rounds[matchForView.rounds.length - 1];
-  const busyControls = running || sess.busy;
+  const hasPerception = !!(replay?.perception && replay.perception.length > 0);
+  const povName = (i: number) => matchForView?.teams[i === 0 ? 'A' : 'B']?.name ?? t(i === 0 ? 'md.povName.our' : 'md.povName.opp');
+  // [series] teams / seed are fixed by the series, and a map is played once.
+  const busyControls = running || sess.busy || (!!series && (match !== null || (sess.state?.finished ?? false)));
+  const lockSetup = !!series;
+  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0;
+  // Only non-default choices are sent, so a default match is the engine's own default config.
+  const matchOptions = (): MatchOptions | undefined => {
+    const teams: Record<string, number> = {};
+    if (minThrow.A > 0) teams[refOf(teamA).id] = minThrow.A;
+    if (minThrow.B > 0) teams[refOf(teamB).id] = minThrow.B;
+    const o: MatchOptions = {
+      ...(opponentMemory ? {} : { opponentMemory: false }),
+      ...(Object.keys(teams).length > 0 ? { minThrowRates: { teams } } : {}),
+    };
+    return Object.keys(o).length > 0 ? o : undefined;
+  };
+  const setThrow = (slot: 'A' | 'B', raw: string) => {
+    const v = Number(raw);
+    setMinThrow((m) => ({ ...m, [slot]: Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0 }));
+  };
 
   useEffect(() => { bridge.loadTrace('trace-scenario-01').then((j) => setTrace(parseTrace(j))).catch(() => {}); }, []);
   // In interactive mode, mirror the session's live replay into shared ctx (Dev etc.).
@@ -61,7 +99,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
     setRunning(true); setPct(0); setLog([]); setMatch(null); setSimStep(null); setRunError(null);
     try {
       const res = await bridge.runSimulation(
-        { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB) },
+        { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB), options: matchOptions(), ...(series ? { seriesGame: true } : {}) },
         (p) => {
           setPct(p.pct);
           if (p.round != null && p.score) setSimStep({ round: p.round, a: p.score.A, b: p.score.B });
@@ -77,7 +115,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
 
   async function startInteractive() {
     setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner'); setImmersive(true);
-    await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'] });
+    await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions(), ...(series ? { seriesGame: true } : {}) });
   }
   async function callTimeout() { await sess.callTimeout('A'); setOrdersOpen(true); }
   async function confirmOrders(order: TeamOrder) { await sess.setOrders('A', order); setOrdersOpen(false); }
@@ -90,6 +128,15 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
   const liveAvailable = interactive ? sess.active : !!replay && source !== '';
   if (immersive && tab === 'match' && liveAvailable) {
     return (
+      <>
+      {/* [series] the live view replaces the setup screen, so the way back to the series lives here too */}
+      {series && (
+        <div className="ser-mdbanner ser-live" data-testid="series-md-banner-live"
+          style={{ position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 50 }}>
+          <b>{series.label}</b>
+          <button className="md-run" onClick={series.onReturn} disabled={running || sess.busy} data-testid="series-return">{series.returnLabel}</button>
+        </div>
+      )}
       <LiveMatch
         replay={interactive ? sess.replay : replay}
         match={matchForView}
@@ -106,6 +153,7 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
         onExit={() => setImmersive(false)}
         onReview={matchForView ? () => { setImmersive(false); setTab('review'); } : null}
       />
+      </>
     );
   }
 
@@ -128,15 +176,25 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
         <LoadingScreen cover="window" title={t('load.session.failed')} error={sessStartError} onRetry={() => { void startInteractive(); }} onDismiss={() => setDismissedSessError(sessStartError)} />
       )}
       <div className="md-main">
+        {series && (
+          <div className="ser-mdbanner" data-testid="series-md-banner">
+            <b>{series.label}</b>
+            {series.note && <span className="muted small">ⓘ {series.note}</span>}
+            <button className="md-run" onClick={series.onReturn} disabled={running || sess.busy} data-testid="series-return">{series.returnLabel}</button>
+          </div>
+        )}
         <div className="md-teamsel">
-          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={busyControls || sess.active} data-testid="team-a">
+          <select value={teamA} onChange={(e) => setTeamA(e.target.value)} disabled={busyControls || sess.active || lockSetup} data-testid="team-a">
             {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
           </select>
           <span className="vs">vs</span>
-          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={busyControls || sess.active} data-testid="team-b">
+          <select value={teamB} onChange={(e) => setTeamB(e.target.value)} disabled={busyControls || sess.active || lockSetup} data-testid="team-b">
             {allTeams.map((x) => <option key={x.teamId} value={x.name}>{x.name}</option>)}
           </select>
-          <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={busyControls || sess.active} /></label>
+          <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={busyControls || sess.active || lockSetup} /></label>
+          <button className={`md-optsbtn ${optsOpen ? 'on' : ''}`} onClick={() => setOptsOpen((v) => !v)} data-testid="match-options-toggle" aria-expanded={optsOpen}>
+            ⚙ {t('md.opts.toggle')}{optsChanged && <span className="md-optsdot" data-testid="match-options-changed" title={t('md.opts.changed')}>●</span>}
+          </button>
           <div className="md-modetoggle" data-testid="md-mode">
             <button className={!interactive ? 'on' : ''} onClick={() => setMode('oneshot')} disabled={sess.active} data-testid="mode-oneshot">{t('md.mode.oneshot')}</button>
             <button className={interactive ? 'on' : ''} onClick={() => setMode('interactive')} disabled={running} data-testid="mode-interactive">{t('md.mode.interactive')}</button>
@@ -151,6 +209,30 @@ export function MatchDayScreen({ ctx }: { ctx: ScreenCtx }) {
             <button className="ord-cancel" onClick={() => { setAutoPlay(false); void sess.stop(); }} data-testid="session-stop">{t('md.sess.stop')}</button>
           )}
         </div>
+
+        {/* pre-match options: opponent memory + per-team minimum throw rate */}
+        {optsOpen && (
+          <div className="md-opts" data-testid="match-options">
+            <label className="md-opt">
+              <input type="checkbox" checked={opponentMemory} onChange={(e) => setOpponentMemory(e.target.checked)} disabled={busyControls || sess.active} data-testid="opt-memory" />
+              <b>{t('md.opts.memory')}</b>
+              <span className="muted small">{t('md.opts.memory.hint')}</span>
+            </label>
+            <div className="md-opt">
+              <b>{t('md.opts.throw')}</b>
+              {(['A', 'B'] as const).map((s) => (
+                <label key={s} className="md-optnum">{s === 'A' ? teamA : teamB}
+                  <input type="number" min={0} max={1} step={0.005} value={minThrow[s]} onChange={(e) => setThrow(s, e.target.value)} disabled={busyControls || sess.active} data-testid={`opt-throw-${s}`} />
+                </label>
+              ))}
+              <span className="muted small">{t('md.opts.throw.hint')}</span>
+            </div>
+            <div className="md-optfoot">
+              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
+              {sess.active && <span className="muted small">{t('md.opts.locked')}</span>}
+            </div>
+          </div>
+        )}
 
         {matchForView && (
           <div className="md-tabs" data-testid="md-tabs">

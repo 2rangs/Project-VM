@@ -67,11 +67,13 @@ function weightedPick<T>(rng: RandomSource, entries: ReadonlyArray<readonly [T, 
   return entries[entries.length - 1]![0];
 }
 
-function toCommand(cand: EvaluatedAction, profile: PlayerProfile, role: PlayerRole): ActionCommand {
+function toCommand(cand: EvaluatedAction): ActionCommand {
   const p = cand.parameters as Record<string, unknown>;
   const playerId = cand.actors[0]!;
   const zone = (k: string): ZoneId | undefined => (p[k] as ZoneId | undefined) ?? undefined;
-  const moveMode: MoveMode = role === "entry" || profile.aggression > 0.6 ? "run" : "walk";
+  // The pace of a drawn move is decided by the team policy from who can hear it and how the
+  // player weighs speed against noise (movement.ts); this is only the quiet default.
+  const moveMode: MoveMode = "walk";
   const base = { playerId, sourceActionId: cand.id } as const;
   switch (cand.schemaId) {
     case "individual.move":
@@ -119,7 +121,7 @@ export function choosePlayerCommand(
   const weighted = mine.map((c) => [c, selectionWeight(c, role, strategy, profile)] as const);
   const chosen = weightedPick(rng, weighted);
   return {
-    command: toCommand(chosen, profile, role),
+    command: toCommand(chosen),
     chosenActionId: chosen.id,
     considered: weighted.map(([c, w]) => ({ id: c.id, weight: Number(w.toFixed(4)) })),
     reason: `role=${role} strategy=${strategy} aggr=${profile.aggression.toFixed(2)} disc=${profile.discipline.toFixed(2)}`,

@@ -1,0 +1,1987 @@
+{
+  "mapId": "split",
+  "mapUuid": "d960549e-485c-e861-8d71-aa9d1aed12a2",
+  "schemaVersion": "0.2.0",
+  "patchVersion": "UNVERIFIED",
+  "sites": [
+    "A",
+    "B"
+  ],
+  "provenance": {
+    "nodePositions": {
+      "sourceId": "valorant-api-maps",
+      "sourceUrl": "https://valorant-api.com/v1/maps",
+      "retrievedAt": "2026-11-19",
+      "evidenceType": "decoded",
+      "verified": true,
+      "notes": [
+        "x,y are the callout locations returned by valorant-api; z is the measured floor height under the callout where the mesh stage found one (see each zone's positionProvenance)."
+      ]
+    },
+    "zoneTypes": "manual-approx (by callout name, tools/map-processor/mapzones.py)",
+    "graph": "measured-on-mesh for kind walk/drop; manual-approx for special edges and approx-links (see each edge)",
+    "plantZones": "derived-by-rule (callout-centred square; not the real plant boundary)",
+    "sightlines": "measured-on-mesh visibility fraction; type and smokeable derived-by-rule",
+    "soundLinks": "derived-by-rule (one link per travel connection; attenuation by distance bucket / door)",
+    "rules": {
+      "edgeStretch": 1.1,
+      "dropGain": 1.25,
+      "sightMinVisibility": 0.02,
+      "notSmokeableAtVisibility": 0.6,
+      "soundAttenuation": "<=25 m 0.2; <=50 m 0.3; >50 m or door 0.4"
+    },
+    "notes": [
+      "Art geometry only (no collision layer in the source scene): walkability and occlusion are inferred from visible meshes.",
+      "Grid distances overestimate straight walks by up to ~8 % (8-neighbour metric)."
+    ]
+  },
+  "movement": {
+    "unitsPerMeter": 100,
+    "runSpeedMetersPerSec": 6.75,
+    "walkSpeedMetersPerSec": 3.4,
+    "note": "Same model as Ascent: run 6.75 m/s documented base speed, walk ~3.4 m/s approximate (manual-approx)."
+  },
+  "zones": [
+    {
+      "id": "attacker-spawn",
+      "name": "Attacker Spawn",
+      "callout": "Attacker Side Spawn",
+      "superRegion": "Attacker Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 1902.0,
+        "y": 59.6,
+        "z": 300.2
+      },
+      "transit": false,
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 1918,
+        "y": 60,
+        "z": 300
+      }
+    },
+    {
+      "id": "defender-spawn",
+      "name": "Defender Spawn",
+      "callout": "Defender Side Spawn",
+      "superRegion": "Defender Side",
+      "zoneType": "spawn",
+      "plantable": false,
+      "position": {
+        "x": 2142.4,
+        "y": -8965.0,
+        "z": 500.0
+      },
+      "transit": false,
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 2118,
+        "y": -8990,
+        "z": 500
+      }
+    },
+    {
+      "id": "a-back",
+      "name": "A Back",
+      "callout": "A Back",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 7345.0,
+        "y": -7858.0,
+        "z": 2.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 7368,
+        "y": -7840,
+        "z": 2
+      }
+    },
+    {
+      "id": "a-lobby",
+      "name": "A Lobby",
+      "callout": "A Lobby",
+      "superRegion": "A",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": 6814.2,
+        "y": -2457.7,
+        "z": 297.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 6818,
+        "y": -2440,
+        "z": 297
+      }
+    },
+    {
+      "id": "a-main",
+      "name": "A Main",
+      "callout": "A Main",
+      "superRegion": "A",
+      "zoneType": "main",
+      "plantable": false,
+      "position": {
+        "x": 6280.0,
+        "y": -4492.8,
+        "z": 200.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 6268,
+        "y": -4490,
+        "z": 200
+      }
+    },
+    {
+      "id": "a-rafters",
+      "name": "A Rafters",
+      "callout": "A Rafters",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 5434.7,
+        "y": -6258.4,
+        "z": 550.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 5468,
+        "y": -6240,
+        "z": 550
+      }
+    },
+    {
+      "id": "a-ramps",
+      "name": "A Ramps",
+      "callout": "A Ramps",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 4330,
+        "y": -4750,
+        "z": 578.9
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 4318,
+        "y": -4740,
+        "z": 579
+      }
+    },
+    {
+      "id": "a-screens",
+      "name": "A Screens",
+      "callout": "A Screens",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 5648.7,
+        "y": -8868.6,
+        "z": 200.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 5668,
+        "y": -8890,
+        "z": 200
+      }
+    },
+    {
+      "id": "a-sewer",
+      "name": "A Sewer",
+      "callout": "A Sewer",
+      "superRegion": "A",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 4862.6,
+        "y": -2367.3,
+        "z": 57.8
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 4868,
+        "y": -2390,
+        "z": 58
+      }
+    },
+    {
+      "id": "a-site",
+      "name": "A Site",
+      "callout": "A Site",
+      "superRegion": "A",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": 6588.7,
+        "y": -6761.1,
+        "z": 100.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 6568,
+        "y": -6740,
+        "z": 100
+      }
+    },
+    {
+      "id": "a-tower",
+      "name": "A Tower",
+      "callout": "A Tower",
+      "superRegion": "A",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 4636.8,
+        "y": -6748.2,
+        "z": 651.1
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 4618,
+        "y": -6740,
+        "z": 651
+      }
+    },
+    {
+      "id": "b-alley",
+      "name": "B Alley",
+      "callout": "B Alley",
+      "superRegion": "B",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -1158.0,
+        "y": -8066.3,
+        "z": 400.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -1182,
+        "y": -8090,
+        "z": 400
+      }
+    },
+    {
+      "id": "b-back",
+      "name": "B Back",
+      "callout": "B Back",
+      "superRegion": "B",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": -3107.2,
+        "y": -7417.3,
+        "z": 303.7
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -3132,
+        "y": -7440,
+        "z": 304
+      }
+    },
+    {
+      "id": "b-garage",
+      "name": "B Garage",
+      "callout": "B Garage",
+      "superRegion": "B",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": -2190.8,
+        "y": -3848.0,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -2182,
+        "y": -3840,
+        "z": 300
+      }
+    },
+    {
+      "id": "b-link",
+      "name": "B Link",
+      "callout": "B Link",
+      "superRegion": "B",
+      "zoneType": "link",
+      "plantable": false,
+      "position": {
+        "x": -27.7,
+        "y": -2369.8,
+        "z": 350.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -32,
+        "y": -2390,
+        "z": 350
+      }
+    },
+    {
+      "id": "b-lobby",
+      "name": "B Lobby",
+      "callout": "B Lobby",
+      "superRegion": "B",
+      "zoneType": "lobby",
+      "plantable": false,
+      "position": {
+        "x": -1271.6,
+        "y": -1983.6,
+        "z": 300.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -1282,
+        "y": -1990,
+        "z": 300
+      }
+    },
+    {
+      "id": "b-rafters",
+      "name": "B Rafters",
+      "callout": "B Rafters",
+      "superRegion": "B",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": -637.1,
+        "y": -6070.6,
+        "z": 921.3
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -682,
+        "y": -6090,
+        "z": 921
+      }
+    },
+    {
+      "id": "b-site",
+      "name": "B Site",
+      "callout": "B Site",
+      "superRegion": "B",
+      "zoneType": "site",
+      "plantable": true,
+      "position": {
+        "x": -2167.2,
+        "y": -6264.8,
+        "z": 400.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": -2182,
+        "y": -6290,
+        "z": 400
+      }
+    },
+    {
+      "id": "b-stairs",
+      "name": "B Stairs",
+      "callout": "B Stairs",
+      "superRegion": "B",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 1061.5,
+        "y": -6761.0,
+        "z": 790.1
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 1068,
+        "y": -6740,
+        "z": 790
+      }
+    },
+    {
+      "id": "b-tower",
+      "name": "B Tower",
+      "callout": "B Tower",
+      "superRegion": "B",
+      "zoneType": "position",
+      "plantable": false,
+      "position": {
+        "x": 168.9,
+        "y": -5290.2,
+        "z": 900.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 168,
+        "y": -5290,
+        "z": 900
+      }
+    },
+    {
+      "id": "mid-bottom",
+      "name": "Mid Bottom",
+      "callout": "Mid Bottom",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 1922.7,
+        "y": -2899.5,
+        "z": 450.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 1918,
+        "y": -2890,
+        "z": 450
+      }
+    },
+    {
+      "id": "mid-mail",
+      "name": "Mid Mail",
+      "callout": "Mid Mail",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 1155.3,
+        "y": -4808.6,
+        "z": 764.2
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 1168,
+        "y": -4790,
+        "z": 764
+      }
+    },
+    {
+      "id": "mid-top",
+      "name": "Mid Top",
+      "callout": "Mid Top",
+      "superRegion": "Mid",
+      "zoneType": "mid",
+      "plantable": false,
+      "position": {
+        "x": 2022.0,
+        "y": -4596.9,
+        "z": 650.0
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 2018,
+        "y": -4590,
+        "z": 650
+      }
+    },
+    {
+      "id": "mid-vent",
+      "name": "Mid Vent",
+      "callout": "Mid Vent",
+      "superRegion": "Mid",
+      "zoneType": "connector",
+      "plantable": false,
+      "position": {
+        "x": 3155.2,
+        "y": -5338.5,
+        "z": 649.6
+      },
+      "positionProvenance": "x,y: valorant-api callout; z: measured-on-mesh (floor under the callout)",
+      "anchor": {
+        "x": 3168,
+        "y": -5340,
+        "z": 650
+      }
+    }
+  ],
+  "plantZones": [
+    {
+      "id": "plant-a",
+      "site": "A",
+      "zoneId": "a-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": 5988.7,
+          "y": -6161.1
+        },
+        {
+          "x": 7188.7,
+          "y": -6161.1
+        },
+        {
+          "x": 7188.7,
+          "y": -7361.1
+        },
+        {
+          "x": 5988.7,
+          "y": -7361.1
+        }
+      ]
+    },
+    {
+      "id": "plant-b",
+      "site": "B",
+      "zoneId": "b-site",
+      "provenance": "derived-by-rule (callout-centred 12 m square; the real plant boundary is NOT measured)",
+      "polygon": [
+        {
+          "x": -2767.2,
+          "y": -5664.8
+        },
+        {
+          "x": -1567.1999999999998,
+          "y": -5664.8
+        },
+        {
+          "x": -1567.1999999999998,
+          "y": -6864.8
+        },
+        {
+          "x": -2767.2,
+          "y": -6864.8
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "mid-mail",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 890,
+      "distanceMeters": 8.9,
+      "runTimeMs": 1319,
+      "walkTimeMs": 2618,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 950,
+        "distanceMeters": 9.5,
+        "runTimeMs": 1407,
+        "walkTimeMs": 2794,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [1168, -4790, 764],
+          [1518, -4690, 654],
+          [2018, -4590, 650]
+        ],
+        "lengthMeters": 8.9,
+        "runTimeMs": 1319,
+        "walkTimeMs": 2618,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-rafters",
+      "to": "b-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1373,
+      "distanceMeters": 13.73,
+      "runTimeMs": 2034,
+      "walkTimeMs": 4038,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1330,
+        "distanceMeters": 13.3,
+        "runTimeMs": 1970,
+        "walkTimeMs": 3912,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-682, -6090, 921],
+          [-682, -5840, 923],
+          [-82, -5740, 900],
+          [168, -5290, 900]
+        ],
+        "lengthMeters": 13.73,
+        "runTimeMs": 2034,
+        "walkTimeMs": 4038,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-rafters",
+      "to": "a-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1472,
+      "distanceMeters": 14.72,
+      "runTimeMs": 2181,
+      "walkTimeMs": 4329,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1370,
+        "distanceMeters": 13.7,
+        "runTimeMs": 2030,
+        "walkTimeMs": 4029,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [5468, -6240, 550],
+          [5418, -6840, 550],
+          [5268, -6890, 671],
+          [5168, -6890, 656],
+          [4618, -6740, 651]
+        ],
+        "lengthMeters": 14.72,
+        "runTimeMs": 2181,
+        "walkTimeMs": 4329,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-link",
+      "to": "b-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1501,
+      "distanceMeters": 15.01,
+      "runTimeMs": 2224,
+      "walkTimeMs": 4415,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1480,
+        "distanceMeters": 14.8,
+        "runTimeMs": 2193,
+        "walkTimeMs": 4353,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-32, -2390, 350],
+          [-232, -1990, 350],
+          [-582, -1990, 300],
+          [-1282, -1990, 300]
+        ],
+        "lengthMeters": 15.01,
+        "runTimeMs": 2224,
+        "walkTimeMs": 4415,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-back",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1516,
+      "distanceMeters": 15.16,
+      "runTimeMs": 2246,
+      "walkTimeMs": 4459,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1560,
+        "distanceMeters": 15.6,
+        "runTimeMs": 2311,
+        "walkTimeMs": 4588,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-3132, -7440, 304],
+          [-2732, -6940, 300],
+          [-2582, -6790, 361],
+          [-2482, -6640, 315],
+          [-2182, -6290, 400]
+        ],
+        "lengthMeters": 15.16,
+        "runTimeMs": 2246,
+        "walkTimeMs": 4459,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "mid-bottom",
+      "to": "mid-top",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1734,
+      "distanceMeters": 17.34,
+      "runTimeMs": 2569,
+      "walkTimeMs": 5100,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1770,
+        "distanceMeters": 17.7,
+        "runTimeMs": 2622,
+        "walkTimeMs": 5206,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [1918, -2890, 450],
+          [1968, -3790, 450],
+          [2018, -4390, 643],
+          [2018, -4590, 650]
+        ],
+        "lengthMeters": 17.34,
+        "runTimeMs": 2569,
+        "walkTimeMs": 5100,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-back",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1910,
+      "distanceMeters": 19.1,
+      "runTimeMs": 2830,
+      "walkTimeMs": 5618,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1850,
+        "distanceMeters": 18.5,
+        "runTimeMs": 2741,
+        "walkTimeMs": 5441,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [7368, -7840, 2],
+          [7368, -6740, 0],
+          [7018, -6740, 3],
+          [6568, -6740, 100]
+        ],
+        "lengthMeters": 19.1,
+        "runTimeMs": 2830,
+        "walkTimeMs": 5618,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-stairs",
+      "to": "b-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1964,
+      "distanceMeters": 19.64,
+      "runTimeMs": 2910,
+      "walkTimeMs": 5776,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1990,
+        "distanceMeters": 19.9,
+        "runTimeMs": 2948,
+        "walkTimeMs": 5853,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [1068, -6740, 790],
+          [1018, -6490, 900],
+          [918, -6390, 900],
+          [568, -6390, 900],
+          [418, -6240, 900],
+          [168, -5290, 900]
+        ],
+        "lengthMeters": 19.64,
+        "runTimeMs": 2910,
+        "walkTimeMs": 5776,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-main",
+      "to": "a-ramps",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2091,
+      "distanceMeters": 20.91,
+      "runTimeMs": 3098,
+      "walkTimeMs": 6150,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2120,
+        "distanceMeters": 21.2,
+        "runTimeMs": 3141,
+        "walkTimeMs": 6235,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [6268, -4490, 200],
+          [5618, -4490, 202],
+          [4818, -4540, 537],
+          [4568, -4540, 550],
+          [4318, -4740, 579]
+        ],
+        "lengthMeters": 20.91,
+        "runTimeMs": 3098,
+        "walkTimeMs": 6150,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-ramps",
+      "to": "a-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2031,
+      "distanceMeters": 20.31,
+      "runTimeMs": 3009,
+      "walkTimeMs": 5974,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2130,
+        "distanceMeters": 21.3,
+        "runTimeMs": 3156,
+        "walkTimeMs": 6265,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [4318, -4740, 579],
+          [4368, -5040, 650],
+          [4618, -6740, 651]
+        ],
+        "lengthMeters": 20.31,
+        "runTimeMs": 3009,
+        "walkTimeMs": 5974,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-link",
+      "to": "mid-bottom",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2074,
+      "distanceMeters": 20.74,
+      "runTimeMs": 3073,
+      "walkTimeMs": 6100,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2170,
+        "distanceMeters": 21.7,
+        "runTimeMs": 3215,
+        "walkTimeMs": 6382,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-32, -2390, 350],
+          [218, -2490, 350],
+          [418, -2590, 419],
+          [1768, -2740, 450],
+          [1918, -2890, 450]
+        ],
+        "lengthMeters": 20.74,
+        "runTimeMs": 3073,
+        "walkTimeMs": 6100,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-back",
+      "to": "a-screens",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2261,
+      "distanceMeters": 22.61,
+      "runTimeMs": 3350,
+      "walkTimeMs": 6650,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2220,
+        "distanceMeters": 22.2,
+        "runTimeMs": 3289,
+        "walkTimeMs": 6529,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [7368, -7840, 2],
+          [7018, -7940, 5],
+          [6668, -7990, 100],
+          [6218, -8090, 100],
+          [6168, -8340, 201],
+          [6118, -8590, 200],
+          [5668, -8890, 200]
+        ],
+        "lengthMeters": 22.61,
+        "runTimeMs": 3350,
+        "walkTimeMs": 6650,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-alley",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2231,
+      "distanceMeters": 22.31,
+      "runTimeMs": 3305,
+      "walkTimeMs": 6562,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2270,
+        "distanceMeters": 22.7,
+        "runTimeMs": 3363,
+        "walkTimeMs": 6676,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-1182, -8090, 400],
+          [-1382, -7390, 400],
+          [-1482, -6890, 400],
+          [-2132, -6540, 400],
+          [-2182, -6290, 400]
+        ],
+        "lengthMeters": 22.31,
+        "runTimeMs": 3305,
+        "walkTimeMs": 6562,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-main",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2312,
+      "distanceMeters": 23.12,
+      "runTimeMs": 3425,
+      "walkTimeMs": 6800,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2380,
+        "distanceMeters": 23.8,
+        "runTimeMs": 3526,
+        "walkTimeMs": 7000,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [6268, -4490, 200],
+          [6318, -5490, 199],
+          [6318, -5890, 104],
+          [6318, -6140, 100],
+          [6568, -6740, 100]
+        ],
+        "lengthMeters": 23.12,
+        "runTimeMs": 3425,
+        "walkTimeMs": 6800,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-main",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2470,
+      "distanceMeters": 24.7,
+      "runTimeMs": 3659,
+      "walkTimeMs": 7265,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2420,
+        "distanceMeters": 24.2,
+        "runTimeMs": 3585,
+        "walkTimeMs": 7118,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [6818, -2440, 297],
+          [6918, -3390, 298],
+          [6968, -4090, 200],
+          [6268, -4490, 200]
+        ],
+        "lengthMeters": 24.7,
+        "runTimeMs": 3659,
+        "walkTimeMs": 7265,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-garage",
+      "to": "b-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2435,
+      "distanceMeters": 24.35,
+      "runTimeMs": 3607,
+      "walkTimeMs": 7162,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2430,
+        "distanceMeters": 24.3,
+        "runTimeMs": 3600,
+        "walkTimeMs": 7147,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-2182, -3840, 300],
+          [-1282, -3440, 300],
+          [-1282, -1990, 300]
+        ],
+        "lengthMeters": 24.35,
+        "runTimeMs": 3607,
+        "walkTimeMs": 7162,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-screens",
+      "to": "a-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2523,
+      "distanceMeters": 25.23,
+      "runTimeMs": 3738,
+      "walkTimeMs": 7421,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2540,
+        "distanceMeters": 25.4,
+        "runTimeMs": 3763,
+        "walkTimeMs": 7471,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [5668, -8890, 200],
+          [6218, -8440, 200],
+          [6218, -8290, 190],
+          [6268, -8090, 100],
+          [6368, -6940, 100],
+          [6568, -6740, 100]
+        ],
+        "lengthMeters": 25.23,
+        "runTimeMs": 3738,
+        "walkTimeMs": 7421,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "defender-spawn",
+      "to": "b-stairs",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2817,
+      "distanceMeters": 28.17,
+      "runTimeMs": 4173,
+      "walkTimeMs": 8285,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 2840,
+        "distanceMeters": 28.4,
+        "runTimeMs": 4207,
+        "walkTimeMs": 8353,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [2118, -8990, 500],
+          [1768, -7490, 500],
+          [1118, -7240, 500],
+          [1068, -6740, 790]
+        ],
+        "lengthMeters": 28.17,
+        "runTimeMs": 4173,
+        "walkTimeMs": 8285,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-garage",
+      "to": "b-site",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3229,
+      "distanceMeters": 32.29,
+      "runTimeMs": 4784,
+      "walkTimeMs": 9497,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 3040,
+        "distanceMeters": 30.4,
+        "runTimeMs": 4504,
+        "walkTimeMs": 8941,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-2182, -3840, 300],
+          [-2682, -4340, 299],
+          [-2632, -6390, 300],
+          [-2182, -6290, 400]
+        ],
+        "lengthMeters": 32.29,
+        "runTimeMs": 4784,
+        "walkTimeMs": 9497,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "b-alley",
+      "to": "b-stairs",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3261,
+      "distanceMeters": 32.61,
+      "runTimeMs": 4831,
+      "walkTimeMs": 9591,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 3130,
+        "distanceMeters": 31.3,
+        "runTimeMs": 4637,
+        "walkTimeMs": 9206,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [-1182, -8090, 400],
+          [-882, -8090, 403],
+          [-532, -8040, 498],
+          [-332, -8040, 500],
+          [68, -7390, 500],
+          [1068, -7290, 500],
+          [1068, -7190, 519],
+          [1068, -6740, 790]
+        ],
+        "lengthMeters": 32.61,
+        "runTimeMs": 4831,
+        "walkTimeMs": 9591,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-sewer",
+      "to": "mid-bottom",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3404,
+      "distanceMeters": 34.04,
+      "runTimeMs": 5043,
+      "walkTimeMs": 10012,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 3260,
+        "distanceMeters": 32.6,
+        "runTimeMs": 4830,
+        "walkTimeMs": 9588,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [4868, -2390, 58],
+          [3768, -2490, 300],
+          [3668, -2990, 300],
+          [2618, -2940, 447],
+          [1918, -2890, 450]
+        ],
+        "lengthMeters": 34.04,
+        "runTimeMs": 5043,
+        "walkTimeMs": 10012,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-screens",
+      "to": "a-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3792,
+      "distanceMeters": 37.92,
+      "runTimeMs": 5618,
+      "walkTimeMs": 11153,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 3760,
+        "distanceMeters": 37.6,
+        "runTimeMs": 5570,
+        "walkTimeMs": 11059,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [5668, -8890, 200],
+          [5118, -8740, 200],
+          [4968, -8640, 209],
+          [4718, -8390, 347],
+          [4468, -8190, 360],
+          [4018, -8140, 498],
+          [3818, -8090, 500],
+          [3868, -7590, 550],
+          [4218, -7240, 650],
+          [4618, -6790, 651],
+          [4618, -6740, 651]
+        ],
+        "lengthMeters": 37.92,
+        "runTimeMs": 5618,
+        "walkTimeMs": 11153,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "defender-spawn",
+      "to": "a-tower",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 3787,
+      "distanceMeters": 37.87,
+      "runTimeMs": 5610,
+      "walkTimeMs": 11138,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 3770,
+        "distanceMeters": 37.7,
+        "runTimeMs": 5585,
+        "walkTimeMs": 11088,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [2118, -8990, 500],
+          [2668, -8190, 500],
+          [3818, -8090, 500],
+          [3868, -7590, 550],
+          [4218, -7240, 650],
+          [4618, -6790, 651],
+          [4618, -6740, 651]
+        ],
+        "lengthMeters": 37.87,
+        "runTimeMs": 5610,
+        "walkTimeMs": 11138,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "b-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 4070,
+      "distanceMeters": 40.7,
+      "runTimeMs": 6030,
+      "walkTimeMs": 11971,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 4110,
+        "distanceMeters": 41.1,
+        "runTimeMs": 6089,
+        "walkTimeMs": 12088,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [1918, 60, 300],
+          [1168, -690, 301],
+          [-182, -790, 300],
+          [-1132, -1640, 300],
+          [-1282, -1990, 300]
+        ],
+        "lengthMeters": 40.7,
+        "runTimeMs": 6030,
+        "walkTimeMs": 11971,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "attacker-spawn",
+      "to": "a-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 5814,
+      "distanceMeters": 58.14,
+      "runTimeMs": 8613,
+      "walkTimeMs": 17100,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 6020,
+        "distanceMeters": 60.2,
+        "runTimeMs": 8919,
+        "walkTimeMs": 17706,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [1918, 60, 300],
+          [2818, -640, 300],
+          [4118, -840, 300],
+          [4968, -1590, 300],
+          [6618, -1940, 300],
+          [6818, -2440, 297]
+        ],
+        "lengthMeters": 58.14,
+        "runTimeMs": 8613,
+        "walkTimeMs": 17100,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-rafters",
+      "to": "a-site",
+      "bidirectional": false,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1649,
+      "distanceMeters": 16.49,
+      "runTimeMs": 2443,
+      "walkTimeMs": 4850,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "drop",
+      "note": "one-way: a drop down from the higher zone",
+      "beforeRoute": {
+        "distanceUnits": 1450,
+        "distanceMeters": 14.5,
+        "runTimeMs": 2148,
+        "walkTimeMs": 4265,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [5468, -6240, 550],
+          [5618, -6440, 548],
+          [5668, -6440, 100],
+          [6568, -6740, 100]
+        ],
+        "lengthMeters": 16.49,
+        "runTimeMs": 2443,
+        "walkTimeMs": 4850,
+        "drops": 1,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-lobby",
+      "to": "a-sewer",
+      "bidirectional": false,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2987,
+      "distanceMeters": 29.87,
+      "runTimeMs": 4425,
+      "walkTimeMs": 8785,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "drop",
+      "note": "one-way: a drop down from the higher zone",
+      "beforeRoute": {
+        "distanceUnits": 2760,
+        "distanceMeters": 27.6,
+        "runTimeMs": 4089,
+        "walkTimeMs": 8118,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [6818, -2440, 297],
+          [6718, -2940, 297],
+          [6668, -2990, 298],
+          [6168, -2840, 299],
+          [6118, -2840, -94],
+          [5768, -2390, -100],
+          [5468, -2390, -92],
+          [4868, -2390, 58]
+        ],
+        "lengthMeters": 29.87,
+        "runTimeMs": 4425,
+        "walkTimeMs": 8785,
+        "drops": 1,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
+      "from": "a-ramps",
+      "to": "mid-vent",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1316,
+      "distanceMeters": 13.16,
+      "runTimeMs": 1949,
+      "walkTimeMs": 3870,
+      "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)",
+      "kind": "approx-link",
+      "routeStatus": "straight (no walkable route on the grid)"
+    }
+  ],
+  "sightlines": [
+    {
+      "a": "a-back",
+      "b": "a-rafters",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.069,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-back",
+      "b": "a-screens",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.049,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-back",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.09,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-back",
+      "b": "a-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.021,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-main",
+      "type": "direct",
+      "smokeable": true,
+      "visibility": 0.049,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-main",
+      "b": "a-rafters",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.09,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-main",
+      "b": "a-ramps",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.41,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-main",
+      "b": "a-screens",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.181,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-main",
+      "b": "a-site",
+      "type": "direct",
+      "smokeable": true,
+      "visibility": 0.285,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-screens",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.285,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": false,
+      "visibility": 0.931,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.319,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-ramps",
+      "b": "a-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.514,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-screens",
+      "b": "a-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.243,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "a-site",
+      "b": "a-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.083,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-alley",
+      "b": "b-rafters",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.035,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-alley",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.042,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-back",
+      "b": "b-garage",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.201,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-back",
+      "b": "b-rafters",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.208,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-back",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.583,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-garage",
+      "b": "b-lobby",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.062,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-garage",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.097,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-link",
+      "b": "b-lobby",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.132,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-link",
+      "b": "mid-bottom",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.347,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-rafters",
+      "b": "b-site",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.479,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-rafters",
+      "b": "b-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.375,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-rafters",
+      "b": "mid-mail",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.056,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-stairs",
+      "b": "b-tower",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.069,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-tower",
+      "b": "mid-mail",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.208,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "b-tower",
+      "b": "mid-top",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.09,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-mail",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.028,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-top",
+      "type": "direct",
+      "smokeable": false,
+      "visibility": 0.75,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-vent",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.188,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-mail",
+      "b": "mid-top",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.458,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-mail",
+      "b": "mid-vent",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.056,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    },
+    {
+      "a": "mid-top",
+      "b": "mid-vent",
+      "type": "angle",
+      "smokeable": true,
+      "visibility": 0.222,
+      "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
+    }
+  ],
+  "soundLinks": [
+    {
+      "a": "mid-mail",
+      "b": "mid-top",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-rafters",
+      "b": "b-tower",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-tower",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-link",
+      "b": "b-lobby",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-back",
+      "b": "b-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "mid-bottom",
+      "b": "mid-top",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-back",
+      "b": "a-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-stairs",
+      "b": "b-tower",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-main",
+      "b": "a-ramps",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-ramps",
+      "b": "a-tower",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-link",
+      "b": "mid-bottom",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-back",
+      "b": "a-screens",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-alley",
+      "b": "b-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-main",
+      "b": "a-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-main",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-garage",
+      "b": "b-lobby",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-screens",
+      "b": "a-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-stairs",
+      "b": "defender-spawn",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-garage",
+      "b": "b-site",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "b-alley",
+      "b": "b-stairs",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-sewer",
+      "b": "mid-bottom",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-screens",
+      "b": "a-tower",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-tower",
+      "b": "defender-spawn",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "attacker-spawn",
+      "b": "b-lobby",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "attacker-spawn",
+      "attenuation": 0.4,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-rafters",
+      "b": "a-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-lobby",
+      "b": "a-sewer",
+      "attenuation": 0.3,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "a-ramps",
+      "b": "mid-vent",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    }
+  ],
+  "routes": {
+    "provenance": "measured-on-mesh",
+    "source": "tools/map-mesh/pipeline/route_map.py",
+    "edgesWithWalkableRoute": 27,
+    "edgesFlaggedStraight": [
+      "a-ramps->mid-vent"
+    ],
+    "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
+  },
+  "mechanics": [
+    {
+      "kind": "rope",
+      "name": "Vertical ropes (A Sewer/Ramps side, Mid Vent, B Tower)",
+      "represented": false,
+      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ],
+  "dataQuality": {
+    "edgeKinds": {
+      "walk": 25,
+      "drop": 2,
+      "approx-link": 1
+    },
+    "approxLinks": [
+      "a-ramps<->mid-vent"
+    ],
+    "zonesWithoutMeasuredSightlines": [],
+    "doorsNotAttached": [],
+    "zonesOnMainWalkComponent": "23/24"
+  },
+  "generatedBy": "tools/map-processor/build_map.py"
+}

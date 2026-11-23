@@ -1,0 +1,110 @@
+{
+ "note": "Blender scene -> game coordinates. The scene is a plain export of the game level: uniform scale and a Y flip, no rotation, no offset. The candidate was chosen from all axis-aligned candidates by how many valorant-api callouts stand on a walkable floor and how closely the callout height matches that floor.",
+ "forward": "gameX_uu = signX * blender{x|y} / blenderUnitsPerUU ; gameY_uu = signY * blender{y|x} / blenderUnitsPerUU ; gameZ_uu = blenderZ / blenderUnitsPerUU",
+ "chosen": {
+  "blenderUnitsPerUU": 0.01,
+  "swapXY": false,
+  "signX": 1,
+  "signY": -1
+ },
+ "calloutCount": 24,
+ "calloutsOnWalkableFloorWithin1.5m": 24,
+ "calloutHeightVsFloor": {
+  "medianOffset_m": -0.0,
+  "medianAbsDeviationAroundOffset_m": 0.0,
+  "calloutHeightIsFloorHeight": true,
+  "calloutHeightUsableForLayerChoice": true,
+  "perCallout_m": {
+   "attacker-spawn": 0.002,
+   "defender-spawn": -0.0,
+   "a-back": 0.0,
+   "a-lobby": -0.007,
+   "a-main": 0.0,
+   "a-rafters": -0.0,
+   "a-ramps": 0.044,
+   "a-screens": -0.0,
+   "a-sewer": -0.012,
+   "a-site": -0.0,
+   "a-tower": -0.0,
+   "b-alley": 0.0,
+   "b-back": 0.0,
+   "b-garage": -0.0,
+   "b-link": 0.0,
+   "b-lobby": -0.0,
+   "b-rafters": 0.0,
+   "b-site": -0.0,
+   "b-stairs": 0.112,
+   "b-tower": 0.0,
+   "mid-bottom": 0.0,
+   "mid-mail": -0.0,
+   "mid-top": 0.0,
+   "mid-vent": -0.001
+  }
+ },
+ "shiftSensitivity": [
+  {
+   "shift_m": 0.0,
+   "calloutsOverWalkableFloor": 24.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 24.0
+  },
+  {
+   "shift_m": 1.0,
+   "calloutsOverWalkableFloor": 24.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 23.0
+  },
+  {
+   "shift_m": 2.0,
+   "calloutsOverWalkableFloor": 24.0,
+   "calloutsAtFloorHeight(\u00b10.3m)": 21.0
+  },
+  {
+   "shift_m": 4.0,
+   "calloutsOverWalkableFloor": 23.5,
+   "calloutsAtFloorHeight(\u00b10.3m)": 17.5
+  },
+  {
+   "shift_m": 8.0,
+   "calloutsOverWalkableFloor": 22.5,
+   "calloutsAtFloorHeight(\u00b10.3m)": 12.0
+  }
+ ],
+ "topCandidates": [
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": false,
+   "signX": 1,
+   "signY": -1,
+   "calloutsOnFloor": 24,
+   "medianAbsDz_m": 0.0,
+   "within0.05m": 23
+  },
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": false,
+   "signX": -1,
+   "signY": -1,
+   "calloutsOnFloor": 14,
+   "medianAbsDz_m": 1.0415,
+   "within0.05m": 3
+  },
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": true,
+   "signX": 1,
+   "signY": -1,
+   "calloutsOnFloor": 14,
+   "medianAbsDz_m": 0.7253,
+   "within0.05m": 2
+  },
+  {
+   "blenderUnitsPerUU": 0.01,
+   "swapXY": true,
+   "signX": -1,
+   "signY": -1,
+   "calloutsOnFloor": 5,
+   "medianAbsDz_m": 0.0034,
+   "within0.05m": 3
+  }
+ ],
+ "provenance": "measured-on-mesh"
+}

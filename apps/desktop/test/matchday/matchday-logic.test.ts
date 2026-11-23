@@ -87,8 +87,10 @@ test('timeline: arrivals become travel segments (run when there was time to wait
   assert.equal(atk4.spawnZone, 'attacker-spawn');
   assert.deepEqual(atk4.hops.map((h) => h.toZone), ['b-lobby', 'b-main', 'b-site']);
   const [toLobby, toMain] = atk4.hops;
-  // spawn → b-lobby takes the whole gap (quantised to engine ticks)
-  assert.equal(toLobby.departMs, r2.startMs);
+  // spawn → b-lobby takes the whole gap (quantised to engine ticks). The fixture was recorded by
+  // the zone-hop engine with the hand-timed edges; the navgraph now carries measured route times,
+  // so the reconstructed departure may sit one tick after the round start.
+  assert.ok(toLobby.departMs - r2.startMs >= 0 && toLobby.departMs - r2.startMs <= 100, `departs with the round (${toLobby.departMs - r2.startMs} ms)`);
   // held b-lobby for a minute, then ran the 6.6 s edge: departure is arrival − run time
   const edge = nav.edge('b-lobby', 'b-main')!;
   assert.ok(Math.abs((toMain.arriveMs - toMain.departMs) - edge.runTimeMs) < 1);

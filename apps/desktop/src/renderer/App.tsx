@@ -15,12 +15,14 @@ import { NAV } from './nav.ts';
 import { useT } from './i18n/index.tsx';
 import { MatchDayScreen } from './screens/MatchDayScreen.tsx';
 import { SquadScreen } from './screens/SquadScreen.tsx';
+import { ScoutingScreen } from './screens/ScoutingScreen.tsx';
 import { OpponentScreen } from './screens/OpponentScreen.tsx';
 import { TacticsScreen } from './screens/TacticsScreen.tsx';
 import { AgentSelectScreen } from './screens/AgentSelectScreen.tsx';
 import { DevScreen } from './screens/DevScreen.tsx';
 import { AboutScreen } from './screens/AboutScreen.tsx';
 import { Placeholder } from './screens/Placeholder.tsx';
+import { SeriesScreen } from './screens/series/SeriesScreen.tsx'; // [series]
 
 export type DetailPanel = { title: string; body: ReactNode } | null;
 
@@ -67,7 +69,9 @@ export default function App() {
 
         <main className="maincontent" data-testid={`screen-${route}`}>
           {route === 'match-day' && <MatchDayScreen ctx={ctx} />}
+          {route === 'veto' && <SeriesScreen ctx={ctx} />}
           {route === 'squad' && <SquadScreen setDetail={setDetail} />}
+          {route === 'scouting' && <ScoutingScreen setDetail={setDetail} />}
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}

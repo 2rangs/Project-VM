@@ -62,12 +62,16 @@ export class ScriptedPolicy implements DecisionPolicy {
       }
       // deploy utility mid-execute (once, while approaching but not yet on site). Throw it AT the
       // site (targetZone) — not on self — so a smoke/flash covers the defenders' angle instead of
-      // blinding the attacker's own vision. abilities is PV-3's AbilityInventory (R2-B).
-      if (this.opts.useUtility && zone !== site) {
+      // blinding the attacker's own vision. abilities is PV-3's AbilityInventory (R2-B). An
+      // ability with no catalogued range does not cross the map (simulator withinThrowReach), so
+      // it is thrown AHEAD: at the farthest zone of the route that is within reach from here (next
+      // to this zone or in its sight) and is the site or looks onto it.
+      const utilTarget = this.opts.useUtility && zone !== site ? this.throwAhead(zone, site) : undefined;
+      if (utilTarget) {
         const pool = [...p.abilities.basic, ...(p.abilities.signature ? [p.abilities.signature] : [])];
         const ready = pool.find((a) => a.charges > 0);
         if (ready && p.id !== carrierId) {
-          commands.push({ playerId: p.id, kind: "useAbility", abilityId: ready.abilityId, targetZone: site });
+          commands.push({ playerId: p.id, kind: "useAbility", abilityId: ready.abilityId, targetZone: utilTarget });
           continue;
         }
       }
@@ -81,6 +85,17 @@ export class ScriptedPolicy implements DecisionPolicy {
     }
     const strategy: TeamStrategy = site === "b-site" ? "bExecute" : "aExecute";
     return { strategy, roles, commands };
+  }
+
+  /** The farthest zone on the route to `site` that is in throw reach of `from` and is the site or sees it. */
+  private throwAhead(from: string, site: string): string | undefined {
+    const route = this.spatial.findPath(from, site)?.path ?? [];
+    for (let i = route.length - 1; i >= 1; i--) {
+      const z = route[i]!;
+      const inReach = this.spatial.hasLineOfSight(from, z) || this.spatial.findPath(from, z)?.path.length === 2;
+      if (inReach && (z === site || this.spatial.hasLineOfSight(z, site))) return z;
+    }
+    return undefined;
   }
 
   private defense(view: PolicyView): PolicyDecision {

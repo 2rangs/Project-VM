@@ -66,11 +66,14 @@ describe("pathfinding", () => {
   });
 
   it("allows a spawn waypoint only when explicitly opted in", () => {
-    const strict = engine.findPath("a-site", "b-site", "run")!;
-    const loose = engine.findPath("a-site", "b-site", "run", { allowNonTransitWaypoints: true })!;
-    // the spawn-cutting route is shorter (straight-line) but disallowed by default
+    // A Lobby -> B Lobby: the two attacker lanes meet at the attacker spawn, so cutting through
+    // it is far shorter than going around through mid — but disallowed by default. (With the
+    // measured walkable routes the A Site -> B Site path no longer gains from a spawn cut.)
+    const strict = engine.findPath("a-lobby", "b-lobby", "run")!;
+    const loose = engine.findPath("a-lobby", "b-lobby", "run", { allowNonTransitWaypoints: true })!;
+    expect(strict.path).not.toContain("attacker-spawn");
     expect(loose.distanceUnits).toBeLessThan(strict.distanceUnits);
-    expect(loose.path).toContain("defender-spawn");
+    expect(loose.path).toContain("attacker-spawn");
   });
 
   it("still allows a spawn as the start or goal of a path", () => {

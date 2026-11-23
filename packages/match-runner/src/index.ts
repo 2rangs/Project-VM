@@ -32,7 +32,7 @@ export type {
   AttackStrategyOrder,
   DefenseStrategyOrder,
 } from "./orders.js";
-export { resolveTeamRef, teamSkills, isKnownTeam } from "./teams.js";
+export { resolveTeamRef, teamSkills, isKnownTeam, type RosterPlayer } from "./teams.js";
 export {
   newTeamEconomy,
   decideBuy,
@@ -44,3 +44,37 @@ export {
 } from "./economy.js";
 export type { TeamEconomy, BuyDecision, BuyTier, EconomyCall } from "./economy.js";
 export { renderMatchSummary, renderDecisionTrace } from "./report.js";
+// --- Series layer: veto, map mastery, scouting, best-of-N (docs/SERIES_AND_VETO.md) ---
+export { runSeries, createSeriesSession, prepareSeries, seriesGameLogs, renderSeriesSummary, sideInRound, SIMULATED_GEOMETRY, VETO_BELIEF } from "./series.js";
+export type {
+  SeriesConfig,
+  SeriesTeamConfig,
+  SeriesPreparation,
+  SeriesGameResult,
+  SeriesResult,
+  SeriesState,
+  SeriesSession,
+  SeriesSessionOptions,
+  SeriesGameSession,
+} from "./series.js";
+export {
+  VetoProcess,
+  recommendVeto,
+  recommendSide,
+  seriesWinProbability,
+  validateVetoFormat,
+  vctGrandFinalBo5,
+  VCT_BO1,
+  VCT_BO3,
+  VCT_BO5,
+  VETO_FORMATS,
+  MAP_POOLS,
+  DEFAULT_MAP_POOL,
+} from "./veto.js";
+export type { VetoStep, VetoFormat, VetoMap, VetoAction, VetoPrompt, VetoBeliefs, VetoRecommendation, SeriesTeam, SeriesFormatId, StartSide } from "./veto.js";
+export { mapMastery, masteryEngineInputs, leagueMasteryReference, experienceHalfGames, defaultLineup, MASTERY_MODEL, MASTERY_EFFECTS } from "./mastery.js";
+export type { MapMastery, MasteryComponent, MasteryRequest, MasteryApplication } from "./mastery.js";
+export { buildScoutingReport, opponentPriorFromLogs, siteEvidence, teamGameLog, estimateOpponentMastery, rosterUptake, gamesReviewed, SCOUTING_MODEL } from "./scouting.js";
+export type { ScoutingReport, ScoutingRequest, ScoutingQuality, ScoutedMap, ScoutedPlayer, SiteEvidence, TeamGameLog, TeamRoundLog, PlayerGameLine, WeightedLog } from "./scouting.js";
+export { gamePlanPrior, applyTraitDelta } from "./team-inputs.js";
+export type { TeamMatchInputs, GamePlan, SeriesGameContext } from "./team-inputs.js";

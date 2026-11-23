@@ -29,6 +29,8 @@ export interface TendencyEstimate<K extends string> {
 /** A decaying categorical tendency over a fixed set of categories. */
 export class Tendency<K extends string> {
   private readonly counts: Record<K, number>;
+  /** [series] Standing pseudo-counts (a conviction held before the match): never decayed. */
+  private readonly standing: Record<K, number>;
 
   constructor(
     private readonly keys: readonly K[],
@@ -36,6 +38,7 @@ export class Tendency<K extends string> {
     private readonly decay = 0.85,
   ) {
     this.counts = Object.fromEntries(keys.map((k) => [k, 0])) as Record<K, number>;
+    this.standing = Object.fromEntries(keys.map((k) => [k, 0])) as Record<K, number>;
   }
 
   /** Record one observation of `key` (optionally fractional weight); older evidence fades first. */
@@ -45,16 +48,33 @@ export class Tendency<K extends string> {
   }
 
   estimate(): TendencyEstimate<K> {
-    const n = this.keys.reduce((s, k) => s + this.counts[k], 0);
+    // [series] `standing` is 0 unless seeded, so an unseeded tendency estimates exactly as before.
+    const n = this.keys.reduce((s, k) => s + this.counts[k] + this.standing[k], 0);
     const denom = n + this.keys.length * this.priorPseudoCount;
     const probability = Object.fromEntries(
-      this.keys.map((k) => [k, (this.counts[k] + this.priorPseudoCount) / denom]),
+      this.keys.map((k) => [k, (this.counts[k] + this.standing[k] + this.priorPseudoCount) / denom]),
     ) as Record<K, number>;
     return { probability, confidence: denom === 0 ? 0 : n / denom, samples: n };
   }
 
   snapshot(): Readonly<Record<K, number>> {
     return { ...this.counts };
+  }
+
+  /**
+   * [series] Add pseudo-observations held BEFORE the first round (docs/SERIES_AND_VETO.md §4):
+   *  - evidence-like (default): added to the decaying counts WITHOUT fading what is there, so it
+   *    is worth exactly that many past observations and fades like them as rounds are observed;
+   *  - `standing`: a conviction that does not fade — in-match evidence has to outweigh it.
+   * Negative / non-finite entries are ignored. The estimate formula is unchanged.
+   */
+  seed(counts: Readonly<Partial<Record<K, number>>>, standing = false): void {
+    for (const k of this.keys) {
+      const c = counts[k];
+      if (typeof c !== "number" || !Number.isFinite(c) || c <= 0) continue;
+      if (standing) this.standing[k] += c;
+      else this.counts[k] += c;
+    }
   }
 }
 
@@ -68,6 +88,11 @@ export interface RoundObservation {
   readonly firstContactSite?: SiteKey | null;
   /** Opponent defending: how many of their players we met on each site. */
   readonly defendersMet?: Readonly<Partial<Record<SiteKey, number>>>;
+  /**
+   * Opponent attacking: the site where their presence first showed to us this round (two or more
+   * bodies heard or seen there). Compared with the plant site it tells a fake from a straight hit.
+   */
+  readonly shownSite?: SiteKey | null;
   /** Opponent defending: they gave up a post-plant (we saw the spike detonate with them alive). */
   readonly savedPostPlant?: boolean;
 }
@@ -77,7 +102,18 @@ export interface OpponentRead {
   readonly attackSite: TendencyEstimate<SiteKey>;
   /** Where the opponent tends to put its defenders. */
   readonly defenseSite: TendencyEstimate<SiteKey>;
+  /**
+   * How often the opponent fakes: of the rounds where it showed on one site and planted, the share
+   * where the plant was on ANOTHER site. A Beta–Bernoulli estimate around a base rate,
+   *     rate = (n_fake + φ₀ · s) / (N + s),   confidence = N / (N + s)
+   * with φ₀ = FAKE_BASE_RATE and s the prior strength (smaller for a sharper team). Optional so a
+   * read built without it means "no information" (the base rate is used).
+   */
+  readonly fakeRate?: { readonly rate: number; readonly confidence: number; readonly samples: number };
 }
+
+/** Prior fake rate before any round is observed (the attack's own opening mix is about 0.2). */
+export const FAKE_BASE_RATE = 0.2;
 
 /**
  * One team's model of its opponent. `patternRecognition` (0..1, a roster trait) sets how quickly
@@ -86,6 +122,8 @@ export interface OpponentRead {
 export class OpponentModel {
   private readonly attackSite: Tendency<SiteKey>;
   private readonly defenseSite: Tendency<SiteKey>;
+  private readonly fakes: Tendency<"fake" | "straight">;
+  private readonly priorStrength: number;
   private rounds = 0;
 
   constructor(patternRecognition = 0.6, decay = 0.85) {
@@ -93,6 +131,8 @@ export class OpponentModel {
     const prior = Math.min(2, Math.max(0.25, 1 - (patternRecognition - 0.6) * 1.25));
     this.attackSite = new Tendency<SiteKey>(["A", "B"], prior, decay);
     this.defenseSite = new Tendency<SiteKey>(["A", "B"], prior, decay);
+    this.fakes = new Tendency<"fake" | "straight">(["fake", "straight"], prior, decay);
+    this.priorStrength = 2 * prior;
   }
 
   /** Fold one finished round's observations in. Rounds with nothing observed teach nothing. */
@@ -102,6 +142,8 @@ export class OpponentModel {
       // The plant is the firm fact; a first contact without a plant is weaker evidence (could be a fake).
       if (obs.plantSite) this.attackSite.observe(obs.plantSite, 1);
       else if (obs.firstContactSite) this.attackSite.observe(obs.firstContactSite, 0.5);
+      // Showed on one site, planted on another: a fake. Showed and planted on the same: straight.
+      if (obs.shownSite && obs.plantSite) this.fakes.observe(obs.shownSite === obs.plantSite ? "straight" : "fake");
     } else {
       const met = obs.defendersMet ?? {};
       const total = (met.A ?? 0) + (met.B ?? 0);
@@ -114,12 +156,38 @@ export class OpponentModel {
   }
 
   read(): OpponentRead {
-    return { attackSite: this.attackSite.estimate(), defenseSite: this.defenseSite.estimate() };
+    const f = this.fakes.snapshot();
+    const n = f.fake + f.straight;
+    const s = this.priorStrength;
+    return {
+      attackSite: this.attackSite.estimate(),
+      defenseSite: this.defenseSite.estimate(),
+      fakeRate: { rate: (f.fake + FAKE_BASE_RATE * s) / (n + s), confidence: n / (n + s), samples: n },
+    };
   }
 
   get roundsObserved(): number {
     return this.rounds;
   }
+
+  /**
+   * [series] Start the match with prior knowledge of the opponent (a scouting report, or the
+   * team's own game plan) instead of a blank model. The prior is pseudo-observations in the same
+   * Dirichlet estimate, so its confidence is N / (N + K·α) like any other evidence: a thin report
+   * barely tilts the opening call, and what the opponent actually does in the match overrides it.
+   */
+  seed(prior: OpponentPrior, options: { readonly standing?: boolean } = {}): void {
+    if (prior.attackSite) this.attackSite.seed(prior.attackSite, options.standing ?? false);
+    if (prior.defenseSite) this.defenseSite.seed(prior.defenseSite, options.standing ?? false);
+  }
+}
+
+/** [series] Pseudo-observation counts per tendency (see OpponentModel.seed). */
+export interface OpponentPrior {
+  /** Where the opponent attacks: pseudo-counts of plants per site. */
+  readonly attackSite?: Readonly<Partial<Record<SiteKey, number>>>;
+  /** Where the opponent defends: pseudo-counts of defenders met per site. */
+  readonly defenseSite?: Readonly<Partial<Record<SiteKey, number>>>;
 }
 
 /**

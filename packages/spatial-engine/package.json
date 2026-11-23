@@ -2,7 +2,7 @@
   "name": "@pv/spatial-engine",
   "version": "0.1.0",
   "private": true,
-  "description": "PROJECT V spatial engine: Ascent tactical zone graph, A* pathfinding, plant-area and line-of-sight queries, coordinate transform.",
+  "description": "PROJECT V spatial engine: per-map tactical zone graph, navigation roadmap and geometric pathfinding (Navigator), node-to-node line of sight, plant-area queries, coordinate transform, map registry.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

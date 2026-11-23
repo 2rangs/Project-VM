@@ -57,3 +57,59 @@ The committed NavMesh is **partially connected** (main component ~27 % of the
 map) because the source `.blend` is art geometry with no collision/blockout
 layer. See `docs/research/ascent-mesh.md` §7–§8 for the measured evidence and the
 options to reach full connectivity.
+
+## Any map (generalised pipeline, 2026-11-19)
+
+The Ascent steps above are kept as the record of how Ascent was calibrated. For every other
+map — and for an Ascent control run — use the map-agnostic scripts. Geometry stays outside
+the repo; only numbers, the schematic PNG, the roadmap (points and segments) and the visibility bits are
+committed — no mesh, no walk grid (`docs/LICENSE_AUDIT.md` §2.0b). Full method, evidence and
+caveats: `docs/research/MAPS_DATA.md`.
+
+```bash
+BL=/path/to/Blender
+PY=/path/to/Blender.app/Contents/Resources/4.2/python/bin/python3.11   # any Python with numpy
+D=/path/OUTSIDE/the/repo/derived
+
+# 1. one triangle soup per scene (positions, normals, object + material ids) — ~5 s
+$BL --background --factory-startup --python tools/map-mesh/blender/extract-map.py -- \
+  --blend /path/Bind.blend --out-dir $D/bind
+
+# 2. transform check, 2.5D walk grid, zone adjacency + travel distances, LoS matrix
+#    -> datasets/spatial/bind/mesh/*.json   (--debug / --no-los for inspection)
+$PY -I tools/map-mesh/pipeline/measure_map.py --map bind --derived $D/bind
+
+# 3. navgraph + coordinate system (pure JSON -> JSON, no geometry needed)
+python3 -I tools/map-processor/build_map.py bind          # or --all
+
+# 4. schematic PNG (graph over the walkable footprint, minimap orientation)
+$PY -I tools/map-mesh/pipeline/render_map.py --map bind --derived $D/bind
+
+# 4b. walkable route (polyline) for every edge -> mesh/bind-routes.json, then merge into the navgraph
+$PY -I tools/map-mesh/pipeline/route_map.py --map bind --derived $D/bind
+python3 -I tools/map-processor/build_map.py bind          # Ascent: python3 -I tools/map-processor/apply_routes.py ascent
+
+# 4c. navigation roadmap (what the simulator moves players on) -> datasets/spatial/bind/bind.nav.json
+$PY -I tools/map-mesh/pipeline/nav_map.py --map bind --derived $D/bind
+
+# 4d. line of sight between roadmap points -> datasets/spatial/bind/bind.vis.json   (Ascent: ~2 min on six cores)
+for i in 0 1 2 3 4 5; do $PY -I tools/map-mesh/pipeline/vis_map.py --map bind --derived $D/bind --part $i/6 & done; wait
+$PY -I tools/map-mesh/pipeline/vis_map.py --map bind --derived $D/bind --merge 6
+
+# 5. independent orientation check from named collections
+python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-landmark-check.json
+```
+
+- `pipeline/mapgeom.py`   — surface sampling, voxel occupancy, walk grid, Dijkstra, ray index
+- `pipeline/measure_map.py` — the measurement stage (reuses `los/los.py`'s tested ray/triangle core)
+- `pipeline/route_map.py`  — A* + string-pull + exact cell-by-cell validation of one polyline per edge
+  (`docs/research/MAP_ROUTES.md`); writes `<derived>/walkable.json` for the optional local tests
+- `pipeline/nav_map.py`    — the navigation roadmap: stand points and walkable segments, each segment walked
+  cell by cell and ray-checked; reaches exactly what the walk grid reaches (`docs/research/NAVIGATION_ENGINE.md` §3)
+- `pipeline/vis_map.py`    — one line-of-sight bit per pair of roadmap points (all eleven maps)
+- `pipeline/render_map.py`, `pipeline/pngdraw.py` — dependency-free PNG schematic
+- `../map-processor/mapzones.py` — callout -> zone rule; `../map-processor/build_map.py` — rules + provenance
+
+Key finding: every scene is a plain export, **game_uu = 100 * (x, -y, z)** of Blender
+coordinates. The 6.6 m-RMS affine recorded for Ascent came from coarse region anchors; the
+relation is exact, which is what makes zone-level line of sight usable.

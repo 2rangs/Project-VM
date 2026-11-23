@@ -16,6 +16,10 @@ export {
   toPerceptionAbilityStates,
   deniedZoneIds,
   activeAreaDenials,
+  activeGroundPatches,
+  deployedEffects,
+  visionBlockedZones,
   revealedEnemies,
   combatFlashBlindMs,
 } from "./adapters.js";
+export type { GroundPatch, DeployedEffect } from "./adapters.js";

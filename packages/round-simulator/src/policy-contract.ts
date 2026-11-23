@@ -90,6 +90,16 @@ export interface ActionCommand {
    * hold/peek, `targetZone` is used; absent entirely, the sim defaults to the enemy entry choke.
    */
   readonly aimZone?: ZoneId;
+  /**
+   * How the route to `targetZone` should be chosen (the policy picks the goal and the purpose;
+   * the navigation layer finds the path). Default FASTEST.
+   */
+  readonly routePreference?: "FASTEST" | "SAFEST" | "STEALTH" | "TACTICAL";
+  /**
+   * Extra cost of passing through a zone (>= 0), from the team's BELIEF — seen / heard /
+   * suspected enemies, utility. Never true enemy positions. Used by every preference but FASTEST.
+   */
+  readonly zoneCosts?: Readonly<Record<string, number>>;
 }
 
 export type TeamStrategy =
@@ -174,6 +184,46 @@ export interface PolicyTeammate {
   readonly credits: number;
   readonly ultimatePoints: number;
   readonly ultimateCost: number;
+  /**
+   * Where this teammate is going right now (absent when not on a route): the remaining waypoints
+   * and how long until it enters the next one. Own-team movement is fully known to the team, and
+   * it is what lets utility be TIMED to a teammate's arrival (a flash that is still blinding when
+   * the entry comes out of the smoke).
+   */
+  readonly transit?: TeammateTransit;
+}
+
+export interface TeammateTransit {
+  /** Remaining waypoints, next first; the last one is where the route ends. */
+  readonly path: readonly ZoneId[];
+  readonly nextZone: ZoneId;
+  /** Time until the teammate enters `nextZone` at its current speed (ms). */
+  readonly nextArrivalMs: number;
+  /** Standing at the edge of a ground hazard, waiting for it to burn out. */
+  readonly waitingAtEdge?: boolean;
+}
+
+/** Public parameters of an ability a teammate carries (catalog facts in runtime units; null = not catalogued). */
+export interface AbilityFact {
+  readonly effectType: string;
+  readonly effectTypes: readonly string[];
+  readonly durationMs: number | null;
+  readonly flashDurationMs: number | null;
+  readonly radiusUnits: number | null;
+  readonly rangeUnits: number | null;
+  readonly windupMs: number | null;
+}
+
+/**
+ * An active effect the team knows about: its own (always known) or an enemy one a teammate can
+ * see (in its zone or line of sight). Zone-level; `own` says whose it is.
+ */
+export interface VisibleEffect {
+  readonly zoneId: ZoneId;
+  readonly effectType: string;
+  readonly abilityId: string;
+  readonly own: boolean;
+  readonly remainingMs: number;
 }
 
 /** An observed passable hazard (molly / area-denial): its zone and remaining lifetime (ms). */
@@ -209,6 +259,14 @@ export interface PolicyView {
    * this lets the policy choose. Observation-limited (DECISION-004): unseen hazards are absent.
    */
   readonly visibleHazards?: readonly HazardInfo[];
+  /**
+   * Every active effect the team knows of — its own, and enemy smokes / walls / fire / slow fields
+   * a teammate has a sightline onto (also mirrored in `observation.knownMapChanges`). This is the
+   * map as utility has changed it: where sight is cut, where the ground is denied.
+   */
+  readonly visibleEffects?: readonly VisibleEffect[];
+  /** Catalog facts of the abilities this team carries, keyed by ability id. */
+  readonly abilityFacts?: Readonly<Record<string, AbilityFact>>;
 }
 
 export interface DecisionPolicy {

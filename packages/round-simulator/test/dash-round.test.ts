@@ -57,7 +57,7 @@ describe("movement ability displaces the caster (dash)", () => {
 
     expect(r.commandTrace!.some((e) => e.playerId === "atk" && e.result === "displaced" && e.toZone === DASH_TO)).toBe(true);
     // the recorded track shows the attacker at the dash destination, not the start zone
-    const destPos = spatial.getZone(DASH_TO)!.position;
+    const destPos = spatial.standPosition(DASH_TO); // tracks draw a zone at its walkable anchor
     const lastAtk = r.tracks!.at(-1)!.players.find((p) => p.id === "atk")!;
     expect(lastAtk.x).toBeCloseTo(destPos.x, 3);
     expect(lastAtk.y).toBeCloseTo(destPos.y, 3);

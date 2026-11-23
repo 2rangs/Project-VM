@@ -9,29 +9,30 @@
 //
 // Usage: tsx run-match.mts '<json config>'
 import { runMatch } from '../../../packages/match-runner/src/index.ts';
-import { installTrackRecording, withSpawnMoves } from './track-shim.mts';
 
-installTrackRecording(); // player positions for the live match screen (see track-shim.mts)
-
-interface Cfg { teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean }
+interface Cfg {
+  teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean;
+  /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
+}
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 
 // recordPerception drives PV-4's fog-of-war / belief track (off by default in the
 // match-runner; MatchConfig.recordPerception since PV-3 7a7a847). We request it on.
-// Each round's events with spawn positions prepended, captured as the round resolves.
-const eventsWithSpawns = new Map<number, Record<string, unknown>[]>();
+// recordTracks: every player's position on every tick (the live match screen draws them) and the
+// navigation trace (what each player planned to walk, and why — the navigation debug view).
 const res = runMatch({
   teamA: cfg.teamA ?? { id: 'A', name: 'Team A' },
   teamB: cfg.teamB ?? { id: 'B', name: 'Team B' },
   map: cfg.map ?? 'ascent',
   seed: cfg.seed ?? 1,
   recordPerception: cfg.recordPerception ?? true,
+  recordTracks: true,
+  ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
+  ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
 }, {
-  onRound: (r, score) => {
-    eventsWithSpawns.set(r.roundNumber, withSpawnMoves(r.replay.events as unknown as Record<string, unknown>[]));
-    // one machine-readable progress line per round; the parent turns it into the loading screen's counter
-    process.stderr.write(`PVPROGRESS ${JSON.stringify({ round: r.roundNumber, score })}\n`);
-  },
+  // one machine-readable progress line per round; the parent turns it into the loading screen's counter
+  onRound: (r, score) => { process.stderr.write(`PVPROGRESS ${JSON.stringify({ round: r.roundNumber, score })}\n`); },
 });
 
 process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);
@@ -45,6 +46,7 @@ const out = {
   winner: res.winner,
   score: res.score,
   wentToOvertime: res.wentToOvertime,
+  options: cfg.options ?? {},
   rounds: res.rounds.map((r) => ({
     roundNumber: r.roundNumber,
     phase: r.phase,
@@ -63,11 +65,16 @@ const out = {
       A: { tier: r.buys.A.tier, weapon: r.buys.A.weapon },
       B: { tier: r.buys.B.tier, weapon: r.buys.B.weapon },
     },
-    replayEvents: eventsWithSpawns.get(r.roundNumber) ?? r.replay.events,
+    replayEvents: r.replay.events,
     // Per-team PerceptionTrack[] for this round (side-keyed, round-relative tMs);
     // the parent remaps side→real-team and offsets tMs onto the match timeline.
     // Absent on match-runner versions without recordPerception.
     perception: r.replay.meta.perception ?? null,
+    // Why each team played the round the way it did (plans, pre-round opponent reads,
+    // what the round let them observe). Plain JSON; null on engines that predate it.
+    decisions: r.decisions ?? null,
+    // What the navigation layer planned for each player (round-relative ms); null without tracks.
+    nav: r.navTrace ?? null,
   })),
 };
 process.stderr.write(`perception: ${out.rounds.filter((r) => r.perception).length}/${out.rounds.length} rounds\n`);

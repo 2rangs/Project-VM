@@ -4,16 +4,15 @@ import {
   RoundSimulator, type DecisionPolicy, type PolicyDecision, type PolicyView, type SimPlayer, type SimState,
 } from "../src/index.js";
 import { infoWeight, soundCueConfidence, TRACER_CUE_CONFIDENCE } from "../src/situational.js";
-import { loadSpatial, loadWeapons, NO_ABILITIES } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, NO_ABILITIES, scenePos, hiddenSpot } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
 const baseWeapons = loadWeapons();
 
 function mk(id: string, side: "attack" | "defense", zoneId: string, weaponId: string): SimPlayer {
-  const z = spatial.getZone(zoneId)!;
   return {
     id, teamId: side === "attack" ? "attackers" : "defenders", side, agentId: "a",
-    position: { ...z.position }, zoneId, facing: { x: 1, y: 0 }, health: 100, armor: 50, alive: true, weaponId,
+    position: { ...scenePos(spatial, zoneId) }, zoneId, facing: { x: 1, y: 0 }, health: 100, armor: 50, alive: true, weaponId,
     skills: AVERAGE_SKILLS, abilities: [], ultimatePoints: 0, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run",
   };
 }
@@ -41,12 +40,14 @@ function run(tracerVisible: boolean) {
   });
   const state: SimState = {
     matchId: "m", roundId: "r", mapId: "ascent", tick: 0, elapsedMs: 0, timeRemainingMs: 6000,
-    players: [mk("atk", "attack", "a-main", "Rifle"), mk("def1", "defense", "a-site", "Rifle"), mk("def2", "defense", "a-rafters", "Rifle")],
+    // def2 stands on a part of A Rafters the attacker's spot cannot see (and that cannot see it)
+    players: [mk("atk", "attack", "a-main", "Rifle"), mk("def1", "defense", "a-site", "Rifle"),
+      { ...mk("def2", "defense", "a-rafters", "Rifle"), position: { ...hiddenSpot(spatial, "a-rafters", scenePos(spatial, "a-main")) } }],
     spike: { phase: "carried", carrierId: "atk", zoneId: null, position: null, plantProgressMs: 0, defuseProgressMs: 0, defuserId: null, detonateAtElapsedMs: null },
   };
   const sim = new RoundSimulator({
     spatial, weapons, abilities: NO_ABILITIES,
-    policies: { attack: hold({ atk: "a-site" }), defense: hold({ def1: "a-main", def2: "a-wine" }) },
+    policies: { attack: hold({ atk: "a-site" }), defense: hold({ def1: "a-main", def2: "defender-spawn" }) }, // def2 looks the other way: from A Rafters it would otherwise SEE the attacker
     config: { seed: 7, roundTimeMs: 6000, traceCommands: true },
   });
   const result = sim.runRound(state);

@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import type { CoordinateTransform, TacticalMapData } from "./types.js";
+import type { NavData, NavVisibility } from "./navigation.js";
 import { SpatialEngine } from "./engine.js";
 
 /** Build an engine from already-parsed JSON objects. */
-export function createEngine(data: TacticalMapData, transform?: CoordinateTransform): SpatialEngine {
-  return new SpatialEngine(data, { transform });
+export function createEngine(data: TacticalMapData, transform?: CoordinateTransform, nav?: NavData, visibility?: NavVisibility): SpatialEngine {
+  return new SpatialEngine(data, { transform, nav, visibility });
 }
 
 /**

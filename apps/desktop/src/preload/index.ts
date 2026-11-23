@@ -6,6 +6,7 @@ import {
   IPC, type PvBridge, type SessionCommand, type SessionReply, type SessionStartRequest,
   type SessionState, type SimProgress, type SimResult, type SimRunRequest, type TeamOrder, type TeamSlot,
 } from '../shared/ipc.ts';
+import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
 
 const cmd = (c: SessionCommand): Promise<SessionReply> => ipcRenderer.invoke(IPC.sessionCmd, c);
 
@@ -28,6 +29,10 @@ const bridge: PvBridge = {
   sessionPlayNextRound: async () => { const r = await cmd({ cmd: 'playNextRound' }); return { round: r.round!, state: r.state! }; },
   sessionResult: async () => (await cmd({ cmd: 'result' })).result!,
   sessionStop: () => ipcRenderer.invoke(IPC.sessionStop),
+  // [series]
+  seriesStart: (req: SeriesStartRequest): Promise<SeriesView> => ipcRenderer.invoke(IPC.seriesStart, req),
+  seriesCmd: (c: SeriesCommand): Promise<SeriesReply> => ipcRenderer.invoke(IPC.seriesCmd, c),
+  seriesStop: () => ipcRenderer.invoke(IPC.seriesStop),
   loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
   platform: process.platform,
   isElectron: true,

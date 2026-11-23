@@ -1,0 +1,13 @@
+{
+  "mapId": "split",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "rope",
+      "name": "Vertical ropes (A Sewer/Ramps side, Mid Vent, B Tower)",
+      "represented": false,
+      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

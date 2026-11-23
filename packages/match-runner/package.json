@@ -33,6 +33,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "sim:match": "tsx src/cli.ts"
+    "sim:match": "tsx src/cli.ts",
+    "sim:series": "tsx src/series-cli.ts"
   }
 }

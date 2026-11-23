@@ -97,6 +97,12 @@ export interface SimState {
   spike: SpikeState;
   /** 1-based round number within the match (surfaced to policies). Default 1. */
   readonly roundNumber?: number;
+  /**
+   * Things a body cannot walk through for a time (a physical wall). NOT vision blockers: a smoke
+   * blocks sight and is walked through. No ability creates one yet — the catalog records walls as
+   * vision blockers only — so this is set by scenarios / tests and by future verified rules.
+   */
+  readonly movementBlockers?: readonly MovementBlocker[];
   /** Each side's economy going into the round (surfaced to its own policy only). */
   readonly economy?: Readonly<Partial<Record<Side, { readonly credits: number; readonly lossBonusTier: number; readonly consecutiveLosses: number }>>>;
 }
@@ -132,6 +138,41 @@ export interface SimEvent {
 }
 
 export type RoundEndReason = "elimination" | "spikeDetonation" | "spikeDefused" | "timeExpired";
+
+/** A movement blocker: a whole zone's floor, or a disc of floor. */
+export interface MovementBlocker {
+  readonly id: string;
+  readonly zoneId?: string;
+  readonly center?: Vector3;
+  readonly radiusUnits?: number;
+  readonly fromMs: number;
+  readonly untilMs: number;
+}
+
+/** A navigation event of the round: a route planned / re-planned, or a goal found blocked / unreachable. */
+export interface NavTraceEvent {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly kind: "planned" | "replanned" | "blocked" | "unreachable";
+  readonly playerId: string;
+  readonly goalZone: string;
+  readonly reason?: string;
+  readonly pathLength?: number;
+  readonly estimatedTravelMs?: number;
+  readonly preference?: string;
+  /** The order behind the move (the policy's `sourceActionId`), i.e. what the route is for. */
+  readonly intent?: string;
+  /** Where the player stood when the path was planned or refused. */
+  readonly from?: { readonly x: number; readonly y: number; readonly z: number };
+  /** The planned path: the points the player will walk through. */
+  readonly waypoints?: ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number }>;
+  /** The strategic route (zones), current zone first. */
+  readonly zones?: readonly string[];
+  /** Zones the planner was told to avoid and their cost — from the team's belief, never true positions. */
+  readonly avoided?: ReadonlyArray<{ readonly zoneId: string; readonly cost: number }>;
+  /** Ground patches (fire, slow) priced into the plan. */
+  readonly hazards?: ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number; readonly radius: number }>;
+}
 
 /** One recorded frame of player positions — the basis for a replay track (PV-6). */
 export interface TrackFrame {
@@ -225,6 +266,8 @@ export interface CommandTraceEvent {
    * when held by executeAtMs, else "active".
    */
   readonly result?: string;
+  /** Why (a navigation failure's reason). */
+  readonly reason?: string;
 }
 
 /**
@@ -257,6 +300,12 @@ export interface EngagementRecord {
   readonly info?: { readonly attacker: boolean; readonly defender: boolean };
   readonly attackerFlashedMs: number;
   readonly defenderFlashedMs: number;
+  /**
+   * Set when a side came out of a vision blocker into this duel (present only then): it crossed a
+   * smoke-cut sightline on the hop that started the duel, so it had no sight until it was out.
+   * `watched` = the other side was holding that smoke edge (stationary, facing it, not blind).
+   */
+  readonly smokeExit?: { readonly attacker: boolean; readonly defender: boolean; readonly watched: boolean };
   /** Winning side of this duel, or null if no one died this duel. */
   readonly winnerSide: Side | null;
 }
@@ -282,6 +331,30 @@ export interface ShotCue {
   readonly confidence: number;
 }
 
+/**
+ * An observable cue an ability gave the OTHER team (world event → observation), the ability
+ * counterpart of {@link ShotCue}. Two channels, decided by physical facts:
+ *  - "sound": the cast was heard over the map's sound graph → zone = the CASTER's zone (loose);
+ *  - "sight": the deployed effect (smoke / wall / fire / slow field) is seen by someone with a
+ *    sightline onto it → zone = the EFFECT's zone. This says where utility is being committed,
+ *    not where the caster stands (a smoke is thrown from range).
+ * Zone-level evidence only — never the caster's position. It feeds the observing team's
+ * observation (and, for a heard cast, its intel on the caster), never the combat resolution.
+ */
+export interface AbilityCue {
+  readonly tick: number;
+  readonly elapsedMs: number;
+  readonly casterId: PlayerId;
+  readonly abilityId: string;
+  readonly effectType: string;
+  readonly zoneId: string;
+  readonly zonePosition: Vector3;
+  readonly observerSide: Side;
+  readonly channel: "sound" | "sight";
+  /** 0..1 — how much this cue is worth as evidence about `zoneId`. */
+  readonly confidence: number;
+}
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -293,12 +366,16 @@ export interface RoundResult {
   readonly roster: Readonly<Record<PlayerId, Side>>;
   /** Per-tick position frames, present only when config.recordTracks is true. */
   readonly tracks?: readonly TrackFrame[];
+  /** Navigation events (routes planned / re-planned, goals blocked or unreachable); with traceCommands or recordTracks. */
+  readonly navTrace?: readonly NavTraceEvent[];
   /** Per-team observation/belief series, present only when config.recordPerception is true. */
   readonly perception?: readonly PerceptionTrack[];
   /** Command→execution trace, present only when config.traceCommands is true. */
   readonly commandTrace?: readonly CommandTraceEvent[];
   /** Every shot cue the teams observed, present only when config.traceCommands is true. */
   readonly cueTrace?: readonly ShotCue[];
+  /** Every ability cue the teams observed, present only when config.traceCommands is true. */
+  readonly abilityCueTrace?: readonly AbilityCue[];
   /** First-contact posture of every duel, present only when config.traceCommands is true. */
   readonly engagementTrace?: readonly EngagementRecord[];
 }
@@ -310,6 +387,12 @@ export interface SimConfig {
   readonly plantDurationMs: number;
   readonly defuseDurationMs: number;
   readonly spikeTimerMs: number;
+  /**
+   * A mover told what to watch on arrival (the order's `aimZone`) takes a covered spot that sees
+   * it, instead of standing near the zone's anchor. Off by default: measured on 160 matches it
+   * moves the round-outcome mix away from the real one (NAVIGATION_ENGINE.md §7.3).
+   */
+  readonly coverSpots: boolean;
   readonly seed: number;
   readonly recordTracks: boolean;
   /** Record per-team observation/belief snapshots (PV-6 fog-of-war). Off by default (cost). */
@@ -318,8 +401,13 @@ export interface SimConfig {
   readonly traceCommands: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
-  /** HP lost per tick while standing in a molly / area-denial zone. */
+  /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */
   readonly mollyDamagePerTick: number;
+  /**
+   * Movement-speed multiplier inside a slow field (manual-approx: the catalog carries no slow
+   * magnitude). Crossing the field costs the extra time of its chord at this speed.
+   */
+  readonly slowSpeedMultiplier: number;
   /**
    * Peeker's advantage (ms): how stale a stationary holder's picture of a MOVING enemy is — the
    * peeker is already further out than the holder sees, so the holder reacts this much later even on
@@ -357,11 +445,13 @@ export const DEFAULT_CONFIG: SimConfig = {
   plantDurationMs: 4000,
   defuseDurationMs: 7000,
   spikeTimerMs: 45000,
+  coverSpots: false,
   seed: 1,
   recordTracks: false,
   recordPerception: false,
   traceCommands: false,
-  mollyDamagePerTick: 6, // ~60 HP/s standing in fire (manual-approx)
+  mollyDamagePerTick: 6, // ~60 HP/s inside a fire patch (manual-approx)
+  slowSpeedMultiplier: 0.5, // manual-approx (no catalog value)
   crossfirePenaltyMs: 60, // Hick–Hyman slope (ms/bit); calibrated on 160 Ascent matches (8/8 judged)
   infoWindowMs: 2000,
   damageCarryover: 0, // off by default: full attrition needs defensive stall utility to stay balanced

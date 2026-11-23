@@ -4,7 +4,7 @@ import { AVERAGE_SKILLS } from "@pv/combat-engine";
 import {
   RoundSimulator, type DecisionPolicy, type PolicyDecision, type PolicyView, type SimPlayer, type SimState,
 } from "../src/index.js";
-import { loadSpatial, loadWeapons } from "./fixtures/setup.js";
+import { loadSpatial, loadWeapons, scenePos } from "./fixtures/setup.js";
 
 const spatial = loadSpatial();
 const weapons = loadWeapons();
@@ -24,7 +24,7 @@ function atk(cast: boolean): SimPlayer {
   const z = spatial.getZone("a-main")!, site = spatial.getZone("a-site")!.position;
   return {
     id: "atk", teamId: "attackers", side: "attack", agentId: "a",
-    position: { ...z.position }, zoneId: "a-main", facing: { x: site.x - z.position.x, y: site.y - z.position.y },
+    position: { ...scenePos(spatial, "a-main") }, zoneId: "a-main", facing: { x: site.x - z.position.x, y: site.y - z.position.y },
     health: 100, armor: 0, alive: true, weaponId: "Vandal", skills: AVERAGE_SKILLS,
     abilities: cast ? [{ abilityId: "sova:Ability2", slot: "basic", chargesRemaining: 1, lastUsedAtMs: null }] : [],
     ultimatePoints: 0, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run",
@@ -32,7 +32,7 @@ function atk(cast: boolean): SimPlayer {
 }
 function def(): SimPlayer {
   const z = spatial.getZone("a-site")!, main = spatial.getZone("a-main")!.position;
-  return { id: "def", teamId: "defenders", side: "defense", agentId: "a", position: { ...z.position }, zoneId: "a-site", facing: { x: main.x - z.position.x, y: main.y - z.position.y }, health: 100, armor: 0, alive: true, weaponId: "Vandal", skills: AVERAGE_SKILLS, abilities: [], ultimatePoints: 0, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run" };
+  return { id: "def", teamId: "defenders", side: "defense", agentId: "a", position: { ...scenePos(spatial, "a-site") }, zoneId: "a-site", facing: { x: main.x - z.position.x, y: main.y - z.position.y }, health: 100, armor: 0, alive: true, weaponId: "Vandal", skills: AVERAGE_SKILLS, abilities: [], ultimatePoints: 0, ultimateCost: 7, path: [], pathIndex: 0, edgeProgressMs: 0, moveMode: "run" };
 }
 
 // attacker casts recon far away at the first decision (busy during the duel), then holds; defender holds.

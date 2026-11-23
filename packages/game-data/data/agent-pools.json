@@ -1,0 +1,2732 @@
+{
+ "pools": {
+  "10": [
+   "astra",
+   "breach",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "1000": [
+   "breach",
+   "fade",
+   "kay-o",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "1001": [
+   "brimstone"
+  ],
+  "1002": [
+   "reyna",
+   "sage",
+   "skye",
+   "viper"
+  ],
+  "1003": [
+   "jett",
+   "sova"
+  ],
+  "101": [
+   "astra",
+   "fade",
+   "kay-o",
+   "neon",
+   "raze",
+   "sage",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "10125": [
+   "jett",
+   "neon",
+   "raze"
+  ],
+  "10160": [
+   "jett",
+   "raze"
+  ],
+  "10161": [
+   "jett",
+   "yoru"
+  ],
+  "1026": [
+   "astra",
+   "brimstone",
+   "viper"
+  ],
+  "10307": [
+   "jett",
+   "phoenix",
+   "raze",
+   "yoru"
+  ],
+  "1046": [
+   "jett",
+   "skye"
+  ],
+  "10486": [
+   "breach",
+   "kay-o"
+  ],
+  "10557": [
+   "cypher",
+   "omen",
+   "viper",
+   "vyse"
+  ],
+  "10584": [
+   "jett"
+  ],
+  "10698": [
+   "breach",
+   "deadlock",
+   "fade",
+   "kay-o",
+   "omen",
+   "skye",
+   "viper"
+  ],
+  "10703": [
+   "sage",
+   "sova"
+  ],
+  "10782": [
+   "breach",
+   "raze",
+   "reyna",
+   "skye"
+  ],
+  "10816": [
+   "chamber",
+   "harbor",
+   "sage"
+  ],
+  "10885": [
+   "fade",
+   "sova"
+  ],
+  "109": [
+   "breach",
+   "brimstone",
+   "cypher",
+   "fade",
+   "kay-o",
+   "omen",
+   "sova",
+   "viper",
+   "yoru"
+  ],
+  "10971": [
+   "breach",
+   "fade",
+   "gekko",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "11": [
+   "breach",
+   "fade",
+   "kay-o",
+   "raze",
+   "skye"
+  ],
+  "11118": [
+   "astra",
+   "cypher",
+   "killjoy",
+   "omen",
+   "viper",
+   "vyse"
+  ],
+  "11134": [
+   "astra",
+   "breach",
+   "gekko",
+   "harbor",
+   "kay-o",
+   "omen",
+   "skye"
+  ],
+  "11218": [
+   "chamber",
+   "cypher",
+   "gekko",
+   "jett",
+   "killjoy",
+   "raze",
+   "sova",
+   "vyse"
+  ],
+  "11225": [
+   "astra",
+   "breach",
+   "fade",
+   "kay-o",
+   "omen",
+   "phoenix",
+   "skye",
+   "tejo",
+   "yoru"
+  ],
+  "1129": [
+   "breach",
+   "viper"
+  ],
+  "11332": [
+   "jett",
+   "neon",
+   "raze",
+   "yoru"
+  ],
+  "1137": [
+   "jett",
+   "raze"
+  ],
+  "1139": [
+   "breach",
+   "fade",
+   "gekko",
+   "kay-o",
+   "raze"
+  ],
+  "114": [
+   "breach",
+   "fade",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "1144": [
+   "astra",
+   "brimstone",
+   "cypher",
+   "fade",
+   "omen",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "11494": [
+   "astra",
+   "brimstone",
+   "chamber",
+   "harbor",
+   "iso",
+   "jett",
+   "killjoy",
+   "omen",
+   "phoenix",
+   "raze",
+   "viper",
+   "vyse"
+  ],
+  "11524": [
+   "breach",
+   "fade",
+   "kay-o",
+   "skye",
+   "sova"
+  ],
+  "11527": [
+   "deadlock",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "raze",
+   "skye",
+   "tejo",
+   "waylay"
+  ],
+  "11600": [
+   "breach",
+   "chamber",
+   "deadlock",
+   "gekko",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "raze",
+   "vyse"
+  ],
+  "1162": [
+   "kay-o",
+   "sage",
+   "viper"
+  ],
+  "1219": [
+   "astra",
+   "viper"
+  ],
+  "1221": [
+   "breach",
+   "skye",
+   "sova"
+  ],
+  "12365": [
+   "astra",
+   "gekko",
+   "omen",
+   "viper"
+  ],
+  "1265": [
+   "breach",
+   "cypher",
+   "deadlock",
+   "kay-o",
+   "killjoy",
+   "skye",
+   "sova",
+   "tejo",
+   "viper"
+  ],
+  "12793": [
+   "jett",
+   "phoenix",
+   "raze",
+   "sage",
+   "waylay"
+  ],
+  "12795": [
+   "cypher",
+   "viper"
+  ],
+  "1281": [
+   "breach",
+   "fade",
+   "kay-o",
+   "raze"
+  ],
+  "1291": [
+   "brimstone",
+   "omen",
+   "raze",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "1294": [
+   "chamber",
+   "jett",
+   "killjoy",
+   "sage",
+   "viper"
+  ],
+  "13039": [
+   "astra",
+   "chamber",
+   "cypher",
+   "iso",
+   "jett",
+   "killjoy",
+   "neon",
+   "raze",
+   "reyna",
+   "viper",
+   "vyse",
+   "yoru"
+  ],
+  "13093": [
+   "breach",
+   "fade"
+  ],
+  "1311": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "1369": [
+   "breach",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "raze",
+   "sage",
+   "skye",
+   "tejo"
+  ],
+  "13744": [
+   "astra",
+   "chamber",
+   "fade",
+   "kay-o",
+   "omen",
+   "skye",
+   "sova",
+   "viper",
+   "waylay"
+  ],
+  "13768": [
+   "breach",
+   "fade",
+   "kay-o"
+  ],
+  "13784": [
+   "fade",
+   "sova"
+  ],
+  "13788": [
+   "breach",
+   "clove",
+   "harbor",
+   "kay-o",
+   "neon",
+   "omen",
+   "phoenix",
+   "sage",
+   "viper"
+  ],
+  "1380": [
+   "breach",
+   "fade",
+   "gekko",
+   "sage",
+   "skye",
+   "sova"
+  ],
+  "1395": [
+   "kay-o",
+   "killjoy",
+   "raze",
+   "sage",
+   "skye",
+   "sova"
+  ],
+  "1411": [
+   "chamber",
+   "jett",
+   "raze"
+  ],
+  "14125": [
+   "astra",
+   "omen",
+   "viper"
+  ],
+  "1427": [
+   "astra",
+   "breach",
+   "omen",
+   "reyna",
+   "sage",
+   "sova"
+  ],
+  "1428": [
+   "killjoy",
+   "reyna",
+   "sage",
+   "skye"
+  ],
+  "1430": [
+   "breach",
+   "fade",
+   "kay-o",
+   "omen",
+   "sova",
+   "tejo"
+  ],
+  "14431": [
+   "killjoy",
+   "viper"
+  ],
+  "1457": [
+   "astra",
+   "breach",
+   "brimstone",
+   "kay-o",
+   "omen",
+   "sage",
+   "skye",
+   "viper"
+  ],
+  "14669": [
+   "astra",
+   "breach",
+   "chamber",
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "sova",
+   "viper"
+  ],
+  "14681": [
+   "chamber",
+   "clove",
+   "jett",
+   "neon",
+   "phoenix",
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "1475": [
+   "astra",
+   "gekko",
+   "sova",
+   "tejo"
+  ],
+  "1481": [
+   "killjoy"
+  ],
+  "1507": [
+   "astra",
+   "kay-o",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "1524": [
+   "chamber",
+   "jett",
+   "raze"
+  ],
+  "1533": [
+   "breach",
+   "fade",
+   "sova"
+  ],
+  "15500": [
+   "breach",
+   "fade",
+   "gekko",
+   "skye",
+   "sova",
+   "tejo"
+  ],
+  "15559": [
+   "astra",
+   "brimstone",
+   "cypher",
+   "killjoy",
+   "omen",
+   "sage",
+   "viper",
+   "vyse"
+  ],
+  "1565": [
+   "brimstone",
+   "omen"
+  ],
+  "1566": [
+   "phoenix",
+   "raze"
+  ],
+  "1567": [
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "sage"
+  ],
+  "15735": [
+   "fade",
+   "kay-o",
+   "skye",
+   "sova"
+  ],
+  "1575": [
+   "chamber",
+   "cypher",
+   "jett",
+   "killjoy",
+   "phoenix",
+   "raze",
+   "sage",
+   "skye",
+   "viper",
+   "yoru"
+  ],
+  "1576": [
+   "astra",
+   "sage"
+  ],
+  "1578": [
+   "breach",
+   "raze",
+   "reyna",
+   "skye"
+  ],
+  "1585": [
+   "jett",
+   "raze",
+   "yoru"
+  ],
+  "1595": [
+   "cypher",
+   "skye",
+   "viper"
+  ],
+  "1607": [
+   "sage",
+   "sova"
+  ],
+  "1615": [
+   "astra",
+   "harbor",
+   "omen"
+  ],
+  "16215": [
+   "omen"
+  ],
+  "1684": [
+   "sova"
+  ],
+  "16924": [
+   "breach",
+   "kay-o",
+   "neon",
+   "yoru"
+  ],
+  "17086": [
+   "breach",
+   "brimstone",
+   "chamber",
+   "gekko",
+   "jett",
+   "neon",
+   "reyna",
+   "sova",
+   "waylay",
+   "yoru"
+  ],
+  "1711": [
+   "astra",
+   "killjoy",
+   "omen",
+   "viper"
+  ],
+  "1743": [
+   "astra",
+   "brimstone",
+   "fade",
+   "sova"
+  ],
+  "18035": [
+   "jett",
+   "neon",
+   "raze"
+  ],
+  "18162": [
+   "astra",
+   "cypher",
+   "gekko",
+   "killjoy"
+  ],
+  "1818": [
+   "cypher",
+   "gekko",
+   "killjoy"
+  ],
+  "18350": [
+   "jett",
+   "neon",
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "18400": [
+   "neon",
+   "raze",
+   "waylay"
+  ],
+  "1885": [
+   "skye",
+   "sova"
+  ],
+  "19": [
+   "killjoy",
+   "viper"
+  ],
+  "1916": [
+   "cypher",
+   "tejo",
+   "viper",
+   "vyse"
+  ],
+  "1952": [
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "19530": [
+   "fade",
+   "gekko",
+   "skye",
+   "sova"
+  ],
+  "1960": [
+   "neon",
+   "skye"
+  ],
+  "19691": [
+   "fade",
+   "omen",
+   "viper"
+  ],
+  "1970": [
+   "astra",
+   "breach",
+   "killjoy",
+   "raze",
+   "sage"
+  ],
+  "20140": [
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "20144": [
+   "neon",
+   "waylay"
+  ],
+  "2021": [
+   "breach",
+   "sova"
+  ],
+  "20240": [
+   "astra",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "2107": [
+   "skye",
+   "sova"
+  ],
+  "21216": [
+   "chamber",
+   "waylay",
+   "yoru"
+  ],
+  "21251": [
+   "fade",
+   "skye",
+   "sova",
+   "tejo"
+  ],
+  "21328": [
+   "breach",
+   "chamber",
+   "fade",
+   "gekko",
+   "jett",
+   "kay-o",
+   "omen",
+   "raze",
+   "skye",
+   "viper",
+   "yoru"
+  ],
+  "2134": [
+   "brimstone",
+   "killjoy",
+   "neon",
+   "sage"
+  ],
+  "21610": [
+   "cypher",
+   "killjoy",
+   "viper"
+  ],
+  "21659": [
+   "omen",
+   "phoenix",
+   "raze",
+   "waylay"
+  ],
+  "21661": [
+   "neon",
+   "omen"
+  ],
+  "21668": [
+   "fade",
+   "sova"
+  ],
+  "2168": [
+   "brimstone",
+   "cypher",
+   "fade",
+   "gekko",
+   "kay-o",
+   "raze",
+   "sova",
+   "vyse"
+  ],
+  "217": [
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "2170": [
+   "chamber",
+   "vyse",
+   "waylay",
+   "yoru"
+  ],
+  "2172": [
+   "brimstone",
+   "fade",
+   "sova",
+   "vyse"
+  ],
+  "2173": [
+   "breach",
+   "cypher",
+   "fade",
+   "killjoy",
+   "sage",
+   "skye",
+   "viper"
+  ],
+  "22047": [
+   "chamber",
+   "jett",
+   "neon",
+   "phoenix",
+   "raze",
+   "sage",
+   "waylay",
+   "yoru"
+  ],
+  "23062": [
+   "chamber",
+   "jett"
+  ],
+  "23169": [
+   "cypher",
+   "kay-o",
+   "viper"
+  ],
+  "2333": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "viper"
+  ],
+  "2334": [
+   "fade",
+   "sage",
+   "sova"
+  ],
+  "2335": [
+   "cypher",
+   "killjoy",
+   "sage"
+  ],
+  "23365": [
+   "neon"
+  ],
+  "2348": [
+   "chamber",
+   "kay-o",
+   "raze",
+   "sova"
+  ],
+  "24007": [
+   "cypher",
+   "fade",
+   "kay-o",
+   "killjoy",
+   "skye",
+   "viper"
+  ],
+  "2408": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "viper"
+  ],
+  "24308": [
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "24344": [
+   "astra",
+   "omen",
+   "viper"
+  ],
+  "2442": [
+   "astra",
+   "jett",
+   "omen",
+   "viper"
+  ],
+  "2452": [
+   "jett",
+   "raze",
+   "reyna",
+   "sage",
+   "viper"
+  ],
+  "2462": [
+   "breach",
+   "chamber",
+   "cypher",
+   "fade",
+   "jett",
+   "kay-o",
+   "neon",
+   "omen",
+   "raze",
+   "reyna",
+   "skye"
+  ],
+  "24628": [
+   "brimstone",
+   "harbor",
+   "omen"
+  ],
+  "24679": [
+   "breach",
+   "fade",
+   "gekko",
+   "killjoy",
+   "skye"
+  ],
+  "2468": [
+   "astra",
+   "brimstone",
+   "omen",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "2489": [
+   "astra",
+   "breach",
+   "brimstone",
+   "cypher",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sage",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "24895": [
+   "jett",
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "25017": [
+   "fade",
+   "sova",
+   "tejo"
+  ],
+  "252": [
+   "jett",
+   "raze",
+   "skye"
+  ],
+  "25255": [
+   "clove",
+   "jett",
+   "phoenix",
+   "raze",
+   "sage",
+   "yoru"
+  ],
+  "25494": [
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "2567": [
+   "jett",
+   "killjoy"
+  ],
+  "25949": [
+   "brimstone",
+   "harbor",
+   "omen"
+  ],
+  "261": [
+   "jett",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "phoenix",
+   "raze",
+   "reyna",
+   "skye"
+  ],
+  "2610": [
+   "breach",
+   "fade",
+   "kay-o",
+   "killjoy",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "26171": [
+   "astra",
+   "brimstone",
+   "chamber",
+   "cypher",
+   "jett",
+   "vyse"
+  ],
+  "2622": [
+   "breach",
+   "harbor",
+   "sova"
+  ],
+  "2625": [
+   "astra",
+   "fade",
+   "omen",
+   "raze",
+   "sage",
+   "viper"
+  ],
+  "263": [
+   "astra",
+   "breach",
+   "brimstone",
+   "chamber",
+   "kay-o",
+   "omen",
+   "viper"
+  ],
+  "2670": [
+   "kay-o",
+   "killjoy",
+   "viper"
+  ],
+  "2679": [
+   "astra",
+   "cypher",
+   "jett",
+   "killjoy"
+  ],
+  "2690": [
+   "brimstone",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "sage",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "27254": [
+   "astra",
+   "chamber",
+   "cypher",
+   "omen"
+  ],
+  "2764": [
+   "chamber",
+   "killjoy",
+   "raze"
+  ],
+  "28400": [
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "2858": [
+   "cypher",
+   "killjoy",
+   "sage",
+   "viper"
+  ],
+  "28716": [
+   "chamber",
+   "viper",
+   "yoru"
+  ],
+  "2894": [
+   "cypher",
+   "killjoy",
+   "sova",
+   "viper"
+  ],
+  "292": [
+   "jett",
+   "raze"
+  ],
+  "29242": [
+   "omen",
+   "sage"
+  ],
+  "29243": [
+   "brimstone",
+   "chamber",
+   "jett",
+   "omen"
+  ],
+  "29833": [
+   "cypher",
+   "fade",
+   "omen",
+   "raze",
+   "reyna",
+   "sova",
+   "tejo",
+   "waylay",
+   "yoru"
+  ],
+  "29867": [
+   "cypher",
+   "fade",
+   "viper"
+  ],
+  "29873": [
+   "cypher",
+   "deadlock",
+   "killjoy",
+   "viper",
+   "vyse"
+  ],
+  "29893": [
+   "jett",
+   "neon"
+  ],
+  "3017": [
+   "breach",
+   "fade",
+   "gekko",
+   "kay-o",
+   "skye",
+   "sova",
+   "tejo"
+  ],
+  "3021": [
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "3024": [
+   "brimstone",
+   "killjoy",
+   "omen"
+  ],
+  "3028": [
+   "chamber",
+   "clove",
+   "jett",
+   "neon",
+   "phoenix",
+   "raze",
+   "reyna",
+   "viper",
+   "yoru"
+  ],
+  "3045": [
+   "astra",
+   "brimstone",
+   "omen"
+  ],
+  "3070": [
+   "breach",
+   "cypher",
+   "jett",
+   "killjoy",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sage",
+   "sova"
+  ],
+  "309": [
+   "breach",
+   "fade",
+   "kay-o",
+   "omen",
+   "raze",
+   "skye",
+   "sova",
+   "viper",
+   "vyse"
+  ],
+  "312": [
+   "breach",
+   "chamber",
+   "cypher",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "omen",
+   "raze",
+   "skye",
+   "tejo",
+   "vyse"
+  ],
+  "31207": [
+   "breach",
+   "brimstone",
+   "fade",
+   "gekko",
+   "killjoy",
+   "omen",
+   "skye",
+   "sova"
+  ],
+  "31305": [
+   "jett",
+   "neon",
+   "waylay"
+  ],
+  "3157": [
+   "jett",
+   "raze",
+   "sage",
+   "viper"
+  ],
+  "31753": [
+   "jett",
+   "waylay",
+   "yoru"
+  ],
+  "31827": [
+   "neon",
+   "waylay"
+  ],
+  "31828": [
+   "chamber",
+   "yoru"
+  ],
+  "31829": [
+   "astra",
+   "cypher",
+   "killjoy",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "320": [
+   "astra",
+   "brimstone",
+   "omen",
+   "sova"
+  ],
+  "3342": [
+   "astra",
+   "breach",
+   "cypher",
+   "jett",
+   "killjoy",
+   "neon",
+   "raze",
+   "sova"
+  ],
+  "339": [
+   "astra",
+   "brimstone",
+   "killjoy",
+   "omen",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "33902": [
+   "chamber",
+   "fade",
+   "phoenix",
+   "raze",
+   "sova",
+   "viper"
+  ],
+  "3401": [
+   "breach",
+   "jett",
+   "skye"
+  ],
+  "34684": [
+   "cypher",
+   "deadlock",
+   "vyse"
+  ],
+  "34974": [
+   "astra",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "35013": [
+   "cypher",
+   "killjoy",
+   "neon",
+   "viper",
+   "vyse",
+   "yoru"
+  ],
+  "3519": [
+   "deadlock",
+   "raze",
+   "waylay"
+  ],
+  "3520": [
+   "chamber",
+   "gekko",
+   "jett",
+   "kay-o",
+   "neon",
+   "raze",
+   "reyna",
+   "waylay",
+   "yoru"
+  ],
+  "3582": [
+   "jett",
+   "sage",
+   "skye"
+  ],
+  "3604": [
+   "cypher",
+   "killjoy",
+   "viper"
+  ],
+  "36169": [
+   "gekko",
+   "kay-o",
+   "sova",
+   "viper"
+  ],
+  "36245": [
+   "breach",
+   "chamber",
+   "fade",
+   "gekko",
+   "kay-o",
+   "omen",
+   "phoenix",
+   "raze",
+   "skye",
+   "sova",
+   "tejo",
+   "yoru"
+  ],
+  "36415": [
+   "brimstone",
+   "fade",
+   "sova"
+  ],
+  "36685": [
+   "neon",
+   "phoenix",
+   "raze"
+  ],
+  "3672": [
+   "astra",
+   "breach",
+   "brimstone",
+   "fade",
+   "omen",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "37017": [
+   "breach",
+   "gekko"
+  ],
+  "3722": [
+   "omen",
+   "yoru"
+  ],
+  "3741": [
+   "cypher",
+   "killjoy",
+   "viper",
+   "vyse"
+  ],
+  "37489": [
+   "astra",
+   "brimstone",
+   "cypher",
+   "deadlock",
+   "killjoy",
+   "omen",
+   "viper",
+   "vyse"
+  ],
+  "37494": [
+   "cypher",
+   "jett",
+   "killjoy",
+   "vyse"
+  ],
+  "37927": [
+   "astra",
+   "cypher",
+   "harbor",
+   "killjoy",
+   "omen",
+   "sage",
+   "viper",
+   "vyse"
+  ],
+  "3826": [
+   "breach",
+   "sova",
+   "viper"
+  ],
+  "3828": [
+   "chamber",
+   "jett",
+   "raze",
+   "skye"
+  ],
+  "384": [
+   "astra",
+   "brimstone",
+   "fade",
+   "jett",
+   "killjoy",
+   "omen",
+   "sage",
+   "skye",
+   "sova"
+  ],
+  "3880": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "viper"
+  ],
+  "3885": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "39357": [
+   "chamber",
+   "jett",
+   "neon"
+  ],
+  "39485": [
+   "cypher",
+   "sage",
+   "viper"
+  ],
+  "39697": [
+   "neon",
+   "yoru"
+  ],
+  "3977": [
+   "astra",
+   "breach",
+   "brimstone",
+   "fade",
+   "kay-o",
+   "omen",
+   "sage",
+   "skye",
+   "viper",
+   "vyse"
+  ],
+  "3980": [
+   "deadlock",
+   "neon",
+   "raze",
+   "sova"
+  ],
+  "3993": [
+   "astra",
+   "harbor",
+   "iso",
+   "jett",
+   "neon",
+   "omen",
+   "phoenix",
+   "raze",
+   "sage",
+   "waylay",
+   "yoru"
+  ],
+  "4": [
+   "breach",
+   "fade",
+   "kay-o",
+   "killjoy",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "4004": [
+   "breach",
+   "jett",
+   "kay-o",
+   "neon",
+   "omen",
+   "raze",
+   "sova",
+   "waylay",
+   "yoru"
+  ],
+  "4054": [
+   "breach",
+   "kay-o"
+  ],
+  "4056": [
+   "astra",
+   "brimstone",
+   "omen"
+  ],
+  "40845": [
+   "cypher",
+   "killjoy",
+   "viper",
+   "vyse"
+  ],
+  "40935": [
+   "yoru"
+  ],
+  "4095": [
+   "kay-o",
+   "sage",
+   "sova"
+  ],
+  "41224": [
+   "neon",
+   "waylay"
+  ],
+  "4147": [
+   "brimstone",
+   "chamber",
+   "cypher",
+   "gekko",
+   "jett",
+   "omen",
+   "raze"
+  ],
+  "4164": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "viper"
+  ],
+  "41739": [
+   "chamber",
+   "jett",
+   "waylay"
+  ],
+  "41774": [
+   "gekko",
+   "harbor",
+   "sova"
+  ],
+  "4181": [
+   "fade",
+   "gekko",
+   "skye",
+   "sova"
+  ],
+  "424": [
+   "jett",
+   "killjoy",
+   "neon",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "42772": [
+   "fade",
+   "sova"
+  ],
+  "43057": [
+   "omen"
+  ],
+  "4321": [
+   "cypher",
+   "killjoy",
+   "omen",
+   "viper"
+  ],
+  "4375": [
+   "astra",
+   "viper"
+  ],
+  "4376": [
+   "cypher"
+  ],
+  "4377": [
+   "jett",
+   "skye"
+  ],
+  "4378": [
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "438": [
+   "astra",
+   "breach",
+   "brimstone",
+   "kay-o",
+   "omen",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "4382": [
+   "astra",
+   "omen",
+   "viper"
+  ],
+  "4428": [
+   "chamber",
+   "neon",
+   "raze",
+   "waylay"
+  ],
+  "4462": [
+   "astra",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "448": [
+   "breach",
+   "cypher",
+   "viper"
+  ],
+  "45": [
+   "phoenix",
+   "raze",
+   "sage",
+   "skye",
+   "sova"
+  ],
+  "454": [
+   "cypher",
+   "killjoy",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "4545": [
+   "gekko",
+   "jett",
+   "raze",
+   "sage"
+  ],
+  "4558": [
+   "jett"
+  ],
+  "4559": [
+   "breach",
+   "kay-o",
+   "phoenix",
+   "raze",
+   "skye"
+  ],
+  "4560": [
+   "astra",
+   "omen"
+  ],
+  "4562": [
+   "breach",
+   "cypher",
+   "killjoy"
+  ],
+  "457": [
+   "astra",
+   "chamber",
+   "cypher",
+   "killjoy",
+   "viper",
+   "vyse",
+   "waylay"
+  ],
+  "458": [
+   "breach",
+   "brimstone",
+   "chamber",
+   "cypher",
+   "harbor",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "raze",
+   "sage",
+   "skye",
+   "sova",
+   "viper",
+   "vyse"
+  ],
+  "4581": [
+   "breach",
+   "fade",
+   "kay-o",
+   "omen",
+   "sage",
+   "skye",
+   "sova",
+   "viper",
+   "vyse"
+  ],
+  "46": [
+   "breach",
+   "jett",
+   "skye",
+   "sova"
+  ],
+  "4603": [
+   "cypher",
+   "killjoy"
+  ],
+  "4663": [
+   "breach",
+   "fade",
+   "skye"
+  ],
+  "46748": [
+   "astra",
+   "omen",
+   "raze"
+  ],
+  "4678": [
+   "breach",
+   "fade",
+   "sova"
+  ],
+  "47": [
+   "astra",
+   "viper"
+  ],
+  "4705": [
+   "astra",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "471": [
+   "reyna",
+   "skye"
+  ],
+  "4712": [
+   "breach",
+   "deadlock",
+   "kay-o",
+   "viper"
+  ],
+  "4720": [
+   "astra",
+   "breach",
+   "brimstone",
+   "cypher",
+   "gekko",
+   "harbor",
+   "omen",
+   "skye",
+   "viper"
+  ],
+  "4723": [
+   "viper"
+  ],
+  "473": [
+   "astra",
+   "skye",
+   "yoru"
+  ],
+  "474": [
+   "breach",
+   "harbor",
+   "kay-o",
+   "sova",
+   "viper"
+  ],
+  "4742": [
+   "astra",
+   "breach",
+   "brimstone",
+   "clove",
+   "fade",
+   "harbor",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "phoenix",
+   "raze",
+   "viper"
+  ],
+  "4770": [
+   "cypher",
+   "killjoy",
+   "omen",
+   "raze"
+  ],
+  "4774": [
+   "breach",
+   "cypher",
+   "fade",
+   "kay-o",
+   "omen",
+   "sage",
+   "sova"
+  ],
+  "48025": [
+   "neon",
+   "waylay"
+  ],
+  "485": [
+   "breach",
+   "fade",
+   "harbor",
+   "kay-o",
+   "omen",
+   "sage",
+   "skye",
+   "sova",
+   "tejo"
+  ],
+  "4866": [
+   "fade",
+   "kay-o",
+   "sova",
+   "vyse"
+  ],
+  "4871": [
+   "astra",
+   "breach",
+   "cypher",
+   "fade",
+   "killjoy",
+   "omen",
+   "viper"
+  ],
+  "4874": [
+   "jett",
+   "neon",
+   "skye"
+  ],
+  "488": [
+   "astra",
+   "brimstone",
+   "chamber",
+   "fade",
+   "harbor",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "omen",
+   "raze",
+   "sage",
+   "skye",
+   "sova",
+   "yoru"
+  ],
+  "4880": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen",
+   "viper"
+  ],
+  "4885": [
+   "jett",
+   "neon",
+   "raze",
+   "yoru"
+  ],
+  "48878": [
+   "harbor",
+   "omen",
+   "viper"
+  ],
+  "49476": [
+   "chamber",
+   "neon",
+   "yoru"
+  ],
+  "5022": [
+   "chamber",
+   "jett",
+   "neon",
+   "raze",
+   "sova",
+   "yoru"
+  ],
+  "50813": [
+   "jett",
+   "yoru"
+  ],
+  "51244": [
+   "breach",
+   "brimstone",
+   "cypher",
+   "kay-o",
+   "neon",
+   "omen",
+   "tejo",
+   "vyse",
+   "waylay"
+  ],
+  "5129": [
+   "cypher",
+   "deadlock",
+   "harbor",
+   "jett",
+   "killjoy",
+   "omen",
+   "phoenix",
+   "skye",
+   "viper"
+  ],
+  "5132": [
+   "jett",
+   "neon",
+   "phoenix",
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "5244": [
+   "astra",
+   "omen",
+   "viper"
+  ],
+  "5283": [
+   "jett",
+   "raze"
+  ],
+  "52904": [
+   "neon",
+   "waylay"
+  ],
+  "5351": [
+   "brimstone",
+   "omen"
+  ],
+  "5395": [
+   "cypher",
+   "killjoy",
+   "viper",
+   "vyse"
+  ],
+  "55038": [
+   "harbor",
+   "killjoy",
+   "viper"
+  ],
+  "55085": [
+   "omen"
+  ],
+  "5550": [
+   "astra",
+   "omen"
+  ],
+  "5554": [
+   "astra",
+   "brimstone",
+   "harbor",
+   "omen"
+  ],
+  "556": [
+   "sova"
+  ],
+  "5565": [
+   "fade",
+   "sova"
+  ],
+  "5568": [
+   "brimstone",
+   "fade",
+   "harbor",
+   "omen"
+  ],
+  "562": [
+   "kay-o",
+   "killjoy",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sova"
+  ],
+  "565": [
+   "astra",
+   "breach",
+   "fade",
+   "sage",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "5654": [
+   "fade",
+   "sova"
+  ],
+  "568": [
+   "breach",
+   "kay-o",
+   "sage",
+   "skye"
+  ],
+  "569": [
+   "cypher",
+   "killjoy",
+   "viper"
+  ],
+  "57": [
+   "sova",
+   "viper"
+  ],
+  "573": [
+   "chamber",
+   "jett",
+   "killjoy",
+   "neon",
+   "raze",
+   "sage"
+  ],
+  "5796": [
+   "deadlock",
+   "fade",
+   "killjoy",
+   "sova",
+   "tejo",
+   "vyse"
+  ],
+  "58959": [
+   "brimstone",
+   "neon",
+   "omen",
+   "waylay"
+  ],
+  "5957": [
+   "astra",
+   "breach",
+   "gekko",
+   "harbor",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "viper",
+   "yoru"
+  ],
+  "601": [
+   "breach",
+   "gekko",
+   "jett",
+   "kay-o",
+   "neon",
+   "omen",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sage",
+   "skye"
+  ],
+  "6022": [
+   "cypher",
+   "killjoy",
+   "viper"
+  ],
+  "604": [
+   "astra",
+   "brimstone",
+   "chamber",
+   "cypher",
+   "gekko",
+   "killjoy",
+   "reyna"
+  ],
+  "612": [
+   "cypher",
+   "killjoy",
+   "sage",
+   "viper"
+  ],
+  "619": [
+   "breach",
+   "brimstone",
+   "cypher",
+   "fade",
+   "kay-o",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "6193": [
+   "breach",
+   "fade",
+   "kay-o",
+   "sage",
+   "skye",
+   "sova"
+  ],
+  "64969": [
+   "omen"
+  ],
+  "65": [
+   "sage",
+   "sova"
+  ],
+  "651": [
+   "cypher",
+   "jett",
+   "killjoy",
+   "phoenix",
+   "reyna",
+   "sage",
+   "skye"
+  ],
+  "6510": [
+   "astra",
+   "breach",
+   "brimstone",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "6582": [
+   "chamber",
+   "cypher",
+   "killjoy"
+  ],
+  "659": [
+   "breach",
+   "fade",
+   "gekko",
+   "skye",
+   "sova"
+  ],
+  "6668": [
+   "astra",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "6674": [
+   "astra",
+   "viper"
+  ],
+  "6700": [
+   "killjoy"
+  ],
+  "6723": [
+   "fade",
+   "jett",
+   "kay-o",
+   "phoenix",
+   "sage",
+   "skye",
+   "sova",
+   "yoru"
+  ],
+  "681": [
+   "chamber",
+   "jett",
+   "kay-o",
+   "neon",
+   "raze"
+  ],
+  "683": [
+   "astra",
+   "brimstone",
+   "chamber",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "687": [
+   "jett"
+  ],
+  "6959": [
+   "breach",
+   "kay-o",
+   "viper"
+  ],
+  "7045": [
+   "breach",
+   "chamber",
+   "kay-o",
+   "killjoy",
+   "viper"
+  ],
+  "7135": [
+   "raze",
+   "skye",
+   "sova"
+  ],
+  "725": [
+   "breach",
+   "fade",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "727": [
+   "breach",
+   "chamber",
+   "cypher",
+   "fade",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "raze",
+   "sage",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "729": [
+   "breach",
+   "brimstone",
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "phoenix",
+   "sage",
+   "viper",
+   "vyse"
+  ],
+  "733": [
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "sage",
+   "viper"
+  ],
+  "7378": [
+   "kay-o",
+   "neon",
+   "omen",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sage"
+  ],
+  "7403": [
+   "neon"
+  ],
+  "7405": [
+   "kay-o",
+   "raze",
+   "sage"
+  ],
+  "7426": [
+   "jett",
+   "raze",
+   "yoru"
+  ],
+  "754": [
+   "tejo",
+   "viper"
+  ],
+  "7603": [
+   "astra",
+   "breach",
+   "brimstone",
+   "cypher",
+   "deadlock",
+   "fade",
+   "harbor",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "sage",
+   "skye",
+   "sova",
+   "viper"
+  ],
+  "771": [
+   "astra",
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "viper"
+  ],
+  "7716": [
+   "jett",
+   "omen",
+   "phoenix",
+   "raze"
+  ],
+  "7718": [
+   "astra",
+   "chamber",
+   "kay-o",
+   "raze",
+   "skye"
+  ],
+  "772": [
+   "astra",
+   "brimstone",
+   "fade",
+   "harbor",
+   "kay-o",
+   "killjoy",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "773": [
+   "fade",
+   "gekko",
+   "raze",
+   "skye",
+   "sova"
+  ],
+  "7754": [
+   "astra",
+   "omen",
+   "sage",
+   "skye",
+   "sova"
+  ],
+  "7764": [
+   "cypher",
+   "sage"
+  ],
+  "783": [
+   "breach",
+   "kay-o",
+   "killjoy",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sage"
+  ],
+  "7841": [
+   "jett",
+   "raze"
+  ],
+  "7849": [
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "7857": [
+   "astra",
+   "breach",
+   "fade",
+   "harbor",
+   "omen",
+   "raze",
+   "sova"
+  ],
+  "7870": [
+   "astra",
+   "killjoy",
+   "omen",
+   "viper"
+  ],
+  "7871": [
+   "kay-o",
+   "raze",
+   "skye",
+   "sova"
+  ],
+  "7873": [
+   "astra",
+   "chamber",
+   "cypher",
+   "deadlock",
+   "jett",
+   "killjoy",
+   "phoenix",
+   "sage",
+   "skye",
+   "viper",
+   "vyse",
+   "yoru"
+  ],
+  "7888": [
+   "astra",
+   "brimstone",
+   "fade",
+   "omen",
+   "viper"
+  ],
+  "796": [
+   "fade",
+   "sova"
+  ],
+  "804": [
+   "astra",
+   "chamber",
+   "jett",
+   "killjoy",
+   "neon",
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "8041": [
+   "astra",
+   "omen",
+   "viper"
+  ],
+  "8044": [
+   "breach",
+   "fade",
+   "gekko",
+   "killjoy",
+   "omen",
+   "skye",
+   "sova"
+  ],
+  "805": [
+   "breach",
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "817": [
+   "breach",
+   "cypher",
+   "fade",
+   "kay-o",
+   "killjoy",
+   "sage",
+   "viper"
+  ],
+  "824": [
+   "astra",
+   "killjoy",
+   "omen",
+   "sage",
+   "viper"
+  ],
+  "8286": [
+   "astra"
+  ],
+  "8369": [
+   "astra",
+   "cypher",
+   "killjoy",
+   "viper",
+   "vyse"
+  ],
+  "8402": [
+   "gekko",
+   "jett",
+   "raze",
+   "yoru"
+  ],
+  "8447": [
+   "astra",
+   "brimstone",
+   "chamber",
+   "cypher",
+   "killjoy",
+   "viper"
+  ],
+  "8480": [
+   "chamber",
+   "jett",
+   "neon",
+   "raze",
+   "waylay"
+  ],
+  "8497": [
+   "astra",
+   "neon",
+   "omen",
+   "raze",
+   "viper"
+  ],
+  "8504": [
+   "breach",
+   "brimstone",
+   "fade",
+   "kay-o",
+   "killjoy",
+   "skye",
+   "sova"
+  ],
+  "8549": [
+   "astra",
+   "breach",
+   "brimstone",
+   "harbor",
+   "kay-o",
+   "neon",
+   "omen",
+   "raze",
+   "viper",
+   "vyse"
+  ],
+  "864": [
+   "astra",
+   "fade",
+   "omen",
+   "skye",
+   "sova"
+  ],
+  "8673": [
+   "breach",
+   "fade",
+   "gekko",
+   "jett",
+   "neon",
+   "raze",
+   "sova"
+  ],
+  "872": [
+   "chamber",
+   "cypher",
+   "jett",
+   "kay-o",
+   "phoenix",
+   "raze",
+   "veto",
+   "viper",
+   "yoru"
+  ],
+  "881": [
+   "chamber",
+   "jett",
+   "sage"
+  ],
+  "882": [
+   "astra",
+   "breach",
+   "brimstone",
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "sage"
+  ],
+  "8872": [
+   "astra",
+   "breach",
+   "harbor",
+   "jett",
+   "kay-o",
+   "sage",
+   "skye",
+   "viper"
+  ],
+  "8873": [
+   "chamber",
+   "jett",
+   "kay-o",
+   "neon"
+  ],
+  "9": [
+   "gekko",
+   "jett",
+   "kay-o",
+   "omen",
+   "raze",
+   "reyna",
+   "sage"
+  ],
+  "9196": [
+   "jett",
+   "neon",
+   "raze"
+  ],
+  "92": [
+   "jett",
+   "kay-o",
+   "phoenix",
+   "raze",
+   "reyna",
+   "sage",
+   "skye"
+  ],
+  "93": [
+   "breach",
+   "chamber",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "raze",
+   "sage",
+   "skye",
+   "viper"
+  ],
+  "937": [
+   "cypher",
+   "killjoy",
+   "sage",
+   "viper"
+  ],
+  "938": [
+   "jett",
+   "reyna",
+   "sage"
+  ],
+  "939": [
+   "fade",
+   "skye",
+   "sova"
+  ],
+  "950": [
+   "killjoy",
+   "sage",
+   "skye"
+  ],
+  "9554": [
+   "jett",
+   "neon",
+   "raze",
+   "waylay",
+   "yoru"
+  ],
+  "9558": [
+   "jett"
+  ],
+  "97": [
+   "killjoy",
+   "viper"
+  ],
+  "9735": [
+   "astra"
+  ],
+  "9747": [
+   "kay-o",
+   "reyna"
+  ],
+  "9780": [
+   "astra",
+   "breach",
+   "chamber",
+   "fade",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "phoenix",
+   "raze",
+   "sage",
+   "skye",
+   "sova",
+   "yoru"
+  ],
+  "98": [
+   "chamber",
+   "cypher",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "raze",
+   "sage"
+  ],
+  "9800": [
+   "astra",
+   "brimstone",
+   "omen",
+   "viper"
+  ],
+  "9801": [
+   "astra",
+   "breach",
+   "brimstone",
+   "chamber",
+   "cypher",
+   "fade",
+   "harbor",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "neon",
+   "omen",
+   "raze",
+   "reyna",
+   "skye",
+   "sova",
+   "veto",
+   "viper",
+   "waylay",
+   "yoru"
+  ],
+  "9802": [
+   "breach",
+   "cypher",
+   "fade",
+   "killjoy",
+   "sage",
+   "sova",
+   "viper"
+  ],
+  "9803": [
+   "astra",
+   "breach",
+   "chamber",
+   "fade",
+   "jett",
+   "kay-o",
+   "killjoy",
+   "omen",
+   "sage",
+   "skye",
+   "sova",
+   "viper",
+   "vyse"
+  ],
+  "9810": [
+   "breach",
+   "chamber",
+   "cypher",
+   "gekko",
+   "iso",
+   "killjoy",
+   "neon",
+   "raze",
+   "sage",
+   "tejo",
+   "viper",
+   "vyse"
+  ],
+  "983": [
+   "astra",
+   "brimstone"
+  ],
+  "985": [
+   "killjoy"
+  ],
+  "99": [
+   "astra",
+   "breach",
+   "brimstone",
+   "cypher",
+   "omen",
+   "viper"
+  ],
+  "992": [
+   "astra",
+   "omen",
+   "viper"
+  ],
+  "993": [
+   "cypher",
+   "killjoy",
+   "sova"
+  ],
+  "999": [
+   "chamber",
+   "cypher",
+   "kay-o",
+   "killjoy",
+   "skye",
+   "sova",
+   "viper"
+  ]
+ },
+ "provenance": {
+  "note": "An agent is listed if the player has ever played it in the dataset; there are no per-agent or per-map counts.",
+  "source": "VCT Reference player_map agents, via datasets/derived/ratings/player_ratings.json"
+ }
+}

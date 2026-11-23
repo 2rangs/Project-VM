@@ -119,6 +119,30 @@
 .lg.sound { border-radius: 50%; border: 2px solid var(--mx-sound); }
 .lg.dest { border-radius: 50%; border: 2px dashed var(--mx-ally); }
 .mdx-debugctl { position: absolute; right: 8px; bottom: 8px; z-index: 2; font-size: 10px; color: var(--mx-muted); background: #0b131bb8; padding: 4px 8px; }
+/* navigation debug (developer view): why each player is walking where it walks */
+.mdx-navdbg { flex: 0 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--mx-dim); background: #0b131bcc; padding: 6px 8px; border-left: 3px solid #3fa7ff; }
+.mdx-navdbg-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding-bottom: 3px; border-bottom: 1px solid #2c3a47; }
+.mdx-navdbg-head b { font-family: var(--mx-font); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--mx-ink, #ece8e1); }
+.mdx-navdbg-row { display: flex; flex-wrap: wrap; gap: 0 6px; align-items: baseline; line-height: 1.35; }
+.mdx-navdbg-row b { flex: 0 0 auto; color: var(--mx-ink, #ece8e1); white-space: nowrap; }
+.mdx-navdbg-row span { flex: 1 1 100%; min-width: 0; padding-left: 18px; }
+.mdx-navdbg-row em { flex: 0 0 auto; font-style: normal; color: #ffa24a; white-space: nowrap; }
+.mdx-navdbg-row em.fail, .mdx-navdbg-row.fail span, .mdx-navdbg-row.warn { color: var(--mx-enemy); }
+.mdx-navdbg-legend { display: flex; flex-wrap: wrap; gap: 3px 10px; padding-top: 3px; border-top: 1px solid #2c3a47; font-size: 10px; }
+.mdx-navdbg-legend span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.mdx-navdbg .pref { display: inline-block; flex: 0 0 auto; width: 12px; height: 3px; background: #5b6670; align-self: center; }
+.mdx-navdbg .pref.fastest { background: #6ab7ff; }
+.mdx-navdbg .pref.safest { background: #7bd88f; }
+.mdx-navdbg .pref.stealth { background: #c792ea; }
+.mdx-navdbg .pref.tactical { background: #f2d95c; }
+.mdx-navdbg .pref.fail { background: var(--mx-enemy); }
+.lgn { display: inline-block; width: 9px; height: 9px; }
+.lgn.trail { height: 2px; width: 12px; background: #ece8e1; opacity: .6; }
+.lgn.replan { background: #ffa24a; transform: rotate(45deg) scale(.8); }
+.lgn.fail { background: linear-gradient(45deg, transparent 42%, var(--mx-enemy) 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, var(--mx-enemy) 42% 58%, transparent 58%); }
+.lgn.zone-ok { border-radius: 50%; border: 2px solid #7bd88f; }
+.lgn.zone-bad { border-radius: 50%; border: 2px solid var(--mx-enemy); }
+.lgn.drop { height: 2px; width: 12px; background: #ffa24a; }
 
 /* ── roster panels ────────────────────────────────────────────────────────────────────── */
 .mdx-panel { display: flex; flex-direction: column; gap: 8px; min-height: 0; min-width: 0; }

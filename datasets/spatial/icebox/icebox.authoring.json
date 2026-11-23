@@ -1,0 +1,30 @@
+{
+  "mapId": "icebox",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "rope",
+      "name": "Vertical ropes (A Nest / A Rafters, B Yellow container, Mid Boiler)",
+      "represented": false,
+      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "zipline",
+      "name": "Horizontal zipline across A site",
+      "represented": false,
+      "engineNeeds": "zipline edge with its own speed and exposure",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ],
+  "zoneOverrides": {
+    "mid-pallet": {
+      "zoneType": "mid",
+      "note": "manual-approx: Icebox's mid lane; no Top/Bottom/Courtyard callout exists"
+    },
+    "mid-blue": {
+      "zoneType": "mid",
+      "note": "manual-approx: Icebox's mid lane"
+    }
+  }
+}

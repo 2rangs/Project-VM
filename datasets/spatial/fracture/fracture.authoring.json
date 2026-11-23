@@ -1,0 +1,44 @@
+{
+  "mapId": "fracture",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "specialEdges": [
+    {
+      "from": "attacker-spawn",
+      "to": "attacker-bridge",
+      "bidirectional": true,
+      "kind": "zipline",
+      "basis": "authored zipline under the map; straight-line length at run speed (real zipline speed not measured)",
+      "note": "attackers cross under the map to the far side"
+    }
+  ],
+  "mechanics": [
+    {
+      "kind": "zipline",
+      "name": "Ziplines under the map joining the two attacker sides",
+      "represented": true,
+      "how": "bidirectional edge kind=zipline (travel time = straight line at run speed, an estimate)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "layout",
+      "name": "Attackers approach from BOTH sides; defenders spawn in the middle",
+      "represented": false,
+      "engineNeeds": "only one 'attacker-spawn' exists in the callouts; a second attacker start (attacker-bridge) and pincer defaults need engine support",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "rope",
+      "name": "Vertical ropes (A Rope, B Tower)",
+      "represented": false,
+      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state (reduced accuracy, audible)",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "layout",
+      "name": "No mid: the map has no 'Mid' super-region",
+      "represented": false,
+      "engineNeeds": "zonesByType('mid') is empty",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

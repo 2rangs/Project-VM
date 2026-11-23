@@ -1,0 +1,239 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Sunset.blend",
+  "blendBytes": 353857321,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Juliett_Art_ASiteVista": 381,
+    "Juliett_Art_AtkPathA": 494,
+    "Juliett_Art_AtkPathB": 441,
+    "Juliett_Art_AtkPathB_Interior": 131,
+    "Juliett_Art_AtkPathToDefA": 209,
+    "Juliett_Art_AtkSpawn": 777,
+    "Juliett_Art_AtkSpawnVista": 418,
+    "Juliett_Art_BSite": 163,
+    "Juliett_Art_BSiteVista": 396,
+    "Juliett_Art_ConnectorToB": 372,
+    "Juliett_Art_DefPathA": 393,
+    "Juliett_Art_DefPathB": 250,
+    "Juliett_Art_DefSpawn": 577,
+    "Juliett_Art_DefSpawnVista": 766,
+    "Juliett_Art_MantisStore": 235,
+    "Juliett_Art_Mid": 1281,
+    "Juliett_ASite": 739
+  },
+  "keptCollections": {
+    "Juliett_Art_AtkSpawn": {
+      "objects": 665,
+      "tris": 194051,
+      "min": [
+        -72.22,
+        -54.21,
+        -3.61
+      ],
+      "max": [
+        -18.01,
+        26.4,
+        17.61
+      ]
+    },
+    "Juliett_Art_ConnectorToB": {
+      "objects": 330,
+      "tris": 107462,
+      "min": [
+        -51.79,
+        -30.2,
+        -1.74
+      ],
+      "max": [
+        34.02,
+        34.76,
+        33.79
+      ]
+    },
+    "Juliett_Art_DefPathA": {
+      "objects": 356,
+      "tris": 91610,
+      "min": [
+        18.18,
+        -48.5,
+        0.71
+      ],
+      "max": [
+        58.87,
+        20.75,
+        21.73
+      ]
+    },
+    "Juliett_Art_DefSpawn": {
+      "objects": 503,
+      "tris": 192487,
+      "min": [
+        29.74,
+        -33.25,
+        -2.72
+      ],
+      "max": [
+        70.48,
+        52.41,
+        18.15
+      ]
+    },
+    "Juliett_Art_Mid": {
+      "objects": 1092,
+      "tris": 353015,
+      "min": [
+        -45.5,
+        -23.32,
+        -0.07
+      ],
+      "max": [
+        34.09,
+        21.04,
+        32.83
+      ]
+    },
+    "Juliett_Art_MantisStore": {
+      "objects": 198,
+      "tris": 121010,
+      "min": [
+        -63.09,
+        -31.59,
+        -2.15
+      ],
+      "max": [
+        -42.76,
+        12.27,
+        17.62
+      ]
+    },
+    "Juliett_Art_AtkPathA": {
+      "objects": 439,
+      "tris": 146572,
+      "min": [
+        -26.46,
+        -42.8,
+        -0.78
+      ],
+      "max": [
+        -0.08,
+        -16.03,
+        11.96
+      ]
+    },
+    "Juliett_Art_AtkPathToDefA": {
+      "objects": 175,
+      "tris": 55976,
+      "min": [
+        -101.89,
+        -31.9,
+        0.81
+      ],
+      "max": [
+        27.55,
+        12.71,
+        12.29
+      ]
+    },
+    "Juliett_ASite": {
+      "objects": 663,
+      "tris": 172139,
+      "min": [
+        -4.46,
+        -61.79,
+        -1.11
+      ],
+      "max": [
+        44.16,
+        -26.46,
+        15.93
+      ]
+    },
+    "Juliett_Art_AtkPathB": {
+      "objects": 396,
+      "tris": 148877,
+      "min": [
+        -73.1,
+        12.49,
+        -1.61
+      ],
+      "max": [
+        10.07,
+        79.77,
+        22.73
+      ]
+    },
+    "Juliett_Art_BSite": {
+      "objects": 157,
+      "tris": 50937,
+      "min": [
+        -51.86,
+        11.24,
+        -7.07
+      ],
+      "max": [
+        22.37,
+        78.39,
+        47.89
+      ]
+    },
+    "Juliett_Art_AtkPathB_Interior": {
+      "objects": 121,
+      "tris": 29349,
+      "min": [
+        -34.93,
+        -41.97,
+        0.32
+      ],
+      "max": [
+        29.8,
+        58.97,
+        34.43
+      ]
+    },
+    "Juliett_Art_DefPathB": {
+      "objects": 224,
+      "tris": 90221,
+      "min": [
+        15.39,
+        -10.0,
+        1.84
+      ],
+      "max": [
+        41.52,
+        56.55,
+        17.29
+      ]
+    }
+  },
+  "objectsKept": 5319,
+  "objectsSkippedExcludedCollection": 1732,
+  "objectsSkippedHidden": 0,
+  "verts": 2367024,
+  "tris": 1753706,
+  "triangleClass": {
+    "floor(nz>=cos45)": 391460,
+    "wall(|nz|<=cos70)": 762860,
+    "other": 599386
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -101.89,
+      -61.79,
+      -7.07
+    ],
+    "max": [
+      70.48,
+      79.77,
+      47.89
+    ]
+  },
+  "materials": 572,
+  "seconds": 3.6
+}

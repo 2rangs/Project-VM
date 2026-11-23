@@ -16,6 +16,9 @@ import {
   IPC, type SessionCommand, type SessionReply, type SessionStartRequest, type SessionState,
   type SimProgress, type SimRunRequest, type SimResult,
 } from '../shared/ipc.ts';
+// [series]
+import { SeriesHost } from './series-host.ts';
+import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 // electron-vite lays out: out/main/index.js, out/main/sim-worker.js, out/preload/index.mjs
@@ -52,6 +55,9 @@ function createWindow(): BrowserWindow {
 function repoRoot(): string { return process.env.PV_REPO_ROOT ?? path.resolve(app.getAppPath(), '..', '..'); }
 function matchScript(): string { return process.env.PV_MATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'run-match.mts'); }
 function sessionScript(): string { return process.env.PV_SESSION_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'match-session.mts'); }
+// [series]
+function seriesScript(): string { return process.env.PV_SERIES_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'series-session.mts'); }
+const seriesHost = new SeriesHost(seriesScript, repoRoot);
 
 // --- interactive match session: one long-lived tsx subprocess hosting a stateful
 //     @pv/match-runner MatchSession, driven over a line-delimited JSON protocol.
@@ -66,6 +72,7 @@ class SessionHost {
     this.dispose();
     const cfg = {
       teamA: req.teamA, teamB: req.teamB, map: req.mapId, seed: req.seed, aiTeams: req.aiTeams ?? ['B'],
+      options: req.options ?? {},
     };
     const child = spawn('npx', ['tsx', sessionScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
     this.child = child;
@@ -113,7 +120,7 @@ function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebC
     const cfg = {
       teamA: req.teamA ?? { id: 'A', name: 'Team A' },
       teamB: req.teamB ?? { id: 'B', name: 'Team B' },
-      map: req.mapId, seed: req.seed,
+      map: req.mapId, seed: req.seed, options: req.options ?? {},
     };
     sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: 'match-runner (pistol → halves → 13 → OT)' } satisfies SimProgress);
     const child = spawn('npx', ['tsx', matchScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
@@ -160,6 +167,7 @@ function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebC
 ipcMain.handle(IPC.simRun, async (event, req: SimRunRequest): Promise<SimResult> => {
   const runId = randomUUID();
   const sender = event.sender;
+  if (req.seriesGame) return runSeriesGame(req, runId, sender); // [series] next map of the live series
   try {
     return await runMatchRunner(req, runId, sender);
   } catch (err) {
@@ -189,9 +197,38 @@ function runRoundSimFallback(req: SimRunRequest, runId: string, sender: Electron
   });
 }
 
-ipcMain.handle(IPC.sessionStart, async (_e, req: SessionStartRequest): Promise<SessionState> => sessionHost.start(req));
-ipcMain.handle(IPC.sessionCmd, async (_e, cmd: SessionCommand): Promise<SessionReply> => sessionHost.send(cmd));
-ipcMain.handle(IPC.sessionStop, async (): Promise<void> => { sessionHost.dispose(); });
+// [series] While a map of a series is open, the session channels talk to the series host (which
+// speaks the same commands, reported from our team's seat); otherwise to the plain match session.
+ipcMain.handle(IPC.sessionStart, async (_e, req: SessionStartRequest): Promise<SessionState> => {
+  if (!req.seriesGame) { seriesHost.gameOpen = false; return sessionHost.start(req); }
+  const r = await seriesHost.send({ cmd: 'startGame' });
+  seriesHost.gameOpen = true;
+  return r.state as SessionState;
+});
+ipcMain.handle(IPC.sessionCmd, async (_e, cmd: SessionCommand): Promise<SessionReply> =>
+  (seriesHost.gameOpen ? (seriesHost.send({ ...cmd }) as Promise<SessionReply>) : sessionHost.send(cmd)));
+ipcMain.handle(IPC.sessionStop, async (): Promise<void> => {
+  if (seriesHost.gameOpen) { seriesHost.gameOpen = false; await seriesHost.send({ cmd: 'closeGame' }, 180000); return; } // plays the map out
+  sessionHost.dispose();
+});
+
+// [series] veto + series state
+ipcMain.handle(IPC.seriesStart, async (_e, req: SeriesStartRequest): Promise<SeriesView> => seriesHost.start(req));
+ipcMain.handle(IPC.seriesCmd, async (_e, cmd: SeriesCommand): Promise<SeriesReply> => seriesHost.send({ ...cmd }) as Promise<SeriesReply>);
+ipcMain.handle(IPC.seriesStop, async (): Promise<void> => { seriesHost.dispose(); });
+
+/** [series] One map of the live series in one go: the host returns the same RawMatch as run-match.mts. */
+async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
+  sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: 'series map (match-runner)' } satisfies SimProgress);
+  const r = await seriesHost.send({ cmd: 'playGame' }, 180000);
+  const { events, summary, perception } = mergeMatch(r.match as RawMatch);
+  const replay = fromSimEventLog(events, {
+    mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
+    matchId: `${summary.teams.A.name} vs ${summary.teams.B.name}`, perception,
+  });
+  sender.send(IPC.simProgress, { runId, phase: 'done', pct: 1 } satisfies SimProgress);
+  return { runId, source: 'match-runner', replay, match: summary };
+}
 
 // Optional real map mesh for the 3D team cams: apps/desktop/assets/maps/<map>.glb (gitignored —
 // map geometry is third-party IP and is never committed). Absent → null → navgraph blockout.

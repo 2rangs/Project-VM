@@ -1,0 +1,31 @@
+{
+  "mapId": "icebox",
+  "mapUuid": "e2ad5c54-4114-a870-9641-8ea21279579a",
+  "patchVersion": "UNVERIFIED",
+  "description": "Game-world <-> minimap coordinate transform for Icebox, verbatim from valorant-api.com/v1/maps (read 2026-11-19). Same axis-swapped convention as Ascent.",
+  "units": {
+    "gameUnit": "Unreal unit (uu)",
+    "unitsPerMeter": 100
+  },
+  "transform": {
+    "xMultiplier": 7.2e-05,
+    "yMultiplier": -7.2e-05,
+    "xScalarToAdd": 0.460214,
+    "yScalarToAdd": 0.304687,
+    "forward": {
+      "minimapX": "gameY * xMultiplier + xScalarToAdd",
+      "minimapY": "gameX * yMultiplier + yScalarToAdd"
+    },
+    "inverse": {
+      "gameY": "(minimapX - xScalarToAdd) / xMultiplier",
+      "gameX": "(minimapY - yScalarToAdd) / yMultiplier"
+    }
+  },
+  "provenance": {
+    "sourceId": "valorant-api-maps",
+    "sourceUrl": "https://valorant-api.com/v1/maps",
+    "retrievedAt": "2026-11-19",
+    "evidenceType": "decoded",
+    "verified": true
+  }
+}

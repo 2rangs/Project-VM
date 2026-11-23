@@ -1,0 +1,31 @@
+{
+  "mapId": "pearl",
+  "mapUuid": "fd267378-4d1d-484f-ff52-77821ed10dc2",
+  "patchVersion": "UNVERIFIED",
+  "description": "Game-world <-> minimap coordinate transform for Pearl, verbatim from valorant-api.com/v1/maps (read 2026-11-19). Same axis-swapped convention as Ascent.",
+  "units": {
+    "gameUnit": "Unreal unit (uu)",
+    "unitsPerMeter": 100
+  },
+  "transform": {
+    "xMultiplier": 7.8e-05,
+    "yMultiplier": -7.8e-05,
+    "xScalarToAdd": 0.480469,
+    "yScalarToAdd": 0.916016,
+    "forward": {
+      "minimapX": "gameY * xMultiplier + xScalarToAdd",
+      "minimapY": "gameX * yMultiplier + yScalarToAdd"
+    },
+    "inverse": {
+      "gameY": "(minimapX - xScalarToAdd) / xMultiplier",
+      "gameX": "(minimapY - yScalarToAdd) / yMultiplier"
+    }
+  },
+  "provenance": {
+    "sourceId": "valorant-api-maps",
+    "sourceUrl": "https://valorant-api.com/v1/maps",
+    "retrievedAt": "2026-11-19",
+    "evidenceType": "decoded",
+    "verified": true
+  }
+}

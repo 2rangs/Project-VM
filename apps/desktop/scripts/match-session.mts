@@ -13,13 +13,12 @@
 import { createInterface } from 'node:readline';
 import { createMatchSession, type MatchSession } from '../../../packages/match-runner/src/index.ts';
 import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
-import { installTrackRecording, withSpawnMoves } from './track-shim.mts';
-
-installTrackRecording(); // player positions for the live match screen (see track-shim.mts)
 
 interface Cfg {
   teamA: { id: string; name: string }; teamB: { id: string; name: string };
   map?: string; seed?: number; aiTeams?: ('A' | 'B')[];
+  /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
 }
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 
@@ -30,6 +29,9 @@ const session: MatchSession = createMatchSession(
     map: cfg.map ?? 'ascent',
     seed: cfg.seed ?? 1,
     recordPerception: true,
+    recordTracks: true, // player positions + the navigation trace (see run-match.mts)
+    ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
+    ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
   },
   { aiTeams: cfg.aiTeams ?? ['B'] },
 );
@@ -48,8 +50,10 @@ function compactRound(r: ReturnType<MatchSession['playNextRound']>) {
       A: { tier: r.buys.A.tier, weapon: r.buys.A.weapon },
       B: { tier: r.buys.B.tier, weapon: r.buys.B.weapon },
     },
-    replayEvents: withSpawnMoves(r.replay.events as unknown as Record<string, unknown>[]),
+    replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
+    decisions: r.decisions ?? null,
+    nav: r.navTrace ?? null,
   };
 }
 

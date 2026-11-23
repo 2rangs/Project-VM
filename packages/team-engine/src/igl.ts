@@ -41,7 +41,7 @@ function isEco(view: PolicyView): boolean {
 
 const v2 = (v: Vector3) => ({ x: v.x, y: v.y });
 
-/** Site-read lead (in seen-enemy units) that justifies changing the team call mid-round. */
+/** ATTACK: site-read lead (in seen-enemy units) that justifies swinging off a stacked site mid-round. */
 const ROTATE_EVIDENCE = 2;
 /** A heard cue fades to nothing over this long. */
 const SOUND_EVIDENCE_WINDOW_MS = 8000;
@@ -153,9 +153,9 @@ export interface Reconsideration {
 }
 
 /**
- * Re-decide mid-round when new information arrives (README §24.1 call changes). If the
- * enemy is now clearly committed to a site, defenders rotate/stack toward it (or retake a
- * planted site); attackers swing away from a stacked site.
+ * Re-decide mid-round when new information arrives (README §24.1 call changes): defenders
+ * call the retake when the spike goes down (their pre-plant rotation is belief-driven, see
+ * hit-belief.ts); attackers swing away from a stacked site.
  */
 export function reconsider(
   view: PolicyView,
@@ -174,12 +174,9 @@ export function reconsider(
     if (planted && prev !== "retake") {
       return { strategy: "retake", changed: true, reason: "spike planted — retake call" };
     }
-    if (lean >= strong && prev !== "stackA") {
-      return { strategy: "stackA", changed: true, reason: "enemies reading A — rotate/stack A" };
-    }
-    if (-lean >= strong && prev !== "stackB") {
-      return { strategy: "stackB", changed: true, reason: "enemies reading B — rotate/stack B" };
-    }
+    // Where the hit is coming, and how many to send, is not a threshold on a site count any more:
+    // the policy keeps a Bayesian belief over hit / fake / nothing (hit-belief.ts) and rotates in
+    // proportion to it (TeamDecisionPolicy.commitDefenseRotation), recording each change on the plan.
     return { strategy: prev, changed: false, reason: "no decisive new info" };
   }
 
@@ -193,17 +190,26 @@ export function reconsider(
   return { strategy: prev, changed: false, reason: "committing to plan" };
 }
 
-/** Deterministically assign roles to alive teammates (README §23 role understanding). */
+/**
+ * Deterministically assign roles to alive teammates (README §23 role understanding).
+ *
+ * The lurker is DESIGNATED once: the least aggressive player of the whole roster (alive or not).
+ * It is not "whoever is last among the living" — otherwise each time the lurker died the next
+ * most passive player would peel off the team in turn, and a five-man attack would trickle away
+ * one lurker at a time. A dead lurker is not replaced, and a team that is down to three does not
+ * keep one (the designated player rejoins as support).
+ */
 export function assignRoles(
   view: PolicyView,
   strategy: TeamStrategy,
   profiles: ReadonlyMap<string, PlayerProfile> | undefined,
   _rng: RandomSource,
 ): RoleAssignment[] {
-  const alive = view.teammates
-    .filter((p) => p.alive)
-    .map((p) => ({ id: p.id, profile: profileFor(p.id, profiles) }))
-    .sort((a, b) => b.profile.aggression - a.profile.aggression || (a.id < b.id ? -1 : 1));
+  const byAggression = (a: { id: PlayerId; profile: PlayerProfile }, b: { id: PlayerId; profile: PlayerProfile }) =>
+    b.profile.aggression - a.profile.aggression || (a.id < b.id ? -1 : 1);
+  const roster = view.teammates.map((p) => ({ id: p.id, alive: p.alive, profile: profileFor(p.id, profiles) })).sort(byAggression);
+  const alive = roster.filter((p) => p.alive);
+  const designatedLurker = roster.length > 0 ? roster[roster.length - 1]!.id : null;
 
   const roles: RoleAssignment[] = [];
   const attack = view.side === "attack";
@@ -211,8 +217,8 @@ export function assignRoles(
     let role: RoleAssignment["role"];
     if (attack) {
       if (i === 0) role = "entry";
-      else if (i === alive.length - 1) role = strategy.startsWith("lurk") || alive.length >= 4 ? "lurker" : "support";
-      else if (i === 1) role = "support";
+      else if (id === designatedLurker && (strategy.startsWith("lurk") || alive.length >= 4)) role = "lurker";
+      else if (i === 1 || i === alive.length - 1) role = "support";
       else role = "rotator";
     } else {
       if (i === 0 && strategy === "aggroPush") role = "entry";

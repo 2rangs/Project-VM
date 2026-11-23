@@ -15,6 +15,8 @@ import type {
 
 export * from "./types.ts";
 export { normalizeAgentSlug, normalizeId } from "./normalize.ts";
+// Per-map knowledge for the series layer (comps, agent pools, team map records).
+export * from "./maps.ts";
 
 const DATA = new URL("../data/", import.meta.url);
 function load<T>(name: string): T {

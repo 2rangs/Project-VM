@@ -10,10 +10,12 @@
  * The SpatialQuery and (optional) EconomyEvaluator are CONSTRUCTION dependencies — the
  * per-decision input is only the PolicyView (no WorldState; DECISION-004).
  */
+import { annotateRoutes } from "./route-intent.js";
 import type {
   ActionCommand,
   DecisionPolicy,
   EconomyEvaluator,
+  MoveMode,
   PlayerProfile,
   PolicyDecision,
   PolicyView,
@@ -21,6 +23,7 @@ import type {
   RoleAssignment,
   SpatialQuery,
   TeamStrategy,
+  Vector3,
   ZoneId,
 } from "@pv/shared-types";
 import { buildTeamBelief, enemyPressureOnZone } from "@pv/decision-engine";
@@ -30,6 +33,9 @@ import { assignRoles, enemySiteBias, profileFor, reconsider, selectStrategy } fr
 import { tendencyLean, type OpponentRead } from "./opponent-model.js";
 import { choosePlayerCommand, type PlayerChoice } from "./player-policy.js";
 import { applyTeamwork, type TeamworkEntry } from "./teamwork.js";
+import { chooseMoveMode, withinEarshot, type MoveIntent } from "./movement.js";
+import { BASE_FAKE_RATE, NO_EVIDENCE, rotationCount, updateHitBelief, type HitBelief, type SiteEvidence } from "./hit-belief.js";
+import { planUtility } from "./utility.js";
 
 export interface TeamPolicyOptions {
   readonly profiles?: ReadonlyMap<string, PlayerProfile>;
@@ -40,7 +46,35 @@ export interface TeamPolicyOptions {
    * effects, so the policy needs this to coordinate execute utility. Omitted → no util coordination.
    */
   readonly abilityEffect?: (abilityId: string) => string | undefined;
+  /**
+   * Shop price of a weapon id (credits). The PolicyView carries what each player holds but not what
+   * it cost; the save decision needs the value of the gear at stake. Omitted → gear value is unknown
+   * and the save is decided on the man count alone.
+   */
+  readonly weaponPrice?: (weaponId: string) => number | undefined;
+  /**
+   * Centre of a zone in the same frame as player positions. Lets a player judge whether a run
+   * would be inside an enemy's hearing (the audio circle on the minimap). Omitted → the policy
+   * falls back on travel time as a stand-in for distance.
+   */
+  readonly zonePosition?: (zoneId: string) => Vector3 | undefined;
+  /**
+   * How far running footsteps carry (world units) — by the game's rule, the spike's blast radius
+   * (@pv/game-rules). Omitted → DEFAULT_FOOTSTEP_RADIUS_UNITS.
+   */
+  readonly footstepRadiusUnits?: number;
 }
+
+/** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
+export const DEFAULT_FOOTSTEP_RADIUS_UNITS = 5000;
+/** Run speed (world units / s) used to turn the footstep radius into a travel time when zone positions are unknown. */
+const RUN_UNITS_PER_SEC = 675;
+/** A fake's show is made by this many players ("few"): enough to be heard as a group, not the team. */
+const FEINT_SHOW_SIZE = 2;
+/** DEFENSE: footsteps count as evidence for this long after they were last heard. */
+const NOISE_WINDOW_MS = 4000;
+/** DEFENSE: a sighting counts as evidence for this long. */
+const SEEN_WINDOW_MS = 8000;
 
 /** Strategies that commit to a site execute (where entry utility is worth firing). */
 const ATTACK_EXECUTE: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>([
@@ -76,6 +110,8 @@ const DEFENSE_AIM: Readonly<Record<string, string>> = {
 const DEFUSE_DURATION_MS = 7000;
 /** Where defenders fall back to when they give up a post-plant retake. */
 const SAVE_FALLBACK_ZONE = "defender-spawn";
+/** The attack's own ground: where it rotates through between sites and falls back to. */
+const ATTACK_FALLBACK_ZONE = "attacker-spawn";
 /**
  * Pre-match tunables of the decision formulas. Every field has a calibrated default
  * (DEFAULT_POLICY_TUNING); a match may override any subset (MatchConfig.tuning).
@@ -85,21 +121,35 @@ export interface PolicyTuning {
   readonly throwRatePerSec: number;
   /** Throw hazard β: profile sensitivity (each +0.1 of z multiplies the rate by e^(β/10)). */
   readonly throwProfileBeta: number;
-  /** Lanchester κ: fighting-strength multiplier of the side already holding the planted spike. */
+  /** Lanchester κ: fighting-strength multiplier of the side holding the ground (the planted spike; before the plant, the sites). */
   readonly postPlantHolderEdge: number;
-  /** The defense retakes only when the Lanchester win chance is at least this. */
+  /** The defense plays the retake only when its Lanchester win chance is at least this; below it, it saves. */
   readonly retakeMinWinChance: number;
+  /**
+   * The attack plays the round out before the plant only when its Lanchester win chance is at
+   * least this; below it, it saves. Default 0.09 (κ = 1: 1v3 0.10 plays, 2v5 0.14 plays, 1v4 0.06
+   * saves) — lower than the defense's retake threshold, calibrated so that rounds run out the
+   * clock as often as in real play (docs/STAT_OUTCOME_MATRIX.md §3.6).
+   */
+  readonly attackSaveMinWinChance: number;
   /** Odds a hero-play lone defender (aggression ≥ 0.75) still accepts. */
   readonly heroMinWinChance: number;
+  /**
+   * The cheapest weapon (credits) an attack gives a lost round up to keep. Default 1900 — the
+   * smallest loss bonus: a gun the next round's loss bonus buys back is not worth saving.
+   */
+  readonly saveMinWeaponValue: number;
 }
 
-/** Calibrated on 160 Ascent matches (seeds 1..160) → 8/8 judged metrics vs the VCT baselines. */
+/** Defaults behind the 160-match Ascent validation (seeds 1..160); see docs/STAT_OUTCOME_MATRIX.md §6. */
 export const DEFAULT_POLICY_TUNING: PolicyTuning = {
   throwRatePerSec: 0.006,
   throwProfileBeta: 3,
   postPlantHolderEdge: 1,
   retakeMinWinChance: 0.15,
+  attackSaveMinWinChance: 0.09,
   heroMinWinChance: 0.08,
+  saveMinWeaponValue: 1900,
 };
 
 /** Aggression at/above which a lone defender plays for the hero clutch. */
@@ -112,7 +162,7 @@ const PLANT_DURATION_MS = 4000;
 const EXECUTE_TIME_MARGIN_MS = 8000;
 /** How much likelier a slow plan commits to the side it already holds, all else equal. */
 const SLOW_SIDE_PREFERENCE = 2;
-/** Latest round clock (ms remaining) at which a slow plan must have picked its site. */
+/** Latest round clock (ms remaining) at which a slow plan must have picked its site (earlier when the map needs it: slowCommitClockMs). */
 const SLOW_COMMIT_CLOCK_MS = 40_000;
 
 /** Site letter of a zone: from its metadata, else from the callout id ("a-site" → A). */
@@ -133,6 +183,12 @@ export interface PlanSummary {
   readonly objective: string | null;
   readonly feint: string | null;
   readonly revisions: ReadonlyArray<{ readonly atMs: number; readonly from: string; readonly to: string; readonly reason: string }>;
+  /** ATTACK fakes: how many players made the show (0 when the plan was not a fake). */
+  readonly showers?: number;
+  /** DEFENSE: the site where the attack's presence first showed (≥ 2 bodies heard or seen), if any. */
+  readonly shownSite?: string | null;
+  /** DEFENSE: every change of the pre-plant rotation — how many players were sent to which site. */
+  readonly rotations?: ReadonlyArray<{ readonly atMs: number; readonly site: string | null; readonly count: number }>;
 }
 
 /** The team's standing plan for one round (mutable: revised in place as information arrives). */
@@ -151,6 +207,29 @@ interface StandingPlan {
   uncommitted: boolean;
   /** ATTACK slow play: the site whose approach the team holds while undecided. */
   slowSide: ZoneId | null;
+  /** ATTACK: the round was called lost before the plant — the survivors save; the call it replaced. */
+  savedFrom: TeamStrategy | null;
+  /** DEFENSE: players who have left their angle to chase a beaten attack's exit kills (sticky). */
+  readonly chasers: Set<string>;
+  /** ATTACK fakes: the few players who make the noise (chosen when the show starts). */
+  showers: string[] | null;
+  /** ATTACK fakes: which way each shower is currently running on its patrol. */
+  readonly patrolLeg: Map<string, "out" | "back">;
+  /** DEFENSE: runners heard per site (round clock, count) — the recent-noise window. */
+  heard: Array<{ atMs: number; site: string; count: number }>;
+  /** DEFENSE: where each defender stood when the round began (its post). */
+  readonly home: Map<string, ZoneId>;
+  /** DEFENSE: the current pre-plant rotation and when it last changed. */
+  rotation: { site: string | null; ids: string[]; changedAtMs: number };
+  /** DEFENSE: every change of the rotation, for the round record. */
+  readonly rotations: Array<{ atMs: number; site: string | null; count: number }>;
+  /** DEFENSE: players who have been rotated this round (they go home when stood down). */
+  readonly rotated: Set<string>;
+  /** DEFENSE: the latest belief about what the attack is doing, and the evidence it rests on. */
+  belief: HitBelief | null;
+  evidence: Record<string, SiteEvidence>;
+  /** DEFENSE: first site where two or more bodies showed. */
+  shownSite: string | null;
   decidedAtMs: number;
   lastSeenClockMs: number;
   readonly revisions: Array<{ atMs: number; from: string; to: string; reason: string }>;
@@ -212,6 +291,8 @@ export interface TeamRoundTrace {
     readonly heardCues: ReadonlyArray<{ readonly kind: string; readonly confidence: number }>;
     readonly siteBias: { readonly A: number; readonly B: number };
     readonly opponentRead: OpponentRead | null;
+    /** DEFENSE pre-plant: the belief about what the attack is doing (hit-belief.ts), when computed. */
+    readonly hitBelief?: HitBelief | null;
   };
   readonly roles: readonly RoleAssignment[];
   readonly players: ReadonlyArray<{
@@ -255,6 +336,14 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   private saveCommitted = false;
   /** Post-plant: players who have thrown (broken their hold to dry-peek) this round. */
   private readonly throwers = new Set<string>();
+  /** Post-plant: the staging zone of each defender's retake approach (assigned once per plant). */
+  private readonly retakeStages = new Map<string, ZoneId>();
+  /** Zones with a direct edge onto a zone (its entries), cached per zone. */
+  private readonly entryCache = new Map<string, readonly ZoneId[]>();
+  /** Attack routes by "from>to" (the map graph is static), see planRoute. */
+  private readonly routeCache = new Map<string, { route: readonly ZoneId[]; waypoint: ZoneId }>();
+  /** Zones the defense watches from its sites (see siteWatched). */
+  private watchedCache: ReadonlySet<string> | null = null;
   constructor(
     private readonly spatial: SpatialQuery,
     private readonly options: TeamPolicyOptions = {},
@@ -327,7 +416,10 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   /** The standing plan of the round in progress / just played (for match records and the debugger). */
   planSummary(): PlanSummary | null {
     const p = this.plan;
-    return p ? { opening: p.opening, strategy: p.strategy, objective: p.objective, feint: p.feint?.site ?? null, revisions: p.revisions.map((r) => ({ ...r })) } : null;
+    return p ? {
+      opening: p.opening, strategy: p.strategy, objective: p.objective, feint: p.feint?.site ?? null, revisions: p.revisions.map((r) => ({ ...r })),
+      showers: p.showers?.length ?? 0, shownSite: p.shownSite, rotations: p.rotations.map((r) => ({ ...r })),
+    } : null;
   }
 
   /**
@@ -344,7 +436,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const opening = selectStrategy(view, this.spatial, rng, this.opponentRead);
     this.plan = {
       contextId: view.contextId, side: view.side, opening, strategy: opening,
-      objective: null, feint: null, executeGo: false, uncommitted: false, slowSide: null,
+      objective: null, feint: null, executeGo: false, uncommitted: false, slowSide: null, savedFrom: null, chasers: new Set<string>(),
+      showers: null, patrolLeg: new Map(), heard: [], home: new Map(), rotation: { site: null, ids: [], changedAtMs: view.timeRemainingMs },
+      rotations: [], rotated: new Set<string>(), belief: null, evidence: {}, shownSite: null,
       decidedAtMs: view.timeRemainingMs, lastSeenClockMs: view.timeRemainingMs, revisions: [],
     };
     this.bindObjective(view, this.plan, rng);
@@ -357,6 +451,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * cue does not flip the team back and forth, while decisive new information still moves it.
    */
   private revisePlan(view: PolicyView, plan: StandingPlan, rng: RandomSource): { reason: string } {
+    if (plan.savedFrom) return { reason: "round called lost — saving" };
     const recon = reconsider(view, this.spatial, plan.strategy, rng);
     if (!recon.changed) return { reason: recon.reason };
     // An execute that has been called is committed: the enemies now seen on the site are the fight
@@ -525,11 +620,67 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
+   * ATTACK pre-plant: play the round out, or save. The mirror of the defense's retake-or-save
+   * (retakeViable): before the spike is down the attack still has to take a held site, so by
+   * Lanchester's square law its chance is
+   *     P(hit) = A² / (A² + κ · D²)       A attackers, D defenders alive, κ = holder edge
+   * and below tuning.attackSaveMinWinChance the round is called lost: the survivors fall back to
+   * their own spawn by the route of least exposure and keep their weapons, and the clock runs out.
+   * With κ = 1 and the 0.09 threshold: 1v2 0.20 play · 2v4 0.20 play · 2v5 0.14 play · 1v3 0.10
+   * play · 1v4 0.06 save · 1v5 0.04 save. The attack's threshold is its own tunable, separate from
+   * the defense's retake threshold: before the plant the attack still holds the spike and the
+   * choice of site, and real rounds rarely run out the clock. A lone hero-play profile
+   * (aggression ≥ HERO_AGGRESSION) accepts tuning.heroMinWinChance if that is lower still.
+   * Saving only makes sense with something to save: the round is given up only if a survivor holds
+   * a weapon worth at least tuning.saveMinWeaponValue (default: the smallest loss bonus — what the
+   * team gets for losing anyway). A pistol or a cheap SMG is not worth a round; they play it out.
+   * The call is recorded as a plan revision, holds for the round, and is lifted only if the man
+   * count comes back to even. Deterministic (no RNG draw). Returns the save orders, or null.
+   */
+  private commitAttackSave(view: PolicyView, plan: StandingPlan): ActionCommand[] | null {
+    const phase = view.spike.phase;
+    if (view.side !== "attack" || (phase !== "carried" && phase !== "dropped")) return null;
+    const alive = view.teammates.filter((p) => p.alive);
+    const enemies = view.knownEnemyAliveCount;
+    if (alive.length === 0 || enemies == null || enemies <= 0) return null;
+    if (plan.savedFrom && alive.length >= enemies) { // even again — the round is back on
+      plan.revisions.push({ atMs: view.timeRemainingMs, from: "save", to: plan.savedFrom, reason: `man count even again (${alive.length}v${enemies}) — play it out` });
+      plan.strategy = plan.savedFrom;
+      plan.savedFrom = null;
+    }
+    if (!plan.savedFrom) {
+      const t = this.tuning;
+      const hero = alive.length === 1 && profileFor(alive[0]!.id, this.profiles).aggression >= HERO_AGGRESSION;
+      const chance = lanchesterWinChance(alive.length, enemies, t.postPlantHolderEdge);
+      const floor = hero ? Math.min(t.heroMinWinChance, t.attackSaveMinWinChance) : t.attackSaveMinWinChance;
+      if (chance >= floor) return null;
+      const price = this.options.weaponPrice;
+      const worthSaving = !price || alive.some((p) => (price(String(p.weapon?.weaponId ?? "")) ?? 0) >= t.saveMinWeaponValue);
+      if (!worthSaving) return null; // nothing worth keeping — play the round out
+      plan.revisions.push({
+        atMs: view.timeRemainingMs, from: plan.strategy, to: "save",
+        reason: `round lost ${alive.length}v${enemies} before the plant (Lanchester ${chance.toFixed(2)} < ${floor}) — save`,
+      });
+      plan.savedFrom = plan.strategy;
+      plan.strategy = "save";
+      plan.decidedAtMs = view.timeRemainingMs;
+    }
+    const home = ATTACK_FALLBACK_ZONE as ZoneId;
+    const hasHome = this.spatial.getZoneMeta(home) !== undefined;
+    return alive.map((p): ActionCommand => {
+      const pz = this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+      return !hasHome || pz === home || !this.spatial.isReachable(pz, home)
+        ? { playerId: p.id, kind: "hold", executeAtMs: 0, sourceActionId: "attack-save:hold" }
+        : { playerId: p.id, kind: "move", targetZone: home, moveMode: "run", executeAtMs: 0, sourceActionId: "attack-save:move" };
+    });
+  }
+
+  /**
    * ATTACK slow play: with no site named, the team takes forward lanes on both sides, HOLDS them
    * (stationary and pre-aimed — a defender who over-extends walks into a set-up gun) and burns
    * clock while information comes in. It commits to a site when
    *  - it is a player up (a pick was found — hit while they are short), or
-   *  - the clock reaches SLOW_COMMIT_CLOCK_MS (the latest a cross-map execute still fits).
+   *  - the clock reaches the commit clock (slowCommitClockMs: the latest the whole team still makes a cross-map execute).
    * The site is the one this round's evidence shows thinner, with the cross-round read of their
    * defense behind it; the choice is recorded as a plan revision with its reason.
    */
@@ -538,7 +689,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const alive = view.teammates.filter((p) => p.alive).length;
     const enemies = view.knownEnemyAliveCount;
     const up = enemies != null && enemies < alive;
-    const late = view.timeRemainingMs <= SLOW_COMMIT_CLOCK_MS;
+    const late = view.timeRemainingMs <= this.slowCommitClockMs(view);
     if (!up && !late) return;
     const site = (letter: "A" | "B"): ZoneId | null =>
       this.spatial.zonesByType("site").find((z) => this.spatial.isPlantableZone(z) && siteLetter(this.spatial, z) === letter) ?? null;
@@ -560,6 +711,30 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
+   * The latest round clock (ms remaining) at which a slow plan must name its site: late enough to
+   * have used the round, early enough that the WHOLE team still makes the hit. The execute is
+   * forced when the clock reaches (farthest player's run to the site + plant + margin); for that
+   * player to be staged with the others before then it needs its run to the staging zone on top.
+   * The site is not chosen yet, so the worst case over the sites counts. Never later than
+   * SLOW_COMMIT_CLOCK_MS. (A fixed 40 s left the lurker on the far side every time: the clock
+   * forced the hit two seconds after the commit and four players went in without the fifth.)
+   */
+  private slowCommitClockMs(view: PolicyView): number {
+    let need = 0;
+    for (const p of view.teammates) {
+      if (!p.alive) continue;
+      const pz = this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+      for (const site of this.plantableSites()) {
+        const route = this.planRoute(pz, site).route;
+        const toSite = this.routeCost(route, () => false).travelMs;
+        const toStage = this.routeCost(this.planRoute(pz, this.stagingZone(pz, site)).route, () => false).travelMs;
+        if (Number.isFinite(toSite + toStage)) need = Math.max(need, toSite + toStage);
+      }
+    }
+    return Math.max(SLOW_COMMIT_CLOCK_MS, need + PLANT_DURATION_MS + EXECUTE_TIME_MARGIN_MS);
+  }
+
+  /**
    * Lane the slow-playing team holds together: two zones short of the provisional site (a forward
    * lane, not the site's doorway). The side is drawn once per plan; the commit may still switch.
    */
@@ -574,67 +749,247 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   /**
    * ATTACK pre-plant: the plan is executed as a team, in phases, instead of five players each
    * walking in on their own draw.
-   *   show   (fakes only) — non-carriers take the doorstep of the feint site: presence, no commit.
+   *   show   (fakes only) — non-carriers close on the feint site up to the last zone it cannot
+   *            see: presence, no commit. (Standing in the site's doorway is not a show, it is a
+   *            fight the team did not plan — and it was losing it.)
    *   stage  — everyone closes to a staging zone on their own route to the objective, out of the
    *            site's sight (so different routes give a split entry).
    *   go     — called once every alive attacker is staged, or when the clock forces it (slowest
    *            travel + plant + margin); sticky for the round. Everyone enters the objective.
-   * A player keeps their own choice to cast an ability, and the lurker keeps their own command
-   * throughout (a lurk is by definition off the team's timing). The carrier never shows on a fake;
-   * on "go" it enters with the team and plants (commitSpikeCarrier).
+   * Every move goes by the route of least exposure (planRoute) and carries the zone to watch on
+   * arrival. A player keeps their own choice to cast an ability. The lurker is special only while
+   * a slow play is undecided (it holds the far side); once a site is named it joins the team. The
+   * carrier never shows on a fake; on "go" it enters with the team and plants (commitSpikeCarrier).
    */
   private commitPlanMovement(view: PolicyView, plan: StandingPlan, commands: readonly ActionCommand[], roleOf: ReadonlyMap<string, string>): ActionCommand[] {
     if (view.side !== "attack") return commands.slice();
     const phase = view.spike.phase;
     if (phase !== "carried" && phase !== "dropped") return commands.slice();
+    const holderId = view.spike.holderId ? String(view.spike.holderId) : null;
+    type Mate = PolicyView["teammates"][number];
+    const zoneOf = (p: Mate) => this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+    // Go to `target` by the route of least exposure (planRoute) and watch `aim` on arrival: a
+    // player who stops with no aim faces wherever the engine defaults to, not what the plan watches.
+    // The pace is a decision (movement.ts): the phase gives the intent, the player's position says
+    // whether a run would be heard, and the clock says whether walking is still affordable.
+    const order = (p: Mate, pz: ZoneId, target: ZoneId, aim: ZoneId, tag: string, intent: MoveIntent, then: ZoneId | null = plan.objective): ActionCommand => {
+      if (target === pz) return { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: `plan:${tag}-hold` };
+      const moveMode = this.paceFor(view, p, intent, intent === "quiet" ? this.quietSlackMs(view, pz, target, then) : 0);
+      return { playerId: p.id, kind: "move", targetZone: this.planRoute(pz, target).waypoint, aimZone: aim, moveMode, executeAtMs: 0, sourceActionId: `plan:${tag}-move` };
+    };
+    const isLurker = (id: string) => roleOf.get(id) === "lurker" && id !== holderId;
+    // The lurk (slow play only): hold the approach to the site the team is NOT playing toward, out
+    // of that site's sight — map presence on the far side — until the team commits to a site; then
+    // the lurker collapses onto the objective and the execute waits for it like for anyone else.
+    const lurk = (p: Mate, pz: ZoneId, teamSide: ZoneId | null): ActionCommand | null => {
+      const far = this.plantableSites().find((z) => z !== teamSide) ?? null;
+      if (!teamSide || !far) return null;
+      return order(p, pz, this.stagingZone(pz, far), far, "lurk", "quiet", null);
+    };
+
     if (plan.uncommitted) {
-      // Slow play: take a lane and hold it. Abilities and the lurker keep their own command.
+      // Slow play: take a lane and hold it, quietly. A player's own choice to cast an ability is kept.
       return commands.map((c) => {
         const id = String(c.playerId);
         const p = view.teammates.find((t) => String(t.id) === id && t.alive);
-        if (!p || c.kind === "useAbility" || roleOf.get(id) === "lurker") return c;
-        const pz = this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+        if (!p || c.kind === "useAbility") return c;
+        const pz = zoneOf(p);
+        if (isLurker(id)) return lurk(p, pz, plan.slowSide) ?? c;
         const lane = this.slowLane(plan, pz);
         return lane === pz
-          ? { playerId: c.playerId, kind: "hold", executeAtMs: 0, sourceActionId: "plan:slow-hold" }
-          : { playerId: c.playerId, kind: "move", targetZone: lane, moveMode: "run", executeAtMs: 0, sourceActionId: "plan:slow-move" };
+          ? { playerId: c.playerId, kind: "hold", ...(plan.slowSide ? { aimZone: plan.slowSide } : {}), executeAtMs: 0, sourceActionId: "plan:slow-hold" }
+          : { playerId: c.playerId, kind: "move", targetZone: lane, ...(plan.slowSide ? { aimZone: plan.slowSide } : {}), moveMode: this.paceFor(view, p, "quiet", this.quietSlackMs(view, pz, lane, plan.slowSide)), executeAtMs: 0, sourceActionId: "plan:slow-move" };
       });
     }
     if (!plan.objective) return commands.slice();
     const objective = plan.objective;
-    const holderId = view.spike.holderId ? String(view.spike.holderId) : null;
-    const zoneOf = (p: PolicyView["teammates"][number]) => this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
-    const team = view.teammates.filter((p) => p.alive && (roleOf.get(String(p.id)) !== "lurker" || String(p.id) === holderId));
+    const alive = view.teammates.filter((p) => p.alive);
+    // A fake's show is made by a few players, chosen once: the most aggressive who are not carrying
+    // the spike. The body of the team — and the spike — goes to the real site, quietly. A team too
+    // short to split (fewer than three alive) does not fake: it plays the objective straight.
+    if (plan.feint && plan.showers === null) {
+      const candidates = alive.filter((p) => String(p.id) !== holderId)
+        .map((p) => ({ id: String(p.id), aggression: profileFor(p.id, this.profiles).aggression }))
+        .sort((a, b) => b.aggression - a.aggression || (a.id < b.id ? -1 : 1));
+      plan.showers = candidates.slice(0, Math.max(0, Math.min(FEINT_SHOW_SIZE, alive.length - 2))).map((c) => c.id);
+      if (plan.showers.length === 0) plan.feint = null;
+    }
     const showing = plan.feint !== null && view.timeRemainingMs > plan.feint.untilClockMs;
+    const isShower = (id: string) => showing && (plan.showers?.includes(id) ?? false);
+    // The execute waits for everyone who is going to make it. While the show lasts the showers are
+    // across the map by design; when its window closes they come round to the real site, and the
+    // hit is the whole team — on a defense that may by then be looking the other way.
+    const team = alive;
 
     if (!showing && !plan.executeGo) {
       let staged = true;
       let slowest = 0;
       for (const p of team) {
         const pz = zoneOf(p);
-        if (pz !== objective && pz !== this.retakeEntry(pz, objective)) staged = false;
-        slowest = Math.max(slowest, pz === objective ? 0 : this.spatial.shortestTravelTimeMs(pz, objective, "run") ?? 0);
+        if (pz !== objective && pz !== this.stagingZone(pz, objective)) staged = false;
+        slowest = Math.max(slowest, this.routeCost(this.planRoute(pz, objective).route, () => false).travelMs);
       }
       if (staged || view.timeRemainingMs <= slowest + PLANT_DURATION_MS + EXECUTE_TIME_MARGIN_MS) plan.executeGo = true;
     }
 
-    const ids = new Set(team.map((p) => String(p.id)));
     return commands.map((c) => {
       const id = String(c.playerId);
-      if (!ids.has(id) || c.kind === "useAbility" || c.kind === "plant") return c;
-      const p = team.find((t) => String(t.id) === id)!;
+      const p = view.teammates.find((t) => String(t.id) === id && t.alive);
+      if (!p || c.kind === "useAbility" || c.kind === "plant") return c;
       const pz = zoneOf(p);
-      const cmd = (target: ZoneId, aim: ZoneId, tag: string): ActionCommand => target === pz
-        ? { playerId: c.playerId, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: `plan:${tag}-hold` }
-        : { playerId: c.playerId, kind: "move", targetZone: target, moveMode: "run", executeAtMs: 0, sourceActionId: `plan:${tag}-move` };
-      if (showing) {
-        if (id === holderId) return cmd(this.retakeEntry(pz, objective), objective, "stage"); // the spike stages toward the real site
-        const path = this.spatial.findPath(pz, plan.feint!.site, "run")?.path;
-        return cmd(path && path.length >= 2 ? path[path.length - 2]! : pz, plan.feint!.site, "feint");
-      }
-      if (!plan.executeGo) return cmd(this.retakeEntry(pz, objective), objective, "stage");
-      return cmd(objective, objective, "go");
+      // go: speed decides the entry — everyone runs.
+      if (plan.executeGo) return order(p, pz, objective, objective, "go", "fast");
+      // show: the few showers RUN, on purpose, where the feint site can hear them but not see them.
+      if (isShower(id)) return order(p, pz, this.showTarget(plan, id, pz, plan.feint!.site), plan.feint!.site, "feint", "loud");
+      // stage: close on the objective unannounced — walk wherever a run would be heard, while the clock allows.
+      return order(p, pz, this.stagingZone(pz, objective), objective, "stage", "quiet");
     });
+  }
+
+  /**
+   * Where a shower runs to next. A show has to keep making noise, and footsteps are only made
+   * while moving: the shower runs a short patrol between the feint site's staging zone (the last
+   * zone the site cannot see) and the zone behind it on the way home — both out of the site's
+   * sight. With nothing hidden behind the staging zone it simply holds there.
+   */
+  private showTarget(plan: StandingPlan, id: string, pz: ZoneId, feintSite: ZoneId): ZoneId {
+    const stage = pz === feintSite ? pz : this.stagingZone(pz, feintSite);
+    const home = ATTACK_FALLBACK_ZONE as ZoneId;
+    const behind = stage !== home ? this.spatial.findPath(stage, home, "run")?.path[1] ?? null : null;
+    const back = behind && behind !== feintSite && !this.spatial.hasLineOfSight(behind, feintSite) ? behind : null;
+    if (!back) return stage;
+    if (pz === stage) plan.patrolLeg.set(id, "back");
+    else if (pz === back) plan.patrolLeg.set(id, "out");
+    return plan.patrolLeg.get(id) === "back" ? back : stage;
+  }
+
+  // ---- walk or run ------------------------------------------------------------------------
+
+  /** Run-time legs summed at walking pace along a route. */
+  private walkMs(route: readonly ZoneId[]): number {
+    let ms = 0;
+    for (let i = 0; i + 1 < route.length; i++) ms += this.spatial.shortestTravelTimeMs(route[i]!, route[i + 1]!, "walk") ?? Infinity;
+    return ms;
+  }
+
+  /**
+   * Clock the ATTACK still has in hand if it does the quiet move at walking pace: time remaining
+   * − (walk to `target` + run from there onto the site `then` + plant + the execute margin).
+   * Negative → walking would cost the plant, so the move is run.
+   */
+  private quietSlackMs(view: PolicyView, from: ZoneId, target: ZoneId, then: ZoneId | null): number {
+    const walk = this.walkMs(this.planRoute(from, target).route);
+    const entry = then && then !== target ? this.legMs(target, then) : 0;
+    return view.timeRemainingMs - (walk + entry + PLANT_DURATION_MS + EXECUTE_TIME_MARGIN_MS);
+  }
+
+  /**
+   * Whether a run at `position` would be heard by an enemy the team believes to be in range:
+   * within the footstep radius of a place enemies are believed to be. The attack assumes the
+   * sites are held (that is what a defense is) and adds every enemy it has seen; the defense has
+   * no such map of the attack and goes by what it has seen and heard. Without zone positions
+   * (no `zonePosition` lookup) the radius is applied as a run-travel time to the site instead.
+   */
+  private audible(view: PolicyView, position: Vector3): boolean {
+    const radius = this.options.footstepRadiusUnits ?? DEFAULT_FOOTSTEP_RADIUS_UNITS;
+    const listeners: Vector3[] = view.observation.visibleEnemies.map((e) => e.lastSeenPosition);
+    if (view.side === "defense") {
+      for (const s of view.observation.audibleEvents) listeners.push(s.approxPosition);
+      return withinEarshot(position, listeners, radius);
+    }
+    if (withinEarshot(position, listeners, radius)) return true;
+    const lookup = this.options.zonePosition;
+    const here = this.spatial.nearestZone({ x: position.x, y: position.y });
+    for (const site of this.spatial.zonesByType("site")) {
+      const at = lookup?.(String(site));
+      if (at ? withinEarshot(position, [at], radius) : this.legMs(here, site) <= (radius / RUN_UNITS_PER_SEC) * 1000) return true;
+    }
+    return false;
+  }
+
+  /** The pace of one move (movement.ts): the plan phase's intent, who can hear, and the clock. */
+  private paceFor(view: PolicyView, p: PolicyView["teammates"][number], intent: MoveIntent, slackMs: number): MoveMode {
+    return chooseMoveMode({ intent, audible: intent === "quiet" ? this.audible(view, p.position) : true, slackMs });
+  }
+
+  /** Every plantable site zone, in map order. */
+  private plantableSites(): readonly ZoneId[] {
+    return this.spatial.zonesByType("site").filter((z) => this.spatial.isPlantableZone(z));
+  }
+
+  /** Zones the defense watches from its sites: each site and everything a site has a sightline onto. */
+  private siteWatched(): ReadonlySet<string> {
+    if (!this.watchedCache) {
+      const w = new Set<string>();
+      for (const site of this.spatial.zonesByType("site")) {
+        w.add(String(site));
+        for (const z of this.spatial.visibleZonesFrom(site)) w.add(String(z));
+      }
+      this.watchedCache = w;
+    }
+    return this.watchedCache;
+  }
+
+  /** Travel time of a route, and how much of it is spent in zones for which `seen` holds. */
+  private routeCost(route: readonly ZoneId[], seen: (z: ZoneId) => boolean): { travelMs: number; exposedMs: number } {
+    let travelMs = 0;
+    let exposedMs = 0;
+    for (let i = 0; i + 1 < route.length; i++) {
+      const leg = this.legMs(route[i]!, route[i + 1]!);
+      travelMs += leg;
+      if (seen(route[i]!)) exposedMs += leg;
+    }
+    return { travelMs, exposedMs };
+  }
+
+  /**
+   * The attack's route between two zones — a minimal-exposure path, like the retake approach. The
+   * shortest path between the two halves of the map runs across defended ground (through a site
+   * or its doorway); a team that is rotating does not walk its spike through the site it just
+   * decided not to hit. Two candidates are compared: the direct shortest path, and the path back
+   * through the team's own spawn. The one that spends less time in zones the sites watch wins
+   * (ties: the faster). `waypoint` is the zone to order the player to — the destination itself, or
+   * the spawn while the route still has to go around.
+   */
+  private planRoute(from: ZoneId, to: ZoneId): { route: readonly ZoneId[]; waypoint: ZoneId } {
+    if (from === to) return { route: [from], waypoint: to };
+    const key = `${String(from)}>${String(to)}`;
+    const hit = this.routeCache.get(key);
+    if (hit) return hit;
+    const direct = this.spatial.findPath(from, to, "run")?.path ?? null;
+    const spawn = ATTACK_FALLBACK_ZONE as ZoneId;
+    let around: ZoneId[] | null = null;
+    if (from !== spawn && to !== spawn && this.spatial.getZoneMeta(spawn)) {
+      const out = this.spatial.findPath(from, spawn, "run")?.path;
+      const back = this.spatial.findPath(spawn, to, "run")?.path;
+      if (out && back) around = [...out, ...back.slice(1)];
+    }
+    let result: { route: readonly ZoneId[]; waypoint: ZoneId };
+    if (!direct || !around) {
+      result = direct ? { route: direct, waypoint: to } : around ? { route: around, waypoint: spawn } : { route: [from, to], waypoint: to };
+    } else {
+      const watched = this.siteWatched();
+      const seen = (z: ZoneId) => watched.has(String(z));
+      const d = this.routeCost(direct, seen);
+      const a = this.routeCost(around, seen);
+      const goAround = a.exposedMs < d.exposedMs || (a.exposedMs === d.exposedMs && a.travelMs < d.travelMs);
+      result = goAround ? { route: around, waypoint: spawn } : { route: direct, waypoint: to };
+    }
+    this.routeCache.set(key, result);
+    return result;
+  }
+
+  /**
+   * Where a player waits before the team enters `site`: the last zone of its route (planRoute) the
+   * site has no sightline onto. Players on different routes stage on different entries.
+   */
+  private stagingZone(from: ZoneId, site: ZoneId): ZoneId {
+    if (from === site) return site;
+    const route = this.planRoute(from, site).route;
+    for (let i = route.length - 2; i >= 0; i--) {
+      if (!this.spatial.hasLineOfSight(route[i]!, site)) return route[i]!;
+    }
+    return from;
   }
 
   private commitSpikeCarrier(
@@ -676,17 +1031,19 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (!carrier) return out;
 
     const carrierZone = this.spatial.nearestZone({ x: carrier.position.x, y: carrier.position.y });
-    if (this.spatial.isPlantableZone(carrierZone)) {
+    // The plan's objective site; the nearest site only when the plan has none or it is unreachable.
+    const site = objective && this.spatial.isReachable(carrierZone, objective) ? objective : this.nearestPlantableSite(carrierZone);
+    // Plant on the site the plan is for — not on whichever plantable zone the carrier happens to
+    // be crossing (a rotation through the other site used to start a plant there and walk off it).
+    if (this.spatial.isPlantableZone(carrierZone) && (!site || carrierZone === site)) {
       put({ playerId: carrier.id, kind: "plant", targetZone: carrierZone, executeAtMs: 0, sourceActionId: "carrier-commit:plant" });
       return out;
     }
-    // The plan's objective site; the nearest site only when the plan has none or it is unreachable.
-    const site = objective && this.spatial.isReachable(carrierZone, objective) ? objective : this.nearestPlantableSite(carrierZone);
     if (!site) return out; // no reachable plantable site — leave the carrier's drawn command
     // Before the execute is called the carrier stages with the team (commitPlanMovement); once it
     // is, or when there is no team plan to wait on, the carrier goes for the site.
     if (!executeGo) return out;
-    put({ playerId: carrier.id, kind: "move", targetZone: site, moveMode: "run", executeAtMs: 0, sourceActionId: "carrier-commit:move" });
+    put({ playerId: carrier.id, kind: "move", targetZone: this.planRoute(carrierZone, site).waypoint, moveMode: "run", executeAtMs: 0, sourceActionId: "carrier-commit:move" });
     return out;
   }
 
@@ -720,6 +1077,266 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     });
   }
 
+  // ---- reading the noise (defense) ----------------------------------------------------------
+
+  /** Site key ("A", "B", …) → its plantable zone. */
+  private siteZones(): ReadonlyMap<string, ZoneId> {
+    const m = new Map<string, ZoneId>();
+    for (const z of this.plantableSites()) {
+      const letter = siteLetter(this.spatial, z);
+      if (letter && !m.has(letter)) m.set(letter, z);
+    }
+    return m;
+  }
+
+  /** Which site's side of the map a zone belongs to ("a-main" → A), or null (mid, spawns). */
+  private sideOf(zone: ZoneId, sites: ReadonlyMap<string, ZoneId>): string | null {
+    const m = /^([a-z])-/.exec(String(zone));
+    const key = m ? m[1]!.toUpperCase() : null;
+    return key && sites.has(key) ? key : null;
+  }
+
+  /**
+   * What the defense has observed per site, in the recent window — the evidence the belief is
+   * updated on (hit-belief.ts). Footsteps are instantaneous, so the count of distinct runners is
+   * remembered for NOISE_WINDOW_MS (the most heard at once in that window): a run that stops, or
+   * moves away, stops counting. Sightings count for SEEN_WINDOW_MS; shot and ability cues arrive
+   * already windowed by the observation.
+   */
+  private gatherEvidence(view: PolicyView, plan: StandingPlan, sites: ReadonlyMap<string, ZoneId>): Record<string, SiteEvidence> {
+    const now = view.timeRemainingMs;
+    const zoneAt = (v: Vector3) => this.spatial.nearestZone({ x: v.x, y: v.y });
+    const runnersNow = new Map<string, number>();
+    const contact = new Set<string>();
+    const utility = new Set<string>();
+    for (const e of view.observation.audibleEvents) {
+      const side = this.sideOf(zoneAt(e.approxPosition), sites);
+      if (!side) continue;
+      if (e.kind === "footstep") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
+      else if (e.kind === "gunfire") contact.add(side);
+      else if (e.kind === "abilityCast") utility.add(side);
+    }
+    for (const [site, count] of runnersNow) plan.heard.push({ atMs: now, site, count });
+    plan.heard = plan.heard.filter((h) => h.atMs - now <= NOISE_WINDOW_MS);
+    const seen = new Map<string, Set<string>>();
+    for (const e of view.observation.visibleEnemies) {
+      if (!e.currentlyVisible && Math.abs(e.lastSeenAtMs - view.observation.timestampMs) > SEEN_WINDOW_MS) continue;
+      const side = this.sideOf(zoneAt(e.lastSeenPosition), sites);
+      if (!side) continue;
+      (seen.get(side) ?? seen.set(side, new Set()).get(side)!).add(String(e.playerId));
+    }
+    const out: Record<string, SiteEvidence> = {};
+    for (const site of sites.keys()) {
+      const runners = plan.heard.reduce((m, h) => (h.site === site ? Math.max(m, h.count) : m), 0);
+      const seenCount = seen.get(site)?.size ?? 0;
+      out[site] = { runners, seen: seenCount, contact: seenCount > 0 || contact.has(site), utility: utility.has(site) };
+      if (!plan.shownSite && Math.max(runners, seenCount) >= 2) plan.shownSite = site;
+    }
+    return out;
+  }
+
+  /**
+   * The defense's belief about what the attack is doing right now (hit-belief.ts), from this
+   * round's evidence and the cross-round read of the opponent:
+   *   π  where they attack           ← OpponentRead.attackSite
+   *   φ  how often they fake         ← OpponentRead.fakeRate (base rate with no data), scaled by
+   *      how feasible a fake still is: a show needs clock left to cross the map and plant —
+   *      feasibility = clamp((clock − T) / T, 0, 1), T = site-to-site run + plant
+   *   τ  how sharply evidence is weighed ← ½ + mean decisionMaking of the living defenders
+   */
+  private readNoise(view: PolicyView, evidence: Readonly<Record<string, SiteEvidence>>, sites: ReadonlyMap<string, ZoneId>): HitBelief {
+    const alive = view.teammates.filter((p) => p.alive);
+    const read = this.opponentRead;
+    const attackPrior: Record<string, number> = {};
+    if (read) for (const [k, v] of Object.entries(read.attackSite.probability)) if (sites.has(k)) attackPrior[k] = v;
+    const zones = [...sites.values()];
+    let cross = 0;
+    for (const a of zones) for (const b of zones) if (a !== b) { const t = this.legMs(a, b); if (Number.isFinite(t)) cross = Math.max(cross, t); }
+    const need = cross + PLANT_DURATION_MS;
+    const feasibility = need > 0 ? Math.min(1, Math.max(0, (view.timeRemainingMs - need) / need)) : 1;
+    const dm = alive.length > 0 ? alive.reduce((sum, p) => sum + profileFor(p.id, this.profiles).decisionMaking, 0) / alive.length : 0.5;
+    return updateHitBelief({
+      sites: [...sites.keys()],
+      evidence,
+      enemiesAlive: view.knownEnemyAliveCount ?? 5,
+      attackPrior,
+      fakeRate: read?.fakeRate?.rate ?? BASE_FAKE_RATE,
+      fakeFeasibility: feasibility,
+      utilityInPlay: view.teammates.some((p) => p.abilities.basic.length > 0 || p.abilities.signature !== null),
+      sharpness: 0.5 + dm,
+    });
+  }
+
+  /**
+   * DEFENSE pre-plant: respond to the read in proportion to the belief. The site with the highest
+   * hit belief gets round(P(hit) × available) of the players who are not already posted on it,
+   * nearest first (hit-belief.ts rotationCount): a moderate belief sends the rotator as support and
+   * leaves the far anchors; a near-certain one sends everyone; a show belief — however loud the
+   * noise — sends nobody, because the mass is on show(s), not hit(s). The clock is in the belief:
+   * late in the round a fake is no longer feasible, so the same noise reads as a hit.
+   *
+   * A rotator joins the site as a holder while it is still held (a teammate on it, no enemy seen
+   * on it); once it has fallen it stops on its retake approach instead (retakeApproach) — it does
+   * not run onto a taken site alone — and is in position when the retake is called. It runs when
+   * the hit is likelier than not or the site is in contact (time decides), and walks otherwise
+   * where the attack could hear it. Stood down, it goes back to its post.
+   *
+   * More is sent at once; less only after PLAN_COMMIT_MS (footsteps blink — a rotation does not).
+   * Every change is recorded on the plan with what it rested on.
+   */
+  private decideDefenseRotation(view: PolicyView, plan: StandingPlan): void {
+    const phase = view.spike.phase;
+    if (view.side !== "defense" || (phase !== "carried" && phase !== "dropped")) return;
+    const sites = this.siteZones();
+    const alive = view.teammates.filter((p) => p.alive);
+    if (sites.size === 0 || alive.length === 0) return;
+    const zoneOf = (p: PolicyView["teammates"][number]) => this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+    for (const p of view.teammates) if (!plan.home.has(String(p.id))) plan.home.set(String(p.id), zoneOf(p));
+
+    const evidence = this.gatherEvidence(view, plan, sites);
+    const belief = this.readNoise(view, evidence, sites);
+    plan.belief = belief;
+    plan.evidence = evidence;
+    const site = belief.likeliest!;
+    const siteZone = sites.get(site)!;
+    const pHit = belief.hit[site] ?? 0;
+    const available = alive
+      .filter((p) => this.sideOf(plan.home.get(String(p.id)) ?? zoneOf(p), sites) !== site)
+      .map((p) => ({ p, id: String(p.id), ms: this.legMs(zoneOf(p), siteZone) }))
+      .filter((a) => Number.isFinite(a.ms));
+    let want = rotationCount(pHit, available.length);
+    const now = view.timeRemainingMs;
+    const current = plan.rotation;
+    const currentAlive = current.ids.filter((id) => alive.some((p) => String(p.id) === id));
+    // Standing a rotation down (or swinging it to another site) waits out the commit window.
+    const reducing = current.site !== null && (current.site !== site || want < currentAlive.length);
+    if (reducing && current.changedAtMs - now < PLAN_COMMIT_MS) return;
+    if (current.site !== site) current.ids = [];
+    const keep = (id: string) => (current.ids.includes(id) ? 0 : 1);
+    const chosen = available
+      .sort((a, b) => keep(a.id) - keep(b.id) || a.ms - b.ms || (a.id < b.id ? -1 : 1))
+      .slice(0, want)
+      .map((a) => a.id);
+    want = chosen.length;
+    const before = current.site === null ? 0 : currentAlive.length;
+    if ((want > 0 ? site : null) !== current.site || want !== before) {
+      const e = evidence[site] ?? NO_EVIDENCE;
+      const bodies = Math.max(e.runners, e.seen);
+      const what = `${bodies} ${e.seen >= e.runners && e.seen > 0 ? "seen" : `runner${bodies === 1 ? "" : "s"} heard`} on ${site}`;
+      const elsewhere = [...sites.keys()].filter((k) => k !== site)
+        .map((k) => { const o = evidence[k] ?? NO_EVIDENCE; return o.contact ? `contact on ${k}` : Math.max(o.runners, o.seen) > 0 ? `${Math.max(o.runners, o.seen)} on ${k}` : `no contact on ${k}`; }).join(", ");
+      const odds = `P(hit ${site}) ${pHit.toFixed(2)}, fake ${belief.fake.toFixed(2)}`;
+      const call = want === 0 ? "hold" : want >= available.length ? `stack ${site} ×${want}` : `support ${site} ×${want}`;
+      const stackCall = (site === "A" ? "stackA" : site === "B" ? "stackB" : plan.strategy) as TeamStrategy;
+      const next = want > 0 ? stackCall : plan.opening;
+      plan.revisions.push({
+        atMs: now, from: plan.strategy, to: call,
+        reason: `${what}${e.contact ? " with contact" : ""}${elsewhere ? `, ${elsewhere}` : ""} — ${odds} — ${want === 0 ? "stand down, hold" : `rotate ${want}`}`,
+      });
+      plan.rotations.push({ atMs: now, site: want > 0 ? site : null, count: want });
+      plan.strategy = next;
+      plan.decidedAtMs = now;
+      plan.rotation = { site: want > 0 ? site : null, ids: chosen, changedAtMs: now };
+      for (const id of chosen) plan.rotated.add(id);
+    } else {
+      current.ids = chosen;
+    }
+  }
+
+  /**
+   * The orders of the current rotation (decideDefenseRotation): rotators to the site, stood-down
+   * rotators home. A rotator comes in by one of the site's entries (retakeApproach): the fastest
+   * while the site is still held — it closes to that approach's staging zone and steps onto the
+   * site from there — and the least-exposed once the site has fallen, where it waits in the
+   * staging zone for the retake instead of running onto a taken site alone.
+   */
+  private commitDefenseRotation(view: PolicyView, plan: StandingPlan, commands: readonly ActionCommand[]): ActionCommand[] {
+    const phase = view.spike.phase;
+    if (view.side !== "defense" || (phase !== "carried" && phase !== "dropped") || plan.rotated.size === 0 || !plan.belief) return commands.slice();
+    const sites = this.siteZones();
+    const evidence = plan.evidence;
+    const belief = plan.belief;
+    const zoneOf = (p: PolicyView["teammates"][number]) => this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+    const rot = plan.rotation;
+    const siteZone = rot.site ? sites.get(rot.site)! : null;
+    const enemyOnSite = siteZone !== null && view.observation.visibleEnemies.some(
+      (e) => e.currentlyVisible && this.spatial.nearestZone({ x: e.lastSeenPosition.x, y: e.lastSeenPosition.y }) === siteZone);
+    const held = siteZone !== null && !enemyOnSite &&
+      view.teammates.some((p) => p.alive && !rot.ids.includes(String(p.id)) && zoneOf(p) === siteZone);
+    const urgent = rot.site !== null && ((belief.hit[rot.site] ?? 0) >= 0.5 || (evidence[rot.site]?.contact ?? false));
+    return commands.map((c) => {
+      const id = String(c.playerId);
+      if (!plan.rotated.has(id) || c.kind === "useAbility") return c;
+      const p = view.teammates.find((t) => String(t.id) === id && t.alive);
+      if (!p) return c;
+      const pz = zoneOf(p);
+      if (siteZone && rot.ids.includes(id)) {
+        // Held site: nobody is watching its entries, so the fastest approach (a zero budget makes
+        // retakeApproach pick by time). Fallen site: the least-exposed one, as for a retake.
+        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity).stage;
+        const target = pz === siteZone || (held && pz === stage) ? siteZone : stage;
+        const aim = target === siteZone ? (DEFENSE_AIM[siteZone] as ZoneId | undefined) ?? siteZone : siteZone;
+        return target === pz
+          ? { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: "rotate:hold" }
+          : { playerId: p.id, kind: "move", targetZone: target, aimZone: aim, moveMode: this.paceFor(view, p, urgent ? "fast" : "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:move" };
+      }
+      const home = plan.home.get(id);
+      if (!home || home === pz) return c;
+      const aim = DEFENSE_AIM[home] as ZoneId | undefined;
+      return { playerId: p.id, kind: "move", targetZone: home, ...(aim ? { aimZone: aim } : {}), moveMode: this.paceFor(view, p, "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:return" };
+    });
+  }
+
+  /**
+   * DEFENSE pre-plant: the exit-kill chase — the third posture of the throw model (see `throws`).
+   * The defense reads the same kill feed as the attack: once the attack's chance to still take a
+   * site, A² / (A² + κ · D²), is below tuning.attackSaveMinWinChance, the round is won by standing
+   * still — the attackers will save (commitAttackSave) and the clock does the rest. Leaving the
+   * angle to run them down is exactly what a throw is: giving up a winning posture to go hunting.
+   * So it follows the same proportional-hazards process as the post-plant throws,
+   *     λ = max(floor, λ₀ · exp(β · z)),   z = (aggression − ½) − (discipline − ½) − (decisionMaking − ½)
+   * per second of holding a won round with nobody in sight; p = 1 − e^(−λ·Δt) per decision. An
+   * aggressive, undisciplined player chases early and often; a disciplined one lets them go. A
+   * chaser runs toward the attackers' own ground as a mover onto a set-up saver, so the chase
+   * costs kills of its own — and enough of them reopens the round (commitAttackSave lifts the save
+   * when the man count is even again). Sticky for the round; the first chase is recorded on the plan.
+   */
+  private commitDefenseChase(view: PolicyView, plan: StandingPlan, commands: readonly ActionCommand[], rng: RandomSource): ActionCommand[] {
+    const phase = view.spike.phase;
+    if (view.side !== "defense" || (phase !== "carried" && phase !== "dropped")) return commands.slice();
+    const alive = view.teammates.filter((p) => p.alive);
+    const attackers = view.knownEnemyAliveCount;
+    const quarry = ATTACK_FALLBACK_ZONE as ZoneId;
+    if (alive.length === 0 || attackers == null || attackers <= 0 || !this.spatial.getZoneMeta(quarry)) return commands.slice();
+    const t = this.tuning;
+    const won = lanchesterWinChance(attackers, alive.length, t.postPlantHolderEdge) < t.attackSaveMinWinChance;
+    const contact = view.observation.visibleEnemies.some((e) => e.currentlyVisible);
+    if (won && !contact) {
+      for (const p of alive) {
+        const key = String(p.id);
+        if (plan.chasers.has(key)) continue;
+        const chance = throwChance(profileFor(p.id, this.profiles), DECISION_STEP_SEC, t, this.throwFloors?.get(key) ?? 0);
+        if (rng.nextFloat() >= chance) continue;
+        if (plan.chasers.size === 0) {
+          plan.revisions.push({
+            atMs: view.timeRemainingMs, from: plan.strategy, to: "aggroPush",
+            reason: `attack is ${attackers}v${alive.length} down with nothing to play for — ${key} leaves the angle to chase the exit kill`,
+          });
+        }
+        plan.chasers.add(key);
+      }
+    }
+    if (plan.chasers.size === 0) return commands.slice();
+    return commands.map((c) => {
+      const p = alive.find((d) => String(d.id) === String(c.playerId));
+      if (!p || !plan.chasers.has(String(p.id))) return c;
+      const pz = this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+      return pz === quarry || !this.spatial.isReachable(pz, quarry)
+        ? { playerId: p.id, kind: "hold", executeAtMs: 0, sourceActionId: "throw:chase-hold" }
+        : { playerId: p.id, kind: "move", targetZone: quarry, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:chase" };
+    });
+  }
+
   /**
    * Symmetric to commitSpikeCarrier for the DEFENSE post-plant: without this, a defuse (7000ms
    * of continuous `defuse`) is interrupted every 500ms by the stochastic re-draw and never
@@ -734,6 +1351,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (phase !== "planted" && phase !== "defusing") { // new round / pre-plant
       this.retakeCommitted = this.saveCommitted = false;
       this.throwers.clear();
+      this.retakeStages.clear();
     }
     if (view.side !== "defense" || (phase !== "planted" && phase !== "defusing")) return out;
     const pos = view.spike.position;
@@ -744,9 +1362,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     let best: (typeof defenders)[number] | null = null;
     let bestMs = Infinity;
     for (const d of defenders) {
-      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-      const t = dz === plantZone ? 0 : this.spatial.shortestTravelTimeMs(dz, plantZone, "run");
-      if (t !== null && t < bestMs) {
+      const t = this.retakeTravelMs(view, d, plantZone);
+      if (t < bestMs) {
         bestMs = t;
         best = d;
       }
@@ -769,7 +1386,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (!this.retakeCommitted && defenders.length > 1 && !this.retakeGo(view, defenders, plantZone)) {
       for (const d of defenders) {
         const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-        const entry = this.retakeEntry(dz, plantZone);
+        const entry = this.retakeStageOf(view, d, plantZone);
         // Throw: runs onto the site alone instead of waiting for the group.
         if (dz !== plantZone && this.throws(d.id, rng)) {
           set({ playerId: d.id, kind: "move", targetZone: plantZone, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:solo-retake" });
@@ -799,8 +1416,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
-   * The zone a defender stages in before swinging onto the plant: the last zone before the plant
-   * on its own route (so several defenders stage on different entries → a crossfire retake).
+   * Fallback staging zone when no entry of the plant zone can be evaluated (retakeApproach): the
+   * last zone before the plant on the defender's shortest route that the plant cannot see.
    */
   private retakeEntry(from: ZoneId, plantZone: ZoneId): ZoneId {
     if (from === plantZone) return plantZone;
@@ -813,6 +1430,79 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       if (!this.spatial.hasLineOfSight(path[i]!, plantZone)) return path[i]!;
     }
     return from;
+  }
+
+  /** Run travel time between two zones (0 for the same zone, ∞ when unreachable). */
+  private legMs(from: ZoneId, to: ZoneId): number {
+    return from === to ? 0 : this.spatial.shortestTravelTimeMs(from, to, "run") ?? Infinity;
+  }
+
+  /** The entries of a zone: every zone with a direct edge onto it. */
+  private entriesOf(zone: ZoneId): readonly ZoneId[] {
+    const key = String(zone);
+    let e = this.entryCache.get(key);
+    if (!e) {
+      e = this.spatial.allZones().filter((z) => z !== zone && this.spatial.findPath(z, zone, "run")?.path.length === 2);
+      this.entryCache.set(key, e);
+    }
+    return e;
+  }
+
+  /**
+   * A defender's retake approach — a minimal-exposure path. The attackers holding the spike watch
+   * the sightlines out of the plant zone, pre-aimed and standing still; a retaker who crosses one
+   * of those sightlines is seen first, mid-stride, by every gun on the site (the worst duel in the
+   * engine: the holder's first-sight edge and the crossfire on the entrant). So the approach is
+   * chosen like a threat-weighted route: for each entry E of the plant zone,
+   *     exposure(E) = Σ time spent in zones the plant zone can see, on  from → E → plant
+   *     travel(E)   = time(from → E) + time(E → plant)
+   * and the defender takes the entry with the least exposure among those that still leave a full
+   * defuse plus the safety margin on the detonation timer (ties: the faster one); when no entry
+   * fits the clock, the fastest. It stages at the last zone of that approach the plant cannot see.
+   * Nothing here is map-specific — which entry is unwatched falls out of the map's sightlines.
+   */
+  retakeApproach(from: ZoneId, plantZone: ZoneId, timerMs: number): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number } {
+    if (from === plantZone) return { stage: plantZone, entry: plantZone, travelMs: 0, exposedMs: 0 };
+    const seen = (z: ZoneId) => this.spatial.hasLineOfSight(plantZone, z) || this.spatial.hasLineOfSight(z, plantZone);
+    let best: { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits: boolean } | null = null;
+    for (const entry of this.entriesOf(plantZone)) {
+      const route = from === entry ? [from] : this.spatial.findPath(from, entry, "run")?.path;
+      if (!route || route.includes(plantZone)) continue; // through the plant is not an approach to it
+      const { travelMs, exposedMs } = this.routeCost([...route, plantZone], seen);
+      if (!Number.isFinite(travelMs)) continue;
+      const fits = travelMs + DEFUSE_DURATION_MS + RETAKE_TIME_MARGIN_MS <= timerMs;
+      let stage = from;
+      for (let i = route.length - 1; i >= 0; i--) if (!seen(route[i]!)) { stage = route[i]!; break; }
+      const better = !best
+        || (fits !== best.fits ? fits
+          : fits ? exposedMs < best.exposedMs || (exposedMs === best.exposedMs && travelMs < best.travelMs)
+          : travelMs < best.travelMs);
+      if (better) best = { stage, entry, travelMs, exposedMs, fits };
+    }
+    return best ?? { stage: this.retakeEntry(from, plantZone), entry: from, travelMs: this.legMs(from, plantZone), exposedMs: 0 };
+  }
+
+  /**
+   * Time a defender still needs to reach the spike: along its own approach (to the staging zone,
+   * then onto the plant), or straight there when that is now shorter.
+   */
+  private retakeTravelMs(view: PolicyView, d: PolicyView["teammates"][number], plantZone: ZoneId): number {
+    const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+    if (dz === plantZone) return 0;
+    const stage = this.retakeStageOf(view, d, plantZone);
+    return Math.min(this.legMs(dz, plantZone), this.legMs(dz, stage) + this.legMs(stage, plantZone));
+  }
+
+  /** The staging zone of a defender's retake approach, chosen once when the retake is called. */
+  private retakeStageOf(view: PolicyView, d: PolicyView["teammates"][number], plantZone: ZoneId): ZoneId {
+    const key = String(d.id);
+    let stage = this.retakeStages.get(key);
+    if (!stage) {
+      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+      stage = this.retakeApproach(dz, plantZone, view.spike.detonationInMs ?? Infinity).stage;
+      this.retakeStages.set(key, stage);
+    }
+    return stage;
   }
 
   /**
@@ -829,9 +1519,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     let slowest = 0;
     for (const d of defenders) {
       const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-      if (dz !== plantZone && dz !== this.retakeEntry(dz, plantZone)) allStaged = false;
-      const t = dz === plantZone ? 0 : this.spatial.shortestTravelTimeMs(dz, plantZone, "run");
-      if (t != null && t + DEFUSE_DURATION_MS <= timer) slowest = Math.max(slowest, t);
+      if (dz !== plantZone && dz !== this.retakeStageOf(view, d, plantZone)) allStaged = false;
+      const t = this.retakeTravelMs(view, d, plantZone);
+      if (t + DEFUSE_DURATION_MS <= timer) slowest = Math.max(slowest, t);
     }
     return allStaged || slowest + DEFUSE_DURATION_MS + RETAKE_TIME_MARGIN_MS >= timer;
   }
@@ -942,6 +1632,11 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const recon = this.revisePlan(view, plan, rng);
     // A coach order (timeout) forces the strategy, overriding the IGL's own call.
     const ordered = this.order?.strategy;
+    // The defense reads the noise and sets its rotation before the call is announced (a coach's
+    // forced call is not second-guessed).
+    if (!ordered) this.decideDefenseRotation(view, plan);
+    // A round called lost is saved, unless the coach has ordered a strategy for it.
+    const saveOrders = ordered ? null : this.commitAttackSave(view, plan);
     const strategy = ordered ?? plan.strategy;
     const reconReason = ordered ? `order: forced ${ordered}` : recon.reason;
     const reconChanged = ordered ? ordered !== opening : plan.strategy !== opening;
@@ -953,17 +1648,32 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     for (const p of alive) {
       const role = roleOf.get(String(p.id)) ?? "support";
       const profile = profileFor(p.id, this.profiles);
-      const choice = choosePlayerCommand(String(p.id), role, strategy, generation.feasible, profile, rng);
+      const drawn = choosePlayerCommand(String(p.id), role, strategy, generation.feasible, profile, rng);
+      // A move the player drew for themselves: an impatient player (aggression > 0.6) takes speed
+      // over stealth; anyone else runs only where nobody is in a position to hear it.
+      const choice = drawn.command.kind === "move"
+        ? { ...drawn, command: { ...drawn.command, moveMode: this.paceFor(view, p, profile.aggression > 0.6 ? "fast" : "quiet", Infinity) } }
+        : drawn;
       choices.push({ choice, entry: { command: choice.command, role, profile } });
     }
 
     let commands = this.commitAttackUtil(view, strategy, applyTeamwork(choices.map((c) => c.entry)));
-    this.commitSlowPlan(view, plan, rng);
-    commands = this.commitPlanMovement(view, plan, commands, roleOf);
-    commands = this.commitSpikeCarrier(view, strategy, commands, plan.objective, plan.executeGo && !plan.uncommitted);
+    if (saveOrders) {
+      commands = saveOrders;
+    } else {
+      commands = planUtility(view, strategy, commands, this.spatial, this.options.abilityEffect);
+      this.commitSlowPlan(view, plan, rng);
+      commands = this.commitPlanMovement(view, plan, commands, roleOf);
+      commands = this.commitSpikeCarrier(view, strategy, commands, plan.objective, plan.executeGo && !plan.uncommitted);
+    }
     commands = this.commitPostPlantContest(view, commands, rng);
     commands = this.commitDefenseHold(view, strategy, commands);
+    if (!ordered) commands = this.commitDefenseRotation(view, plan, commands);
+    commands = this.commitDefenseChase(view, plan, commands, rng);
     commands = this.commitDefuser(view, commands, rng);
+
+    // Route intent: every move order says how it wants to get there (route-intent.ts).
+    commands = annotateRoutes(view, strategy, roleOf, commands);
 
     const decision: PolicyDecision = { strategy, roles, commands };
     const trace: TeamRoundTrace = {
@@ -981,6 +1691,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         heardCues: view.observation.audibleEvents.map((s) => ({ kind: s.kind, confidence: s.confidence })),
         siteBias: enemySiteBias(view, this.spatial),
         opponentRead: this.opponentRead ?? null,
+        hitBelief: plan.belief,
       },
       roles,
       players: choices.map(({ choice }, i) => ({

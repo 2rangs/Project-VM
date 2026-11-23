@@ -32,3 +32,31 @@ export function pointInPolygon(p: Vec2, polygon: Vec2[]): boolean {
   }
   return inside;
 }
+
+/**
+ * The point a given fraction (by length, clamped to 0..1) of the way along a polyline, and the
+ * XY heading of the segment it lies on. A polyline needs at least one point.
+ */
+export function pointAlongPolyline(points: readonly Vec3[], fraction: number): { position: Vec3; heading: Vec2 } {
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  if (points.length === 1) return { position: { ...first }, heading: { x: 0, y: 0 } };
+  let total = 0;
+  for (let i = 1; i < points.length; i++) total += distance3(points[i - 1]!, points[i]!);
+  const f = Math.min(1, Math.max(0, Number.isFinite(fraction) ? fraction : 0));
+  let remaining = f * total;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!;
+    const b = points[i]!;
+    const len = distance3(a, b);
+    if (remaining <= len || i === points.length - 1) {
+      const t = len > 0 ? Math.min(1, remaining / len) : 1;
+      return {
+        position: { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t },
+        heading: { x: b.x - a.x, y: b.y - a.y },
+      };
+    }
+    remaining -= len;
+  }
+  return { position: { ...last }, heading: { x: 0, y: 0 } };
+}

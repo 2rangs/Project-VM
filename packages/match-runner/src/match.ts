@@ -22,6 +22,7 @@ import {
   type Pv6SimEventLog,
   type MatchRoundPlayer,
   type MatchRoundTeam,
+  type NavTraceEvent,
 } from "@pv/round-simulator";
 import { lossBonusTierFor, type TeamEconomyState } from "@pv/economy-engine";
 import {
@@ -43,11 +44,24 @@ import {
   type TeamEconomy,
   type BuyDecision,
 } from "./economy.js";
-import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterProfile } from "./teams.js";
+import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
 import type { PlayerProfile } from "@pv/shared-types";
 import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
+import { MAP_IDS, isMapId } from "@pv/spatial-engine";
 import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
+// [series] per-team inputs + series metadata (additive; see ./team-inputs.ts)
+import { applyTraitDelta, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
+import { FORM_SIGMA_MAX } from "./teams.js";
+import { DEFAULT_POLICY_TUNING } from "@pv/team-engine";
+
+/** The map whose geometry a match is simulated on (see MatchConfig.geometry). */
+export function geometryOf(config: Pick<MatchConfig, "map" | "geometry">): string {
+  if (config.geometry !== "own") return "ascent";
+  const id = config.map.trim().toLowerCase();
+  if (!isMapId(id)) throw new Error(`MatchConfig.geometry "own": no spatial data for map "${config.map}" (available: ${MAP_IDS.join(", ")})`);
+  return id;
+}
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
@@ -76,12 +90,30 @@ export interface MatchTuning extends Partial<PolicyTuning> {
   readonly formSigmaMax?: number;
   /** Attrition: share of duel damage a survivor carries into the next fight (0..1). Default 0. */
   readonly damageCarryover?: number;
+  /**
+   * Multiplier on the time a shooter caught on the move needs before it fights like a set player
+   * (combat-engine accuracy.stopMs: 700 ms from a run, 350 ms from a walk at movement skill 0.5).
+   * Default 1. Larger = moving into a held angle costs more; Infinity = a mover never settles.
+   */
+  readonly movingStopScale?: number;
 }
 
 export interface MatchConfig {
   readonly teamA: TeamRef;
   readonly teamB: TeamRef;
   readonly map: string;
+  /**
+   * The geometry the match is simulated on.
+   *  - "ascent" (default): Ascent's zone graph, roadmap and sight, whatever `map` says — `map`
+   *    then only selects that map's mastery, scouting and records. The tactical layer (defender
+   *    setups, smoke and aim targets, A/B sites) is written for Ascent.
+   *  - "own": the map named in `map` — its own zone graph, navigation roadmap and, where it has
+   *    one, its table of sight between real positions (else the zone sightline table). The engine
+   *    RUNS on every map this way, but the tactical layer is still Ascent's: a zone id it names
+   *    that the map lacks is skipped, a third site is never played, and some zones cannot be
+   *    reached on some maps. For measurement (sim-batch --geometry own), not for the product yet.
+   */
+  readonly geometry?: "ascent" | "own";
   readonly seed: number;
   /** Safety cap on total rounds (OT can in principle run long). Default 60. */
   readonly maxRounds?: number;
@@ -91,6 +123,11 @@ export interface MatchConfig {
    * round's `replay.meta.perception` is populated (round-simulator → toPv6ReplayFormat).
    */
   readonly recordPerception?: boolean;
+  /**
+   * Record every player's position on every tick (RoundResult.tracks → `move` events in each
+   * round's replay). Passive: outcomes are identical with and without it. Default false.
+   */
+  readonly recordTracks?: boolean;
   /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
@@ -115,6 +152,20 @@ export interface MatchConfig {
     readonly teams?: Readonly<Record<string, number>>;
     readonly players?: Readonly<Record<string, number>>;
   };
+  /**
+   * [series] Per-team values for the existing formulas (map mastery, scouting prior, game plan —
+   * see ./team-inputs.ts and docs/SERIES_AND_VETO.md). Omitted → both teams run on `tuning` and a
+   * blank opponent model, exactly as before.
+   */
+  readonly teamInputs?: Readonly<Partial<Record<TeamSlot, TeamMatchInputs>>>;
+  /**
+   * Field these players instead of the team's game-data roster (first five play), per team slot —
+   * e.g. a career world's squad including generated players (@pv/career `startingFive`). Omitted →
+   * the game-data roster, exactly as before. Ratings are read exactly as for game-data players.
+   */
+  readonly rosters?: Readonly<Partial<Record<TeamSlot, readonly RosterPlayer[]>>>;
+  /** [series] Series metadata of this map (who picked it, starting sides). Not read by the engine. */
+  readonly series?: SeriesGameContext;
 }
 
 export interface RoundRecord {
@@ -142,6 +193,12 @@ export interface RoundRecord {
   };
   /** PV-6 replay-engine bridge input for this round (EventLog → replay). */
   readonly replay: Pv6SimEventLog;
+  /**
+   * What the navigation layer did this round — every planned path (goal, preference, length,
+   * time), replan, blocked step and unreachable goal. Present only when `recordTracks` is on;
+   * it is what the navigation debug view draws.
+   */
+  readonly navTrace?: readonly NavTraceEvent[];
 }
 
 /**
@@ -289,9 +346,9 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
  * (byte-identical output), so the default runMatch / sim-batch are unchanged.
  */
 export class MatchEngine {
-  private readonly spatial = loadSpatial();
+  private readonly spatial: ReturnType<typeof loadSpatial>;
   private readonly weapons = loadWeapons();
-  private readonly sq = makeSpatialQuery(this.spatial);
+  private readonly sq: ReturnType<typeof makeSpatialQuery>;
   private readonly maxRounds: number;
   private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
   private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
@@ -299,7 +356,7 @@ export class MatchEngine {
   private readonly consistencyBySlot: Record<TeamSlot, number[]>;
   /** What each team has learned about the other so far this match. */
   private readonly opponentModels: Record<TeamSlot, OpponentModel>;
-  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number };
+  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number; combatCalibration?: { stopTimeScale?: number } };
   private readonly formSigmaMax: number | undefined;
   /** Per roster index: the player's minimum throw rate (max of team and player entries). */
   private readonly throwFloorsBySlot: Record<TeamSlot, number[]>;
@@ -316,23 +373,27 @@ export class MatchEngine {
   private roundNumber = 1; // the next round to play
 
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
+    this.spatial = loadSpatial(geometryOf(config));
+    this.sq = makeSpatialQuery(this.spatial);
     this.maxRounds = config.maxRounds ?? 60;
-    this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5), B: rosterSkills(config.teamB.id, 5) };
-    this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5), B: rosterTraits(config.teamB.id, 5) };
-    this.profilesBySlot = { A: rosterProfiles(config.teamA.id, 5), B: rosterProfiles(config.teamB.id, 5) };
-    this.consistencyBySlot = { A: rosterConsistency(config.teamA.id, 5), B: rosterConsistency(config.teamB.id, 5) };
+    const ro = config.rosters ?? {};
+    this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5, ro.A), B: rosterSkills(config.teamB.id, 5, ro.B) };
+    this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5, ro.A), B: rosterTraits(config.teamB.id, 5, ro.B) };
+    this.profilesBySlot = { A: rosterProfiles(config.teamA.id, 5, ro.A), B: rosterProfiles(config.teamB.id, 5, ro.B) };
+    this.consistencyBySlot = { A: rosterConsistency(config.teamA.id, 5, ro.A), B: rosterConsistency(config.teamB.id, 5, ro.B) };
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
-    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, ...policyTuning } = config.tuning ?? {};
+    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
     this.policies.defense.setTuning(policyTuning);
     this.simTuning = {
       ...(crossfireMsPerBit !== undefined ? { crossfirePenaltyMs: crossfireMsPerBit } : {}),
       ...(infoHalfLifeMs !== undefined ? { infoWindowMs: infoHalfLifeMs } : {}),
       ...(damageCarryover !== undefined ? { damageCarryover } : {}),
+      ...(movingStopScale !== undefined ? { combatCalibration: { stopTimeScale: movingStopScale } } : {}),
     };
     this.formSigmaMax = formSigmaMax;
     const recognition = (slot: TeamSlot) => {
@@ -340,7 +401,38 @@ export class MatchEngine {
       return pr.reduce((s, p) => s + p.decisionMaking, 0) / Math.max(1, pr.length);
     };
     this.opponentModels = { A: new OpponentModel(recognition("A")), B: new OpponentModel(recognition("B")) };
-    this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id), B: this.throwFloors(config.teamB.id) };
+    this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id, ro.A), B: this.throwFloors(config.teamB.id, ro.B) };
+    // [series] Per-team inputs: re-derive the affected values for the slots that have any.
+    this.basePolicyTuning = policyTuning;
+    for (const slot of ["A", "B"] as const) {
+      const inp = config.teamInputs?.[slot];
+      if (!inp) continue;
+      if (inp.traitDelta) this.traitsBySlot[slot] = applyTraitDelta(this.traitsBySlot[slot], inp.traitDelta);
+      if (inp.patternRecognitionDelta || inp.opponentPrior || inp.standingPrior) {
+        const model = new OpponentModel(Math.min(1, Math.max(0, recognition(slot) + (inp.patternRecognitionDelta ?? 0))));
+        if (inp.opponentPrior) model.seed(inp.opponentPrior);
+        if (inp.standingPrior) model.seed(inp.standingPrior, { standing: true });
+        this.opponentModels[slot] = model;
+      }
+    }
+  }
+
+  /** [series] Policy tunables shared by both teams (config.tuning minus the simulator-side fields). */
+  private readonly basePolicyTuning: Partial<PolicyTuning>;
+
+  /** [series] The side policy's tunables for the team playing that side this round. */
+  private policyTuningFor(slot: TeamSlot): Partial<PolicyTuning> {
+    const scale = this.config.teamInputs?.[slot]?.throwRateScale;
+    if (scale === undefined || scale === 1) return this.basePolicyTuning;
+    const base = this.basePolicyTuning.throwRatePerSec ?? DEFAULT_POLICY_TUNING.throwRatePerSec;
+    return { ...this.basePolicyTuning, throwRatePerSec: base * Math.max(0, scale) };
+  }
+
+  /** [series] Form σ ceiling for a team: the match value, scaled by the team's formSigmaScale. */
+  private formSigmaFor(slot: TeamSlot): number | undefined {
+    const scale = this.config.teamInputs?.[slot]?.formSigmaScale;
+    if (scale === undefined || scale === 1) return this.formSigmaMax;
+    return (this.formSigmaMax ?? FORM_SIGMA_MAX) * Math.max(0, scale);
   }
 
   /**
@@ -356,7 +448,7 @@ export class MatchEngine {
         rng(),
         rng(),
         pressure ? { clutch: this.traitsBySlot[slot][i]?.clutch ?? 0.6 } : undefined,
-        this.formSigmaMax,
+        this.formSigmaFor(slot), // [series] was this.formSigmaMax — identical when no teamInputs
       );
     });
   }
@@ -366,10 +458,10 @@ export class MatchEngine {
     return roundNumber > REGULATION_ROUNDS || this.score.A >= ROUNDS_TO_WIN - 1 || this.score.B >= ROUNDS_TO_WIN - 1;
   }
 
-  private throwFloors(teamId: string): number[] {
+  private throwFloors(teamId: string, override?: readonly RosterPlayer[]): number[] {
     const m = this.config.minThrowRates;
     const team = m?.teams?.[teamId] ?? 0;
-    return rosterPlayerIds(teamId, 5).map((pid) => Math.max(team, (pid && m?.players?.[pid]) || 0));
+    return rosterPlayerIds(teamId, 5, override).map((pid) => Math.max(team, (pid && m?.players?.[pid]) || 0));
   }
 
   private floorMap(slot: TeamSlot, prefix: "atk" | "def"): ReadonlyMap<string, number> {
@@ -441,6 +533,11 @@ export class MatchEngine {
     readBefore[defender] = useMemory ? this.opponentModels[defender].read() : null;
     this.policies.attack.setOpponentRead(readBefore[attacker]);
     this.policies.defense.setOpponentRead(readBefore[defender]);
+    // [series] The side policies are shared, so per-team tunables are re-bound to whoever plays the side.
+    if (config.teamInputs) {
+      this.policies.attack.setTuning(this.policyTuningFor(attacker));
+      this.policies.defense.setTuning(this.policyTuningFor(defender));
+    }
     this.policies.attack.setThrowFloors(this.floorMap(attacker, "atk"));
     this.policies.defense.setThrowFloors(this.floorMap(defender, "def"));
     const attackers: MatchRoundTeam = {
@@ -468,7 +565,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);
@@ -478,7 +575,13 @@ export class MatchEngine {
     const plans = { [attacker]: this.policies.attack.planSummary(), [defender]: this.policies.defense.planSummary() } as Record<TeamSlot, PlanSummary | null>;
     // --- Each team folds what it OBSERVED this round into its model of the other ---
     const seen = observedTendencies(out.events);
-    this.opponentModels[defender].observeRound({ opponentSide: "attack", plantSite: seen.plantSite, firstContactSite: seen.firstContactSite });
+    // Where the attack first SHOWED is what the defense itself heard and saw (its plan keeps it);
+    // against the plant site it tells a fake from a straight hit.
+    const shown = plans[defender]?.shownSite;
+    this.opponentModels[defender].observeRound({
+      opponentSide: "attack", plantSite: seen.plantSite, firstContactSite: seen.firstContactSite,
+      shownSite: shown === "A" || shown === "B" ? shown : null,
+    });
     this.opponentModels[attacker].observeRound({ opponentSide: "defense", defendersMet: seen.defendersMet });
 
     // --- Resolve outcome onto teams ---
@@ -527,6 +630,7 @@ export class MatchEngine {
         seed,
         matchId: `${config.teamA.id}-vs-${config.teamB.id}`,
       }),
+      ...(result.navTrace ? { navTrace: result.navTrace } : {}),
     };
     this.rounds.push(record);
     this.options.onRound?.(record, { ...score });

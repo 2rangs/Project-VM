@@ -11,18 +11,75 @@ Shell: left nav (MATCH / TEAM / CLUB / DEV), a top context bar (team · season �
 next match · Continue), main content, and a right detail panel. DECISION-001 —
 the match/data screens work first; club ops are reserved "준비 중" placeholders.
 
+Contents: [Run](#run--build--verify) · [Screens](#screens--data-sources) ·
+[Match Day](#match-day) · [Review](#round-decisions-post-match-review) ·
+[Series](#series--map-veto) · [Architecture](#how-a-match-reaches-the-screen) ·
+[Security](#security-posture) · [Open items](#open-items)
+
+## Run / build / verify
+
+```bash
+# once, at the repo root: the match runs from workspace source via tsx
+pnpm install --frozen-lockfile
+cd apps/desktop
+npm install
+
+npm run dev                                   # electron-vite dev
+npm start                                     # build + run the built app
+npm run typecheck                             # tsc --noEmit
+npm run build                                 # → out/{main,preload,renderer}
+
+npm run test:unit                             # IPC contract, trace parser, i18n, match merge, round decisions, series view, navigation debug model (48)
+npm run test:matchday                         # live match view logic: graph, timeline, visibility, monitors, playback, blockout (29)
+npm run test:engine                           # desktop ↔ live engine contract: run-match.mts output, options, tracks + navigation trace (4)
+npm run build && npm run test:e2e             # Playwright _electron E2E + screenshots (macOS / Windows: opens a real window)
+npm run build && xvfb-run -a npm run test:e2e # the same on Linux, headless
+npm run build && npm run test:e2e:series      # full Bo3 through the veto + Match Day, in Korean and English
+```
+
+Notes:
+- The match itself does not run inside the app bundle. The main process spawns
+  `scripts/run-match.mts` (one-shot), `scripts/match-session.mts` (round by round) or
+  `scripts/series-session.mts` (series) with `npx tsx` from the repo root, so **Node 22 and the
+  repo-root install are needed at run time**, not only for tests.
+- The shared `ReplayViewer` source lives in `../replay-viewer`; `react` / `pixi.js`
+  are resolved from *this* app's `node_modules` (`resolve.dedupe` in
+  `electron.vite.config.ts`, `paths` in `tsconfig.json`), so no install is needed there.
+- `test:engine` needs the repo-root install (`node_modules/.bin/tsx`) and skips with
+  a message without it. Run it after any engine change that touches `RoundRecord`.
+- `test:e2e` needs Playwright, which is not a dependency of this app: set
+  `PLAYWRIGHT_REQUIRE_BASE` to a directory whose `node_modules` has `playwright`
+  (e.g. `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i playwright` in a temp dir; no
+  browser download is needed for `_electron`). It pins the UI language to Korean,
+  plays one-shot and interactive matches, turns the navigation developer view on, checks the
+  round-decisions view in both languages and the opponent-memory option, and **rewrites the PNGs in
+  `docs/`** (restore them with `git checkout -- docs` unless the screens really changed).
+- `test:e2e:series` (same Playwright setup) plays a whole best-of-three twice — Korean, then
+  English: a first ban against the staff advice, the AI's replies, map 1 through Match Day in one
+  go, map 2 round by round, a decider if needed, the summary — checks for sideways overflow at
+  1280×720 and 1920×1080, and writes `docs/desktop-veto*.png` / `desktop-series-summary*.png`.
+- `test/review.test.ts` is not in `test:unit`: `src/renderer/data.ts` imports JSON
+  without an import attribute, which Node's test runner rejects (Vite is fine).
+
+Windows is the first target (README §07). Development and verification were on Linux
+(Electron under `xvfb` + SwiftShader) and, since 2026-11-20, on macOS. If Electron can't be
+installed, the renderer still runs in plain-browser mode (`window.pv` absent → in-page
+`StubRunner` + bundled fixtures; see `src/renderer/platform.ts`).
+
 ## Screens & data sources
 
 | Screen | Status | Data |
 |---|---|---|
-| **Match Day** | working (REAL sim) | `@pv/match-runner` in a separate process (one-shot map or interactive round-by-round session with tactical timeouts and coach orders). While a match is on, the screen is the full-window **live match view** — tactical map / team cams, see below |
+| **Match Day** | working (REAL sim) | `@pv/match-runner` in a separate process (one-shot map or interactive round-by-round session with tactical timeouts and coach orders); real team select; coach note from a real PV-3 trace. While a match is on, the screen is the full-window **live match view** — tactical map / team cams, our team's fog of war, belief overlay, navigation developer view |
+| **Match Day → Review (post-match)** | working (REAL sim) | match-runner summary + replay: round results, **round decisions** (each team's read, call, plan changes), economy timeline, timeout log, MVP, ground-truth replay |
+| **Series · Map veto** | working (REAL engine) | `@pv/match-runner` series layer (`createSeriesSession`): Bo1/Bo3/Bo5, step-by-step veto vs the AI, per-map mastery + scouting, maps played through Match Day |
 | **Squad / Player Profile** | working | PV-2 `player_ratings` + `player_names` — 402 real VCT players, 1–20 grid, uncertainty, explicit null |
 | **Opponent Report** | working | PV-2 `team_profiles` + `team_names` — 70 real teams, economy + map pool |
 | **Tactics** | working (list) | PV-1 `ascent-tactics` (provenance tags shown) |
 | **Agent Select** | working (data) | PV-1 `ascent-comps` (win rates + CI, role templates) |
 | **Dev → Decision Debugger** | working | real PV-3 `@pv/decision-debugger` traces (Handoff §21) |
-| **About** | working | pre-release real-names disclaimer |
-| Map Veto / Inbox / Schedule / Finance / Transfers / Training / Scouting | 준비 중 | — |
+| **About** | working | pre-release real-names disclaimer; language switch |
+| Inbox / Schedule / Finance / Transfers / Training / Scouting | 준비 중 | — |
 
 Data fixtures are copied from PV-1/PV-2 branches; see `src/data/README.md` and
 `test/fixtures/traces/README.md` for exact sources. All values are
@@ -31,7 +88,26 @@ user decision for pre-release internal development only — license / name /
 likeness rights must be re-reviewed before any launch. The `.vrf` sample players
 (non-pro) stay anonymous (`player_N`).
 
-## Live match view (Match Day while a match is played or watched)
+## Match Day
+
+### Pre-match options (match setup)
+
+**⚙ 경기 옵션 / Match options** on Match Day exposes the `MatchConfig` options that
+are a team's or organiser's choice; they apply to both one-shot and interactive
+matches and lock while a session is live:
+
+- **상대 기억 / Opponent memory** (`opponentMemory`, default on) — off makes both
+  teams play every round like the first; the Review then shows no reads.
+- **최소 쓰로잉률 / Minimum throw rate** per team (`minThrowRates.teams[teamId]`,
+  /s, default 0) — a floor on how often a player breaks a winning post-plant hold.
+
+Only non-default choices are sent, so a default match is exactly the engine's
+default config. Per-player floors (`minThrowRates.players`) pass through the IPC
+types and scripts but have no UI yet. The engine tunables in `MatchConfig.tuning`
+(crossfire slope, info half-life, save thresholds, moving-shot stopping time, …; listed in
+`docs/STAT_OUTCOME_MATRIX.md` §5 at the repo root) are deliberately not exposed.
+
+### Live match view (while a match is played or watched)
 
 Starting a match (one-shot or interactive) opens a full-window broadcast-style screen
 (`src/renderer/screens/matchday/`, logic in `src/renderer/matchday/`). **◂ 로비** returns to the
@@ -70,17 +146,45 @@ timeouts) up to the furthest point you have watched — a round you have already
 marks. Banners appear when they matter (spike planted + countdown, 1 v N clutch, opponent
 timeout), and the tactical timeout opens the orders sheet over the stage.
 
-### No invented routes
-The live view never draws a straight line between zone centres as if it were a route: no movement
-trails, plan arrows or rotation lines, and the navgraph's travel edges are hidden (the
-`구역 그래프 (디버그)` checkbox on the tactical map shows them, labelled as not being routes). A
-player on the way somewhere is shown by a ring on the destination zone. The only lines on the map
-connect two real positions in a fight (a player and the enemy they see). The 3D blockout — used
-only when no map mesh is installed — is still a schematic of the zone graph, so its corridors are
-straight; the older `ReplayViewer` (Review's full-view replay and Dev) still interpolates between
-keyframes through `@pv/replay-engine`.
+#### Players are drawn where the engine recorded them
 
-### The coach sees only what the team knows
+The engine moves every player along its navigation roadmap and records a position on every tick
+(`MatchConfig.recordTracks`, requested by `scripts/run-match.mts`, `match-session.mts` and
+`series-session.mts`). The live view draws exactly those positions — consecutive samples joined
+linearly — so players walk along the real corridors and nobody is drawn crossing a wall
+(`packages/match-runner/test/movement-floor.test.ts` checks every recorded position of whole matches
+against the roadmap). Each round's replay starts with one zero-length move per player, so a player
+who never leaves their spot still has a position.
+
+The view itself still invents nothing: no movement trails, plan arrows or rotation lines in the
+normal view; the only lines on the map connect two real positions in a fight (a player and the
+enemy they see). Planned routes and walked traces exist only in the developer view below. For a
+replay with sparse tracks (an older engine: one keyframe per zone arrival) the player stays on the
+origin zone, the destination zone is ringed and an arc shows how far along the hop is — never a
+straight line between two zone centres. The 3D blockout — used only when no map mesh is installed —
+is a schematic of the zone graph, so its corridors are straight; the older `ReplayViewer` (Review's
+full-view replay and Dev) still interpolates between keyframes through `@pv/replay-engine`.
+
+#### Navigation (developer) view
+
+![Navigation developer view](docs/desktop-nav-debug.png)
+
+The **내비게이션 (개발자) / Navigation (developer)** checkbox at the bottom right of the tactical map
+(off by default, not persisted) draws engine output only — nothing is re-planned in the renderer:
+
+- the walkable floor as the engine's roadmap knows it (`src/data/sim/ascent.nav.json`), one-way
+  drops in their own colour, and the zone graph with every zone ringed green (connected) or red (not);
+- for each player of the viewed team: the destination, the planned waypoints still ahead (coloured
+  by route preference — fastest / safest / quiet / tactical), the walked trace, replans and refused
+  paths, and ground patches priced into the plan;
+- a panel beside the map that says, per player, WHY that route: what the order is for → goal ·
+  route preference · zones avoided (from the team's belief) · length · time.
+
+Source: `RoundRecord.navTrace` → `MatchRoundSummary.nav`; model `src/renderer/matchday/navdebug.ts`
+(unit-tested in `test/navdebug.test.ts`). Engine side: `docs/research/NAVIGATION_ENGINE.md` at the
+repo root.
+
+#### The coach sees only what the team knows
 The default view is OUR team's fog of war: our players, enemies while one of our players sees
 them, remembered sightings (hollow, fading with age), sound cues, and — public information —
 kills and the planted spike. The opponent's real positions are never drawn otherwise. The
@@ -88,28 +192,22 @@ kills and the planted spike. The opponent's real positions are never drawn other
 "디버그"; the app had that POV switch before); the cams are always our team. Ground truth stays
 in Dev.
 
-### Data each mode uses
+#### Data each mode uses
 | Source | Used for |
 |---|---|
-| `Replay.tracks` (per-round `move` events) | our players' positions; enemies only once gated by perception |
+| `Replay.tracks` (per-round `move` events, one per player per tick while moving) | our players' positions; enemies only once gated by perception |
 | `Replay.events` kill / plant / defuse / roundEnd | kill feed, spike state and clock, round result, monitor states |
 | `Replay.perception[team]` snapshots (500 ms) | observed enemies, sound cues, belief zones |
-| `MatchSummary.rounds[]` | attacker (engine id → team), buys/weapon, economy, score |
+| `MatchSummary.rounds[]` | attacker (engine id → team), buys/weapon, economy, score, round decisions, navigation trace |
 | `src/data/sim/ascent.navgraph.json` | zones, travel edges, sightlines, sound links (vision/hearing rules, blockout) |
+| `src/data/sim/ascent.nav.json` | the navigation roadmap, for the developer view (and the in-app round simulator) |
 | `@pv/game-data` `rosters.json` (read-only import) | engine slot 1..5 → real player handle |
 
-**Position tracks come from an app-side bridge.** `@pv/match-runner` does not forward
-`recordTracks`, so the app received no player positions at all. `scripts/track-shim.mts` turns the
-simulator's own track recording on from the app's two match scripts (outcomes, sim events and
-perception are identical with and without it) and adds a spawn position per player. It reads a
-private simulator field; if that breaks, the screen says positions are unavailable. The clean fix
-is a `MatchConfig.recordTracks` option in the engine.
-
-### Approximations (derived in the renderer — and the engine field that would make each exact)
+#### Approximations (derived in the renderer — and the engine field that would make each exact)
 | Shown | How it is derived today | Exact with |
 |---|---|---|
-| Movement | **Players are drawn only where the engine recorded them.** Consecutive track samples (≤ 300 ms or ≤ 120 uu apart) are joined linearly, with no re-timing, and players are oriented along their motion. Nothing is ever interpolated between zone centres: with the zone-hop engine at 8e165f4 (one keyframe per zone arrival) a player stays on the origin zone until the engine moves them, the destination zone is ringed and an arc around the player shows how far along the hop they are — no path is drawn, because the straight line between two zone centres is not a route. A small per-player offset separates players that engine stacks on one point | continuous per-tick positions along walkable paths in the replay tracks (then players simply move) |
-| Facing | engine rule re-implemented: toward the next zone while travelling, toward the choke on the enemy-spawn → here path when standing; toward the opponent during a duel | `TrackFrame.players[].facing` (a policy `aimZone` overrides the default and is not exported) |
+| Movement | **Exact**: recorded per-tick positions (above). Only a replay with sparse tracks falls back to "stay on the origin zone + ring the destination", with a small per-player offset separating players that such an engine stacks on one point | — |
+| Facing | derived: along the recorded motion while moving, toward the choke on the enemy-spawn → here path when standing, toward the opponent during a duel (the engine itself faces a mover toward the next zone of its route) | `TrackFrame.players[].facing` (a policy `aimZone` overrides the default and is not exported) |
 | Which of OUR players sees an enemy | team snapshot `currentlyVisible` ∩ the engine's `canSee` (alive, ≤ 4500 uu, 110° cone, zone sightline) evaluated per player, ∪ the opponent of a kill event the player is in. The team snapshot is the upper bound | per-player `visibleEnemyIds` in the perception snapshot |
 | Duels | a kill resolves in one engine tick; the two players are shown squaring up 1.2 s before it | `engage` events (dropped by the replay bridge) with real duel timing |
 | What a player hears | team sound cues filtered by loudness × sound-link attenuation to the player's zone; our own footsteps removed by zone | per-player `heardSounds`, and a source team on each cue |
@@ -118,7 +216,7 @@ is a `MatchConfig.recordTracks` option in the engine.
 | Health / armor / per-player weapon, ult, abilities | **not shown** — the roster shows alive/dead, the team's bought weapon, team credits and ult points | `health`, `armor`, `weaponId`, `ultimatePoints`, ability charges per player per frame |
 | Spike carrier before the plant | not shown | `spikePickup` events / carrier id |
 
-### 3D cams: map mesh and blockout
+#### 3D cams: map mesh and blockout
 `CamStage3D` (three.js) renders all monitors with ONE WebGL renderer and scissored viewports,
 capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
 
@@ -149,51 +247,170 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
   3.32 M → 380 k triangles, 17.6 MB, 10 draw calls; calibration = 100 uu per Blender metre with y
   flipped (22/22 zone centres over geometry, 17–18/22 on a floor within 0.6 m; the next-best axis
   assignment scores 8).
-- **Known limits on the real mesh.** The engine simulates on the 22-zone graph, not on the mesh:
-  at 8e165f4 players hop from zone centre to zone centre, so a monitor's camera cuts from one zone
-  to the next instead of walking there (the view never invents the path in between). An engine
-  that records continuous positions along walkable paths turns that into real movement without any
-  change here. An enemy
-  the engine counts as seen can still be behind real geometry — its marker is drawn through walls
-  rather than hidden; per-player observations would fix that.
+- **Known limits on the real mesh.** Positions are continuous now, so a monitor's camera moves with
+  the player instead of cutting from zone to zone (this was not re-checked on the real mesh in the
+  navigation work — only the 2D map was watched). The engine now decides sight
+  between real positions on Ascent, but the monitors still take "seen" from the team snapshot, so an
+  enemy counted as seen can be behind real geometry for that one player — its marker is drawn through
+  walls rather than hidden; per-player observations would fix that.
 - **Measured** (this Mac, 1920×1080, 1× playback, before the view model was added): wall render 0.8–1.4 ms CPU
   per 30 fps tick on the blockout (8 k triangles, 72 draw calls) and ≈1.1 ms with the 600 k-triangle
   mesh (2.0 M triangles per wall render; the 380 k export above is lighter still); the page stayed at 16.6 ms/frame (p95 17.4 ms) in both.
   CPU-side timings only — GPU time is not measured. Under software GL (the e2e flags) the tactical
   map runs at ≈12 fps; the real mesh is not usable there.
 
+## Round decisions (post-match Review)
+
+![Round decisions](docs/desktop-review-decisions.png)
+
+The Review tab's **라운드별 판단 / Round decisions** card shows *why* each round went
+the way it did, from the engine's `RoundRecord.decisions` (`@pv/match-runner`;
+background in `docs/CONTINUOUS_TACTICAL_INTELLIGENCE.md` at the repo root). Pick a
+round; for **both teams** it reads as an analyst's note:
+
+- **들고 들어간 상대 리딩 / Read of the opponent going in** — where the team thinks
+  the opponent attacks and defends (`opponentReadBefore`). The estimate that matters
+  for the side it plays this round is tagged *used this round* (attacking → where
+  they defend; defending → where they attack); the other is a compact reference
+  line. Each shows the lean ("A 쪽 68%"), an A|B split bar, and confidence with the
+  sample count. **Thin evidence is visibly weak**: no data → grey hatched bar,
+  "근거 없음", no percentage; low confidence (< 0.4, i.e. about one round of
+  evidence) → hatched bar, dashed amber frame and a note that it barely moves the
+  call; medium < 0.6 ≤ high. With opponent memory off the read is `null` and the
+  card says so.
+- **콜 / The call** — opening call → final call, the objective site, and the fake
+  ("A를 먼저 보여준 뒤 전환") if any. When the team held a read at medium+ confidence,
+  one line says whether the opening went **with** it (defence stacks the expected
+  site; attack goes away from the expected stack), **against** it, or picked no site.
+- **플랜 수정 / Plan changes** — every revision with the round clock remaining
+  ("1:23 남음"), from → to, and the engine's reason. No revisions → "수정 없음".
+- **라운드가 끝난 뒤 / After the round** — whether the read held up against what the
+  round showed (plant > first contact for the defence; where defenders fell for the
+  attack), and what the team learned (the evidence its model takes into the next round).
+
+Above the picker, **경기 전체: 상대에 맞춰 적응했는가 / Did they adapt?** totals per
+team: rounds with a mid-round plan change, fakes, openings with / against the read,
+and how often the read was right. The picker marks rounds with a plan change (●) or
+a fake (F). So "why did they rotate?" is the plan-change line of that round, and
+"did they adapt to us?" is the read + with/against line across rounds and the summary.
+
+Data path: `scripts/run-match.mts` / `scripts/match-session.mts` pass `decisions`
+through untouched → `mergeMatch` (`src/shared/match-merge.ts`) →
+`MatchRoundSummary.decisions` (`src/shared/ipc.ts`) → view model
+`src/renderer/decisions.ts` (pure; unit-tested in `test/decisions.test.ts`) →
+`src/renderer/screens/DecisionsPanel.tsx`. The two judgements the view adds on top
+of the engine data (with/against the read, read right/wrong) are computed and
+documented in `decisions.ts`; everything else is shown as recorded. Matches from an
+engine without `decisions` (or the browser stub) show "판단 기록이 없습니다".
+
+**Not localised yet:** revision `reason` strings ("spike planted — retake call",
+"enemies reading B — rotate/stack B", …) are free English text built inside
+`@pv/team-engine` and are shown verbatim in both languages. Localising them needs
+the engine to emit a reason *key* (+ params) per revision; the UI would then map it
+through `ko.ts` / `en.ts`. Revision `from` / `to` are parsed on the desktop side
+(`parseCall`: strategy ids, the `" (slow)"` suffix, `"commit A|B"`) and are localised.
+
+## Series · map veto
+
+![Map veto](docs/desktop-veto.png)
+
+**시리즈 · 밴픽 / Series · Veto** (left nav) runs a best-of-1/3/5 on the engine's series layer
+(`docs/SERIES_AND_VETO.md` at the repo root has the formulas and the measured effects).
+
+> **Every map is currently simulated on the Ascent geometry.** Ascent is the only map the engine can
+> play: the other ten have spatial data and navigation roadmaps but are not playable yet
+> (`docs/research/NAVIGATION_ENGINE.md` §9 at the repo root). So a "Lotus" game is an Ascent game with
+> Lotus's mastery and scouting applied. The veto and series screens carry a persistent note saying so,
+> and Match Day shows it on such maps.
+
+Flow:
+
+1. **Setup** — our team, the opponent, the format, the seed, and the team's own pre-match options:
+   **상대 사전 분석 / Scout the opponent** and **분석관 수준 / Analyst quality** (0–1; how many of their
+   games are reviewed and how exact the estimate of their map mastery is).
+2. **Veto** — the pool as cards. The bar at the top always says whose turn it is and what the step
+   is (ban / pick / choose side, `n/total`). We make our team's choices (the card's 밴/픽 button, or
+   the side buttons); the AI makes the opponent's one step at a time, ~1 s apart, each landing in
+   the veto log tagged `AI`. Banned maps grey out and are struck through; picked maps show
+   "N맵 · team 픽" and our starting side; the last map left is marked **디사이더 / Decider**.
+3. **Decision support, on the same screen** — every card shows our mastery and our analysts'
+   estimate of theirs (0–100, `±` one standard deviation). Selecting a card opens the breakdown
+   for both teams — map record, roster continuity, composition fit, each with its own `±` and the
+   note of what it is based on ("34경기 24승", "선수별 맵 출전 기록 기준") — and the scouting report for that
+   map: strong / average / weak verdict, where they attack and defend with the amount of evidence
+   behind it, and how many games were reviewed. **Uncertain numbers look uncertain**: at
+   `±` ≥ 10 the bar is hatched amber with a dashed outline and the `±` is highlighted (the same
+   idea as low-confidence reads in the Review); "not scouted" is a grey hatched bar with no number.
+   The **분석팀 추천 / Staff advice** line gives the engine's recommended choice (it searches the
+   rest of the veto on our own win estimates) with the visible numbers behind it, and a one-click
+   "추천대로".
+4. **Maps** — between maps the series scoreboard lists every map (who picked it, our starting
+   side, score). The next map opens in the existing **Match Day** (one-shot or round by round with
+   timeouts) with a banner and a "시리즈로 돌아가기" button, or is simulated in one go
+   ("결과만 빠르게"). Leaving an unfinished map plays it out.
+5. **Summary** — winner, map scores, the full veto record, mastery by map.
+
+![Series summary](docs/desktop-series-summary.png)
+
+Data path: `scripts/series-session.mts` (one long-lived tsx subprocess hosting
+`createSeriesSession`; line-delimited JSON like `match-session.mts`) ⇄ `src/main/series-host.ts`
+⇄ IPC `pv:series:{start,cmd,stop}` ⇄ `src/renderer/series/useSeries.ts` → view logic
+`src/renderer/series/view.ts` (pure; `test/series-view.test.ts`) → `screens/series/*`. The host
+reports every game from **our seat** (our team is always slot A, whichever side it starts on), so
+Match Day needs no change in how it reads a match: a map of the series is requested with
+`seriesGame: true` on the ordinary `runSimulation` / `sessionStart` calls and the session channels
+are routed to the series host while that map is open.
+
+What is simulated rather than real: the **scouting film** is each team's last two games against
+other teams, simulated at series start (`PV_SERIES_FILM` changes the count) — the data has no real
+per-round history. The map records themselves are real (`packages/game-data/data/map-history.json`:
+maps played and won per team and per player since 2025); a team without a record shows
+"승패 데이터 없음" and is treated as neutral. Not built yet: the team game plan (site leans)
+and both-teams-human veto have no UI; a series does not survive leaving the screen's route
+mid-series (the host keeps running, the screen state is not restored).
+
+## How a match reaches the screen
+
+```
+renderer (React)  ──IPC──▶  main process  ──spawn `npx tsx`──▶  scripts/*.mts  ──▶  @pv/match-runner (workspace source)
+      ▲                         │                                   │
+      └──── Replay + MatchSummary ◀── mergeMatch (src/shared/match-merge.ts) ◀── JSON on stdout / line protocol
+```
+
+- **One-shot map**: `scripts/run-match.mts` prints the whole match as JSON; `mergeMatch` puts every
+  round on one timeline (events, perception per real team) and keeps per-round extras (`decisions`,
+  `nav`) in the summary.
+- **Round by round**: `scripts/match-session.mts` is one long-lived subprocess speaking
+  line-delimited JSON (`state`, `callTimeout`, `setOrders`, `playNextRound`, `result`, `stop`).
+- **Series**: `scripts/series-session.mts` ⇄ `src/main/series-host.ts` (same protocol, plus the veto).
+- **In-app round simulator** (`src/shared/real-sim.ts`, run in `src/main/sim-worker.ts` off the UI
+  thread): `@pv/round-simulator` bundled from source with scripted policies, used by the simulation
+  runner path; its data inputs are the JSON copies under `src/data/sim/` (zone graph, roadmap,
+  visibility table, coordinate system, weapons — see the README there).
+- Types shared by both sides: `src/shared/ipc.ts`.
+
 ## Security posture
 - `contextIsolation: true`, `nodeIntegration: false`; the renderer reaches
   privileged work only through the preload whitelist (`src/preload` → `window.pv`:
-  `runSimulation`, `loadTrace`, `listTraces`) via `contextBridge`.
+  simulation run, trace list / load, match session, series, map-mesh load) via `contextBridge`.
 - CSP set in `index.html` (PixiJS needs `unsafe-eval` + blob workers, allowed only
-  in this local renderer). `sandbox` is off for ESM-preload compat on Electron 33.
+  in this local renderer; images and the minimap come from `valorant-api.com`). `sandbox` is off
+  for ESM-preload compat on Electron 33.
 
-## Run / build / verify
+## Open items
+1. **Per-player data for the live match view** — see "Approximations" above for the engine
+   fields that would replace each renderer-side derivation.
+2. **One map on screen** — the live view's map image, zone graph, roadmap and transform are
+   Ascent's (`src/data/sim/`, `src/shared/ascent-transform.ts`); a per-map spatial adapter is needed
+   before another map can be shown.
+3. **Options without UI** — per-player minimum throw rates, the team game plan (site leans),
+   both-teams-human veto, and every `MatchConfig.tuning` field.
+4. **Not localised** — plan-revision reasons and the navigation view's "why" lines are engine
+   English in both languages.
+5. **A series does not survive leaving the screen's route** mid-series (the host keeps running,
+   the screen state is not restored).
+6. **`test:e2e` has fixed waits** in its interactive part (1.5 s after "next round"); it timed out
+   once in about ten runs on 2026-11-20 and passed on rerun.
 
-```bash
-cd apps/desktop
-npm install
-npm run dev                                   # electron-vite dev
-npm run build                                 # → out/{main,preload,renderer}
-npm run test:unit                             # IPC contract + trace parser (6)
-npm run test:matchday                         # live match view logic: graph, timeline, visibility, monitors, playback, blockout (29)
-npm run build && xvfb-run -a npm run test:e2e # Playwright _electron E2E + screenshots
-```
-
-Windows is the first target (README §07); development and verification here were
-on Linux (Electron under `xvfb` + SwiftShader). If Electron can't be installed,
-the renderer still runs in plain-browser mode (`window.pv` absent → in-page
-`StubRunner` + bundled fixtures; see `src/renderer/platform.ts`).
-
-## Integration swap points (TODO)
-1. **`SimulationRunner`** (`src/shared/sim.ts`) — `StubRunner` → PV-4/PV-3 real
-   Match Runner (`pnpm sim:match` on the integration branch), same interface; the
-   worker + IPC path stay unchanged.
-2. **Per-player data for the live match view** — see "Approximations" above for the engine
-   fields that would replace each renderer-side derivation, and `scripts/track-shim.mts`.
-3. **Spatial adapter** — `src/shared/ascent-transform.ts` (copied PV-4 transform)
-   → a real spatial-engine adapter supplying the transform per map.
-4. **Team select** — pick two real teams + seed to start a match.
-
-Screens: `docs/desktop-{shell,matchday,squad,debugger}.png`.
+Screens: `docs/desktop-{shell,matchday,fog,fog-pov,orders,interactive,review,review-interactive,review-decisions,review-decisions-en,match-options,nav-debug,squad,debugger,veto,veto-1080p,veto-en,veto-en-1080p,series-summary,series-summary-en}.png`,
+`docs/screenshots/matchday-{tactical-map,team-cams}.png`. UI terms: `docs/GLOSSARY_KO.md`.

@@ -8,11 +8,17 @@
  *   round-simulator's per-side skill, so stronger rosters shoot better — a real-data signal
  *   without touching PV-4's SimState (per-player skills are a later, finer pass).
  */
-import { getTeam, getPlayer } from "@pv/game-data";
+import { getTeam, getPlayer, type Player } from "@pv/game-data";
 import { AVERAGE_SKILLS, type CombatSkills } from "@pv/combat-engine";
 import { AVERAGE_TRAITS, type TacticalTraits } from "@pv/round-simulator";
 import { NEUTRAL_PROFILE, type PlayerProfile } from "@pv/shared-types";
 import type { TeamRef } from "./match.js";
+
+/**
+ * A player the match can field instead of the team's game-data roster (MatchConfig.rosters): any
+ * game-data-shaped player — e.g. a generated prospect from a career world (@pv/career).
+ */
+export type RosterPlayer = Pick<Player, "playerId" | "attributes" | "hasRatings">;
 
 const SKILL_KEYS: ReadonlyArray<keyof CombatSkills> = [
   "aim",
@@ -74,11 +80,8 @@ export function teamSkills(id: string): CombatSkills {
  * Per-player CombatSkills for the first `count` roster players (real ratings, AVERAGE fallback
  * for players without ratings or beyond the roster). Feeds runMatchRound's per-player `skills`.
  */
-export function rosterSkills(id: string, count: number): CombatSkills[] {
-  const team = getTeam(id);
-  const players = team
-    ? team.roster.map((r) => getPlayer(r.playerId)).filter((p): p is NonNullable<typeof p> => !!p)
-    : [];
+export function rosterSkills(id: string, count: number, override?: readonly RosterPlayer[]): CombatSkills[] {
+  const players = override ?? gameDataRoster(id);
   const out: CombatSkills[] = [];
   for (let i = 0; i < count; i++) {
     const p = players[i];
@@ -87,12 +90,18 @@ export function rosterSkills(id: string, count: number): CombatSkills[] {
   return out;
 }
 
-/** The first `count` rostered players of a team (undefined beyond the roster / unknown team). */
-function rosterPlayers(id: string, count: number) {
+/** A team's game-data roster (empty for an unknown team). */
+function gameDataRoster(id: string): RosterPlayer[] {
   const team = getTeam(id);
-  const players = team
-    ? team.roster.map((r) => getPlayer(r.playerId)).filter((p): p is NonNullable<typeof p> => !!p)
-    : [];
+  return team ? team.roster.map((r) => getPlayer(r.playerId)).filter((p): p is NonNullable<typeof p> => !!p) : [];
+}
+
+/**
+ * The first `count` players of a team (undefined beyond the roster / unknown team): the override
+ * when one is given (MatchConfig.rosters), else the game-data roster.
+ */
+function rosterPlayers(id: string, count: number, override?: readonly RosterPlayer[]): Array<RosterPlayer | undefined> {
+  const players = override ?? gameDataRoster(id);
   return Array.from({ length: count }, (_, i) => players[i]);
 }
 
@@ -109,8 +118,8 @@ function rated(p: ReturnType<typeof rosterPlayers>[number], key: string, fallbac
  *   clutch    ← clutch
  * Unrated players get the league-average trait.
  */
-export function rosterTraits(id: string, count: number): TacticalTraits[] {
-  return rosterPlayers(id, count).map((p) => ({
+export function rosterTraits(id: string, count: number, override?: readonly RosterPlayer[]): TacticalTraits[] {
+  return rosterPlayers(id, count, override).map((p) => ({
     gameSense: rated(p, "impact", AVERAGE_TRAITS.gameSense),
     trading: rated(p, "trading", AVERAGE_TRAITS.trading),
     clutch: rated(p, "clutch", AVERAGE_TRAITS.clutch),
@@ -128,8 +137,8 @@ export type RosterProfile = Omit<PlayerProfile, "playerId">;
  *   teamwork       ← trading
  * Unrated players get NEUTRAL_PROFILE.
  */
-export function rosterProfiles(id: string, count: number): RosterProfile[] {
-  return rosterPlayers(id, count).map((p) => ({
+export function rosterProfiles(id: string, count: number, override?: readonly RosterPlayer[]): RosterProfile[] {
+  return rosterPlayers(id, count, override).map((p) => ({
     aggression: rated(p, "entryAggression", NEUTRAL_PROFILE.aggression),
     discipline: rated(p, "consistency", NEUTRAL_PROFILE.discipline),
     decisionMaking: (rated(p, "impact", NEUTRAL_PROFILE.decisionMaking) + rated(p, "clutch", NEUTRAL_PROFILE.decisionMaking)) / 2,
@@ -138,8 +147,8 @@ export function rosterProfiles(id: string, count: number): RosterProfile[] {
 }
 
 /** Per-player consistency rating (league average 0.6 when unrated) — sizes the round-form swing. */
-export function rosterConsistency(id: string, count: number): number[] {
-  return rosterPlayers(id, count).map((p) => rated(p, "consistency", 0.6));
+export function rosterConsistency(id: string, count: number, override?: readonly RosterPlayer[]): number[] {
+  return rosterPlayers(id, count, override).map((p) => rated(p, "consistency", 0.6));
 }
 
 /** Form standard deviation for a player with consistency 0 (σ = FORM_SIGMA_MAX × (1 − consistency)). */
@@ -166,6 +175,6 @@ export function applyRoundForm(skills: CombatSkills, consistency: number, u1: nu
 }
 
 /** game-data player ids of the first `count` rostered players (null beyond the roster / unknown team). */
-export function rosterPlayerIds(id: string, count: number): Array<string | null> {
-  return rosterPlayers(id, count).map((p) => p?.playerId ?? null);
+export function rosterPlayerIds(id: string, count: number, override?: readonly RosterPlayer[]): Array<string | null> {
+  return rosterPlayers(id, count, override).map((p) => p?.playerId ?? null);
 }

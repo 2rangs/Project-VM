@@ -118,6 +118,11 @@ export interface AbilityUsage {
   readonly teamId: string;
   readonly origin: Vec3;
   readonly startedAtMs: number;
+  /**
+   * Ground patches only: the neighbouring zone whose connection with the effect's zone the patch
+   * lies ON (a doorway). Absent → the patch lies in the middle of its zone.
+   */
+  readonly doorToZoneId?: string;
   /** Targets caught by flash/concuss/reveal, if the caller resolved them (see adapters). */
   readonly affectedPlayerIds?: readonly string[];
 }
@@ -136,10 +141,14 @@ export interface ActiveEffect {
   readonly instanceId: string;
   readonly abilityId: string;
   readonly effectType: EffectType;
+  /** Full effect set of the ability that created this effect (an ability may combine several). */
+  readonly effectTypes: readonly EffectType[];
   readonly ownerId: string;
   readonly teamId: string;
   readonly origin: Vec3;
   readonly zoneId: string;
+  /** Ground patches: the neighbouring zone whose doorway the patch lies on, or null (mid-zone). */
+  readonly doorToZoneId: string | null;
   readonly startedAtMs: number;
   readonly expiresAtMs: number | null; // null = until destroyed/manual
   readonly radiusUnits: number;

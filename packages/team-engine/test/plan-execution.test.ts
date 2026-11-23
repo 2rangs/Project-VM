@@ -56,13 +56,20 @@ describe("the plan decides where the team goes (counterfactual: same state, diff
     const plan = policy.planSummary()!;
     expect(plan.objective).toBe("b-site");
     expect(plan.feint).toBe("a-site");
-    // While showing: non-carriers head for A's doorstep; the carrier does not show.
+    // The show is made by a FEW players who run on purpose; the carrier is never one of them, and
+    // the body of the team stages toward the real site.
     const showing = new TeamDecisionPolicy(spatial).decide(view, rng(seed)).commands;
     const carrierId = String(view.spike.holderId);
-    expect(showing.some((c) => c.sourceActionId === "plan:feint-move" && String(c.playerId) !== carrierId)).toBe(true);
-    expect(showing.find((c) => String(c.playerId) === carrierId)?.sourceActionId).not.toMatch(/feint/);
-    // After the show window the same plan turns to the real objective.
-    const later = policy.decide({ ...view, timeRemainingMs: 60_000 }, rng(seed)).commands;
+    const show = showing.filter((c) => c.sourceActionId === "plan:feint-move");
+    expect(show).toHaveLength(2);
+    expect(show.every((c) => c.moveMode === "run" && String(c.playerId) !== carrierId)).toBe(true);
+    expect(showing.filter((c) => c.sourceActionId === "plan:stage-move").length).toBe(3);
+    expect(policy.planSummary()!.showers).toBe(2);
+    // Show window over: the showers come round to the real site, and once the team is staged on
+    // B's approach the execute is called and everyone goes for the real objective.
+    const staged = attackView(ZONE.spawn, { timeRemainingMs: 60_000 });
+    const mainAtB = { ...staged, teammates: staged.teammates.map((p) => ({ ...p, position: ZONE.bMain })) };
+    const later = policy.decide(mainAtB, rng(seed)).commands;
     expect(later.some((c) => c.sourceActionId?.startsWith("plan:feint"))).toBe(false);
     expect(targets(later).some((t) => t.includes("b-") )).toBe(true);
   });

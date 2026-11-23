@@ -40,6 +40,13 @@ export interface Zone {
   plantable: boolean;
   position: Vec3;
   /**
+   * A walkable standing point for the zone (game uu, z = floor), measured on the map
+   * geometry: where a player in this zone is DRAWN, and where every edge route that
+   * touches the zone starts/ends. `position` stays the callout and remains the zone's
+   * logical centre (nearest-zone lookups, distances).
+   */
+  anchor?: Vec3;
+  /**
    * Whether a shortest path may pass *through* this zone as an intermediate
    * waypoint. Defaults to true. Spawn zones are `transit: false`: a generic
    * (attacker-style) route must not cut through a spawn, so a spawn can only be
@@ -69,6 +76,48 @@ export interface NavEdge {
   runTimeMs: number;
   walkTimeMs: number;
   provenance: string;
+  /** Traversal kind (multi-map datasets); absent = ordinary walkable connection. */
+  kind?: EdgeKind;
+  note?: string;
+  /**
+   * Walkable polyline from `from` to `to`, measured on the map geometry. When present the
+   * edge's distance/time ARE this route's. A bidirectional edge is walked back along the
+   * reversed waypoints unless `routeReverse` is present.
+   */
+  route?: EdgeRoute;
+  /** The way back when it differs from the reversed `route` (a one-way drop on one side). */
+  routeReverse?: EdgeRoute;
+  /** Set to "straight (...)" when no walkable route was found: the edge is a flagged straight segment. */
+  routeStatus?: string;
+}
+
+/** [x, y, z] in game uu. */
+export type Waypoint = [number, number, number];
+
+export interface EdgeRoute {
+  /** Ordered points including both zone anchors. */
+  waypoints: Waypoint[];
+  lengthMeters: number;
+  runTimeMs: number;
+  walkTimeMs: number;
+  /** Number of one-way drops along the route. */
+  drops?: number;
+  provenance?: string;
+}
+
+/** One direction of an edge, as a mover experiences it. */
+export interface EdgeTraversal {
+  from: string;
+  to: string;
+  /** Polyline from the `from` zone's stand point to the `to` zone's (>= 2 points). */
+  waypoints: Vec3[];
+  /** Polyline length in game units (for a teleporter: the straight segment, not travelled). */
+  lengthUnits: number;
+  runTimeMs: number;
+  walkTimeMs: number;
+  kind?: EdgeKind;
+  /** True when the polyline is a measured walkable route; false = flagged straight segment. */
+  walkable: boolean;
 }
 
 export interface PlantZone {
@@ -85,6 +134,9 @@ export interface Sightline {
   type: "direct" | "angle";
   smokeable: boolean;
   note?: string;
+  /** Measured fraction of eye-point pairs that see each other (geometry-derived maps). */
+  visibility?: number;
+  provenance?: string;
 }
 
 export interface SoundLink {
@@ -92,6 +144,7 @@ export interface SoundLink {
   b: string;
   /** 0 = no loss, 1 = fully attenuated across this link. */
   attenuation: number;
+  provenance?: string;
 }
 
 export interface CoordinateTransform {
@@ -119,6 +172,10 @@ export interface TacticalMapData {
   edges: NavEdge[];
   sightlines: Sightline[];
   soundLinks: SoundLink[];
+  /** Site letters in order (multi-map datasets; Ascent's file omits it). */
+  sites?: string[];
+  /** Map mechanics and whether the graph expresses them (multi-map datasets). */
+  mechanics?: MapMechanic[];
   // coordinateTransform may be supplied separately (coordinate-system.json)
   // or embedded; the loader accepts either.
   transform?: CoordinateTransform;
@@ -139,4 +196,19 @@ export interface AudibleZone {
   zoneId: string;
   /** Remaining signal strength in [0,1] when the sound reaches this zone. */
   strength: number;
+}
+
+// ---- Multi-map additions (optional fields; Ascent's dataset does not carry them) ----
+
+/** How an edge is traversed. Absent = an ordinary walkable connection. */
+export type EdgeKind = "walk" | "drop" | "teleporter" | "zipline" | "rope" | "approx-link";
+
+/** A map mechanic and whether the navgraph can express it. */
+export interface MapMechanic {
+  kind: string;
+  name: string;
+  represented: boolean;
+  how?: string;
+  engineNeeds?: string;
+  provenance: string;
 }

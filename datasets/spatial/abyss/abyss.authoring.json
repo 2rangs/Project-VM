@@ -1,0 +1,20 @@
+{
+  "mapId": "abyss",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "mechanics": [
+    {
+      "kind": "fall-off",
+      "name": "No outer walls: players can fall off the map and die",
+      "represented": false,
+      "engineNeeds": "lethal boundary zones / fall hazard on edges next to the void; displacement abilities need a 'knocked off' outcome",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "jump-shortcut",
+      "name": "Jump gaps between platforms (e.g. mid, B danger)",
+      "represented": false,
+      "engineNeeds": "one-way/jump edges with a fall-risk cost; only drops the walk grid could see are encoded",
+      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ]
+}

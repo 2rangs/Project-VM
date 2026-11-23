@@ -8,7 +8,7 @@
  * shapes and fills the belief PV-3 owns (perception produces observation only). R2-B: PV-4 to
  * populate the contract teammate fields natively so this backfill can be dropped.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
@@ -18,17 +18,22 @@ import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simula
 import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
+import { spikeBlastRadiusUnits, weaponPrice } from "@pv/game-rules";
 import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
 
-/** Load the Ascent spatial engine from the shared dataset (datasets/spatial/ascent). */
-export function loadSpatial(): SpatialEngine {
-  const dir = resolve(repoRoot, "datasets/spatial/ascent");
-  const nav = JSON.parse(readFileSync(resolve(dir, "ascent.navgraph.json"), "utf8"));
+/** Load a map's spatial engine — zone graph, coordinate system and navigation roadmap — from datasets/spatial/<map>. */
+export function loadSpatial(mapId = "ascent"): SpatialEngine {
+  const dir = resolve(repoRoot, "datasets/spatial", mapId);
+  const nav = JSON.parse(readFileSync(resolve(dir, `${mapId}.navgraph.json`), "utf8"));
   const cs = JSON.parse(readFileSync(resolve(dir, "coordinate-system.json"), "utf8"));
-  return createEngine(nav, cs.transform);
+  const roadmap = JSON.parse(readFileSync(resolve(dir, `${mapId}.nav.json`), "utf8"));
+  // measured line of sight between roadmap nodes; without it sight falls back to the zone table
+  const visPath = resolve(dir, `${mapId}.vis.json`);
+  const visibility = existsSync(visPath) ? JSON.parse(readFileSync(visPath, "utf8")) : undefined;
+  return createEngine(nav, cs.transform, roadmap, visibility);
 }
 
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
@@ -38,6 +43,11 @@ export function loadWeapons(): Record<string, WeaponSpec> {
 }
 
 export const NO_ABILITIES: AbilityCatalog = {};
+
+/** Shop price of a weapon id as the sim names it ("Vandal" → game-rules key "vandal"). */
+function shopPrice(weaponId: string): number | undefined {
+  return weaponPrice(weaponId.toLowerCase())?.price.value;
+}
 
 /**
  * Build a SpatialQuery over the engine. The internal frame is game world units, so the
@@ -53,8 +63,15 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined) {
-    this.inner = new TeamDecisionPolicy(sq, abilityEffect ? { abilityEffect } : {});
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine) {
+    this.inner = new TeamDecisionPolicy(sq, {
+      ...(abilityEffect ? { abilityEffect } : {}),
+      weaponPrice: shopPrice,
+      // Footsteps carry as far as the spike's blast (game-rules); zone centres let a player judge
+      // whether a run is inside an enemy's hearing.
+      footstepRadiusUnits: spikeBlastRadiusUnits(),
+      ...(spatial ? { zonePosition: (id: string) => spatial.getZone(id)?.position } : {}),
+    });
   }
   /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
   setOrder(order: PolicyOrder | null): void {
@@ -108,8 +125,9 @@ export class WrappedTeamPolicy implements DecisionPolicy {
 export function makeSimPolicies(
   sq: SpatialQuery,
   abilityEffect?: (abilityId: string) => string | undefined,
+  spatial?: SpatialEngine,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect), defense: new WrappedTeamPolicy(sq, abilityEffect) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

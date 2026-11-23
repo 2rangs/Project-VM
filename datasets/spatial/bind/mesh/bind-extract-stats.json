@@ -1,0 +1,267 @@
+{
+  "note": "World-space measurements of the playable art geometry. Counts and bounding boxes only \u2014 the geometry itself is never committed.",
+  "blendFile": "Bind.blend",
+  "blendBytes": 266591825,
+  "blenderVersion": "4.2.23 LTS",
+  "sceneUnits": {
+    "system": "METRIC",
+    "scaleLength": 1.0
+  },
+  "excludeCollectionRegex": "Vista|Skybox|_NPEV2|Snowball|Audio|Lighting",
+  "allCollections": {
+    "Collection": 0,
+    "Duality_Art_A": 430,
+    "Duality_Art_Atk": 525,
+    "Duality_Art_AtkPathA": 469,
+    "Duality_Art_AtkPathB": 1331,
+    "Duality_Art_B": 450,
+    "Duality_Art_BathHouse": 442,
+    "Duality_Art_Def": 528,
+    "Duality_Art_DefPathA": 323,
+    "Duality_Art_DefPathB": 211,
+    "Duality_Art_Destructibles": 0,
+    "Duality_Art_Lantern": 361,
+    "Duality_Art_Mid": 958,
+    "Duality_Art_MidPathA": 969,
+    "Duality_Art_MIdPathB": 553,
+    "Duality_Art_Signage": 77,
+    "Duality_Art_TPArrivalRooms": 184,
+    "Duality_Art_Vista": 1669
+  },
+  "keptCollections": {
+    "Duality_Art_Atk": {
+      "objects": 475,
+      "tris": 170415,
+      "min": [
+        -2.17,
+        -32.82,
+        -4.09
+      ],
+      "max": [
+        52.8,
+        23.13,
+        15.17
+      ]
+    },
+    "Duality_Art_AtkPathB": {
+      "objects": 1139,
+      "tris": 331936,
+      "min": [
+        34.66,
+        8.65,
+        -2.07
+      ],
+      "max": [
+        98.25,
+        92.92,
+        31.71
+      ]
+    },
+    "Duality_Art_AtkPathA": {
+      "objects": 399,
+      "tris": 149842,
+      "min": [
+        35.46,
+        -62.56,
+        -2.81
+      ],
+      "max": [
+        93.1,
+        -13.4,
+        26.12
+      ]
+    },
+    "Duality_Art_BathHouse": {
+      "objects": 380,
+      "tris": 80871,
+      "min": [
+        71.61,
+        -54.65,
+        0.74
+      ],
+      "max": [
+        99.36,
+        -1.21,
+        17.53
+      ]
+    },
+    "Duality_Art_MidPathA": {
+      "objects": 792,
+      "tris": 275397,
+      "min": [
+        62.87,
+        -42.49,
+        -1.44
+      ],
+      "max": [
+        132.99,
+        19.12,
+        53.09
+      ]
+    },
+    "Duality_Art_Lantern": {
+      "objects": 303,
+      "tris": 115651,
+      "min": [
+        90.1,
+        -37.16,
+        0.05
+      ],
+      "max": [
+        114.97,
+        10.43,
+        12.33
+      ]
+    },
+    "Duality_Art_Mid": {
+      "objects": 784,
+      "tris": 269058,
+      "min": [
+        -0.11,
+        -57.08,
+        -2.68
+      ],
+      "max": [
+        163.47,
+        85.92,
+        29.7
+      ]
+    },
+    "Duality_Art_B": {
+      "objects": 365,
+      "tris": 79407,
+      "min": [
+        97.16,
+        34.04,
+        -14.31
+      ],
+      "max": [
+        146.57,
+        80.0,
+        21.99
+      ]
+    },
+    "Duality_Art_MIdPathB": {
+      "objects": 467,
+      "tris": 125422,
+      "min": [
+        64.42,
+        -23.84,
+        0.11
+      ],
+      "max": [
+        123.0,
+        62.09,
+        26.85
+      ]
+    },
+    "Duality_Art_A": {
+      "objects": 357,
+      "tris": 94914,
+      "min": [
+        61.08,
+        -55.76,
+        -1.9
+      ],
+      "max": [
+        141.55,
+        1.11,
+        68.4
+      ]
+    },
+    "Duality_Art_DefPathB": {
+      "objects": 178,
+      "tris": 56982,
+      "min": [
+        114.68,
+        19.96,
+        -2.53
+      ],
+      "max": [
+        140.7,
+        77.3,
+        11.33
+      ]
+    },
+    "Duality_Art_Signage": {
+      "objects": 69,
+      "tris": 13153,
+      "min": [
+        47.49,
+        -47.92,
+        1.02
+      ],
+      "max": [
+        112.83,
+        74.04,
+        13.69
+      ]
+    },
+    "Duality_Art_TPArrivalRooms": {
+      "objects": 161,
+      "tris": 22352,
+      "min": [
+        53.85,
+        -63.14,
+        -1.09
+      ],
+      "max": [
+        94.09,
+        25.07,
+        13.57
+      ]
+    },
+    "Duality_Art_Def": {
+      "objects": 479,
+      "tris": 117716,
+      "min": [
+        94.84,
+        -9.18,
+        0.45
+      ],
+      "max": [
+        163.18,
+        37.02,
+        25.15
+      ]
+    },
+    "Duality_Art_DefPathA": {
+      "objects": 278,
+      "tris": 64452,
+      "min": [
+        112.45,
+        -38.37,
+        -1.93
+      ],
+      "max": [
+        170.34,
+        2.06,
+        16.0
+      ]
+    }
+  },
+  "objectsKept": 6626,
+  "objectsSkippedExcludedCollection": 1470,
+  "objectsSkippedHidden": 0,
+  "verts": 2548954,
+  "tris": 1967568,
+  "triangleClass": {
+    "floor(nz>=cos45)": 360306,
+    "wall(|nz|<=cos70)": 897056,
+    "other": 710206
+  },
+  "bboxBlenderUnits": {
+    "min": [
+      -2.17,
+      -63.14,
+      -14.31
+    ],
+    "max": [
+      170.34,
+      92.92,
+      68.4
+    ]
+  },
+  "materials": 382,
+  "seconds": 4.5
+}
