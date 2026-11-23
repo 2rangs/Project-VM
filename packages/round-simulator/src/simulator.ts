@@ -4,6 +4,7 @@ import {
   DEFAULT_PARAMS as PERCEPTION_PARAMS,
   facingAngleTo,
   lineOfSight,
+  landingSound,
   EYE_HEIGHT_UNITS,
   type SightOccluder,
   type SightPoint,
@@ -108,6 +109,8 @@ const HALF_FOV_RAD = (PERCEPTION_PARAMS.vision.halfFovDeg * Math.PI) / 180;
 /** What a mover needs to know about the ground ahead (built once per tick). */
 interface MoveWorld {
   readonly state: SimState;
+  /** The round's event log (a landing is recorded as it happens). */
+  readonly events: SimEvent[];
   readonly fire: readonly GroundPatch[];
   readonly slow: readonly GroundPatch[];
   /** Passable ground hazards in force, as discs on the floor (what the route planner prices). */
@@ -248,6 +251,8 @@ export class RoundSimulator {
     const burnUntil = new Map<string, number>();
     const lastHop = new Map<string, { fromZone: string; tick: number }>();
     let eyeInside = new Map<string, SightOccluder>(); // player → the smoke its eye is in (last tick)
+    this.landings = [];
+    this.shotLog = [];
     const gazeSource = this.gazeOf;
     gazeSource.clear();
     this.lastSight.clear();
@@ -289,7 +294,9 @@ export class RoundSimulator {
         const activeAbilities = toPerceptionAbilityStates(abilityEngine);
         for (const side of ["attack", "defense"] as const) {
           const dt = prevBelief[side] ? decisionDtMs : 0;
+          const sound = this.cfg.soundDetail ? this.soundWindow(state.elapsedMs, decisionDtMs) : null;
           const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, {
+            ...(sound ? { extraSounds: sound.extraSounds, maskers: sound.maskers } : {}),
             activeAbilities, abilityEngine, cues, elapsedMs: state.elapsedMs,
             abilityCues, abilityCatalog: this.abilitiesCatalog, transitOf: (p) => this.transitOf(p), stationaryIds: this.edgeWaiting,
           });
@@ -318,7 +325,7 @@ export class RoundSimulator {
       const fire = activeGroundPatches(abilityEngine, "molly", state.elapsedMs);
       const slow = activeGroundPatches(abilityEngine, "slow", state.elapsedMs);
       const hazards = this.groundHazards(fire, slow);
-      const moveWorld: MoveWorld = { state, fire, slow, hazards, rerouteTried, stackWait, stackStats, patchExposure, burnUntil, lastHop };
+      const moveWorld: MoveWorld = { state, events, fire, slow, hazards, rerouteTried, stackWait, stackStats, patchExposure, burnUntil, lastHop };
       this.edgeWaiting.clear();
       // Movement blockers (things a body cannot walk through) in force this tick. Vision
       // blockers such as smoke are NOT among them: a smoke is walked through.
@@ -664,6 +671,24 @@ export class RoundSimulator {
   private readonly gazeOf = new Map<string, GazeSource>();
   /** The point each player chose to look at this tick (gaze "enemy" / "threat"). */
   private readonly gazeAt = new Map<string, { x: number; y: number; z: number }>();
+  // ---- sound detail (cfg.soundDetail) ----
+  private readonly perceptionParams = roundPerceptionParams();
+  /** Landings off drops this round (each a distance-rule sound with its own reach). */
+  private landings: Array<{ playerId: string; teamId: string; position: { x: number; y: number; z: number }; heightUnits: number; elapsedMs: number; radiusUnits: number; levelDb: number }> = [];
+  /** Where and when shots were fired this round (the maskers). */
+  private shotLog: Array<{ position: { x: number; y: number; z: number }; elapsedMs: number }> = [];
+
+  /** The sounds a decision made now hears: landings since the last decision; gunfire in the masking window. */
+  private soundWindow(nowMs: number, sinceMs: number) {
+    const m = this.perceptionParams.hearing.masking;
+    return {
+      extraSounds: this.landings.filter((l) => l.elapsedMs > nowMs - sinceMs && l.elapsedMs <= nowMs)
+        .map((l) => ({ kind: "landing" as const, position: l.position, teamId: l.teamId, radiusUnits: l.radiusUnits, levelDb: l.levelDb })),
+      maskers: this.shotLog.filter((s) => s.elapsedMs > nowMs - m.windowMs && s.elapsedMs <= nowMs)
+        .map((s) => ({ position: s.position, levelDb: m.gunfireDb })),
+    };
+  }
+
   /** Enemies each player saw on the last perception tick (not blinded). */
   private readonly lastSight = new Map<string, string[]>();
 
@@ -1102,6 +1127,13 @@ export class RoundSimulator {
         trace({ playerId: p.id, phase: "move", fromZone, toZone, targetZone });
       },
       onArrive: (p) => trace({ playerId: p.id, phase: "arrived", toZone: p.zoneId, targetZone }),
+      onLanding: (p, h, at) => {
+        if (!this.cfg.soundDetail) return;
+        const snd = landingSound(h, this.perceptionParams);
+        if (!snd) return;
+        this.landings.push({ playerId: p.id, teamId: p.teamId, position: at, heightUnits: h, elapsedMs: world.state.elapsedMs, ...snd });
+        world.events.push({ kind: "landing", tick: world.state.tick, elapsedMs: world.state.elapsedMs, actor: p.id, zoneId: p.zoneId, detail: `${Math.round(h)}uu r${Math.round(snd.radiusUnits)}` });
+      },
       onNavEvent: (e: NavEvent) => {
         navEvents.push({ tick: world.state.tick, elapsedMs: world.state.elapsedMs, ...e, ...(intent ? { intent } : {}) });
         if (e.kind === "blocked" || e.kind === "unreachable") {
@@ -1466,7 +1498,10 @@ export class RoundSimulator {
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
         // Shots are world events with observable consequences for the OTHER team (sound, tracers).
         for (const [shooter, target] of [[a, b], [b, a]] as const) {
-          if ((r.outcomes[shooter.id]?.shotsFired ?? 0) > 0) this.emitShotCues(state, shooter, target, alive, intel, cues);
+          if ((r.outcomes[shooter.id]?.shotsFired ?? 0) > 0) {
+            this.emitShotCues(state, shooter, target, alive, intel, cues);
+            if (this.cfg.soundDetail) this.shotLog.push({ position: { ...shooter.position }, elapsedMs: state.elapsedMs });
+          }
         }
         // Attrition: whoever survives the duel keeps a share (cfg.damageCarryover) of the damage it
         // took into the next fight. At 0 a winner re-fights every duel at full health, so one player

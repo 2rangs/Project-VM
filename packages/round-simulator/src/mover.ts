@@ -92,6 +92,8 @@ export interface MoverHooks {
   onZoneChange?(p: SimPlayer, fromZone: string, toZone: string): void;
   onArrive?(p: SimPlayer): void;
   onNavEvent?(e: NavEvent): void;
+  /** The mover came down a one-way drop of this height (uu) and landed at `at`. */
+  onLanding?(p: SimPlayer, heightUnits: number, at: { x: number; y: number; z: number }): void;
 }
 
 export interface NavEvent {
@@ -743,6 +745,7 @@ export class MovementExecutor {
         if (stepLen < d) { this.updateZone(p, m, prev, w, hooks); break; }
       }
       // reached waypoint w
+      if (w.via === "drop" && hooks?.onLanding) hooks.onLanding(p, Math.max(0, prev.position.z - w.position.z), { ...w.position });
       this.updateZone(p, m, w, w, hooks);
       m.index++;
       if (m.index >= m.waypoints.length) { this.arrive(p, m, hooks); break; }

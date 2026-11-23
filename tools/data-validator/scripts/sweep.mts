@@ -9,7 +9,7 @@ const teams = a.mirror ? [{ id: "undefined", name: "A" }, { id: "undefined", nam
 let n = 0, atk = 0, fk = 0, fkA = 0, plant = 0, pistol = 0, pistolA = 0, ff = 0, ffA = 0;
 const reasons: Record<string, number> = {};
 for (let i = 0; i < matches; i++) {
-  const cfg: MatchConfig = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: "Ascent", seed: seed0 + i, ...(tuning ? { tuning } : {}), ...(a.abilities ? { enableAbilities: true } : {}), ...(a.gaze ? { gaze: true } : {}) };
+  const cfg: MatchConfig = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: "Ascent", seed: seed0 + i, ...(tuning ? { tuning } : {}), ...(a.abilities ? { enableAbilities: true } : {}), ...(a.gaze ? { gaze: true } : {}), ...(a.sound ? { soundDetail: true } : {}) };
   for (const r of runMatch(cfg).rounds) {
     n++; const w = r.winnerSide === "attack"; if (w) atk++;
     reasons[r.reason] = (reasons[r.reason] ?? 0) + 1;

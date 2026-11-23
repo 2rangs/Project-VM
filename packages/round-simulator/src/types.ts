@@ -125,6 +125,7 @@ export type SimEventKind =
   | "defuseInterrupted"
   | "defused"
   | "detonated"
+  | "landing"
   | "roundEnd";
 
 export interface SimEvent {
@@ -466,6 +467,12 @@ export interface SimConfig {
    * it (measured effect: §8).
    */
   readonly gaze?: boolean;
+  /**
+   * Sound detail (docs/ENGINE_TRUTH.md §9): a landing off a drop is a sound whose reach grows with
+   * the fall (perception-engine landingSound), and gunfire masks quieter cues (footsteps, landings)
+   * for listeners it is much louder for (isMasked). OFF by default until measured into calibration.
+   */
+  readonly soundDetail?: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */

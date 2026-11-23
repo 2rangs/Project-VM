@@ -32,6 +32,8 @@ export type SoundKind =
   | "abilityCast"
   | "spikePlant"
   | "spikeDefuse"
+  /** Landing off a drop (PROJECT V sound detail): a body arriving, heard within a reach set by the fall. */
+  | "landing"
   | "other";
 
 export interface SoundObservation {

@@ -55,6 +55,14 @@ export interface PerceptionParams {
     /** behaviorState substrings that classify movement for footstep emission. */
     readonly runningStates: readonly string[];
     readonly walkingStates: readonly string[];
+    /**
+     * Sound masking levels (dB at the reference distance) and margin — hearing.ts isMasked.
+     * manual-approx: a rifle shot is ~30 dB above a footstep at the same distance; a cue is lost
+     * when the masker is louder at the listener by more than the margin.
+     */
+    readonly masking: { readonly gunfireDb: number; readonly footstepDb: number; readonly marginDb: number; readonly refDistanceUnits: number; readonly windowMs: number };
+    /** Landing off a drop: silent below this fall height (uu). manual-approx (hearing.ts landingSound). */
+    readonly landing: { readonly silentBelowUnits: number };
   };
   readonly memory: {
     /**
@@ -95,6 +103,8 @@ export const DEFAULT_PARAMS: PerceptionParams = {
     eventWindowTicks: 1,
     runningStates: ["run", "running", "sprint", "rush"],
     walkingStates: ["walk", "walking", "crouch", "shift"],
+    masking: { gunfireDb: 30, footstepDb: 0, marginDb: 10, refDistanceUnits: 100, windowMs: 300 },
+    landing: { silentBelowUnits: 250 },
   },
   memory: {
     halfLifeMs: 5000,

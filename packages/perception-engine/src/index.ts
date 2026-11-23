@@ -16,7 +16,7 @@ export {
 export type { VisibilityOracle, OracleOptions } from "./oracle.js";
 export { canSee, facingAngleTo, lineOfSight, occluded, segmentHitsSphere, EYE_HEIGHT_UNITS, type SightOccluder, type SightOptions, type SightPoint } from "./vision.js";
 export type { VisionContext } from "./vision.js";
-export { collectSoundSources, hearSounds, footstepConfidence } from "./hearing.js";
+export { collectSoundSources, hearSounds, footstepConfidence, isMasked, landingSound } from "./hearing.js";
 export type { SoundSource } from "./hearing.js";
 export { EnemyMemory } from "./memory.js";
 export { CommunicationHub } from "./communication.js";

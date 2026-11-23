@@ -1159,7 +1159,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     for (const e of view.observation.audibleEvents) {
       const side = this.sideOf(zoneAt(e.approxPosition), sites);
       if (!side) continue;
-      if (e.kind === "footstep") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
+      // a landing off a drop is a body arriving there, as a running step is
+      if (e.kind === "footstep" || e.kind === "landing") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
       else if (e.kind === "gunfire") contact.add(side);
       else if (e.kind === "abilityCast") utility.add(side);
     }
