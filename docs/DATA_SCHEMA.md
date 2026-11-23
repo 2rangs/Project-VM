@@ -188,7 +188,7 @@ Navigation data (`datasets/spatial/<map>/`, loaded by `loadMap` when present; se
   bidirectional }` (teleporter / zipline), `anchors` (zone id → node index: where a player in that zone
   stands), `zonesWithoutAnchor`, `params`, `stats` (the generator's checks, incl. `edgesHittingGeometry` and
   `zonePairsReachableOnGrid`). Provenance `measured-on-mesh`.
-- `<map>.vis.json` — line of sight between roadmap nodes, Ascent only so far. `nodes` (count; must equal the
+- `<map>.vis.json` — line of sight between roadmap nodes, all eleven maps. `nodes` (count; must equal the
   roadmap's), `rangeUnits` (pairs beyond it are untested and 0), `bitsBase64` — one bit per unordered pair
   `(i < j)`, upper triangle row-major, MSB first, 1 = visible. Provenance `measured-on-mesh`.
 Both hold points, segments and bits only; no mesh, grid or other surface is committed (`docs/LICENSE_AUDIT.md`

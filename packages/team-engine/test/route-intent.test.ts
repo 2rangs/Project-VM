@@ -30,7 +30,9 @@ function attackView(over: Partial<PolicyView> = {}, weaponId = "Vandal"): Policy
 }
 const withThreat = (v: PolicyView, threat: Record<string, number>): PolicyView =>
   ({ ...v, belief: { ...v.belief, threatZones: Object.entries(threat).map(([zoneId, threatLevel]) => ({ zoneId, threatLevel })) } });
-const move = (v: PolicyView, i: number, over: Partial<ActionCommand> = {}): ActionCommand =>
+/** Order fields as plain strings (zone ids are branded in the contract; a test writes them as text). */
+type OrderFields = Omit<Partial<ActionCommand>, "targetZone" | "aimZone"> & { targetZone?: string; aimZone?: string };
+const move = (v: PolicyView, i: number, over: OrderFields = {}): ActionCommand =>
   ({ playerId: v.teammates[i]!.id, kind: "move", targetZone: "b-site", moveMode: "run", executeAtMs: 0, ...over } as ActionCommand);
 const roles = (v: PolicyView, r: Record<number, string>) => new Map(Object.entries(r).map(([i, role]) => [String(v.teammates[Number(i)]!.id), role]));
 const forced = (strategy: TeamStrategy) => { const p = new TeamDecisionPolicy(spatial); p.setOrder({ strategy }); return p; };

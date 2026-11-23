@@ -11,9 +11,10 @@ only one piece of code — the movement executor — may change it.
 | **Built** | Roadmap navigation on all eleven maps' data; movement executor with continuous positions; sight decided between real positions (Ascent); every tactical travel time taken from the navigator; route preference by intent; standing spots by intent; the navigation debug view in the desktop app |
 | **Checked** | Every recorded position of whole real matches is on walkable floor (§5). All engine suites, desktop typecheck, build, unit, engine-contract and both Electron end-to-end runs pass |
 | **Balance** | 160 matches: **8 of 8 judged metrics, attack win rate 0.521** — the target before a merge (at least 7, attack 0.47–0.55) is met, and it holds on two unseen seed ranges (8 / 8 each). The movement work alone reached 6 of 8; the last two were closed by calibrating the moving-shot model and the attack's save threshold, at the user's request (§7.2) |
-| **Playable** | Ascent only. The other ten maps have roadmaps but are not playable (§9) |
+| **Playable** | Ascent only. The other ten maps have roadmaps and sight tables and run on their own geometry behind an opt-in, for measurement; their round-end mix is skewed because the tactical layer is Ascent's (§7.5) |
 
-Contents: 1 diagnosis · 2 approach · 3 navigation data · 4 how it works · 5 tests · 6 performance · 7 balance ·
+Contents: 1 diagnosis · 2 approach · 3 navigation data · 4 how it works · 5 tests · 6 performance · 7 balance
+(7.5: the other ten maps) ·
 8 errors fixed · 9 not done · 10 next · 11 reproduce.
 
 ---
@@ -150,8 +151,31 @@ Two files per map under `datasets/spatial/<map>/`, both derived offline from the
 
 `tools/map-mesh/pipeline/vis_map.py` casts eye-level segments between every pair of roadmap nodes within 46 m
 against the map's solid, opaque triangles (a pair is visible when either eye sees the other's eye or chest) and
-stores **one bit per pair**. Ascent: 420,860 pairs tested, 73,041 visible (17.4 %), 144 KB. Only Ascent has
-this file so far; the other ten would total about 2.3 MB and need each map's mesh re-extracted locally.
+stores **one bit per pair**. All eleven maps have one (1.96 MB together), built with the same occluders, eye
+(1.6 m) and chest (1.1 m) heights and range:
+
+| Map | Roadmap points | Pairs tested (≤ 46 m) | Visible | Size | Walk edges whose ends see each other | Nearby zone sightlines confirmed |
+|---|---|---|---|---|---|---|
+| Ascent | 1,328 | 420,860 | 73,041 (17.4 %) | 144 KB | 100 % | 8 / 9 |
+| Abyss | 1,160 | 241,420 | 57,389 (23.8 %) | 110 KB | 100 % | 23 / 23 |
+| Bind | 1,108 | 175,625 | 42,757 (24.3 %) | 100 KB | 100 % | 19 / 19 |
+| Breeze | 2,671 | 903,326 | 285,738 (31.6 %) | 581 KB | 100 % | 17 / 17 |
+| Fracture | 935 | 181,305 | 37,181 (20.5 %) | 72 KB | 100 % | 25 / 25 |
+| Haven | 867 | 177,492 | 23,848 (13.4 %) | 62 KB | 100 % | 24 / 24 |
+| Icebox | 2,119 | 671,211 | 186,015 (27.7 %) | 366 KB | 100 % | 34 / 34 |
+| Lotus | 1,452 | 374,807 | 89,311 (23.8 %) | 172 KB | 100 % | 39 / 39 |
+| Pearl | 1,391 | 437,703 | 61,937 (14.2 %) | 158 KB | 100 % | 22 / 25 |
+| Split | 999 | 178,072 | 34,152 (19.2 %) | 82 KB | 100 % | 33 / 33 |
+| Sunset | 894 | 165,596 | 28,494 (17.2 %) | 66 KB | 100 % | 12 / 12 |
+
+The last two columns are the sanity checks the tests run on every map: two points joined by a walkable segment
+must see each other, and where the zone sightline table (measured on the same geometry for the ten newer maps)
+says two zones within 30 m see each other, some pair of their standing points must. The four misses are pinned
+in the test by name: Ascent's `a-window ~ a-site` is a hand-authored line that no standing point confirms, and
+three of Pearl's involve B Club, whose callout is stacked on Mid Shops' on the wrong floor.
+
+A table made for another roadmap (its node count differs) is refused when loaded and the map falls back to the
+zone sightline table; it never fails to load.
 
 ### 3.3 What is in git, and by whose decision
 
@@ -290,8 +314,8 @@ team commits, the execute waits for the lurker, and a detour there stalls the ro
 
 `perception-engine/src/vision.ts` asks `Navigator.sees(positionA, zoneA, positionB, zoneB)` after its distance
 and field-of-view checks, using the table of §3.2. Vision blockers keep their zone rule on top (a smoke in
-either body's zone cuts the line between two different zones). Maps without the table — every map but Ascent
-today — keep the zone sightline table. `PerceptionParams.vision.positionalSight = false` switches it off. The
+either body's zone cuts the line between two different zones). A map without a table (or with one that does
+not match its roadmap) keeps the zone sightline table. `PerceptionParams.vision.positionalSight = false` switches it off. The
 observation / belief separation is unchanged.
 
 ### F. Vision, movement and bullet blockers are separate
@@ -353,6 +377,8 @@ export itself writes every player's starting position (a zero-length `move` at t
 | P | Performance vs the previous engine | `perf.test.ts` | 11.6 ms / round, see §6 |
 | Travel times | The tactical travel-time query equals the Navigator's cost for every Ascent zone pair (and differs from the zone graph's for > 90 % of them); spawn floor only when there is no other way; zones the roadmap cannot reach answer unreachable on every map | navigation | pass |
 | Spots | The carrier stops on the plant area at a covered point and plants there; a defender sent onto the spike stops at the spike and defuses; with cover spots on, a mover told what to watch takes a spot that sees it; a replan keeps the spot; exposure equals a brute-force count | movement, navigation | pass |
+| Sight tables | Every map: table made for its roadmap (node count, bit length, stored count = bits set), nothing visible beyond the range, both ends of every walk edge see each other, nearby zone sightlines confirmed (the four known misses pinned by name); a table for another roadmap is refused and the map falls back to zone sight | navigation | pass |
+| Geometry | Default: any map name plays in Ascent's zones, and Ascent "own" is the same match; "own": a Bind match happens in Bind's zones and on Bind's floor with Bind's sight table; deterministic; an unknown map is refused by name; a match runs to the end on all eleven maps | `match-runner/test/geometry.test.ts` | pass |
 | Live view | Every recorded position of two real matches (52,635 and 33,323 positions) is on the roadmap's floor (0.00 uu off), every step and its midpoint too, longest step 67.5 uu, every track continuous, a start position for all ten players | `match-runner/test/movement-floor.test.ts` | pass |
 | Debug view | Roadmap drawing model and zone connectivity, plan in force through time, waypoints ahead, walked trace, replans, failures, "why" text | `apps/desktop/test/navdebug.test.ts` (unit), `test/engine-contract.test.ts` (tracks + navigation trace from the real match script), `test/e2e.electron.test.mjs` (overlay on, 22/22 zones, five rows) | pass |
 | — | Local geometry only: every roadmap edge and every track position on a walkable grid cell | navigation + movement, with `PV_MAPS_DERIVED` | pass where the grid is present; skipped otherwise |
@@ -363,9 +389,9 @@ Suites at the head of the branch:
 |---|---|
 | root `npx vitest run` (PV-core packages incl. team-engine) | 259 passed, 4 todo |
 | `packages/combat-engine` | 21 passed |
-| `packages/spatial-engine` | 265 passed, 22 skipped (local grid absent) |
+| `packages/spatial-engine` | 278 passed, 22 skipped (local grid absent) |
 | `packages/round-simulator` | 121 passed, 1 skipped (local grid absent) |
-| `packages/match-runner` | 70 passed |
+| `packages/match-runner` | 84 passed |
 | `packages/perception-engine` | 22 passed |
 | `apps/desktop` typecheck, build | clean |
 | `apps/desktop` `test:unit` / `test:matchday` / `test:engine` | 48 / 29 / 4 passed |
@@ -513,6 +539,88 @@ What each step showed:
 - **The calibration** (§7.2) closed the last two: movers recover in long duels, so more executes reach the plant
   and more retakes reach the defuse; and the attack no longer gives up a 1v3.
 
+### 7.5 The other ten maps on their own geometry (opt-in, 2026-11-23)
+
+By default every match is simulated on Ascent's geometry whatever `MatchConfig.map` says — the map name only
+selects mastery, scouting and records (`match-runner` `geometryOf`; the series layer's `SIMULATED_GEOMETRY`).
+`MatchConfig.geometry: "own"` (`sim-batch --geometry own`) simulates the named map on its own zone graph,
+roadmap and sight table instead. Nothing in the desktop app or the series layer uses it: the app draws only
+Ascent's map.
+
+Ascent itself is unchanged by this work: 160 matches, 8 / 8 judged, attack 0.521, identical to §7.1.
+
+Sixty matches per map (≈ 1,250 rounds each, seeds 1..60), with the sight table and — to isolate what sight
+does — with the table withheld (zone sightlines). Nothing was retuned. Real values are Ascent's VCT numbers
+(all-maps attack win rate: 0.500); there is no per-map real baseline in the priors.
+
+| Map | Sight | Attack | Opening duel | Elimination | Detonation | Defuse | Time |
+|---|---|---|---|---|---|---|---|
+| *Real (Ascent)* | | *0.509* | *0.437* | *0.714* | *0.082* | *0.160* | *0.043* |
+| Ascent (160 matches) | table | 0.521 | 0.462 | 0.704 | 0.106 | 0.148 | 0.042 |
+| Abyss | table | 0.544 | 0.460 | 0.567 | 0.200 | 0.179 | 0.054 |
+| | zone | 0.538 | 0.422 | 0.758 | 0.074 | 0.112 | 0.056 |
+| Bind | table | 0.542 | 0.482 | 0.614 | 0.248 | 0.110 | 0.028 |
+| | zone | 0.579 | 0.475 | 0.669 | 0.218 | 0.092 | 0.020 |
+| Breeze | table | 0.513 | 0.520 | 0.742 | 0.087 | 0.161 | 0.011 |
+| | zone | 0.522 | 0.481 | 0.806 | 0.057 | 0.119 | 0.019 |
+| Fracture | table | 0.468 | 0.470 | 0.640 | 0.214 | 0.107 | 0.038 |
+| | zone | 0.429 | 0.398 | 0.807 | 0.071 | 0.087 | 0.035 |
+| **Haven** | table | **0.390** | 0.509 | 0.513 | 0.116 | **0.334** | 0.037 |
+| | zone | **0.603** | 0.572 | 0.764 | 0.041 | 0.159 | 0.035 |
+| Icebox | table | 0.492 | 0.464 | 0.583 | 0.238 | 0.156 | 0.023 |
+| | zone | 0.433 | 0.430 | 0.838 | 0.052 | 0.101 | 0.009 |
+| Lotus | table | 0.570 | 0.493 | 0.596 | 0.227 | 0.135 | 0.042 |
+| | zone | 0.424 | 0.321 | 0.789 | 0.035 | 0.133 | 0.044 |
+| Pearl | table | 0.531 | 0.451 | 0.675 | 0.121 | 0.160 | 0.044 |
+| | zone | **0.609** | 0.540 | 0.717 | 0.097 | 0.147 | 0.039 |
+| **Split** | table | 0.526 | 0.520 | **0.364** | **0.342** | **0.281** | 0.013 |
+| | zone | 0.518 | 0.485 | 0.815 | 0.081 | 0.077 | 0.028 |
+| **Sunset** | table | 0.575 | 0.488 | **0.462** | 0.245 | 0.256 | 0.038 |
+| | zone | 0.574 | 0.529 | 0.654 | 0.114 | 0.176 | 0.056 |
+
+What to read from it:
+
+- **Side balance.** With the tables, one side is above 0.60 on one map only: **Haven, defense 0.61**. Sunset
+  (attack 0.575) and Lotus (0.570) lean to the attack. Without the tables two maps are above 0.60 for the
+  attack (Haven 0.603, Pearl 0.609). Six of the ten are within 0.47–0.55 with the tables, three without.
+- **Round-end mix.** With real sight far fewer rounds end by elimination and far more by the spike — on every
+  map but Breeze and Pearl, and worst on **Split** (36 % eliminations, 34 % detonations, 28 % defuses) and
+  **Sunset** (46 %).
+
+The measured cause is not the tables (they pass the checks of §3.2 on every map) but that the tactical layer's
+positions are Ascent's, and real sight exposes it where zone sight hid it. Eight matches per map:
+
+| | Ascent | Split | Haven | Sunset | Bind | Icebox | Abyss | Lotus |
+|---|---|---|---|---|---|---|---|---|
+| Defuses completed with attackers still alive | 4 % | **60 %** | **80 %** | 35 % | 29 % | 26 % | 0 % | 4 % |
+| Kills after the plant, per plant | 3.19 | 1.95 | 3.97 | 2.89 | 3.18 | 2.28 | 3.87 | 2.78 |
+| Detonations: defenders / attackers still alive | 1.2 / 3.6 | 1.5 / 3.8 | 1.2 / 3.5 | 1.3 / 4.0 | 1.6 / 4.0 | 1.4 / 4.1 | 1.5 / 4.1 | 1.4 / 4.0 |
+
+and six matches per map:
+
+| | Ascent | Split | Haven | Sunset | Lotus | Breeze |
+|---|---|---|---|---|---|---|
+| Rounds with a plant | 64 % | 75 % | 69 % | 80 % | 57 % | 45 % |
+| Plants with no kill before them | 17 % | 24 % | **50 %** | 3 % | 26 % | 0 % |
+| The policy's aim / smoke zone ids that exist on the map | 3 / 3 · 5 / 5 | 2 / 3 · 3 / 5 | **0 / 3 · 0 / 5** | 3 / 3 · 2 / 5 | 2 / 3 · 1 / 5 | 2 / 3 · 1 / 5 |
+
+- **Attackers who do not watch the spike.** On Split 60 % of defuses, and on Haven 80 %, are completed while
+  attackers are still alive: a defender walks to the spike and holds the defuse for seven seconds unseen. The
+  attack's post-plant positions and what they aim at come from tables written for Ascent's zones; under zone
+  sight a holder "saw" the whole site whatever it faced (Split, zone sight: 0 %), under real sight it has to
+  stand where the spike is visible and look at it.
+- **Defenders who do not cover the way in.** On Haven half of all plants happen before a single kill: none of
+  the zones the defense is told to aim at exist there (0 of 3), its start positions are Ascent's, the C site is
+  never defended or attacked, and B Site cannot be reached on the roadmap at all (§1).
+- **Then the spike decides.** With the plant conceded and the retake rarely fought, the round is settled by
+  the timer (detonations with one or two defenders alive who saved) or by an unseen defuse — hence the low
+  elimination share.
+
+What it would take to play these maps properly is the list in `MAPS_DATA.md` §6: per-map defender setups and
+aim zones, post-plant positions chosen by what sees the spike, the third site, and the source-data fixes for
+Haven and Pearl. None of that was attempted here, and no duel, speed or policy constant was changed for any
+map.
+
 ## 8. Path errors found and fixed along the way
 
 | Error | Found by | Fix |
@@ -549,8 +657,8 @@ What each step showed:
   rule checks the zone, not the distance to the spike.
 
 **Geometry and rules**
-- Sight is positional on Ascent only (§3.2), and is decided between the roadmap nodes the two bodies stand at
-  (≤ ~1.3 m from the body), not between exact positions. Ability effects that reveal or blind (recon, flash) and
+- Sight is decided between the roadmap nodes the two bodies stand at (≤ ~1.3 m from the body), not between
+  exact positions, and only out to 46 m. Ability effects that reveal or blind (recon, flash) and
   tracers still use zone sightlines.
 - No ability creates a movement blocker (§4): the mechanism exists and is tested, the rule is not verified.
 - Bullet blockers are not modelled.
@@ -559,8 +667,10 @@ What each step showed:
   Only Bind's teleporters and Fracture's zipline are links.
 
 **Maps**
-- Only Ascent is playable, for the reasons in `MAPS_DATA.md` §6. Haven's B Site and most of Pearl are
-  additionally unreachable on the roadmap (§1), and the tactical layer answers "unreachable" for them.
+- Only Ascent is playable as a product. Every map now *runs* on its own geometry behind an opt-in
+  (`MatchConfig.geometry: "own"`, §7.5), but the tactical layer is still Ascent's — the reasons are in
+  `MAPS_DATA.md` §6 and the measured consequences in §7.5. Haven's B Site and most of Pearl are additionally
+  unreachable on the roadmap (§1), and the tactical layer answers "unreachable" for them.
 - The debug view, like the live view, draws Ascent (`apps/desktop/src/data/sim/`).
 
 **Not evaluated**
@@ -574,8 +684,8 @@ What each step showed:
    decide the whole route for plan orders too.
 2. Cover spots at round start and for holders with a default watch zone — now measurable against a balance that
    passes; plant and defuse *at* a position rather than in a zone.
-3. `<map>.vis.json` for the other ten maps; fix Haven B Site and Pearl in the source data so their zones
-   connect.
+3. Make the tactical layer map-aware (§7.5): defender setups and aim zones per map, post-plant positions that
+   see the spike, the third site; fix Haven B Site and Pearl in the source data so their zones connect.
 4. Re-check the two calibrated constants (§7.2) on the next playable map.
 
 ## 11. Reproduce
@@ -588,13 +698,16 @@ $BLENDER --background --factory-startup --python tools/map-mesh/blender/extract-
 $PY -I tools/map-mesh/pipeline/nav_map.py --map ascent --derived $D/ascent        # datasets/spatial/ascent/ascent.nav.json
 for i in 0 1 2 3 4 5; do $PY -I tools/map-mesh/pipeline/vis_map.py --map ascent --derived $D/ascent --part $i/6 & done; wait
 $PY -I tools/map-mesh/pipeline/vis_map.py --map ascent --derived $D/ascent --merge 6   # datasets/spatial/ascent/ascent.vis.json
-rm $D/ascent/mesh.npz                                                             # 85 MB; not needed afterwards
+rm $D/ascent/mesh.npz                                                             # 85–110 MB per map; not needed afterwards
+# the same three steps for every other map (lower-case id, e.g. bind / Bind.blend); 2–8 minutes each on eight cores
 
 # tests (run inside each package; PV_MAPS_DERIVED enables the local-grid checks)
 PV_MAPS_DERIVED=$D npx vitest run        # packages/spatial-engine, packages/round-simulator, packages/match-runner
 
 # balance (needs Node 22 and a Python with jsonschema)
 cd tools/data-validator && PYTHON=<python> npx tsx scripts/sim-batch.mts --matches 160   # reports/sim-batch.md
+# another map on its own geometry (give parallel runs their own --out / --report)
+PYTHON=<python> npx tsx scripts/sim-batch.mts --map Bind --geometry own --matches 60 --out /tmp/bind-run.json --report /tmp/bind
 
 # desktop
 cd apps/desktop && npm run typecheck && npm run build && npm run test:unit && npm run test:engine

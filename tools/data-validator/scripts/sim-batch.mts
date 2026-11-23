@@ -13,6 +13,8 @@
 //   --matches N        number of matches to simulate (default 20); seeds are seedStart..seedStart+N-1
 //   --seed-start S     first seed (default 1) — deterministic per seed (DECISION-010)
 //   --map NAME         map (default Ascent)
+//   --geometry own     simulate on the named map's own geometry (zone graph, roadmap, sight table);
+//                      default: every map is simulated on Ascent's geometry (MatchConfig.geometry)
 //   --max-rounds R     safety cap on rounds per match passed to runMatch (default: engine default 60)
 //   --out FILE         SimRun bundle path (default reports/sim-batch-run.json)
 //   --report PREFIX    report path prefix for sim:validate (default reports/sim-batch)
@@ -76,6 +78,8 @@ async function main(): Promise<void> {
   const matches = Number(args["matches"] ?? 20);
   const seedStart = Number(args["seed-start"] ?? 1);
   const map = String(args["map"] ?? "Ascent");
+  const ownGeometry = String(args["geometry"] ?? "") === "own";
+  if (args["geometry"] !== undefined && !ownGeometry) { console.error('sim:batch: --geometry takes "own"'); process.exit(2); }
   const maxRounds = args["max-rounds"] !== undefined ? Number(args["max-rounds"]) : undefined;
   const outPath = resolvePath(String(args["out"] ?? "reports/sim-batch-run.json"));
   const reportPrefix = resolvePath(String(args["report"] ?? "reports/sim-batch"));
@@ -97,11 +101,11 @@ async function main(): Promise<void> {
   const reasonCounts: Record<string, number> = {};
   let attackRoundWins = 0, totalRounds = 0, pistolRounds = 0, pistolAttackWins = 0, otMatches = 0;
 
-  console.error(`sim:batch: simulating ${matches} match(es) on ${map}, seeds ${seedStart}..${seedStart + matches - 1}`);
+  console.error(`sim:batch: simulating ${matches} match(es) on ${map}${ownGeometry ? " (its own geometry)" : map.toLowerCase() === "ascent" ? "" : " (on Ascent's geometry)"}, seeds ${seedStart}..${seedStart + matches - 1}`);
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     for (const r of m.rounds) {
