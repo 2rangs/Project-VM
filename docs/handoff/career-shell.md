@@ -58,7 +58,13 @@ Design doc: `docs/CAREER_MODE.md` (flow, calendar, competition, sim, saves, hook
 1. Re-run `test:e2e` and `test:e2e:series` (start-menu edits) under heavy-run.sh; discard the
    regenerated `apps/desktop/docs/*.png`.
 2. Run the match-runner suite once for the `roster` change.
-3. Merge with club-ops (App.tsx / nav.ts both rewritten here — their three route lines go on top).
+3. Merge with club-ops (`claude/happy-newton-649a94`). It still uses its own `CareerHooks`
+   interface; the adapter onto `registerCareerHook` is described in `docs/handoff/club-ops.md` on
+   that branch. Expected conflicts:
+   - `App.tsx` / `nav.ts`: both rewritten here; their three route lines go on top.
+   - `advanceSeason` options: both branches added an options object (`{ mapsPlayed }` here,
+     `{ focus }` there). The merged `AdvanceSeasonOptions` needs both, and `endSeason` in
+     `packages/career/src/career/career.ts` should pass `focus: seasonFocus(world)` too.
 4. Swap `CareerProgress` for the match-day `LoadingScreen` when it lands.
 5. Lineup choice before a match; per-player K/D from the manager's series; Kickoff/Masters,
    double elimination; other regions' leagues.
