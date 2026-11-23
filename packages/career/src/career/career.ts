@@ -16,6 +16,8 @@
 // to the match engine in another process). Fixture seeds come from (career seed, fixture id), so a
 // result never depends on the order fixtures are played in.
 import { advanceSeason } from "../season.ts";
+import { clubCareerHook, drainClubOutbox, syncClubInbox } from "../club/career-hook.ts";
+import { seasonFocus } from "../club/training.ts";
 import { newProspects, startingFive, teamStaffInputs } from "../world.ts";
 import { toScale200, estimateAbility, teamScout } from "../scouting.ts";
 import type { World } from "../model.ts";
@@ -76,8 +78,11 @@ function hookCtx(state: CareerState, hook: CareerHook): HookContext {
   };
 }
 
+/** Built-in hooks first (core bookkeeping, then the club layer), then the registered ones. */
+const allHooks = (rt: CareerRuntime | undefined): CareerHook[] => [coreHook, clubCareerHook, ...careerHooks(rt?.hooks ?? []).filter((h) => h.id !== coreHook.id && h.id !== clubCareerHook.id)];
+
 function runHooks(state: CareerState, rt: CareerRuntime | undefined, fn: (h: CareerHook, ctx: HookContext) => void): void {
-  for (const h of [coreHook, ...careerHooks(rt?.hooks ?? [])]) fn(h, hookCtx(state, h));
+  for (const h of allHooks(rt)) fn(h, hookCtx(state, h));
 }
 
 // --- creating a career --------------------------------------------------------------------------------
@@ -334,7 +339,8 @@ function endSeason(state: CareerState, rt?: CareerRuntime): void {
   for (const tid of season.teams) for (const pid of state.world.teams[tid]?.roster ?? []) mapsPlayed[pid] = 0;
   for (const [pid, line] of Object.entries(state.stats)) mapsPlayed[pid] = line.maps;
   const before = new Set(state.world.teams[state.userTeamId]?.roster ?? []);
-  state.world = advanceSeason(state.world, { mapsPlayed });
+  // Development with the season's training focus; the manager's squad is left to the manager.
+  state.world = advanceSeason(state.world, { mapsPlayed, focus: seasonFocus(state.world), managedTeams: [state.userTeamId] });
   const rec = state.world.history[state.world.history.length - 1]!;
   const team = state.world.teams[state.userTeamId]!;
   const name = (id: string) => state.world.players[id]?.handle ?? state.world.retired.find((r) => r.id === id)?.label ?? id;
@@ -377,7 +383,7 @@ export function answerInbox(state: CareerState, itemId: string, answer: string, 
   if (!item.options?.some((o) => o.id === answer)) throw new Error(`"${answer}" is not an option of ${itemId}`);
   item.answer = answer;
   item.read = true;
-  for (const h of [coreHook, ...careerHooks(rt?.hooks ?? [])]) {
+  for (const h of allHooks(rt)) {
     if (h.id === item.source) h.onAnswer?.(state.world, item, answer, hookCtx(state, h));
   }
 }

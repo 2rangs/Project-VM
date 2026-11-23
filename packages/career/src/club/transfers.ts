@@ -188,7 +188,7 @@ function advance(w: World, o: TransferOffer, date: string): void {
     // A bid for one of the user's players waits for the user.
     o.stage = "club"; o.status = "pending"; o.expires = addDays(date, M.offerExpiryDays);
     const p = w.players[o.playerId]!;
-    pushMessage(club, date, MSG.incoming(label(p), w.teams[o.toTeamId]!.name, o.terms.fee));
+    pushMessage(club, date, { ...MSG.incoming(label(p), w.teams[o.toTeamId]!.name, o.terms.fee), offerId: o.id, playerId: p.playerId });
     return;
   }
   const a = clubAnswer(w, o);

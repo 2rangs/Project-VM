@@ -100,7 +100,14 @@ describe("continue loop", () => {
     expect(starter[1].maps).toBeGreaterThan(10);
     expect(starter[1].kills).toBeGreaterThan(0);
     expect(new Set(Object.values(c.stats).map((l) => l.form)).size).toBeGreaterThan(20); // form is per player
+    const rosterBefore = new Set([...c.world.teams[c.userTeamId]!.roster, ...c.world.teams[c.userTeamId]!.academy]);
     await continueCareer(c, sim); // leaves the season's last day → transition
+    // The season loop left the manager's squad alone: no signings, academy picks or releases for it.
+    const rec = c.world.history[c.world.history.length - 1]!;
+    expect(rec.signings.filter((x) => x.teamId === c.userTeamId)).toHaveLength(0);
+    expect(rec.academyPicks.filter((x) => x.teamId === c.userTeamId)).toHaveLength(0);
+    expect(rec.releases.filter((x) => x.teamId === c.userTeamId)).toHaveLength(0);
+    for (const id of [...c.world.teams[c.userTeamId]!.roster, ...c.world.teams[c.userTeamId]!.academy]) expect(rosterBefore.has(id), id).toBe(true);
     expect(c.world.season).toBe(startSeason + 1);
     expect(c.season.season).toBe(startSeason + 1);
     expect(c.history).toHaveLength(1);
