@@ -16,7 +16,10 @@
 // to the match engine in another process). Fixture seeds come from (career seed, fixture id), so a
 // result never depends on the order fixtures are played in.
 import { advanceSeason } from "../season.ts";
+import { clubCareerHook, drainClubOutbox, syncClubInbox } from "../club/career-hook.ts";
+import { seasonFocus } from "../club/training.ts";
 import { newProspects, startingFive, teamStaffInputs } from "../world.ts";
+import { applyMatchLoad } from "./readiness.ts";
 import { toScale200, estimateAbility, teamScout } from "../scouting.ts";
 import type { World } from "../model.ts";
 import { deriveSeed, mulberry32 } from "../rng.ts";
@@ -76,8 +79,11 @@ function hookCtx(state: CareerState, hook: CareerHook): HookContext {
   };
 }
 
+/** Built-in hooks first (core bookkeeping, then the club layer), then the registered ones. */
+const allHooks = (rt: CareerRuntime | undefined): CareerHook[] => [coreHook, clubCareerHook, ...careerHooks(rt?.hooks ?? []).filter((h) => h.id !== coreHook.id && h.id !== clubCareerHook.id)];
+
 function runHooks(state: CareerState, rt: CareerRuntime | undefined, fn: (h: CareerHook, ctx: HookContext) => void): void {
-  for (const h of [coreHook, ...careerHooks(rt?.hooks ?? [])]) fn(h, hookCtx(state, h));
+  for (const h of allHooks(rt)) fn(h, hookCtx(state, h));
 }
 
 // --- creating a career --------------------------------------------------------------------------------
@@ -176,12 +182,36 @@ export function dayAgenda(state: CareerState): DayAgenda {
   };
 }
 
+/**
+ * A team's five for its next match: the manager's chosen lineup (players still in the squad) for
+ * the user's club, topped up in roster order; the roster's first five for everyone else.
+ */
+export function lineupFor(state: CareerState, teamId: string): string[] {
+  const t = state.world.teams[teamId];
+  if (!t) return [];
+  if (teamId !== state.userTeamId || !state.lineup) return startingFive(state.world, teamId).map((p) => p.playerId);
+  const squad = [...t.roster, ...t.academy].filter((id) => state.world.players[id]);
+  const chosen = state.lineup.filter((id) => squad.includes(id)).slice(0, 5);
+  for (const id of squad) { if (chosen.length >= 5) break; if (!chosen.includes(id)) chosen.push(id); }
+  return chosen;
+}
+
+/** The manager picks today's five from the squad (roster + academy). */
+export function setLineup(state: CareerState, ids: readonly string[]): void {
+  const t = state.world.teams[state.userTeamId]!;
+  const squad = new Set([...t.roster, ...t.academy]);
+  const uniq = [...new Set(ids)];
+  if (uniq.length !== 5) throw new Error("a lineup is five players");
+  for (const id of uniq) if (!squad.has(id)) throw new Error(`${id} is not in the squad`);
+  state.lineup = uniq;
+}
+
 /** A fixture as a simulation request: today's five per side and each side's analyst. */
 export function seriesRequest(state: CareerState, f: Fixture): SeriesRequest {
   if (!f.home || !f.away) throw new Error(`fixture ${f.id} has no teams yet`);
   const side = (id: string) => ({
     teamId: id, name: teamName(state, id),
-    lineup: startingFive(state.world, id).map((p) => p.playerId),
+    lineup: lineupFor(state, id),
     analyst: teamStaffInputs(state.world, id).analyst,
   });
   return { fixtureId: f.id, seed: deriveSeed(state.seed, `series:${f.id}`), format: f.format, home: side(f.home), away: side(f.away) };
@@ -217,6 +247,8 @@ export function recordResult(state: CareerState, fixtureId: string, outcome: Ser
   f.result = { ...outcome, mapsWon: [outcome.mapsWon[0], outcome.mapsWon[1]], maps: outcome.maps.map((m) => ({ ...m, score: [m.score[0], m.score[1]] as const })) };
   creditPlayers(state, outcome.lineups.home, f, true);
   creditPlayers(state, outcome.lineups.away, f, false);
+  applyMatchLoad(state, outcome.lineups.home, outcome.maps.length);
+  applyMatchLoad(state, outcome.lineups.away, outcome.maps.length);
   if (isUserFixture(state, f)) {
     const home = f.home === state.userTeamId;
     const won = outcome.winner === state.userTeamId;
@@ -334,7 +366,8 @@ function endSeason(state: CareerState, rt?: CareerRuntime): void {
   for (const tid of season.teams) for (const pid of state.world.teams[tid]?.roster ?? []) mapsPlayed[pid] = 0;
   for (const [pid, line] of Object.entries(state.stats)) mapsPlayed[pid] = line.maps;
   const before = new Set(state.world.teams[state.userTeamId]?.roster ?? []);
-  state.world = advanceSeason(state.world, { mapsPlayed });
+  // Development with the season's training focus; the manager's squad is left to the manager.
+  state.world = advanceSeason(state.world, { mapsPlayed, focus: seasonFocus(state.world), managedTeams: [state.userTeamId] });
   const rec = state.world.history[state.world.history.length - 1]!;
   const team = state.world.teams[state.userTeamId]!;
   const name = (id: string) => state.world.players[id]?.handle ?? state.world.retired.find((r) => r.id === id)?.label ?? id;
@@ -377,7 +410,7 @@ export function answerInbox(state: CareerState, itemId: string, answer: string, 
   if (!item.options?.some((o) => o.id === answer)) throw new Error(`"${answer}" is not an option of ${itemId}`);
   item.answer = answer;
   item.read = true;
-  for (const h of [coreHook, ...careerHooks(rt?.hooks ?? [])]) {
+  for (const h of allHooks(rt)) {
     if (h.id === item.source) h.onAnswer?.(state.world, item, answer, hookCtx(state, h));
   }
 }

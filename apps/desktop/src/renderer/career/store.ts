@@ -5,7 +5,8 @@ import { useSyncExternalStore } from 'react';
 import { buildDesktopWorld, loadSavedWorld, serializeWorld, STORE_KEY, type World } from './world.ts';
 import { FIXTURES } from './fixtures.ts';
 import { activeCareerWorld, subscribeCareer } from './session.ts';
-import { advanceClubDays, clubSeasonEnd, withClub } from './club.ts';
+import { updateCareerWorld } from './session.ts';
+import { advanceSeason } from './world.ts';
 
 let world: World | null = null;
 const listeners = new Set<() => void>();
@@ -21,8 +22,7 @@ export function getWorld(): World {
   const cw = activeCareerWorld();
   if (cw) return cw;
   if (!world) {
-    // Club operations start with the world (contracts, finances); older saves get them on load.
-    world = withClub(readSave() ?? buildDesktopWorld(FIXTURES));
+    world = readSave() ?? buildDesktopWorld(FIXTURES);
     writeSave(world);
   }
   return world;
@@ -34,23 +34,20 @@ function set(w: World): void {
   for (const l of listeners) l();
 }
 
-/**
- * End the current season: prize money, contract expiry, development (with the season's training
- * focus), retirements, the next intake and signings, the new budgets.
- */
-export function advanceWorld(): void { set(clubSeasonEnd(getWorld())); }
+/** Sandbox (no career): end the season of the standalone world. */
+export function advanceWorld(): void { set(advanceSeason(getWorld())); }
 
-/** Throw the save away and start again from the dataset. */
-export function resetWorld(): void { set(withClub(buildDesktopWorld(FIXTURES))); }
-
-/** Apply a club action (offer, plan change, …) and save. */
-export function updateWorld(fn: (w: World) => World): void { set(fn(getWorld())); }
+/** Sandbox: throw the standalone world away and start again from the dataset. */
+export function resetWorld(): void { set(buildDesktopWorld(FIXTURES)); }
 
 /**
- * Advance the club calendar by days (local driver: onDay, onMonth, season end). Temporary until
- * the career shell's calendar drives the hooks (docs/CLUB_OPERATIONS.md §7).
+ * Apply a club action (offer, plan change, release, …). In a career it changes the CAREER's world
+ * (its messages go to the career inbox and the career autosaves); otherwise the sandbox world.
  */
-export function advanceDays(n: number): void { set(advanceClubDays(getWorld(), n)); }
+export function updateWorld(fn: (w: World) => World): void {
+  if (activeCareerWorld()) { updateCareerWorld(fn); return; }
+  set(fn(getWorld()));
+}
 
 export function useWorld(): World {
   return useSyncExternalStore((l) => {

@@ -18,6 +18,7 @@ import { useMatchSession } from '../useMatchSession.ts';
 import { useT, strategyLabel } from '../i18n/index.tsx';
 import { LiveMatch } from './matchday/LiveMatch.tsx';
 import { MatchHub } from './matchday/MatchHub.tsx';
+import { Icon } from './matchday/Icons.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx';
 import { MatchLoadScreen } from '../loading/MatchLoadScreen.tsx';
 import { preloadMatchAssets } from './matchday/assets.ts';
@@ -198,7 +199,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
         {series && (
           <div className="ser-mdbanner" data-testid="series-md-banner">
             <b>{series.label}</b>
-            {series.note && <span className="muted small">ⓘ {series.note}</span>}
+            {series.note && <span className="muted small"><Icon name="info" size={11} /> {series.note}</span>}
             <button className="md-run" onClick={series.onReturn} disabled={running || sess.busy} data-testid="series-return">{series.returnLabel}</button>
           </div>
         )}
@@ -212,7 +213,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
           </select>
           <label className="md-seed">{t('md.seed')} <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} disabled={busyControls || sess.active || lockSetup} /></label>
           <button className={`md-optsbtn ${optsOpen ? 'on' : ''}`} onClick={() => setOptsOpen((v) => !v)} data-testid="match-options-toggle" aria-expanded={optsOpen}>
-            ⚙ {t('md.opts.toggle')}{optsChanged && <span className="md-optsdot" data-testid="match-options-changed" title={t('md.opts.changed')}>●</span>}
+            <Icon name="debug" size={13} /> {t('md.opts.toggle')}{optsChanged && <span className="md-optsdot" data-testid="match-options-changed" title={t('md.opts.changed')}>●</span>}
           </button>
           <div className="md-modetoggle" data-testid="md-mode">
             <button className={!interactive ? 'on' : ''} onClick={() => setMode('oneshot')} disabled={sess.active} data-testid="mode-oneshot">{t('md.mode.oneshot')}</button>

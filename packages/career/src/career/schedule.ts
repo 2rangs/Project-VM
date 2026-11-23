@@ -10,8 +10,7 @@
 //
 // Not modelled (docs/CAREER_MODE.md §7): the Kickoff, international events (Masters/Champions),
 // double-elimination brackets, promotion/relegation, other regions' leagues.
-import { caOf } from "../season.ts";
-import { UNRATED_ABILITY } from "../scouting.ts";
+import { teamStrength } from "../club/market.ts";
 import type { World } from "../model.ts";
 import type { Region } from "../regions.ts";
 import { deriveSeed, mulberry32, type Rng } from "../rng.ts";
@@ -40,14 +39,8 @@ export const GROUPS: readonly GroupId[] = ["alpha", "omega"];
 export const STAGES: readonly StageId[] = ["stage1", "stage2"];
 const FRIDAY = 5;
 
-/** Team strength: mean current ability of today's five (unrated players count as UNRATED_ABILITY). */
-export function teamStrength(w: World, teamId: string): number {
-  const t = w.teams[teamId];
-  if (!t) return 0;
-  const five = t.roster.slice(0, 5).map((id) => w.players[id]).filter((p) => !!p);
-  if (five.length === 0) return 0;
-  return five.reduce((s, p) => s + (p!.ca ?? caOf(w, p!) ?? UNRATED_ABILITY), 0) / 5;
-}
+/** Team strength (the package's one definition: club/market.ts — mean true CA of the top five, 0..1). */
+export { teamStrength };
 
 /** Teams of a region that can field five, strongest first (ties by id). */
 export function regionTeams(w: World, region: Region): string[] {

@@ -71,6 +71,8 @@ export interface CareerSeriesFixture {
   /** Our analyst's quality from the career staff. */
   analyst: number;
   rosters: NonNullable<SeriesStartRequest['rosters']>;
+  /** Training map practice per team (→ map mastery). */
+  practice?: SeriesStartRequest['practice'];
   /** e.g. "Stage 1 · Group Alpha · Round 2". */
   label: string;
   onFinished: (view: SeriesView) => void | Promise<void>;
@@ -114,7 +116,7 @@ export function SeriesScreen({ ctx, fixture }: { ctx: ScreenCtx; fixture?: Caree
   }, [aiPending, aiStepNo, ser.busy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function start() {
-    await ser.start({ teamA: refOf(teamA), teamB: refOf(teamB), format, seed, analyst, scouting, ...(fixture ? { rosters: fixture.rosters } : {}) });
+    await ser.start({ teamA: refOf(teamA), teamB: refOf(teamB), format, seed, analyst, scouting, ...(fixture ? { rosters: fixture.rosters, ...(fixture.practice ? { practice: fixture.practice } : {}) } : {}) });
   }
   /** Back from Match Day: if the map was left unfinished it is played out, then the series view refreshes. */
   async function returnFromGame() {

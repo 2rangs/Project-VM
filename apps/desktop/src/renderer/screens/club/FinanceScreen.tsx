@@ -4,7 +4,9 @@ import { useState } from 'react';
 import type { DetailPanel } from '../../App.tsx';
 import { DataTable, type Column } from '../../ui.tsx';
 import { useLang, useT } from '../../i18n/index.tsx';
-import { advanceDays, useWorld } from '../../career/store.ts';
+import { useWorld } from '../../career/store.ts';
+import { useCareer } from '../../career/session.ts';
+import { inboxText } from '../../career/view.ts';
 import type { LedgerEntry } from '../../career/world.ts';
 import { financeSummary, usd, userTeamId, wageRows, type WageRow } from '../../career/club.ts';
 import { ContractPanel } from './ContractPanel.tsx';
@@ -12,18 +14,11 @@ import './club.css';
 
 type Tab = 'ledger' | 'wages' | 'board';
 
-/** The local driver's day step (until the shell's calendar runs the hooks). */
+/** The club's date: career mode's calendar (time moves only with Continue on Home). */
 export function ClubClock() {
   const t = useT();
   const w = useWorld();
-  return (
-    <span className="club-clock">
-      <span className="small" data-testid="club-date">{t('club.date', { date: w.club?.date ?? '—', season: w.season })}</span>
-      <button className="club-btn" onClick={() => advanceDays(1)} data-testid="club-advance-day">{t('club.advanceDay')}</button>
-      <button className="club-btn" onClick={() => advanceDays(7)} data-testid="club-advance-week">{t('club.advanceWeek')}</button>
-      <button className="club-btn" onClick={() => advanceDays(30)} data-testid="club-advance-month">{t('club.advanceMonth')}</button>
-    </span>
-  );
+  return <span className="club-clock"><span className="small" data-testid="club-date">{t('club.date', { date: w.club?.date ?? '—', season: w.season })}</span></span>;
 }
 
 function Card({ label, value, sub, warn, testid }: { label: string; value: string; sub?: string; warn?: boolean; testid?: string }) {
@@ -40,6 +35,7 @@ export function FinanceScreen({ setDetail }: { setDetail: (d: DetailPanel) => vo
   const t = useT();
   const { lang } = useLang();
   const w = useWorld();
+  const career = useCareer().career;
   const [tab, setTab] = useState<Tab>('ledger');
   const uid = userTeamId(w);
   const s = financeSummary(w);
@@ -60,7 +56,8 @@ export function FinanceScreen({ setDetail }: { setDetail: (d: DetailPanel) => vo
     { key: 'end', header: t('club.col.end'), render: (r) => r.endSeason, sortValue: (r) => r.endSeason, width: '10%' },
     { key: 'buyout', header: t('club.col.buyout'), render: (r) => (r.buyout === null ? '—' : usd(r.buyout)), sortValue: (r) => r.buyout ?? 0 },
   ];
-  const msgs = w.club!.messages.slice().reverse();
+  // The club's messages live in the career inbox (source "club").
+  const msgs = (career?.inbox ?? []).filter((m) => m.source === 'club').slice().reverse();
   const wagePct = s.wageBudget > 0 ? Math.min(150, Math.round((s.wageBill / s.wageBudget) * 100)) : 0;
   return (
     <div className="pad club" data-testid="finance-screen">
@@ -87,13 +84,16 @@ export function FinanceScreen({ setDetail }: { setDetail: (d: DetailPanel) => vo
       {tab === 'board' && (
         <div className="club-msgs" data-testid="club-messages">
           {msgs.length === 0 && <p className="muted small">{t('club.noMessages')}</p>}
-          {msgs.map((m) => (
-            <div key={m.id} className={`club-msg k-${m.kind}`}>
-              <div className="small muted">{m.date} · {t(`club.msgKind.${m.kind}`)}</div>
-              <div><b>{m.title[lang]}</b></div>
-              <div className="small">{m.body[lang]}</div>
-            </div>
-          ))}
+          {msgs.map((m) => {
+            const tx = inboxText(t, lang, m);
+            return (
+              <div key={m.id} className={`club-msg k-${m.category}`}>
+                <div className="small muted">{m.date} · {t(`inbox.cat.${m.category}`)}</div>
+                <div><b>{tx.title}</b></div>
+                <div className="small">{tx.body}</div>
+              </div>
+            );
+          })}
         </div>
       )}
       <p className="small muted mt">{t('club.finance.note')}</p>

@@ -92,6 +92,9 @@ export interface PlayerSeasonLine {
    *   form ← form + formRate · (perf − form)
    */
   form: number;
+  /** Match sharpness after the last map played (career/readiness.ts), and that day. */
+  sharpness?: number;
+  lastPlayed?: IsoDate;
 }
 
 export interface Manager {
@@ -125,6 +128,11 @@ export interface CareerState {
   history: SeasonSummary[];
   /** The board's objective for this season (set by the manager's answer). */
   objective: string | null;
+  /**
+   * The manager's chosen starting five (player ids). Players no longer in the squad drop out and
+   * the roster order fills the gaps (lineupFor). Absent: the roster's first five.
+   */
+  lineup?: string[];
   /** Saved state of extension hooks, by hook id (see hooks.ts). */
   ext: Record<string, unknown>;
 }

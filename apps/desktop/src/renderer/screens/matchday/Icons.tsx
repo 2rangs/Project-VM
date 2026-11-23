@@ -44,6 +44,17 @@ const PATHS = {
   squad: 'M12 1l4 4-4 4-4-4z M4 12l4 4-4 4-4-4z M20 12l4 4-4 4-4-4z M12 11l4 4-4 4-4-4z',
   series: 'M2 3h9v4H6v3h5v4H6v3h5v4H2z M13 9h9v6h-9z',
   info: 'M10 2h4v4h-4z M10 9h4v13h-4z',
+  // ── app navigation + status (replace the text glyphs / emoji the shell used) ──
+  inbox: 'M2 4h20v12h-6l-2 3h-4l-2-3H2z M5 7v6h4l2 3h2l2-3h4V7z',
+  schedule: 'M3 4h18v18H3z M5 10v10h14V10z M7 1h3v5H7z M14 1h3v5h-3z',
+  standings: 'M3 14h5v8H3z M9.5 8h5v14h-5z M16 3h5v19h-5z',
+  finance: 'M12 1l10 11-10 11L2 12z M12 6l-6 6 6 6 6-6z M11 8h2v8h-2z',
+  transfers: 'M2 5h13V1l7 7-7 7v-4H2z M22 19H9v4l-7-7 7-7v4h13z',
+  training: 'M2 9h3V6h3v12H5v-3H2z M22 9h-3V6h-3v12h3v-3h3z M8 11h8v2H8z',
+  scout: 'M10 2l8 4v8l-8 4-8-4V6z M10 6L6 8v4l4 2 4-2V8z M16 17l6 5-2 2-6-5z',
+  debug: 'M9 1h6v3h4v4h3v3h-3v2h3v3h-3v4h-4v3H9v-3H5v-4H2v-3h3v-2H2V8h3V4h4z M9 8v8h6V8z',
+  warn: 'M12 1l11 21H1z M11 8h2v7h-2z M11 17h2v2h-2z',
+  check: 'M2 12l3-3 4 4 10-10 3 3-13 13z',
   // ── roles (our own glyphs: blade / pulse / ring / wall) ──
   duelist: 'M19 2h3v3L9 18l-3-3z M2 17l3-3 5 5-3 3z M4 4l5 5-2 2-3-4z',
   initiator: 'M12 1l3 6-3 3-3-3z M23 12l-6 3-3-3 3-3z M12 23l-3-6 3-3 3 3z M1 12l6-3 3 3-3 3z',
@@ -69,4 +80,13 @@ export const STATE_ICON: Record<string, IconName> = {
 
 export const ROLE_ICON: Record<string, IconName> = {
   Duelist: 'duelist', Initiator: 'initiator', Controller: 'controller', Sentinel: 'sentinel',
+};
+
+/** Shell navigation route → icon (the left nav draws these instead of text glyphs / emoji). */
+export const NAV_ICONS: Record<string, IconName> = {
+  home: 'home', inbox: 'inbox', schedule: 'schedule', standings: 'standings',
+  'match-day': 'play', tactics: 'tactics', agents: 'ult', veto: 'series',
+  squad: 'squad', opponent: 'eye',
+  finance: 'finance', transfers: 'transfers', training: 'training', scouting: 'scout',
+  'dev-debugger': 'debug', about: 'info',
 };

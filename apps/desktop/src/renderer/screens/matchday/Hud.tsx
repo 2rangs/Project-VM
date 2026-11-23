@@ -158,7 +158,7 @@ export function AllyPanel({ t, frame, teamName, nameOf, zoneName, bank, onPick, 
               <span className="mdx-status"><Icon name={STATE_ICON[u.status.state] ?? 'hold'} size={11} />{statusText(t, u.status, zoneName, nameOf)}</span>
             </span>
             <span className="mdx-row-side">
-              <span className="mdx-weapon">{u.pose.alive ? weapon : '✕'}</span>
+              <span className="mdx-weapon">{u.pose.alive ? weapon : <Icon name="dead" size={11} />}</span>
               <span className="mdx-k">{u.kills > 0 ? t('mdx.kills', { n: u.kills }) : ''}</span>
             </span>
             {(u.status.state === 'planting' || u.status.state === 'defusing') && <i className="mdx-progress" style={{ width: `${Math.round((u.status.progress ?? 0) * 100)}%` }} />}
@@ -197,7 +197,7 @@ export function EnemyPanel({ t, frame, teamName, nameOf, zoneName, bank, childre
                 <span className="mdx-nameline"><b className="mdx-name">{nameOf(p.id)}</b><AgentTag slot={p.slot} t={t} /></span>
                 <span className="mdx-status">{intel}</span>
               </span>
-              <span className="mdx-row-side"><span className="mdx-weapon">{alive ? weapon : '✕'}</span></span>
+              <span className="mdx-row-side"><span className="mdx-weapon">{alive ? weapon : <Icon name="dead" size={11} />}</span></span>
             </li>
           );
         })}
@@ -330,7 +330,7 @@ export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel,
         )}
       </dl>
       {hint && <span className="mdx-result-hint">{hint}</span>}
-      {nextLabel && <button className="mdx-btn primary" onClick={onNext} disabled={nextDisabled} data-testid="summary-next">{nextLabel}</button>}
+      {nextLabel && <button className="mdx-btn primary" onClick={onNext} disabled={nextDisabled} data-testid="summary-next"><Icon name="play" size={13} />{nextLabel}</button>}
     </div>
   );
 }
@@ -414,7 +414,7 @@ export function BottomBar({
               </button>
               <label className="mdx-ctl check"><input type="checkbox" checked={autoPlay} onChange={(e) => onAutoPlay(e.target.checked)} data-testid="auto-play" />{t('mdx.auto')}</label>
               <button className={`mdx-btn primary ${canAdvance ? 'ready' : ''}`} onClick={onNext} disabled={session!.busy || session!.ordersOpen} data-testid="next-round">
-                {session!.busy ? t('mdx.simulating') : t('mdx.next', { n: st.roundNumber })}
+                {session!.busy ? t('mdx.simulating') : <><Icon name="play" size={13} />{t('mdx.next', { n: st.roundNumber })}</>}
               </button>
             </>
           ) : <span className="mdx-done">{t('mdx.finished')}</span>

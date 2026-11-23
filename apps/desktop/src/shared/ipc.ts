@@ -134,6 +134,8 @@ export interface LocalBannerPack {
   id: string; files: Record<number, string>;
   /** Layered kill banner (frame / ring / emblem / pip images): composited by the app, one pip per step. */
   layers?: { frame: string; ring: string; emblem: string; pip: string };
+  /** Optional sound per step (kill1 … kill5), played only when the player turns banner sounds on. */
+  sounds?: Record<number, string>;
 }
 
 export interface SimRunRequest {
@@ -190,6 +192,18 @@ export interface MatchRoundSummary {
   decisions?: RoundDecisions | null;
   /** Navigation trace of the round (developer view). Absent when the engine recorded none. */
   nav?: NavTraceEvent[] | null;
+  /**
+   * What the sim's sight model decided, per tick (round-relative ms): the zone the sim has each
+   * player in, and the enemies each player sees. Absent on engines that do not record it — the live
+   * view then falls back to its zone-sightline approximation (labelled as approximate).
+   */
+  sight?: SightFrame[] | null;
+}
+
+export interface SightFrame {
+  tMs: number;
+  zones?: Record<string, string>;
+  sees?: Record<string, string[]>;
 }
 
 export interface MatchSummary {

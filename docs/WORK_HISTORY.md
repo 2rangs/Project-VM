@@ -321,9 +321,16 @@
 ### 16차 main 머지 (2026-11-23) — 최종 통합과 정리(작업 일시 정지)
 - 별도 세션이 `claude/final-merge`로 nav-engine·club-ops·career-shell·sim-batch-real-rosters·matchday-uiux를 합쳐 main `5e35ff8`에 푸시.
 - 이 통합 세션이 그 위에 빠진 커밋을 합침: career-shell(테스트·`CAREER_MODE.md`·인계서, e2e 진입점을 시작 메뉴로), club-ops(재정·이적·훈련 화면, 계약 패널, 인계서), nav-engine(`27bac33` 리테이크 위치).
-- **정정:** 13–15차의 "8/8"은 `sim-batch` 팀 id 버그로 **평균 선수 미러 경기**였다(`6bfb689`). 실제 로스터: 6/8, 공격 0.460(시드 1–160) / 0.484(161–320). 이 정리 시점 측정: WRAPUP_REAL_RESULT.
+- **정정:** 13–15차의 "8/8"은 `sim-batch` 팀 id 버그로 **평균 선수 미러 경기**였다(`6bfb689`). 실제 로스터: 6/8, 공격 0.460(시드 1–160) / 0.484(161–320). 이 정리 시점 측정(시드 1–160): 6/8, 공격 0.455, 피스톨 0.444. 데스크톱 e2e·시리즈·커리어·구단 운영 e2e 통과.
 - 문서: `docs/HANDOFF.md`(현재 상태 정본으로 재작성), `docs/DEVELOPMENT_PROCESS.md`(신규), `docs/research/STATUS_AUDIT_2026-11-23.md`(독립 진단, 신규).
 - 미완성 브랜치: `claude/nav-engine` `11ec870`(Haven/Pearl 원본 데이터 수정, 미검증).
+
+### 17차 main 머지 (2026-11-23) — 커리어+구단 운영 통합 · 11개 맵 3D · 오리지널 모델 · 경기 화면
+- 합친 브랜치: `claude/festive-brattain-042f51`(`0918e78`), `claude/serene-goldberg-b05635`(`9692d0b`), `claude/matchday-uiux-efc023`(`10028ee`).
+- 커리어: 구단 운영이 `registerCareerHook`로 커리어 달력 위에서 동작(받은메일·달력·팀 전력 하나로), 감독 팀 로스터 자동 변경 제거, 경기 전 라인업 선택, 준비도 R = (1 − 0.25·max(0, 피로 − 0.3))·(1 − 0.08·(1 − 샤프니스)), 선수별 K/D·맵 연습이 경기에 반영, AI 시즌은 보정된 빠른 시뮬이 기본.
+- 모델링: 11개 맵 웹 GLB(저장소 밖 `~/ProjectV-assets/maps/glb`, 맵 좌표 보정·바닥/시야 일치 확인), 스키닝된 오리지널 선수·무기 모델, 엔진 트랙 기반 애니메이션 상태·시선·옆걸음, 1인칭 리그, 맵별 조명. 메시·GLB·.blend는 미커밋.
+- 경기 화면: 엔진이 판정한 시야 표시(없으면 근사로 표시), 킬 배너 소리(선택), 오리지널 아이콘 세트, VCT 로고 로딩 엠블럼(로컬·gitignore, 대체 그림 있음 — 상표, 내부용).
+- 검증: 엔진 변경 없음(실제 로스터 6/8, 공격 0.455 유지). 루트 259, career 49, round-simulator 121, match-runner 87(+1 기존 실패: Bind own geometry, 맵 세션 담당), spatial-engine 278, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과(커리어 e2e는 영입 → 라인업 → 시즌 종료 → 계약 만료 → 다음 시즌까지).
 
 ## 6. 다음 단계
 

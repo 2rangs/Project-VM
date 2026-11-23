@@ -3,6 +3,7 @@
 // seed, mode) stays in MatchDayScreen above this.
 import type { MatchSummary, SessionState } from '../../../shared/ipc.ts';
 import { useT } from '../../i18n/index.tsx';
+import { Icon } from './Icons.tsx';
 import './matchday.css';
 
 export function MatchHub({ match, session, engineLabel, log, error, canOpen, onOpen }: {
@@ -23,7 +24,7 @@ export function MatchHub({ match, session, engineLabel, log, error, canOpen, onO
       <div className="mdx-hub-meta">
         <span className="pill">{engineLabel}</span>
         {log.length > 0 && <span className="muted small">{log.join('  ·  ')}</span>}
-        {error && <span className="err small">⚠ {error}</span>}
+        {error && <span className="err small"><Icon name="warn" size={12} /> {error}</span>}
       </div>
       {canOpen ? (
         <div className="mdx-hub-card">
@@ -43,7 +44,7 @@ export function MatchHub({ match, session, engineLabel, log, error, canOpen, onO
               ))}
             </div>
           )}
-          <button className="mdx-btn primary big" onClick={onOpen} data-testid="open-live">▶ {live ? t('mdx.hub.resume') : t('mdx.hub.watch')}</button>
+          <button className="mdx-btn primary big" onClick={onOpen} data-testid="open-live"><Icon name="play" size={14} /> {live ? t('mdx.hub.resume') : t('mdx.hub.watch')}</button>
           <p className="muted small">{t('mdx.hub.hint')}</p>
         </div>
       ) : (

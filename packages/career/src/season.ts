@@ -248,10 +248,11 @@ function pickOrder(w: World, season: number): WorldTeam[] {
   return [...teams.slice(k), ...teams.slice(0, k)];
 }
 
-function academies(w: World, rec: SeasonRecord, season: number): void {
+function academies(w: World, rec: SeasonRecord, season: number, managed: ReadonlySet<string> = new Set()): void {
   const sm = SEASON_MODEL;
-  // Academy players who aged out are released.
+  // Academy players who aged out are released (a managed club decides that itself).
   for (const t of sortedTeams(w)) {
+    if (managed.has(t.teamId)) continue;
     for (const id of t.academy.slice()) {
       const p = w.players[id];
       if (p && p.age > sm.academyMaxAge) {
@@ -266,7 +267,7 @@ function academies(w: World, rec: SeasonRecord, season: number): void {
   while (picked) {
     picked = false;
     for (const t of pickOrder(w, season)) {
-      if (t.academy.length >= sm.academySize) continue;
+      if (managed.has(t.teamId) || t.academy.length >= sm.academySize) continue;
       const scout = teamScout(w, t.teamId);
       const pool = prospects.filter((p) => p.status === "free" && p.region === t.region);
       if (pool.length === 0) continue;
@@ -282,10 +283,12 @@ function academies(w: World, rec: SeasonRecord, season: number): void {
   }
 }
 
-function squads(w: World, rec: SeasonRecord, season: number): void {
+function squads(w: World, rec: SeasonRecord, season: number, managed: ReadonlySet<string> = new Set()): void {
   const sm = SEASON_MODEL;
   const byAbility = (ids: string[]) => ids.slice().sort((a, b) => abilityOf(w.players[b]!) - abilityOf(w.players[a]!) || a.localeCompare(b));
   for (const t of pickOrder(w, season)) {
+    // A managed club's squad changes only through its manager (and club-ops transfers).
+    if (managed.has(t.teamId)) { t.roster = t.roster.filter((id) => w.players[id]); t.academy = t.academy.filter((id) => w.players[id]); continue; }
     const scout = teamScout(w, t.teamId);
     const est = (id: string) => estimateAbility(w, scout, w.players[id]!).ca;
     t.roster = byAbility(t.roster.filter((id) => w.players[id]));
@@ -326,11 +329,11 @@ function squads(w: World, rec: SeasonRecord, season: number): void {
 }
 
 /** Steps 4–7: staff, intake, academies, squads; returns the new season's record. */
-export function openSeason(w: World, season: number, rec: SeasonRecord = emptyRecord(w, season)): SeasonRecord {
+export function openSeason(w: World, season: number, rec: SeasonRecord = emptyRecord(w, season), managed: ReadonlySet<string> = new Set()): SeasonRecord {
   fillStaff(w, rec, season);
   intake(w, rec, season);
-  academies(w, rec, season);
-  squads(w, rec, season);
+  academies(w, rec, season, managed);
+  squads(w, rec, season, managed);
   const pop = regionPopulation(w);
   for (const r of REGIONS) rec.population[r] = pop[r];
   rec.population.staff = Object.keys(w.staff).length;
@@ -346,6 +349,12 @@ export interface AdvanceSeasonOptions {
    * (`seasonMaps`).
    */
   readonly mapsPlayed?: Readonly<Record<string, number>>;
+  /**
+   * Clubs run by a manager (career mode: the user's club). Their squads are not touched by the
+   * season loop — no academy picks or releases, promotions, free-agent signings or roster-cap
+   * releases. Retirement still applies.
+   */
+  readonly managedTeams?: readonly string[];
 }
 /** Kept for the club-ops callers. */
 export type AdvanceOptions = AdvanceSeasonOptions;
@@ -387,7 +396,7 @@ export function advanceSeason(world: World, opts: AdvanceSeasonOptions = {}): Wo
 
   // 4–7.
   w.season = season;
-  openSeason(w, season, rec);
+  openSeason(w, season, rec, new Set(opts.managedTeams ?? []));
   w.history.push(rec);
   return w;
 }
