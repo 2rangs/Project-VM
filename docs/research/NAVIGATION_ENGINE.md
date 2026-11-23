@@ -627,6 +627,59 @@ aim zones, post-plant positions chosen by what sees the spike, the third site, a
 Haven and Pearl. None of that was attempted here, and no duel, speed or policy constant was changed for any
 map.
 
+### 7.6 All eleven maps with derived tactics and real rosters (2026-11-23, evening)
+
+Since §7.5: per-map tactics are derived from each map's own roadmap and sight table (`spatial-engine/src/tactics.ts`,
+`spots.ts`), the third site is played, a holder stands where it sees what it watches, the retake sends one
+defender to the spike, every zone is reachable on every roadmap, and ropes / ziplines / teleporters / jumps are
+typed links (`MAPS_DATA.md` §4–5). `sim-batch` now plays real rosters, so these rows are not comparable in level
+with §7.5 (league-average mirrors) — compare the round-end mix, not the third decimal.
+
+60 matches per map on its own geometry, seeds 1..60 (Ascent: 160, default geometry). Targets: attack 0.42–0.58,
+elimination ~0.60–0.75, detonation ≤ ~0.15. "Before" is §7.5's table row.
+
+| Map | Before: attack / elim / det / defuse | Now: attack / elim / det / defuse | Judged | In range |
+|---|---|---|---|---|
+| Ascent | 0.521 / 0.704 / 0.106 / 0.148 | 0.455 / 0.728 / 0.085 / 0.136 | 6/8 | real-roster baseline held |
+| Abyss | 0.544 / 0.567 / 0.200 / 0.179 | 0.507 / 0.618 / 0.163 / 0.155 | 7/9 | nearly (detonation +0.013) |
+| Bind | 0.542 / 0.614 / 0.248 / 0.110 | 0.501 / 0.572 / 0.237 / 0.104 | 3/8 | no |
+| Breeze | 0.513 / 0.742 / 0.087 / 0.161 | 0.522 / 0.764 / 0.085 / 0.122 | 6/8 | yes (elimination +0.014) |
+| Fracture | 0.468 / 0.640 / 0.214 / 0.107 | 0.482 / 0.540 / 0.279 / 0.155 | 6/8 | no |
+| Haven | 0.390 / 0.513 / 0.116 / 0.334 | 0.489 / 0.416 / 0.236 / 0.288 | 4/8 | no |
+| Icebox | 0.492 / 0.583 / 0.238 / 0.156 | 0.454 / 0.578 / 0.218 / 0.181 | 4/8 | no |
+| Lotus | 0.570 / 0.596 / 0.227 / 0.135 | 0.493 / 0.475 / 0.204 / 0.255 | 4/8 | no |
+| Pearl | 0.531 / 0.675 / 0.121 / 0.160 | 0.421 / 0.585 / 0.212 / 0.170 | 3/8 | no |
+| Split | 0.526 / 0.364 / 0.342 / 0.281 | 0.496 / 0.594 / 0.209 / 0.172 | 3/8 | no |
+| Sunset | 0.575 / 0.462 / 0.245 / 0.256 | 0.519 / 0.582 / 0.202 / 0.174 | 4/8 | no |
+
+What holds: the attack rate is inside 0.42–0.58 on every map (Haven 0.390 → 0.489; no side above 0.58).
+What does not: on eight maps about a fifth of the rounds or more end by detonation and eliminations are under 0.60.
+
+**The result is not robust to a roadmap resample.** Bind before its roadmap was regenerated (two nodes added,
+teleporter ends moved < 3.5 m, same zones) gave 0.502 / 0.751 / 0.135 / 0.083, in range; after, the row above.
+Derived holding spots are picked among roadmap nodes, so a resample moves them. A 60-match "in range" on one
+roadmap is weak evidence, Breeze's included.
+
+**Measured, six matches per map (own geometry, one fixed pair of teams):**
+
+| | Ascent | Abyss | Bind | Breeze | Fracture | Haven | Icebox | Lotus | Pearl | Split | Sunset |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Kills that follow the same player's kill within 1 s | 34 % | 29 % | 29 % | 32 % | 36 % | 31 % | 29 % | 28 % | 36 % | 29 % | 28 % |
+| Rounds where one player kills three within 2.5 s | 58 % | 32 % | 54 % | 46 % | 52 % | 48 % | 37 % | 40 % | 59 % | 37 % | 34 % |
+| Kills after the plant, per plant | 3.38 | 4.15 | 4.08 | 2.85 | 3.09 | 3.64 | 2.05 | 3.62 | 3.93 | 2.00 | 2.77 |
+| Detonations: defenders / attackers alive | 1.0 / 3.3 | 1.4 / 3.8 | 1.5 / 3.3 | 1.3 / 3.8 | 1.1 / 3.8 | 1.3 / 3.7 | 1.4 / 4.1 | 1.2 / 3.7 | 1.4 / 4.1 | 1.5 / 4.3 | 1.3 / 3.8 |
+
+- Rapid multi-kills (a duel winner fights again on the next 100 ms tick, whatever the time-to-kill) are as
+  common on Ascent as anywhere. They are a property of the combat loop, **not** what separates the maps that
+  miss — an earlier reading of single traces (Split, Bind) suggested they were.
+- Detonations happen with one or two defenders alive against about four attackers on every map: the defense
+  has already lost the site fight when the spike is planted, and the survivors do not win it back. On Icebox
+  and Split only two kills follow a plant (the retake is mostly not fought).
+- **Not established:** why the defense loses the pre-plant fight more often on these maps than on Ascent. The
+  per-map plant rate and the kill balance before the plant were not measured in this pass.
+
+No duel odds, speeds or global constants were changed for any map. `geometry: "own"` remains opt-in.
+
 ## 8. Path errors found and fixed along the way
 
 | Error | Found by | Fix |
@@ -669,14 +722,14 @@ map.
 - No ability creates a movement blocker (§4): the mechanism exists and is tested, the rule is not verified.
 - Bullet blockers are not modelled.
 - Jumping: a step up to 0.6 m is walkable; anything higher is not climbable. Jump-only routes do not exist.
-- Ropes, ziplines on Icebox / Split, rotating doors, breakable walls, fall-off edges: as in `MAPS_DATA.md` §5.
-  Only Bind's teleporters and Fracture's zipline are links.
+- Rotating doors, breakable walls, fall-off edges: as in `MAPS_DATA.md` §5. Ropes, ziplines, teleporters and
+  Abyss's two jump gaps are roadmap links since 2026-11-23; their times are length ÷ run speed, not measured.
 
 **Maps**
 - Only Ascent is playable as a product. Every map now *runs* on its own geometry behind an opt-in
   (`MatchConfig.geometry: "own"`, §7.5), but the tactical layer is still Ascent's — the reasons are in
-  `MAPS_DATA.md` §6 and the measured consequences in §7.5. Haven's B Site and most of Pearl are additionally
-  unreachable on the roadmap (§1), and the tactical layer answers "unreachable" for them.
+  `MAPS_DATA.md` §6 and the measured consequences in §7.5. Since 2026-11-23 the tactics are derived per map and every
+  zone is reachable (§7.6); the round-end mix still misses the targets on eight maps.
 - The debug view, like the live view, draws Ascent (`apps/desktop/src/data/sim/`).
 
 **Not evaluated**

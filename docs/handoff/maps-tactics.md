@@ -134,6 +134,10 @@ detonation ≤ ~0.15.
 | Sunset | 0.575 | 0.488 / 0.526 / 0.202 / 0.215 | attack only |
 | Breeze, Fracture, Haven, Pearl | 0.513, 0.468, 0.390, 0.531 | not run | unknown |
 
+- **Correction (2026-11-23 evening):** rapid multi-kills are as common on Ascent (58 % of rounds have one
+  player killing three within 2.5 s) as on the maps that miss, so they do not explain the misses; see
+  `NAVIGATION_ENGINE.md` §7.6 for the table and for Bind's sensitivity to a roadmap resample. Why the defense
+  loses the pre-plant fight more often off Ascent is not established.
 - **Detonations ~20 %, eliminations ~0.53–0.60 on most maps.** Traced on Split: right after the plant the
   defenders waiting in A Tower step out one after another; one spike-watching attacker kills two within 0.3 s,
   the last defender saves. Cause is retake execution in the policy plus duels resolved one at a time — not map
