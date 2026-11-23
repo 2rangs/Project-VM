@@ -29,7 +29,7 @@ export const NAV: NavGroup[] = [
       { id: 'finance', icon: '$', soon: true },
       { id: 'transfers', icon: '⇄', soon: true },
       { id: 'training', icon: '◳', soon: true },
-      { id: 'scouting', icon: '🔍', soon: true },
+      { id: 'scouting', icon: '🔍' }, // career world: new prospects, free agents, staff (screens/ScoutingScreen.tsx)
     ],
   },
   {

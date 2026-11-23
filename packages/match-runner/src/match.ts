@@ -44,7 +44,7 @@ import {
   type TeamEconomy,
   type BuyDecision,
 } from "./economy.js";
-import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterProfile } from "./teams.js";
+import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
 import type { PlayerProfile } from "@pv/shared-types";
 import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { MAP_IDS, isMapId } from "@pv/spatial-engine";
@@ -158,6 +158,12 @@ export interface MatchConfig {
    * blank opponent model, exactly as before.
    */
   readonly teamInputs?: Readonly<Partial<Record<TeamSlot, TeamMatchInputs>>>;
+  /**
+   * Field these players instead of the team's game-data roster (first five play), per team slot —
+   * e.g. a career world's squad including generated players (@pv/career `startingFive`). Omitted →
+   * the game-data roster, exactly as before. Ratings are read exactly as for game-data players.
+   */
+  readonly rosters?: Readonly<Partial<Record<TeamSlot, readonly RosterPlayer[]>>>;
   /** [series] Series metadata of this map (who picked it, starting sides). Not read by the engine. */
   readonly series?: SeriesGameContext;
 }
@@ -370,10 +376,11 @@ export class MatchEngine {
     this.spatial = loadSpatial(geometryOf(config));
     this.sq = makeSpatialQuery(this.spatial);
     this.maxRounds = config.maxRounds ?? 60;
-    this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5), B: rosterSkills(config.teamB.id, 5) };
-    this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5), B: rosterTraits(config.teamB.id, 5) };
-    this.profilesBySlot = { A: rosterProfiles(config.teamA.id, 5), B: rosterProfiles(config.teamB.id, 5) };
-    this.consistencyBySlot = { A: rosterConsistency(config.teamA.id, 5), B: rosterConsistency(config.teamB.id, 5) };
+    const ro = config.rosters ?? {};
+    this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5, ro.A), B: rosterSkills(config.teamB.id, 5, ro.B) };
+    this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5, ro.A), B: rosterTraits(config.teamB.id, 5, ro.B) };
+    this.profilesBySlot = { A: rosterProfiles(config.teamA.id, 5, ro.A), B: rosterProfiles(config.teamB.id, 5, ro.B) };
+    this.consistencyBySlot = { A: rosterConsistency(config.teamA.id, 5, ro.A), B: rosterConsistency(config.teamB.id, 5, ro.B) };
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
@@ -394,7 +401,7 @@ export class MatchEngine {
       return pr.reduce((s, p) => s + p.decisionMaking, 0) / Math.max(1, pr.length);
     };
     this.opponentModels = { A: new OpponentModel(recognition("A")), B: new OpponentModel(recognition("B")) };
-    this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id), B: this.throwFloors(config.teamB.id) };
+    this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id, ro.A), B: this.throwFloors(config.teamB.id, ro.B) };
     // [series] Per-team inputs: re-derive the affected values for the slots that have any.
     this.basePolicyTuning = policyTuning;
     for (const slot of ["A", "B"] as const) {
@@ -451,10 +458,10 @@ export class MatchEngine {
     return roundNumber > REGULATION_ROUNDS || this.score.A >= ROUNDS_TO_WIN - 1 || this.score.B >= ROUNDS_TO_WIN - 1;
   }
 
-  private throwFloors(teamId: string): number[] {
+  private throwFloors(teamId: string, override?: readonly RosterPlayer[]): number[] {
     const m = this.config.minThrowRates;
     const team = m?.teams?.[teamId] ?? 0;
-    return rosterPlayerIds(teamId, 5).map((pid) => Math.max(team, (pid && m?.players?.[pid]) || 0));
+    return rosterPlayerIds(teamId, 5, override).map((pid) => Math.max(team, (pid && m?.players?.[pid]) || 0));
   }
 
   private floorMap(slot: TeamSlot, prefix: "atk" | "def"): ReadonlyMap<string, number> {

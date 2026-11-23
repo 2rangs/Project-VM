@@ -15,6 +15,7 @@ import { NAV } from './nav.ts';
 import { useT } from './i18n/index.tsx';
 import { MatchDayScreen } from './screens/MatchDayScreen.tsx';
 import { SquadScreen } from './screens/SquadScreen.tsx';
+import { ScoutingScreen } from './screens/ScoutingScreen.tsx';
 import { OpponentScreen } from './screens/OpponentScreen.tsx';
 import { TacticsScreen } from './screens/TacticsScreen.tsx';
 import { AgentSelectScreen } from './screens/AgentSelectScreen.tsx';
@@ -70,6 +71,7 @@ export default function App() {
           {route === 'match-day' && <MatchDayScreen ctx={ctx} />}
           {route === 'veto' && <SeriesScreen ctx={ctx} />}
           {route === 'squad' && <SquadScreen setDetail={setDetail} />}
+          {route === 'scouting' && <ScoutingScreen setDetail={setDetail} />}
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}
