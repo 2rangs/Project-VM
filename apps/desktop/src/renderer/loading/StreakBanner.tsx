@@ -5,7 +5,9 @@
 // These are ORIGINAL designs drawn for this project (geometric cores, no skulls, no game artwork,
 // no audio); several variants exist so the player can pick one (BannerPicker, stored in
 // localStorage). Game banners themselves are third-party artwork and are not shipped.
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { bridge } from '../platform.ts';
+import type { LocalBannerPack } from '../../shared/ipc.ts';
 
 export const BANNERS = ['standard', 'prism', 'forge', 'signal'] as const;
 export type BannerId = (typeof BANNERS)[number];
@@ -71,19 +73,112 @@ export function StreakBanner({ variant, stage, size = 112, label }: { variant: B
   );
 }
 
+// ── the player's own banner media (optional, local only) ────────────────────────────────────
+// Packs live in apps/desktop/assets/banners/<name>/1.webm … 5.webm (or png/webp/gif/mp4). The
+// app plays whatever the user has put there; it never downloads or ships banner media.
+export const LOCAL_PREFIX = 'local:';
+let packs: LocalBannerPack[] | null = null;
+let packsPromise: Promise<LocalBannerPack[]> | null = null;
+const packSubs = new Set<() => void>();
+const urlCache = new Map<string, Promise<string | null>>();
+export function loadLocalBanners(): Promise<LocalBannerPack[]> {
+  if (!packsPromise) packsPromise = bridge.listBanners().catch(() => []).then((p) => { packs = p; for (const s of packSubs) s(); return p; });
+  return packsPromise;
+}
+export function useLocalBanners(): LocalBannerPack[] {
+  useEffect(() => { void loadLocalBanners(); }, []);
+  return useSyncExternalStore((l) => { packSubs.add(l); return () => { packSubs.delete(l); }; }, () => packs ?? EMPTY, () => packs ?? EMPTY);
+}
+const EMPTY: LocalBannerPack[] = [];
+function mediaUrl(pack: string, file: string): Promise<string | null> {
+  const key = `${pack}/${file}`;
+  let p = urlCache.get(key);
+  if (!p) {
+    const type = /\.(webm)$/i.test(file) ? 'video/webm' : /\.(mp4)$/i.test(file) ? 'video/mp4' : /\.gif$/i.test(file) ? 'image/gif' : /\.webp$/i.test(file) ? 'image/webp' : /\.png$/i.test(file) ? 'image/png' : 'image/jpeg';
+    p = bridge.loadBannerFile(pack, file).then((bytes) => (bytes ? URL.createObjectURL(new Blob([bytes as BlobPart], { type })) : null)).catch(() => null);
+    urlCache.set(key, p);
+  }
+  return p;
+}
+
+function useMedia(pack: string, file: string | undefined): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => { let alive = true; setUrl(null); if (file) void mediaUrl(pack, file).then((u) => { if (alive) setUrl(u); }); return () => { alive = false; }; }, [pack, file]);
+  return url;
+}
+
+/**
+ * A layered kill banner composited like the game does it: frame behind, spinning ring, emblem in
+ * the middle, and one pip per kill on an arc above. `stage` 1..5 = number of pips lit; 'loop' plays
+ * 1 → 5 and starts again.
+ */
+function LayeredBanner({ pack, stage, size }: { pack: LocalBannerPack; stage: BannerStage; size: number }) {
+  const L = pack.layers!;
+  const frame = useMedia(pack.id, L.frame), ring = useMedia(pack.id, L.ring), emblem = useMedia(pack.id, L.emblem), pip = useMedia(pack.id, L.pip);
+  const [loopN, setLoopN] = useState(1);
+  useEffect(() => {
+    if (stage !== 'loop') return;
+    const id = setInterval(() => setLoopN((n) => (n % 5) + 1), 650);
+    return () => clearInterval(id);
+  }, [stage]);
+  const n = stage === 'loop' ? loopN : stage;
+  const pips = Array.from({ length: 5 }, (_, i) => { const a = (-90 + (i - 2) * 22) * Math.PI / 180; return { x: 50 + Math.cos(a) * 46, y: 52 + Math.sin(a) * 46, on: i < n }; });
+  return (
+    <span className="pvk-layered" style={{ width: size, height: size }} data-stage={n}>
+      {frame && <img src={frame} className="pvk-frame" alt="" />}
+      {ring && <img src={ring} className="pvk-ring" alt="" key={`r${n}`} />}
+      {emblem && <img src={emblem} className="pvk-emblem" alt="" key={`e${n}`} />}
+      {pip && pips.map((p, i) => <img key={i} src={pip} className={`pvk-pip ${p.on ? 'on' : ''}`} style={{ left: `${p.x}%`, top: `${p.y}%` }} alt="" />)}
+    </span>
+  );
+}
+
+/** Plays a local pack: the media of the current stage; in loop mode it steps 1 → 5 on its own. */
+function LocalBanner({ pack, stage, size }: { pack: LocalBannerPack; stage: BannerStage; size: number }) {
+  const stages = Object.keys(pack.files).map(Number).sort((a, b) => a - b);
+  const [loopAt, setLoopAt] = useState(0);
+  useEffect(() => {
+    if (stage !== 'loop') return;
+    const id = setInterval(() => setLoopAt((n) => (n + 1) % Math.max(1, stages.length)), 1400);
+    return () => clearInterval(id);
+  }, [stage, stages.length]);
+  const want = stage === 'loop' ? stages[loopAt] ?? stages[0] : [...stages].reverse().find((n) => n <= stage) ?? stages[0];
+  const file = pack.files[want];
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => { let alive = true; setUrl(null); if (file) void mediaUrl(pack.id, file).then((u) => { if (alive) setUrl(u); }); return () => { alive = false; }; }, [pack.id, file]);
+  const style = { width: size, height: size, objectFit: 'contain' as const, display: 'block' };
+  if (!url) return <span className="pvk-local" style={{ ...style, display: 'block' }} />;
+  return /\.(webm|mp4)$/i.test(file)
+    ? <video className="pvk-local" key={url} src={url} style={style} autoPlay muted playsInline data-stage={want} />
+    : <img className="pvk-local" src={url} style={style} alt="" data-stage={want} />;
+}
+
+/** The banner for a loading screen: a built-in variant, or one of the user's local packs. */
+export function LoadingBanner({ variant, stage, size = 112 }: { variant: string; stage: BannerStage; size?: number }) {
+  const local = useLocalBanners();
+  if (variant.startsWith(LOCAL_PREFIX)) {
+    const pack = local.find((p) => p.id === variant.slice(LOCAL_PREFIX.length));
+    if (pack?.layers) return <LayeredBanner pack={pack} stage={stage} size={size} />;
+    if (pack) return <LocalBanner pack={pack} stage={stage} size={size} />;
+    return <StreakBanner variant="standard" stage={stage} size={size} />; // pack removed or still listing
+  }
+  return <StreakBanner variant={(BANNERS as readonly string[]).includes(variant) ? (variant as BannerId) : 'standard'} stage={stage} size={size} />;
+}
+
 // ── the player's choice ─────────────────────────────────────────────────────────────────────
 const KEY = 'pv-loading-banner';
 const subs = new Set<() => void>();
-function read(): BannerId {
-  try { const v = globalThis.localStorage?.getItem(KEY); if ((BANNERS as readonly string[]).includes(v ?? '')) return v as BannerId; } catch { /* no storage */ }
+function read(): string {
+  try { const v = globalThis.localStorage?.getItem(KEY); if (v && ((BANNERS as readonly string[]).includes(v) || v.startsWith(LOCAL_PREFIX))) return v; } catch { /* no storage */ }
   return 'standard';
 }
-let current: BannerId = read();
-export function setLoadingBanner(id: BannerId): void {
+let current: string = read();
+/** `id` is a built-in BannerId or `local:<pack>`. */
+export function setLoadingBanner(id: string): void {
   current = id;
   try { globalThis.localStorage?.setItem(KEY, id); } catch { /* no storage */ }
   for (const s of subs) s();
 }
-export function useLoadingBanner(): BannerId {
+export function useLoadingBanner(): string {
   return useSyncExternalStore((l) => { subs.add(l); return () => { subs.delete(l); }; }, () => current, () => current);
 }

@@ -19,6 +19,7 @@ import { useT, strategyLabel } from '../i18n/index.tsx';
 import { LiveMatch } from './matchday/LiveMatch.tsx';
 import { MatchHub } from './matchday/MatchHub.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx';
+import { MatchLoadScreen } from '../loading/MatchLoadScreen.tsx';
 import { preloadMatchAssets } from './matchday/assets.ts';
 
 /**
@@ -179,14 +180,17 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   return (
     <div className="matchday">
       {running && (
-        <LoadingScreen cover="window" title={t('load.sim.title')} detail={`${versus} · Ascent`}
+        <MatchLoadScreen map="Ascent" mode={t('load.sim.title')} ally={{ ...refOf(teamA), side: 'attack' }} enemy={{ ...refOf(teamB), side: 'defense' }}
           progress={loadPhase === 'assets' ? 1 : simStep ? pct : null}
           steps={loadPhase === 'assets' ? t('load.assets.preparing') : simStep ? t('load.sim.steps', { n: simStep.round, a: simStep.a, b: simStep.b }) : t('load.sim.starting')} />
       )}
       {!running && runError && (
         <LoadingScreen cover="window" title={t('load.sim.failed')} error={runError} onRetry={() => { void runMatch(); }} onDismiss={() => setRunError(null)} />
       )}
-      {sessStarting && <LoadingScreen cover="window" title={t('load.session.title')} detail={`${versus} · Ascent`} steps={loadPhase === 'assets' ? t('load.assets.preparing') : t('load.session.steps')} />}
+      {sessStarting && (
+        <MatchLoadScreen map="Ascent" mode={t('load.session.title')} ally={{ ...refOf(teamA), side: 'attack' }} enemy={{ ...refOf(teamB), side: 'defense' }}
+          progress={null} steps={loadPhase === 'assets' ? t('load.assets.preparing') : t('load.session.steps')} />
+      )}
       {!sessStarting && sessStartError && (
         <LoadingScreen cover="window" title={t('load.session.failed')} error={sessStartError} onRetry={() => { void startInteractive(); }} onDismiss={() => setDismissedSessError(sessStartError)} />
       )}

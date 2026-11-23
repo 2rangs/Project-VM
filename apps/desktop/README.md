@@ -122,7 +122,15 @@ One original design (`src/renderer/loading/`: CSS + inline SVG, no game assets) 
 | Next round of a session | an inline chip on the stage ("라운드 N 시뮬레이션 중…") |
 | Series preparation / quick-simulated series map | `LoadingScreen` with `맵 n/m`; the series worker replies once per map, so there is no per-round counter here |
 | Season advance (Scouting) | `LoadingScreen`; the work is synchronous, so the screen is painted first and the season runs on the next tick |
-| Map image / 3D map mesh in the live view | inline chips in the corner of the stage; a mesh that fails to load says so and the blockout is used |
+| Live-view assets (3D map mesh for the team cams, minimap image) | **prepared during the game load**: `screens/matchday/assets.ts` starts with the simulation / session start and the loading screen waits for it ("3D 맵 · 맵 이미지 준비 중…", capped at 20 s). The cams' renderer is created with the live view and warmed up, so switching to the team cams starts no load. Inline chips remain only for the case of re-opening the view before the preload has settled; a mesh that fails to parse says so and the blockout is used |
+
+The emblem on every loading screen is a **streak banner** (`loading/StreakBanner.tsx`): it builds
+up in five steps — core, ring, cap and ticks, wings, outer ring, burst — the way a shooter's kill
+banner escalates from one kill to five. With real progress the steps follow the work (20 % each,
+with a five-pip counter); without it the banner loops 1 → 5. Four original variants (스탠다드 /
+프리즘 / 포지 / 시그널) can be chosen in **정보 → 로딩 배너**; the choice is stored in `localStorage`
+(`pv-loading-banner`). They are drawn for this project — the game's own kill banners are
+third-party artwork and are not shipped or downloaded.
 
 Rules: a loader is rendered only while its work is pending (it owns no timers, so it cannot outlive
 the work), the inline chips never take input, and a failure turns the same surface into a message

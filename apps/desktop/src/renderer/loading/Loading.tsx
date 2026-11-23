@@ -15,7 +15,7 @@
 // own, so it cannot outlive the work), and pass `error` instead of leaving it up on failure.
 import type { ReactNode } from 'react';
 import { useT } from '../i18n/index.tsx';
-import { StreakBanner, useLoadingBanner, type BannerStage } from './StreakBanner.tsx';
+import { LoadingBanner, useLoadingBanner, type BannerStage } from './StreakBanner.tsx';
 import './loading.css';
 
 export function LoadingMark({ size = 56 }: { size?: number }) {
@@ -70,7 +70,7 @@ export function LoadingScreen({ title, detail, progress, steps, error, onRetry, 
   return (
     <div className={`pvl pvl-${cover}`} role="status" aria-live="polite" aria-busy="true" data-testid={testId} data-banner={banner}>
       <div className="pvl-card">
-        <StreakBanner variant={banner} stage={stage} />
+        <LoadingBanner variant={banner} stage={stage} />
         <span className={`pvl-pips ${stage === 'loop' ? 'loop' : ''}`} aria-hidden>{[1, 2, 3, 4, 5].map((n) => <i key={n} className={stage !== 'loop' && stage >= n ? 'on' : ''} />)}</span>
         <span className="pvl-kicker"><i>//</i>{t('load.kicker')}</span>
         <strong className="pvl-title">{title}</strong>

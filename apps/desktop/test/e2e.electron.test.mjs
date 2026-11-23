@@ -33,6 +33,9 @@ async function main() {
     env: {
       ...process.env,
       PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces'),
+      // optional local assets (real map mesh, banners) are never present in CI: keep the run independent of them
+      PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
+      PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
@@ -86,6 +89,7 @@ async function main() {
   // Seed-42 match: team-A's richest perception frame (observed enemies + belief) is
   // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
   // The live view scrubs one round at a time: jump to round 5 and seek 12 s in (first contact).
+  await page.getByTestId('view-mode-tactical').click(); // the opponent POV is a tactical-map debug view (locked in team cams)
   await page.getByTestId('round-chip-5').click();
   const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
   await page.locator('.rv-scrub').fill(String(r5Start + 12000));

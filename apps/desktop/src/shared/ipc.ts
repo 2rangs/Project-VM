@@ -28,6 +28,10 @@ export const IPC = {
   seriesStop: 'pv:series:stop',
   /** renderer → main (invoke): read the optional local map mesh (assets/maps/<map>.glb); null when absent. */
   mapMesh: 'pv:asset:map-mesh',
+  /** renderer → main (invoke): list the user's own loading-banner packs (assets/banners/<name>/<n>.<ext>). */
+  bannerList: 'pv:asset:banner-list',
+  /** renderer → main (invoke): read one file of a banner pack; null when absent. */
+  bannerFile: 'pv:asset:banner-file',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -111,6 +115,13 @@ export interface SessionReply {
   /** Present for playNextRound: the raw round (RawRound shape for mergeMatch). */
   round?: Record<string, unknown>;
   result?: SessionResultSummary;
+}
+
+/** A folder of the user's own banner media: one file per build-up stage (1 = first step … 5, optional 6). */
+export interface LocalBannerPack {
+  id: string; files: Record<number, string>;
+  /** Layered kill banner (frame / ring / emblem / pip images): composited by the app, one pip per step. */
+  layers?: { frame: string; ring: string; emblem: string; pip: string };
 }
 
 export interface SimRunRequest {
@@ -218,6 +229,9 @@ export interface PvBridge {
   seriesStop(): Promise<void>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
+  /** User-supplied loading banners (never shipped, never in git): pack name → stage (1..6) → file name. */
+  listBanners(): Promise<LocalBannerPack[]>;
+  loadBannerFile(pack: string, file: string): Promise<Uint8Array | null>;
   readonly platform: string;
   readonly isElectron: true;
 }

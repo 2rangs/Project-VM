@@ -43,6 +43,8 @@ const browserBridge: PvBridge = {
   async seriesCmd() { throw new Error('series requires Electron'); },
   async seriesStop() { /* no-op */ },
   async loadMapMesh() { return null; }, // browser fallback: the cams use the navgraph blockout
+  async listBanners() { return []; },
+  async loadBannerFile() { return null; },
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };

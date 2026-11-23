@@ -34,6 +34,8 @@ const bridge: PvBridge = {
   seriesCmd: (c: SeriesCommand): Promise<SeriesReply> => ipcRenderer.invoke(IPC.seriesCmd, c),
   seriesStop: () => ipcRenderer.invoke(IPC.seriesStop),
   loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
+  listBanners: () => ipcRenderer.invoke(IPC.bannerList),
+  loadBannerFile: (pack: string, file: string) => ipcRenderer.invoke(IPC.bannerFile, pack, file),
   platform: process.platform,
   isElectron: true,
 };
