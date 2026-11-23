@@ -23,6 +23,7 @@
 //                      against — the report gains Δ-vs-baseline + improved/worsened columns
 //   --no-validate      only write the SimRun bundle + print the summary; skip sim:validate
 //   --tuning JSON      MatchConfig.tuning for every match (pre-match engine options, e.g. '{"damageCarryover":0.5}')
+//   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
 //   --teams-only       print the paired teams' first-five combat skills as JSON and exit (the
 //                      roster check in tests/test_sim_batch_runner.py uses it)
@@ -152,7 +153,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };
@@ -178,7 +179,7 @@ async function main(): Promise<void> {
   const bundle = {
     meta: {
       synthetic: true,
-      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""})`,
+      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""}${args["gaze"] === true ? ", gaze model" : ""})`,
       rounds: rounds.length, matches, map, seedStart,
       generatedAt: new Date().toISOString(),
     },

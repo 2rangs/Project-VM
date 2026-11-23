@@ -12,6 +12,8 @@ import {
 } from "@pv/perception-engine";
 import {
   resolveDuel,
+  readyDelayMs,
+  DEFAULT_PARAMS as COMBAT_PARAMS,
   OPEN_POSTURE,
   type Combatant,
   type WeaponSpec,
@@ -54,6 +56,7 @@ import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from
 import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 import { MovementExecutor, type MoverHooks, type NavEvent, type SpotIntent } from "./mover.js";
+import { offsetDeg, rotateToward, turnRateRadPerMs, type GazeSource } from "./gaze.js";
 
 export interface RoundSimulatorDeps {
   readonly spatial: SpatialEngine;
@@ -245,6 +248,9 @@ export class RoundSimulator {
     const burnUntil = new Map<string, number>();
     const lastHop = new Map<string, { fromZone: string; tick: number }>();
     let eyeInside = new Map<string, SightOccluder>(); // player → the smoke its eye is in (last tick)
+    const gazeSource = this.gazeOf;
+    gazeSource.clear();
+    this.lastSight.clear();
     const rerouteTried = new Set<string>();
     const stackWait = new Map<string, { zone: string; sinceMs: number }>();
     const stackStats = { waits: 0, ticks: 0, timeouts: 0 };
@@ -325,6 +331,10 @@ export class RoundSimulator {
       }
       this.mover.releaseDead(state.players);
       const alive = state.players.filter((q) => q.alive);
+      // gaze is state: where each player looked at the end of the last tick (turn-rate limited below)
+      const facingBefore = new Map(state.players.map((q) => [q.id, { ...q.facing }]));
+      this.guardTaken.clear();
+      this.beliefNow = prevBelief;
       const sp = state.spike;
       this.spikeWatched = (sp.phase === "planted" || sp.phase === "defusing") && sp.zoneId && sp.position ? { zoneId: sp.zoneId, position: sp.position } : null;
       for (const p of state.players) {
@@ -360,6 +370,10 @@ export class RoundSimulator {
         if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
       }
       this.publishZones(state);
+      // Gaze: choose what to look at (an enemy it sees > the most threatening believed spot it has a
+      // line to and no teammate watches > the plan's angle / the way ahead), then turn toward it no
+      // faster than its turn rate allows.
+      if (this.cfg.gaze) this.updateGaze(state, commands, prevBelief, facingBefore, gazeSource, dt);
       if (collect) {
         let overlap = false;
         for (let i = 0; i < alive.length; i++) {
@@ -478,6 +492,12 @@ export class RoundSimulator {
 
       // 4. perception snapshot for engagement
       const sight = perception.perceive(this.toPerceptionWorld(state, abilityEngine));
+      this.lastSight.clear();
+      for (const p of state.players) {
+        if (!p.alive || abilityEngine.blindRemainingMs(p.id, state.elapsedMs) > 0) continue;
+        const seen = (sight.players.get(p.id)?.visibleEnemies ?? []).filter((e) => e.currentlyVisible).map((e) => e.playerId);
+        if (seen.length) this.lastSight.set(p.id, seen);
+      }
 
       // 5. engagement detection (mutual or one-sided visibility → duel)
       // Smoke exits: an eye that was inside a smoke volume last tick and is out of it now.
@@ -579,7 +599,9 @@ export class RoundSimulator {
             // the sight the engagement step decided on this tick (resolveEngagements' `sees`)
             const blind = abilityEngine.blindRemainingMs(p.id, state.elapsedMs) > 0;
             const sees = blind ? [] : (sight.players.get(p.id)?.visibleEnemies ?? []).filter((e) => e.currentlyVisible).map((e) => e.playerId).sort();
-            return { ...base, sees, ...(blind ? { blind: true as const } : {}) };
+            const fm = Math.hypot(p.facing.x, p.facing.y) || 1;
+            const look = this.cfg.gaze ? this.gazeAt.get(p.id) : undefined;
+            return { ...base, sees, facing: { x: p.facing.x / fm, y: p.facing.y / fm }, gaze: gazeSource.get(p.id) ?? (this.isMoving(p) ? "route" : "hold"), ...(look ? { look } : {}), ...(blind ? { blind: true as const } : {}) };
           }),
         });
       }
@@ -637,6 +659,76 @@ export class RoundSimulator {
   }
 
   // ---- helpers ----
+
+  /** Each player's gaze source this tick (recorded in tracks / engagement trace). */
+  private readonly gazeOf = new Map<string, GazeSource>();
+  /** The point each player chose to look at this tick (gaze "enemy" / "threat"). */
+  private readonly gazeAt = new Map<string, { x: number; y: number; z: number }>();
+  /** Enemies each player saw on the last perception tick (not blinded). */
+  private readonly lastSight = new Map<string, string[]>();
+
+  /**
+   * Choose each player's gaze target and turn toward it (gaze.ts). Sources, in order:
+   *  1. "enemy" — the nearest enemy it saw last tick (it tracks what it is fighting);
+   *  2. "threat" — for a mover, or a holder without an angle from the plan: the believed enemy spot
+   *     (team belief hypotheses, highest weight first, nearer first on ties) it has a clear line to
+   *     and that no teammate is already watching (in a teammate's field of view with a line to it) —
+   *     teammates split sectors instead of double-checking one;
+   *  3. "hold" / "route" — what the plan / the mover set (the held angle, the way ahead).
+   * The facing then turns from where it was toward the target by at most turnRate · dt.
+   */
+  private updateGaze(state: SimState, commands: ReadonlyMap<string, ActionCommand>, belief: Record<Side, BeliefState | null>,
+    before: ReadonlyMap<string, { x: number; y: number }>, source: Map<string, GazeSource>, dtMs: number): void {
+    const alive = state.players.filter((p) => p.alive);
+    const byId = new Map(state.players.map((p) => [p.id, p]));
+    const watched = (side: Side, self: SimPlayer, pt: { x: number; y: number; z: number }): boolean =>
+      alive.some((q) => q.side === side && q.id !== self.id && facingAngleTo(q.facing, q.position, pt) <= HALF_FOV_RAD && this.lineOf(q, { position: pt }));
+    // believed spots a teammate already took this tick (side|x,y): split, don't double-check
+    const taken = new Set<string>();
+    const spotKey = (side: Side, pt: { x: number; y: number }) => `${side}|${Math.round(pt.x)},${Math.round(pt.y)}`;
+    this.gazeAt.clear();
+    for (const p of alive) {
+      const moving = this.isMoving(p);
+      const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
+      const planAngle = !moving && !!cmd && (cmd.aimZone !== undefined || ((cmd.kind === "hold" || cmd.kind === "peek") && cmd.targetZone !== undefined));
+      let target: { x: number; y: number } | null = null;
+      let src: GazeSource = moving ? "route" : "hold";
+      const seen = (this.lastSight.get(p.id) ?? []).map((id) => byId.get(id)).filter((e): e is SimPlayer => !!e && e.alive);
+      if (seen.length) {
+        const e = seen.reduce((m, q) => (dist3(q.position, p.position) < dist3(m.position, p.position) ? q : m));
+        target = e.position; src = "enemy";
+      } else {
+        // Threat points from the team's belief: a last-seen enemy spot is worth the freshness of
+        // that sighting, 2^(−age / info half-life) (the duel model's info weight); a believed zone
+        // (diffused from sightings and contacts) is worth its threat level at its standing point.
+        const b = belief[p.side];
+        const cands: Array<{ pos: { x: number; y: number; z: number }; w: number }> = [];
+        for (const eb of b?.enemyPositionBeliefs ?? []) {
+          const fresh = Math.pow(2, -eb.staleness / this.cfg.infoWindowMs);
+          for (const h of eb.hypotheses) cands.push({ pos: h.position, w: h.weight * fresh });
+        }
+        if (!planAngle) for (const t of b?.threatZones ?? []) if (this.spatial.getZone(t.zoneId)) cands.push({ pos: this.spatial.standPosition(t.zoneId), w: t.threatLevel });
+        // A holder keeps the plan's angle unless the team has a FRESH read on an enemy (worth ≥ ½,
+        // the same threshold at which a call counts as a pre-aimed swing in the duel model).
+        const minW = planAngle ? 0.5 : 0;
+        const ranked = cands
+          .filter((c) => c.w > minW && dist3(c.pos, p.position) <= PERCEPTION_PARAMS.vision.maxViewDistanceUnits && dist3(c.pos, p.position) > 1)
+          .sort((x, y) => y.w - x.w || dist3(x.pos, p.position) - dist3(y.pos, p.position))
+          .slice(0, 8);
+        for (const c of ranked) {
+          if (!this.lineOf(p, { position: c.pos })) continue;
+          if (taken.has(spotKey(p.side, c.pos)) || watched(p.side, p, c.pos)) continue;
+          taken.add(spotKey(p.side, c.pos));
+          target = c.pos; src = "threat"; break;
+        }
+      }
+      if (target) this.gazeAt.set(p.id, { x: target.x, y: target.y, z: (target as { z?: number }).z ?? p.position.z });
+      const desired = target ? { x: target.x - p.position.x, y: target.y - p.position.y } : p.facing;
+      const prev = before.get(p.id) ?? p.facing;
+      p.facing = rotateToward(prev, desired, turnRateRadPerMs(p.skills) * dtMs);
+      source.set(p.id, src);
+    }
+  }
 
   /**
    * Where a thrown / placed ability aimed at a zone lands: the point of that zone's floor nearest
@@ -1111,7 +1203,15 @@ export class RoundSimulator {
     // spike left every retaker arriving from outside the cone: the retaker saw first in 85% of
     // post-plant duels (2026-11-23 measurement, ENGINE_TRUTH.md §4).
     const spike = this.spikeWatched;
+    if (spike && p.side === "attack" && cmd?.aimZone === spike.zoneId && this.cfg.gaze) {
+      const entry = this.guardEntryFor(p, spike.zoneId);
+      const at = entry ? this.peekPoint(p, entry, "defender-spawn") : spike.position;
+      const ex = at.x - p.position.x, ey = at.y - p.position.y;
+      if (ex !== 0 || ey !== 0) { p.facing = { x: ex, y: ey }; return; }
+    }
     if (spike && p.side === "attack" && cmd?.aimZone === spike.zoneId) {
+      // (gaze model off) the calibrated rule: watch the retake entry from defender-spawn, and look
+      // between it and the spike when both fit in the field of view
       const sx = spike.position.x - p.position.x, sy = spike.position.y - p.position.y;
       const entry = this.retakeEntryOf(spike.zoneId, originOf);
       const ez = entry ? this.spatial.getZone(entry) : undefined;
@@ -1132,17 +1232,60 @@ export class RoundSimulator {
     if (!hintZone || hintZone === p.zoneId) return;
     const z = this.spatial.getZone(hintZone);
     if (!z) return;
-    const dx = z.position.x - p.position.x, dy = z.position.y - p.position.y;
+    // gaze model: crosshair on the peek point of the watched zone, not its centre (peekPoint)
+    const at = this.cfg.gaze ? this.peekPoint(p, hintZone, originOf[p.side === "attack" ? "defense" : "attack"]) : z.position;
+    const dx = at.x - p.position.x, dy = at.y - p.position.y;
     if (dx === 0 && dy === 0) return;
     p.facing = { x: dx, y: dy };
   }
+
+  /**
+   * Which way into the spike's zone a post-plant guard watches. Candidates: the zones joined to the
+   * spike's zone (and the zone itself). Each is weighted by how likely the retake comes through it —
+   *   w(z) = t_min / t_via(z) + belief threat level of z,
+   * t_via(z) = travel time defender-spawn → z → spike zone, t_min the shortest such time (the
+   * nearer route is the likelier one) — plus what the team believes (sightings, sounds). A guard
+   * takes the heaviest entry it has a clear line to that no teammate has already taken this tick
+   * (teammates split the entries rather than all watching one). None in sight: the spike.
+   * Looking only at the spike let the retaker see first in 85% of post-plant duels, and with gaze
+   * as state the guard was 40°+ off the retaker in 4 duels of 10 when it watched one entry only
+   * (2026-11-23, ENGINE_TRUTH.md §4–§8).
+   */
+  private guardEntryFor(p: SimPlayer, spikeZone: string): string | null {
+    const key = `entries>${spikeZone}`;
+    let entries = this.guardEntryCache.get(key);
+    if (!entries) {
+      const from = this.spatial.getZone("defender-spawn") ? "defender-spawn" : null;
+      const zones = this.spatial.zones.map((z) => z.id).filter((z) => z === spikeZone || this.adjacent(z, spikeZone));
+      const via = zones.map((z) => {
+        if (!from) return { zone: z, t: 1 };
+        const a = this.spatial.shortestTravelTimeMs(from, z, "run"), b = z === spikeZone ? 0 : this.spatial.shortestTravelTimeMs(z, spikeZone, "run");
+        return { zone: z, t: a == null || b == null ? Infinity : a + b + 1 };
+      });
+      const tmin = Math.min(...via.map((v) => v.t));
+      entries = via.map((v) => ({ zone: v.zone, w: Number.isFinite(v.t) ? tmin / v.t : 0 }));
+      this.guardEntryCache.set(key, entries);
+    }
+    const threat = new Map((this.beliefNow.attack?.threatZones ?? []).map((t) => [t.zoneId, t.threatLevel]));
+    const ranked = entries.map((e) => ({ zone: e.zone, w: e.w + (threat.get(e.zone) ?? 0) })).sort((a, b) => b.w - a.w || (a.zone < b.zone ? -1 : 1));
+    for (const e of ranked) {
+      if (this.guardTaken.get(e.zone) && this.guardTaken.get(e.zone) !== p.id) continue;
+      if (!this.lineOf(p, { position: this.spatial.standPosition(e.zone), zoneId: e.zone })) continue;
+      this.guardTaken.set(e.zone, p.id);
+      return e.zone;
+    }
+    return null;
+  }
+  private readonly guardEntryCache = new Map<string, Array<{ zone: string; w: number }>>();
+  /** entry zone → the guard that took it this tick. */
+  private readonly guardTaken = new Map<string, string>();
+  /** Each side's latest belief (for gaze and the guards' entries). */
+  private beliefNow: Record<Side, BeliefState | null> = { attack: null, defense: null };
 
   /** The zone the defenders enter `zoneId` through on a retake: the predecessor on defender-spawn → zone. */
   private retakeEntryOf(zoneId: string, originOf: Record<Side, string>): string | undefined {
     const key = `retake>${zoneId}`;
     if (!this.retakeEntry.has(key)) {
-      // where a retake comes from: the defenders' spawn side (every map has a "defender-spawn"),
-      // else where the defenders started this round
       const from = this.spatial.getZone("defender-spawn") ? "defender-spawn" : originOf.defense;
       const r = from && from !== zoneId ? this.spatial.findPath(from, zoneId) : null;
       this.retakeEntry.set(key, r && r.path.length >= 2 ? r.path[r.path.length - 2] : undefined);
@@ -1150,6 +1293,37 @@ export class RoundSimulator {
     return this.retakeEntry.get(key);
   }
   private readonly retakeEntry = new Map<string, string | undefined>();
+
+  /**
+   * Where a holder watching a zone puts its crosshair: the PEEK POINT — of the zone's floor that the
+   * holder can see (measured node-to-node sight), the point nearest to where the enemy comes from
+   * (its origin zone's standing point): the edge an enemy entering the holder's view crosses first.
+   * Without a sight table, or with nothing of the zone in view, the zone's standing point.
+   * Crosshair height on it is the player's crosshairPlacement (combat model).
+   */
+  private peekPoint(p: SimPlayer, zoneId: string, enemyFrom: string | undefined): { x: number; y: number; z: number } {
+    const nav = this.spatial.nav;
+    const fallback = this.spatial.standPosition(zoneId);
+    if (!nav || !nav.hasVisibility) return fallback;
+    const at = nav.locateInZone(p.position, p.zoneId);
+    if (at === null) return fallback;
+    const key = `${at}|${zoneId}|${enemyFrom ?? ""}`;
+    let n = this.peekCache.get(key);
+    if (n === undefined) {
+      const ref = enemyFrom && this.spatial.getZone(enemyFrom) ? this.spatial.standPosition(enemyFrom) : fallback;
+      let best = -1, bestD = Infinity;
+      for (const c of nav.zoneNodes(zoneId)) {
+        if (!nav.nodesVisible(at, c)) continue;
+        const q = nav.nodePosition(c);
+        const d = Math.hypot(q.x - ref.x, q.y - ref.y, q.z - ref.z);
+        if (d < bestD) { bestD = d; best = c; }
+      }
+      n = best;
+      this.peekCache.set(key, n);
+    }
+    return n >= 0 ? nav.nodePosition(n) : fallback;
+  }
+  private readonly peekCache = new Map<string, number>();
 
   /** The zone an enemy would enter this player's zone from: the predecessor on enemy-origin → here. */
   private defaultHoldZone(p: SimPlayer, originOf: Record<Side, string>): string | undefined {
@@ -1285,8 +1459,8 @@ export class RoundSimulator {
           aAngleMs = aWatched ? smokeExitDelayMs(speed) : 0;
           bAngleMs = bWatched ? smokeExitDelayMs(speed) : 0;
         }
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW, aAngleMs);
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW, bAngleMs);
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW, aAngleMs, b);
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW, bAngleMs, a);
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
         const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
@@ -1335,6 +1509,12 @@ export class RoundSimulator {
             angleDelayMs: { attacker: atkP === a ? aAngleMs : bAngleMs, defender: defP === a ? aAngleMs : bAngleMs },
             crossfire: { attacker: (atkP === a ? aCross : bCross) > 0, defender: (defP === a ? aCross : bCross) > 0 },
             info: { attacker: atkP === a ? aInfo : bInfo, defender: defP === a ? aInfo : bInfo },
+            aimOffsetDeg: { attacker: offsetDeg(atkP.facing, atkP.position, defP.position), defender: offsetDeg(defP.facing, defP.position, atkP.position) },
+            gaze: { attacker: this.gazeOf.get(atkP.id) ?? "route", defender: this.gazeOf.get(defP.id) ?? "route" },
+            readyMs: {
+              attacker: readyDelayMs(atkP === a ? ca : cb, COMBAT_PARAMS, this.cfg.combatCalibration ?? {}, dm),
+              defender: readyDelayMs(defP === a ? ca : cb, COMBAT_PARAMS, this.cfg.combatCalibration ?? {}, dm),
+            },
             attackerFlashedMs: abilityEngine.blindRemainingMs(atkP.id, state.elapsedMs),
             defenderFlashedMs: abilityEngine.blindRemainingMs(defP.id, state.elapsedMs),
             ...(aFrom !== null || bFrom !== null
@@ -1402,7 +1582,7 @@ export class RoundSimulator {
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0, angleMs = 0): Combatant {
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0, angleMs = 0, opponent?: SimPlayer): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
     const stationary = !this.isMoving(p);
@@ -1438,6 +1618,9 @@ export class RoundSimulator {
         seesEnemyAtMs,
         flashBlindMs: blindMs,
         behindCover: 0,
+        // Gaze: how far its crosshair is off the enemy when the fight starts (Fitts aim time in the
+        // combat model; crosshair placement adds the height error). Replaces the pre-aim flag for timing.
+        ...(opponent && this.cfg.gaze ? { aimOffsetDeg: offsetDeg(p.facing, p.position, opponent.position) } : {}),
       },
     };
   }

@@ -82,6 +82,13 @@ export interface EngagePosture {
   readonly flashBlindMs: number;
   /** Cover/angle disadvantage against this combatant in [0,1]; reduces incoming hit chance. */
   readonly behindCover: number;
+  /**
+   * Angle (degrees) between where this combatant's crosshair points and the enemy when it first
+   * perceives it — the gaze error. When given, the time to the first shot is perception (reaction)
+   * plus a Fitts aim time over this angle (skills.aimTimeMs), and `preAim` is ignored for timing:
+   * a pre-aimed holder is simply one whose offset is ≈ 0. Absent → the legacy flag model.
+   */
+  readonly aimOffsetDeg?: number;
 }
 
 export const OPEN_POSTURE: EngagePosture = {

@@ -194,6 +194,12 @@ export interface TrackFrame {
     readonly sees?: readonly PlayerId[];
     /** True while the player is blinded by a flash (it then sees nobody). Absent otherwise. */
     readonly blind?: true;
+    /** Gaze (unit vector, horizontal): where the player's crosshair points this tick. Living players. */
+    readonly facing?: { readonly x: number; readonly y: number };
+    /** What it is looking at: an enemy it sees, a believed threat, its held angle, or the way ahead. */
+    readonly gaze?: "enemy" | "threat" | "hold" | "route";
+    /** The point it chose to look at (gaze "enemy" / "threat"; gaze model only). */
+    readonly look?: { readonly x: number; readonly y: number; readonly z: number };
   }>;
 }
 
@@ -309,6 +315,12 @@ export interface EngagementRecord {
   readonly info?: { readonly attacker: boolean; readonly defender: boolean };
   readonly attackerFlashedMs: number;
   readonly defenderFlashedMs: number;
+  /** Gaze error (deg) each side's crosshair had off the other at first contact (Fitts aim offset). */
+  readonly aimOffsetDeg?: { readonly attacker: number; readonly defender: number };
+  /** When each side could first fire (ms after contact; combat-engine readyDelayMs). */
+  readonly readyMs?: { readonly attacker: number; readonly defender: number };
+  /** What each side was looking at (gaze source) at first contact. */
+  readonly gaze?: { readonly attacker: string; readonly defender: string };
   /**
    * Set when a side came out of a vision blocker into this duel (present only then): it crossed a
    * smoke-cut sightline on the hop that started the duel, so it had no sight until it was out.
@@ -444,6 +456,16 @@ export interface SimConfig {
   readonly traceCommands: boolean;
   /** Collect report-only movement / crowd measurements (RoundResult.stats). Off by default; passive. */
   readonly collectStats?: boolean;
+  /**
+   * Gaze model (gaze.ts, docs/ENGINE_TRUTH.md §8): facing is state that turns at a bounded rate
+   * toward what the player chooses to watch (an enemy it sees > a believed threat no teammate
+   * watches > the plan's angle / the way ahead); holders put the crosshair on the watched zone's
+   * peek point; post-plant guards split the spike zone's entries; and the time to the first shot is
+   * perception + Fitts aim time over the crosshair's angle off the enemy (combat-engine
+   * aimOffsetDeg) instead of the pre-aim flag. OFF by default until the engine is recalibrated with
+   * it (measured effect: §8).
+   */
+  readonly gaze?: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */

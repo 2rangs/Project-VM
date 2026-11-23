@@ -4,8 +4,32 @@ import type { CombatCalibration, CombatParams } from "./params.js";
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * clamp(t, 0, 1);
 
+/** Angular width (deg) of a body at a range — the W of the Fitts term. */
+export function bodyAngularWidthDeg(distanceMeters: number, p: CombatParams): number {
+  return (2 * Math.atan(p.aim.bodyHalfWidthM / Math.max(0.5, distanceMeters)) * 180) / Math.PI;
+}
+
+/** The crosshair's effective distance (deg) from the target: gaze error ⊕ height error from placement. */
+export function effectiveAimOffsetDeg(offsetDeg: number, crosshairPlacement: number, p: CombatParams): number {
+  const v = p.aim.placementSigmaDeg * (1 - clamp(crosshairPlacement, 0, 1));
+  return Math.hypot(Math.max(0, offsetDeg), v);
+}
+
+/** Fitts aim time (ms): a + b(aim) · log2(1 + D/W). D = 0 → a; each doubling of D/W adds ≈ b. */
+export function aimTimeMs(offsetDeg: number, widthDeg: number, aim: number, p: CombatParams): number {
+  const b = lerp(p.aim.fittsBSlowMs, p.aim.fittsBFastMs, aim);
+  return p.aim.fittsA + b * Math.log2(1 + Math.max(0, offsetDeg) / Math.max(1e-3, widthDeg));
+}
+
 /** When (ms after t0) a combatant can first pull the trigger. */
-export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}): number {
+export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}, distanceMeters = 15): number {
+  if (c.posture.aimOffsetDeg !== undefined) {
+    const perception = lerp(p.aim.perceptionSlowMs, p.aim.perceptionFastMs, c.skills.reaction);
+    const d = effectiveAimOffsetDeg(c.posture.aimOffsetDeg, c.skills.crosshairPlacement, p);
+    const aimMs = aimTimeMs(d, bodyAngularWidthDeg(distanceMeters, p), c.skills.aim, p);
+    const flash = c.posture.flashBlindMs > 0 ? c.posture.flashBlindMs + p.reaction.flashReactionPenaltyMs : 0;
+    return c.posture.seesEnemyAtMs + (perception + aimMs) * (cal.reactionScale ?? 1) + flash;
+  }
   const base = c.posture.preAim
     ? p.reaction.preAimMs
     : lerp(p.reaction.slowMs, p.reaction.fastMs, c.skills.reaction);
@@ -52,7 +76,11 @@ export function hitChance(
   chance *= lerp(0.5, 1.1, shooter.skills.aim);
   if (isFirstShot) {
     chance += lerp(0, 0.1, shooter.skills.firstBulletAccuracy);
-    if (shooter.posture.preAim) chance += p.accuracy.preAimFirstShotBonus;
+    // crosshair already on the body when the fight starts (gaze model), or the legacy pre-aim flag
+    const onTarget = shooter.posture.aimOffsetDeg !== undefined
+      ? effectiveAimOffsetDeg(shooter.posture.aimOffsetDeg, shooter.skills.crosshairPlacement, p) <= bodyAngularWidthDeg(distanceMeters, p) / 2
+      : shooter.posture.preAim;
+    if (onTarget) chance += p.accuracy.preAimFirstShotBonus;
   }
 
   // range: falloff beyond the weapon's comfortable range (SMGs suffer more than rifles).
