@@ -90,10 +90,10 @@ Done (commits 8050d2f, 763d174, c6bd559, then the wip/docs commits):
 - Unscheduled lobby `screens/home` deleted; career loading uses the match-day `LoadingScreen`.
 - Verified: `packages/career` vitest 49/49, desktop typecheck, build, `test:unit` 58/58.
 
-Not verified at the time of writing: `test:e2e:career` (rewritten for the whole loop: sign on a
-one-year contract → training → lineup with the signing → engine series → engine background sim →
-season out → contract expiry → load). The first run failed at the first match day (a bid question
-stopped Continue; the test now answers it); the re-run was queued behind other sessions on
-heavy-run.sh. `test:e2e:club` (now starts a career) and the edited `test:e2e` / `test:e2e:series`
-were not re-run. Known gaps: below five players after expiries the lineup cannot be confirmed
-(no Home warning); the manager's squad is never auto-refilled.
+Verified (heavy-run.sh): `test:e2e:career` passes — "signed rion, played 0–2 on 2026-02-06 with a
+chosen five; 5 engine-played AI series; season 2026 played out, contract expired, season 2027
+open" (first run failed at the first match day because a bid question stopped Continue; the test
+now answers it); `test:e2e:club` (starts a career first) passes. Not re-run: the edited
+`test:e2e` and `test:e2e:series` (start-menu edits; `test:e2e` no longer has a club step), the
+full match-runner suite. Known gaps: below five players after expiries the lineup cannot be
+confirmed (no Home warning); the manager's squad is never auto-refilled.
