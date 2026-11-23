@@ -34,6 +34,9 @@ async function main() {
     env: {
       ...process.env,
       PV_TRACES_DIR: path.join(appDir, 'test/fixtures/traces'),
+      // optional local assets (real map mesh, banners) are never present in CI: keep runs independent of them
+      PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
+      PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
@@ -61,9 +64,14 @@ async function main() {
 
   // run a stub match (separate process → IPC → replay) and confirm it loads
   await page.getByTestId('run-match').click();
+  // the wait is covered by the match load screen: map name, both line-ups, progress
+  await page.waitForSelector('[data-testid="loading-screen"][data-layout="match"]', { timeout: 15000 });
+  assert.equal(await page.locator('[data-testid="matchload-ally"] li').count(), 5, 'load screen lists our five');
+  assert.equal(await page.locator('[data-testid="matchload-enemy"] li').count(), 5, 'load screen lists their five');
   // match-runner subprocess (npx tsx) + full map can take a while to cold-start
   await page.waitForSelector('.rv-src-simulated', { timeout: 90000 });
   assert.ok(/SIMULATED/.test(await page.locator('.rv-src-simulated').innerText()), 'simulated replay loaded');
+  assert.equal(await page.locator('[data-testid="loading-screen"]').count(), 0, 'the load screen closes once the match is on screen');
   // real match scoreboard rendered (first-to-13)
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 5000 });
   const sb = await page.getByTestId('scoreboard').innerText();
@@ -236,8 +244,15 @@ async function main() {
   // English: the decisions view is fully localised (revision reasons stay engine English in both).
   await page.getByTestId('nav-about').click();
   await page.getByTestId('lang-en').click();
+  // loading banner: the player's choice is used by the next load screen
+  await page.waitForSelector('[data-testid="banner-picker"]', { timeout: 5000 });
+  assert.ok(await page.locator('[data-testid="banner-picker"] [role="radio"]').count() >= 4, 'built-in banners are offered');
+  await page.getByTestId('banner-prism').click();
+  assert.equal(await page.getByTestId('banner-prism').getAttribute('aria-checked'), 'true', 'banner choice is selected');
+  assert.equal(await page.locator('[data-testid="banner-sound"]').count(), 0, 'no sound settings without a banner pack that has sounds');
   await page.getByTestId('nav-match-day').click();
   await page.getByTestId('run-match').click();
+  await page.waitForSelector('[data-testid="loading-screen"][data-banner="prism"]', { timeout: 15000 });
   await page.waitForSelector('[data-testid="scoreboard"]', { timeout: 90000 });
   await page.getByTestId('tab-review').click();
   await page.waitForSelector('[data-testid="rev-decisions-panel"]', { timeout: 10000 });
@@ -251,6 +266,7 @@ async function main() {
   // restore the default language (it persists in localStorage across launches)
   await page.getByTestId('nav-about').click();
   await page.getByTestId('lang-ko').click();
+  await page.getByTestId('banner-standard').click();
 
   await app.close();
   console.log('E2E OK — screenshots in apps/desktop/docs/');

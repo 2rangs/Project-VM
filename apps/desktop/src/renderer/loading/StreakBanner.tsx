@@ -90,11 +90,11 @@ export function useLocalBanners(): LocalBannerPack[] {
   return useSyncExternalStore((l) => { packSubs.add(l); return () => { packSubs.delete(l); }; }, () => packs ?? EMPTY, () => packs ?? EMPTY);
 }
 const EMPTY: LocalBannerPack[] = [];
-function mediaUrl(pack: string, file: string): Promise<string | null> {
+export function mediaUrl(pack: string, file: string): Promise<string | null> {
   const key = `${pack}/${file}`;
   let p = urlCache.get(key);
   if (!p) {
-    const type = /\.(webm)$/i.test(file) ? 'video/webm' : /\.(mp4)$/i.test(file) ? 'video/mp4' : /\.gif$/i.test(file) ? 'image/gif' : /\.webp$/i.test(file) ? 'image/webp' : /\.png$/i.test(file) ? 'image/png' : 'image/jpeg';
+    const type = /\.mp3$/i.test(file) ? 'audio/mpeg' : /\.ogg$/i.test(file) ? 'audio/ogg' : /\.wav$/i.test(file) ? 'audio/wav' : /\.(webm)$/i.test(file) ? 'video/webm' : /\.(mp4)$/i.test(file) ? 'video/mp4' : /\.gif$/i.test(file) ? 'image/gif' : /\.webp$/i.test(file) ? 'image/webp' : /\.png$/i.test(file) ? 'image/png' : 'image/jpeg';
     p = bridge.loadBannerFile(pack, file).then((bytes) => (bytes ? URL.createObjectURL(new Blob([bytes as BlobPart], { type })) : null)).catch(() => null);
     urlCache.set(key, p);
   }
@@ -122,6 +122,19 @@ function LayeredBanner({ pack, stage, size }: { pack: LocalBannerPack; stage: Ba
     return () => clearInterval(id);
   }, [stage]);
   const n = stage === 'loop' ? loopN : stage;
+  // opt-in step sound (off by default; settings in the banner picker)
+  const sound = useBannerSound();
+  useEffect(() => {
+    const file = pack.sounds?.[n];
+    if (!sound.on || !file) return;
+    let alive = true; let audio: HTMLAudioElement | null = null;
+    void mediaUrl(pack.id, file).then((u) => {
+      if (!alive || !u) return;
+      audio = new Audio(u); audio.volume = sound.volume;
+      void audio.play().catch(() => { /* autoplay refused: stay silent */ });
+    });
+    return () => { alive = false; audio?.pause(); };
+  }, [n, sound.on, sound.volume, pack]);
   const pips = Array.from({ length: 5 }, (_, i) => { const a = (-90 + (i - 2) * 22) * Math.PI / 180; return { x: 50 + Math.cos(a) * 46, y: 52 + Math.sin(a) * 46, on: i < n }; });
   return (
     <span className="pvk-layered" style={{ width: size, height: size }} data-stage={n}>
@@ -153,9 +166,20 @@ function LocalBanner({ pack, stage, size }: { pack: LocalBannerPack; stage: Bann
     : <img className="pvk-local" src={url} style={style} alt="" data-stage={want} />;
 }
 
+/** The VCT logo (gitignored apps/desktop/assets/banners/vct/vct_emblem.png), or null when it is not installed. */
+export const VCT_PACK = 'vct';
+function VctLogo({ size, stage }: { size: number; stage: BannerStage }) {
+  const [url, setUrl] = useState<string | null | undefined>(undefined);
+  useEffect(() => { let alive = true; void mediaUrl(VCT_PACK, 'vct_emblem.png').then((u) => { if (alive) setUrl(u); }); return () => { alive = false; }; }, []);
+  if (url === undefined) return <span style={{ display: 'block', width: size, height: size }} />; // still reading: reserve the space
+  if (url === null) return <StreakBanner variant="standard" stage={stage} size={size} />; // not installed: our own emblem
+  return <img src={url} className="pvk-vct" style={{ width: size, height: size }} alt="VCT" data-testid="vct-logo" />;
+}
+
 /** The banner for a loading screen: a built-in variant, or one of the user's local packs. */
 export function LoadingBanner({ variant, stage, size = 112 }: { variant: string; stage: BannerStage; size?: number }) {
   const local = useLocalBanners();
+  if (variant === 'vct') return <VctLogo size={size} stage={stage} />;
   if (variant.startsWith(LOCAL_PREFIX)) {
     const pack = local.find((p) => p.id === variant.slice(LOCAL_PREFIX.length));
     if (pack?.layers) return <LayeredBanner pack={pack} stage={stage} size={size} />;
@@ -169,8 +193,8 @@ export function LoadingBanner({ variant, stage, size = 112 }: { variant: string;
 const KEY = 'pv-loading-banner';
 const subs = new Set<() => void>();
 function read(): string {
-  try { const v = globalThis.localStorage?.getItem(KEY); if (v && ((BANNERS as readonly string[]).includes(v) || v.startsWith(LOCAL_PREFIX))) return v; } catch { /* no storage */ }
-  return 'standard';
+  try { const v = globalThis.localStorage?.getItem(KEY); if (v && (v === 'vct' || (BANNERS as readonly string[]).includes(v) || v.startsWith(LOCAL_PREFIX))) return v; } catch { /* no storage */ }
+  return 'vct';
 }
 let current: string = read();
 /** `id` is a built-in BannerId or `local:<pack>`. */
@@ -181,4 +205,25 @@ export function setLoadingBanner(id: string): void {
 }
 export function useLoadingBanner(): string {
   return useSyncExternalStore((l) => { subs.add(l); return () => { subs.delete(l); }; }, () => current, () => current);
+}
+
+// ── banner sound (opt-in) ──────────────────────────────────────────────────────────────────
+const SOUND_KEY = 'pv-loading-banner-sound';
+export interface BannerSound { on: boolean; volume: number }
+function readSound(): BannerSound {
+  try {
+    const v = JSON.parse(globalThis.localStorage?.getItem(SOUND_KEY) ?? 'null') as Partial<BannerSound> | null;
+    if (v && typeof v === 'object') return { on: v.on === true, volume: typeof v.volume === 'number' ? Math.min(1, Math.max(0, v.volume)) : 0.3 };
+  } catch { /* no storage or bad value */ }
+  return { on: false, volume: 0.3 };
+}
+let sound: BannerSound = readSound();
+const soundSubs = new Set<() => void>();
+export function setBannerSound(patch: Partial<BannerSound>): void {
+  sound = { ...sound, ...patch, volume: Math.min(1, Math.max(0, patch.volume ?? sound.volume)) };
+  try { globalThis.localStorage?.setItem(SOUND_KEY, JSON.stringify(sound)); } catch { /* no storage */ }
+  for (const s of soundSubs) s();
+}
+export function useBannerSound(): BannerSound {
+  return useSyncExternalStore((l) => { soundSubs.add(l); return () => { soundSubs.delete(l); }; }, () => sound, () => sound);
 }

@@ -258,25 +258,29 @@ ipcMain.handle(IPC.mapMesh, async (_e, mapId: string): Promise<Uint8Array | null
 const BANNER_FILE = /^([1-6])\.(webm|mp4|png|webp|gif|jpg|jpeg)$/i;
 // layered kill banners (frame / ring / emblem / pip images, as composited in game)
 const BANNER_LAYER = /(frame|ring|emblem|pip)[^/]*\.(png|webp)$/i;
+// optional per-step sounds of a layered banner (kill1.mp3 … kill5.mp3)
+const BANNER_SOUND = /^kill([1-6])\.(mp3|ogg|wav)$/i;
 function bannerDirs(): string[] {
   return process.env.PV_BANNER_ASSETS_DIR
     ? [process.env.PV_BANNER_ASSETS_DIR]
     : [path.join(app.getAppPath(), 'assets', 'banners'), path.join(dirname, '..', '..', 'assets', 'banners')];
 }
-ipcMain.handle(IPC.bannerList, async (): Promise<Array<{ id: string; files: Record<number, string>; layers?: Record<string, string> }>> => {
+ipcMain.handle(IPC.bannerList, async (): Promise<Array<{ id: string; files: Record<number, string>; layers?: Record<string, string>; sounds?: Record<number, string> }>> => {
   for (const dir of bannerDirs()) {
     try {
-      const packs: Array<{ id: string; files: Record<number, string>; layers?: Record<string, string> }> = [];
+      const packs: Array<{ id: string; files: Record<number, string>; layers?: Record<string, string>; sounds?: Record<number, string> }> = [];
       for (const ent of await readdir(dir, { withFileTypes: true })) {
         if (!ent.isDirectory() || !/^[\w .-]{1,48}$/.test(ent.name)) continue;
         const files: Record<number, string> = {};
         const layers: Record<string, string> = {};
+        const sounds: Record<number, string> = {};
         for (const f of await readdir(path.join(dir, ent.name))) {
           const m = BANNER_FILE.exec(f); if (m) files[Number(m[1])] = f;
           const l = BANNER_LAYER.exec(f); if (l) layers[l[1].toLowerCase()] = f;
+          const snd = BANNER_SOUND.exec(f); if (snd) sounds[Number(snd[1])] = f;
         }
         const layered = ['frame', 'ring', 'emblem', 'pip'].every((k) => layers[k]);
-        if (Object.keys(files).length > 0 || layered) packs.push({ id: ent.name, files, ...(layered ? { layers } : {}) });
+        if (Object.keys(files).length > 0 || layered) packs.push({ id: ent.name, files, ...(layered ? { layers } : {}), ...(Object.keys(sounds).length ? { sounds } : {}) });
       }
       return packs.sort((a, b) => a.id.localeCompare(b.id));
     } catch { /* try the next location */ }
@@ -285,7 +289,7 @@ ipcMain.handle(IPC.bannerList, async (): Promise<Array<{ id: string; files: Reco
 });
 ipcMain.handle(IPC.bannerFile, async (_e, pack: string, file: string): Promise<Uint8Array | null> => {
   const p = path.basename(String(pack)); const f = path.basename(String(file));
-  if (!/^[\w .-]{1,48}$/.test(p) || !(BANNER_FILE.test(f) || BANNER_LAYER.test(f))) return null;
+  if (!/^[\w .-]{1,48}$/.test(p) || !(BANNER_FILE.test(f) || BANNER_LAYER.test(f) || BANNER_SOUND.test(f))) return null;
   for (const dir of bannerDirs()) {
     try { return new Uint8Array(await readFile(path.join(dir, p, f))); } catch { /* try the next location */ }
   }
