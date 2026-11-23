@@ -427,3 +427,5 @@
 .mdx-loadchip.center { left: 50%; top: 14px; transform: translateX(-50%); }
 .lg-src { padding: 0 6px; border: 1px solid var(--mx-line); color: var(--mx-dim); }
 .lg-src.approx { border-style: dashed; color: var(--mx-sound); }
+
+.nav-ico .mdx-icon { vertical-align: -3px; }

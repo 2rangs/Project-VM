@@ -15,6 +15,10 @@ export function BannerPicker() {
     <div className="pvl-picker" data-testid="banner-picker">
       <div className="pvl-picker-head"><b>{t('load.banner.title')}</b><span>{t('load.banner.hint')}</span></div>
       <div className="pvl-picker-grid" role="radiogroup" aria-label={t('load.banner.title')}>
+        <button role="radio" aria-checked={current === 'vct'} className={current === 'vct' ? 'on' : ''} onClick={() => setLoadingBanner('vct')} data-testid="banner-vct">
+          <LoadingBanner variant="vct" stage={5} size={84} />
+          <span>VCT</span>
+        </button>
         {BANNERS.map((id) => (
           <button key={id} role="radio" aria-checked={current === id} className={current === id ? 'on' : ''} onClick={() => setLoadingBanner(id)} data-testid={`banner-${id}`}>
             <StreakBanner variant={id} stage={current === id ? 'loop' : 5} size={84} />

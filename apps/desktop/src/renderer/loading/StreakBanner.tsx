@@ -90,7 +90,7 @@ export function useLocalBanners(): LocalBannerPack[] {
   return useSyncExternalStore((l) => { packSubs.add(l); return () => { packSubs.delete(l); }; }, () => packs ?? EMPTY, () => packs ?? EMPTY);
 }
 const EMPTY: LocalBannerPack[] = [];
-function mediaUrl(pack: string, file: string): Promise<string | null> {
+export function mediaUrl(pack: string, file: string): Promise<string | null> {
   const key = `${pack}/${file}`;
   let p = urlCache.get(key);
   if (!p) {
@@ -166,9 +166,20 @@ function LocalBanner({ pack, stage, size }: { pack: LocalBannerPack; stage: Bann
     : <img className="pvk-local" src={url} style={style} alt="" data-stage={want} />;
 }
 
+/** The VCT logo (gitignored apps/desktop/assets/banners/vct/vct_emblem.png), or null when it is not installed. */
+export const VCT_PACK = 'vct';
+function VctLogo({ size, stage }: { size: number; stage: BannerStage }) {
+  const [url, setUrl] = useState<string | null | undefined>(undefined);
+  useEffect(() => { let alive = true; void mediaUrl(VCT_PACK, 'vct_emblem.png').then((u) => { if (alive) setUrl(u); }); return () => { alive = false; }; }, []);
+  if (url === undefined) return <span style={{ display: 'block', width: size, height: size }} />; // still reading: reserve the space
+  if (url === null) return <StreakBanner variant="standard" stage={stage} size={size} />; // not installed: our own emblem
+  return <img src={url} className="pvk-vct" style={{ width: size, height: size }} alt="VCT" data-testid="vct-logo" />;
+}
+
 /** The banner for a loading screen: a built-in variant, or one of the user's local packs. */
 export function LoadingBanner({ variant, stage, size = 112 }: { variant: string; stage: BannerStage; size?: number }) {
   const local = useLocalBanners();
+  if (variant === 'vct') return <VctLogo size={size} stage={stage} />;
   if (variant.startsWith(LOCAL_PREFIX)) {
     const pack = local.find((p) => p.id === variant.slice(LOCAL_PREFIX.length));
     if (pack?.layers) return <LayeredBanner pack={pack} stage={stage} size={size} />;
@@ -182,8 +193,8 @@ export function LoadingBanner({ variant, stage, size = 112 }: { variant: string;
 const KEY = 'pv-loading-banner';
 const subs = new Set<() => void>();
 function read(): string {
-  try { const v = globalThis.localStorage?.getItem(KEY); if (v && ((BANNERS as readonly string[]).includes(v) || v.startsWith(LOCAL_PREFIX))) return v; } catch { /* no storage */ }
-  return 'standard';
+  try { const v = globalThis.localStorage?.getItem(KEY); if (v && (v === 'vct' || (BANNERS as readonly string[]).includes(v) || v.startsWith(LOCAL_PREFIX))) return v; } catch { /* no storage */ }
+  return 'vct';
 }
 let current: string = read();
 /** `id` is a built-in BannerId or `local:<pack>`. */

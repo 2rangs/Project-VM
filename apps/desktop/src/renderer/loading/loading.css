@@ -140,3 +140,8 @@
 .pvl-sound input[type="checkbox"] { accent-color: #4be3c9; }
 .pvl-sound input[type="range"] { width: 120px; accent-color: #ece8e1; }
 .pvl-sound b { font-variant-numeric: tabular-nums; min-width: 36px; }
+
+/* the VCT logo as the loading emblem: it breathes while loading */
+.pvk-vct { display: block; object-fit: contain; animation: pvk-vct 1.8s ease-in-out infinite; }
+@keyframes pvk-vct { 0%, 100% { opacity: .75; transform: scale(.96); } 50% { opacity: 1; transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .pvk-vct { animation: none; } }

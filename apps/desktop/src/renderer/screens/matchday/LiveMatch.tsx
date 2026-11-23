@@ -351,7 +351,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       )}
       {session?.busy && !session.ordersOpen && <div className="mdx-loadchip center"><LoadingInline label={t('load.round', { n: session.state.roundNumber })} testId="loading-round" /></div>}
       {toast && <div className="mdx-toast" role="status">{toast}</div>}
-      {session?.error && <div className="mdx-toast err" role="alert">⚠ {session.error}</div>}
+      {session?.error && <div className="mdx-toast err" role="alert"><Icon name="warn" size={12} /> {session.error}</div>}
       {replay && tl.rounds.length > 0 && !tl.hasTracks && <div className="mdx-toast warn">{t('mdx.noTracks')}</div>}
     </>
   );
