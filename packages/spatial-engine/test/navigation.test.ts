@@ -31,6 +31,12 @@ function onlyRoadmapArcs(engine: ReturnType<typeof loadMap>, r: Extract<Navigati
   return true;
 }
 
+/** A map loaded with its roadmap but without its sight table (as a map that has none yet). */
+function withoutSight(id: MapId): ReturnType<typeof loadMap> {
+  const { data, transform, nav: road } = loadMapData(id);
+  return createEngine(data, transform, road);
+}
+
 describe("navigation: Ascent", () => {
   it("A — simple move between neighbouring areas succeeds with a real path", () => {
     const r = ok(nav.findPath(req(at("a-main"), at("a-site"))));
@@ -197,15 +203,25 @@ describe("navigation: Ascent", () => {
     const e = nodes.map((n) => nav.exposure(n));
     expect(Math.max(...e)).toBeGreaterThan(2 * Math.min(...e) + 5);
     // without measured sight there is nothing to count
-    const bind = loadMap("bind").nav!;
-    expect(bind.exposure(bind.zoneNodes("a-site")[0]!)).toBe(0);
-    expect(bind.sightInto(bind.zoneNodes("a-site")[0]!, "a-short")).toBe(0);
+    const bare = withoutSight("bind").nav!;
+    expect(bare.exposure(bare.zoneNodes("a-site")[0]!)).toBe(0);
+    expect(bare.sightInto(bare.zoneNodes("a-site")[0]!, "a-short")).toBe(0);
   });
 
   it("a map without measured line of sight answers null, and the caller keeps its zone rule", () => {
-    const bind = loadMap("bind");
+    const bind = withoutSight("bind");
     expect(bind.nav!.hasVisibility).toBe(false);
     expect(bind.nav!.sees(bind.standPosition("a-site"), "a-site", bind.standPosition("a-short"), "a-short")).toBeNull();
+  });
+
+  it("a sight table made for another roadmap is refused, not misread: the map loads and falls back to zone sight", () => {
+    const { data, transform, nav: road, visibility } = loadMapData("ascent");
+    const wrong = { ...visibility!, nodes: visibility!.nodes + 1 };
+    const engine = createEngine(data, transform, road, wrong);
+    expect(engine.nav).not.toBeNull();
+    expect(engine.nav!.hasVisibility).toBe(false);
+    expect(engine.nav!.sees(engine.standPosition("a-site"), "a-site", engine.standPosition("a-main"), "a-main")).toBeNull();
+    expect(engine.hasLineOfSight("a-site", "a-main")).toBe(true); // the zone table still answers
   });
 
   it("roadmap travel times agree with the measured edge routes", () => {
@@ -290,6 +306,12 @@ describe("tactical travel time = navigation path cost", () => {
 });
 
 const summary: string[] = [];
+const sightSummary: string[] = [];
+/** Nearby zone sightlines that the measured point-to-point table does not confirm (see the test). */
+const SIGHTLINE_DISAGREEMENTS: Partial<Record<MapId, string[]>> = {
+  ascent: ["a-window~a-site"],                                        // hand-authored line; no standing point of A Window sees one of A Site
+  pearl: ["b-club~b-ramp", "b-club~mid-plaza", "b-club~mid-shops"],   // B Club's callout is stacked on Mid Shops' (wrong floor)
+};
 
 describe.each(MAP_IDS.map((id) => [id] as const))("navigation roadmap: %s", (id: MapId) => {
   const engine = loadMap(id);
@@ -328,6 +350,54 @@ describe.each(MAP_IDS.map((id) => [id] as const))("navigation roadmap: %s", (id:
     else expect(reachable).toBe(stats.zonePairsReachableOnGrid);
   });
 
+  it("sight table: made for this roadmap, symmetric by construction, and consistent with the floor and the zone sightlines", () => {
+    const vis = loadMapData(id).visibility;
+    expect(vis, `${id}.vis.json`).toBeDefined();
+    const count = raw!.nodes.length;
+    // made for THIS roadmap: same node count, one bit per unordered pair
+    expect(vis!.nodes).toBe(count);
+    expect(n.hasVisibility).toBe(true);
+    const bytes = Buffer.from(vis!.bitsBase64, "base64");
+    expect(bytes.length).toBe(Math.ceil((count * (count - 1)) / 2 / 8));
+    let ones = 0;
+    for (const b of bytes) { let v = b; while (v) { ones += v & 1; v >>= 1; } }
+    const meta = vis as unknown as { pairsVisible: number; pairsTested: number; rangeUnits: number };
+    expect(ones).toBe(meta.pairsVisible);
+    expect(meta.pairsVisible).toBeLessThan(meta.pairsTested); // walls exist
+    expect(meta.pairsVisible / meta.pairsTested).toBeGreaterThan(0.05);
+    expect(meta.pairsVisible / meta.pairsTested).toBeLessThan(0.6);
+    // nothing is "visible" beyond the measured range, and the answer does not depend on the order asked
+    const pos = raw!.nodes;
+    const d = (i: number, j: number): number => Math.hypot(pos[i]![0]! - pos[j]![0]!, pos[i]![1]! - pos[j]![1]!, pos[i]![2]! - pos[j]![2]!);
+    let beyond = 0;
+    for (let i = 0; i < count; i += 7) for (let j = i + 1; j < count; j += 5) {
+      expect(n.nodesVisible(i, j)).toBe(n.nodesVisible(j, i));
+      if (d(i, j) > meta.rangeUnits + 1 && n.nodesVisible(i, j)) beyond++;
+    }
+    expect(beyond).toBe(0);
+    // two points joined by a walkable segment see each other (the segment itself was ray-checked)
+    let joined = 0, seen = 0;
+    for (const e of raw!.edges) { joined++; if (n.nodesVisible(e[0]!, e[1]!)) seen++; }
+    expect(seen / joined, "walk edges whose two ends see each other").toBeGreaterThan(0.97);
+    // the zone sightline table was measured on the same geometry: where it says two nearby zones see
+    // each other, some pair of their standing points does
+    const anchor = (z: string): number | undefined => n.anchorNode(z);
+    let lines = 0, confirmed = 0;
+    const unconfirmed: string[] = [];
+    for (const sl of data.sightlines) {
+      const a = anchor(sl.a), b = anchor(sl.b);
+      if (a === undefined || b === undefined || d(a, b) > 3000) continue;
+      lines++;
+      if (n.zoneNodes(sl.a).some((i) => n.zoneNodes(sl.b).some((j) => n.nodesVisible(i, j)))) confirmed++;
+      else unconfirmed.push(`${sl.a}~${sl.b}`);
+    }
+    // Every map but two agrees completely. Ascent's zone table is hand-authored, not measured, and
+    // Pearl's callout heights put several zones on the wrong floor (MAPS_DATA.md) — both are pinned
+    // to exactly the lines they disagree on, so a change in either table shows up here.
+    expect(unconfirmed, "zone sightlines no pair of standing points confirms").toEqual(SIGHTLINE_DISAGREEMENTS[id] ?? []);
+    sightSummary.push(`${id.padEnd(9)} nodes ${String(count).padStart(4)}  pairs tested ${String(meta.pairsTested).padStart(7)}  visible ${(100 * meta.pairsVisible / meta.pairsTested).toFixed(1).padStart(4)} %  walk edges seen ${(100 * seen / joined).toFixed(1)} %  zone sightlines confirmed ${confirmed}/${lines}  ${(bytes.length / 1024).toFixed(0)} KB`);
+  });
+
   const derived = process.env.PV_MAPS_DERIVED;
   const gridPath = derived ? resolve(derived, id, "walkable.json") : "";
   it.skipIf(!gridPath || !existsSync(gridPath))("every node and every walk edge lies on walkable grid cells (local geometry only)", () => {
@@ -360,4 +430,11 @@ describe("roadmap summary", () => {
     console.log("\n" + summary.join("\n"));
     expect(summary).toHaveLength(MAP_IDS.length);
   });
+
+  it("prints the sight tables", () => {
+    // eslint-disable-next-line no-console
+    console.log("\nline of sight between roadmap points\n" + sightSummary.join("\n"));
+    expect(sightSummary).toHaveLength(MAP_IDS.length);
+  });
 });
+

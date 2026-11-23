@@ -47,12 +47,21 @@ import {
 import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterProfile } from "./teams.js";
 import type { PlayerProfile } from "@pv/shared-types";
 import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
+import { MAP_IDS, isMapId } from "@pv/spatial-engine";
 import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
 // [series] per-team inputs + series metadata (additive; see ./team-inputs.ts)
 import { applyTraitDelta, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
 import { FORM_SIGMA_MAX } from "./teams.js";
 import { DEFAULT_POLICY_TUNING } from "@pv/team-engine";
+
+/** The map whose geometry a match is simulated on (see MatchConfig.geometry). */
+export function geometryOf(config: Pick<MatchConfig, "map" | "geometry">): string {
+  if (config.geometry !== "own") return "ascent";
+  const id = config.map.trim().toLowerCase();
+  if (!isMapId(id)) throw new Error(`MatchConfig.geometry "own": no spatial data for map "${config.map}" (available: ${MAP_IDS.join(", ")})`);
+  return id;
+}
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
@@ -93,6 +102,18 @@ export interface MatchConfig {
   readonly teamA: TeamRef;
   readonly teamB: TeamRef;
   readonly map: string;
+  /**
+   * The geometry the match is simulated on.
+   *  - "ascent" (default): Ascent's zone graph, roadmap and sight, whatever `map` says — `map`
+   *    then only selects that map's mastery, scouting and records. The tactical layer (defender
+   *    setups, smoke and aim targets, A/B sites) is written for Ascent.
+   *  - "own": the map named in `map` — its own zone graph, navigation roadmap and, where it has
+   *    one, its table of sight between real positions (else the zone sightline table). The engine
+   *    RUNS on every map this way, but the tactical layer is still Ascent's: a zone id it names
+   *    that the map lacks is skipped, a third site is never played, and some zones cannot be
+   *    reached on some maps. For measurement (sim-batch --geometry own), not for the product yet.
+   */
+  readonly geometry?: "ascent" | "own";
   readonly seed: number;
   /** Safety cap on total rounds (OT can in principle run long). Default 60. */
   readonly maxRounds?: number;
@@ -319,9 +340,9 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
  * (byte-identical output), so the default runMatch / sim-batch are unchanged.
  */
 export class MatchEngine {
-  private readonly spatial = loadSpatial();
+  private readonly spatial: ReturnType<typeof loadSpatial>;
   private readonly weapons = loadWeapons();
-  private readonly sq = makeSpatialQuery(this.spatial);
+  private readonly sq: ReturnType<typeof makeSpatialQuery>;
   private readonly maxRounds: number;
   private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
   private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
@@ -346,6 +367,8 @@ export class MatchEngine {
   private roundNumber = 1; // the next round to play
 
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
+    this.spatial = loadSpatial(geometryOf(config));
+    this.sq = makeSpatialQuery(this.spatial);
     this.maxRounds = config.maxRounds ?? 60;
     this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5), B: rosterSkills(config.teamB.id, 5) };
     this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5), B: rosterTraits(config.teamB.id, 5) };

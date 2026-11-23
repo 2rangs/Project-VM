@@ -8,7 +8,10 @@ The engine still *plays* only Ascent; §6 lists what must be generalised before 
 > became measured edges.
 >
 > **Update (2026-11-20):** each map also has a navigation roadmap (`<map>.nav.json`: stand points and walkable
-> segments), and Ascent a table of line of sight between those points (`ascent.vis.json`). The simulator moves
+> segments) and a table of line of sight between those points (`<map>.vis.json`, all eleven since 2026-11-23).
+> A match can be simulated on a map's own geometry with `MatchConfig.geometry: "own"` (off by default; row 1 of
+> §6 is therefore an opt-in now, the rest of §6 still stands — measured consequences in
+> `NAVIGATION_ENGINE.md` §7.5). The simulator moves
 > players on the roadmap with a real position every tick — see `docs/research/NAVIGATION_ENGINE.md` (§3 for
 > the data and the decision to commit it, §9 for what still keeps the other ten maps from being played).
 > `loadMap(id)` loads both files when present.

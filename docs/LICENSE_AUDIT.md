@@ -91,9 +91,12 @@ git 밖에 둔다.
 - **시야 표도 같은 결정에 포함 (사용자 확인, 2026-11-20):** `datasets/spatial/ascent/ascent.vis.json` 과
   그 앱 사본 `apps/desktop/src/data/sim/ascent.vis.json` 도 커밋 상태로 유지한다. 로드맵 지점 쌍 사이의
   시야 여부를 **쌍당 1비트**로 담은 표(147 KB)로, 좌표나 표면은 없고 `ascent.nav.json` 의 지점 번호만
-  참조한다. 생성기는 `tools/map-mesh/pipeline/vis_map.py`. 나머지 10개 맵의 `.vis.json` 은 아직 생성하지
-  않았으며, 생성하면 같은 범위(지점 쌍당 1비트, 표면 없음)로 커밋할 수 있다. 권리 상태와 출시 전 재검토
-  조건은 로드맵과 동일하다.
+  참조한다. 생성기는 `tools/map-mesh/pipeline/vis_map.py`. 권리 상태와 출시 전 재검토 조건은 로드맵과 동일하다.
+- **나머지 10개 맵의 시야 표 (2026-11-23 생성·커밋, 같은 결정의 범위):**
+  `datasets/spatial/{abyss,bind,breeze,fracture,haven,icebox,lotus,pearl,split,sunset}/<map>.vis.json`.
+  Ascent 와 같은 방식(같은 가림 지오메트리, 눈 1.6 m · 가슴 1.1 m, 46 m 이내 지점 쌍)으로 만들었고 내용도 같다:
+  지점 쌍당 1비트, 좌표·표면 없음. 11개 맵 합계 1.96 MB. 생성에 쓴 추출 메시(`mesh.npz`)는 저장소 밖에서만
+  만들었고 생성 직후 삭제했다. 메시·워크 그리드·`.blend`·`.glb` 는 여전히 커밋하지 않는다.
 
 상세: `docs/research/NAVIGATION_ENGINE.md` §3.
 
@@ -119,3 +122,4 @@ git 밖에 둔다.
 *변경 이력: v1.0 (2026-11-18, PV-1) — 5개 저장소 LICENSE 직접 확인, 나머지 분류.*
 *v1.1 (2026-11-20) — §2.0b 추가: 내비게이션 로드맵(`<map>.nav.json`, 점·선분) 커밋 결정 기록. 메시·워크 그리드는 계속 git 밖.*
 *v1.2 (2026-11-20) — §2.0b: 지점 간 시야 표(`<map>.vis.json`, 쌍당 1비트)도 같은 결정에 포함됨을 기록.*
+*v1.3 (2026-11-23) — §2.0b: 나머지 10개 맵의 시야 표 파일 목록 추가.*

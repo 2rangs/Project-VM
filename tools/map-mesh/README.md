@@ -106,7 +106,7 @@ python3 -I tools/map-mesh/align/landmark_check.py > datasets/spatial/transform-l
   (`docs/research/MAP_ROUTES.md`); writes `<derived>/walkable.json` for the optional local tests
 - `pipeline/nav_map.py`    — the navigation roadmap: stand points and walkable segments, each segment walked
   cell by cell and ray-checked; reaches exactly what the walk grid reaches (`docs/research/NAVIGATION_ENGINE.md` §3)
-- `pipeline/vis_map.py`    — one line-of-sight bit per pair of roadmap points (Ascent only so far)
+- `pipeline/vis_map.py`    — one line-of-sight bit per pair of roadmap points (all eleven maps)
 - `pipeline/render_map.py`, `pipeline/pngdraw.py` — dependency-free PNG schematic
 - `../map-processor/mapzones.py` — callout -> zone rule; `../map-processor/build_map.py` — rules + provenance
 
