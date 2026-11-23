@@ -311,3 +311,9 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .dec-conflabel { font-size: 11px; color: #c3cfdb; }
 .dec-conflabel.conf-low, .dec-conflabel.conf-none { color: #f0b429; font-weight: 600; }
 .dec-hint { font-size: 11px; color: #f0b429; margin-top: 3px; word-break: keep-all; }
+
+/* career world (generated people) */
+.gen-tag { margin-left:6px; font-size:9px; padding:1px 5px; border-radius:999px; border:1px solid #7ee78755; color:#7ee787; vertical-align:middle; }
+.career-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:6px 0 10px; }
+.career-advance, .career-reset { padding:5px 12px; border-radius:6px; border:1px solid var(--line); background:#1b2230; color:inherit; cursor:pointer; }
+.career-advance { margin-left:auto; border-color:#7ee78788; }

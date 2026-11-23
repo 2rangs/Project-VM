@@ -200,6 +200,22 @@ async function main() {
   await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(OUT, 'desktop-squad.png') });
 
+  // Scouting · career world: generated prospects (marked), one season advance, player detail.
+  await page.getByTestId('nav-scouting').click();
+  await page.waitForSelector('[data-testid="career-screen"]', { timeout: 10000 });
+  await page.getByTestId('career-reset').click();
+  await page.waitForSelector('[data-testid="dt-row"]', { timeout: 10000 });
+  assert.ok(/2026/.test(await page.getByTestId('career-season').innerText()), 'a fresh world opens in 2026');
+  assert.ok(await page.locator('[data-testid="dt-row"] [data-testid="gen-tag"]').count() > 0, 'new prospects are marked as generated');
+  await page.getByTestId('career-advance').click();
+  await page.waitForFunction(() => /2027/.test(document.querySelector('[data-testid="career-season"]')?.textContent ?? ''), null, { timeout: 15000 });
+  assert.ok(await page.locator('[data-testid="dt-row"]').count() > 0, 'the 2027 class is listed');
+  await page.getByTestId('dt-row').first().click();
+  await page.waitForSelector('[data-testid="player-detail"] [data-testid="ability-estimate"]', { timeout: 5000 });
+  await page.getByTestId('career-tab-staff').click();
+  assert.ok(await page.locator('[data-testid="dt-row"]').count() > 0, 'staff are listed');
+  await page.getByTestId('career-reset').click(); // leave a fresh world behind
+
   // Decision Debugger (Dev) — pick the scenario with exclusions
   await page.getByTestId('nav-dev-debugger').click();
   await page.waitForSelector('[data-testid="excluded-card"]', { timeout: 10000 });

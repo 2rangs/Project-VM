@@ -11,6 +11,8 @@ statistics from public match data, never ground-truth scouting.
 | `ratings_meta.json` | `origin/claude/pv-data` | `datasets/derived/ratings/ratings_meta.json` | Player Profile (method note) |
 | `team_names.json` | `origin/claude/pv-data` | `datasets/derived/team-profiles/team_names.json` | Opponent Report |
 | `team_profiles.json` | `origin/claude/pv-data` | `datasets/derived/team-profiles/team_profiles.json` | Opponent Report |
+| `rosters.json` | this repo | `packages/game-data/data/rosters.json` | Scouting · career world (team rosters) |
+| `reserved_handles.json` | this repo (derived) | normalised `handle` of every player in `packages/game-data/data/players.json` | Scouting · career world (generated handles never collide with these) |
 | `ascent-tactics.json` | `origin/claude/pv-research` | `datasets/derived/tactics/ascent-tactics.json` | Tactics |
 | `ascent-comps.json` | `origin/claude/pv-research` | `datasets/derived/comps/ascent-comps.json` | Agent Select |
 
