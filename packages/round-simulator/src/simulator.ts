@@ -323,6 +323,7 @@ export class RoundSimulator {
           else if (b.center) this.mover.addDiscBlocker(b.id, b.center, b.radiusUnits ?? DEFAULT_PATCH_RADIUS_UNITS);
         } else if (!active && this.mover.blockers.has(b.id)) this.mover.removeBlocker(b.id);
       }
+      this.mover.releaseDead(state.players);
       const alive = state.players.filter((q) => q.alive);
       const sp = state.spike;
       this.spikeWatched = (sp.phase === "planted" || sp.phase === "defusing") && sp.zoneId && sp.position ? { zoneId: sp.zoneId, position: sp.position } : null;

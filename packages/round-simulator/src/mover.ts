@@ -228,6 +228,18 @@ export class MovementExecutor {
     }
   }
 
+  /**
+   * A dead body holds no standing spot: its claim is released, so the living can stand there —
+   * the defuser on the spot the planter planted from, a teammate on a fallen anchor's angle.
+   */
+  releaseDead(players: readonly SimPlayer[]): void {
+    if (this.claims.size === 0) return;
+    for (const p of players) {
+      if (p.alive) continue;
+      for (const [n, id] of this.claims) if (id === p.id) this.claims.delete(n);
+    }
+  }
+
   private claim(playerId: string, node: number): void {
     for (const [n, id] of this.claims) if (id === playerId) this.claims.delete(n);
     if (node >= 0) this.claims.set(node, playerId);
