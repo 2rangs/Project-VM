@@ -16,3 +16,8 @@ export {
 } from "./world.ts";
 export { serializeWorld, deserializeWorld, SAVE_FORMAT } from "./save.ts";
 export { mulberry32, deriveSeed } from "./rng.ts";
+// --- Career mode: calendar, competition, inbox, extension hooks (docs/CAREER_MODE.md) ---
+export * from "./career/calendar.ts";
+export * from "./career/inbox.ts";
+export * from "./career/hooks.ts";
+export type * from "./career/types.ts";
