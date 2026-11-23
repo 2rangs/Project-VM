@@ -138,7 +138,7 @@ export interface OfferRequest {
   readonly terms: OfferTerms;
 }
 
-export type OfferError = "windowClosed" | "squadFull" | "overBudget" | "ownPlayer" | "notContracted" | "pendingExists" | "unknown";
+export type OfferError = "windowClosed" | "squadFull" | "overBudget" | "ownPlayer" | "notContracted" | "pendingExists" | "releasedHere" | "unknown";
 
 /** Why an offer cannot be made (null: it can). */
 export function offerBlocker(w: World, req: OfferRequest, date: string): OfferError | null {
@@ -151,6 +151,8 @@ export function offerBlocker(w: World, req: OfferRequest, date: string): OfferEr
   if ((req.kind === "transfer" || req.kind === "loan") && !windowStatus(date).open) return "windowClosed";
   if (req.kind === "free" && p.teamId) return "notContracted";
   if ((req.kind === "transfer" || req.kind === "loan") && !p.teamId) return "unknown";
+  // A club cannot re-sign a player it released this season (no release-and-re-sign to reset a contract).
+  if (club.transfers.some((r) => r.playerId === req.playerId && r.fromTeamId === req.toTeamId && r.kind === "release" && r.season === w.season)) return "releasedHere";
   if (to.roster.length >= SEASON_MODEL.maxRoster) return "squadFull";
   if (req.terms.fee > club.finances[req.toTeamId]!.transferBudget) return "overBudget";
   if (club.offers.some((o) => o.playerId === req.playerId && o.toTeamId === req.toTeamId && (o.status === "pending" || o.status === "countered"))) return "pendingExists";

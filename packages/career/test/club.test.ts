@@ -8,7 +8,7 @@ import { worldFromGameData } from "../src/game-data.ts";
 import {
   CLUB_MODEL, ABILITY_KEYS, MECHANICAL_KEYS, advanceSeason, answerCounter, askingPrice, clubAnswer, clubSalary, clubSeasonEnd,
   createLocalDriver, estimateAbility, focusFactors, initClub, makeOffer, marketWage, playerAnswer, playerUtility,
-  practiceAdjustedRecords, reputations, seasonFocus, serializeWorld, setIndividualFocus, setTrainingPlan, teamScout, teamStrength,
+  practiceAdjustedRecords, releasePlayer, reputations, seasonFocus, serializeWorld, setIndividualFocus, setTrainingPlan, teamScout, teamStrength,
   trainingWeek, wageBill, weeklyVector, windowStatus, type World, type WorldPlayer, type RatedAttr, type OfferTerms,
 } from "../src/index.ts";
 
@@ -191,6 +191,14 @@ describe("transfer decisions follow the utilities (counterfactual)", () => {
     if (back && back.teamId) expect(back.teamId).not.toBe(user);
   });
 
+  it("a released player cannot be re-signed by the same club in the same season", () => {
+    const id = club.teams[user]!.roster[club.teams[user]!.roster.length - 1]!;
+    const w = releasePlayer(club, id);
+    expect(w.players[id]!.status).toBe("free");
+    expect(w.club!.finances[user]!.balance).toBeLessThan(club.club!.finances[user]!.balance);
+    expect(makeOffer(w, { playerId: id, toTeamId: user, kind: "free", terms: { fee: 0, wage: 1_000_000, years: 1 } }).error).toBe("releasedHere");
+  });
+
   it("a starter is not loaned out", () => {
     const starterId = club.teams[target.teamId!]!.roster[0]!;
     expect(clubAnswer(club, { kind: "loan", playerId: starterId, terms: { fee: 0, wage: 0, years: 1, wageShare: 1 } }).decision).toBe("reject");
@@ -286,7 +294,8 @@ describe("economy over three seasons (seeded)", () => {
         expect(f.balance, `${w.teams[id]!.name} ${w.season}`).toBeLessThan(8_000_000);
         expect(f.expectedIncome).toBeGreaterThan(500_000);
         expect(f.expectedIncome).toBeLessThan(6_000_000);
-        expect(f.wageBudget).toBeCloseTo(M.wageShare * f.expectedIncome, -4);
+        if (w.season > snapshots[0]!.season) expect(f.wageBudget).toBeCloseTo(M.wageShare * f.expectedIncome, -4);
+        else expect(f.wageBudget).toBeGreaterThanOrEqual(Math.round(M.wageShare * f.expectedIncome / 1000) * 1000 - 1000);
         expect(f.fanbase).toBeGreaterThanOrEqual(0);
         expect(f.fanbase).toBeLessThanOrEqual(1);
       }

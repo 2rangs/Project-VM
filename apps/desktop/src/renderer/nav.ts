@@ -26,9 +26,9 @@ export const NAV: NavGroup[] = [
   {
     label: 'CLUB',
     items: [
-      { id: 'finance', icon: '$', soon: true },
-      { id: 'transfers', icon: '⇄', soon: true },
-      { id: 'training', icon: '◳', soon: true },
+      { id: 'finance', icon: '$' }, // club ops: budget, ledger, wage list (screens/club/FinanceScreen.tsx)
+      { id: 'transfers', icon: '⇄' }, // club ops: search, offers, window (screens/club/TransfersScreen.tsx)
+      { id: 'training', icon: '◳' }, // club ops: weekly + individual focus (screens/club/TrainingScreen.tsx)
       { id: 'scouting', icon: '🔍' }, // career world: new prospects, free agents, staff (screens/ScoutingScreen.tsx)
     ],
   },
