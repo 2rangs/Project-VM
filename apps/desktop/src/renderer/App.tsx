@@ -126,9 +126,9 @@ export default function App() {
           {route === 'veto' && <SeriesScreen ctx={ctx} />}
           {route === 'squad' && <SquadScreen setDetail={setDetail} />}
           {route === 'scouting' && <ScoutingScreen setDetail={setDetail} />}
-          {route === 'finance' && <FinanceScreen setDetail={setDetail} />}
-          {route === 'transfers' && <TransfersScreen setDetail={setDetail} />}
-          {route === 'training' && <TrainingScreen setDetail={setDetail} />}
+          {route === 'finance' && c && <FinanceScreen setDetail={setDetail} />}
+          {route === 'transfers' && c && <TransfersScreen setDetail={setDetail} />}
+          {route === 'training' && c && <TrainingScreen setDetail={setDetail} />}
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}

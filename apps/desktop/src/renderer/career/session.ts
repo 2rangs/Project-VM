@@ -7,7 +7,7 @@ import { useSyncExternalStore } from 'react';
 import { bridge, runtime } from '../platform.ts';
 import type { CareerSimProgress, CareerSimRequest, SaveSlot } from '../../shared/career.ts';
 import {
-  answerInbox, buildDesktopWorld, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
+  answerInbox, buildDesktopWorld, drainClubOutbox, syncClubInbox, type World, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
   recordResult, serializeCareer, type BatchSimulator, type CareerState, type ContinueResult, type Outcome,
   type SeriesOutcome, type SeriesRequest,
 } from './world.ts';
@@ -152,6 +152,17 @@ export async function continueGame(): Promise<ContinueResult | null> {
     notify({ busy: null, error: (e as Error).message });
     return null;
   }
+}
+
+/** A club action on the career's world (pure: World in, World out); messages reach the inbox. */
+export function updateCareerWorld(fn: (w: World) => World): void {
+  const c = snap.career;
+  if (!c) return;
+  c.world = fn(c.world);
+  drainClubOutbox(c);
+  syncClubInbox(c);
+  notify();
+  void writeSlot();
 }
 
 export function answer(itemId: string, option: string): void {

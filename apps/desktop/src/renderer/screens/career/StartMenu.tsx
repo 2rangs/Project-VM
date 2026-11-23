@@ -6,7 +6,7 @@ import { bridge, runtime } from '../../platform.ts';
 import { useLang } from '../../i18n/index.tsx';
 import type { SaveSlot, SaveSlotInfo } from '../../../shared/career.ts';
 import { loadCareer, setSimMode, useCareer } from '../../career/session.ts';
-import { CareerProgress } from './CareerProgress.tsx';
+import { LoadingScreen } from '../../loading/Loading.tsx';
 
 export function StartMenu({ onNewCareer, onQuickMatch }: { onNewCareer: () => void; onQuickMatch: () => void }) {
   const { t, lang, setLang } = useLang();
@@ -23,7 +23,7 @@ export function StartMenu({ onNewCareer, onQuickMatch }: { onNewCareer: () => vo
     await bridge.saveDelete(slot); refresh();
   };
 
-  if (cs.busy?.kind === 'load') return <CareerProgress title={t('start.loading')} />;
+  if (cs.busy?.kind === 'load') return <LoadingScreen cover="window" testId="career-progress" title={t('start.loading')} />;
 
   return (
     <div className="start" data-testid="start-menu">
