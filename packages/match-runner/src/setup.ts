@@ -92,6 +92,10 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   setProfiles(profiles: ReadonlyMap<string, PlayerProfile> | null): void {
     this.inner.setProfiles(profiles);
   }
+  /** Per-player "is this gear worth a save?" from the match economy (TeamDecisionPolicy.setSaveWorth). */
+  setSaveWorth(worth: ReadonlyMap<string, boolean> | null): void {
+    this.inner.setSaveWorth(worth);
+  }
   /** The plan of the round just played (opening call, final call, revisions). */
   planSummary(): PlanSummary | null {
     return this.inner.planSummary();

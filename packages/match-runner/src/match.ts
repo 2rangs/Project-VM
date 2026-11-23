@@ -41,6 +41,7 @@ import {
   decideTeamBuy,
   afterBuy,
   settleRound,
+  saveWorth,
   postRoundPickups,
   halfReset,
   overtimeReset,
@@ -593,6 +594,12 @@ export class MatchEngine {
       this.policies.attack.setTuning(this.policyTuningFor(attacker));
       this.policies.defense.setTuning(this.policyTuningFor(defender));
     }
+    // Per-player save worth from the match economy (a rich player plays a lost round out).
+    const saveByCredits = config.economy?.saveByCredits ?? true;
+    const worthMap = (slot: TeamSlot, prefix: string): ReadonlyMap<string, boolean> | null =>
+      saveByCredits ? new Map(saveWorth(economy[slot], buys[slot]).map((w, i) => [`${prefix}${i + 1}`, w])) : null;
+    this.policies.attack.setSaveWorth(worthMap(attacker, "atk"));
+    this.policies.defense.setSaveWorth(worthMap(defender, "def"));
     this.policies.attack.setThrowFloors(this.floorMap(attacker, "atk"));
     this.policies.defense.setThrowFloors(this.floorMap(defender, "def"));
     const attackers: MatchRoundTeam = {

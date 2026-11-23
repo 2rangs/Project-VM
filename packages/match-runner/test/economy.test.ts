@@ -7,6 +7,7 @@ import {
   decideTeamBuy,
   newTeamEconomy,
   postRoundPickups,
+  saveWorth,
   settleRound,
   type BuyContext,
   type PlayerEconomy,
@@ -106,14 +107,14 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
     expect(b.loadoutValue - bare.loadoutValue).toBeGreaterThan(4_000);
   });
 
-  it("ultimate readiness changes buy timing: a team on 2000 each saves without ults and buys with five ready", () => {
-    const noUlt = buy(eco(five(2_000), [], 1), { abilities: true });
-    const ults = buy(eco(five(2_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
+  it("ultimate readiness changes buy timing: a team on 3000 each saves without ults and buys with five ready", () => {
+    const noUlt = buy(eco(five(3_000), [], 1), { abilities: true });
+    const ults = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
     expect(noUlt.plan).toBe("eco");
     expect(ults.plan).not.toBe("eco");
     expect(ults.cost).toBeGreaterThan(noUlt.cost);
     // With abilities off an ultimate does nothing in the sim, so it does not move the buy.
-    const off = buy(eco(five(2_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
+    const off = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
     expect(off.plan).toBe(noUlt.plan);
   });
 
@@ -125,33 +126,47 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
   });
 });
 
+describe("save worth (per-player credits)", () => {
+  it("a gun is worth a save only to a player who could not buy it back next round", () => {
+    // Next loss bonus 1900; a rifle + heavy shield costs 3900.
+    // Size: a player left with 2000+ after a rifle buy plays the round out; one left with ~0 saves.
+    const rich = saveWorth(eco(five(9_000), [], 0), buy(eco(five(9_000), [], 0)));
+    const poor = saveWorth(eco(five(3_900), [], 0), buy(eco(five(3_900), [], 0)));
+    expect(rich.every((w) => !w)).toBe(true);
+    expect(poor.filter(Boolean).length).toBeGreaterThanOrEqual(4);
+  });
+});
+
 describe("saving players (match level)", () => {
   const teams = simulatableTeamRefs();
   const run = (seed: number, tuning?: MatchConfig["tuning"]): MatchResult =>
     runMatch({ teamA: teams[2 * seed]!, teamB: teams[2 * seed + 1]!, map: "Ascent", seed, ...(tuning ? { tuning } : {}) });
 
-  it("a saving attack survives lost rounds more often and carries its guns into the next buy", () => {
+  it("a saving attack gives lost rounds up and carries its guns into the next buy", () => {
     const tally = (ms: MatchResult[]) => {
-      let lost = 0, survivors = 0, keptNext = 0;
+      let lost = 0, saves = 0, keptNext = 0;
       for (const m of ms) {
         m.rounds.forEach((r, k) => {
           const atk = r.attacker;
           if (r.winner === atk) return;
           lost++;
-          survivors += r.economy[atk].players.filter((p) => p.weapon !== null).length; // armed survivors
+          if (r.decisions.plans[atk]?.revisions.some((v) => v.to === "save")) saves++;
           const next = m.rounds[k + 1];
           if (next && next.phase === "regulation" && next.roundNumber !== 13) keptNext += next.buys[atk].players.filter((p) => p.weaponSource === "kept").length;
         });
       }
-      return { lost, perLost: survivors / lost, keptPerLost: keptNext / lost };
+      return { lost, saves, keptPerLost: keptNext / lost };
     };
     const seeds = [1, 2, 3];
     const saving = tally(seeds.map((s) => run(s)));
     const never = tally(seeds.map((s) => run(s, { attackSaveMinWinChance: 0 })));
-    expect(saving.perLost).toBeGreaterThan(never.perLost);
+    expect(saving.saves).toBeGreaterThan(0);
+    expect(never.saves).toBe(0);
     expect(saving.keptPerLost).toBeGreaterThan(never.keptPerLost);
-    // Size (seeds 1–3, 2026-11-23): armed survivors per lost round 0.095 vs 0, guns kept into the
-    // next buy 0.071 vs 0 (42 and 46 lost rounds).
-    expect(saving.keptPerLost).toBeGreaterThan(0.04);
+    // Size (seeds 1–3, merge of main 4f72e64, 2026-11-23): 2 saves in 36 lost rounds; guns kept into
+    // the next buy 0.083 vs 0.048 per lost round (36 and 42 lost rounds). Armed survivors per lost
+    // round are no longer a save signal on this engine: attackers who play a lost round out survive
+    // it too (0.083 saving vs 0.143 never).
+    expect(saving.keptPerLost).toBeGreaterThan(0.06);
   }, 120_000);
 });

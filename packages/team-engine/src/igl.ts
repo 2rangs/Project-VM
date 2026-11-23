@@ -43,6 +43,16 @@ function isEco(view: PolicyView): boolean {
   return view.economy.credits <= ECO_BANK_THRESHOLD;
 }
 
+/**
+ * A partial buy (the per-player economy's force / half call): some rifles, some SMGs or pistols.
+ * Such a team cannot win a long post-plant against a full-buy retake, so on attack it plays for
+ * picks (the slow default) and hits only when a player up or late, instead of executing at once.
+ */
+function isPartialBuy(view: PolicyView): boolean {
+  if (isPistolRound(view)) return false;
+  return view.economy.buyCall === "force" || view.economy.buyCall === "half";
+}
+
 const v2 = (v: Vector3) => ({ x: v.x, y: v.y });
 
 /** ATTACK: site-read lead (in seen-enemy units) that justifies swinging off a stacked site mid-round. */
@@ -160,6 +170,7 @@ export function selectStrategy(
 
   // Attack
   if (isEco(view)) return "default"; // conservative: gather info, play for picks
+  if (isPartialBuy(view)) return "default"; // a force: play for picks, hit a player up or late
   // Full buy: commit. Prefer the LESS defended site; fake the more defended one. What we see this
   // round counts first; where their defenders have tended to be is the prior behind it.
   const defA = read ? tendencyLean(read.defenseSite, "A") : 0; // > 0: they favour defending A

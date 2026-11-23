@@ -1,5 +1,66 @@
 # PROJECT V — ECONOMY & ULTIMATE MODEL
 
+## Match economy v1.1 — on the recalibrated engine (2026-11-23)
+
+Main `4f72e64` (engine-truth: damage carryover 0.4, positional smoke/plant, post-plant guards) passes the
+original 8 at 8/8 with the old team-threshold economy. v1 on that engine fell to 6/8: elimination 0.661
+(needs ≥ 0.674) and defuse 0.204 (needs ≤ 0.200).
+
+**Measured cause** (seeds 1–160, bundles split by both teams' plans):
+1. *Partial buys executed like full buys.* team-engine's `isEco` sent only true ecos to the slow
+   `default` plan, so a force (on average 2.8 rifles + SMGs) ran a full execute. It reached the site
+   (plant rate 0.52; main's five-Spectre force planted 0.31) and lost the retake: defuse 0.30 against
+   0.16 for VCT Ascent semi-vs-full rounds (VCT ends those by elimination, 0.74). The win rate was
+   already right (0.33 vs VCT 0.32); the round just ended the wrong way.
+2. *Rifle carriers saved where Spectre carriers played out.* The policy's save rule keeps any gun worth
+   ≥ 1900. Main's force was Spectres (1600), so those attacks never saved. v1's forces carry rifles, so
+   losing attacks saved and ran the clock: time-expired from force attacks 1.5–1.8% of all rounds vs 0.4%.
+3. Not the cause: the tier mix. Reweighting v1's per-tier outcome rates to VCT Ascent's tier mix still
+   gives elimination 0.657 / defuse 0.203. And main's 8/8 partly rests on its old mix: 23% of its rounds
+   were full attacks against a five-Spectre defence (attack wins 0.89; VCT full-vs-semi is 0.68).
+   VCT Ascent end reasons by attack/defence tier (international, 3,061 rounds with loadouts): full/full
+   elim 0.64 defuse 0.18; semi/full 0.74 / 0.16; full/semi 0.73 / 0.13; pistol 0.80 / 0.18. The sim's
+   defuse rate is high on every tier (full/full 0.20, pistol 0.24); that part is engine, not economy.
+
+**Fixes (economy mechanism; no combat constant changed):**
+- `team-engine/igl.ts`: a partial buy (`buyCall` `force` or `half`) on attack plays the slow `default` plan:
+  take lanes, hit when a player up or at the commit clock. Bonus rounds and full buys still execute.
+- Save worth per player: `match-runner` `saveWorth(eco, buy)` → `TeamDecisionPolicy.setSaveWorth(map)`
+  (new per-round setter, like `setProfiles`). A gun counts toward a save only if its holder's own next
+  round (credits left after this buy + next loss bonus) could not buy it back with a heavy shield. A rich
+  player plays a lost round out. `EconomyOptions.saveByCredits` (default true) turns it off; the
+  policy's price rule still applies.
+- Win belief refit on the new engine: β 8.35, τ 18,500 (table below).
+
+**Validation (160 matches, real rosters, Ascent, abilities off; defaults)**
+
+| Metric | Real | main 4f72e64 1–160 | v1 merged 1–160 | **v1.1 1–160** | **v1.1 161–320** |
+|---|---|---|---|---|---|
+| Ends by elimination | 0.714 | 0.686 ✓ | 0.661 ✗ | 0.677 ✓ | 0.682 ✓ |
+| Ends by detonation | 0.082 | 0.082 ✓ | 0.085 ✓ | 0.090 ✓ | 0.084 ✓ |
+| Ends by defuse | 0.160 | 0.185 ✓ | 0.204 ✗ | 0.194 ✓ | 0.190 ✓ |
+| Ends by time | 0.043 | 0.047 ✓ | 0.050 ✓ | 0.039 ✓ | 0.044 ✓ |
+| Attack round win | 0.509 | 0.501 ✓ | 0.482 ✓ | 0.503 ✓ | 0.489 ✓ |
+| Opening duel (attack) | 0.437 | 0.448 ✓ | 0.441 ✓ | 0.449 ✓ | 0.450 ✓ |
+| Pistol vs pistol (attack) | 0.500 | 0.463 ✓ | 0.463 ✓ | 0.463 ✓ | 0.394 ✗ |
+| Full vs full (attack) | 0.500 | — | 0.498 ✓ | 0.457 ✓ | 0.468 ✓ |
+| **Original 8** | | 8/8 | 6/8 | **8/8** | **7/8** |
+| VCT economy cells | | — | 6/7 | 5/7 | 6/7 |
+| **All judged** | | | 12/15 | **13/15** | **13/15** |
+
+The 161–320 pistol miss is decided before any buy; engine-truth reported 0.394 on that range too. Failing economy
+cells: semi-vs-eco 0.98 (VCT 0.93) on both ranges, and eco-vs-semi 0.02 (VCT 0.07) on 1–160. Both are the
+eco-rounds-never-win gap (`EC-04`, engine-truth).
+
+Report-only (1–160 / 161–320, VCT): force-vs-full 0.29 / 0.33 (0.34) · bonus conversion 0.57 / 0.57
+(0.43) · pistol conversion 0.93 / 0.91 (0.88) · eco-vs-full 0.016 (0.115) · tier share eco / semi / full
+0.10 / 0.35 / 0.55 (0.054 / 0.326 / 0.621). The steeper belief makes teams save more: eco share went from
+0.073 to 0.10, above VCT. Drop rate 0.09.
+
+Intermediate runs (1–160): the plan fix alone gave elimination 0.668 / defuse 0.190 / time 0.055. Adding the
+refit gave 0.668 / 0.191 / 0.051 with attack 0.502. Adding save worth gave 0.677 / 0.194 / 0.039.
+Final 1–160 report: `docs/research/SIM_ECONOMY_V11_2026-11-23.json`.
+
 ## Match economy v1 — per player (EC-01/02/03/05, 2026-11-23)
 
 **Code:** `packages/match-runner/src/economy.ts` (state, plans, settlement, pickups) ·
@@ -75,7 +136,8 @@ ults do nothing in the sim, so they carry no value in the buy. Ult orbs: match-r
 | Fit | Data | β | τ | log-loss |
 |---|---|---|---|---|
 | `ROUND_WIN_BELIEF` (VCT) | VCT Reference international rounds 2–24, both loadouts known, 42,364 team-rounds, vct.duckdb `a1a189d0…4890` | 4.12 | 10,000 | 0.612 |
-| `SIM_ROUND_WIN_BELIEF` (**default**) | this simulator, sim-batch real rosters, Ascent, seeds 1–160 (commit `38ab6a5`), 5,392 team-rounds | 7.75 | 12,000 | 0.566 (VCT curve: 0.595) |
+| `SIM_ROUND_WIN_BELIEF` (**default**, v1.1) | this simulator after engine-truth's recalibration (main `4f72e64`), seeds 1–160, 5,618 team-rounds | 8.35 | 18,500 | 0.532 (old sim fit: 0.534; VCT curve: 0.557) |
+| first sim fit (v1) | pre-recalibration engine (`38ab6a5`), seeds 1–160, 5,392 team-rounds | 7.75 | 12,000 | 0.566 (VCT curve: 0.595) |
 
 VCT reality check (opponent ≈ 22.6k): own 7.9k → curve 0.19 / real 0.22; 12.5k → 0.32 / 0.29;
 16.6k → 0.41 / 0.39; 19.7k → 0.46 / 0.48. An eco (≈2.7k) is under-read: 0.06 / 0.13 (n = 179).
@@ -176,7 +238,11 @@ forward `players` / `pickups` (left to the UI session).
   conversion is still 0.59 vs 0.43).
 - **Eco rounds never win** (0.01 vs 0.12 real): classic vs rifle duels in the simulator, plus no eco
   stacking (`EC-04`) — engine-truth.
-- **Attack deficit** (0.448 / 0.419) is unchanged by the economy; it is upstream (pistol rounds identical).
+- **Attack deficit** (v1, old engine: 0.448 / 0.419) was upstream (pistol rounds identical). On the
+  recalibrated engine with v1.1: 0.503 / 0.489.
+- **Defuse share is high on every tier** (full/full 0.20 vs VCT Ascent 0.18, pistol 0.24 vs 0.18): retake
+  play, engine-truth. Elimination 0.677 is just inside the 0.674 bound.
+- The save-worth rule ignores kill rewards earned before the save and the team's drops next round.
 - Opponent's future buys in the lookahead are assumed to be full buys (a cautious read).
 - Kill rewards are not projected in the lookahead (≈ +500–700 a team per round).
 - Overtime keeps the old boundary rule (equipment does not carry between OT rounds).

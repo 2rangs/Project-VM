@@ -37,6 +37,16 @@ describe("IGL strategy (README §24.1)", () => {
     expect(selectStrategy({ ...eco, roundNumber: 1 }, spatial, rng(1))).not.toBe("default");
   });
 
+  it("a partial buy (the match economy's force / half call) plays for picks on attack", () => {
+    const full = { ...loadView("01"), roundNumber: 5 };
+    const call = (buyCall: string) => selectStrategy({ ...full, economy: { ...full.economy, buyCall } }, spatial, rng(1));
+    expect(call("force")).toBe("default");
+    expect(call("half")).toBe("default");
+    expect(call("eco")).toBe("default");
+    expect(call("full")).not.toBe("default"); // a full buy commits
+    expect(call("bonus")).not.toBe("default"); // a bonus round plays on its kept guns
+  });
+
   it("issues a rotate/stack call when enemies are read onto a site (defense)", () => {
     const base = loadView("03"); // deciding team is defense
     // Inject an observation of two enemies at A site (minimap ~ a-site anchor).

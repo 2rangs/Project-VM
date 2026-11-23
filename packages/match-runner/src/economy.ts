@@ -177,6 +177,11 @@ export interface EconomyOptions {
    * docs/ECONOMY_MODEL.md for the VCT fit (β 4.12, τ 10000) and the fit on this simulator's rounds.
    */
   readonly winBelief: WinBeliefParams;
+  /**
+   * Attack saves follow each player's credits (saveWorth): a gun its holder could buy back next round
+   * is not worth giving a round up for. false → the policy's price-only rule. Default true.
+   */
+  readonly saveByCredits: boolean;
 }
 
 export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
@@ -187,6 +192,7 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
   survivalPriorRounds: 4,
   ultPointsPerRoundPrior: 1.4,
   winBelief: SIM_ROUND_WIN_BELIEF,
+  saveByCredits: true,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -658,6 +664,17 @@ export function decideTeamBuy(ctx: BuyContext): BuyDecision {
 }
 
 const round4 = (v: number) => Math.round(v * 10_000) / 10_000;
+
+/**
+ * Is each player's gear worth a save this round? A player who loses the round gets the next loss
+ * bonus; if that plus what they have left after this buy re-buys their weapon and a heavy shield,
+ * keeping the gun does not change their next buy, so it is not worth giving the round up for it.
+ * Roster order (sim id atk{i+1} / def{i+1}).
+ */
+export function saveWorth(eco: TeamEconomy, buy: BuyDecision): boolean[] {
+  const next = lossBonusFor(eco.consecutiveLosses + 1);
+  return buy.players.map((b) => clampCredits(b.creditsAfter + next) < priceOf(b.weapon) + HEAVY_COST);
+}
 
 /** After the buy: each player's credits are what they have left. */
 export function afterBuy(eco: TeamEconomy, buy: BuyDecision): TeamEconomy {

@@ -43,18 +43,21 @@ export const ROUND_WIN_BELIEF = {
 } as const;
 
 /**
- * The same curve fitted to THIS simulator's rounds (sim-batch, real rosters, Ascent, seeds 1–160,
- * 5,392 team-rounds, 2026-11-23): β = 7.75, τ = 12,000, log-loss 0.566 (the VCT curve scores 0.595
- * on them). Loadout decides a simulated round harder than a real one — rounds the VCT curve gives
- * 0.3 are won 0.14 in the sim — so a team that believed the VCT curve would force into fights its
- * world does not give it. Match-runner teams use this curve by default (they believe what their world
- * does); refit it when the combat model changes (docs/ECONOMY_MODEL.md, "Refitting the belief").
+ * The same curve fitted to THIS simulator's rounds. Refit 2026-11-23 on the recalibrated engine
+ * (main 4f72e64: damage carryover 0.4, positional smoke/plant, post-plant guards) — sim-batch real
+ * rosters, Ascent, seeds 1–160, rounds 2–24, 5,618 team-rounds: β = 8.35, τ = 18,500, log-loss 0.532
+ * (the previous fit 7.75 / 12,000 scores 0.534, the VCT curve 0.557). First fit, pre-recalibration
+ * engine (38ab6a5, 5,392 team-rounds): 7.75 / 12,000. Loadout decides a simulated round harder than a
+ * real one — rounds the VCT curve gives 0.3 are won 0.14 in the sim — so a team that believed the VCT
+ * curve would force into fights its world does not give it. Match-runner teams use this curve by
+ * default (they believe what their world does); refit it when the combat model changes
+ * (docs/ECONOMY_MODEL.md, "Refitting the belief").
  */
 export const SIM_ROUND_WIN_BELIEF = {
-  beta: 7.75,
-  tauCredits: 12_000,
-  source: "sim-batch econ-1 (38ab6a5), real rosters, Ascent, seeds 1–160, rounds 2–24",
-  teamRounds: 5_392,
+  beta: 8.35,
+  tauCredits: 18_500,
+  source: "sim-batch v-fp-1 (merge of 4f72e64), real rosters, Ascent, seeds 1–160, rounds 2–24",
+  teamRounds: 5_618,
 } as const;
 
 /** Parameters of the round-win belief curve (β, τ); ROUND_WIN_BELIEF is the VCT fit. */
