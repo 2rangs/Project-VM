@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import type { CoordinateTransform, TacticalMapData } from "./types.js";
 import { SpatialEngine } from "./engine.js";
 import type { NavData, NavVisibility } from "./navigation.js";
+import { deriveMapTactics, type MapTactics, type MapTacticsOverrides } from "./tactics.js";
 
 export const MAP_IDS = [
   "ascent",
@@ -77,6 +78,8 @@ export interface LoadedMapData {
   readonly transform: CoordinateTransform;
   /** The map's navigation roadmap, when <id>.nav.json exists. */
   readonly nav?: NavData;
+  /** The hand-authored part of the map's tactics, when <id>.tactics.json exists (see tactics.ts). */
+  readonly tactics?: MapTacticsOverrides;
   /** Measured line of sight between roadmap nodes, when <id>.vis.json exists. */
   readonly visibility?: NavVisibility;
 }
@@ -91,11 +94,19 @@ export function loadMapData(id: string, datasetsRoot: string = defaultDatasetsRo
   const nav = existsSync(navPath) ? (JSON.parse(readFileSync(navPath, "utf8")) as NavData) : undefined;
   const visPath = resolve(dir, `${id}.vis.json`);
   const visibility = existsSync(visPath) ? (JSON.parse(readFileSync(visPath, "utf8")) as NavVisibility) : undefined;
-  return { info: MAPS[id], data, transform: cs.transform, ...(nav ? { nav } : {}), ...(visibility ? { visibility } : {}) };
+  const tacPath = resolve(dir, `${id}.tactics.json`);
+  const tactics = existsSync(tacPath) ? (JSON.parse(readFileSync(tacPath, "utf8")) as MapTacticsOverrides) : undefined;
+  return { info: MAPS[id], data, transform: cs.transform, ...(nav ? { nav } : {}), ...(visibility ? { visibility } : {}), ...(tactics ? { tactics } : {}) };
 }
 
 /** Load a map by id and return its spatial engine. */
 export function loadMap(id: string, datasetsRoot?: string): SpatialEngine {
   const { data, transform, nav, visibility } = loadMapData(id, datasetsRoot);
   return new SpatialEngine(data, { transform, nav, visibility });
+}
+
+/** A map's tactical data: derived from its geometry, with its hand-authored file (if any) applied. */
+export function loadMapTactics(id: string, datasetsRoot?: string, engine?: SpatialEngine): MapTactics {
+  const loaded = loadMapData(id, datasetsRoot);
+  return deriveMapTactics(engine ?? new SpatialEngine(loaded.data, { transform: loaded.transform, nav: loaded.nav, visibility: loaded.visibility }), loaded.tactics ?? {});
 }

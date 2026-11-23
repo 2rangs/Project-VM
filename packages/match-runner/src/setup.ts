@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { createEngine, type SpatialEngine } from "@pv/spatial-engine";
+import { createEngine, deriveMapTactics, type MapTactics, type MapTacticsOverrides, type SpatialEngine } from "@pv/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
 import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
@@ -34,6 +34,16 @@ export function loadSpatial(mapId = "ascent"): SpatialEngine {
   const visPath = resolve(dir, `${mapId}.vis.json`);
   const visibility = existsSync(visPath) ? JSON.parse(readFileSync(visPath, "utf8")) : undefined;
   return createEngine(nav, cs.transform, roadmap, visibility);
+}
+
+/**
+ * A map's tactical data (sites, the way in to each, what a defender watches, defender starts):
+ * derived from its geometry, with its hand-authored `<map>.tactics.json` (if any) applied.
+ */
+export function loadTactics(mapId: string, spatial: SpatialEngine): MapTactics {
+  const path = resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.tactics.json`);
+  const overrides: MapTacticsOverrides = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
+  return deriveMapTactics(spatial, overrides);
 }
 
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
@@ -63,8 +73,9 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics) {
     this.inner = new TeamDecisionPolicy(sq, {
+      ...(tactics ? { tactics } : {}),
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
       // Footsteps carry as far as the spike's blast (game-rules); zone centres let a player judge
@@ -126,8 +137,9 @@ export function makeSimPolicies(
   sq: SpatialQuery,
   abilityEffect?: (abilityId: string) => string | undefined,
   spatial?: SpatialEngine,
+  tactics?: MapTactics,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

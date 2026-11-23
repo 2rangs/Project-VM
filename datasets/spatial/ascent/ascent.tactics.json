@@ -1,0 +1,12 @@
+{
+  "mapId": "ascent",
+  "schemaVersion": "1.0.0",
+  "note": "Hand-authored tactical values for Ascent that replace the values derived from the map (packages/spatial-engine/src/tactics.ts). Everything not listed here is derived. These are the values the Ascent balance was validated with.",
+  "provenance": "manual-approx (PV-1 tactics KB execute utilityRequirements; PV-3 defense anchors)",
+  "aim": { "mid-courtyard": "mid-top" },
+  "smokes": {
+    "a-site": ["a-main", "a-rafters", "a-wine"],
+    "b-site": ["b-main", "b-boathouse"],
+    "mid-courtyard": ["mid-top"]
+  }
+}

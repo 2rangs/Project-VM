@@ -17,7 +17,7 @@ import type {
 } from "@pv/shared-types";
 import type { EvaluatedAction } from "@pv/action-generator";
 
-const EXECUTE_STRATEGIES = new Set<TeamStrategy>(["aExecute", "bExecute", "midControl", "fakeAtoB", "fakeBtoA"]);
+const EXECUTE_STRATEGIES = new Set<TeamStrategy>(["aExecute", "bExecute", "cExecute", "midControl", "fakeAtoB", "fakeBtoA"]);
 
 export interface PlayerChoice {
   readonly command: ActionCommand;
