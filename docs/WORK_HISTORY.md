@@ -332,6 +332,13 @@
 - 경기 화면: 엔진이 판정한 시야 표시(없으면 근사로 표시), 킬 배너 소리(선택), 오리지널 아이콘 세트, VCT 로고 로딩 엠블럼(로컬·gitignore, 대체 그림 있음 — 상표, 내부용).
 - 검증: 엔진 변경 없음(실제 로스터 6/8, 공격 0.455 유지). 루트 259, career 49, round-simulator 121, match-runner 87(+1 기존 실패: Bind own geometry, 맵 세션 담당), spatial-engine 278, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과(커리어 e2e는 영입 → 라인업 → 시즌 종료 → 계약 만료 → 다음 시즌까지).
 
+### 18차 main 머지 (2026-11-23) — 엔진 정합성 1단계: 시야 하나로, 위치 기반 스모크·설치, 실제 로스터 재보정
+- 합친 브랜치: `claude/peaceful-agnesi-b01f91` @ `2e2a7bf`(engine-truth 1–6단계, 상세 `docs/ENGINE_TRUTH.md`).
+- 내용: 검증 리포트 전용 지표 + sim-batch 실제 로스터 확인 테스트, 플래시·정찰·트레이서·크로스파이어가 `vision.ts`와 같은 위치 LOS 사용 + 틱별 시야 기록, 스모크는 착탄 지점 볼륨으로 차단, 설치는 사이트 다각형·해체는 거리, 사망자 스팟 해제, 설치 후 가드가 리테이크 진입로를 봄, 듀얼 피해 이월 0.4(실제 로스터 시드 1–160 적합).
+- 검증(실제 로스터, 이 통합 세션 재측정, 시드 1–160): **8/8**, 공격 0.501, 피스톨 0.463, 전멸 0.686, 해체 0.185, 폭발 0.082, 시간 초과 0.047. 세션 보고: 시드 161–320 7/8(0.485), 321–480 8/8(0.507). 스킬 on: 3/8, 공격 0.281(수비 쏠림, 원인은 ENGINE_TRUTH.md) — 기본 OFF 유지.
+- 함께 고친 것: 커리어 저장이 겹칠 때 `.tmp` 이름 충돌(ENOENT) → 슬롯별 순차 쓰기, 커리어 e2e가 자동 저장을 기다림(3/3 연속 통과).
+- 테스트: core 259/4 todo, career 49, round-simulator 128, match-runner 87(+1 기존 실패: Bind own geometry), spatial-engine 278, ability-engine 21, combat-engine 21, perception-engine 27, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
