@@ -40,7 +40,7 @@ import type {
   TrackFrame,
   NavTraceEvent,
 } from "./types.js";
-import { AVERAGE_TRAITS, DEFAULT_CONFIG, type AbilityCue, type ShotCue } from "./types.js";
+import { AVERAGE_TRAITS, BODY_OVERLAP_UNITS, DEFAULT_CONFIG, type AbilityCue, type RoundStats, type ShotCue } from "./types.js";
 import {
   abilityCastCueConfidence, angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness,
   patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
@@ -103,6 +103,8 @@ interface MoveWorld {
   readonly rerouteTried: Set<string>;
   /** player → the boundary it is waiting at for teammates, and since when. */
   readonly stackWait: Map<string, { zone: string; sinceMs: number }>;
+  /** Report-only stack-up counters (RoundStats.crowd). */
+  readonly stackStats: { waits: number; ticks: number; timeouts: number };
   /** `${patch}|${player}` → elapsed ms until which the player is inside that patch (set once). */
   readonly patchExposure: Map<string, number>;
   /** player → elapsed ms until which it is inside fire (the latest of its patch exposures). */
@@ -217,6 +219,13 @@ export class RoundSimulator {
     const lastHop = new Map<string, { fromZone: string; tick: number }>();
     const rerouteTried = new Set<string>();
     const stackWait = new Map<string, { zone: string; sinceMs: number }>();
+    const stackStats = { waits: 0, ticks: 0, timeouts: 0 };
+    // Report-only round measurements (config.collectStats).
+    const collect = this.cfg.collectStats === true;
+    let overlapTicks = 0, minPairDistance = Number.POSITIVE_INFINITY;
+    const siteArrivals: Array<{ playerId: string; zoneId: string; atMs: number }> = [];
+    const attackerRoutes: Record<string, string[]> = {};
+    if (collect) for (const p of state.players) if (p.side === "attack") attackerRoutes[p.id] = [p.zoneId];
     this.steppingOut.clear();
     this.edgeWaiting.clear();
     // Navigation: every player takes its own standing spot; from here on only the executor moves them.
@@ -275,7 +284,7 @@ export class RoundSimulator {
       const fire = activeGroundPatches(abilityEngine, "molly", state.elapsedMs);
       const slow = activeGroundPatches(abilityEngine, "slow", state.elapsedMs);
       const hazards = this.groundHazards(fire, slow);
-      const moveWorld: MoveWorld = { state, fire, slow, hazards, rerouteTried, stackWait, patchExposure, burnUntil, lastHop };
+      const moveWorld: MoveWorld = { state, fire, slow, hazards, rerouteTried, stackWait, stackStats, patchExposure, burnUntil, lastHop };
       this.edgeWaiting.clear();
       // Movement blockers (things a body cannot walk through) in force this tick. Vision
       // blockers such as smoke are NOT among them: a smoke is walked through.
@@ -316,6 +325,28 @@ export class RoundSimulator {
         if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
       }
       this.publishZones(state);
+      if (collect) {
+        let overlap = false;
+        for (let i = 0; i < alive.length; i++) {
+          const a = alive[i]!;
+          if (!a.alive) continue;
+          for (let j = i + 1; j < alive.length; j++) {
+            const b = alive[j]!;
+            if (!b.alive || Math.abs(a.position.z - b.position.z) > 120) continue;
+            const d = Math.hypot(a.position.x - b.position.x, a.position.y - b.position.y);
+            if (d < minPairDistance) minPairDistance = d;
+            if (d < BODY_OVERLAP_UNITS) overlap = true;
+          }
+        }
+        if (overlap) overlapTicks++;
+        for (const p of state.players) {
+          if (p.side !== "attack" || !p.alive) continue;
+          const route = attackerRoutes[p.id];
+          if (!route || siteArrivals.some((a) => a.playerId === p.id)) continue;
+          if (route[route.length - 1] !== p.zoneId) route.push(p.zoneId);
+          if (this.spatial.isPlantableZone(p.zoneId)) siteArrivals.push({ playerId: p.id, zoneId: p.zoneId, atMs: state.elapsedMs });
+        }
+      }
 
       // 3. abilities
       for (const p of state.players) {
@@ -531,6 +562,17 @@ export class RoundSimulator {
       engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
       cueTrace: this.cfg.traceCommands ? cues : undefined,
       abilityCueTrace: this.cfg.traceCommands ? abilityCues : undefined,
+      ...(collect
+        ? {
+            stats: {
+              ticks: state.tick, overlapTicks, minPairDistance, siteArrivals, attackerRoutes,
+              crowd: {
+                ...this.mover.crowd,
+                stackWaits: stackStats.waits, stackWaitTicks: stackStats.ticks, stackTimeouts: stackStats.timeouts,
+              },
+            } satisfies RoundStats,
+          }
+        : {}),
     };
   }
 
@@ -633,9 +675,14 @@ export class RoundSimulator {
     });
     if (!behind) { w.stackWait.delete(p.id); return true; }
     const held = w.stackWait.get(p.id);
-    const sinceMs = held && held.zone === toZone ? held.sinceMs : w.state.elapsedMs;
+    const fresh = !(held && held.zone === toZone);
+    const sinceMs = fresh ? w.state.elapsedMs : held!.sinceMs;
     w.stackWait.set(p.id, { zone: toZone, sinceMs });
-    return w.state.elapsedMs - sinceMs >= STACK_MAX_WAIT_MS;
+    const timedOut = w.state.elapsedMs - sinceMs >= STACK_MAX_WAIT_MS;
+    if (fresh) w.stackStats.waits++;
+    if (timedOut) w.stackStats.timeouts++;
+    else w.stackStats.ticks++;
+    return timedOut;
   }
 
   /** Fire on the doorway into `nextZoneId` (the longest-burning, if several): wait or cross. */

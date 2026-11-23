@@ -355,6 +355,38 @@ export interface AbilityCue {
   readonly confidence: number;
 }
 
+/**
+ * Report-only measurements of a round (config.collectStats): how the bodies moved and crowded.
+ * Nothing in the simulation reads them; the validator turns them into batch metrics
+ * (tools/data-validator engine metrics). Collecting them does not change the outcome.
+ */
+export interface RoundStats {
+  /** Ticks simulated. */
+  readonly ticks: number;
+  /** Ticks on which at least one pair of living bodies on the same floor stood closer than BODY_OVERLAP_UNITS. */
+  readonly overlapTicks: number;
+  /** Smallest same-floor centre distance between two living bodies this round (uu; Infinity if never measured). */
+  readonly minPairDistance: number;
+  /** Each attacker's first entry into a plantable (site) zone, in order of arrival. */
+  readonly siteArrivals: ReadonlyArray<{ readonly playerId: PlayerId; readonly zoneId: string; readonly atMs: number }>;
+  /** Each attacker's zones in the order walked (repeats collapsed) up to its first site entry, its death or the round end. */
+  readonly attackerRoutes: Readonly<Record<PlayerId, readonly string[]>>;
+  /** Crowd handling: mover-ticks queued / giving way, give-ups (squeezed past), stack-up waits at boundaries. */
+  readonly crowd: {
+    readonly queueTicks: number;
+    readonly queuePushes: number;
+    readonly yieldTicks: number;
+    readonly yieldPushes: number;
+    /** Stack-up episodes (a mover holding at a boundary for a teammate), mover-ticks spent so, and episodes cut by STACK_MAX_WAIT. */
+    readonly stackWaits: number;
+    readonly stackWaitTicks: number;
+    readonly stackTimeouts: number;
+  };
+}
+
+/** Two bodies whose centres are closer than this (uu, ≈ 0.85 body widths) overlap (report-only metric). */
+export const BODY_OVERLAP_UNITS = 30;
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -378,6 +410,8 @@ export interface RoundResult {
   readonly abilityCueTrace?: readonly AbilityCue[];
   /** First-contact posture of every duel, present only when config.traceCommands is true. */
   readonly engagementTrace?: readonly EngagementRecord[];
+  /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
+  readonly stats?: RoundStats;
 }
 
 export interface SimConfig {
@@ -399,6 +433,8 @@ export interface SimConfig {
   readonly recordPerception: boolean;
   /** Record a command→execution trace (policy debugging for PV-3). Off by default. */
   readonly traceCommands: boolean;
+  /** Collect report-only movement / crowd measurements (RoundResult.stats). Off by default; passive. */
+  readonly collectStats?: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */

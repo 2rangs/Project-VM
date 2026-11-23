@@ -170,6 +170,12 @@ export class MovementExecutor {
   /** blocker id → the zone it seals (zone blockers only), for the strategic route. */
   private readonly zoneOfBlocker = new Map<string, string>();
   private readonly speeds: { run: number; walk: number }; // uu per ms
+  /**
+   * Crowd counters for the round (report-only, never read by the simulation): mover-ticks spent
+   * queued behind a mover / giving way to a body, and how often a mover gave up waiting and
+   * squeezed past (the body-overlap cases). Reset with the executor's `reset`.
+   */
+  readonly crowd = { queueTicks: 0, queuePushes: 0, yieldTicks: 0, yieldPushes: 0 };
 
   constructor(private readonly spatial: SpatialEngine, speeds: { runUnitsPerSec: number; walkUnitsPerSec: number }) {
     if (!spatial.nav) throw new Error(`MovementExecutor: map "${spatial.mapId}" has no navigation roadmap (<map>.nav.json) loaded`);
@@ -196,6 +202,7 @@ export class MovementExecutor {
   reset(players: readonly SimPlayer[]): void {
     this.movers.clear();
     this.claims.clear();
+    this.crowd.queueTicks = 0; this.crowd.queuePushes = 0; this.crowd.yieldTicks = 0; this.crowd.yieldPushes = 0;
     const perTeam = new Map<string, number>();
     for (const p of players) {
       const slot = perTeam.get(p.teamId) ?? 0;
@@ -668,14 +675,18 @@ export class MovementExecutor {
           // behind a mover going the same way (or queued at a boundary): simply follow — unless the
           // line has not moved at all for MAX_QUEUE_TICKS (then pass it, as past a standing body)
           if (ahead === "queue") {
+            this.crowd.queueTicks++;
             if (++m.queueTicks < MAX_QUEUE_TICKS) break;
             m.queueTicks = 0;
             m.pushTicks = 15;
+            this.crowd.queuePushes++;
           }
           // a body standing in the way: give it a moment, then squeeze past
           if (ahead === "standing") {
+            this.crowd.yieldTicks++;
             if (++m.yieldTicks < MAX_YIELD_TICKS) break;
             m.pushTicks = 15;
+            this.crowd.yieldPushes++;
           }
         }
         m.yieldTicks = 0;
