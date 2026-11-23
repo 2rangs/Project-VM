@@ -18,7 +18,6 @@ export const NAV: NavGroup[] = [
   {
     label: 'MATCH',
     items: [
-      { id: 'home', icon: '⌂' }, // [home] lobby (screens/home/HomeScreen.tsx)
       { id: 'match-day', icon: '▶' },
       { id: 'tactics', icon: '◈' },
       { id: 'agents', icon: '✦' },

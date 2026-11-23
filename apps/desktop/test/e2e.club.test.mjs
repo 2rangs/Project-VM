@@ -31,10 +31,16 @@ async function main() {
   });
   const page = await app.firstWindow();
   page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  // The app opens on the start menu; the club screens are reached from Quick Match (sandbox).
+  const enterSandbox = async () => {
+    await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
+    await page.getByTestId('start-quick-match').click();
+    await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  };
+  await enterSandbox();
   await page.evaluate(() => localStorage.setItem('pv-lang', 'ko'));
   await page.reload();
-  await page.waitForSelector('[data-testid="screen-match-day"]', { timeout: 20000 });
+  await enterSandbox();
   const signed = await clubStep(page, OUT);
   await app.close();
   console.log(`E2E CLUB OK — signed ${signed}; screenshots in apps/desktop/docs/`);
