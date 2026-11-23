@@ -28,6 +28,7 @@ export function toPerceptionAbilityStates(engine: AbilityEngine): AbilityState[]
       abilityId: e.effectType === "wall" ? "wall" : "smoke", // matches visionBlockerIsSmoke
       origin: e.origin,
       expiresAtMs: e.expiresAtMs,
+      radiusUnits: e.radiusUnits > 0 ? e.radiusUnits : null,
     });
   }
   return out;

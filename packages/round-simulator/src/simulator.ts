@@ -3,6 +3,8 @@ import {
   PerceptionEngine,
   DEFAULT_PARAMS as PERCEPTION_PARAMS,
   facingAngleTo,
+  lineOfSight,
+  type SightPoint,
   type PlayerState as PPlayerState,
   type WorldState as PWorldState,
 } from "@pv/perception-engine";
@@ -164,6 +166,22 @@ export class RoundSimulator {
   private readonly reachCache = new Map<string, boolean>();
   /** The round's movement executor: the only thing that changes a player's position. */
   private mover!: MovementExecutor;
+  /** Vision blockers in force this tick (refreshed after abilities advance; see lineOf). */
+  private sightBlockers: { smokedPairs: Array<[string, string]> } = { smokedPairs: [] };
+
+  /**
+   * Is the line between two points clear? The ONE sight rule (perception-engine `lineOfSight`):
+   * positional where the map has a sight table, the zone table otherwise. `throughSmoke` = the
+   * question is about light that a smoke does not stop (a tracer); everything else is cut by it.
+   * No facing here — who LOOKS is decided by the caller (canSee for eyes, facing for a flash).
+   */
+  private lineOf(a: SightPoint, b: SightPoint, throughSmoke = false): boolean {
+    return lineOfSight(this.spatial, a, b, {
+      positionalSight: PERCEPTION_PARAMS.vision.positionalSight !== false,
+      sameZoneAlwaysVisible: PERCEPTION_PARAMS.vision.sameZoneAlwaysVisible,
+      ...(throughSmoke ? {} : { smokedPairs: this.sightBlockers.smokedPairs }),
+    });
+  }
 
   constructor(deps: RoundSimulatorDeps) {
     this.spatial = deps.spatial;
@@ -349,6 +367,7 @@ export class RoundSimulator {
       }
 
       // 3. abilities
+      this.refreshSightBlockers(abilityEngine);
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
@@ -435,6 +454,7 @@ export class RoundSimulator {
         }
       }
       abilityEngine.advance(state.elapsedMs);
+      this.refreshSightBlockers(abilityEngine);
       // A deployed smoke / wall / fire is SEEN by whoever has a sightline onto it.
       this.emitDeployedEffectCues(state, abilityEngine, seenEffects, abilityCues);
 
@@ -518,9 +538,18 @@ export class RoundSimulator {
 
       // 7. record track frame (opt-in)
       if (this.cfg.recordTracks) {
+        const killedNow = new Set(events.filter((e) => e.kind === "kill" && e.tick === state.tick).map((e) => e.target!));
         tracks.push({
           tick: state.tick, elapsedMs: state.elapsedMs,
-          players: state.players.map((p) => ({ id: p.id, side: p.side, x: p.position.x, y: p.position.y, z: p.position.z, alive: p.alive })),
+          players: state.players.map((p) => {
+            const base = { id: p.id, side: p.side, x: p.position.x, y: p.position.y, z: p.position.z, alive: p.alive };
+            // dead before this tick: no sight. Killed on it: the sight it had when the duel began.
+            if (!p.alive && !killedNow.has(p.id)) return base;
+            // the sight the engagement step decided on this tick (resolveEngagements' `sees`)
+            const blind = abilityEngine.blindRemainingMs(p.id, state.elapsedMs) > 0;
+            const sees = blind ? [] : (sight.players.get(p.id)?.visibleEnemies ?? []).filter((e) => e.currentlyVisible).map((e) => e.playerId).sort();
+            return { ...base, sees, ...(blind ? { blind: true as const } : {}) };
+          }),
         });
       }
 
@@ -577,6 +606,11 @@ export class RoundSimulator {
   }
 
   // ---- helpers ----
+
+  private refreshSightBlockers(abilityEngine: AbilityEngine): void {
+    const zones = visionBlockedZones(abilityEngine);
+    this.sightBlockers = { smokedPairs: zones.flatMap((z) => this.spatial.visibleZonesFrom(z).map((n): [string, string] => [z, n])) };
+  }
 
   /** Damage a body takes crossing a fire patch right now (its chord, capped by the burn time left). */
   private crossDamage(h: GroundPatch): number {
@@ -770,11 +804,13 @@ export class RoundSimulator {
    */
   private reconTargets(state: SimState, caster: SimPlayer, radiusUnits: number | null, center: { x: number; y: number; z: number }): SnapshotEnemy[] {
     const centerZone = this.spatial.nearestZone(center).id;
+    const device = { position: center, zoneId: centerZone };
     const out: SnapshotEnemy[] = [];
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
-      const sameZone = e.zoneId === centerZone;
-      if (!sameZone && (radiusUnits == null || dist3(center, e.position) > radiusUnits || !this.spatial.hasLineOfSight(centerZone, e.zoneId))) continue;
+      // inside the radius (no catalogued radius: its own zone only) and in the device's sight
+      if (radiusUnits == null ? e.zoneId !== centerZone : dist3(center, e.position) > radiusUnits) continue;
+      if (!this.lineOf(device, e)) continue;
       out.push({ enemyId: e.id, teamId: e.teamId, position: { ...e.position } });
     }
     return out;
@@ -840,6 +876,9 @@ export class RoundSimulator {
       const observerSide: Side = owner.side === "attack" ? "defense" : "attack";
       const key = `${e.instanceId}|${observerSide}`;
       if (seen.has(key)) continue;
+      // A deployed smoke / wall / fire is a large thing (metres across, a smoke metres tall): any
+      // part of it in view gives it away, so it is seen over the zone sightline table, not over
+      // a single point-to-point line (which would miss a smoke whose top is in plain view).
       const sighted = state.players.some((p) => p.alive && p.side === observerSide &&
         (p.zoneId === e.zoneId || this.spatial.hasLineOfSight(p.zoneId, e.zoneId)));
       if (!sighted) continue;
@@ -868,7 +907,7 @@ export class RoundSimulator {
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
       if (dist3(centerPos, e.position) > radiusUnits) continue;
-      if (e.zoneId !== centerZone && !this.spatial.hasLineOfSight(centerZone, e.zoneId)) continue;
+      if (!this.lineOf({ position: centerPos, zoneId: centerZone }, e)) continue;
       if (needsSight && e.zoneId !== caster.zoneId) {
         const popFrom = e.zoneId === centerZone ? casterZonePos : centerPos;
         if (facingAngleTo(e.facing, e.position, popFrom) > HALF_FOV_RAD) continue;
@@ -1094,7 +1133,7 @@ export class RoundSimulator {
       let guns = 0;
       for (const c of alive) {
         if (!c.alive || c.side !== duelist.side || c.id === duelist.id || blind(c.id)) continue;
-        if (!this.spatial.hasLineOfSight(c.zoneId, target.zoneId) && !sees(c.id, target.id)) continue;
+        if (!sees(c.id, target.id) && !this.lineOf(c, target)) continue;
         if (!this.isMoving(c)) { guns++; continue; }
         const bearing = Math.atan2(c.position.y - target.position.y, c.position.x - target.position.x);
         const diff = Math.abs(Math.atan2(Math.sin(bearing - ref), Math.cos(bearing - ref)));
@@ -1245,8 +1284,9 @@ export class RoundSimulator {
     let tracer = false;
     for (const o of observers) {
       sound = Math.max(sound, soundCueConfidence(o.zoneId === shooter.zoneId ? 1 : audible.get(o.zoneId) ?? 0, weapon?.fireLoudness ?? 1));
-      if ((weapon?.tracerVisible ?? true) &&
-        (this.spatial.hasLineOfSight(o.zoneId, shooter.zoneId) || this.spatial.hasLineOfSight(o.zoneId, target.zoneId))) tracer = true;
+      // a tracer is light along the shot: seen by whoever has a line onto the shooter or the target
+      // (a smoke does not hide it — assumption kept from the zone-level rule)
+      if (!tracer && (weapon?.tracerVisible ?? true) && (this.lineOf(o, shooter, true) || this.lineOf(o, target, true))) tracer = true;
     }
     const zonePosition = { ...(this.spatial.getZone(shooter.zoneId)?.position ?? shooter.position) };
     const push = (channel: ShotCue["channel"], confidence: number) => {

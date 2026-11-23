@@ -185,6 +185,15 @@ export interface TrackFrame {
     readonly y: number;
     readonly z: number;
     readonly alive: boolean;
+    /**
+     * Enemies this player SEES on this tick — exactly the sight the engagement step used (the
+     * perception engine's line of sight, FOV and range; a blinded player sees nobody). Ids, sorted.
+     * Present on every living player's entry and on one killed this very tick (its sight when the
+     * duel began); absent on players dead before the tick.
+     */
+    readonly sees?: readonly PlayerId[];
+    /** True while the player is blinded by a flash (it then sees nobody). Absent otherwise. */
+    readonly blind?: true;
   }>;
 }
 
