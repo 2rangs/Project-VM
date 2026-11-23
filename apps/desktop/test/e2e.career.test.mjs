@@ -28,6 +28,17 @@ const electronPath = createRequire(path.join(appDir, 'package.json'))('electron'
 const LONG = 300000;
 const SAVES = fs.mkdtempSync(path.join(os.tmpdir(), 'pv-career-e2e-'));
 const readSave = () => JSON.parse(fs.readFileSync(path.join(SAVES, 'slot1.json'), 'utf8')).career;
+// Autosave is asynchronous: the screen can show a new state a moment before the save file has it.
+// Poll the save until it reaches the state the screen shows (or time out and return the last read).
+async function saveWhen(pred, timeoutMs = 15000) {
+  const t0 = Date.now();
+  let last = null;
+  while (Date.now() - t0 < timeoutMs) {
+    try { last = readSave(); if (pred(last)) return last; } catch { /* mid-write */ }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return last ?? readSave();
+}
 
 async function main() {
   const app = await electron.launch({
@@ -183,7 +194,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('[data-testid="home-matchday"], [data-testid="home-awaiting"], [data-testid="home-season-end"]'), null, { timeout: LONG });
   }
   assert.ok(seasonEnd, 'the season reached its last day');
-  const endSave = readSave();
+  const endSave = await saveWhen((c) => c.season.fixtures.every((f) => !!f.result));
   assert.ok(endSave.season.fixtures.every((f) => !!f.result), 'every fixture of the season was played');
   assert.ok(endSave.world.club.contracts[signedId], 'the signing is still under contract on the last day');
   await shot('season-end');
@@ -192,7 +203,7 @@ async function main() {
   const rosterBefore = new Set([...endSave.world.teams[teamId].roster, ...endSave.world.teams[teamId].academy]);
   await page.getByTestId('home-continue').click();
   await page.waitForFunction(() => document.querySelector('[data-testid="home-matchday"], [data-testid="home-awaiting"]') || /2027/.test(document.querySelector('[data-testid="home-date"]')?.textContent ?? ''), null, { timeout: LONG });
-  const next = readSave();
+  const next = await saveWhen((c) => c.world.season === endSave.world.season + 1);
   assert.equal(next.world.season, endSave.world.season + 1, 'the next season opened');
   assert.ok(!next.world.teams[teamId].roster.includes(signedId), 'the one-year signing left when the contract expired');
   assert.ok(next.world.club.transfers.some((t) => t.playerId === signedId && t.kind === 'expiry'), 'the expiry is recorded');
