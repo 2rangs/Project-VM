@@ -492,9 +492,21 @@ export class MovementExecutor {
     m.spotKey = spotKey(goal);
     this.claim(p.id, spot);
     m.atNode = -1;
-    m.waypoints = this.withLane(r.waypoints, m.lane);
+    // a body held in or carried by a timed link (teleporter, rope) stays on that link: the new path
+    // starts at the link's far end, so the link itself is kept with the time already spent on it —
+    // otherwise the rest of the link would become a straight walk through whatever lies between
+    const riding = m.index > 0 && m.index < m.waypoints.length && m.waypoints[m.index]!.fixedMs !== undefined
+      ? { from: m.waypoints[m.index - 1]!, link: m.waypoints[m.index]!, elapsedMs: m.linkElapsedMs } : null;
+    const planned = this.withLane(r.waypoints, m.lane);
+    const rejoin = riding ? planned.findIndex((w) => w.node >= 0 && w.node === riding.link.node) : -1;
+    if (riding && rejoin >= 0) {
+      m.waypoints = [riding.from, riding.link, ...planned.slice(rejoin + 1)];
+      m.linkElapsedMs = riding.elapsedMs;
+    } else {
+      m.waypoints = planned;
+      m.linkElapsedMs = 0;
+    }
     m.index = 1; // waypoint 0 is where the player stands
-    m.linkElapsedMs = 0;
     m.gatePassed = null;
     m.yieldTicks = 0;
     m.queueTicks = 0;
