@@ -17,8 +17,10 @@ Run (headless, Blender 4.2 LTS):
 What it does
   1. drops what a first-person tactical view does not need: vista/skybox collections, foliage and
      clutter (same name regex family as extract-collision.py), and tiny props;
-  2. paints each object's material colour into a vertex-colour layer and strips materials, UVs
-     and textures (no game textures leave the .blend);
+  2. paints a vertex-colour layer from each material's albedo (`<material>_DF`) texture: every
+     face corner gets the colour of a 64 px box-filtered copy of that texture at its UV — so tiles,
+     trims and painted walls keep their tone — then strips materials, UVs and textures (no texture
+     image leaves the .blend; materials without an albedo get a flat base / hashed stone colour);
   3. joins everything per source collection (a handful of draw calls) and decimates to a budget;
   4. CALIBRATES the Blender→game frame against the navgraph instead of trusting a hand fit:
      tries the 8 axis flips/swaps of "1 Blender metre = 100 uu", keeps the one that puts the most
@@ -36,6 +38,7 @@ import json
 import math
 import argparse
 import hashlib
+import numpy as np
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 
@@ -90,6 +93,95 @@ def material_colour(obj):
     return (0.5, 0.49, 0.46)
 
 
+ALBEDO_PX = 64  # albedo textures are box-filtered down to this before sampling (colour, not detail)
+_albedo_cache = {}
+
+
+def albedo_image(mat):
+    """The material's own albedo texture (`*_DF`, not the shared `Albedo_DF` placeholder), or None."""
+    if not mat or not mat.node_tree:
+        return None
+    best = None
+    for n in mat.node_tree.nodes:
+        im = getattr(n, "image", None) if n.type == "TEX_IMAGE" else None
+        if im is None:
+            continue
+        stem = os.path.splitext(im.name)[0]
+        if re.search(r"_DF$", stem) and not stem.startswith("Albedo_DF"):
+            return im
+        if best is None and re.search(r"(_D|_BaseColor|_Albedo)$", stem, re.I):
+            best = im
+    return best
+
+
+def albedo_array(im):
+    """ALBEDO_PX² box-filtered sRGB colours of an image (rows bottom-up, as Blender stores them)."""
+    key = im.name
+    if key in _albedo_cache:
+        return _albedo_cache[key]
+    arr = None
+    try:
+        w, h = im.size[0], im.size[1]
+        if w > 0 and h > 0:
+            px = np.empty(w * h * 4, dtype=np.float32)
+            im.pixels.foreach_get(px)
+            img = px.reshape(h, w, 4)[:, :, :3]
+            fy, fx = max(1, h // ALBEDO_PX), max(1, w // ALBEDO_PX)
+            hh, ww = (h // fy) * fy, (w // fx) * fx
+            arr = img[:hh, :ww].reshape(hh // fy, fy, ww // fx, fx, 3).mean(axis=(1, 3))
+    except Exception as e:  # unreadable image: fall back to the flat colour
+        print(f"albedo: {im.name} unreadable ({e})")
+    _albedo_cache[key] = arr
+    return arr
+
+
+def paint_from_albedo(obj, layer):
+    """Per face corner: the albedo colour at its UV (flat material colour where there is none)."""
+    me = obj.data
+    nl = len(me.loops)
+    if nl == 0:
+        return
+    loop_mat = np.zeros(nl, dtype=np.int32)
+    if len(me.polygons):
+        starts = np.empty(len(me.polygons), dtype=np.int32); me.polygons.foreach_get("loop_start", starts)
+        totals = np.empty(len(me.polygons), dtype=np.int32); me.polygons.foreach_get("loop_total", totals)
+        mats = np.empty(len(me.polygons), dtype=np.int32); me.polygons.foreach_get("material_index", mats)
+        loop_mat = np.repeat(mats, totals)
+    uv = None
+    if me.uv_layers:
+        uv = np.empty(nl * 2, dtype=np.float32)
+        me.uv_layers[0].data.foreach_get("uv", uv)
+        uv = uv.reshape(nl, 2)
+    out = np.empty((nl, 4), dtype=np.float32); out[:, 3] = 1.0
+    slots = obj.material_slots
+    for mi in np.unique(loop_mat):
+        sel = loop_mat == mi
+        mat = slots[mi].material if mi < len(slots) else None
+        im = albedo_image(mat)
+        arr = albedo_array(im) if im is not None else None
+        if arr is None or uv is None:
+            out[sel, :3] = srgb(flat_colour(mat))
+            continue
+        ah, aw = arr.shape[0], arr.shape[1]
+        u = uv[sel, 0] % 1.0; v = uv[sel, 1] % 1.0
+        xi = np.minimum((u * aw).astype(np.int32), aw - 1)
+        yi = np.minimum((v * ah).astype(np.int32), ah - 1)
+        out[sel, :3] = arr[yi, xi]
+    layer.data.foreach_set("color_srgb", out.ravel())
+
+
+def srgb(c):
+    """Linear → sRGB for a flat colour, so every corner is written in one colour space."""
+    return tuple((12.92 * x) if x <= 0.0031308 else (1.055 * (x ** (1 / 2.4)) - 0.055) for x in c)
+
+
+def flat_colour(mat):
+    """A flat (linear) colour for a material without an albedo texture."""
+    class _O:  # material_colour() reads obj.material_slots
+        material_slots = [type("S", (), {"material": mat})()] if mat else []
+    return material_colour(_O)
+
+
 def main():
     a = parse_args()
     bpy.ops.wm.open_mainfile(filepath=a.blend)
@@ -124,11 +216,10 @@ def main():
         if obj.data.users > 1:
             obj.data = obj.data.copy()
         me = obj.data
-        col = material_colour(obj)
         for attr in list(me.color_attributes):
             me.color_attributes.remove(attr)
         layer = me.color_attributes.new(name="Col", type="BYTE_COLOR", domain="CORNER")
-        layer.data.foreach_set("color", [col[0], col[1], col[2], 1.0] * len(me.loops))
+        paint_from_albedo(obj, layer)
         me.materials.clear()
         while me.uv_layers:
             me.uv_layers.remove(me.uv_layers[0])

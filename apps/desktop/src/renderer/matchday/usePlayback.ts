@@ -1,10 +1,13 @@
 // Playback clock for the live match screen. The playhead lives in a ref and advances on
-// requestAnimationFrame; per-frame consumers (the PixiJS stage) subscribe to it directly, while
+// requestAnimationFrame (at the display's rate, at most MAX_FPS); per-frame consumers (the PixiJS stage) subscribe to it directly, while
 // React only re-renders the HUD ~10×/s through the throttled `tMs` state. Playback always stops
 // at the end of the round under the playhead — the caller decides what happens next.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { roundIndexAt, type MatchTimeline, type RoundTimeline } from './timeline.ts';
 import type { Tempo } from './prefs.ts';
+
+/** Frame-rate ceiling for the live view (2D stage and 3D cams follow this loop). */
+export const MAX_FPS = 144;
 
 export interface Playback {
   /** Throttled playhead for React (match ms). */
@@ -34,6 +37,8 @@ export function usePlayback(tl: MatchTimeline, tempo: Tempo, onRoundEnd?: (round
   useEffect(() => {
     let raf = 0; let last = performance.now(); let lastEmit = 0;
     const tick = (now: number) => {
+      // Follow the display's refresh, but never draw more than MAX_FPS (a 240 Hz panel draws 144).
+      if (now - last < 1000 / MAX_FPS - 0.5) { raf = requestAnimationFrame(tick); return; }
       const dt = Math.min(100, now - last); last = now;
       const { tl: cur, tempo: tp, onRoundEnd: done } = live.current;
       if (playingRef.current && cur.rounds.length > 0) {
