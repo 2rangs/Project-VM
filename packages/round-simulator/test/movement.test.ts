@@ -226,8 +226,10 @@ describe("a standing spot is chosen by what the stop is for", () => {
     expect(covered).not.toBe(plain);
     // judged as the rule judges it: nearer to where it came in, or less seen from the rest of the map
     expect(nav.exposure(covered, "a-main")).toBeLessThanOrEqual(Math.max(...nav.zoneNodes("a-site").map((n) => nav.exposure(n, "a-main"))));
-    // off (the default) nothing changes: the order stands by the callout as before
-    expect(dist(nav.nodePosition(plain), spatial.standPosition("a-site"))).toBeLessThan(400);
+    // off (the default): no cover scoring, but a defender told to watch the way in still stops
+    // where it can see it — the first such spot on its own way in, not the middle of the site
+    expect(nav.nodeZone(plain)).toBe("a-site");
+    expect(nav.sightInto(plain, "a-main")).toBeGreaterThan(0);
   });
 
   it("a replan on the way keeps the spot the player was going to", () => {

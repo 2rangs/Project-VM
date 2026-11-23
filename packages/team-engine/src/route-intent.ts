@@ -58,7 +58,7 @@ export function routeIntentOf(cmd: ActionCommand, role: string | undefined, stra
   if (role === "lurker" && !carriesSpike && src.includes("lurk")) return "lurk";
   if (cmd.moveMode === "walk") return "stealth";
   if (role === "entry") return "entry";
-  if (strategy === "aExecute" || strategy === "bExecute") return "execute";
+  if (strategy === "aExecute" || strategy === "bExecute" || strategy === "cExecute") return "execute";
   return "default";
 }
 

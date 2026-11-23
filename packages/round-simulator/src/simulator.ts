@@ -286,6 +286,8 @@ export class RoundSimulator {
         } else if (!active && this.mover.blockers.has(b.id)) this.mover.removeBlocker(b.id);
       }
       const alive = state.players.filter((q) => q.alive);
+      const sp = state.spike;
+      this.spikeWatched = (sp.phase === "planted" || sp.phase === "defusing") && sp.zoneId && sp.position ? { zoneId: sp.zoneId, position: sp.position } : null;
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
@@ -299,6 +301,13 @@ export class RoundSimulator {
             ...this.spotIntent(p, cmd, state),
             hazards,
           }, hooks);
+        } else if (cmd && cmd.kind === "hold" && !this.isMoving(p)) {
+          // A holder told what to watch stands where it can see it: if its spot does not, it shifts
+          // to one of its zone that does (a few steps; the zone does not change).
+          const watch = this.watchIntent(p, cmd.aimZone, p.zoneId, state);
+          if (watch && !this.mover.seesFromSpot(p, watch) && this.mover.hasSpotThatSees(p.id, p.zoneId, watch)) {
+            this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: watch, hazards }, hooks);
+          }
         }
         this.mover.step(p, dt, alive, hooks);
         // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
@@ -892,8 +901,27 @@ export class RoundSimulator {
     if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: { kind: "plant" } };
     if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.zoneId === targetZone && s.position) return { spot: { kind: "at", position: s.position } };
     if (this.cfg.coverSpots && cmd.aimZone && cmd.aimZone !== targetZone) return { spot: { kind: "hold", watchZone: cmd.aimZone } };
-    return {};
+    const watch = this.watchIntent(p, cmd.aimZone, targetZone, state);
+    return watch ? { spot: watch } : {};
   }
+
+  /**
+   * What a player must be able to SEE from where it stands, from the state of the round:
+   *  - a defender before the plant whose order names a zone to watch (the way in to its site):
+   *    that zone;
+   *  - an attacker after the plant whose order is to watch the spike's zone: the spike itself.
+   * Nobody else — a team staging out of sight is not asked to stand in view.
+   */
+  private watchIntent(p: SimPlayer, aimZone: string | undefined, standZone: string, state: SimState): Extract<SpotIntent, { kind: "see" }> | null {
+    if (!aimZone) return null;
+    const s = state.spike;
+    const planted = s.phase === "planted" || s.phase === "defusing";
+    if (p.side === "attack") return planted && s.zoneId === aimZone && s.position ? { kind: "see", point: s.position } : null;
+    return !planted && aimZone !== standZone ? { kind: "see", zone: aimZone } : null;
+  }
+
+  /** The planted spike, while it is down (what a guarding attacker faces). */
+  private spikeWatched: { zoneId: string; position: { x: number; y: number; z: number } } | null = null;
 
   private isMoving(p: SimPlayer): boolean {
     if (this.steppingOut.has(p.id)) return true; // getting out of / crossing a fire patch
@@ -912,6 +940,12 @@ export class RoundSimulator {
       cmd?.aimZone ??
       (cmd && (cmd.kind === "hold" || cmd.kind === "peek") ? cmd.targetZone : undefined) ??
       this.defaultHoldZone(p, originOf);
+    // an attacker guarding the planted spike looks at the spike, wherever in the zone it lies
+    const spike = this.spikeWatched;
+    if (spike && p.side === "attack" && cmd?.aimZone === spike.zoneId) {
+      const sx = spike.position.x - p.position.x, sy = spike.position.y - p.position.y;
+      if (sx !== 0 || sy !== 0) { p.facing = { x: sx, y: sy }; return; }
+    }
     if (!hintZone || hintZone === p.zoneId) return;
     const z = this.spatial.getZone(hintZone);
     if (!z) return;

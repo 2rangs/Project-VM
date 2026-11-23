@@ -103,8 +103,8 @@ export interface ActionCommand {
 }
 
 export type TeamStrategy =
-  | "default" | "aExecute" | "bExecute" | "midControl" | "fakeAtoB" | "fakeBtoA"
-  | "lurkDefault" | "save" | "defaultHold" | "aggroPush" | "stackA" | "stackB" | "retake";
+  | "default" | "aExecute" | "bExecute" | "cExecute" | "midControl" | "fakeAtoB" | "fakeBtoA"
+  | "lurkDefault" | "save" | "defaultHold" | "aggroPush" | "stackA" | "stackB" | "stackC" | "retake";
 
 export type PlayerRole = "entry" | "support" | "lurker" | "anchor" | "rotator" | "igl";
 

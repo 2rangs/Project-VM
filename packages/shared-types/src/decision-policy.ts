@@ -115,6 +115,8 @@ export type TeamStrategy =
   | "default"
   | "aExecute"
   | "bExecute"
+  /** Three-site maps (Haven, Lotus). */
+  | "cExecute"
   | "midControl"
   | "fakeAtoB"
   | "fakeBtoA"
@@ -125,6 +127,7 @@ export type TeamStrategy =
   | "aggroPush"
   | "stackA"
   | "stackB"
+  | "stackC"
   | "retake";
 
 export type PlayerRole = "entry" | "support" | "lurker" | "anchor" | "rotator" | "igl";

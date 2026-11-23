@@ -50,12 +50,19 @@ const MAX_QUEUE_TICKS = 30;
  *    the less the rest of the map sees it and the nearer it is to where the route enters the zone,
  *    the better. The carrier plants behind what cover the plant area has, not on the callout.
  *  - "at": as near a point as the floor allows (the planted spike, for the defuser).
+ *  - "see": a spot from which the thing being watched is visible — a zone (a defender holding the
+ *    way in: the spot nearest to where it stands, or to the zone's anchor, that sees that zone) or
+ *    a point (an attacker guarding the planted spike: of the spots that see the spike, the one the
+ *    rest of the map sees least, then the nearest). A body that already stands on such a spot does
+ *    not move. Where the zone has no spot that sees it, the player stands as usual.
  */
 export type SpotIntent =
   | { readonly kind: "stand" }
   | { readonly kind: "hold"; readonly watchZone: string }
   | { readonly kind: "plant" }
-  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } };
+  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } }
+  | { readonly kind: "see"; readonly zone: string }
+  | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
 
 /** Share of a spot's score that is the player's own preference (so teammates spread out the same way every time). */
 const SPOT_JITTER = 0.25;
@@ -143,6 +150,7 @@ function spotKey(goal: MoveGoal): string {
   if (!k || k.kind === "stand") return `${goal.zoneId}|stand`;
   if (k.kind === "plant") return `${goal.zoneId}|plant`;
   if (k.kind === "hold") return `${goal.zoneId}|hold|${k.watchZone}`;
+  if (k.kind === "see") return "zone" in k ? `${goal.zoneId}|see|${k.zone}` : `${goal.zoneId}|see|${Math.round(k.point.x)},${Math.round(k.point.y)},${Math.round(k.point.z)}`;
   return `${goal.zoneId}|at|${Math.round(k.position.x)},${Math.round(k.position.y)},${Math.round(k.position.z)}`;
 }
 
@@ -254,6 +262,17 @@ export class MovementExecutor {
       const t = intent.position;
       return pick((n) => { const q = this.nav.nodePosition(n); return Math.hypot(q.x - t.x, q.y - t.y, q.z - t.z); });
     }
+    if (intent.kind === "see") {
+      const seeing = pool.filter((n) => this.nodeSees(n, intent));
+      if (seeing.length === 0) return pick((n) => flat(n, a) + 350 * hash01(`${playerId}|${n}`)); // nothing sees it from here: stand
+      pool = seeing;
+      const ref = opts.from ?? a;
+      if ("zone" in intent) return pick((n) => flat(n, ref) + 350 * hash01(`${playerId}|${n}`));
+      // a point (the spike): least seen by the rest of the map first, then nearest
+      let maxD = 1, maxE = 1;
+      for (const n of pool) { maxD = Math.max(maxD, flat(n, ref)); maxE = Math.max(maxE, this.nav.exposure(n)); }
+      return pick((n) => this.nav.exposure(n) / maxE + flat(n, ref) / maxD + SPOT_JITTER * hash01(`${playerId}|${n}`));
+    }
     let watch: string | undefined;
     if (intent.kind === "plant") {
       const onArea = pool.filter((n) => this.spatial.plantZoneAt(this.nav.nodePosition(n))?.zoneId === zoneId);
@@ -270,6 +289,30 @@ export class MovementExecutor {
     let maxD = 1, maxE = 1;
     for (const n of pool) { maxD = Math.max(maxD, flat(n, ref)); maxE = Math.max(maxE, exposureOf(n)); }
     return pick((n) => flat(n, ref) / maxD + exposureOf(n) / maxE + SPOT_JITTER * hash01(`${playerId}|${n}`));
+  }
+
+  /** Can a body on this roadmap node see what the intent watches? (Always true without measured sight.) */
+  private nodeSees(n: number, intent: Extract<SpotIntent, { kind: "see" }>): boolean {
+    if (!this.nav.hasVisibility) return true;
+    if ("zone" in intent) return this.nav.sightInto(n, intent.zone) > 0;
+    const target = this.nav.locate(intent.point);
+    return target === null || n === target || this.nav.nodesVisible(n, target);
+  }
+
+  /** Does this standing player already see what the intent watches from its spot? Movers: not yet decided (true). */
+  seesFromSpot(p: SimPlayer, intent: Extract<SpotIntent, { kind: "see" }>): boolean {
+    const m = this.movers.get(p.id);
+    if (!m || m.index < m.waypoints.length) return true;
+    const node = m.atNode >= 0 ? m.atNode : this.nav.locate(p.position);
+    return node === null || node < 0 || this.nodeSees(node, intent);
+  }
+
+  /** Is there a spot in the zone, free for this player, that sees what the intent watches? */
+  hasSpotThatSees(playerId: string, zoneId: string, intent: Extract<SpotIntent, { kind: "see" }>): boolean {
+    return this.nav.zoneNodes(zoneId).some((n) => {
+      const holder = this.claims.get(n);
+      return (holder === undefined || holder === playerId) && !this.blockers.nodeBlocked(n) && this.nodeSees(n, intent);
+    });
   }
 
   isMoving(p: SimPlayer): boolean {
@@ -372,7 +415,8 @@ export class MovementExecutor {
       if (p.zoneId === goal.zoneId) return "SUCCESS"; // already standing there
     }
     m.goal = goal;
-    if (p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {
+    const respot = goal.spot?.kind === "see" && !this.seesFromSpot(p, goal.spot);
+    if (!respot && p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {
       // already standing in the goal zone: stay on the spot it holds
       m.failure = null;
       p.path = [p.zoneId]; p.pathIndex = 1;
@@ -408,6 +452,7 @@ export class MovementExecutor {
     }
     const intent = goal.spot ?? { kind: "stand" as const };
     if (intent.kind === "at" || intent.kind === "stand") return this.pickSpot(p.id, goal.zoneId, { intent });
+    if (intent.kind === "see" && p.zoneId === goal.zoneId) return this.pickSpot(p.id, goal.zoneId, { from: p.position, intent });
     let from: { x: number; y: number; z: number } = p.position;
     const anchor = this.nav.anchorNode(goal.zoneId);
     if (p.zoneId !== goal.zoneId && anchor !== undefined) {

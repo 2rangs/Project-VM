@@ -27,6 +27,7 @@ import {
 import { lossBonusTierFor, type TeamEconomyState } from "@pv/economy-engine";
 import {
   loadSpatial,
+  loadTactics,
   loadWeapons,
   makeSpatialQuery,
   makeSimPolicies,
@@ -349,6 +350,8 @@ export class MatchEngine {
   private readonly spatial: ReturnType<typeof loadSpatial>;
   private readonly weapons = loadWeapons();
   private readonly sq: ReturnType<typeof makeSpatialQuery>;
+  /** The map's tactical data, derived from its geometry (sites, entries, aims, defender starts). */
+  private readonly tactics: ReturnType<typeof loadTactics>;
   private readonly maxRounds: number;
   private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
   private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
@@ -375,6 +378,7 @@ export class MatchEngine {
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
     this.spatial = loadSpatial(geometryOf(config));
     this.sq = makeSpatialQuery(this.spatial);
+    this.tactics = loadTactics(geometryOf(config), this.spatial);
     this.maxRounds = config.maxRounds ?? 60;
     const ro = config.rosters ?? {};
     this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5, ro.A), B: rosterSkills(config.teamB.id, 5, ro.B) };
@@ -384,7 +388,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
@@ -546,7 +550,9 @@ export class MatchEngine {
       economy: toEconomyState({ ...economy[attacker], credits: economy[attacker].credits + buys[attacker].cost }, "attack"),
       players: makeRoster("attack", buys[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
     };
-    const defSpawns = this.abilitiesOn ? selectDefenseSetup(config.seed, roundNumber).spawns : DEFENDER_SPAWNS;
+    // Where the five defenders start: the map's derived starts (on Ascent: its two sites twice and
+    // mid courtyard, as before). The scripted setups of the abilities mode exist for Ascent only.
+    const defSpawns = this.abilitiesOn && this.tactics.mapId === "ascent" ? selectDefenseSetup(config.seed, roundNumber).spawns : this.tactics.defenderStarts;
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
       economy: toEconomyState({ ...economy[defender], credits: economy[defender].credits + buys[defender].cost }, "defense"),

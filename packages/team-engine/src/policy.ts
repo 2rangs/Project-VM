@@ -15,6 +15,7 @@ import type {
   ActionCommand,
   DecisionPolicy,
   EconomyEvaluator,
+  MapTactics,
   MoveMode,
   PlayerProfile,
   PolicyDecision,
@@ -63,6 +64,11 @@ export interface TeamPolicyOptions {
    * (@pv/game-rules). Omitted → DEFAULT_FOOTSTEP_RADIUS_UNITS.
    */
   readonly footstepRadiusUnits?: number;
+  /**
+   * The map's tactical data (sites, the way in to each, what a defender watches, smoke targets),
+   * derived from the map by @pv/spatial-engine. Omitted → the built-in Ascent tables below.
+   */
+  readonly tactics?: MapTactics;
 }
 
 /** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
@@ -80,6 +86,7 @@ const SEEN_WINDOW_MS = 8000;
 const ATTACK_EXECUTE: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>([
   "aExecute",
   "bExecute",
+  "cExecute",
   "fakeAtoB",
   "fakeBtoA",
 ]);
@@ -90,7 +97,8 @@ const SMOKE_WINDOW_MS = 7000;
 /**
  * Defender sightline zones to smoke per objective site (block vision INTO the site, not the team's
  * own entry path). From the PV-1 tactics KB execute utilityRequirements (a-rafters/a-wine, b-heaven
- * side, mid angles); a later pass can read these from the KB directly.
+ * side, mid angles). These two tables are Ascent's and are used only when the policy is built
+ * without the map's tactics (TeamPolicyOptions.tactics); with them, both come from the map.
  */
 const SMOKE_TARGETS: Readonly<Record<string, readonly string[]>> = {
   // The forward CHOKE the attack pushes through: smoking it denies the forward defender's hold
@@ -168,7 +176,7 @@ const SLOW_COMMIT_CLOCK_MS = 40_000;
 /** Site letter of a zone: from its metadata, else from the callout id ("a-site" → A). */
 function siteLetter(spatial: SpatialQuery, z: ZoneId): string | null {
   const id = String(z);
-  return spatial.getZoneMeta(z)?.site ?? (id.startsWith("a-") ? "A" : id.startsWith("b-") ? "B" : null);
+  return spatial.getZoneMeta(z)?.site ?? (id.startsWith("a-") ? "A" : id.startsWith("b-") ? "B" : id.startsWith("c-") ? "C" : null);
 }
 
 /** A fake shows presence on the other site for this long before the team turns to the real objective. */
@@ -388,12 +396,14 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     }
     const a = sites.get("A") ?? null;
     const b = sites.get("B") ?? null;
+    const c = sites.get("C") ?? null;
     const fallback = a ?? b ?? [...sites.values()][0] ?? null;
     const before = plan.objective;
     plan.feint = null;
     switch (plan.strategy) {
       case "aExecute": plan.objective = a ?? fallback; break;
       case "bExecute": plan.objective = b ?? fallback; break;
+      case "cExecute": plan.objective = c ?? fallback; break;
       case "fakeAtoB":
         plan.objective = b ?? fallback;
         if (a && b) plan.feint = { site: a, untilClockMs: view.timeRemainingMs - FEINT_SHOW_MS };
@@ -406,7 +416,10 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         // No site named (default / mid control): play slow. The site is chosen later, on evidence
         // (commitSlowPlan) — keep whatever was already chosen this round.
         if (!plan.objective) plan.uncommitted = a !== null && b !== null;
-        if (plan.uncommitted && !plan.slowSide) plan.slowSide = rng.nextFloat() < 0.5 ? a : b;
+        if (plan.uncommitted && !plan.slowSide) {
+          // the side the slow play leans on: any site with equal chance (two sites: one draw, as before)
+          plan.slowSide = c ? [a, b, c][Math.min(2, Math.floor(rng.nextFloat() * 3))]! : rng.nextFloat() < 0.5 ? a : b;
+        }
         if (!plan.objective && !plan.uncommitted) plan.objective = fallback;
     }
     if (plan.objective) plan.uncommitted = false;
@@ -433,7 +446,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       p.lastSeenClockMs = view.timeRemainingMs;
       return p;
     }
-    const opening = selectStrategy(view, this.spatial, rng, this.opponentRead);
+    const opening = selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters());
     this.plan = {
       contextId: view.contextId, side: view.side, opening, strategy: opening,
       objective: null, feint: null, executeGo: false, uncommitted: false, slowSide: null, savedFrom: null, chasers: new Set<string>(),
@@ -452,7 +465,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    */
   private revisePlan(view: PolicyView, plan: StandingPlan, rng: RandomSource): { reason: string } {
     if (plan.savedFrom) return { reason: "round called lost — saving" };
-    const recon = reconsider(view, this.spatial, plan.strategy, rng);
+    const recon = reconsider(view, this.spatial, plan.strategy, rng, this.siteLetters());
     if (!recon.changed) return { reason: recon.reason };
     // An execute that has been called is committed: the enemies now seen on the site are the fight
     // the team came for, not a reason to leave it (and never to walk off a half-taken site).
@@ -526,7 +539,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     // Cast discipline: don't cast with an enemy already in the player's zone (fight, don't cast).
     const enemyInZone = (zone: ZoneId): boolean =>
       view.observation.visibleEnemies.some((e) => this.spatial.nearestZone({ x: e.lastSeenPosition.x, y: e.lastSeenPosition.y }) === zone);
-    const smokeTargets = SMOKE_TARGETS[site] ?? [];
+    const smokeTargets = this.smokeTargets(site);
 
     for (const p of view.teammates) {
       if (!p.alive || (holderId && String(p.id) === String(holderId))) continue;
@@ -691,17 +704,29 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const up = enemies != null && enemies < alive;
     const late = view.timeRemainingMs <= this.slowCommitClockMs(view);
     if (!up && !late) return;
-    const site = (letter: "A" | "B"): ZoneId | null =>
+    const site = (letter: "A" | "B" | "C"): ZoneId | null =>
       this.spatial.zonesByType("site").find((z) => this.spatial.isPlantableZone(z) && siteLetter(this.spatial, z) === letter) ?? null;
     const a = site("A");
     const b = site("B");
+    const c = site("C");
     if (!a || !b) { plan.objective = a ?? b; plan.uncommitted = false; return; }
     const bias = enemySiteBias(view, this.spatial);
     const defA = this.opponentRead ? tendencyLean(this.opponentRead.defenseSite, "A") : 0;
+    if (c) {
+      // Three sites: each weighted by how much thinner it looks than the most defended of the
+      // other two, the A/B read behind it, and the side already held.
+      const of = { A: bias.A, B: bias.B, C: bias.C ?? 0 };
+      const thin = (k: "A" | "B" | "C"): number => 1 + Math.max(0, Math.max(...(["A", "B", "C"] as const).filter((o) => o !== k).map((o) => of[o])) - of[k]);
+      const held = (z: ZoneId): number => (plan.slowSide === z ? SLOW_SIDE_PREFERENCE : 1);
+      const w = [thin("A") * (1 + Math.max(0, -defA)) * held(a), thin("B") * (1 + Math.max(0, defA)) * held(b), thin("C") * held(c)];
+      let r = rng.nextFloat() * (w[0]! + w[1]! + w[2]!);
+      plan.objective = (r -= w[0]!) < 0 ? a : (r -= w[1]!) < 0 ? b : c;
+    } else {
     // The side already held is the cheap choice (no cross-map rotate); evidence can outweigh it.
     const wA = (1 + Math.max(0, bias.B - bias.A)) * (1 + Math.max(0, -defA)) * (plan.slowSide === a ? SLOW_SIDE_PREFERENCE : 1);
     const wB = (1 + Math.max(0, bias.A - bias.B)) * (1 + Math.max(0, defA)) * (plan.slowSide === b ? SLOW_SIDE_PREFERENCE : 1);
     plan.objective = rng.nextFloat() * (wA + wB) < wA ? a : b;
+    }
     plan.uncommitted = false;
     plan.executeGo = false;
     plan.revisions.push({
@@ -912,6 +937,28 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     return chooseMoveMode({ intent, audible: intent === "quiet" ? this.audible(view, p.position) : true, slackMs });
   }
 
+  /** What a defender standing on a zone watches: from the map's tactics, else Ascent's table. */
+  private aimOf(zone: ZoneId | string): ZoneId | undefined {
+    const t = this.options.tactics;
+    return (t ? t.aim[String(zone)] : DEFENSE_AIM[String(zone)]) as ZoneId | undefined;
+  }
+
+  /** Zones to smoke for an execute onto a zone: from the map's tactics, else Ascent's table. */
+  private smokeTargets(zone: ZoneId | string): readonly string[] {
+    const t = this.options.tactics;
+    return (t ? t.smokes[String(zone)] : SMOKE_TARGETS[String(zone)]) ?? [];
+  }
+
+  /** The letters of the map's sites ("A", "B", and "C" on a three-site map). */
+  private siteLetters(): readonly string[] {
+    if (!this.lettersCache) {
+      const t = this.options.tactics;
+      this.lettersCache = t ? t.sites.map((s) => s.site) : [...new Set(this.plantableSites().map((z) => siteLetter(this.spatial, z)).filter((l): l is string => l !== null))];
+    }
+    return this.lettersCache;
+  }
+  private lettersCache: readonly string[] | null = null;
+
   /** Every plantable site zone, in map order. */
   private plantableSites(): readonly ZoneId[] {
     return this.spatial.zonesByType("site").filter((z) => this.spatial.isPlantableZone(z));
@@ -1059,7 +1106,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    */
   private commitDefenseHold(view: PolicyView, strategy: TeamStrategy, commands: readonly ActionCommand[]): ActionCommand[] {
     // Holding strategies only; aggroPush is an intentional push and is left to the draw.
-    const holdStrategies = strategy === "defaultHold" || strategy === "stackA" || strategy === "stackB";
+    const holdStrategies = strategy === "defaultHold" || strategy === "stackA" || strategy === "stackB" || strategy === "stackC";
     if (view.side !== "defense" || !holdStrategies) return commands.slice();
     const phase = view.spike.phase;
     if (phase !== "carried" && phase !== "dropped") return commands.slice(); // pre-plant only
@@ -1072,7 +1119,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
       if (!tm) return c;
       const anchor = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
-      const aimZone = DEFENSE_AIM[anchor] as ZoneId | undefined;
+      const aimZone = this.aimOf(anchor);
       return { playerId: c.playerId, kind: "hold", ...(aimZone ? { aimZone } : {}), executeAtMs: 0, sourceActionId: "defense-hold" };
     });
   }
@@ -1227,7 +1274,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         .map((k) => { const o = evidence[k] ?? NO_EVIDENCE; return o.contact ? `contact on ${k}` : Math.max(o.runners, o.seen) > 0 ? `${Math.max(o.runners, o.seen)} on ${k}` : `no contact on ${k}`; }).join(", ");
       const odds = `P(hit ${site}) ${pHit.toFixed(2)}, fake ${belief.fake.toFixed(2)}`;
       const call = want === 0 ? "hold" : want >= available.length ? `stack ${site} ×${want}` : `support ${site} ×${want}`;
-      const stackCall = (site === "A" ? "stackA" : site === "B" ? "stackB" : plan.strategy) as TeamStrategy;
+      const stackCall = (site === "A" ? "stackA" : site === "B" ? "stackB" : site === "C" ? "stackC" : plan.strategy) as TeamStrategy;
       const next = want > 0 ? stackCall : plan.opening;
       plan.revisions.push({
         atMs: now, from: plan.strategy, to: call,
@@ -1275,14 +1322,14 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         // retakeApproach pick by time). Fallen site: the least-exposed one, as for a retake.
         const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity).stage;
         const target = pz === siteZone || (held && pz === stage) ? siteZone : stage;
-        const aim = target === siteZone ? (DEFENSE_AIM[siteZone] as ZoneId | undefined) ?? siteZone : siteZone;
+        const aim = target === siteZone ? this.aimOf(siteZone) ?? siteZone : siteZone;
         return target === pz
           ? { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: "rotate:hold" }
           : { playerId: p.id, kind: "move", targetZone: target, aimZone: aim, moveMode: this.paceFor(view, p, urgent ? "fast" : "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:move" };
       }
       const home = plan.home.get(id);
       if (!home || home === pz) return c;
-      const aim = DEFENSE_AIM[home] as ZoneId | undefined;
+      const aim = this.aimOf(home);
       return { playerId: p.id, kind: "move", targetZone: home, ...(aim ? { aimZone: aim } : {}), moveMode: this.paceFor(view, p, "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:return" };
     });
   }

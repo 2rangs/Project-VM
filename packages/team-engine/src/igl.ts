@@ -52,25 +52,36 @@ const SOUND_EVIDENCE_CAP = 1.2;
 /** How far a fully confident opponent tendency can tilt an opening call (multiplier on its weight). */
 const TENDENCY_WEIGHT = 3;
 
-/** Which half (A/B) a zone belongs to, by id prefix; mid/other → null. */
-function siteOfZone(zone: ZoneId): "A" | "B" | null {
+/** A site letter this module reasons about. */
+export type SiteLetter = "A" | "B" | "C";
+/** Enemy presence read per site. `C` is present only once something was observed on a C side. */
+export interface SiteBias { A: number; B: number; C?: number }
+
+/** Which site's side (A/B/C) a zone belongs to, by id prefix; mid/other → null. */
+function siteOfZone(zone: ZoneId): SiteLetter | null {
   const s = String(zone);
   if (s.startsWith("a-")) return "A";
   if (s.startsWith("b-")) return "B";
+  if (s.startsWith("c-")) return "C";
   return null;
 }
 
+const EXECUTE_OF: Readonly<Record<SiteLetter, TeamStrategy>> = { A: "aExecute", B: "bExecute", C: "cExecute" };
+const STACK_OF: Readonly<Record<SiteLetter, TeamStrategy>> = { A: "stackA", B: "stackB", C: "stackC" };
+const SITE_OF_EXECUTE: Readonly<Partial<Record<TeamStrategy, SiteLetter>>> = { aExecute: "A", bExecute: "B", cExecute: "C" };
+
 /** Believed/observed enemy bias toward each site, from observation + belief zones. */
-export function enemySiteBias(view: PolicyView, spatial: SpatialQuery): { A: number; B: number } {
-  const bias = { A: 0, B: 0 };
+export function enemySiteBias(view: PolicyView, spatial: SpatialQuery): SiteBias {
+  const bias: SiteBias = { A: 0, B: 0 };
+  const add = (site: SiteLetter, w: number): void => { bias[site] = (bias[site] ?? 0) + w; };
   for (const e of view.observation.visibleEnemies) {
     const site = siteOfZone(spatial.nearestZone(v2(e.lastSeenPosition)));
-    if (site) bias[site] += 1;
+    if (site) add(site, 1);
   }
   for (const b of view.belief.enemyPositionBeliefs) {
     for (const h of b.hypotheses) {
       const site = siteOfZone(spatial.nearestZone(v2(h.position)));
-      if (site) bias[site] += h.weight * 0.5;
+      if (site) add(site, h.weight * 0.5);
     }
   }
   // Heard / inferred contact (footsteps, gunfire, tracers): unseen enemies still leave evidence.
@@ -78,7 +89,7 @@ export function enemySiteBias(view: PolicyView, spatial: SpatialQuery): { A: num
   // noise from several zones of a site adds up — a team massing on a site is louder than one
   // lurker — up to SOUND_EVIDENCE_CAP. Each cue is weighted by confidence and fades over
   // SOUND_EVIDENCE_WINDOW_MS; a single cue is never worth a sighting.
-  const heard = { A: new Map<string, number>(), B: new Map<string, number>() };
+  const heard = { A: new Map<string, number>(), B: new Map<string, number>(), C: new Map<string, number>() };
   for (const s of view.observation.audibleEvents) {
     const zone = spatial.nearestZone(v2(s.approxPosition));
     const site = siteOfZone(zone);
@@ -90,6 +101,7 @@ export function enemySiteBias(view: PolicyView, spatial: SpatialQuery): { A: num
   const total = (m: Map<string, number>) => Math.min(SOUND_EVIDENCE_CAP, [...m.values()].reduce((s, w) => s + w, 0) * SOUND_EVIDENCE_WEIGHT);
   bias.A += total(heard.A);
   bias.B += total(heard.B);
+  if (heard.C.size > 0) add("C", total(heard.C));
   return bias;
 }
 
@@ -110,16 +122,28 @@ function weightedPick<T>(rng: RandomSource, entries: ReadonlyArray<readonly [T, 
  * tilts the weights in proportion to its confidence and never removes an option, so the call stays
  * a sample — a small sample barely moves it, and a team is never fully predictable itself.
  */
-export function selectStrategy(view: PolicyView, spatial: SpatialQuery, rng: RandomSource, read?: OpponentRead): TeamStrategy {
+export function selectStrategy(
+  view: PolicyView, spatial: SpatialQuery, rng: RandomSource, read?: OpponentRead, sites: readonly string[] = ["A", "B"],
+): TeamStrategy {
   const planted = view.spike.phase === "planted";
   const bias = enemySiteBias(view, spatial);
+  // A third site: the same reasoning over three. (A two-site map takes the code below unchanged.)
+  const hasC = sites.includes("C");
+  const of = (k: SiteLetter): number => bias[k] ?? 0;
+  const letters: readonly SiteLetter[] = ["A", "B", "C"];
 
   if (view.side === "defense") {
     if (planted) return "retake";
     if (isEco(view)) return "defaultHold";
-    // Lean toward the site the enemy is showing; otherwise hold or push.
-    if (bias.A > bias.B + 0.5) return "stackA";
-    if (bias.B > bias.A + 0.5) return "stackB";
+    if (hasC) {
+      // Lean toward the site the enemy is showing, if one stands out from the other two.
+      const ranked = [...letters].sort((p, q) => of(q) - of(p));
+      if (of(ranked[0]!) > of(ranked[1]!) + 0.5) return STACK_OF[ranked[0]!];
+    } else {
+      // Lean toward the site the enemy is showing; otherwise hold or push.
+      if (bias.A > bias.B + 0.5) return "stackA";
+      if (bias.B > bias.A + 0.5) return "stackB";
+    }
     // No read this round yet: fall back on where they have attacked before.
     const leanA = read ? tendencyLean(read.attackSite, "A") : 0;
     return weightedPick(rng, [
@@ -137,6 +161,19 @@ export function selectStrategy(view: PolicyView, spatial: SpatialQuery, rng: Ran
   const defA = read ? tendencyLean(read.defenseSite, "A") : 0; // > 0: they favour defending A
   const aWeight = (1 + Math.max(0, bias.B - bias.A)) * (1 + TENDENCY_WEIGHT * Math.max(0, -defA));
   const bWeight = (1 + Math.max(0, bias.A - bias.B)) * (1 + TENDENCY_WEIGHT * Math.max(0, defA));
+  if (hasC) {
+    // Three sites: each is weighted by how much thinner it looks than the most defended of the
+    // other two. The cross-round read still only knows A and B, so C carries no tendency factor.
+    const thin = (k: SiteLetter): number => 1 + Math.max(0, Math.max(...letters.filter((o) => o !== k).map(of)) - of(k));
+    return weightedPick(rng, [
+      ["aExecute", thin("A") * (1 + TENDENCY_WEIGHT * Math.max(0, -defA))],
+      ["bExecute", thin("B") * (1 + TENDENCY_WEIGHT * Math.max(0, defA))],
+      ["midControl", 0.8],
+      ["fakeAtoB", (bias.A > bias.B ? 0.9 : 0.3) * (1 + TENDENCY_WEIGHT * Math.max(0, defA))],
+      ["fakeBtoA", (bias.B > bias.A ? 0.9 : 0.3) * (1 + TENDENCY_WEIGHT * Math.max(0, -defA))],
+      ["cExecute", thin("C")],
+    ] as const);
+  }
   return weightedPick(rng, [
     ["aExecute", aWeight],
     ["bExecute", bWeight],
@@ -162,6 +199,7 @@ export function reconsider(
   spatial: SpatialQuery,
   prev: TeamStrategy,
   rng: RandomSource,
+  sites: readonly string[] = ["A", "B"],
 ): Reconsideration {
   const planted = view.spike.phase === "planted";
   const bias = enemySiteBias(view, spatial);
@@ -181,6 +219,16 @@ export function reconsider(
   }
 
   // Attack: swing off a site that is now heavily defended (per belief/observation).
+  if (sites.includes("C")) {
+    // Three sites: off the stacked one, onto whichever of the other two looks thinner.
+    const named = SITE_OF_EXECUTE[prev];
+    if (named) {
+      const of = (k: SiteLetter): number => bias[k] ?? 0;
+      const other = (["A", "B", "C"] as const).filter((k) => k !== named).sort((p, q) => of(p) - of(q))[0]!;
+      if (of(named) - of(other) >= strong) return { strategy: EXECUTE_OF[other], changed: true, reason: `${named} is stacked — swing to ${other}` };
+    }
+    return { strategy: prev, changed: false, reason: "committing to plan" };
+  }
   if (prev === "aExecute" && lean >= strong) {
     return { strategy: "bExecute", changed: true, reason: "A is stacked — swing to B" };
   }
