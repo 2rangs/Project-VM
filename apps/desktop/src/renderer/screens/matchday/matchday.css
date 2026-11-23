@@ -425,3 +425,5 @@
 .mdx-loadchip { position: absolute; z-index: 4; pointer-events: none; }
 .mdx-loadchip.corner { right: 8px; top: 8px; }
 .mdx-loadchip.center { left: 50%; top: 14px; transform: translateX(-50%); }
+.lg-src { padding: 0 6px; border: 1px solid var(--mx-line); color: var(--mx-dim); }
+.lg-src.approx { border-style: dashed; color: var(--mx-sound); }

@@ -423,3 +423,21 @@ test('view model: a player fires only around the kills they are part of', () => 
   assert.equal(firingAt(r3.kills, 'atk3', kill).kick, 0, 'a teammate who is not in the duel does not fire');
   assert.equal(firingAt(r3.kills, 'def2', kill).flash, true, 'the victim was shooting back');
 });
+
+test('sight: the sim\'s own per-tick sight and zones win over the approximation; without it the source is "approx"', async () => {
+  const { sightAt, zoneOf } = await import('../../src/renderer/matchday/timeline.ts');
+  const before = computeFrame(replay, tl, nav, 'A', at(r3, 5000))!;
+  assert.equal(before.sightSource, 'approx');
+  // attach a sight record to round 3: at 5 s atk1 sees def5 and stands in mid-catwalk per the sim
+  const sight: Array<{ tMs: number; zones: Record<string, string>; sees: Record<string, string[]> }> = [{ tMs: 0, zones: { atk1: 'attacker-spawn' }, sees: {} }, { tMs: 5000, zones: { atk1: 'mid-catwalk' }, sees: { atk1: ['def5', 'atk2'] } }];
+  const r3s = { ...r3, summary: { ...r3.summary!, sight } };
+  const tl2 = { ...tl, rounds: [tl.rounds[0], r3s] };
+  assert.equal(sightAt(r3s, at(r3, 4999))?.zones.atk1, 'attacker-spawn');
+  assert.equal(zoneOf(r3s, findPlayer(r3s, 'atk1')!, at(r3, 5000)), 'mid-catwalk', 'the sim\'s zone, not the nearest centre');
+  const f = computeFrame(replay, tl2, nav, 'A', at(r3, 5000))!;
+  assert.equal(f.sightSource, 'engine');
+  const atk1 = f.units.find((u) => u.id === 'atk1')!;
+  assert.deepEqual(atk1.view.enemies, [{ enemyId: 'def5', via: 'sight' }], 'exactly the enemies the sim says — teammates ignored');
+  assert.equal(atk1.pose.zone, 'mid-catwalk');
+  assert.deepEqual(f.seen.map((e) => e.id), ['def5']);
+});

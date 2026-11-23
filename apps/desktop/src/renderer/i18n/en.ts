@@ -1064,4 +1064,10 @@ export const en: Record<string, string> = {
   "club.focusHint.tactics": "Scrims on one map: the starters' practice games on it feed map-mastery continuity (C). No attribute growth that week.",
   "club.focusHint.rest": "Rest: fatigue recovers. Above 30% fatigue, training yields less.",
   "club.training.note": "Training never adds to a rating directly: it changes the development formula's factor (F) and the map-mastery input (docs/CLUB_OPERATIONS.md §5).",
+  'load.banner.sound': 'Banner sounds (one per step)',
+  'load.banner.volume': 'Volume',
+  'mdx.sight.engine': 'Sight: engine',
+  'mdx.sight.engine.hint': 'Who sees whom is exactly what the simulation decided each tick.',
+  'mdx.sight.approx': 'Sight: approximate',
+  'mdx.sight.approx.hint': 'This engine does not record per-player sight; it is estimated from zone sightlines and view cones.',
 };

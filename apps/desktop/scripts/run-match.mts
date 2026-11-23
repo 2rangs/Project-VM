@@ -70,6 +70,8 @@ const out = {
     // the parent remaps side→real-team and offsets tMs onto the match timeline.
     // Absent on match-runner versions without recordPerception.
     perception: r.replay.meta.perception ?? null,
+    // per-tick sight decided by the sim (engine-truth), when the engine records it
+    sight: (r as unknown as { sight?: unknown }).sight ?? (r.replay.meta as unknown as { sight?: unknown }).sight ?? null,
     // Why each team played the round the way it did (plans, pre-round opponent reads,
     // what the round let them observe). Plain JSON; null on engines that predate it.
     decisions: r.decisions ?? null,

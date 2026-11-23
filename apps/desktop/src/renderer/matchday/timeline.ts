@@ -400,7 +400,7 @@ export function poseAt(round: RoundTimeline, p: PlayerRound, tMs: number, nav: N
   const hop = alive ? activeHop(p, t) : null;
   const logical = logicalAt(p, t);
   return {
-    pos: displayPos(p, t), logicalPos: logical.pos, zone: logical.zone, alive,
+    pos: displayPos(p, t), logicalPos: logical.pos, zone: sightAt(round, t)?.zones[p.id] ?? logical.zone, alive,
     hopProgress: hop && !hop.sampled ? Math.min(1, Math.max(0, (t - hop.departMs) / Math.max(1, hop.arriveMs - hop.departMs))) : null,
     moving: !!hop, moveMode: hop?.mode ?? null, toZone: hop?.toZone ?? null,
     facing: facingAt(round, p, t, nav),
@@ -431,4 +431,27 @@ export function scoreAt(tl: MatchTimeline, tMs: number): Record<TeamSlot, number
 /** True once playback has reached the round's end event. */
 export function roundOver(round: RoundTimeline, tMs: number): boolean {
   return round.endReason != null && tMs >= round.endMs;
+}
+
+// ── sight decided by the sim (when the engine records it) ───────────────────────────────────
+
+export interface SightNow { readonly zones: Readonly<Record<string, string>>; readonly sees: Readonly<Record<string, readonly string[]>> }
+
+/** The sim's latest sight frame at or before tMs for this round (match ms), or null without data. */
+export function sightAt(round: RoundTimeline, tMs: number): SightNow | null {
+  const frames = round.summary?.sight;
+  if (!frames || frames.length === 0) return null;
+  const rel = tMs - round.startMs;
+  let lo = 0, hi = frames.length - 1, ans = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (frames[mid].tMs <= rel) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+  if (ans < 0) return null;
+  // zones may be sparse (only changes): carry the latest known zone per player forward
+  const zones: Record<string, string> = {};
+  for (let i = 0; i <= ans; i++) Object.assign(zones, frames[i].zones ?? {});
+  return { zones, sees: frames[ans].sees ?? {} };
+}
+
+/** The zone a player is in: the sim's own zone when recorded, else the nearest-centre estimate. */
+export function zoneOf(round: RoundTimeline, p: PlayerRound, tMs: number): string {
+  return sightAt(round, tMs)?.zones[p.id] ?? logicalAt(p, tMs).zone;
 }

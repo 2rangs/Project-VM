@@ -424,6 +424,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                   <span><i className="lg ghost" />{t('mdx.legend.ghost')}</span>
                   <span><i className="lg sound" />{t('mdx.legend.sound')}</span>
                   <span><i className="lg dest" />{t('mdx.legend.dest')}</span>
+                  {frame && <span className={`lg-src ${frame.sightSource}`} data-testid="sight-source" title={t(`mdx.sight.${frame.sightSource}.hint`)}>{t(`mdx.sight.${frame.sightSource}`)}</span>}
                 </div>
               </div>
             </div>

@@ -82,6 +82,8 @@ function compactRound(ctx: SeriesGameContext, r: ReturnType<MatchSession['playNe
     buys: { A: { tier: buys.A.tier, weapon: buys.A.weapon }, B: { tier: buys.B.tier, weapon: buys.B.weapon } },
     replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
+    // per-tick sight decided by the sim (engine-truth), when the engine records it
+    sight: (r as unknown as { sight?: unknown }).sight ?? (r.replay.meta as unknown as { sight?: unknown }).sight ?? null,
     decisions: r.decisions ? { plans: byUi(ctx, r.decisions.plans), opponentReadBefore: byUi(ctx, r.decisions.opponentReadBefore), observed: r.decisions.observed } : null,
     nav: r.navTrace ?? null,
   };

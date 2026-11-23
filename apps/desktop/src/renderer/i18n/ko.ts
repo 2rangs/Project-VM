@@ -1066,4 +1066,10 @@ export const ko: Record<string, string> = {
   "club.focusHint.tactics": "한 맵을 스크림합니다. 주전들의 맵 연습 경기 수가 늘어 맵 숙련도의 연속성(C)이 오릅니다. 그 주는 개인 성장이 없습니다.",
   "club.focusHint.rest": "휴식: 피로가 크게 회복됩니다. 피로가 30%를 넘으면 훈련 효율이 떨어집니다.",
   "club.training.note": "훈련은 능력치를 직접 올리지 않습니다. 시즌 말 성장 공식의 배율(F)과 맵 숙련도 입력만 바꿉니다 (docs/CLUB_OPERATIONS.md §5).",
+  'load.banner.sound': '배너 효과음 (킬 단계마다)',
+  'load.banner.volume': '볼륨',
+  'mdx.sight.engine': '시야: 엔진 판정',
+  'mdx.sight.engine.hint': '누가 누구를 보는지는 시뮬레이션이 매 틱 판정한 그대로입니다.',
+  'mdx.sight.approx': '시야: 근사치',
+  'mdx.sight.approx.hint': '이 엔진은 선수별 시야를 기록하지 않아, 구역 시야선·시야각으로 추정해 보여줍니다.',
 };
