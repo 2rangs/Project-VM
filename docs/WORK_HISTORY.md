@@ -339,6 +339,13 @@
 - 함께 고친 것: 커리어 저장이 겹칠 때 `.tmp` 이름 충돌(ENOENT) → 슬롯별 순차 쓰기, 커리어 e2e가 자동 저장을 기다림(3/3 연속 통과).
 - 테스트: core 259/4 todo, career 49, round-simulator 128, match-runner 87(+1 기존 실패: Bind own geometry), spatial-engine 278, ability-engine 21, combat-engine 21, perception-engine 27, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과.
 
+### 19차 main 머지 (2026-11-23) — 11개 맵 데이터·전술 완료, 시선·소리 모델(기본 OFF) · 개인 경제는 보류
+- 합친 브랜치: `claude/peaceful-agnesi-b01f91`(`7daae91`, 시선 모델 `--gaze`·소리 디테일 `--sound`, 둘 다 기본 OFF), `claude/nav-engine`(`f8d905b`, 11개 맵 끊긴 구역 0, 시야 표, 전술, `<map>.objects.json`, Bind own geometry 테스트 수정).
+- **보류: `claude/epic-mahavira-18c91b`(개인 경제).** 함께 합치면 실제 로스터 기존 8개 지표가 **6/8**(전멸 0.661, 해체 0.204)로 떨어짐. 경제만 뺀 같은 조합은 8/8(공격 0.501)로 main과 동일 → 원인은 경제. 경제는 엔진 재보정 전 기반에서 만들어져 현재 엔진에서 다시 맞춰야 함(경제 세션에 전달). 포스 승률 0.10 → 0.26–0.31 등 개선은 브랜치에 있음.
+- 검증(실제 로스터, 시드 1–160, 이 통합 세션 측정): **8/8**, 공격 0.501(경제 제외 조합). 맵별 자기 지형: 공격 승률은 11개 맵 모두 범위, 라운드 종료 비율은 Breeze만 범위 → `geometry: "own"`은 옵트인 유지(`NAVIGATION_ENGINE.md` §7.6).
+- 시선 모델을 켜면 공격 0.25–0.36(피커스 어드밴티지 상수와 이중 계산) — 지글·리피크·각쪼개기·정지 시간과 함께 재보정 후 기본 적용 예정(`ENGINE_TRUTH.md` §7–9).
+- 테스트: core 263/4 todo, round-simulator 134, match-runner 90(Bind own 통과), spatial-engine 407, combat-engine 27, perception-engine 27→32, 데스크톱 typecheck·build·unit·matchday·engine 통과. e2e 4종은 경제 포함 조합에서 통과(데스크톱 차이는 경제의 3줄뿐).
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
