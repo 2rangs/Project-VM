@@ -33,7 +33,8 @@ import { MatchStage, type StageView } from './MatchStage.ts';
 import { CamStage3D, type CamView } from './CamStage3D.ts';
 import { buildBlockout } from '../../matchday/world3d.ts';
 import { bridge } from '../../platform.ts';
-import { AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { AgentTag, AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { Icon, STATE_ICON } from './Icons.tsx';
 import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
@@ -329,8 +330,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       )}
       {preRound && !session!.ordersOpen && (
         <div className="mdx-result neutral" data-testid="pre-match">
-          <span className="mdx-result-kicker">{teams.A.name} vs {teams.B.name}</span>
-          <strong>{t('mdx.pre.title')}</strong>
+          <span className="mdx-result-kicker">{t('mdx.pre.title')}</span>
+          <div className="mdx-versus"><b className="ally">{teams.A.name}</b><i>VS</i><b className="enemy">{teams.B.name}</b></div>
           <span className="mdx-result-hint">{t('mdx.pre.hint')}</span>
         </div>
       )}
@@ -391,13 +392,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                   <button key={key} className={`mdx-mon st-${state} ${focus === key ? 'focus' : ''}`} ref={setViewEl(key)}
                     onClick={() => setFocus(focus === key ? null : key)} data-testid={`cam-${slot}`} aria-pressed={focus === key}
                     title={focus === key ? t('mdx.cam.unfocus') : t('mdx.cam.focus')}>
-                    <span className="mdx-osd tl"><b>CAM {String(slot).padStart(2, '0')}</b>{unit ? nameOf(unit.id) : handles[OUR_TEAM][slot - 1]}</span>
+                    <span className="mdx-osd tl"><b>CAM {String(slot).padStart(2, '0')}</b>{unit ? nameOf(unit.id) : handles[OUR_TEAM][slot - 1]}<AgentTag slot={slot} t={t} /></span>
                     <span className="mdx-osd tr">
                       {state === 'dead' ? <em className="lost">{t('mdx.cam.offline')}</em> : <em className="live"><i />{t('mdx.cam.live')}</em>}
                       {round ? `R${round.roundNum} ${formatClock(playback.tMs - round.startMs).padStart(4, '0')}` : ''}
                     </span>
                     <span className="mdx-osd bl">
-                      {unit ? <><i className={`mdx-statedot st-${state}`} />{statusText(t, unit.status, zoneName, nameOf)}</> : t('mdx.waiting')}
+                      {unit ? <><Icon name={STATE_ICON[state] ?? 'hold'} size={12} className={`mdx-stateicon st-${state}`} />{statusText(t, unit.status, zoneName, nameOf)}</> : t('mdx.waiting')}
                     </span>
                     <span className="mdx-osd br">
                       {unit && unit.pose.alive ? <>{zoneName(unit.pose.zone)}{unit.view.enemies.length > 0 && <em className="contact">{t('mdx.cam.contact', { n: unit.view.enemies.length })}</em>}</> : ''}

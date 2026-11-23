@@ -437,4 +437,9 @@ export const ko: Record<string, string> = {
   'mdx.graph': '구역 그래프 (디버그)',
   'mdx.graph.hint': '엔진의 구역 연결선. 구역 중심을 잇는 직선일 뿐 실제 이동 경로가 아닙니다.',
   'mdx.legend.dest': '이동 목적지',
+  'mdx.crumb.match': '경기',
+  'mdx.role.Duelist': '타격대',
+  'mdx.role.Initiator': '척후대',
+  'mdx.role.Controller': '전략가',
+  'mdx.role.Sentinel': '감시자',
 };

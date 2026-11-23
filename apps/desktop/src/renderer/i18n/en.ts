@@ -435,4 +435,9 @@ export const en: Record<string, string> = {
   'mdx.graph': 'Zone graph (debug)',
   'mdx.graph.hint': 'Zone links from the engine: straight lines between zone centres, not walkable routes.',
   'mdx.legend.dest': 'Destination',
+  'mdx.crumb.match': 'Match',
+  'mdx.role.Duelist': 'Duelist',
+  'mdx.role.Initiator': 'Initiator',
+  'mdx.role.Controller': 'Controller',
+  'mdx.role.Sentinel': 'Sentinel',
 };

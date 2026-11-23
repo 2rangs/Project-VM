@@ -41,6 +41,13 @@ button back into the match. Look and layout follow tactical-shooter spectator-HU
 ally teal / enemy red); no Riot logo, font, icon or screen is copied. Team colours are always
 doubled by shape (ally circle, enemy diamond, sound ring, spike hexagon).
 
+Icons are an original set (`screens/matchday/Icons.tsx`): solid single-colour glyphs on a 24 px
+grid with 45° terminals, in the spirit of the game's published iconography guide but drawn for
+this project — none of the game's icons, role symbols or logo are reproduced. The top-left
+breadcrumb (`로비 // 경기`), `//` section labels and the symmetric VS card before round 1 follow
+the same language. Each player carries their engine slot's agent name and role glyph (the fixed
+comp the match-runner fields, mirrored in `matchday/roster.ts`).
+
 Two view modes, switched with the toggle top-left (or `M`); the choice, the playback tempo and
 the belief overlay persist in `localStorage` (`pv-matchday-view`):
 
