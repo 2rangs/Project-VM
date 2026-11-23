@@ -302,6 +302,13 @@
 - 테스트: typecheck clean, core 252/4 todo, round-simulator 107, match-runner 62, spatial-engine 213(+11 로컬 격자 필요로 skip), ability-engine 21, 데스크톱 단위 40·엔진 3·e2e·시리즈 e2e(Bo3, ko/en) 통과.
 - 알려진 한계: 선수 위치(`p.position`)는 여전히 구역 단위이고 화면 궤적만 보행 경로를 따름(이동 엔진 개편 과제로 이관), 13개 연결은 직선 근사(텔레포터·집라인 등), 스킬 on 모드 공격 과다(0.695), 피스톨 라운드, 계획 변경 사유 영어, Ascent 외 맵은 Ascent 지형으로 플레이.
 
+### 14차 main 머지 (2026-11-23) — 이동 엔진 개편(실제 맵 경로 위의 연속 위치)
+- 합친 브랜치: `claude/nav-engine`(`0f2fa75`).
+- 내용(상세 `docs/research/NAVIGATION_ENGINE.md`): 맵별 내비게이션 로드맵(`<map>.nav.json`, 점·선분만, 사용자 결정으로 커밋 — 지오메트리·격자·.glb 미커밋), `Navigator.findPath`(SUCCESS/UNREACHABLE/INVALID_*, 직선 대체 없음), 구역 그래프 전략 경로 → 기하 경로 → 이동 실행기(`p.position`의 유일한 작성자), 집결 후 진입·대기열, 정면으로 마주친 두 이동자의 교착 해소, Ascent 위치 기반 시야(`vis.json`), 이동 시간 판단 = 경로 비용, 팀 믿음 기반 의도별 경로 선택, 라이브 화면 내비게이션 디버그 보기, 이동 사격 정지 시간(속도·이동 능력치), 공격 세이브 기준 별도 튜너블.
+- 검증(160경기·3,383R, 시드 1–160, 통합 브랜치에서 재측정): judged **8/8**. 공격 승률 0.521, 피스톨 0.528, 전멸 0.704, 해체 0.148, 폭발 0.106, 시간 초과 0.042. 세션 보고: 시드 161–, 321– 구간도 8/8.
+- 테스트: core 259/4 todo, round-simulator 121, match-runner 70, spatial-engine 265(+22 skip), ability-engine 21, combat-engine 21, 데스크톱 typecheck·build·단위·엔진·e2e·시리즈 e2e 통과.
+- 남은 한계: 위치 기반 시야는 Ascent만(타 맵은 구역 시야), 13개 직선 연결(텔레포터·로프 등), 스킬 on 모드 공격 과다, 계획 변경 사유 현지화, 스카우팅 효과 검출 불가.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
