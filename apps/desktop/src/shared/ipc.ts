@@ -3,6 +3,7 @@
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
+import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot, SaveSlotInfo } from './career.ts';
 
 export const IPC = {
   /** renderer → main (invoke): start a simulation, resolves with the result replay. */
@@ -28,6 +29,17 @@ export const IPC = {
   seriesStop: 'pv:series:stop',
   /** renderer → main (invoke): read the optional local map mesh (assets/maps/<map>.glb); null when absent. */
   mapMesh: 'pv:asset:map-mesh',
+  // [career] background simulation of a day's AI fixtures + save slots (src/main/career-host.ts)
+  /** renderer → main (invoke): play a batch of AI series through the engine; resolves with outcomes. */
+  careerSim: 'pv:career:sim',
+  /** main → renderer (event): progress of the batch in flight. */
+  careerSimProgress: 'pv:career:sim-progress',
+  saveList: 'pv:save:list',
+  saveRead: 'pv:save:read',
+  saveWrite: 'pv:save:write',
+  saveDelete: 'pv:save:delete',
+  /** renderer → main (invoke): quit the app (start menu). */
+  appQuit: 'pv:app:quit',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -216,6 +228,13 @@ export interface PvBridge {
   seriesStop(): Promise<void>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
+  // [career]
+  careerSimulate(reqs: CareerSimRequest[], onProgress: (p: CareerSimProgress) => void): Promise<CareerSimOutcome[]>;
+  saveList(): Promise<SaveSlotInfo[]>;
+  saveRead(slot: SaveSlot): Promise<string | null>;
+  saveWrite(slot: SaveSlot, text: string): Promise<void>;
+  saveDelete(slot: SaveSlot): Promise<void>;
+  quit(): Promise<void>;
   readonly platform: string;
   readonly isElectron: true;
 }

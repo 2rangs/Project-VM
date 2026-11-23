@@ -1,16 +1,10 @@
 // The desktop's career world: one shared World, saved to localStorage after every change and
 // loaded on start (a fresh world is built from the dataset fixtures when there is no save).
 import { useSyncExternalStore } from 'react';
-import playerRatings from '../../data/player_ratings.json';
-import playerNames from '../../data/player_names.json';
-import teamNames from '../../data/team_names.json';
-import rosters from '../../data/rosters.json';
-import reservedHandles from '../../data/reserved_handles.json';
-import { advanceSeason, buildDesktopWorld, loadSavedWorld, serializeWorld, STORE_KEY, type DesktopFixtures, type World } from './world.ts';
-
-const FIXTURES = {
-  ratings: playerRatings, names: playerNames, teams: teamNames, rosters, reservedHandles,
-} as unknown as DesktopFixtures;
+// When a career is open, every screen reads the CAREER's world instead (career/session.ts).
+import { advanceSeason, buildDesktopWorld, loadSavedWorld, serializeWorld, STORE_KEY, type World } from './world.ts';
+import { FIXTURES } from './fixtures.ts';
+import { activeCareerWorld, subscribeCareer } from './session.ts';
 
 let world: World | null = null;
 const listeners = new Set<() => void>();
@@ -23,6 +17,8 @@ function writeSave(w: World): void {
 }
 
 export function getWorld(): World {
+  const cw = activeCareerWorld();
+  if (cw) return cw;
   if (!world) {
     world = readSave() ?? buildDesktopWorld(FIXTURES);
     writeSave(world);
@@ -43,5 +39,9 @@ export function advanceWorld(): void { set(advanceSeason(getWorld())); }
 export function resetWorld(): void { set(buildDesktopWorld(FIXTURES)); }
 
 export function useWorld(): World {
-  return useSyncExternalStore((l) => { listeners.add(l); return () => { listeners.delete(l); }; }, getWorld, getWorld);
+  return useSyncExternalStore((l) => {
+    listeners.add(l);
+    const off = subscribeCareer(l);
+    return () => { listeners.delete(l); off(); };
+  }, getWorld, getWorld);
 }

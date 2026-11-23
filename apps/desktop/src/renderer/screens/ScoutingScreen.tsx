@@ -6,6 +6,7 @@ import type { DetailPanel } from '../App.tsx';
 import { DataTable, Flag, type Column } from '../ui.tsx';
 import { useT } from '../i18n/index.tsx';
 import { advanceWorld, resetWorld, useWorld } from '../career/store.ts';
+import { useCareer } from '../career/session.ts';
 import {
   freeAgents, newProspects, populationSummary, scoutedAbility, staffQuality, toScale200, STAFF_ATTRS,
   type World, type WorldStaff,
@@ -40,6 +41,9 @@ function StaffDetail({ s, w }: { s: WorldStaff; w: World }) {
 export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => void }) {
   const t = useT();
   const w = useWorld();
+  // [career] in a career the world advances through the calendar and our own scout judges players.
+  const career = useCareer().career;
+  const viewer = career?.userTeamId ?? null;
   const [tab, setTab] = useState<Tab>('prospects');
   const pop = populationSummary(w);
   const last = w.history[w.history.length - 1];
@@ -50,8 +54,8 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
     { key: 'country', header: '', render: (p) => <Flag cc={p.country} />, width: '6%' },
     { key: 'age', header: t('col.age'), render: (p) => p.age, sortValue: (p) => p.age, width: '6%' },
     { key: 'role', header: t('col.role'), render: (p) => p.role, sortValue: (p) => p.role, width: '11%' },
-    { key: 'ca', header: t('col.ca'), render: (p) => { const e = scoutedAbility(w, null, p.world); return `${e.caLo}–${e.caHi}`; }, sortValue: (p) => scoutedAbility(w, null, p.world).ca, width: '10%' },
-    { key: 'pa', header: t('col.pa'), render: (p) => { const e = scoutedAbility(w, null, p.world); return `${e.paLo}–${e.paHi}`; }, sortValue: (p) => scoutedAbility(w, null, p.world).pa, width: '10%' },
+    { key: 'ca', header: t('col.ca'), render: (p) => { const e = scoutedAbility(w, viewer, p.world); return `${e.caLo}–${e.caHi}`; }, sortValue: (p) => scoutedAbility(w, viewer, p.world).ca, width: '10%' },
+    { key: 'pa', header: t('col.pa'), render: (p) => { const e = scoutedAbility(w, viewer, p.world); return `${e.paLo}–${e.paHi}`; }, sortValue: (p) => scoutedAbility(w, viewer, p.world).pa, width: '10%' },
     { key: 'club', header: t('col.club'), render: (p) => (p.teamName ? t(`career.status.${p.status}`, { team: p.teamName }) : t('career.status.free')), sortValue: (p) => p.teamName ?? '~' },
   ];
   const staffCols: Column<WorldStaff>[] = [
@@ -73,8 +77,8 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
       <div className="career-bar">
         <span className="small">{t('career.population', { players: pop.players, gen: pop.generated, staff: pop.staff })}</span>
         {last && <span className="small muted">{t('career.lastIntake', { season: last.season, n: last.newPlayers.length, retired: last.retiredPlayers.length, signed: last.signings.length })}</span>}
-        <button className="career-advance" onClick={() => { setDetail(null); advanceWorld(); }} data-testid="career-advance">{t('career.advance')}</button>
-        <button className="career-reset" onClick={() => { setDetail(null); resetWorld(); }} data-testid="career-reset">{t('career.reset')}</button>
+        {!career && <button className="career-advance" onClick={() => { setDetail(null); advanceWorld(); }} data-testid="career-advance">{t('career.advance')}</button>}
+        {!career && <button className="career-reset" onClick={() => { setDetail(null); resetWorld(); }} data-testid="career-reset">{t('career.reset')}</button>}
       </div>
       <div className="md-tabs">
         <button className={tab === 'prospects' ? 'on' : ''} onClick={() => setTab('prospects')} data-testid="career-tab-prospects">{t('career.tab.prospects', { season: w.season, n: prospects.length })}</button>
