@@ -1,12 +1,57 @@
 {
   "mapId": "lotus",
   "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "traversalsNote": "Game uu. Ropes, ziplines, teleporters and jumps measured on the scene: a and b are the walk-grid cells at the two ends (they become roadmap nodes joined by a link in <map>.nav.json), zones the zone at each end. See tools/map-mesh/README.md.",
+  "traversals": [
+    {
+      "id": "a-rope",
+      "name": "A site rope",
+      "kind": "rope",
+      "bidirectional": true,
+      "travelTimeMs": 539,
+      "speedMetersPerSec": 6.75,
+      "a": {
+        "x": 8726,
+        "y": 4944,
+        "z": 300
+      },
+      "b": {
+        "x": 8726,
+        "y": 4944,
+        "z": 664
+      },
+      "zones": [
+        "a-hut",
+        "a-top"
+      ],
+      "objectNames": [
+        "Ascender_0_CableA",
+        "Kingdom_0_VertAscenderA"
+      ],
+      "basis": "Game metres. Cable Ascender_0_CableA (x,y 87.41, 49.38; z -1.89..6.68) under the housing Kingdom_0_VertAscenderA (z 6.43..6.71). a = the 3.00 m floor cell at the cable, b = the 6.64 m floor cell at its top (same x,y, 3.64 m higher). Both are on the main floor: the rope is a short cut.",
+      "provenance": "measured-on-mesh (object position, the two walk cells, length 3.64 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)"
+    }
+  ],
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    },
+    {
+      "name": "Two rotating doors (A Door, C Door)",
+      "reason": "the doors are moving actors and not in the static scene: the only objects named for them are Shell_4_RotatingDoorBakeRoomWallsA / .001 (x 40.08..55.47, y -23.83..-8.74 and x 47.91..63.30, y 44.76..59.85, z -20.4..-12.3), lighting-bake rooms 15 m under the map, which do not give the doors' positions."
+    },
+    {
+      "name": "Breakable wall between A Link and B Site",
+      "reason": "no object name matches breakable / destructible / crumbling wall near A Link; Shell_0_AtkPathADestroyedColumn* are static ruins on the attacker path."
+    }
+  ],
   "mechanics": [
     {
       "kind": "layout",
       "name": "Three sites A/B/C",
       "represented": false,
-      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md \u00a76)",
+      "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md §6)",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
     },
     {
@@ -29,6 +74,13 @@
       "represented": false,
       "engineNeeds": "zonesByType('mid') is empty",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "rope",
+      "name": "Vertical rope at A site",
+      "represented": true,
+      "how": "one roadmap link kind=rope (traversal a-rope). The 'on rope' state is NOT modelled",
+      "provenance": "measured-on-mesh (cable object, cells); manual-approx (travel time)"
     }
   ]
 }

@@ -1922,65 +1922,19 @@
       }
     },
     {
-      "from": "a-drop",
+      "from": "a-hut",
       "to": "a-top",
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 9712,
-      "distanceMeters": 97.12,
-      "runTimeMs": 14388,
-      "walkTimeMs": 28565,
-      "provenance": "measured-on-mesh (walkable route)",
-      "kind": "walk",
-      "beforeRoute": {
-        "distanceUnits": 1142,
-        "distanceMeters": 11.42,
-        "runTimeMs": 1691,
-        "walkTimeMs": 3358,
-        "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)"
-      },
-      "route": {
-        "waypoints": [
-          [9526, 6094, 300],
-          [9226, 6394, 300],
-          [8676, 6344, 300],
-          [8276, 4944, 300],
-          [7276, 4794, 300],
-          [7376, 4094, 300],
-          [8076, 3894, 300],
-          [8326, 3844, 306],
-          [8576, 3794, 400],
-          [8776, 3744, 396],
-          [8876, 3044, 399],
-          [8926, 2794, 498],
-          [8926, 2594, 500],
-          [9426, 2744, 501],
-          [9576, 4544, 675],
-          [9276, 5044, 675]
-        ],
-        "lengthMeters": 97.12,
-        "runTimeMs": 14388,
-        "walkTimeMs": 28565,
-        "drops": 0,
-        "provenance": "measured-on-mesh (walkable route)"
-      },
-      "routeReverse": {
-        "waypoints": [
-          [9276, 5044, 675],
-          [8926, 5044, 674],
-          [8926, 5094, 300],
-          [8726, 6394, 300],
-          [9376, 6344, 300],
-          [9526, 6094, 300]
-        ],
-        "lengthMeters": 29.86,
-        "runTimeMs": 4424,
-        "walkTimeMs": 8782,
-        "drops": 1,
-        "provenance": "measured-on-mesh (walkable route)"
-      },
-      "note": "was a straight-line approx-link; replaced by a measured walkable route"
+      "distanceUnits": 1485,
+      "distanceMeters": 14.85,
+      "runTimeMs": 539,
+      "walkTimeMs": 539,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'a-rope' in the authoring file",
+      "kind": "rope",
+      "traversal": "a-rope",
+      "routeStatus": "straight (special traversal (no walking route applies))"
     },
     {
       "from": "b-site",
@@ -2669,19 +2623,15 @@
       "b": "b-upper",
       "attenuation": 0.2,
       "provenance": "derived-by-rule"
-    },
-    {
-      "a": "a-drop",
-      "b": "a-top",
-      "attenuation": 0.4,
-      "provenance": "derived-by-rule"
     }
   ],
   "routes": {
     "provenance": "measured-on-mesh",
     "source": "tools/map-mesh/pipeline/route_map.py",
-    "edgesWithWalkableRoute": 40,
-    "edgesFlaggedStraight": [],
+    "edgesWithWalkableRoute": 39,
+    "edgesFlaggedStraight": [
+      "a-hut->a-top"
+    ],
     "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
   },
   "mechanics": [
@@ -2712,15 +2662,24 @@
       "represented": false,
       "engineNeeds": "zonesByType('mid') is empty",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "rope",
+      "name": "Vertical rope at A site",
+      "represented": true,
+      "how": "one roadmap link kind=rope (traversal a-rope). The 'on rope' state is NOT modelled",
+      "provenance": "measured-on-mesh (cable object, cells); manual-approx (travel time)"
     }
   ],
   "dataQuality": {
     "edgeKinds": {
-      "walk": 38,
-      "drop": 2
+      "walk": 37,
+      "drop": 2,
+      "rope": 1
     },
     "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [],
     "doorsNotAttached": [],
     "zonesOnMainWalkComponent": "28/28"
   },
