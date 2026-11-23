@@ -51,6 +51,11 @@ export interface TeamEconomyState {
   readonly credits: number; // sum available across the team this buy phase
   readonly lossBonusTier: number; // 0-based index into the loss-bonus ladder
   readonly consecutiveLosses: number;
+  /**
+   * The team's buy call this round, when the match runner made one ("pistol" | "full" | "half" |
+   * "force" | "eco" | "bonus"). Lets the round plan follow the real buy instead of a bank threshold.
+   */
+  readonly buyCall?: string;
 }
 
 /** A single player's buy decision, split team vs. individual (README §19.3). */

@@ -36,13 +36,19 @@ export { resolveTeamRef, teamSkills, rosterSkills, isKnownTeam, simulatableTeamR
 export {
   newTeamEconomy,
   decideBuy,
-  decideBuyForCall,
-  applyRoundOutcome,
+  decideTeamBuy,
+  afterBuy,
+  settleRound,
+  saveWorth,
+  postRoundPickups,
   halfReset,
   overtimeReset,
   spend,
+  priceOf,
+  ultCost,
+  DEFAULT_ECONOMY_OPTIONS,
 } from "./economy.js";
-export type { TeamEconomy, BuyDecision, BuyTier, EconomyCall } from "./economy.js";
+export type { TeamEconomy, PlayerEconomy, BuyDecision, BuyTier, BuyPlan, PlayerBuy, EconomyCall, EconomyOptions, BuyContext, PlayerContext, TeamDecisionTraits, PlayerSettlement, Pickup } from "./economy.js";
 export { renderMatchSummary, renderDecisionTrace } from "./report.js";
 // --- Series layer: veto, map mastery, scouting, best-of-N (docs/SERIES_AND_VETO.md) ---
 export { runSeries, createSeriesSession, prepareSeries, seriesGameLogs, renderSeriesSummary, sideInRound, SIMULATED_GEOMETRY, VETO_BELIEF } from "./series.js";

@@ -105,6 +105,7 @@ export const ko: Record<string, string> = {
   'buy.eco': '에코',
   'buy.save': '세이브',
   'buy.half': '하프바이',
+  'buy.bonus': '보너스',
   'reason.elimination': '전멸',
   'reason.spikeDetonation': '스파이크 폭발',
   'reason.spikeDefused': '해제',

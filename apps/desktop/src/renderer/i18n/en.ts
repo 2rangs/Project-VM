@@ -103,6 +103,7 @@ export const en: Record<string, string> = {
   'buy.eco': 'eco',
   'buy.save': 'save',
   'buy.half': 'half',
+  'buy.bonus': 'bonus',
   'reason.elimination': 'elimination',
   'reason.spikeDetonation': 'spike',
   'reason.spikeDefused': 'defuse',

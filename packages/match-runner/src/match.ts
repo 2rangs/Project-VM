@@ -38,13 +38,20 @@ import {
 import { loadAbilityCatalog, agentAbilityLoadout, ASCENT_COMP } from "./abilities.js";
 import {
   newTeamEconomy,
-  decideBuyForCall,
-  applyRoundOutcome,
+  decideTeamBuy,
+  afterBuy,
+  settleRound,
+  saveWorth,
+  postRoundPickups,
   halfReset,
   overtimeReset,
-  spend,
+  ultCost,
   type TeamEconomy,
   type BuyDecision,
+  type EconomyOptions,
+  type Pickup,
+  type PlayerContext,
+  type TeamDecisionTraits,
 } from "./economy.js";
 import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
 import type { PlayerProfile } from "@pv/shared-types";
@@ -67,7 +74,8 @@ export function geometryOf(config: Pick<MatchConfig, "map" | "geometry">): strin
 
 /** Defender anchor spawns (mirror of the round-simulator's SYNTHETIC_DEFENSE_ANCHORS). */
 const DEFENDER_SPAWNS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"] as const;
-const ULT_COST = 7; // provisional default ult cost (per-agent costs are a later refinement).
+/** Points cost a held ultimate is shown to the simulator with, so it is not cast this round. */
+const HELD_ULT_COST = 99;
 /** Precomputed per-slot agent + ability loadout for the fixed comp (both teams use it). */
 const COMP_LOADOUTS = ASCENT_COMP.map((agent) => ({ agent, abilities: agentAbilityLoadout(agent) }));
 
@@ -177,6 +185,8 @@ export interface MatchConfig {
   readonly rosters?: Readonly<Partial<Record<TeamSlot, readonly RosterPlayer[]>>>;
   /** [series] Series metadata of this map (who picked it, starting sides). Not read by the engine. */
   readonly series?: SeriesGameContext;
+  /** Economy decision tunables (docs/ECONOMY_MODEL.md); omitted fields use the defaults. */
+  readonly economy?: Partial<EconomyOptions>;
 }
 
 export interface RoundRecord {
@@ -190,7 +200,10 @@ export interface RoundRecord {
   readonly planted: boolean;
   readonly kills: Readonly<Record<TeamSlot, number>>;
   readonly score: Readonly<Record<TeamSlot, number>>;
+  /** Each team's economy after the round (per-player credits, carried weapons, ult points). */
   readonly economy: Readonly<Record<TeamSlot, TeamEconomy>>;
+  /** Weapons picked up off the floor after the round (kept into the next one). */
+  readonly pickups: readonly (Pickup & { readonly team: TeamSlot; readonly index: number })[];
   readonly events: readonly SimEvent[];
   /**
    * Why each team played the round the way it did: its plan (opening call → revisions → final
@@ -276,15 +289,8 @@ function emptyMemory(): OpponentMemory {
 }
 
 /** Our light TeamEconomy → the economy-engine TeamEconomyState surfaced to PolicyView.economy. */
-function toEconomyState(eco: TeamEconomy, side: Side): TeamEconomyState {
-  return { teamId: "", side, credits: eco.credits, consecutiveLosses: eco.consecutiveLosses, lossBonusTier: lossBonusTierFor(eco.consecutiveLosses) };
-}
-
-/** Armor points a buy tier equips (heavy 50 / light 25 / none). */
-function armorFor(tier: BuyDecision["tier"]): number {
-  if (tier === "full") return 50;
-  if (tier === "force" || tier === "pistol") return 25;
-  return 0; // eco
+function toEconomyState(eco: TeamEconomy, side: Side, buy: BuyDecision): TeamEconomyState {
+  return { teamId: "", side, credits: eco.credits, consecutiveLosses: eco.consecutiveLosses, lossBonusTier: lossBonusTierFor(eco.consecutiveLosses), buyCall: buy.tier };
 }
 
 /**
@@ -292,11 +298,11 @@ function armorFor(tier: BuyDecision["tier"]): number {
  * Defenders spawn on their anchors (a/b/mid); attackers use the default attacker spawn. Per-player
  * skills come from the team's real ratings. Abilities/ults are the next layer (Stage 2).
  */
-function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean, defenderSpawns: readonly string[] = DEFENDER_SPAWNS, traits: readonly TacticalTraits[] = []): MatchRoundPlayer[] {
+function makeRoster(side: Side, buy: BuyDecision, eco: TeamEconomy, skills: readonly ReturnType<typeof rosterSkills>[number][], withAbilities: boolean, defenderSpawns: readonly string[] = DEFENDER_SPAWNS, traits: readonly TacticalTraits[] = []): MatchRoundPlayer[] {
   const prefix = side === "attack" ? "atk" : "def";
-  const armor = armorFor(buy.tier);
   return Array.from({ length: 5 }, (_, i): MatchRoundPlayer => {
     const comp = COMP_LOADOUTS[i]!;
+    const pb = buy.players[i]!;
     return {
       id: `${prefix}${i + 1}`,
       agentId: comp.agent,
@@ -304,11 +310,11 @@ function makeRoster(side: Side, buy: BuyDecision, skills: readonly ReturnType<ty
       ...(traits[i] ? { traits: traits[i] } : {}),
       ...(side === "defense" ? { spawnZoneId: defenderSpawns[i] ?? DEFENDER_SPAWNS[i] } : {}),
       loadout: {
-        weaponId: buy.weapon,
-        armor,
+        weaponId: pb.weapon,
+        armor: pb.armor,
         ...(withAbilities ? { abilities: comp.abilities } : {}),
-        ultimatePoints: 0,
-        ultimateCost: ULT_COST,
+        ultimatePoints: eco.players[i]?.ultPoints ?? 0,
+        ultimateCost: pb.ultHeld ? HELD_ULT_COST : ultCost(comp.agent),
       },
     };
   });
@@ -386,6 +392,11 @@ export class MatchEngine {
   private readonly rounds: RoundRecord[] = [];
   private wentToOvertime = false;
   private roundNumber = 1; // the next round to play
+  private lastWinner: TeamSlot | null = null;
+  /** Per roster index: agent and star rating (who gets the rifle first). */
+  private readonly econPlayersBySlot: Record<TeamSlot, PlayerContext[]>;
+  /** Team means of the traits the buy decision reads. */
+  private readonly econTraitsBySlot: Record<TeamSlot, TeamDecisionTraits>;
 
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
     this.spatial = loadSpatial(geometryOf(config));
@@ -418,6 +429,17 @@ export class MatchEngine {
     };
     this.opponentModels = { A: new OpponentModel(recognition("A")), B: new OpponentModel(recognition("B")) };
     this.throwFloorsBySlot = { A: this.throwFloors(config.teamA.id, ro.A), B: this.throwFloors(config.teamB.id, ro.B) };
+    const econPlayers = (slot: TeamSlot): PlayerContext[] => this.skillsBySlot[slot].map((sk, i) => ({
+      agent: COMP_LOADOUTS[i]!.agent,
+      priority: (sk.aim + sk.reaction + sk.firstBulletAccuracy + sk.crosshairPlacement) / 4,
+    }));
+    const econTraits = (slot: TeamSlot): TeamDecisionTraits => {
+      const pr = this.profilesBySlot[slot];
+      const mean = (f: (p: RosterProfile) => number) => pr.reduce((s, p) => s + f(p), 0) / Math.max(1, pr.length);
+      return { discipline: mean((p) => p.discipline), gameSense: mean((p) => p.decisionMaking) };
+    };
+    this.econPlayersBySlot = { A: econPlayers("A"), B: econPlayers("B") };
+    this.econTraitsBySlot = { A: econTraits("A"), B: econTraits("B") };
     // [series] Per-team inputs: re-derive the affected values for the slots that have any.
     this.basePolicyTuning = policyTuning;
     for (const slot of ["A", "B"] as const) {
@@ -526,12 +548,30 @@ export class MatchEngine {
     const defender = other(attacker);
     const pistol = isPistol(roundNumber);
 
-    // --- Buy phase (team-level; an economy call order overrides the pick) ---
-    const buyA = decideBuyForCall(economy.A.credits, pistol, orders.A?.economy);
-    const buyB = decideBuyForCall(economy.B.credits, pistol, orders.B?.economy);
-    economy.A = { ...economy.A, credits: spend(economy.A.credits, buyA.cost) };
-    economy.B = { ...economy.B, credits: spend(economy.B.credits, buyB.cost) };
-    const buys: Record<TeamSlot, BuyDecision> = { A: buyA, B: buyB };
+    // --- Buy phase: per-player buys inside a team plan (an economy call order restricts the plan) ---
+    const preBuy: Record<TeamSlot, TeamEconomy> = { A: economy.A, B: economy.B };
+    const buyFor = (slot: TeamSlot): BuyDecision => {
+      const opp = other(slot);
+      const call = orders[slot]?.economy;
+      return decideTeamBuy({
+        roundNumber,
+        score: [score[slot], score[opp]],
+        own: economy[slot],
+        opp: economy[opp],
+        ownPlayers: this.econPlayersBySlot[slot],
+        oppPlayers: this.econPlayersBySlot[opp],
+        ownTraits: this.econTraitsBySlot[slot],
+        oppTraits: this.econTraitsBySlot[opp],
+        pistol,
+        wonLastRound: this.lastWinner === slot && !pistol && roundNumber !== ROUNDS_PER_HALF + 1,
+        ...(call ? { call } : {}),
+        abilities: this.abilitiesOn,
+        ...(config.economy ? { options: config.economy } : {}),
+      });
+    };
+    const buys: Record<TeamSlot, BuyDecision> = { A: buyFor("A"), B: buyFor("B") };
+    economy.A = afterBuy(economy.A, buys.A);
+    economy.B = afterBuy(economy.B, buys.B);
 
     // --- Coach orders → policy (attacker's order to the attack policy, defender's to defense) ---
     this.policies.attack.setOrder(toPolicyOrder(orders[attacker]));
@@ -554,21 +594,27 @@ export class MatchEngine {
       this.policies.attack.setTuning(this.policyTuningFor(attacker));
       this.policies.defense.setTuning(this.policyTuningFor(defender));
     }
+    // Per-player save worth from the match economy (a rich player plays a lost round out).
+    const saveByCredits = config.economy?.saveByCredits ?? true;
+    const worthMap = (slot: TeamSlot, prefix: string): ReadonlyMap<string, boolean> | null =>
+      saveByCredits ? new Map(saveWorth(economy[slot], buys[slot]).map((w, i) => [`${prefix}${i + 1}`, w])) : null;
+    this.policies.attack.setSaveWorth(worthMap(attacker, "atk"));
+    this.policies.defense.setSaveWorth(worthMap(defender, "def"));
     this.policies.attack.setThrowFloors(this.floorMap(attacker, "atk"));
     this.policies.defense.setThrowFloors(this.floorMap(defender, "def"));
     const attackers: MatchRoundTeam = {
       teamId: this.teamRef(attacker).id,
       // Pre-buy bank (what the team could field this round), not the leftover after buying.
-      economy: toEconomyState({ ...economy[attacker], credits: economy[attacker].credits + buys[attacker].cost }, "attack"),
-      players: makeRoster("attack", buys[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
+      economy: toEconomyState(preBuy[attacker], "attack", buys[attacker]),
+      players: makeRoster("attack", buys[attacker], preBuy[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
     };
     // Where the five defenders start: the map's derived starts (on Ascent: its two sites twice and
     // mid courtyard, as before). The scripted setups of the abilities mode exist for Ascent only.
     const defSpawns = this.abilitiesOn && this.tactics.mapId === "ascent" ? selectDefenseSetup(config.seed, roundNumber).spawns : this.tactics.defenderStarts;
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
-      economy: toEconomyState({ ...economy[defender], credits: economy[defender].credits + buys[defender].cost }, "defense"),
-      players: makeRoster("defense", buys[defender], this.formSkills(defender, seed, pressure), this.abilitiesOn, defSpawns, this.traitsBySlot[defender]),
+      economy: toEconomyState(preBuy[defender], "defense", buys[defender]),
+      players: makeRoster("defense", buys[defender], preBuy[defender], this.formSkills(defender, seed, pressure), this.abilitiesOn, defSpawns, this.traitsBySlot[defender]),
     };
     const out = runMatchRound({
       spatial: this.spatial,
@@ -611,12 +657,45 @@ export class MatchEngine {
       [defender]: killsOf("defense"),
     } as Record<TeamSlot, number>;
 
-    economy[attacker] = applyRoundOutcome(economy[attacker], {
-      won: winner === attacker, kills: kills[attacker], planted, leftoverCredits: economy[attacker].credits,
+    // --- Post-round: pickups, then per-player credits / kept equipment / ultimate points ---
+    const outcomeById = new Map(out.players.map((p) => [p.id, p]));
+    const simId = (slot: TeamSlot, i: number) => `${slot === attacker ? "atk" : "def"}${i + 1}`;
+    const startWeapon = new Map<string, string>();
+    for (const slot of [attacker, defender]) buys[slot].players.forEach((b, i) => startWeapon.set(simId(slot, i), b.weapon));
+    const survivors = new Map(out.players.filter((p) => p.alive).map((p) => [p.id, p.weaponRetained ?? "Classic"]));
+    const endZone = new Map(out.players.map((p) => [p.id, p.endZoneId]));
+    const picked = postRoundPickups({
+      kills: out.events.filter((e) => e.kind === "kill" && e.target).map((e) => ({ ...(e.actor ? { killer: String(e.actor) } : {}), victim: String(e.target), ...(e.zoneId ? { zoneId: e.zoneId } : {}) })),
+      startWeapon, survivors, endZone,
     });
-    economy[defender] = applyRoundOutcome(economy[defender], {
-      won: winner === defender, kills: kills[defender], planted: false, leftoverCredits: economy[defender].credits,
+    const pickedBy = new Map(picked.map((p) => [p.playerId, p.weapon]));
+    const orbs = (id: string) => out.events.filter((e) => (e.kind as string) === "orbPickup" && e.actor === id).length;
+    for (const slot of [attacker, defender]) {
+      economy[slot] = settleRound(economy[slot], {
+        won: winner === slot,
+        planted,
+        attacking: slot === attacker,
+        ultCosts: COMP_LOADOUTS.map((c) => ultCost(c.agent)),
+        players: buys[slot].players.map((_, i) => {
+          const id = simId(slot, i);
+          const o = outcomeById.get(id);
+          return {
+            alive: o?.alive ?? false,
+            kills: o?.kills ?? 0,
+            weaponAfter: pickedBy.get(id) ?? o?.weaponRetained ?? null,
+            armorRetained: o?.armorRetained ?? 0,
+            ultimatePointsEnd: o?.ultimatePointsEnd ?? 0,
+            orbs: orbs(id),
+            ultimatePointsEarned: o?.ultimatePointsEarned ?? 0,
+          };
+        }),
+      });
+    }
+    const pickups = picked.map((p) => {
+      const slot: TeamSlot = p.playerId.startsWith("atk") ? attacker : defender;
+      return { ...p, team: slot, index: Number(p.playerId.slice(3)) - 1 };
     });
+    this.lastWinner = winner;
 
     score[winner] += 1;
 
@@ -640,6 +719,7 @@ export class MatchEngine {
       kills,
       score: { ...score },
       economy: { A: economy.A, B: economy.B },
+      pickups,
       events: result.events,
       decisions: { plans, opponentReadBefore: readBefore, observed: seen },
       replay: toPv6ReplayFormat(result, {

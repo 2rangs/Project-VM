@@ -157,6 +157,124 @@ def economy_matchup(rounds) -> dict[tuple[str, str], tuple[int, int]]:
     return {k: (v[0], v[1]) for k, v in acc.items()}
 
 
+# --- economy report metrics (EC-01..05) -------------------------------------------------------
+def _winner_side(r):
+    end = _round_end(r["events"])
+    return end.get("winner") if end else None
+
+
+def _team_rounds(rounds):
+    """Yield (match, half, roundNumber, side, plan, vctTier, won, econ) per team per round.
+
+    Sides are fixed within a half, so a team is (match, half, side). Plans fall back to buyTiers for
+    bundles written before the per-player economy (their buyTiers were the plan tiers)."""
+    for r in rounds:
+        win = _winner_side(r)
+        if win is None:
+            continue
+        n = r.get("roundNumber", 0)
+        half = 0 if n <= 12 else 1 if n <= 24 else 2 + (n - 25)
+        plans = r.get("plans") or r.get("buyTiers") or {}
+        tiers = r.get("buyTiers") or {}
+        econ = r.get("econ") or {}
+        for side in ("attack", "defense"):
+            yield (r.get("match"), half, n, side, plans.get(side), tiers.get(side), win == side, econ.get(side) or {})
+
+
+def economy_report(rounds) -> dict[str, tuple[int, int]]:
+    """Report-only economy metrics as (successes, n)."""
+    by_team: dict[tuple, dict[int, tuple]] = defaultdict(dict)
+    acc: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    has_match = any("match" in r for r in rounds)
+
+    def add(key, ok):
+        acc[key][1] += 1
+        acc[key][0] += 1 if ok else 0
+
+    team_rounds = list(_team_rounds(rounds))
+    non_pistol = [t for t in team_rounds if t[4] != "pistol" and t[2] <= 24]
+    for vt in ("eco", "semi", "full"):
+        for t in non_pistol:
+            add(f"tier_share:{vt}", t[5] == vt)
+    for (m, half, n, side, plan, tier, won, econ) in team_rounds:
+        if plan:
+            add(f"plan_win:{plan}", won)
+        if econ:
+            if plan != "pistol":
+                add("drop_rate", econ.get("drops", 0) > 0)
+            add("pickup_rate", econ.get("pickups", 0) > 0)
+        if has_match:
+            by_team[(m, half, side)][n] = (plan, tier, won)
+    # plan vs the opponent's plan (force into a full buy is the VCT semi-vs-full cell)
+    for r in rounds:
+        win = _winner_side(r)
+        plans = r.get("plans") or r.get("buyTiers") or {}
+        if win is None or not plans:
+            continue
+        for side, opp in (("attack", "defense"), ("defense", "attack")):
+            if plans.get(side) == "force" and plans.get(opp) == "full":
+                add("force_vs_full_win", win == side)
+            if plans.get(side) == "eco" and plans.get(opp) == "full":
+                add("eco_vs_full_win", win == side)
+    # conversions: next round of the same team within the same half
+    for rounds_of in by_team.values():
+        for n, (plan, tier, won) in rounds_of.items():
+            nxt = rounds_of.get(n + 1)
+            if nxt is None:
+                continue
+            if plan == "pistol" and won:
+                add("pistol_conversion", nxt[2])
+                nxt2 = rounds_of.get(n + 2)
+                if nxt[2] and nxt2 is not None:
+                    add("bonus_conversion", nxt2[2])
+            if tier == "eco":
+                add("eco_next_round_win", nxt[2])
+            if tier == "full":
+                add("full_next_round_win", nxt[2])
+    return {k: (v[0], v[1]) for k, v in acc.items()}
+
+
+# Real (VCT international) reference values for the economy report, from datasets/derived/priors.
+def _economy_reference(priors) -> dict[str, tuple[float, str]]:
+    ref: dict[str, tuple[float, str]] = {}
+    pc = priors.get("pistol_conversion")
+    e = _find(pc, half="combined", step="win_next_round")
+    if e:
+        ref["pistol_conversion"] = (e["rate"], "pistol_conversion combined")
+    two = [_find(pc, half=h, step="win_next_two_rounds") for h in ("first", "second")]
+    one = [_find(pc, half=h, step="win_next_round") for h in ("first", "second")]
+    if all(two) and all(one):
+        w2 = sum(t["successes"] for t in two) / sum(t["n"] for t in two)
+        w1 = sum(o["successes"] for o in one) / sum(o["n"] for o in one)
+        ref["bonus_conversion"] = (w2 / w1, "pistol_conversion: P(win r+2 | won r, r+1) = two-round / one-round")
+    em = priors.get("economy_matchup.international")
+    if em:
+        # Share of team-rounds per VCT buy tier (rounds 2-24): the matchup prior's n per own tier.
+        n_by = defaultdict(int)
+        for e in em.get("estimates", []):
+            if e["dims"].get("ownBuy") in ("eco", "semi", "full"):
+                n_by[e["dims"]["ownBuy"]] += e["n"]
+        tot = sum(n_by.values())
+        if tot:
+            for vt, n in n_by.items():
+                ref[f"tier_share:{vt}"] = (n / tot, "economy_matchup.international n per own tier")
+    se = priors.get("save_eco_future_value")
+    e = _find(se, condition="eco_this_round", measured="win_next_round")
+    if e:
+        ref["eco_next_round_win"] = (e["rate"], "save_eco_future_value eco_this_round")
+    e = _find(se, condition="full_this_round", measured="win_next_round")
+    if e:
+        ref["full_next_round_win"] = (e["rate"], "save_eco_future_value full_this_round")
+    em = priors.get("economy_matchup.international")
+    e = _find(em, ownBuy="semi", oppBuy="full")
+    if e:
+        ref["force_vs_full_win"] = (e["rate"], "economy_matchup semi vs full (semi = half + force)")
+    e = _find(em, ownBuy="eco", oppBuy="full")
+    if e:
+        ref["eco_vs_full_win"] = (e["rate"], "economy_matchup eco vs full")
+    return ref
+
+
 def man_advantage(rounds) -> dict[str, tuple[int, int]]:
     """For each (atkAlive,defAlive) state a round passes through, P(attacker wins). Report-only."""
     acc: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -345,6 +463,17 @@ def evaluate_sim_run(sim_run: dict, priors_dir: str, *, scope: str = "ascent",
     for key, sw in sorted(man_advantage(rounds).items()):
         results.append(_judge("man_advantage", "sim_only", {"state": key}, sw, None, 0.0))
     results.append(_judge("trade_rate", "sim_only", {}, trade_rate(rounds), None, 0.0))
+
+    # 6. economy (report-only: the VCT figures are shown for reference, not judged)
+    econ_ref = _economy_reference(priors)
+    for key, sw in sorted(economy_report(rounds).items()):
+        name, _, plan = key.partition(":")
+        res = _judge("economy", "sim_only", {"metric": name, **({"plan": plan} if plan else {})}, sw, None, 0.0)
+        ref_key = key if key in econ_ref else name
+        if ref_key in econ_ref:
+            res.realRate, src = econ_ref[ref_key]
+            res.note = f"reference only: {src}"
+        results.append(res)
     dur, dn = avg_round_duration_ms(rounds)
     results.append(MetricResult("round_duration_ms", "sim_only", {}, dur, dn,
                                 note="no real baseline (VCT Reference has map duration, not per-round)"))

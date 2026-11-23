@@ -39,6 +39,11 @@ export interface TeamEconomyState {
   readonly credits: number;
   readonly lossBonusTier: number;
   readonly consecutiveLosses: number;
+  /**
+   * The team's buy call this round, when the match runner made one ("pistol" | "full" | "half" |
+   * "force" | "eco" | "bonus"). Lets the round plan follow the real buy instead of a bank threshold.
+   */
+  readonly buyCall?: string;
 }
 
 /** Team index convention used across PROJECT V datasets (0 = team0, 1 = team1). */
