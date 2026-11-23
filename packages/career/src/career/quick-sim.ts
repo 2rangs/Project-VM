@@ -1,6 +1,7 @@
 // Quick series estimate: plays a series round by round from the two lineups' attributes, without
-// the match engine. Used by the package tests, the browser build and the "quick" background-sim
-// setting; the desktop's default is the full engine (match-runner, off the UI thread).
+// the match engine. The desktop's default for AI-vs-AI series (a whole season in seconds; the full
+// engine is a setting), the instant result, the browser build and the package tests. Its one
+// strength constant is calibrated against the engine (QUICK_SIM.roundSlope).
 //
 //   s_team      = mean over the five of the ability attributes (current ability, 0..1)
 //   comfort_map = a stable per-team, per-map lean ~ N(0, QUICK_SIM.mapComfortSd), seeded by
@@ -16,10 +17,12 @@ import type { CareerState, MapResult, SeriesOutcome, SeriesRequest, SeriesSimula
 
 export const QUICK_SIM = {
   /**
-   * Round-win slope per unit of ability difference. Set so the region's strongest team beats the
-   * twelfth-strongest on about two maps in three (ability gap ≈ 0.08 → round share ≈ 0.55).
+   * Round-win slope per unit of lineup-ability difference, fitted to the match engine by maximum
+   * likelihood (tools/career/calibrate-quick-sim.mts: 48 engine maps between career fives across
+   * the four regions, ability-difference sd 0.052 → slope 5.39). So a 0.05 ability edge is a
+   * 0.567 round share, which the first-to-13 format turns into ≈ 0.75 of maps.
    */
-  roundSlope: 2.5,
+  roundSlope: 5.4,
   mapComfortSd: 0.01,
   /** The pool the quick estimate draws maps from (the engine's DEFAULT_MAP_POOL). */
   pool: ["Abyss", "Ascent", "Haven", "Lotus", "Split", "Summit", "Sunset"],

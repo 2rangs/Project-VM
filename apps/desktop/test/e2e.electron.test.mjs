@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
-import { clubStep } from './e2e-club-step.mjs';
+// (club operations are covered by e2e.club / e2e.career: they need a career)
 
 // Playwright is not a dependency of this app: point PLAYWRIGHT_REQUIRE_BASE at any
 // directory whose node_modules has `playwright` (no browser download is needed).
@@ -223,9 +223,7 @@ async function main() {
   assert.ok(await page.locator('[data-testid="dt-row"]').count() > 0, 'staff are listed');
   await page.getByTestId('career-reset').click(); // leave a fresh world behind
 
-  // Club operations: an offer to a free agent is accepted and he joins the roster.
-  const signed = await clubStep(page, OUT);
-  console.log(`club ops: signed ${signed}`);
+  // Club operations belong to a career: see test:e2e:club / test:e2e:career.
 
   // Decision Debugger (Dev) — pick the scenario with exclusions
   await page.getByTestId('nav-dev-debugger').click();

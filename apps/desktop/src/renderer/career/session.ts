@@ -1,7 +1,7 @@
 // The open career in the renderer: one CareerState (@pv/career), the save slot it belongs to, and
 // the Continue loop. AI fixtures are played by the full engine in another process
-// (bridge.careerSimulate → scripts/career-sim.mts) unless the manager chose the quick estimate
-// (or there is no Electron); a failed engine batch falls back to the quick estimate for that day.
+// (bridge.careerSimulate → scripts/career-sim.mts) when the manager chose it in Settings; by
+// default the calibrated quick estimate plays them; a failed engine batch falls back to the quick estimate for that day.
 // The career autosaves into its slot whenever Continue stops and after the manager's own match.
 import { useSyncExternalStore } from 'react';
 import { bridge, runtime } from '../platform.ts';
@@ -16,8 +16,12 @@ import { FIXTURES } from './fixtures.ts';
 export type SimMode = 'engine' | 'quick';
 const SIM_KEY = 'pv-career-sim';
 
+/**
+ * How other teams' series are played: the calibrated quick estimate by default (a whole season of
+ * AI series in seconds), the full engine when the manager chooses it in Settings (~20 min/season).
+ */
 export function simMode(): SimMode {
-  try { return localStorage.getItem(SIM_KEY) === 'quick' ? 'quick' : 'engine'; } catch { return 'engine'; }
+  try { return localStorage.getItem(SIM_KEY) === 'engine' ? 'engine' : 'quick'; } catch { return 'quick'; }
 }
 export function setSimMode(m: SimMode): void {
   try { localStorage.setItem(SIM_KEY, m); } catch { /* no storage */ }

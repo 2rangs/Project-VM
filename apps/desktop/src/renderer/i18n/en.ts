@@ -771,7 +771,7 @@ export const en: Record<string, string> = {
   "start.sim": "Other teams' matches",
   "start.sim.engine": "Full engine",
   "start.sim.quick": "Quick estimate",
-  "start.sim.hint": "The full engine plays every series through the match engine in the background (tens of seconds each). The quick estimate plays the rounds from player ability instantly.",
+  "start.sim.hint": "The default quick estimate plays rounds from player ability (with today's readiness) by a formula calibrated against the engine — a whole season of AI series takes under a second. The full engine plays every series through the match engine in the background (about 3 s per series, about 3 minutes a season).",
   "nc.title": "New career",
   "nc.step1": "Manager",
   "nc.step2": "Region · team",
