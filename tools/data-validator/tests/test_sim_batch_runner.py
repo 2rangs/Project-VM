@@ -48,3 +48,38 @@ def test_one_match_bundle_shape(tmp_path):
     assert sum(1 for s in rd["roster"].values() if s == "attack") == 5
     assert set(rd["buyTiers"]) == {"attack", "defense"}
     assert any(e.get("kind") == "roundEnd" for e in rd["events"])
+
+
+def _teams(*flags):
+    r = subprocess.run(
+        ["npx", "tsx", str(BATCH), "--teams-only", *flags],
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=240,
+    )
+    assert r.returncode == 0, f"stdout={r.stdout}\nstderr={r.stderr}"
+    return json.loads(r.stdout)
+
+
+def test_default_batch_plays_real_rosters():
+    """The default batch must field real game-data players, not the 0.6 league-average fallback.
+
+    Every batch before 2026-11-23 silently played league-average mirrors (team ids read as `t.id`).
+    Real rosters show a spread of ratings within and across teams.
+    """
+    out = _teams()
+    assert out["mirror"] is False
+    teams = out["teams"]
+    assert len(teams) >= 20
+    assert len({t["id"] for t in teams}) == len(teams), "team ids must be distinct"
+    aims = [p["aim"] for t in teams for p in t["firstFive"]]
+    assert len(set(aims)) > 50, "player aim ratings should differ"
+    assert max(aims) - min(aims) > 0.2, f"aim spread too small: {min(aims)}..{max(aims)}"
+    assert sum(1 for a in aims if a == 0.6) < len(aims) / 4, "most players fell back to 0.6"
+    team_means = [sum(p["aim"] for p in t["firstFive"]) / 5 for t in teams]
+    assert max(team_means) - min(team_means) > 0.05, "teams should differ in strength"
+
+
+def test_mirror_flag_plays_league_average():
+    out = _teams("--mirror")
+    assert out["mirror"] is True
+    values = {v for t in out["teams"] for p in t["firstFive"] for v in p.values()}
+    assert values == {0.6}

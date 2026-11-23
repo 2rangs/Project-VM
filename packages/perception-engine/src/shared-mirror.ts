@@ -103,6 +103,8 @@ export interface AbilityState {
   readonly abilityId: string;
   readonly origin: Vector3;
   readonly expiresAtMs: number | null;
+  /** Radius of the deployed effect (world units), when known — a smoke's volume (PROJECT V extension). */
+  readonly radiusUnits?: number | null;
 }
 
 export interface PlayerState {

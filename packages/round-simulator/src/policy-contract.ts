@@ -88,6 +88,9 @@ export interface ActionCommand {
    * Direction a holding/stationary player should aim: the zone to watch (a choke/entry). Sets
    * the player's facing (perception FOV + combat pre-aim) while not moving. When absent on a
    * hold/peek, `targetZone` is used; absent entirely, the sim defaults to the enemy entry choke.
+   * On a `useAbility` aimed at `targetZone`: the zone the effect screens off — it lands on the
+   * side of `targetZone` that faces this zone (a smoke cutting that zone's sight onto it).
+   * Absent → it lands on the side facing the thrower.
    */
   readonly aimZone?: ZoneId;
   /**

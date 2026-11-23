@@ -19,6 +19,8 @@ export {
   activeGroundPatches,
   deployedEffects,
   visionBlockedZones,
+  visionOccluders,
+  DEFAULT_OCCLUDER_RADIUS_UNITS,
   revealedEnemies,
   combatFlashBlindMs,
 } from "./adapters.js";

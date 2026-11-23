@@ -185,6 +185,15 @@ export interface TrackFrame {
     readonly y: number;
     readonly z: number;
     readonly alive: boolean;
+    /**
+     * Enemies this player SEES on this tick — exactly the sight the engagement step used (the
+     * perception engine's line of sight, FOV and range; a blinded player sees nobody). Ids, sorted.
+     * Present on every living player's entry and on one killed this very tick (its sight when the
+     * duel began); absent on players dead before the tick.
+     */
+    readonly sees?: readonly PlayerId[];
+    /** True while the player is blinded by a flash (it then sees nobody). Absent otherwise. */
+    readonly blind?: true;
   }>;
 }
 
@@ -260,9 +269,9 @@ export interface CommandTraceEvent {
   readonly toZone?: string;
   readonly abilityId?: string;
   /**
-   * Outcome / rejection reason. For "plant": "started" | "planting" | "notPlantableZone" |
+   * Outcome / rejection reason. For "plant": "started" | "planting" | "notPlantableZone" | "notOnPlantArea" |
    * "noCarrier" | "notCarrier" | "dead". For "ability": "used" | "noSlot" | "unavailable" |
-   * "noSpec". For "defuse": "started" | "notOnSpikeZone" | "dead". For "issued": "deferred"
+   * "noSpec". For "defuse": "started" | "notAtSpike" (beyond DEFUSE_REACH_UNITS) | "dead". For "issued": "deferred"
    * when held by executeAtMs, else "active".
    */
   readonly result?: string;
@@ -355,6 +364,38 @@ export interface AbilityCue {
   readonly confidence: number;
 }
 
+/**
+ * Report-only measurements of a round (config.collectStats): how the bodies moved and crowded.
+ * Nothing in the simulation reads them; the validator turns them into batch metrics
+ * (tools/data-validator engine metrics). Collecting them does not change the outcome.
+ */
+export interface RoundStats {
+  /** Ticks simulated. */
+  readonly ticks: number;
+  /** Ticks on which at least one pair of living bodies on the same floor stood closer than BODY_OVERLAP_UNITS. */
+  readonly overlapTicks: number;
+  /** Smallest same-floor centre distance between two living bodies this round (uu; Infinity if never measured). */
+  readonly minPairDistance: number;
+  /** Each attacker's first entry into a plantable (site) zone, in order of arrival. */
+  readonly siteArrivals: ReadonlyArray<{ readonly playerId: PlayerId; readonly zoneId: string; readonly atMs: number }>;
+  /** Each attacker's zones in the order walked (repeats collapsed) up to its first site entry, its death or the round end. */
+  readonly attackerRoutes: Readonly<Record<PlayerId, readonly string[]>>;
+  /** Crowd handling: mover-ticks queued / giving way, give-ups (squeezed past), stack-up waits at boundaries. */
+  readonly crowd: {
+    readonly queueTicks: number;
+    readonly queuePushes: number;
+    readonly yieldTicks: number;
+    readonly yieldPushes: number;
+    /** Stack-up episodes (a mover holding at a boundary for a teammate), mover-ticks spent so, and episodes cut by STACK_MAX_WAIT. */
+    readonly stackWaits: number;
+    readonly stackWaitTicks: number;
+    readonly stackTimeouts: number;
+  };
+}
+
+/** Two bodies whose centres are closer than this (uu, ≈ 0.85 body widths) overlap (report-only metric). */
+export const BODY_OVERLAP_UNITS = 30;
+
 export interface RoundResult {
   readonly winner: Side;
   readonly reason: RoundEndReason;
@@ -378,6 +419,8 @@ export interface RoundResult {
   readonly abilityCueTrace?: readonly AbilityCue[];
   /** First-contact posture of every duel, present only when config.traceCommands is true. */
   readonly engagementTrace?: readonly EngagementRecord[];
+  /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
+  readonly stats?: RoundStats;
 }
 
 export interface SimConfig {
@@ -399,6 +442,8 @@ export interface SimConfig {
   readonly recordPerception: boolean;
   /** Record a command→execution trace (policy debugging for PV-3). Off by default. */
   readonly traceCommands: boolean;
+  /** Collect report-only movement / crowd measurements (RoundResult.stats). Off by default; passive. */
+  readonly collectStats?: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */
@@ -432,6 +477,7 @@ export interface SimConfig {
    * Attrition: share of the damage a duel's survivor took that carries into its next fight
    * (0 = every duel at full health, 1 = all of it). Below 1 stands in for what the sim does not
    * model between fights (cover, heals, disengaging).
+   * Default 0.4 (fitted on real rosters; ENGINE_TRUTH.md §4).
    */
   readonly damageCarryover: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
@@ -454,6 +500,10 @@ export const DEFAULT_CONFIG: SimConfig = {
   slowSpeedMultiplier: 0.5, // manual-approx (no catalog value)
   crossfirePenaltyMs: 60, // Hick–Hyman slope (ms/bit); calibrated on 160 Ascent matches (8/8 judged)
   infoWindowMs: 2000,
-  damageCarryover: 0, // off by default: full attrition needs defensive stall utility to stay balanced
+  // VALORANT has no health regeneration, so the physical value is 1; the missing 0.6 stands for what
+  // the sim does not model between fights (cover, falling back, stall utility the default
+  // abilities-off game has none of). Fitted on real rosters, seeds 1–160 (8/8 judged, attack 0.501),
+  // confirmed on 161–320 and 321–480 — docs/ENGINE_TRUTH.md §4.
+  damageCarryover: 0.4,
   peekerAdvantageMs: 180,
 };

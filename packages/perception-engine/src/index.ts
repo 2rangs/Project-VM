@@ -11,9 +11,10 @@ export {
   SpatialPerceptionOracle,
   observedEnemyFromVisible,
   healthBand,
+  DEFAULT_SMOKE_RADIUS_UNITS,
 } from "./oracle.js";
 export type { VisibilityOracle, OracleOptions } from "./oracle.js";
-export { canSee, facingAngleTo } from "./vision.js";
+export { canSee, facingAngleTo, lineOfSight, occluded, segmentHitsSphere, EYE_HEIGHT_UNITS, type SightOccluder, type SightOptions, type SightPoint } from "./vision.js";
 export type { VisionContext } from "./vision.js";
 export { collectSoundSources, hearSounds, footstepConfidence } from "./hearing.js";
 export type { SoundSource } from "./hearing.js";

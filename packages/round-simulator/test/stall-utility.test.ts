@@ -115,8 +115,8 @@ describe("a ground patch on the entry delays it or makes it pay — through path
     const known = views.find((v) => (v.visibleEffects ?? []).length > 0)!;
     expect(known.visibleEffects).toEqual([expect.objectContaining({ zoneId: "a-main", effectType: "molly", own: true })]);
     expect(known.observation.knownMapChanges[0]!.note).toBe("molly:own:a-main");
-    const z = spatial.getZone("a-main")!.position;
-    expect(known.observation.knownMapChanges[0]!.approxPosition).toEqual({ x: z.x, y: z.y, z: z.z });
+    // where the patch landed: A main's floor (the doorway side facing the thrower), not the callout
+    expect(spatial.nav!.zoneAt(known.observation.knownMapChanges[0]!.approxPosition)).toBe("a-main");
   });
 
   it("same seed and state → the identical round", () => {

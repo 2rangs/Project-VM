@@ -47,7 +47,7 @@ export class AbilityEngine {
 
   /** Deploy an ability instance. Returns the created effect. */
   use(spec: AbilitySpec, usage: AbilityUsage, opts: UseOptions = {}): ActiveEffect {
-    const zoneId = this.spatial.nearestZone(usage.origin).id;
+    const zoneId = usage.zoneId ?? this.spatial.nearestZone(usage.origin).id;
     const expiresAtMs = spec.durationMs != null ? usage.startedAtMs + spec.durationMs : null;
     const flashDurationMs = spec.flashDurationMs ?? 0;
     const suppressDurationMs = spec.suppressDurationMs ?? 0;

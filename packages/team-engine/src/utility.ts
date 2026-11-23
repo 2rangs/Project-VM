@@ -128,6 +128,11 @@ export interface UtilityWant {
   readonly etaMs?: number;
   /** stall: other families that would serve when this one is not available, in order. */
   readonly fallback?: readonly UtilityFamily[];
+  /**
+   * cover: the zone whose sight onto `target` the smoke is there to cut. Sent as the command's
+   * `aimZone`, so the smoke lands on the side of `target` that faces it (round-simulator landingPoint).
+   */
+  readonly screen?: ZoneId;
   readonly reason: string;
 }
 
@@ -331,7 +336,7 @@ export function coverWants(ctx: Ctx): UtilityWant[] {
     const prev = best.get(step);
     if (!prev || need > (prev.minDurationMs ?? 0)) {
       best.set(step, {
-        purpose: "cover", family: "vision", target: step, minDurationMs: need,
+        purpose: "cover", family: "vision", target: step, screen: far, minDurationMs: need,
         reason: `${String(p.id)} steps into ${step} in ${Math.round(t.nextArrivalMs)}ms, in open sight of ${far}`,
       });
     }
@@ -473,6 +478,7 @@ export function planUtility(
     if (want.purpose !== "blind" && want.purpose !== "scout") served.add(key);
     const cmd: ActionCommand = {
       playerId: pick.p.id, kind: "useAbility", abilityId: pick.a.abilityId as ActionCommand["abilityId"], targetZone: want.target,
+      ...(want.screen ? { aimZone: want.screen } : {}),
       executeAtMs: 0, sourceActionId: `utility:${want.purpose}:${pick.a.effectType}`,
     };
     const idx = out.findIndex((c) => String(c.playerId) === String(pick!.p.id));
