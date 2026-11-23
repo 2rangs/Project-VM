@@ -32,8 +32,11 @@ Design doc: `docs/CAREER_MODE.md` (flow, calendar, competition, sim, saves, hook
 
 ## Half-done / not verified
 - **Career e2e** `apps/desktop/test/e2e.career.test.mjs` (`test:e2e:career`): first run failed
-  on a test assumption (the board question blocks Continue from day one); fixed and re-run —
-  result recorded at the bottom of this note.
+  on a test assumption (the board question blocks Continue from day one); fixed and re-run:
+  **passes** — "CAREER E2E OK — T1: 2–1 on 2026-02-07; 5 engine-played AI series; next match day
+  2026-02-14" (start menu → new career → board answer → first match day → real-engine Bo3 →
+  recorded → standings → engine background sim → main menu → Continue reproduces the save).
+  Moved to "Done and verified".
 - `test/e2e.electron.test.mjs` and `test/e2e.series.test.mjs` were edited to click "Quick Match"
   on the new start menu; **not re-run**.
 - match-runner's own test suite not re-run after the roster change (only the career test that
@@ -52,7 +55,7 @@ Design doc: `docs/CAREER_MODE.md` (flow, calendar, competition, sim, saves, hook
 - `apps/desktop/vite.browser.config.ts` and `.claude/launch.json` are local, uncommitted helpers.
 
 ## Next steps (in order)
-1. Re-run `test:e2e`, `test:e2e:series`, `test:e2e:career` under heavy-run.sh; discard the
+1. Re-run `test:e2e` and `test:e2e:series` (start-menu edits) under heavy-run.sh; discard the
    regenerated `apps/desktop/docs/*.png`.
 2. Run the match-runner suite once for the `roster` change.
 3. Merge with club-ops (App.tsx / nav.ts both rewritten here — their three route lines go on top).
