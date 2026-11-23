@@ -1914,6 +1914,21 @@
         "drops": 1,
         "provenance": "measured-on-mesh (walkable route)"
       }
+    },
+    {
+      "from": "a-shop",
+      "to": "mid-hall",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 2773,
+      "distanceMeters": 27.73,
+      "runTimeMs": 702,
+      "walkTimeMs": 702,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'hall-rope' in the authoring file",
+      "kind": "rope",
+      "traversal": "hall-rope",
+      "routeStatus": "straight (special traversal (no walking route applies))"
     }
   ],
   "sightlines": [
@@ -2438,7 +2453,9 @@
     "provenance": "measured-on-mesh",
     "source": "tools/map-mesh/pipeline/route_map.py",
     "edgesWithWalkableRoute": 39,
-    "edgesFlaggedStraight": [],
+    "edgesFlaggedStraight": [
+      "a-shop->mid-hall"
+    ],
     "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
   },
   "mechanics": [
@@ -2455,15 +2472,24 @@
       "represented": false,
       "engineNeeds": "one-way edge; only drops the walk grid could see are encoded (check the 'drop' edges)",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    },
+    {
+      "kind": "rope",
+      "name": "Vertical rope between A Shop and Mid Hall",
+      "represented": true,
+      "how": "one roadmap link kind=rope (traversal hall-rope). The 'on rope' state is NOT modelled",
+      "provenance": "measured-on-mesh (ascender object, cells); manual-approx (travel time)"
     }
   ],
   "dataQuality": {
     "edgeKinds": {
       "walk": 36,
-      "drop": 3
+      "drop": 3,
+      "rope": 1
     },
     "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [],
     "doorsNotAttached": [],
     "zonesOnMainWalkComponent": "23/23"
   },
