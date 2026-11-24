@@ -126,6 +126,9 @@ export type SimEventKind =
   | "defused"
   | "detonated"
   | "landing"
+  | "traversal"
+  | "disengage"
+  | "rePeek"
   | "roundEnd";
 
 export interface SimEvent {
@@ -393,6 +396,8 @@ export interface RoundStats {
   readonly siteArrivals: ReadonlyArray<{ readonly playerId: PlayerId; readonly zoneId: string; readonly atMs: number }>;
   /** Each attacker's zones in the order walked (repeats collapsed) up to its first site entry, its death or the round end. */
   readonly attackerRoutes: Readonly<Record<PlayerId, readonly string[]>>;
+  /** Peeks by technique (gaze model; all 0 without it), re-peeks and disengages (jiggles that drew no kill). */
+  readonly peeks: { readonly walkIn: number; readonly swing: number; readonly slice: number; readonly jiggle: number; readonly rePeek: number; readonly disengage: number };
   /** Crowd handling: mover-ticks queued / giving way, give-ups (squeezed past), stack-up waits at boundaries. */
   readonly crowd: {
     readonly queueTicks: number;
@@ -405,6 +410,13 @@ export interface RoundStats {
     readonly stackTimeouts: number;
   };
 }
+
+/**
+ * Stop time (ms) of the legacy (gaze-off) duel model: an aggregate calibrated on 160 Ascent matches
+ * (STAT_OUTCOME_MATRIX §2.7) that also absorbs what that model does not have (aim time, tracking a
+ * swing). The gaze model uses combat-engine's physical stopMs instead.
+ */
+export const LEGACY_STOP_MS = { run: 700, walk: 350 } as const;
 
 /** Two bodies whose centres are closer than this (uu, ≈ 0.85 body widths) overlap (report-only metric). */
 export const BODY_OVERLAP_UNITS = 30;

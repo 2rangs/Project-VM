@@ -177,7 +177,7 @@ export interface BuildViewOptions {
   /** Loud sounds in the masking window (gunfire), for sound masking (sound detail). */
   readonly maskers?: NonNullable<PWorldExtras["maskers"]>;
 }
-type PWorldExtras = { extraSounds?: ReadonlyArray<{ kind: "landing"; position: { x: number; y: number; z: number }; teamId?: string; radiusUnits: number; levelDb: number }>; maskers?: ReadonlyArray<{ position: { x: number; y: number; z: number }; levelDb: number }> };
+type PWorldExtras = { extraSounds?: ReadonlyArray<{ kind: "landing" | "traversal"; position: { x: number; y: number; z: number }; teamId?: string; radiusUnits: number; levelDb: number }>; maskers?: ReadonlyArray<{ position: { x: number; y: number; z: number }; levelDb: number }> };
 
 /**
  * Perception parameters for a round: the defaults, with the footstep audio range taken from the

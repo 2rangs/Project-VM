@@ -22,10 +22,22 @@ export function aimTimeMs(offsetDeg: number, widthDeg: number, aim: number, p: C
 }
 
 /** When (ms after t0) a combatant can first pull the trigger. */
-export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}, distanceMeters = 15): number {
+/**
+ * How far (deg) a target moving across the line of sight gets from where it was first seen while the
+ * shooter is still perceiving it: ω · t = (lateral / distance) · perception. It is added to the gaze
+ * offset the Fitts term has to cover — the physical part of the peeker's advantage (a holder whose
+ * crosshair sits on the peek point still has to catch a swing that runs past it).
+ */
+export function trackingOffsetDeg(targetLateralMps: number, distanceMeters: number, perceptionMs: number): number {
+  if (targetLateralMps <= 0 || perceptionMs <= 0) return 0;
+  return (Math.atan2(targetLateralMps * (perceptionMs / 1000), Math.max(0.5, distanceMeters)) * 180) / Math.PI;
+}
+
+export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}, distanceMeters = 15, targetLateralMps = 0): number {
   if (c.posture.aimOffsetDeg !== undefined) {
     const perception = lerp(p.aim.perceptionSlowMs, p.aim.perceptionFastMs, c.skills.reaction);
-    const d = effectiveAimOffsetDeg(c.posture.aimOffsetDeg, c.skills.crosshairPlacement, p);
+    const track = trackingOffsetDeg(targetLateralMps, distanceMeters, perception);
+    const d = effectiveAimOffsetDeg(c.posture.aimOffsetDeg + track, c.skills.crosshairPlacement, p);
     const aimMs = aimTimeMs(d, bodyAngularWidthDeg(distanceMeters, p), c.skills.aim, p);
     const flash = c.posture.flashBlindMs > 0 ? c.posture.flashBlindMs + p.reaction.flashReactionPenaltyMs : 0;
     return c.posture.seesEnemyAtMs + (perception + aimMs) * (cal.reactionScale ?? 1) + flash;

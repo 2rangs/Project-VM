@@ -94,6 +94,8 @@ export interface MoverHooks {
   onNavEvent?(e: NavEvent): void;
   /** The mover came down a one-way drop of this height (uu) and landed at `at`. */
   onLanding?(p: SimPlayer, heightUnits: number, at: { x: number; y: number; z: number }): void;
+  /** Entering / leaving an authored link (teleporter, rope, zipline): its sound at that end (sound detail). */
+  onTraverse?(p: SimPlayer, via: string, end: "enter" | "exit", at: { x: number; y: number; z: number }): void;
 }
 
 export interface NavEvent {
@@ -701,8 +703,10 @@ export class MovementExecutor {
       if (w.fixedMs !== undefined) {
         // an authored link with its own travel time: a teleporter holds the body then moves it,
         // a zipline / rope carries it along the link
+        if (m.linkElapsedMs === 0 && hooks?.onTraverse) hooks.onTraverse(p, w.via ?? "link", "enter", { ...prev.position });
         m.linkElapsedMs += budget;
         const done = m.linkElapsedMs >= w.fixedMs;
+        if (done && hooks?.onTraverse) hooks.onTraverse(p, w.via ?? "link", "exit", { ...w.position });
         if (w.via !== "teleporter" || done) {
           const f = Math.min(1, m.linkElapsedMs / w.fixedMs);
           const before = { ...p.position };

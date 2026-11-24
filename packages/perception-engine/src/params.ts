@@ -63,6 +63,12 @@ export interface PerceptionParams {
     readonly masking: { readonly gunfireDb: number; readonly footstepDb: number; readonly marginDb: number; readonly refDistanceUnits: number; readonly windowMs: number };
     /** Landing off a drop: silent below this fall height (uu). manual-approx (hearing.ts landingSound). */
     readonly landing: { readonly silentBelowUnits: number };
+    /**
+     * Authored-link sounds (teleporter / rope / zipline) at each end: reach (uu) and level (dB).
+     * manual-approx — the map data (`<map>.objects.json` traversals) has soundRadiusUu null and
+     * soundVerified false until measured in game. A teleporter is louder than a step.
+     */
+    readonly traversal: { readonly teleporterRadiusUnits: number; readonly ropeRadiusUnits: number; readonly ziplineRadiusUnits: number; readonly levelDb: number };
   };
   readonly memory: {
     /**
@@ -105,6 +111,7 @@ export const DEFAULT_PARAMS: PerceptionParams = {
     walkingStates: ["walk", "walking", "crouch", "shift"],
     masking: { gunfireDb: 30, footstepDb: 0, marginDb: 10, refDistanceUnits: 100, windowMs: 300 },
     landing: { silentBelowUnits: 250 },
+    traversal: { teleporterRadiusUnits: 7500, ropeRadiusUnits: 5000, ziplineRadiusUnits: 5000, levelDb: 10 },
   },
   memory: {
     halfLifeMs: 5000,

@@ -29,13 +29,13 @@ export interface ResolveOptions {
   readonly calibration?: CombatCalibration;
 }
 
-function initState(c: Combatant, seed: number, p: CombatParams, cal: CombatCalibration, distanceMeters: number): FighterState {
+function initState(c: Combatant, opponent: Combatant, seed: number, p: CombatParams, cal: CombatCalibration, distanceMeters: number): FighterState {
   return {
     c,
     health: c.health,
     armor: c.armor,
     ammo: c.ammo ?? c.weapon.magazineSize,
-    nextFireAt: readyDelayMs(c, p, cal, distanceMeters),
+    nextFireAt: readyDelayMs(c, p, cal, distanceMeters, opponent.posture.lateralSpeedMps ?? 0),
     shotsFired: 0,
     shotsHit: 0,
     rng: mulberry32(deriveSeed(seed, c.id)),
@@ -59,8 +59,8 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
   const p = opts.params ?? DEFAULT_PARAMS;
   const cal = opts.calibration ?? {};
   const states: Record<PlayerId, FighterState> = {
-    [duel.a.id]: initState(duel.a, seed, p, cal, duel.distanceMeters),
-    [duel.b.id]: initState(duel.b, seed, p, cal, duel.distanceMeters),
+    [duel.a.id]: initState(duel.a, duel.b, seed, p, cal, duel.distanceMeters),
+    [duel.b.id]: initState(duel.b, duel.a, seed, p, cal, duel.distanceMeters),
   };
   const order: [FighterState, FighterState] = [states[duel.a.id], states[duel.b.id]];
   const opponentOf = (s: FighterState): FighterState => (s === order[0] ? order[1] : order[0]);
@@ -69,6 +69,9 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
   let winner: PlayerId | null = null;
   let loser: PlayerId | null = null;
   let ttk: number | null = null;
+  let disengagedAtMs: number | undefined;
+  // A jiggle / shoulder peek: the line of sight ends when the first fighter is back behind cover.
+  const exposedUntil = Math.min(duel.a.posture.exposedUntilMs ?? Infinity, duel.b.posture.exposedUntilMs ?? Infinity);
 
   const bothAlive = () => order[0].health > 0 && order[1].health > 0;
 
@@ -76,6 +79,7 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
     // pick the next shooter: earliest nextFireAt; ties → combatant a (order[0]) first.
     const shooter = order[0].nextFireAt <= order[1].nextFireAt ? order[0] : order[1];
     const t = shooter.nextFireAt;
+    if (t > exposedUntil) { disengagedAtMs = exposedUntil; break; }
     if (t > p.timeBudgetMs) break;
 
     if (shooter.ammo <= 0) {
@@ -135,5 +139,5 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
       shotsHit: s.shotsHit,
     };
   }
-  return { winner, loser, timeToKillMs: ttk, events, outcomes };
+  return { winner, loser, timeToKillMs: ttk, events, outcomes, ...(disengagedAtMs !== undefined ? { disengagedAtMs } : {}) };
 }

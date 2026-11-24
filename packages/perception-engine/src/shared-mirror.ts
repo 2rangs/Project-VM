@@ -57,6 +57,7 @@ export type SoundKind =
   | "spikePlant"
   | "spikeDefuse"
   | "landing"
+  | "traversal"
   | "other";
 
 export interface SoundObservation {

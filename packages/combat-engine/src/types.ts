@@ -89,6 +89,19 @@ export interface EngagePosture {
    * a pre-aimed holder is simply one whose offset is ≈ 0. Absent → the legacy flag model.
    */
   readonly aimOffsetDeg?: number;
+  /**
+   * This combatant's speed (m/s) ACROSS the opponent's line of sight at contact. The opponent's
+   * crosshair has to follow it: during the opponent's perception time the target moves
+   * lateral · perception / distance radians off where it was seen (gaze model only). A wide swing
+   * strafes at run speed, a slice walks, a holder is 0.
+   */
+  readonly lateralSpeedMps?: number;
+  /**
+   * When (ms after t0) this combatant breaks line of sight again on its own — a jiggle or shoulder
+   * peek strafes back behind cover. Neither side can fire after the earlier of the two; if nobody
+   * has died by then the duel ends as a disengage (DuelResult.disengagedAtMs). Absent = stays in.
+   */
+  readonly exposedUntilMs?: number;
 }
 
 export const OPEN_POSTURE: EngagePosture = {
@@ -147,6 +160,8 @@ export interface DuelResult {
   readonly winner: PlayerId | null;
   readonly loser: PlayerId | null;
   readonly timeToKillMs: number | null;
+  /** Set when the duel ended because a fighter left the line of sight (exposedUntilMs), no kill. */
+  readonly disengagedAtMs?: number;
   readonly events: readonly CombatEvent[];
   readonly outcomes: Readonly<Record<PlayerId, CombatantOutcome>>;
 }

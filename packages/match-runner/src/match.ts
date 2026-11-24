@@ -102,7 +102,7 @@ export interface MatchTuning extends Partial<PolicyTuning> {
   readonly damageCarryover?: number;
   /**
    * Multiplier on the time a shooter caught on the move needs before it fights like a set player
-   * (combat-engine accuracy.stopMs: 700 ms from a run, 350 ms from a walk at movement skill 0.5).
+   * (combat-engine accuracy.stopMs with the gaze model: 260 ms from a run, 220 ms from a walk at movement skill 0.5; the legacy model 700 / 350).
    * Default 1. Larger = moving into a held angle costs more; Infinity = a mover never settles.
    */
   readonly movingStopScale?: number;
