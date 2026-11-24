@@ -403,6 +403,9 @@ Full model and formulas: `docs/MATCH_MANAGEMENT.md` at the repo root (Korean).
 - **Review → 감독 결정 요약 / Manager decisions**: both managers' decisions (the opponent's is the AI) with the rounds won
   in the three rounds before and after, tilt three rounds later, talk reactions, and a tilt chart per team.
 - Series maps are played with the same layer (through the series host). One-shot matches stay plain `runMatch`.
+- **Default off — Match options → 감독 실험 기능 / Manager experimental**: turns on the engine flags `moodEffects`
+  (state of mind affects play), `aiManager` (AI uses shouts, talks, attribute-driven timeouts) and `timeoutsPerHalf: 1`.
+  Off, moods are shown but do not affect play, and the AI behaves as before. Not validated against the balance gate.
 
 Data path: `scripts/match-session.mts` (now `createManagedSession`; commands `setShouts`, `setStrategy`, `teamTalk`)
 and `scripts/series-session.mts` (same commands, seat ⇄ slot) → `scripts/manager-view.mts` (state from our seat) →
