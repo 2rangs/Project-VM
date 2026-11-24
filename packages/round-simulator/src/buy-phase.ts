@@ -39,6 +39,10 @@ export const DEFENDER_BARRIER_SHARE = 0.45;
  * full-v-full 0.45; around the spawn's middle 0.50 / 0.46 — the duel calibration assumes the attackers
  * leave spawn from its middle, so that is where they set up.
  */
+/** How often (ticks) a player checks it can still make its setup, and the room it keeps on the estimated run. */
+const LEAVE_CHECK_TICKS = 5;
+const LATE_SLACK = 1.25;
+const LATE_MARGIN_MS = 1000;
 /** An idle wander is a walk of at most this long (ms) — it is never started if it would make the player late. */
 const WANDER_BUDGET_MS = 3500;
 
@@ -86,6 +90,9 @@ interface Script {
   started: number;
   /** Where the player looks once set (a point). */
   face: { x: number; y: number } | null;
+  /** The setup the last step goes to, and where that is (null: no point to time the leave by). */
+  readonly setup: MoveGoal;
+  readonly dest: { x: number; y: number; z: number } | null;
 }
 
 /** Zones behind each side's barrier. */
@@ -124,6 +131,9 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
   const exec: Record<Side, MovementExecutor> = { attack: null!, defense: null! };
   for (const side of ["attack", "defense"] as const) {
     const ex = new MovementExecutor(spatial, input.speeds);
+    // each player's setup spot is kept for it: nobody else buys, wanders or stands there, so every
+    // player can end the phase exactly where the round's executor placed it
+    for (const p of players) if (p.side === side) { const n = nav.locate(setupSpot.get(p.id)!); if (n !== null) ex.holdFor(p.id, n); }
     ex.reset(players.filter((p) => p.side === side));
     for (const z of spatial.zones) if (!areas[side].has(z.id)) ex.addZoneBlocker(`barrier:${z.id}`, z.id);
     for (const p of players) if (p.side === side) ex.setStyle(p.id, { lane: input.styles.get(p.id)?.lane ?? 0 });
@@ -162,7 +172,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
       // way during the buy phase put every defender on its angle at 0:00 and cost the attack 3 pp).
       const target = cmd?.targetZone && spatial.getZone(cmd.targetZone) ? cmd.targetZone : planZone;
       const zone = areas.defense.has(planZone) ? planZone : SPAWN_ZONE.defense;
-      goal = { zoneId: zone, mode: "run", spot: zone === planZone ? { kind: "at", position: setupSpot.get(p.id)! } : { kind: "stand" } };
+      goal = { zoneId: zone, mode: "run", spot: zone === planZone ? { kind: "at", position: setupSpot.get(p.id)!, exact: true } : { kind: "stand" } };
       const watch = cmd?.aimZone && spatial.getZone(cmd.aimZone) ? cmd.aimZone : null;
       const look = spatial.getZone(watch ?? target);
       if (look && look.id !== zone) face = { x: look.position.x, y: look.position.y };
@@ -181,7 +191,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
         }
       }
       void exit; void role;
-      goal = { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "at", position: setupSpot.get(p.id)! } };
+      goal = { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "at", position: setupSpot.get(p.id)!, exact: true } };
       if (target) planZone = target;
     }
     setups.push({ p, planZone });
@@ -199,7 +209,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
       const near = nav.zoneNodes(p.zoneId).filter((n) => {
         const q = nav.nodePosition(n);
         const d = Math.hypot(q.x - p.position.x, q.y - p.position.y);
-        return d > 150 && d < radius && !ex.blockers.nodeBlocked(n);
+        return d > 150 && d < radius && !ex.blockers.nodeBlocked(n) && !ex.heldForOther(p.id, n);
       });
       if (near.length === 0) break;
       const n = near[Math.floor(rng() * near.length)]!;
@@ -212,7 +222,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
     if (walk) goal = { ...goal, mode: "walk" };
     steps.push({ kind: "stand", untilMs: Math.max(clock, Math.min(latest, input.durationMs - travel * (walk ? 2 : 1) - 500)) });
     steps.push({ kind: "goto", goal });
-    scripts.push({ p, steps, at: 0, started: -1, face });
+    scripts.push({ p, steps, at: 0, started: -1, face, setup: goal, dest });
   }
 
   // ---- run the phase ----
@@ -223,6 +233,19 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
     const nowMs = t * input.tickMs;
     for (const s of scripts) {
       const ex = exec[s.p.side];
+      // never late: the planned leave time is an estimate (wanders end where they end, teammates are in
+      // the way), so every half second a player not yet running to its setup checks the run from where
+      // it stands — and leaves now, running, once that run would no longer make it.
+      const last = s.steps.length - 1;
+      if (t % LEAVE_CHECK_TICKS === 0 && s.dest && (s.at < last || s.p.moveMode === "walk")) {
+        const need = runMs(s.p.side, s.p, s.dest) * LATE_SLACK + LATE_MARGIN_MS;
+        if (nowMs + need >= input.durationMs) {
+          const run: MoveGoal = { ...s.setup, mode: "run" };
+          s.steps[last] = { kind: "goto", goal: run };
+          if (s.at < last) s.at = last; // the next lines hand it to the executor
+          else ex.setGoal(s.p, run, hooks[s.p.side]);
+        }
+      }
       // advance the script
       for (;;) {
         const step = s.steps[s.at];

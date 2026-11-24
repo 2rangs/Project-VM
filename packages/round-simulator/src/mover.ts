@@ -62,7 +62,8 @@ export type SpotIntent =
   | { readonly kind: "stand" }
   | { readonly kind: "hold"; readonly watchZone: string }
   | { readonly kind: "plant" }
-  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } }
+  /** `exact`: the player must end on this very point (the buy phase's setup spot), not merely near it. */
+  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number }; readonly exact?: boolean }
   | { readonly kind: "see"; readonly zone: string }
   | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
 
@@ -270,10 +271,19 @@ export class MovementExecutor {
   /** Is this roadmap node free for this player to stand on (no one else claims it)? */
   spotFree(playerId: string, node: number): boolean {
     const holder = this.claims.get(node);
-    return holder === undefined || holder === playerId;
+    return (holder === undefined || holder === playerId) && !this.heldForOther(playerId, node);
   }
   /** Reserve a standing spot for a player ahead of its move there (its previous claim is released). */
   reserve(playerId: string, node: number): void { this.claim(playerId, node); }
+  /**
+   * Keep a standing spot free for a player that will go there later (the buy phase: each player's
+   * setup spot): nobody else is given it as a standing spot. Unlike a claim, the player keeps its
+   * current spot meanwhile.
+   */
+  holdFor(playerId: string, node: number): void { if (node >= 0) this.held.set(node, playerId); }
+  /** Is this node held for someone other than this player? */
+  heldForOther(playerId: string, node: number): boolean { const h = this.held.get(node); return h !== undefined && h !== playerId; }
+  private readonly held = new Map<number, string>();
 
   private claim(playerId: string, node: number): void {
     for (const [n, id] of this.claims) if (id === playerId) this.claims.delete(n);
@@ -300,6 +310,7 @@ export class MovementExecutor {
     for (const n of this.nav.zoneNodes(zoneId)) {
       const holder = this.claims.get(n);
       if (holder !== undefined && holder !== playerId) continue;
+      if (this.heldForOther(playerId, n)) continue;
       if (this.blockers.nodeBlocked(n)) continue;
       if (Math.abs(this.nav.nodePosition(n).z - a.z) > 160) continue; // same floor as the zone's anchor
       pool.push(n);
@@ -486,7 +497,7 @@ export class MovementExecutor {
     const sp = goal.spot;
     const respot = sp?.kind === "see" ? !this.seesFromSpot(p, sp)
       : sp?.kind === "plant" ? this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId)
-      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > AT_SPOT_TOLERANCE_UNITS
+      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > (sp.exact ? 1 : AT_SPOT_TOLERANCE_UNITS)
       : false;
     if (!respot && p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {
       // already standing in the goal zone: stay on the spot it holds
@@ -861,6 +872,12 @@ export class MovementExecutor {
       if (headOn) { if (near && q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
       // beyond a body gap, spacing is kept only behind a teammate going the same way (within ~45°)
       if (!near && (q.teamId !== p.teamId || ql < 1e-6 || (qx * ux + qy * uy) / ql < SAME_WAY_COS)) continue;
+      // two bodies crossing each other's way each have the other ahead: neither is the back of a
+      // queue — judged as queues, both waited MAX_QUEUE_TICKS. As head-on, the lower id goes first.
+      if (ql > 1e-6 && ((p.position.x - q.position.x) * qx + (p.position.y - q.position.y) * qy) / ql > 0) {
+        if (q.id < p.id) found = found ?? "standing";
+        continue;
+      }
       return "queue";
     }
     return found;
