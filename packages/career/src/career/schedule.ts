@@ -6,7 +6,7 @@
 //     · playoffs    — the top four of each group: quarter-finals (Bo3, cross-group 1v4 / 2v3),
 //       semi-finals (Bo3) and a Bo5 final.
 //   Stage 1 is drawn at the start of the season by strength (snake seeding); Stage 2 is drawn the
-//   day after the Stage 1 final from the Stage 1 placings. The season ends on 1 September.
+//   day after the Stage 1 final from the Stage 1 placings. The season ends on 15 September.
 //
 // Not modelled (docs/CAREER_MODE.md §7): the Kickoff, international events (Masters/Champions),
 // double-elimination brackets, promotion/relegation, other regions' leagues.
@@ -15,19 +15,26 @@ import type { World } from "../model.ts";
 import type { Region } from "../regions.ts";
 import { deriveSeed, mulberry32, type Rng } from "../rng.ts";
 import { addDays, isoDate, nextWeekday, type IsoDate } from "./calendar.ts";
-import type { Fixture, GroupId, PlayoffRound, SeasonState, SlotSource, StageId, StageState } from "./types.ts";
+import type { CompetitionId, Fixture, GroupId, PlayoffRound, SeasonState, SlotSource, StageId, StageState } from "./types.ts";
 
 export const SCHEDULE_MODEL = {
   /** League size per region (the real partner leagues have 12). */
   leagueSize: 12,
   /** Playoff places per group. */
   playoffPerGroup: 4,
-  /** Group-stage weeks start on the first Friday on/after these dates (month, day). */
-  stageStart: { stage1: [2, 1], stage2: [5, 1] } as Record<StageId, [number, number]>,
-  /** At least this many days between a stage final and the next stage's first match. */
-  minGapDays: 21,
-  /** The season ends (review, development, intake) on this date (month, day). */
-  seasonEnd: [9, 1] as [number, number],
+  /**
+   * Competitions start on the first Friday on/after these dates (month, day) and never earlier than
+   * `minGapDays` after the previous competition ended. The 2026 calendar: Kickoff 9 Jan–22 Feb,
+   * Stage 1 6 Mar–19 Apr, Masters 1 1–13 May, Stage 2 29 May–12 Jul, Masters 2 24 Jul–5 Aug,
+   * Champions 14–26 Aug; the season ends 15 September.
+   */
+  stageStart: { kickoff: [1, 9], stage1: [3, 6], stage2: [5, 29], masters1: [5, 1], masters2: [7, 24], champions: [8, 14] } as Record<CompetitionId, [number, number]>,
+  minGapDays: 7,
+  /**
+   * The season ends (review, development, intake) on this date (month, day): after Champions in
+   * every year (the Friday anchors move the circuit by up to six days; tested for 2026–2040).
+   */
+  seasonEnd: [9, 15] as [number, number],
   /** A brand-new career opens on this date of its first season (month, day). */
   careerStart: [1, 5] as [number, number],
   format: { group: "bo3", qf: "bo3", sf: "bo3", final: "bo5" } as const,
@@ -36,7 +43,7 @@ export const SCHEDULE_MODEL = {
 } as const;
 
 export const GROUPS: readonly GroupId[] = ["alpha", "omega"];
-export const STAGES: readonly StageId[] = ["stage1", "stage2"];
+export const STAGES: readonly StageId[] = ["kickoff", "stage1", "stage2"];
 const FRIDAY = 5;
 
 /** Team strength (the package's one definition: club/market.ts — mean true CA of the top five, 0..1). */
@@ -52,11 +59,11 @@ export function regionTeams(w: World, region: Region): string[] {
 }
 
 /** The league: the region's strongest teams, always including the manager's team. */
-export function leagueTeams(w: World, region: Region, userTeamId: string): string[] {
+export function leagueTeams(w: World, region: Region, userTeamId: string | null): string[] {
   const all = regionTeams(w, region);
   const n = SCHEDULE_MODEL.leagueSize;
   const top = all.slice(0, n);
-  if (!top.includes(userTeamId) && w.teams[userTeamId]) {
+  if (userTeamId && !top.includes(userTeamId) && w.teams[userTeamId]?.region === region) {
     if (top.length >= n) top.pop();
     top.push(userTeamId);
   }
@@ -98,7 +105,7 @@ export function roundRobin(teams: readonly string[], rng: Rng): Array<Array<[str
   return rounds;
 }
 
-function stageFirstFriday(season: number, stage: StageId, notBefore: IsoDate | null): IsoDate {
+export function stageFirstFriday(season: number, stage: CompetitionId, notBefore: IsoDate | null): IsoDate {
   const [m, d] = SCHEDULE_MODEL.stageStart[stage];
   let start = nextWeekday(isoDate(season, m, d), FRIDAY);
   if (notBefore) {
@@ -115,10 +122,10 @@ function stageFirstFriday(season: number, stage: StageId, notBefore: IsoDate | n
 export function drawStage(season: SeasonState, stageId: StageId, groups: Record<GroupId, string[]>, firstFriday: IsoDate, seed: number): void {
   const stage = season.stages.find((s) => s.id === stageId)!;
   stage.groups = { alpha: [...groups.alpha], omega: [...groups.omega] };
-  const rng = mulberry32(deriveSeed(seed, `draw:${season.season}:${stageId}`));
+  const rng = mulberry32(deriveSeed(seed, `draw:${season.season}:${season.region}:${stageId}`));
   const rr = { alpha: roundRobin(groups.alpha, rng), omega: roundRobin(groups.omega, rng) };
   const weeks = Math.max(rr.alpha.length, rr.omega.length);
-  const prefix = `${season.season}-${stageId}`;
+  const prefix = `${season.season}-${season.region}-${stageId}`;
   for (let w = 0; w < weeks; w++) {
     const friday = addDays(firstFriday, 7 * w);
     const games = [
@@ -129,7 +136,7 @@ export function drawStage(season: SeasonState, stageId: StageId, groups: Record<
     order.forEach(({ g, p }, i) => {
       season.fixtures.push({
         id: `${prefix}-${g[0]}${w + 1}-${i + 1}`,
-        season: season.season, stage: stageId, phase: "group", group: g, round: w + 1,
+        season: season.season, stage: stageId, phase: "group", group: g, round: w + 1, region: season.region,
         date: addDays(friday, i % 3), format: SCHEDULE_MODEL.format.group, home: p[0], away: p[1],
       });
     });
@@ -141,7 +148,7 @@ export function drawStage(season: SeasonState, stageId: StageId, groups: Record<
   const seedOf = (group: GroupId, rank: number): SlotSource => ({ kind: "seed", group, rank });
   const winner = (fixtureId: string): SlotSource => ({ kind: "winner", fixtureId });
   const po = (id: string, round: PlayoffRound, date: IsoDate, homeFrom: SlotSource, awayFrom: SlotSource): Fixture => ({
-    id: `${prefix}-${id}`, season: season.season, stage: stageId, phase: "playoff", round, date,
+    id: `${prefix}-${id}`, season: season.season, stage: stageId, phase: "playoff", round, date, region: season.region,
     format: SCHEDULE_MODEL.format[round], home: null, away: null, homeFrom, awayFrom,
   });
   const qf = [
@@ -161,20 +168,20 @@ export function drawStage(season: SeasonState, stageId: StageId, groups: Record<
   stage.end = sun;
 }
 
-/** A new season: the league, Stage 1 drawn by strength, Stage 2 waiting for its draw. */
-export function buildSeason(w: World, region: Region, userTeamId: string, season: number, seed: number): SeasonState {
+/** A new season of one region's league: Kickoff drawn by strength, the later stages waiting for their draws. */
+export function buildSeason(w: World, region: Region, userTeamId: string | null, season: number, seed: number): SeasonState {
   const teams = leagueTeams(w, region, userTeamId);
   const [em, ed] = SCHEDULE_MODEL.seasonEnd;
   const end = isoDate(season, em, ed);
   const st: SeasonState = {
     season, region, teams,
-    stages: STAGES.map((id): StageState => ({ id, groups: { alpha: [], omega: [] }, start: null, end: null, drawDate: id === "stage1" ? isoDate(season, 1, 1) : end, champion: null })),
+    stages: STAGES.map((id): StageState => ({ id, groups: { alpha: [], omega: [] }, start: null, end: null, drawDate: id === "kickoff" ? isoDate(season, 1, 1) : end, champion: null })),
     fixtures: [],
     end,
     nextStart: addDays(end, 1),
     ended: false,
   };
-  drawStage(st, "stage1", snakeGroups(teams), stageFirstFriday(season, "stage1", null), seed);
+  drawStage(st, "kickoff", snakeGroups(teams), stageFirstFriday(season, "kickoff", null), seed);
   return st;
 }
 
@@ -223,12 +230,16 @@ export function sortStandings(rows: StandingRow[], fixtures: readonly Fixture[])
     || a.teamId.localeCompare(b.teamId));
 }
 
-export function groupStandings(season: SeasonState, stageId: StageId, group: GroupId): StandingRow[] {
-  const stage = season.stages.find((s) => s.id === stageId)!;
-  const fixtures = season.fixtures.filter((f) => f.stage === stageId && f.phase === "group" && f.group === group);
-  const rows = new Map(stage.groups[group].map((id) => [id, emptyRow(id)]));
+/** Standings of one group from the group fixtures that have results (any competition). */
+export function tableOf(teams: readonly string[], fixtures: readonly Fixture[]): StandingRow[] {
+  const rows = new Map(teams.map((id) => [id, emptyRow(id)]));
   for (const f of fixtures) addResult(rows, f);
   return sortStandings([...rows.values()], fixtures);
+}
+
+export function groupStandings(season: SeasonState, stageId: StageId, group: GroupId): StandingRow[] {
+  const stage = season.stages.find((s) => s.id === stageId)!;
+  return tableOf(stage.groups[group], season.fixtures.filter((f) => f.stage === stageId && f.phase === "group" && f.group === group));
 }
 
 export const groupStageDone = (season: SeasonState, stageId: StageId): boolean => {
@@ -242,27 +253,34 @@ export const stageDone = (season: SeasonState, stageId: StageId): boolean => {
 };
 
 /**
- * Fill in playoff slots whose source is now known (group finished / earlier round played).
- * Returns the fixtures that got both teams in this call.
+ * Fill in playoff slots whose source is now known (group finished / earlier round played), for any
+ * competition's fixtures. `seedOf(stage, group, rank)` answers a group-seed slot (null until that
+ * group stage is over). Returns the fixtures that got both teams in this call.
  */
-export function resolvePlayoffs(season: SeasonState): Fixture[] {
+export function resolveSlots(fixtures: readonly Fixture[], seedOf: (stage: string, group: string, rank: number) => string | null): Fixture[] {
   const filled: Fixture[] = [];
-  for (const f of season.fixtures) {
+  const byId = new Map(fixtures.map((f) => [f.id, f]));
+  for (const f of fixtures) {
     if (f.phase !== "playoff" || (f.home && f.away)) continue;
     const resolve = (src: SlotSource | undefined): string | null => {
       if (!src) return null;
-      if (src.kind === "seed") {
-        if (!groupStageDone(season, f.stage)) return null;
-        return groupStandings(season, f.stage, src.group)[src.rank - 1]?.teamId ?? null;
-      }
-      return season.fixtures.find((x) => x.id === src.fixtureId)?.result?.winner ?? null;
+      if (src.kind === "seed") return seedOf(f.stage, src.group, src.rank);
+      const r = byId.get(src.fixtureId);
+      if (!r?.result || !r.home || !r.away) return null;
+      return src.kind === "winner" ? r.result.winner : r.result.winner === r.home ? r.away : r.home;
     };
-    const before = !!(f.home && f.away);
     f.home ??= resolve(f.homeFrom);
     f.away ??= resolve(f.awayFrom);
-    if (!before && f.home && f.away) filled.push(f);
+    if (f.home && f.away) filled.push(f);
   }
   return filled;
+}
+
+export function resolvePlayoffs(season: SeasonState): Fixture[] {
+  return resolveSlots(season.fixtures, (stage, group, rank) => {
+    const sid = stage as StageId;
+    return groupStageDone(season, sid) ? groupStandings(season, sid, group as GroupId)[rank - 1]?.teamId ?? null : null;
+  });
 }
 
 /**
@@ -289,13 +307,17 @@ export function stagePlacings(season: SeasonState, stageId: StageId): string[] {
   return out;
 }
 
-/** Draw Stage 2 from the Stage 1 placings (snake), first match at least three weeks after the final. */
-export function drawNextStage(season: SeasonState, seed: number): StageId | null {
-  const s2 = season.stages.find((s) => s.id === "stage2")!;
-  if (s2.start || !stageDone(season, "stage1")) return null;
-  const s1 = season.stages.find((s) => s.id === "stage1")!;
-  drawStage(season, "stage2", snakeGroups(stagePlacings(season, "stage1")), stageFirstFriday(season.season, "stage2", s1.end), seed);
-  return "stage2";
+/**
+ * Draw `next` from `prev`'s placings (snake) once `prev` is over, never starting before
+ * `notBefore` (the end of an international event in between) plus the minimum gap.
+ */
+export function drawNextStage(season: SeasonState, prev: StageId, next: StageId, seed: number, notBefore: IsoDate | null = null): boolean {
+  const n = season.stages.find((s) => s.id === next)!;
+  if (n.start || !stageDone(season, prev)) return false;
+  const p = season.stages.find((s) => s.id === prev)!;
+  const after = [p.end, notBefore].filter((d): d is IsoDate => !!d).sort().pop() ?? null;
+  drawStage(season, next, snakeGroups(stagePlacings(season, prev)), stageFirstFriday(season.season, next, after), seed);
+  return true;
 }
 
 /** A brand-new career's first day. */

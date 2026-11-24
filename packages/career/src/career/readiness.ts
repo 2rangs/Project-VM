@@ -75,8 +75,12 @@ export function matchRoster(state: CareerState, lineup: readonly string[]): Arra
     .map((p) => ({ playerId: p.playerId, attributes: matchAttributes(state, p), hasRatings: p.hasRatings }));
 }
 
-/** After a series: match load on fatigue and sharpness for the players who played `maps` maps. */
-export function applyMatchLoad(state: CareerState, lineup: readonly string[], maps: number): void {
+/**
+ * After a series: match load on sharpness for the players who played `maps` maps, and on fatigue
+ * when `withFatigue` (the manager's club — AI clubs manage their own rest, so their fatigue stays
+ * at the starting level instead of building up for ever with no training week to recover it).
+ */
+export function applyMatchLoad(state: CareerState, lineup: readonly string[], maps: number, withFatigue = true): void {
   const ex = state.world.club?.training.exposure;
   for (const id of lineup) {
     const line = state.stats[id];
@@ -86,7 +90,7 @@ export function applyMatchLoad(state: CareerState, lineup: readonly string[], ma
       line.sharpness = Math.round(s * 10000) / 10000;
       line.lastPlayed = state.date;
     }
-    if (ex) {
+    if (ex && withFatigue) {
       const e = (ex[id] ??= { mechanics: 0, utility: 0, teamplay: 0, weeks: 0, fatigue: CLUB_MODEL.fatigueStart });
       e.fatigue = Math.round(Math.min(1, e.fatigue + M.mapLoad * maps) * 10000) / 10000;
     }

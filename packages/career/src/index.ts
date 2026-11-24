@@ -23,6 +23,8 @@ export * from "./career/inbox.ts";
 export * from "./career/hooks.ts";
 export type * from "./career/types.ts";
 export * from "./career/schedule.ts";
+export * from "./career/circuit.ts";
+export { circuitProgress, upsetNews, UPSET_GAP } from "./career/progress.ts";
 export * from "./career/career.ts";
 export * from "./career/quick-sim.ts";
 export * from "./career/save.ts";
