@@ -1,0 +1,45 @@
+# Packaged build of the desktop app (macOS first; `npm run package:mac`).
+# The app runs with no repository, no node_modules and no tsx: main / preload / renderer and the
+# whole match engine are bundled into out/ (electron-vite), and the engine's data files are staged
+# into Resources/engine by scripts/stage-engine-data.mjs (git-tracked, allow-listed files only).
+#
+# PRE-RELEASE, INTERNAL ONLY. Not signed with a Developer ID, not notarised. Before any release
+# the asset / IP review in docs/HANDOFF.md §6 and docs/LICENSE_AUDIT.md must be done.
+appId: dev.projectv.desktop
+productName: PROJECT V
+copyright: Pre-release internal build. Not for distribution.
+directories:
+  output: dist
+asar: true
+npmRebuild: false
+# Everything the app needs at run time is in out/ (renderer dependencies are bundled by Vite), so
+# node_modules never ships.
+files:
+  - out/**
+  - package.json
+  # Decision Debugger traces (read from <app>/test/fixtures/traces)
+  - test/fixtures/traces/*.json
+  # Kingdom Archives player cards: committed by the owner's decision, may ship in internal builds.
+  # RELEASE REVIEW REQUIRED (third-party art) — see docs/HANDOFF.md §6.
+  - assets/playercards/**
+  # Never ship: local map geometry and loading banners (git-ignored, third-party), anything else under assets/.
+  - "!assets/maps/**"
+  - "!assets/banners/**"
+  - "!**/*.glb"
+  - "!**/*.blend"
+  - "!**/node_modules/**"
+  - "!**/*.map"
+extraResources:
+  # engine data, laid out like the repository (src/engine/root.ts)
+  - from: dist/engine-data
+    to: engine
+mac:
+  category: public.app-category.games
+  target:
+    - dir
+  # No Developer ID signing here. scripts/adhoc-sign.cjs (afterPack) gives the bundle an ad-hoc
+  # signature, which is what Apple Silicon needs to launch locally built code.
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+afterPack: scripts/adhoc-sign.cjs

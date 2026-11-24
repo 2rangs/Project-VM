@@ -5,25 +5,53 @@
 // comes from the engine's RoundRecord.decisions via ../decisions.ts (view model);
 // this file only lays it out and picks strings.
 //
-// Revision reasons are engine text (English) and are shown verbatim — they have no
-// localisation keys yet.
+// Revision reasons are engine sentences (English); ../decision-reasons.ts parses the ones the
+// engine writes today so they show in the UI language, and anything else is shown verbatim.
 import { useMemo, useState } from 'react';
 import type { MatchSummary, TeamSlot } from '../../shared/ipc.ts';
 import {
   adaptationSummary, matchNotes,
   type CallLabel, type RoundNote, type TeamNote, type TendencyView,
 } from '../decisions.ts';
+import { seatOf, type ReasonLabel } from '../decision-reasons.ts';
 import { useT, type TFn } from '../i18n/index.tsx';
 
 const SLOTS: TeamSlot[] = ['A', 'B'];
 
 function callText(t: TFn, c: CallLabel): string {
   if (c.kind === 'commit') return t('rev.dec.call.commit', { site: c.site });
+  if (c.kind === 'rotate') return t(`rev.dec.call.${c.mode}`, { site: c.site, n: c.count });
+  if (c.kind === 'hold') return t('rev.dec.call.hold');
   if (c.kind === 'raw') return c.text;
   const key = `ostrat.${c.id}`;
   const label = t(key);
   const base = label === key ? c.id : label;
   return c.slow ? t('rev.dec.call.slow', { call: base }) : base;
+}
+
+/** A plan-change reason in the UI language; a sentence the parser does not know stays as the engine wrote it. */
+function reasonText(t: TFn, why: ReasonLabel): string {
+  switch (why.kind) {
+    case 'raw': return why.text;
+    case 'spikePlanted': case 'clockCommit': return t(`rev.dec.reason.${why.kind}`);
+    case 'siteStacked': return t('rev.dec.reason.siteStacked', { from: why.from, to: why.to });
+    case 'playerAdvantage': case 'evenAgain': return t(`rev.dec.reason.${why.kind}`, { us: why.us, them: why.them });
+    case 'roundLost': return t('rev.dec.reason.roundLost', { us: why.us, them: why.them, chance: why.chance, floor: why.floor });
+    case 'exitChase': {
+      const seat = seatOf(why.player);
+      const player = seat ? t(`rev.dec.reason.seat.${seat.side}`, { n: seat.n }) : why.player;
+      return t('rev.dec.reason.exitChase', { atk: why.atk, def: why.def, player });
+    }
+    case 'rotation': {
+      const evidence = t(`rev.dec.reason.${why.evidence}`, { site: why.site, n: why.n });
+      const elsewhere = why.elsewhere.map((e) => t(`rev.dec.reason.else.${e.kind}`, { site: e.site, n: e.kind === 'count' ? e.n : 0 }));
+      return t('rev.dec.reason.rotation', {
+        evidence: [evidence + (why.contact ? t('rev.dec.reason.withContact') : ''), ...elsewhere].join(', '),
+        site: why.site, hit: why.hit, fake: why.fake,
+        call: why.rotate > 0 ? t('rev.dec.reason.rotate', { n: why.rotate }) : t('rev.dec.reason.standDown'),
+      });
+    }
+  }
 }
 
 /** One opponent tendency: which way it leans, how sure, and whether it mattered this round. */
@@ -110,7 +138,9 @@ function TeamCard({ t, note, name }: { t: TFn; note: TeamNote; name: string }) {
               <li key={i} data-testid="dec-revision">
                 <span className="dec-clock">{t('rev.dec.rev.clock', { clock: r.clock })}</span>
                 <span className="dec-revcall">{callText(t, r.from)} <span className="dec-arrow">→</span> <b>{callText(t, r.to)}</b></span>
-                <span className="dec-reason" lang="en" title={t('rev.dec.rev.reason')}>{r.reason}</span>
+                {r.why.kind === 'raw'
+                  ? <span className="dec-reason" lang="en" title={t('rev.dec.rev.reason')} data-testid="dec-reason" data-localized="false">{r.reason}</span>
+                  : <span className="dec-reason" title={r.reason} data-testid="dec-reason" data-localized="true">{reasonText(t, r.why)}</span>}
               </li>
             ))}
           </ol>

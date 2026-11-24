@@ -157,8 +157,26 @@
 | `<call> (slow)` | `<콜>` (슬로우) |
 | `commit A` / `commit B` | A 사이트 확정 / B 사이트 확정 |
 
-> 플랜 수정의 **사유(reason)** 는 엔진이 만드는 영어 문장이라 아직 번역 키가 없다
-> (원문 그대로 표시). 엔진이 사유 키를 내보내면 `rev.dec.reason.*` 로 옮긴다.
+> 플랜 수정의 **사유(reason)** 는 엔진이 영어 문장으로 만든다. `src/renderer/decision-reasons.ts`가
+> 그 문장을 풀어 `rev.dec.reason.*` 키로 한국어·영어로 표시한다(모르는 문장은 원문 그대로).
+
+### 플랜 수정 사유 (`rev.dec.reason.*`) · 로테이션 콜
+
+| 엔진 문장 | 한국어 |
+| --- | --- |
+| spike planted — retake call | 스파이크가 설치됨 — 리테이크 콜 |
+| A is stacked — swing to B | A에 수비가 몰려 있음 — B로 전환 |
+| clock — commit with the information gathered | 시간이 없음 — 지금까지 모은 정보로 사이트 확정 |
+| player advantage 4v2 — hit while they are short | 인원 우위 4대2 — 상대가 부족할 때 진입 |
+| man count even again (3v3) — play it out | 인원이 다시 동률 (3대3) — 라운드를 이어감 |
+| round lost 1v3 before the plant (…) — save | 설치 전 1대3로 밀림 (승산 4% < 기준 10%) — 세이브 |
+| … leaves the angle to chase the exit kill | … 각을 버리고 엑시트 킬을 노림 |
+| N runners heard / N seen on A | A에서 N명 발소리 / A에서 N명 목격 |
+| with contact · contact on B · no contact on B · 2 on B | (교전 중) · B도 교전 · B는 조용함 · B에 2명 |
+| P(hit A) 0.62, fake 0.11 | A 진입 확률 62% · 페이크 11% |
+| rotate 2 · stand down, hold | 2명 로테이트 · 로테이션 해제, 홀드 |
+| `stack A ×3` · `support B ×1` · `hold` (콜) | A 스택 ×3 · B 지원 ×1 · 홀드 |
+| cExecute · stackC | C 실행 · C 스택 |
 
 ## 원어 유지 (번역하지 않음)
 

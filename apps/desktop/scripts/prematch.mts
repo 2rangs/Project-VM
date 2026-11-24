@@ -1,11 +1,9 @@
-// Pre-match opponent report (one-shot subprocess, like run-match.mts): simulate the opponent's
-// recent film, read it through the scouting model and print the report JSON to stdout.
+// tsx reference path for the pre-match opponent report (src/engine/prematch.ts). The app runs the
+// same code in the bundled engine host (op `prematch.report`).
 // Usage: tsx prematch.mts '<PrematchRequest json>'   (src/shared/manager.ts)
-import { buildOpponentReport, scoutingFilm } from '../../../packages/match-runner/src/index.ts';
+import { prematchReport, type PrematchReq } from '../src/engine/prematch.ts';
 
-interface Req { us: { id: string; name: string }; them: { id: string; name: string }; map: string; seed: number; analyst: number; film?: number }
-const req: Req = JSON.parse(process.argv[2] ?? '{}');
-const logs = scoutingFilm(req.them, [req.us.id], req.film ?? 2, req.seed);
-const report = buildOpponentReport({ us: req.us, them: req.them, map: req.map, logs, analyst: req.analyst, seed: req.seed });
-process.stderr.write(`prematch: ${req.them.name}, ${report.gamesReviewed}/${logs.length} games reviewed\n`);
+const req: PrematchReq = JSON.parse(process.argv[2] ?? '{}');
+const { report, filmGames } = prematchReport(req);
+process.stderr.write(`prematch: ${req.them.name}, ${report.gamesReviewed}/${filmGames} games reviewed\n`);
 process.stdout.write(JSON.stringify(report));

@@ -24,15 +24,36 @@ import type { DecisionPolicy, MidControlState, PlantSpotRef, PlayerProfile, Play
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
 
+/**
+ * Parsed map / catalog data files, read and parsed once per process. A long-lived host (the desktop
+ * engine worker, a series, a season batch) builds a new engine for every match from the same files;
+ * the parsed JSON is shared between those builds and is never mutated (`createEngine`,
+ * `deriveMapTactics` and `buildCatalog` only read it), so every match still gets its own engine.
+ * A file that does not exist is remembered as `undefined`.
+ */
+const DATA_FILES = new Map<string, unknown>();
+function readDataFile<T>(path: string): T | undefined {
+  if (!DATA_FILES.has(path)) DATA_FILES.set(path, existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined);
+  return DATA_FILES.get(path) as T | undefined;
+}
+function requireDataFile<T>(path: string): T {
+  const data = readDataFile<T>(path);
+  if (data === undefined) throw new Error(`ENOENT: no such file or directory, open '${path}'`);
+  return data;
+}
+/** Forget the parsed data files (tools that rewrite map data and reload it in the same process). */
+export function clearDataFileCache(): void {
+  DATA_FILES.clear();
+}
+
 /** Load a map's spatial engine — zone graph, coordinate system and navigation roadmap — from datasets/spatial/<map>. */
 export function loadSpatial(mapId = "ascent"): SpatialEngine {
   const dir = resolve(repoRoot, "datasets/spatial", mapId);
-  const nav = JSON.parse(readFileSync(resolve(dir, `${mapId}.navgraph.json`), "utf8"));
-  const cs = JSON.parse(readFileSync(resolve(dir, "coordinate-system.json"), "utf8"));
-  const roadmap = JSON.parse(readFileSync(resolve(dir, `${mapId}.nav.json`), "utf8"));
+  const nav = requireDataFile<Parameters<typeof createEngine>[0]>(resolve(dir, `${mapId}.navgraph.json`));
+  const cs = requireDataFile<{ transform: Parameters<typeof createEngine>[1] }>(resolve(dir, "coordinate-system.json"));
+  const roadmap = requireDataFile<Parameters<typeof createEngine>[2]>(resolve(dir, `${mapId}.nav.json`));
   // measured line of sight between roadmap nodes; without it sight falls back to the zone table
-  const visPath = resolve(dir, `${mapId}.vis.json`);
-  const visibility = existsSync(visPath) ? JSON.parse(readFileSync(visPath, "utf8")) : undefined;
+  const visibility = readDataFile<Parameters<typeof createEngine>[3]>(resolve(dir, `${mapId}.vis.json`));
   return createEngine(nav, cs.transform, roadmap, visibility);
 }
 
@@ -41,8 +62,7 @@ export function loadSpatial(mapId = "ascent"): SpatialEngine {
  * derived from its geometry, with its hand-authored `<map>.tactics.json` (if any) applied.
  */
 export function loadTactics(mapId: string, spatial: SpatialEngine): MapTactics {
-  const path = resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.tactics.json`);
-  const overrides: MapTacticsOverrides = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
+  const overrides = readDataFile<MapTacticsOverrides>(resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.tactics.json`)) ?? {};
   return deriveMapTactics(spatial, overrides);
 }
 
@@ -52,9 +72,8 @@ export function loadTactics(mapId: string, spatial: SpatialEngine): MapTactics {
  * are missing — every map today: orbs are spawned actors the scene export does not contain.
  */
 export function loadUltOrbs(mapId: string): { id: string; position: { x: number; y: number; z: number } }[] {
-  const path = resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.objects.json`);
-  if (!existsSync(path)) return [];
-  const raw = JSON.parse(readFileSync(path, "utf8")) as { ultOrbs?: unknown[] };
+  const raw = readDataFile<{ ultOrbs?: unknown[] }>(resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.objects.json`));
+  if (!raw) return [];
   const out: { id: string; position: { x: number; y: number; z: number } }[] = [];
   (raw.ultOrbs ?? []).forEach((o, i) => {
     const r = o as { id?: unknown; position?: { x?: unknown; y?: unknown; z?: unknown }; x?: unknown; y?: unknown; z?: unknown };
@@ -73,8 +92,9 @@ function weaponCatalog(): Record<string, WeaponSpec> {
 
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
 export function loadWeapons(opts: { modes?: boolean } = {}): Record<string, WeaponSpec> {
-  const raw = JSON.parse(readFileSync(resolve(here, "..", "data", "weapons.manual-approx.json"), "utf8"));
-  const weapons = (raw.weapons as WeaponSpec[]).map((w) => {
+  const raw = requireDataFile<{ weapons: WeaponSpec[] }>(resolve(here, "..", "data", "weapons.manual-approx.json"));
+  // (the cached rows are shared and never mutated: the mode strip below makes new objects)
+  const weapons = raw.weapons.map((w) => {
     if (opts.modes) return w;
     // Without weapon modes (MatchConfig.weaponModes, default off): no alt-fire, no run-and-gun
     // accuracy — the six v1.2 guns duel exactly as before. Pellets stay (a shotgun needs them).

@@ -12,12 +12,14 @@
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
     "test:unit": "node --experimental-strip-types --import ./test/support/json-imports.mjs --test test/ipc-contract.test.ts test/trace-parser.test.ts test/i18n.test.ts test/match-merge.test.ts test/decisions.test.ts test/series-view.test.ts test/navdebug.test.ts test/career-world.test.ts test/scouting-view.test.ts test/career-mode.test.ts test/club-ops.test.ts test/review.test.ts test/manager-view.test.ts",
-    "test:engine": "node --experimental-strip-types --test test/engine-contract.test.ts",
+    "test:engine": "node --experimental-strip-types --test test/engine-contract.test.ts test/engine-bundle.test.ts",
     "test:e2e": "node test/e2e.electron.test.mjs",
     "test:e2e:series": "node test/e2e.series.test.mjs",
     "test:e2e:career": "node test/e2e.career.test.mjs",
     "test:e2e:club": "node test/e2e.club.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "package:mac": "electron-vite build && node scripts/stage-engine-data.mjs dist/engine-data && electron-builder --mac --dir --publish never && node scripts/verify-package.mjs",
+    "test:e2e:packaged": "node test/e2e.packaged.test.mjs"
   },
   "dependencies": {
     "pixi.js": "8.6.6",
@@ -33,6 +35,7 @@
     "@types/three": "^0.170.0",
     "@vitejs/plugin-react": "4.3.4",
     "electron": "33.2.1",
+    "electron-builder": "26.0.12",
     "electron-vite": "2.3.0",
     "typescript": "5.6.3",
     "vite": "5.4.11"

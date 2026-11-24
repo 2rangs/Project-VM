@@ -1,6 +1,6 @@
 // Projection of the managed session's manager layer onto OUR seat (src/shared/manager.ts), shared
-// by match-session.mts (seat = engine slot) and series-session.mts (seat ≠ slot on some maps).
-import type { ManagedSessionResult, ManagerState } from '../../../packages/match-runner/src/index.ts';
+// by match-session.ts (seat = engine slot) and series-session.ts (seat ≠ slot on some maps).
+import type { ManagedSessionResult, ManagerState } from '../../../../packages/match-runner/src/index.ts';
 
 type Slot = 'A' | 'B';
 /** seatOf(engineSlot) → our seat; slotOf(seat) → engine slot. */

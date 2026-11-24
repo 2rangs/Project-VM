@@ -4,8 +4,6 @@
 // utilityProcess (DECISION-007), never on the UI thread.
 import { app, BrowserWindow, ipcMain, utilityProcess, type UtilityProcess } from 'electron';
 import { readFile, readdir } from 'node:fs/promises';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { createInterface, type Interface as ReadlineInterface } from 'node:readline';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +21,7 @@ import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from 
 import type { OpponentReportView, PrematchRequest } from '../shared/manager.ts'; // [manager]
 // [career]
 import { registerCareerIpc } from './career-host.ts';
+import { EngineWorker } from './engine-worker.ts';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 // electron-vite lays out: out/main/index.js, out/main/sim-worker.js, out/preload/index.mjs
@@ -53,30 +52,22 @@ function createWindow(): BrowserWindow {
   return win;
 }
 
-// The match-runner (@pv/match-runner) reads data files and pulls in many engines,
-// so it runs as a SEPARATE tsx subprocess in the workspace (not bundled). repoRoot
-// resolves from the app path; override with PV_REPO_ROOT / PV_MATCH_SCRIPT for E2E.
-function repoRoot(): string { return process.env.PV_REPO_ROOT ?? path.resolve(app.getAppPath(), '..', '..'); }
-function matchScript(): string { return process.env.PV_MATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'run-match.mts'); }
-function sessionScript(): string { return process.env.PV_SESSION_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'match-session.mts'); }
+// The match engine (@pv/match-runner and every engine under it) is bundled into
+// out/main/engine-host.js and runs in Electron utility processes (src/main/engine-worker.ts) — no
+// tsx, no workspace at run time. One worker per kind of work, so they never wait on each other.
 // [series]
-// [manager]
-function prematchScript(): string { return process.env.PV_PREMATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'prematch.mts'); }
-function seriesScript(): string { return process.env.PV_SERIES_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'series-session.mts'); }
-const seriesHost = new SeriesHost(seriesScript, repoRoot);
+const seriesHost = new SeriesHost();
 // [career] background simulation of AI fixtures + save slots
-function careerSimScript(): string { return process.env.PV_CAREER_SIM_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'career-sim.mts'); }
-const disposeCareer = registerCareerIpc({ script: careerSimScript, cwd: repoRoot });
-app.on('will-quit', () => { disposeCareer(); seriesHost.dispose(); });
+const disposeCareer = registerCareerIpc();
+/** One-shot matches ("run the whole map"). */
+const matchWorker = new EngineWorker('match');
 
-// --- interactive match session: one long-lived tsx subprocess hosting a stateful
-//     @pv/match-runner MatchSession, driven over a line-delimited JSON protocol.
-//     One session at a time; starting a new one disposes the old. ---
+// --- interactive match session: a stateful @pv/match-runner MatchSession living in its own
+//     engine worker (src/engine/match-session.ts). One session at a time; starting a new one
+//     replaces the old. ---
 class SessionHost {
-  private child: ChildProcessWithoutNullStreams | null = null;
-  private rl: ReadlineInterface | null = null;
-  private seq = 0;
-  private pending = new Map<number, { resolve: (r: SessionReply) => void; reject: (e: Error) => void }>();
+  private readonly worker = new EngineWorker('session');
+  private started = false;
 
   async start(req: SessionStartRequest): Promise<SessionState> {
     this.dispose();
@@ -87,96 +78,60 @@ class SessionHost {
       ...(req.plan ? { plan: req.plan } : {}),
       ...(req.scouting ? { scouting: req.scouting } : {}),
     };
-    const child = spawn('npx', ['tsx', sessionScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
-    this.child = child;
-    this.rl = createInterface({ input: child.stdout });
-    this.rl.on('line', (line) => {
-      const text = line.trim(); if (!text) return;
-      let msg: SessionReply & { id?: number };
-      try { msg = JSON.parse(text); } catch { return; } // ignore non-JSON diagnostics
-      if (typeof msg.id === 'number') {
-        const p = this.pending.get(msg.id);
-        if (p) { this.pending.delete(msg.id); msg.ok ? p.resolve(msg) : p.reject(new Error(msg.error ?? 'session error')); }
-      }
-    });
-    child.on('exit', () => { for (const p of this.pending.values()) p.reject(new Error('session ended')); this.pending.clear(); });
-    child.on('error', (e) => { for (const p of this.pending.values()) p.reject(e); this.pending.clear(); });
-    const r = await this.send({ cmd: 'state' });
-    return r.state!;
+    this.started = true;
+    const r = await this.worker.request<{ state: SessionState }>('session.start', cfg, { timeoutMs: 60000 });
+    return r.state;
   }
 
-  send(cmd: SessionCommand): Promise<SessionReply> {
-    const child = this.child;
-    if (!child) return Promise.reject(new Error('no active session'));
-    const id = ++this.seq;
-    return new Promise<SessionReply>((resolve, reject) => {
-      const timer = setTimeout(() => { if (this.pending.delete(id)) reject(new Error('session command timed out')); }, 60000);
-      this.pending.set(id, {
-        resolve: (r: SessionReply) => { clearTimeout(timer); resolve(r); },
-        reject: (e: Error) => { clearTimeout(timer); reject(e); },
-      });
-      child.stdin.write(JSON.stringify({ id, ...cmd }) + '\n');
-    });
+  async send(cmd: SessionCommand): Promise<SessionReply> {
+    if (!this.started) throw new Error('no active session');
+    const r = await this.worker.request<Omit<SessionReply, 'ok'>>('session.cmd', cmd, { timeoutMs: 60000 });
+    return { ok: true, ...r };
   }
 
   dispose(): void {
-    if (this.child) { try { this.child.stdin.write(JSON.stringify({ id: ++this.seq, cmd: 'stop' }) + '\n'); } catch { /* */ } try { this.child.kill(); } catch { /* */ } }
-    this.rl?.close(); this.rl = null; this.child = null;
-    for (const p of this.pending.values()) p.reject(new Error('session disposed'));
-    this.pending.clear();
+    const wasStarted = this.started;
+    this.started = false;
+    // a round being played cannot be interrupted, only ended with its process
+    if (this.worker.inFlight > 0) this.worker.kill('session disposed');
+    else if (wasStarted && this.worker.alive) void this.worker.request('session.stop').catch(() => undefined);
   }
+
+  shutdown(): void { this.started = false; this.worker.kill('session disposed'); }
 }
 const sessionHost = new SessionHost();
+app.on('will-quit', () => { disposeCareer(); seriesHost.shutdown(); sessionHost.shutdown(); matchWorker.kill('app quit'); prematchWorker.kill('app quit'); });
 
-function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
-  return new Promise<SimResult>((resolve, reject) => {
-    const cfg = {
-      teamA: req.teamA ?? { id: 'A', name: 'Team A' },
-      teamB: req.teamB ?? { id: 'B', name: 'Team B' },
-      map: req.mapId, seed: req.seed, options: req.options ?? {},
-    };
-    sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: 'match-runner (pistol → halves → 13 → OT)' } satisfies SimProgress);
-    const child = spawn('npx', ['tsx', matchScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
-    let out = ''; let errBuf = '';
-    const timeout = setTimeout(() => { try { child.kill(); } catch { /* */ } reject(new Error('match-runner timed out')); }, 90000);
-    child.stdout.on('data', (d) => { out += String(d); });
-    child.stderr.on('data', (d) => {
-      errBuf += String(d);
-      // run-match.mts logs round progress to stderr; drop npx/npm bootstrap noise.
-      const lines = String(d).split('\n').map((l) => l.trim());
-      for (const l of lines) {
-        if (!l.startsWith('PVPROGRESS ')) continue;
-        try {
-          const p = JSON.parse(l.slice(11)) as { round: number; score: { A: number; B: number } };
-          // first to 13: the leader's score is the best available estimate of how far along the map is
-          const pct = Math.min(0.98, Math.max(p.score.A, p.score.B) / 13);
-          sender.send(IPC.simProgress, { runId, phase: 'round', pct, round: p.round, score: p.score } satisfies SimProgress);
-        } catch { /* ignore a torn line */ }
-      }
-      const msg = lines.filter((l) => l && !l.startsWith('PVPROGRESS ') && !/^npm (warn|notice)/i.test(l)).join(' ').slice(0, 120);
-      if (msg) sender.send(IPC.simProgress, { runId, phase: 'round', pct: 0.5, message: msg } satisfies SimProgress);
-    });
-    child.on('error', (e) => { clearTimeout(timeout); reject(e); });
-    child.on('close', (code) => {
-      clearTimeout(timeout);
-      if (code !== 0) return reject(new Error(`match-runner exited ${code}: ${errBuf.slice(-200)}`));
-      try {
-        const raw = JSON.parse(out) as RawMatch;
-        const { events, summary, perception } = mergeMatch(raw);
-        const replay = fromSimEventLog(events, {
-          mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
-          matchId: `${summary.teams.A.name} vs ${summary.teams.B.name}`,
-          perception, // match-level fog-of-war / belief track (undefined if not recorded)
-        });
-        sender.send(IPC.simProgress, { runId, phase: 'done', pct: 1 } satisfies SimProgress);
-        resolve({ runId, source: 'match-runner', replay, match: summary });
-      } catch (e) { reject(new Error(`match-runner output parse failed: ${(e as Error).message}`)); }
-    });
+async function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
+  const cfg = {
+    teamA: req.teamA ?? { id: 'A', name: 'Team A' },
+    teamB: req.teamB ?? { id: 'B', name: 'Team B' },
+    map: req.mapId, seed: req.seed, options: req.options ?? {},
+  };
+  const send = (p: SimProgress) => { try { sender.send(IPC.simProgress, p); } catch { /* window gone */ } };
+  send({ runId, phase: 'start', pct: 0, message: 'match-runner (pistol → halves → 13 → OT)' });
+  const raw = await matchWorker.request<RawMatch>('match.run', cfg, {
+    timeoutMs: 180000,
+    onEvent: (data) => {
+      const p = data as { round: number; score: { A: number; B: number } };
+      // first to 13: the leader's score is the best available estimate of how far along the map is
+      const pct = Math.min(0.98, Math.max(p.score.A, p.score.B) / 13);
+      send({ runId, phase: 'round', pct, round: p.round, score: p.score });
+    },
   });
+  send({ runId, phase: 'round', pct: 0.99, message: `match: ${raw.winner} wins ${raw.score.A}-${raw.score.B} (${raw.rounds.length} rounds, OT=${raw.wentToOvertime})` });
+  const { events, summary, perception } = mergeMatch(raw);
+  const replay = fromSimEventLog(events, {
+    mapId: req.mapId, mapDisplayName: 'Ascent', seed: req.seed, coordinateTransform: ASCENT_TRANSFORM,
+    matchId: `${summary.teams.A.name} vs ${summary.teams.B.name}`,
+    perception, // match-level fog-of-war / belief track (undefined if not recorded)
+  });
+  send({ runId, phase: 'done', pct: 1 });
+  return { runId, source: 'match-runner', replay, match: summary };
 }
 
-// --- simulation: try the real match-runner subprocess; fall back to the bundled
-//     round-simulator utilityProcess so Match Day always produces a replay. ---
+// --- simulation: the real match-runner in the engine worker; if that fails, fall back to the
+//     bundled round-simulator utilityProcess so Match Day always produces a replay. ---
 ipcMain.handle(IPC.simRun, async (event, req: SimRunRequest): Promise<SimResult> => {
   const runId = randomUUID();
   const sender = event.sender;
@@ -230,20 +185,11 @@ ipcMain.handle(IPC.seriesStart, async (_e, req: SeriesStartRequest): Promise<Ser
 ipcMain.handle(IPC.seriesCmd, async (_e, cmd: SeriesCommand): Promise<SeriesReply> => seriesHost.send({ ...cmd }) as Promise<SeriesReply>);
 ipcMain.handle(IPC.seriesStop, async (): Promise<void> => { seriesHost.dispose(); });
 
-// [manager] Pre-match opponent report: a one-shot tsx subprocess (simulates the opponent's film).
-ipcMain.handle(IPC.prematchReport, (_e, req: PrematchRequest): Promise<OpponentReportView> => new Promise((resolve, reject) => {
-  const child = spawn('npx', ['tsx', prematchScript(), JSON.stringify(req)], { cwd: repoRoot(), env: process.env });
-  let out = ''; let err = '';
-  const timer = setTimeout(() => { try { child.kill(); } catch { /* */ } reject(new Error('pre-match report timed out')); }, 180000);
-  child.stdout.on('data', (d) => { out += String(d); });
-  child.stderr.on('data', (d) => { err += String(d); });
-  child.on('error', (e) => { clearTimeout(timer); reject(e); });
-  child.on('close', (code) => {
-    clearTimeout(timer);
-    if (code !== 0) return reject(new Error(`pre-match report failed (${code}): ${err.slice(-200)}`));
-    try { resolve(JSON.parse(out) as OpponentReportView); } catch (e) { reject(new Error(`pre-match report parse failed: ${(e as Error).message}`)); }
-  });
-}));
+// [manager] Pre-match opponent report (simulates the opponent's film): its own engine worker, so a
+// report being prepared never holds up a match.
+const prematchWorker = new EngineWorker('prematch');
+ipcMain.handle(IPC.prematchReport, async (_e, req: PrematchRequest): Promise<OpponentReportView> =>
+  (await prematchWorker.request<{ report: OpponentReportView }>('prematch.report', req, { timeoutMs: 180000 })).report);
 
 /** [series] One map of the live series in one go: the host returns the same RawMatch as run-match.mts. */
 async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {

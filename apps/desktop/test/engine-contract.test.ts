@@ -1,5 +1,6 @@
-// Desktop ↔ engine contract. Runs scripts/run-match.mts (the exact subprocess the
-// Electron main spawns) against the LIVE @pv/match-runner in this workspace and
+// Desktop ↔ engine contract. Runs scripts/run-match.mts (the tsx reference path of
+// src/engine/run-match.ts, the code the app's bundled engine host runs — see
+// test/engine-bundle.test.ts for bundle == source) against the LIVE @pv/match-runner and
 // checks that its JSON still has the shape the app reads — in particular
 // RoundRecord.decisions, which the Review's round-decisions view is built on — and
 // that the pre-match options reach the engine.

@@ -1,79 +1,13 @@
-// Match-runner subprocess entry. Runs PV-3's @pv/match-runner (a full VALORANT
-// map: pistol → halves → first-to-13 → OT, with economy + ultimate carryover)
-// from workspace source and prints a compact match result as JSON to stdout.
-//
-// The Electron main process spawns this via tsx (the match-runner reads data
-// files with node:fs and pulls in many @pv engines, so it cannot be bundled into
-// the app — it runs here, in the workspace, as a separate process). Progress and
-// diagnostics go to stderr; only the final JSON goes to stdout.
+// tsx reference path for a whole map: the same code the bundled engine host runs
+// (src/engine/run-match.ts), from workspace source. The app no longer spawns this — it is kept for
+// the determinism test (bundle vs. source), the engine-contract test and command-line use.
+// Progress goes to stderr (one `PVPROGRESS {json}` line per round); only the final JSON to stdout.
 //
 // Usage: tsx run-match.mts '<json config>'
-import { runMatch } from '../../../packages/match-runner/src/index.ts';
-import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-round.mts';
+import { runMatchCompact, type RunMatchCfg } from '../src/engine/run-match.ts';
 
-interface Cfg {
-  teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean;
-  /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
-  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
-}
-const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
-
-// recordPerception drives PV-4's fog-of-war / belief track (off by default in the
-// match-runner; MatchConfig.recordPerception since PV-3 7a7a847). We request it on.
-// recordTracks: every player's position on every tick (the live match screen draws them) and the
-// navigation trace (what each player planned to walk, and why — the navigation debug view).
-const res = runMatch({
-  teamA: cfg.teamA ?? { id: 'A', name: 'Team A' },
-  teamB: cfg.teamB ?? { id: 'B', name: 'Team B' },
-  map: cfg.map ?? 'ascent',
-  seed: cfg.seed ?? 1,
-  recordPerception: cfg.recordPerception ?? true,
-  recordTracks: true,
-  ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
-  ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
-}, {
-  // one machine-readable progress line per round; the parent turns it into the loading screen's counter
-  onRound: (r, score) => { process.stderr.write(`PVPROGRESS ${JSON.stringify({ round: r.roundNumber, score })}\n`); },
-});
-
-process.stderr.write(`match: ${res.winner} wins ${res.score.A}-${res.score.B} (${res.rounds.length} rounds, OT=${res.wentToOvertime})\n`);
-
-// Compact, serializable projection: strip the round replay to just its events
-// (the parent merges them onto one match timeline).
-const out = {
-  teams: { A: res.config.teamA, B: res.config.teamB },
-  map: res.config.map,
-  seed: res.config.seed,
-  winner: res.winner,
-  score: res.score,
-  wentToOvertime: res.wentToOvertime,
-  options: cfg.options ?? {},
-  rounds: res.rounds.map((r) => ({
-    roundNumber: r.roundNumber,
-    phase: r.phase,
-    attacker: r.attacker,
-    winner: r.winner,
-    winnerSide: r.winnerSide,
-    reason: r.reason,
-    planted: r.planted,
-    score: r.score,
-    kills: r.kills,
-    economy: { A: compactEconomy(r.economy.A), B: compactEconomy(r.economy.B) },
-    buys: { A: compactBuy(r.buys.A), B: compactBuy(r.buys.B) },
-    replayEvents: r.replay.events,
-    // Per-team PerceptionTrack[] for this round (side-keyed, round-relative tMs);
-    // the parent remaps side→real-team and offsets tMs onto the match timeline.
-    // Absent on match-runner versions without recordPerception.
-    perception: r.replay.meta.perception ?? null,
-    // per-tick sight decided by the sim (engine-truth), when the engine records it
-    sight: sightOf(r),
-    engagement: engagementOf(r),
-    // Why each team played the round the way it did (plans, pre-round opponent reads,
-    // what the round let them observe). Plain JSON; null on engines that predate it.
-    decisions: r.decisions ?? null,
-    // What the navigation layer planned for each player (round-relative ms); null without tracks.
-    nav: r.navTrace ?? null,
-  })),
-};
+const cfg: RunMatchCfg = JSON.parse(process.argv[2] ?? '{}');
+const out = runMatchCompact(cfg, (p) => { process.stderr.write(`PVPROGRESS ${JSON.stringify(p)}\n`); });
+process.stderr.write(`match: ${out.winner} wins ${out.score.A}-${out.score.B} (${out.rounds.length} rounds, OT=${out.wentToOvertime})\n`);
 process.stderr.write(`perception: ${out.rounds.filter((r) => r.perception).length}/${out.rounds.length} rounds\n`);
 process.stdout.write(JSON.stringify(out));
