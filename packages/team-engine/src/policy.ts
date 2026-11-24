@@ -1177,7 +1177,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const side = this.sideOf(zoneAt(e.approxPosition), sites);
       if (!side) continue;
       // a landing off a drop is a body arriving there, as a running step is
-      if (e.kind === "footstep" || e.kind === "landing") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
+      // a link sound (teleporter / rope / zipline) is a body using it (MS-09)
+      if (e.kind === "footstep" || e.kind === "landing" || e.kind === "traversal") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
       else if (e.kind === "gunfire") contact.add(side);
       else if (e.kind === "abilityCast") utility.add(side);
     }

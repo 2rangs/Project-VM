@@ -13,13 +13,13 @@ const mover = (over: Parameters<typeof mkCombatant>[0]["posture"] = {}, skills =
   mkCombatant({ id: "mover", weapon: "Vandal", posture: { moving: true, ...over }, skills });
 
 describe("stopping time of a moving shooter", () => {
-  it("is 0 for a standing player; from a run it is twice the walk's; perception delay comes first", () => {
+  it("is 0 for a standing player; from a run it is longer than from a walk; perception delay comes first", () => {
     expect(stoppedAtMs(stand, P)).toBe(0);
     const run = stoppedAtMs(mover({ pace: "run" }, { movement: 0.5 }), P);
     const walk = stoppedAtMs(mover({ pace: "walk" }, { movement: 0.5 }), P);
     expect(run).toBeCloseTo(P.accuracy.stopMs.run, 6);
     expect(walk).toBeCloseTo(P.accuracy.stopMs.walk, 6);
-    expect(run).toBeCloseTo(2 * walk, 6);
+    expect(run).toBeGreaterThan(walk);
     expect(stoppedAtMs(mover({}, { movement: 0.5 }), P)).toBeCloseTo(run, 6); // no pace given = a run
     // it cannot start stopping before it has seen the enemy
     expect(stoppedAtMs(mover({ pace: "run", seesEnemyAtMs: 300 }, { movement: 0.5 }), P)).toBeCloseTo(300 + run, 6);
@@ -58,7 +58,11 @@ describe("stopping time of a moving shooter", () => {
 });
 
 describe("what it does to a duel (5,000 seeded duels each, Vandal v Vandal at 15 m)", () => {
-  const winRate = (a: ReturnType<typeof mkCombatant>, params: CombatParams = P): number =>
+  // The legacy flag model (no aimOffsetDeg) with its calibrated stop aggregate (700 / 350 ms): there a
+  // walker and a runner are still moving when they fire. With the physical stop time and the gaze
+  // model, a walker is usually stopped by the time it is ready (aim.test.ts / round-simulator peeks).
+  const LEGACY: CombatParams = { ...P, accuracy: { ...P.accuracy, stopMs: { run: 700, walk: 350 } } };
+  const winRate = (a: ReturnType<typeof mkCombatant>, params: CombatParams = LEGACY): number =>
     monteCarloDuel({ a, b: mkCombatant({ id: "holder", weapon: "Vandal" }), distanceMeters: 15 }, 5000, 7, { params }).winRateA;
 
   it("standing > walking in > running in > never stopping, for the same player", () => {
@@ -66,7 +70,7 @@ describe("what it does to a duel (5,000 seeded duels each, Vandal v Vandal at 15
     const walking = winRate(mkCombatant({ id: "a", weapon: "Vandal", posture: { moving: true, pace: "walk" } }));
     const running = winRate(mkCombatant({ id: "a", weapon: "Vandal", posture: { moving: true, pace: "run" } }));
     const never = winRate(mkCombatant({ id: "a", weapon: "Vandal", posture: { moving: true, pace: "run" } }),
-      { ...P, accuracy: { ...P.accuracy, stopMs: { run: Infinity, walk: Infinity } } });
+      { ...LEGACY, accuracy: { ...LEGACY.accuracy, stopMs: { run: Infinity, walk: Infinity } } });
     // (two equal standing players are not 50/50 here: on a tie the engine lets combatant a fire first)
     expect(walking).toBeLessThan(standing);
     expect(running).toBeLessThan(walking);
