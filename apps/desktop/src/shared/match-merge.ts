@@ -4,7 +4,7 @@
 // round's per-team PerceptionTrack into ONE match-level perception track per real
 // team (fog-of-war / belief heatmap source, DECISION-004).
 import type { PerceptionTrack, PerceptionSnapshot, SimEvent } from '@pv/replay-engine';
-import type { MatchOptions, MatchSummary, NavTraceEvent, RoundDecisions , SightFrame } from './ipc.ts';
+import type { MatchOptions, MatchSummary, NavTraceEvent, RoundDecisions , SightFrame , EngagementInfo } from './ipc.ts';
 
 const GAP_MS = 5000;
 
@@ -21,8 +21,8 @@ interface RawRound {
   roundNumber: number; phase: string; attacker: 'A' | 'B'; winner: string; winnerSide: string;
   reason: string; planted: boolean;
   score: { A: number; B: number }; kills: { A: number; B: number };
-  economy: { A: { credits: number; ultPoints: number }; B: { credits: number; ultPoints: number } };
-  buys: { A: { tier: string; weapon: string }; B: { tier: string; weapon: string } };
+  economy: MatchSummary['rounds'][number]['economy'];
+  buys: MatchSummary['rounds'][number]['buys'];
   replayEvents: Array<Record<string, unknown>>;
   perception?: RawPerceptionTrack[] | null;
   /** RoundRecord.decisions, passed through untouched (absent on older engines). */
@@ -31,6 +31,8 @@ interface RawRound {
   nav?: NavTraceEvent[] | null;
   /** RoundRecord.sight (round-relative ms), passed through untouched; absent on older engines. */
   sight?: SightFrame[] | null;
+  /** RoundRecord.engagementTrace, passed through (round-relative ms); absent on older engines. */
+  engagement?: EngagementInfo[] | null;
 }
 export interface RawMatch {
   teams: { A: { id: string; name: string }; B: { id: string; name: string } };
@@ -98,6 +100,7 @@ export function mergeMatch(raw: RawMatch): MergedMatch {
       ...(r.decisions ? { decisions: r.decisions } : {}),
       ...(r.nav ? { nav: r.nav } : {}),
       ...(r.sight && r.sight.length ? { sight: r.sight } : {}),
+      ...(r.engagement && r.engagement.length ? { engagement: r.engagement } : {}),
     })),
     ...(raw.options ? { options: raw.options } : {}),
   };
