@@ -21,6 +21,7 @@ import {
   type SimEvent,
   type Pv6SimEventLog,
   type MatchRoundPlayer,
+  type RoundAbilityLoadout,
   type MatchRoundTeam,
   type NavTraceEvent,
   type RoundStats,
@@ -59,7 +60,6 @@ import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, ros
 import type { PlayerProfile } from "@pv/shared-types";
 import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { MAP_IDS, isMapId } from "@pv/spatial-engine";
-import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
 // [series] per-team inputs + series metadata (additive; see ./team-inputs.ts)
 import { applyTraitDelta, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
@@ -320,12 +320,22 @@ function makeRoster(side: Side, buy: BuyDecision, eco: TeamEconomy, skills: read
       loadout: {
         weaponId: pb.weapon,
         armor: pb.armor,
-        ...(withAbilities ? { abilities: comp.abilities } : {}),
+        ...(withAbilities ? { abilities: paidAbilities(comp.abilities, pb.utility > 0) } : {}),
         ultimatePoints: eco.players[i]?.ultPoints ?? 0,
         ultimateCost: pb.ultHeld ? HELD_ULT_COST : ultCost(comp.agent),
       },
     };
   });
+}
+
+/**
+ * The abilities a player takes into the round: what it paid for. The economy charges each player
+ * for its agent's buyable kit (game-rules utilityKitCost, `PlayerBuy.utility`); a player who did
+ * not buy it has only what the game gives every round for free — the signature's free charge — and
+ * its ultimate when it has the points. Basic abilities come only with a bought kit.
+ */
+function paidAbilities(kit: readonly RoundAbilityLoadout[], boughtKit: boolean): RoundAbilityLoadout[] {
+  return boughtKit ? kit.slice() : kit.filter((a) => a.slot === "signature" || a.slot === "ultimate");
 }
 
 /** Site letter of a zone id ("a-site" → A, "b-main" → B), or null for mid / spawns. */
@@ -619,8 +629,11 @@ export class MatchEngine {
       players: makeRoster("attack", buys[attacker], preBuy[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
     };
     // Where the five defenders start: the map's derived starts (on Ascent: its two sites twice and
-    // mid courtyard, as before). The scripted setups of the abilities mode exist for Ascent only.
-    const defSpawns = this.abilitiesOn && this.tactics.mapId === "ascent" ? selectDefenseSetup(config.seed, roundNumber).spawns : this.tactics.defenderStarts;
+    // mid courtyard), with abilities on or off — abilities change what players can do, not where the
+    // defense sets up. (The abilities mode used to switch to scripted VCT setups; with no utility
+    // cast at all that alone moved the attack from 0.50 to 0.67, so it measured the setups, not the
+    // abilities.)
+    const defSpawns = this.tactics.defenderStarts;
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
       economy: toEconomyState(preBuy[defender], "defense", buys[defender]),
