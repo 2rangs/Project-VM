@@ -34,6 +34,7 @@ import {
   weaponPrice,
 } from "@pv/game-rules";
 import { SIM_ROUND_WIN_BELIEF, lookaheadValue, mapOver, mapWinProbability, roundWinBelief, vctTierForLoadout, type IncomeRules, type LookaheadTeam, type WinBeliefParams } from "@pv/economy-engine";
+import { armorMatchedPrice } from "./weapon-worth.js";
 
 // ---------------------------------------------------------------------------------------------
 // Types
@@ -67,7 +68,7 @@ export interface TeamEconomy {
 }
 
 export type BuyTier = "pistol" | "full" | "half" | "force" | "eco" | "bonus";
-export type BuyPlan = "pistol" | "max" | "half" | "light" | "eco" | "keep";
+export type BuyPlan = "pistol" | "max" | "smg" | "half" | "light" | "eco" | "keep";
 
 /** One player's buy this round. */
 export interface PlayerBuy {
@@ -182,6 +183,12 @@ export interface EconomyOptions {
    * is not worth giving a round up for. false → the policy's price-only rule. Default true.
    */
   readonly saveByCredits: boolean;
+  /**
+   * This round's belief reads each gun at its worth against the shields the other team is expected
+   * to wear (weapon-worth.ts): against an eco an SMG is worth nearly a rifle. Prices at heavy shields,
+   * so full-buy rounds read the same. false → shop prices. Default true.
+   */
+  readonly armorMatchedValue: boolean;
 }
 
 export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
@@ -193,6 +200,7 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
   ultPointsPerRoundPrior: 1.4,
   winBelief: SIM_ROUND_WIN_BELIEF,
   saveByCredits: true,
+  armorMatchedValue: true,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -289,6 +297,7 @@ const LADDER: readonly Package[] = [
   { weapon: RIFLE, armor: HEAVY_PTS, util: true },
   { weapon: RIFLE, armor: HEAVY_PTS, util: false },
   { weapon: RIFLE, armor: LIGHT_PTS, util: false },
+  { weapon: SMG, armor: HEAVY_PTS, util: true },
   { weapon: SMG, armor: HEAVY_PTS, util: false },
   { weapon: SMG, armor: LIGHT_PTS, util: false },
   { weapon: SIDEARM, armor: LIGHT_PTS, util: false },
@@ -296,6 +305,7 @@ const LADDER: readonly Package[] = [
   { weapon: DEFAULT_WEAPON, armor: LIGHT_PTS, util: false },
   { weapon: DEFAULT_WEAPON, armor: 0, util: false },
 ];
+const SMG_START = LADDER.findIndex((p) => p.weapon === SMG && p.armor === HEAVY_PTS && p.util);
 const HALF_START = LADDER.findIndex((p) => p.weapon === SMG && p.armor === LIGHT_PTS);
 const LIGHT_START = LADDER.findIndex((p) => p.weapon === DEFAULT_WEAPON && p.armor === LIGHT_PTS);
 
@@ -457,6 +467,7 @@ function planBuys(plan: BuyPlan, slots: readonly Slot[]): PlayerBuy[] {
   switch (plan) {
     case "pistol": return toPlayerBuys(slots, allocatePistol(slots));
     case "max": return toPlayerBuys(slots, allocate(slots, 0, true));
+    case "smg": return toPlayerBuys(slots, allocate(slots, SMG_START, false));
     case "half": return toPlayerBuys(slots, allocate(slots, HALF_START, false));
     case "light": return toPlayerBuys(slots, allocate(slots, LIGHT_START, false));
     case "keep": return toPlayerBuys(slots, allocateKeep(slots));
@@ -516,7 +527,7 @@ function candidates(c: { eco: TeamEconomy; ctx: readonly PlayerContext[]; pistol
   const plans: BuyPlan[] = c.pistol ? ["pistol"]
     : c.call === "save" ? ["eco"] // a save order spends nothing (kept guns still play)
     : c.call === "force" || c.call === "full" ? ["max"]
-    : ["max", "half", "keep", "light", "eco"];
+    : ["max", "smg", "half", "keep", "light", "eco"];
   const ready = c.ultValue > 0 ? readyUlts(c.eco, c.ctx) : 0;
   const out: Candidate[] = [];
   for (const plan of plans) {
@@ -544,6 +555,22 @@ function futureWeight(t: TeamDecisionTraits | undefined, o: EconomyOptions): num
   return Math.min(1.8, Math.max(0.2, 1 + o.disciplineFutureSlope * (d - 0.6)));
 }
 
+/**
+ * Credits to add to a loadout's value for this round's belief: each gun at its worth against the
+ * shields the other team is expected to wear (mean over its players) instead of its price.
+ */
+function armorMatchDelta(buys: readonly PlayerBuy[], against: readonly PlayerBuy[]): number {
+  if (!against.length) return 0;
+  let d = 0;
+  for (const b of buys) {
+    const price = priceOf(b.weapon);
+    if (price <= 0) continue;
+    const worth = sum(against.map((t) => armorMatchedPrice(b.weapon, price, t.armor))) / against.length;
+    d += worth - price;
+  }
+  return d;
+}
+
 interface Scored extends Candidate { readonly j: number; readonly winNow: number }
 
 /**
@@ -562,7 +589,9 @@ function score(
   const [a, b] = scoreline;
   const w = futureWeight(side.traits, o);
   return cands.map((c) => {
-    const winNow = roundWinBelief(c.value, opp.value, o.winBelief);
+    const winNow = o.armorMatchedValue
+      ? roundWinBelief(c.value + armorMatchDelta(c.buys, opp.buys), opp.value + armorMatchDelta(opp.buys, c.buys), o.winBelief)
+      : roundWinBelief(c.value, opp.value, o.winBelief);
     // A held ultimate is fielded next round; using it now restarts the charge, and the points earned
     // over the lookahead (a held, full ultimate wastes them) are counted as that share of an ultimate.
     const progress = Math.min(1, (LOOKAHEAD_DEPTH * ultRate(side.eco, o)) / meanUltCost(side.ctx));
@@ -602,6 +631,7 @@ function tierOf(plan: BuyPlan, buys: readonly PlayerBuy[], wonLastRound: boolean
       if (buys.every((b) => RIFLES.has(b.weapon) && b.armor >= LIGHT_PTS)) return "full";
       // Won the last round and playing mostly on the guns it kept: the bonus round, topped up.
       return wonLastRound && buys.filter((b) => b.weaponSource === "kept").length >= 3 ? "bonus" : "force";
+    case "smg":
     case "half": return "half";
     case "light": return "eco";
     case "keep": return wonLastRound ? "bonus" : "eco";
@@ -729,6 +759,32 @@ export function settleRound(
     : { ...sv, lostRounds: sv.lostRounds + 1, lostAlive: sv.lostAlive + alive };
   const earned = sum(r.players.map((p) => (p.ultimatePointsEarned ?? 0) + (p.orbs ?? 0) * orbPoint));
   return team(players, r.won ? 0 : eco.consecutiveLosses + 1, { ...survival, ultEarned: survival.ultEarned + earned, playerRounds: survival.playerRounds + r.players.length });
+}
+
+/**
+ * What lies where each player died after the round's mid-round pickups (round-simulator
+ * `weaponPickup` events: actor took detail "<taken>|<dropped>" from target). A player dies with the
+ * gun they held last; a gun taken from a body is replaced there by the taker's old one.
+ */
+export function floorAfterRound(
+  startWeapon: ReadonlyMap<string, string>,
+  events: readonly { readonly kind: string; readonly actor?: string; readonly target?: string; readonly detail?: string }[],
+): Map<string, string> {
+  const held = new Map(startWeapon);
+  const floor = new Map<string, string>();
+  const dead = new Set<string>();
+  for (const e of events) {
+    if (e.kind === "kill" && e.target) dead.add(String(e.target));
+    if (e.kind !== "weaponPickup" || !e.actor || !e.detail) continue;
+    const [taken, dropped] = e.detail.split("|");
+    if (!taken) continue;
+    held.set(String(e.actor), taken);
+    // Taken from a body: the taker's old gun lies there now. (From a living swapper: not a body.)
+    if (e.target && dead.has(String(e.target))) floor.set(String(e.target), dropped || DEFAULT_WEAPON);
+  }
+  const out = new Map(held);
+  for (const [id, w] of floor) out.set(id, w);
+  return out;
 }
 
 /** A weapon picked up off the floor after the round. */

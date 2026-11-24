@@ -1,0 +1,1195 @@
+{
+  "generatedAt": "2026-11-24T02:43:09+00:00",
+  "scope": "ascent",
+  "era": "all",
+  "priorsSource": {
+    "side_map_baselines": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "combat_opening_duel": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "round_outcome_distribution": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "pistol_conversion": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "economy_matchup.ascent": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "save_eco_future_value": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "economy_matchup.international": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890"
+  },
+  "simMeta": {
+    "synthetic": true,
+    "label": "sim-batch 160 matches (seeds 1..160, Ascent, real rosters (46 teams))",
+    "rounds": 3312,
+    "matches": 160,
+    "map": "Ascent",
+    "seedStart": 1,
+    "generatedAt": "2026-11-24T02:43:08.928Z"
+  },
+  "summary": {
+    "passed": 13,
+    "judged": 15,
+    "reportedOnly": 54,
+    "allPassed": false
+  },
+  "metrics": [
+    {
+      "metric": "round_outcome_distribution",
+      "scope": "ascent",
+      "dims": {
+        "outcome": "elimination"
+      },
+      "simValue": 0.6811594202898551,
+      "simN": 3312,
+      "realRate": 0.7144160583941606,
+      "realWilson": [
+        0.6987336291268111,
+        0.7295980562348325
+      ],
+      "tolerance": 0.04,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "round_outcome_distribution",
+      "scope": "ascent",
+      "dims": {
+        "outcome": "bomb_detonated"
+      },
+      "simValue": 0.09027777777777778,
+      "simN": 3312,
+      "realRate": 0.08242092457420924,
+      "realWilson": [
+        0.07350119246001235,
+        0.09231525576475796
+      ],
+      "tolerance": 0.04,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "round_outcome_distribution",
+      "scope": "ascent",
+      "dims": {
+        "outcome": "defuse"
+      },
+      "simValue": 0.19082125603864733,
+      "simN": 3312,
+      "realRate": 0.1599756690997567,
+      "realWilson": [
+        0.14784337760744665,
+        0.17290155255664164
+      ],
+      "tolerance": 0.04,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "round_outcome_distribution",
+      "scope": "ascent",
+      "dims": {
+        "outcome": "time_expired"
+      },
+      "simValue": 0.03774154589371981,
+      "simN": 3312,
+      "realRate": 0.04318734793187348,
+      "realWilson": [
+        0.03675582981679403,
+        0.05068503342690959
+      ],
+      "tolerance": 0.04,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "side_winrate",
+      "scope": "ascent",
+      "dims": {
+        "side": "attack",
+        "phase": "all"
+      },
+      "simValue": 0.5120772946859904,
+      "simN": 3312,
+      "realRate": 0.508848080133556,
+      "realWilson": [
+        0.490944147352655,
+        0.5267293444700314
+      ],
+      "tolerance": 0.04,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "opening_duel",
+      "scope": "ascent",
+      "dims": {
+        "side": "attack"
+      },
+      "simValue": 0.4513888888888889,
+      "simN": 3312,
+      "realRate": 0.43689632968448167,
+      "realWilson": [
+        0.41954149760582415,
+        0.4544070604828403
+      ],
+      "tolerance": 0.04,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "pistol",
+        "oppBuy": "pistol"
+      },
+      "simValue": 0.4625,
+      "simN": 320,
+      "realRate": 0.5,
+      "realWilson": [
+        0.45916179634417353,
+        0.5408382036558265
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "semi",
+        "oppBuy": "eco"
+      },
+      "simValue": 0.9948453608247423,
+      "simN": 194,
+      "realRate": 0.9277566539923955,
+      "realWilson": [
+        0.8899315691435907,
+        0.9532657398292637
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": false,
+      "withinRealCI": true,
+      "passed": false,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "full",
+        "oppBuy": "full"
+      },
+      "simValue": 0.489010989010989,
+      "simN": 910,
+      "realRate": 0.5,
+      "realWilson": [
+        0.4787852938355474,
+        0.5212147061644526
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "full",
+        "oppBuy": "semi"
+      },
+      "simValue": 0.6732223903177005,
+      "simN": 661,
+      "realRate": 0.6811832374691865,
+      "realWilson": [
+        0.65446598809773,
+        0.7067602766344624
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "full",
+        "oppBuy": "eco"
+      },
+      "simValue": 0.9923076923076923,
+      "simN": 130,
+      "realRate": 0.96,
+      "realWilson": [
+        0.8045593626380625,
+        0.9929037664980127
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": "real baseline is small-sample; treat as advisory"
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "semi",
+        "oppBuy": "semi"
+      },
+      "simValue": 0.5331010452961672,
+      "simN": 287,
+      "realRate": 0.5,
+      "realWilson": [
+        0.44162651042001944,
+        0.5583734895799806
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "eco",
+        "oppBuy": "semi"
+      },
+      "simValue": 0.022099447513812154,
+      "simN": 181,
+      "realRate": 0.07224334600760456,
+      "realWilson": [
+        0.0467342601707364,
+        0.11006843085640927
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": false,
+      "withinRealCI": true,
+      "passed": false,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "semi",
+        "oppBuy": "full"
+      },
+      "simValue": 0.3485148514851485,
+      "simN": 505,
+      "realRate": 0.3188167625308135,
+      "realWilson": [
+        0.29323972336553766,
+        0.34553401190227
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": ""
+    },
+    {
+      "metric": "economy_matchup",
+      "scope": "ascent",
+      "dims": {
+        "ownBuy": "eco",
+        "oppBuy": "full"
+      },
+      "simValue": 0.024193548387096774,
+      "simN": 124,
+      "realRate": 0.04,
+      "realWilson": [
+        0.007096233501987265,
+        0.19544063736193734
+      ],
+      "tolerance": 0.05,
+      "withinTolerance": true,
+      "withinRealCI": true,
+      "passed": true,
+      "note": "real baseline is small-sample; treat as advisory"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "0v1"
+      },
+      "simValue": 0.0,
+      "simN": 291,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "0v2"
+      },
+      "simValue": 0.006993006993006993,
+      "simN": 286,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "0v3"
+      },
+      "simValue": 0.00303951367781155,
+      "simN": 329,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "0v4"
+      },
+      "simValue": 0.008174386920980926,
+      "simN": 367,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "0v5"
+      },
+      "simValue": 0.014218009478672985,
+      "simN": 211,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "1v0"
+      },
+      "simValue": 1.0,
+      "simN": 352,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "1v1"
+      },
+      "simValue": 0.536036036036036,
+      "simN": 666,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "1v2"
+      },
+      "simValue": 0.26323529411764707,
+      "simN": 680,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "1v3"
+      },
+      "simValue": 0.09818731117824774,
+      "simN": 662,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "1v4"
+      },
+      "simValue": 0.030441400304414,
+      "simN": 657,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "1v5"
+      },
+      "simValue": 0.020289855072463767,
+      "simN": 345,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "2v0"
+      },
+      "simValue": 1.0,
+      "simN": 364,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "2v1"
+      },
+      "simValue": 0.8225108225108225,
+      "simN": 693,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "2v2"
+      },
+      "simValue": 0.5743944636678201,
+      "simN": 867,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "2v3"
+      },
+      "simValue": 0.34576271186440677,
+      "simN": 885,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "2v4"
+      },
+      "simValue": 0.15638297872340426,
+      "simN": 940,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "2v5"
+      },
+      "simValue": 0.059931506849315065,
+      "simN": 584,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "3v0"
+      },
+      "simValue": 1.0,
+      "simN": 288,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "3v1"
+      },
+      "simValue": 0.9673202614379085,
+      "simN": 612,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "3v2"
+      },
+      "simValue": 0.7968036529680366,
+      "simN": 876,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "3v3"
+      },
+      "simValue": 0.6007568590350048,
+      "simN": 1057,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "3v4"
+      },
+      "simValue": 0.3688212927756654,
+      "simN": 1315,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "3v5"
+      },
+      "simValue": 0.18333333333333332,
+      "simN": 1080,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "4v0"
+      },
+      "simValue": 1.0,
+      "simN": 226,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "4v1"
+      },
+      "simValue": 0.9953703703703703,
+      "simN": 432,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "4v2"
+      },
+      "simValue": 0.9088235294117647,
+      "simN": 680,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "4v3"
+      },
+      "simValue": 0.7748015873015873,
+      "simN": 1008,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "4v4"
+      },
+      "simValue": 0.5630810092961488,
+      "simN": 1506,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "4v5"
+      },
+      "simValue": 0.33241607044578975,
+      "simN": 1817,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "5v0"
+      },
+      "simValue": 1.0,
+      "simN": 167,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "5v1"
+      },
+      "simValue": 0.9961089494163424,
+      "simN": 257,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "5v2"
+      },
+      "simValue": 0.9753086419753086,
+      "simN": 405,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "5v3"
+      },
+      "simValue": 0.8953168044077136,
+      "simN": 726,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "5v4"
+      },
+      "simValue": 0.7304347826086957,
+      "simN": 1495,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "man_advantage",
+      "scope": "sim_only",
+      "dims": {
+        "state": "5v5"
+      },
+      "simValue": 0.5120772946859904,
+      "simN": 3312,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "trade_rate",
+      "scope": "sim_only",
+      "dims": {},
+      "simValue": 0.5534030960823316,
+      "simN": 23126,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "bonus_conversion"
+      },
+      "simValue": 0.4377104377104377,
+      "simN": 297,
+      "realRate": 0.42683965893517156,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: pistol_conversion: P(win r+2 | won r, r+1) = two-round / one-round"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "drop_rate"
+      },
+      "simValue": 0.0855614973262032,
+      "simN": 5984,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "eco_next_round_win"
+      },
+      "simValue": 0.5143312101910829,
+      "simN": 628,
+      "realRate": 0.5984147952443857,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: save_eco_future_value eco_this_round"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "eco_vs_full_win"
+      },
+      "simValue": 0.017361111111111112,
+      "simN": 288,
+      "realRate": 0.1148936170212766,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: economy_matchup eco vs full"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "force_vs_full_win"
+      },
+      "simValue": 0.3463203463203463,
+      "simN": 693,
+      "realRate": 0.3404320987654321,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: economy_matchup semi vs full (semi = half + force)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "full_next_round_win"
+      },
+      "simValue": 0.556312769010043,
+      "simN": 2788,
+      "realRate": 0.5058982283550255,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: save_eco_future_value full_this_round"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "pickup_rate"
+      },
+      "simValue": 0.026268115942028984,
+      "simN": 6624,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "pistol_conversion"
+      },
+      "simValue": 0.9433962264150944,
+      "simN": 318,
+      "realRate": 0.8790389395194698,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: pistol_conversion combined"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "plan_win",
+        "plan": "bonus"
+      },
+      "simValue": 0.16666666666666666,
+      "simN": 6,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "plan_win",
+        "plan": "eco"
+      },
+      "simValue": 0.015698587127158554,
+      "simN": 637,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "plan_win",
+        "plan": "force"
+      },
+      "simValue": 0.42369477911646586,
+      "simN": 996,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "plan_win",
+        "plan": "full"
+      },
+      "simValue": 0.5891255605381166,
+      "simN": 3568,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "plan_win",
+        "plan": "half"
+      },
+      "simValue": 0.5881595881595881,
+      "simN": 777,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "plan_win",
+        "plan": "pistol"
+      },
+      "simValue": 0.5,
+      "simN": 640,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (data gap)"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "tier_share",
+        "plan": "eco"
+      },
+      "simValue": 0.10675492192803802,
+      "simN": 5892,
+      "realRate": 0.05365404588801813,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: economy_matchup.international n per own tier"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "tier_share",
+        "plan": "full"
+      },
+      "simValue": 0.5342837746096402,
+      "simN": 5892,
+      "realRate": 0.6207393069587386,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: economy_matchup.international n per own tier"
+    },
+    {
+      "metric": "economy",
+      "scope": "sim_only",
+      "dims": {
+        "metric": "tier_share",
+        "plan": "semi"
+      },
+      "simValue": 0.3589613034623218,
+      "simN": 5892,
+      "realRate": 0.32560664715324333,
+      "realWilson": null,
+      "tolerance": 0.0,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "reference only: economy_matchup.international n per own tier"
+    },
+    {
+      "metric": "round_duration_ms",
+      "scope": "sim_only",
+      "dims": {},
+      "simValue": 61761.65458937198,
+      "simN": 3312,
+      "realRate": null,
+      "realWilson": null,
+      "tolerance": null,
+      "withinTolerance": null,
+      "withinRealCI": null,
+      "passed": null,
+      "note": "no real baseline (VCT Reference has map duration, not per-round)"
+    }
+  ]
+}
