@@ -11,6 +11,7 @@ import { staffQuality } from "../generate.ts";
 import { clamp, streamFor } from "../rng.ts";
 import { CLUB_MODEL } from "./constants.ts";
 import type { Contract, SquadRole } from "./types.ts";
+import { estimateForTeam } from "../knowledge.ts";
 
 const M = CLUB_MODEL;
 
@@ -76,7 +77,7 @@ export function valueFrom(w: Pick<World, "calibration">, ca: number, pa: number,
 
 /** Value of a player as `viewerTeamId`'s scout sees him (rounded to the fee step). */
 export function playerValue(w: World, p: WorldPlayer, viewerTeamId: string | null): number {
-  const est = estimateAbility(w, teamScout(w, viewerTeamId), p);
+  const est = estimateForTeam(w, viewerTeamId, p);
   const c = w.club?.contracts[p.playerId];
   const yearsLeft = c ? c.endSeason - w.season : null;
   return roundTo(valueFrom(w, est.ca, est.pa, p.age, yearsLeft), M.feeStep);
@@ -143,7 +144,7 @@ export function startingYears(w: World, p: WorldPlayer): number {
 export function marketContract(w: World, p: WorldPlayer, teamId: string, years: number, date: string, rep: number, salary?: number): Contract {
   const team = w.teams[teamId]!;
   const role = squadRoleOf(w, teamId, p);
-  const est = estimateAbility(w, teamScout(w, teamId), p);
+  const est = estimateForTeam(w, teamId, p);
   const pay = salary ?? (role === "academy" ? M.academyWage : clubSalary(marketWage(w, p, team.region, est), rep));
   const value = valueFrom(w, est.ca, est.pa, p.age, years - 1);
   return {

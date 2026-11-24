@@ -101,7 +101,23 @@ export interface WorldPlayer {
   status: PlayerStatus;
   /** Maps played over the whole career in this world (drives rating uncertainty). */
   careerMaps: number;
+  /**
+   * Development history: one point per season ended in this world (true values; the desktop shows
+   * them for the manager's own players only). Newest last, at most DEV_HISTORY_MAX points.
+   */
+  history?: DevPoint[];
 }
+
+/** One season of a player's development (recorded when the season ends, after development). */
+export interface DevPoint {
+  readonly season: number;
+  readonly age: number;
+  readonly ca: number;
+  readonly maps: number;
+  /** Season-end morale used for the development step (0..1, 0.5 = content). */
+  readonly morale?: number;
+}
+export const DEV_HISTORY_MAX = 12;
 
 export type StaffRole = "headCoach" | "analyst" | "scout";
 export const STAFF_ROLES: readonly StaffRole[] = ["headCoach", "analyst", "scout"];
@@ -189,4 +205,8 @@ export interface World {
   retired: RetiredRecord[];
   /** Club operations (contracts, finance, transfers, training) once a career has started them. */
   club?: import("./club/types.ts").ClubState;
+  /** The manager's scouting knowledge, assignments and reports (knowledge.ts), once a career started. */
+  scouting?: import("./knowledge.ts").ScoutingState;
+  /** The manager's development decisions (mentors; development.ts). */
+  development?: import("./development.ts").DevelopmentState;
 }

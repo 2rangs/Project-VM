@@ -31,6 +31,8 @@ import {
   stageDone, stagePlacings, STAGES, teamStrength,
 } from "./schedule.ts";
 import type { CareerState, Fixture, Manager, SeasonSummary, SeriesOutcome, SeriesRequest, StageId } from "./types.ts";
+import { estimateForTeam } from "../knowledge.ts";
+import { scoutingCareerHook } from "../knowledge-hook.ts";
 
 export const CAREER_MODE = {
   /** Form update rate per map (see PlayerSeasonLine.form). */
@@ -80,7 +82,12 @@ function hookCtx(state: CareerState, hook: CareerHook): HookContext {
 }
 
 /** Built-in hooks first (core bookkeeping, then the club layer), then the registered ones. */
-const allHooks = (rt: CareerRuntime | undefined): CareerHook[] => [coreHook, clubCareerHook, ...careerHooks(rt?.hooks ?? []).filter((h) => h.id !== coreHook.id && h.id !== clubCareerHook.id)];
+const BUILT_IN = (): CareerHook[] => [coreHook, clubCareerHook, scoutingCareerHook];
+const allHooks = (rt: CareerRuntime | undefined): CareerHook[] => {
+  const builtIn = BUILT_IN();
+  const ids = new Set(builtIn.map((h) => h.id));
+  return [...builtIn, ...careerHooks(rt?.hooks ?? []).filter((h) => !ids.has(h.id))];
+};
 
 function runHooks(state: CareerState, rt: CareerRuntime | undefined, fn: (h: CareerHook, ctx: HookContext) => void): void {
   for (const h of allHooks(rt)) fn(h, hookCtx(state, h));
@@ -144,11 +151,11 @@ function seasonOpeningMail(state: CareerState): void {
   });
   const pros = newProspects(w).filter((p) => p.region === state.region);
   if (pros.length) {
-    const scout = teamScout(w, state.userTeamId);
-    const best = [...pros].sort((a, b) => (estimateAbility(w, scout, b).pa ?? 0) - (estimateAbility(w, scout, a).pa ?? 0) || a.playerId.localeCompare(b.playerId))[0]!;
+    const est = (p: typeof pros[number]) => estimateForTeam(w, state.userTeamId, p);
+    const best = [...pros].sort((a, b) => est(b).pa - est(a).pa || a.playerId.localeCompare(b.playerId))[0]!;
     postInbox(state, {
       category: "scouting", key: "scouting.prospects", from: "scout",
-      params: { n: pros.length, best: best.handle ?? best.playerId, pa: toScale200(estimateAbility(w, scout, best).pa) ?? 0 },
+      params: { n: pros.length, best: best.handle ?? best.playerId, pa: toScale200(est(best).pa) ?? 0 },
       ref: { playerId: best.playerId },
     });
   }
@@ -367,7 +374,9 @@ function endSeason(state: CareerState, rt?: CareerRuntime): void {
   for (const [pid, line] of Object.entries(state.stats)) mapsPlayed[pid] = line.maps;
   const before = new Set(state.world.teams[state.userTeamId]?.roster ?? []);
   // Development with the season's training focus; the manager's squad is left to the manager.
-  state.world = advanceSeason(state.world, { mapsPlayed, focus: seasonFocus(state.world), managedTeams: [state.userTeamId] });
+  const form: Record<string, number> = {};
+  for (const [pid, line] of Object.entries(state.stats)) if (line.maps > 0) form[pid] = line.form;
+  state.world = advanceSeason(state.world, { mapsPlayed, focus: seasonFocus(state.world), managedTeams: [state.userTeamId], form });
   const rec = state.world.history[state.world.history.length - 1]!;
   const team = state.world.teams[state.userTeamId]!;
   const name = (id: string) => state.world.players[id]?.handle ?? state.world.retired.find((r) => r.id === id)?.label ?? id;
@@ -475,10 +484,9 @@ const coreHook: CareerHook = {
       });
     }
     // Scout: the free agent in the region the scout rates highest right now.
-    const scout = teamScout(w, state.userTeamId);
     const free = Object.values(w.players).filter((p) => p.status === "free" && p.region === state.region && p.hasRatings);
     if (free.length) {
-      const est = (p: typeof free[number]) => estimateAbility(w, scout, p);
+      const est = (p: typeof free[number]) => estimateForTeam(w, state.userTeamId, p);
       const best = [...free].sort((a, b) => (est(b).ca ?? 0) - (est(a).ca ?? 0) || a.playerId.localeCompare(b.playerId))[0]!;
       const core = ctx.ext(() => ({ flags: [] as string[] })) as { flags: string[]; lastFreeAgent?: string };
       if (core.lastFreeAgent === best.playerId) return;

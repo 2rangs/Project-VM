@@ -60,3 +60,28 @@ export function teamScout(world: World, teamId: string | null | undefined): Worl
 export function toScale200(v: number | null | undefined): number | null {
   return v === null || v === undefined ? null : Math.round(1 + 199 * clamp(v, 0, 1));
 }
+
+/** One attribute as a club sees it: best estimate and a range that holds the true value. */
+export interface AttributeEstimate { readonly value: number; readonly lo: number; readonly hi: number }
+
+/**
+ * Per-attribute ranges in the scout-error model (AI clubs; and the sandbox): half-width
+ * σ_CA (the same σ as estimateAbility's CA, from judgingAbility and careerMaps) per attribute,
+ * estimate = true + σ·z/2 (z ~ N(0,1) clamped ±2, seeded per scout × player × attribute), so the
+ * range [value − σ, value + σ] holds the true value. No scout → the widest bands.
+ */
+export function estimateAttributes(world: Pick<World, "seed">, scout: WorldStaff | null | undefined, p: WorldPlayer): Record<string, AttributeEstimate> {
+  const s = SCOUT_MODEL;
+  const ja = scout?.attributes.judgingAbility ?? 0;
+  const K = CAREER_MODEL.uncertaintyHalfMaps;
+  const sig = (s.caSigmaMin + s.caSigmaSpan * (1 - ja)) * Math.sqrt(K / (K + p.careerMaps));
+  const out: Record<string, AttributeEstimate> = {};
+  for (const [k, slot] of Object.entries(p.attributes ?? {})) {
+    const v = (slot as { value: unknown }).value;
+    if (typeof v !== "number") continue;
+    const z = normal(streamFor(world.seed, `scout-attr:${scout?.staffId ?? "none"}:${p.playerId}:${k}`), 2) / 2;
+    const value = clamp(v + sig * z, 0, 1);
+    out[k] = { value, lo: clamp(value - sig, 0, 1), hi: clamp(value + sig, 0, 1) };
+  }
+  return out;
+}

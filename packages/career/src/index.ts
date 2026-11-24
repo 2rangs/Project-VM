@@ -7,7 +7,7 @@ export { CAREER_MODEL, maturity, closingRate, declineLoss, playTimeFactor, coach
 export { deriveCalibration, compositeOf, attrValue, type Calibration, type RealPlayerInput } from "./calibration.ts";
 export { generatePlayer, generateStaff, peakProfile, staffQuality, STAFF_MODEL, type PlayerGenRequest, type StaffGenRequest } from "./generate.ts";
 export { generateHandle, generatePersonName, normalizeHandle, isBlockedHandle, type PersonName } from "./names.ts";
-export { estimateAbility, teamScout, toScale200, SCOUT_MODEL, UNRATED_ABILITY, type AbilityEstimate } from "./scouting.ts";
+export { estimateAbility, estimateAttributes, teamScout, toScale200, SCOUT_MODEL, UNRATED_ABILITY, type AbilityEstimate, type AttributeEstimate } from "./scouting.ts";
 export { advanceSeason, type AdvanceOptions, openSeason, developPlayer, retirementHazard, staffRetirementHazard, seasonMaps, caOf, regionPopulation, SEASON_MODEL, type AdvanceSeasonOptions } from "./season.ts";
 export {
   createWorld, estimateRealAge, listPlayers, freeAgents, generatedPlayers, newProspects, newStaff,
@@ -29,3 +29,8 @@ export * from "./career/save.ts";
 export * from "./career/readiness.ts";
 // One inbox (career/inbox.ts), one date helper (career/calendar.ts) and one teamStrength
 // (club/market.ts, re-exported by career/schedule.ts) for the whole package.
+// --- Scouting knowledge (attribute fog), development drivers, the manager's academy (docs/GENERATED_PEOPLE.md §9–12) ---
+export * from "./knowledge.ts";
+export * from "./development.ts";
+export * from "./academy.ts";
+export { scoutingCareerHook } from "./knowledge-hook.ts";

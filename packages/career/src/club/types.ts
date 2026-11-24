@@ -117,6 +117,8 @@ export interface Loan {
   readonly toTeamId: string;
   readonly wageShare: number;
   readonly endSeason: number;
+  /** Where the player goes back to when the loan ends (an academy player returns to the academy). */
+  readonly returnTo?: "roster" | "academy";
 }
 
 export interface TransferRecord {

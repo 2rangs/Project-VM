@@ -10,7 +10,7 @@
 //                   with the season's training focus (advanceSeason), then contracts for whoever the
 //                   season loop signed, and the new season's budgets
 import type { World, WorldPlayer } from "../model.ts";
-import { advanceSeason } from "../season.ts";
+import { advanceSeason, SEASON_MODEL } from "../season.ts";
 import { estimateAbility, teamScout } from "../scouting.ts";
 import { dayOfWeek, monthKey, monthOf, seasonEndDate, seasonStartDate, windowStatus } from "./calendar.ts";
 import { CLUB_MODEL } from "./constants.ts";
@@ -166,7 +166,15 @@ export function clubBeforeSeasonEndMut(w: World, ctx: SeasonEndContext = {}): vo
   // Loans return to the parent club.
   for (const l of club.loans.filter((x) => x.endSeason <= w.season)) {
     const p = w.players[l.playerId];
-    if (p && w.teams[l.fromTeamId]) joinRoster(w, p, l.fromTeamId);
+    if (p && w.teams[l.fromTeamId]) {
+      joinRoster(w, p, l.fromTeamId);
+      const t = w.teams[l.fromTeamId]!;
+      if (l.returnTo === "academy" && t.academy.length < SEASON_MODEL.academySize) {
+        t.roster = t.roster.filter((id) => id !== p.playerId);
+        t.academy.push(p.playerId);
+        p.status = "academy";
+      }
+    }
   }
   club.loans = club.loans.filter((x) => x.endSeason > w.season);
   seasonEndFinance(w, date, ctx.standings);
