@@ -32,6 +32,8 @@ export interface StageView {
 
 export interface StageOptions {
   readonly showBelief: boolean;
+  /** Player the coach picked (keys 1–5 / roster click): a pulsing ring keeps them findable. */
+  readonly highlightId?: string | null;
   /**
    * Developer view: the navigation debug overlay — the walkable floor as the engine's roadmap
    * knows it, the zone graph with connected / unconnected zones, and (with `navDebug`) each
@@ -398,6 +400,11 @@ export class MatchStage {
           const lead = Math.min(1, Math.max(0, (t % 400) / 400));
           over.circle(p.x, p.y, r + 4 + lead * 5).stroke({ color: C.ink, width: 2, alpha: 1 - lead });
         }
+        if (opts.highlightId === u.id && !follow) {
+          const k = (t % 1200) / 1200;
+          over.circle(p.x, p.y, r + 7 + k * 6).stroke({ color: C.ink, width: 2, alpha: 0.9 - k * 0.6 });
+          over.circle(p.x, p.y, r + 5).stroke({ color: C.ink, width: 2, alpha: 0.95 });
+        }
         over.circle(p.x, p.y, r).fill(follow && !me ? C.allyDeep : C.ally).stroke({ color: C.bg, width: 2 });
         if (u.pose.hopProgress != null && u.pose.toZone) {
           // On the way to another zone (zone-hop engine): no path is drawn — the destination is
@@ -431,7 +438,11 @@ export class MatchStage {
       const p = this.toScreen(cam, z.position);
       if (!this.near(view, p, 0)) continue;
       const on = relevant.has(z.id);
-      node.label(`z:${z.id}`, z.name.toUpperCase(), p.x, p.y - this.px(cam, 300) - 4, compact ? 9 : 10, on ? C.ink : C.muted, lost ? 0.35 : on ? 0.9 : 0.55);
+      // Landmarks stay legible at a glance: sites (plantable) biggest, then spawns / mid, the rest dim.
+      const site = !!z.plantable || /site/i.test(z.zoneType ?? '');
+      const key = site || /spawn|mid/i.test(z.zoneType ?? '');
+      const size = (compact ? 9 : 10) + (site ? 3 : key ? 1 : 0);
+      node.label(`z:${z.id}`, z.name.toUpperCase(), p.x, p.y - this.px(cam, 300) - 4, size, on || site ? C.ink : C.muted, lost ? 0.35 : site ? 1 : on ? 0.9 : key ? 0.7 : 0.5);
     }
     node.endLabels();
   }
