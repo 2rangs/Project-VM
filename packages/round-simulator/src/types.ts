@@ -539,7 +539,7 @@ export interface SimConfig {
    * routes, stop-and-check moments, a quiet lurk. Off = every player moves the executor's one way.
    * The match runner turns it on.
    */
-  readonly movementStyle?: boolean;
+  readonly movementStyle?: boolean | import("./movement-style.js").MovementStyleParts;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {

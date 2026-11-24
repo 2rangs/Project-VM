@@ -285,7 +285,7 @@ export class RoundSimulator {
     // Movement style (movement-style.ts) and the buy phase (buy-phase.ts). The round's plan is made
     // when the buy phase starts — the very decision tick 0 would make, from the same state — and the
     // buy phase carries it out behind the barriers; tick 0 then reuses it.
-    this.styles = this.cfg.movementStyle ? new RoundMovementStyles(this.spatial, deriveSeed(this.cfg.seed, "movement")) : null;
+    this.styles = this.cfg.movementStyle ? new RoundMovementStyles(this.spatial, deriveSeed(this.cfg.seed, "movement"), typeof this.cfg.movementStyle === "object" ? this.cfg.movementStyle : {}) : null;
     const opening: Partial<Record<Side, { view: PolicyView; decision: PolicyDecision }>> = {};
     let buyPhase: BuyPhaseResult | null = null;
     if ((this.cfg.buyPhaseMs ?? 0) > 0 && this.spatial.nav) {

@@ -45,6 +45,15 @@ export interface BuyPhaseStyle {
   readonly setMarginMs: number;
 }
 
+/** Which parts of the style are in force (all by default; a part off moves as the plain executor does). */
+export interface MovementStyleParts {
+  readonly lanes?: boolean;
+  readonly spacing?: boolean;
+  readonly routes?: boolean;
+  readonly checks?: boolean;
+  readonly lurk?: boolean;
+}
+
 export interface MovementStyle {
   readonly lane: number;
   readonly spacing: number;
@@ -175,7 +184,10 @@ export class RoundMovementStyles {
   private readonly checksLeft = new Map<string, number>();
   private readonly checked = new Set<string>();
 
-  constructor(private readonly spatial: SpatialEngine, private readonly seed: number) {}
+  private readonly parts: Required<MovementStyleParts>;
+  constructor(private readonly spatial: SpatialEngine, private readonly seed: number, parts: MovementStyleParts = {}) {
+    this.parts = { lanes: true, spacing: true, routes: true, checks: true, lurk: true, ...parts };
+  }
 
   get assigned(): boolean { return this.styles.size > 0; }
   styleOf(id: string): MovementStyle | undefined { return this.styles.get(id); }
@@ -197,8 +209,9 @@ export class RoundMovementStyles {
   install(mover: MovementExecutor, players: readonly SimPlayer[], threat: (side: SimPlayer["side"], zoneId: string) => number): void {
     for (const p of players) {
       const st = this.styles.get(p.id);
-      if (st) mover.setStyle(p.id, { lane: st.lane, spacing: st.spacing });
+      if (st) mover.setStyle(p.id, { ...(this.parts.lanes ? { lane: st.lane } : {}), ...(this.parts.spacing ? { spacing: st.spacing } : {}) });
     }
+    if (!this.parts.routes) return;
     mover.routeChooser = (p, goal, mode, opts) => {
       const st = this.styles.get(p.id);
       if (!st) return null;
@@ -220,7 +233,7 @@ export class RoundMovementStyles {
   checkPauseMs(p: SimPlayer, toZone: string, threat: number, calm: boolean, elapsedMs = 0, cleared = false): number {
     const st = this.styles.get(p.id);
     // a run is an execute or a rotation: nobody stops to clear angles mid-sprint; a walk is a slow play
-    if (!st || !calm || cleared || p.moveMode !== "walk") return 0;
+    if (!st || !this.parts.checks || !calm || cleared || p.moveMode !== "walk") return 0;
     if (threat < CHECK_THREAT_MIN && this.enemyReachMs(p.side, toZone) > elapsedMs) return 0;
     const key = `${p.id}|${toZone}`;
     if (this.checked.has(key)) return 0;
@@ -259,7 +272,7 @@ export class RoundMovementStyles {
 
   /** A quiet lurker walks the last LURK_QUIET_UNITS of its approach while the round is still calm. */
   pace(p: SimPlayer, mode: "run" | "walk", remainingUnits: number, calm: boolean): "run" | "walk" {
-    if (mode === "walk" || !calm || this.roles.get(p.id) !== "lurker") return mode;
+    if (!this.parts.lurk || mode === "walk" || !calm || this.roles.get(p.id) !== "lurker") return mode;
     const st = this.styles.get(p.id);
     return st && st.quiet >= 0.5 && remainingUnits > 0 && remainingUnits < LURK_QUIET_UNITS ? "walk" : mode;
   }
