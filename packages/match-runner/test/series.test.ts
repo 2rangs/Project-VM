@@ -237,13 +237,14 @@ describe("single-map runMatch is unchanged by the series layer", () => {
     const plan = (site: "A" | "B"): GamePlan => ({ attack: { site, strength: 8 } });
     const plants = (site: "A" | "B") => {
       let a = 0, b = 0;
-      for (const seed of [1, 2, 3]) {
+      // five seeds: with per-player route choice (movement style) three seeds sat on the margin
+      for (const seed of [1, 2, 3, 4, 5]) {
         const r = runMatch({ ...base, seed, teamInputs: { A: { standingPrior: gamePlanPrior(plan(site))! } } });
         for (const round of teamGameLog(r, "A").rounds) { if (round.plantSite === "A") a++; if (round.plantSite === "B") b++; }
       }
       return a / Math.max(1, a + b);
     };
-    expect(plants("A")).toBeGreaterThan(plants("B") + 0.15);
+    expect(plants("A")).toBeGreaterThan(plants("B") + 0.15); // 0.533 vs 0.345 on seeds 1–5
   }, LONG);
 });
 
