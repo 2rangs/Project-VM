@@ -4,8 +4,8 @@
  * Before the round goes live both teams move behind their barriers. The round's plan is made at
  * the start of the buy phase (the team policies' first decision); during the phase each player
  * carries out its part of that plan as far as its barrier lets it:
- *  - attackers stay in their spawn: each takes a spot near the exit its first move leaves by,
- *    stacked by role (the entry at the door, the support behind it, a lurker at its own exit);
+ *  - attackers stay in their spawn: each ends on a spot of its own around the spawn's middle, facing
+ *    the exit its first move leaves by (a stack at that exit was measured and dropped — see below);
  *  - defenders move freely on their side up to the barrier and get to their setup — the zone the
  *    plan sets each of them down in (an anchor on site, a retake spot, an early mid presence) — on
  *    a standing spot of their own, looking where their first order points.
@@ -30,15 +30,12 @@ import type { Side, SimPlayer, TrackFrame } from "./types.js";
 /** A zone is behind the defenders' barrier when d / (a + d) ≤ this (d, a: run times from each spawn). */
 export const DEFENDER_BARRIER_SHARE = 0.45;
 /**
- * How far behind the exit (uu) each role sets up in the attackers' spawn. Set back from the door, not
- * in it: five bodies stacked in the doorway leave it in single file when the barrier drops (measured,
- * 60 matches: attack −2.5 pp, full-v-full 0.41 against 0.46 with the attackers spread in spawn).
+ * Attackers stand on a spot of their own around the middle of their spawn, facing the exit their first
+ * move leaves by. A role stack at that exit was built and measured (60 matches, real rosters): in the
+ * doorway (0.6–3.2 m) attack −2.5 pp and full-v-full 0.41; set back and spread (3–6 m) attack 0.47 and
+ * full-v-full 0.45; around the spawn's middle 0.50 / 0.46 — the duel calibration assumes the attackers
+ * leave spawn from its middle, so that is where they set up.
  */
-const STACK_DEPTH: Record<PlayerRole | "none", number> = {
-  entry: 300, support: 500, igl: 600, lurker: 350, anchor: 450, rotator: 450, none: 450,
-};
-/** Spread of a player's stack spot (uu) around its role's depth — its own preference this round. */
-const STACK_JITTER = 300;
 /** An idle wander is a walk of at most this long (ms) — it is never started if it would make the player late. */
 const WANDER_BUDGET_MS = 3500;
 
@@ -178,11 +175,8 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
           if (after) face = { x: after.position.x, y: after.position.y };
         }
       }
-      const depth = STACK_DEPTH[role ?? "none"] + STACK_JITTER * (rng() - 0.5);
-      const spot = exit ? stackSpot(ex, nav, p.id, exit, depth) : -1;
-      goal = spot >= 0
-        ? { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "at", position: nav.nodePosition(spot) } }
-        : { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "stand" } };
+      void exit; void role;
+      goal = { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "stand" } };
       if (target) planZone = target;
     }
     setups.push({ p, planZone });
@@ -263,20 +257,6 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
     setups: setups.map(({ p, planZone }) => ({ playerId: p.id, side: p.side, planZone, zoneId: p.zoneId })),
     areas: { attack: [...areas.attack], defense: [...areas.defense].sort() },
   };
-}
-
-/** The spawn node at about `depth` uu from the exit that no one has taken yet. */
-function stackSpot(ex: MovementExecutor, nav: NonNullable<SpatialEngine["nav"]>, playerId: string, exit: { x: number; y: number; z: number }, depth: number): number {
-  let best = -1, bestScore = Infinity;
-  for (const n of nav.zoneNodes(SPAWN_ZONE.attack)) {
-    if (ex.blockers.nodeBlocked(n) || !ex.spotFree(playerId, n)) continue;
-    const q = nav.nodePosition(n);
-    if (Math.abs(q.z - exit.z) > 160) continue;
-    const sc = Math.abs(Math.hypot(q.x - exit.x, q.y - exit.y) - depth);
-    if (sc < bestScore) { bestScore = sc; best = n; }
-  }
-  if (best >= 0) ex.reserve(playerId, best);
-  return best;
 }
 
 /** Roughly where a goal will put the player (for the travel-time estimate). */
