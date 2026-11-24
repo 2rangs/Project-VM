@@ -83,6 +83,9 @@ class SessionHost {
     const cfg = {
       teamA: req.teamA, teamB: req.teamB, map: req.mapId, seed: req.seed, aiTeams: req.aiTeams ?? ['B'],
       options: req.options ?? {},
+      // [manager] our pre-match plan and the opponent film the report was read from
+      ...(req.plan ? { plan: req.plan } : {}),
+      ...(req.scouting ? { scouting: req.scouting } : {}),
     };
     const child = spawn('npx', ['tsx', sessionScript(), JSON.stringify(cfg)], { cwd: repoRoot(), env: process.env });
     this.child = child;
