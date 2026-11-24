@@ -10,19 +10,35 @@ Definition of done per map: (1) roadmap with no unreachable zone, (2) sight tabl
 teleporters as typed links, doors, breakables), (5) own-geometry real-roster batch in range (attack 0.42–0.58,
 elimination ~0.60–0.75, detonation ≤ ~0.15). Last update: 2026-11-23 evening — all batches below are real rosters, seeds 1..60 (Ascent 1..160), attack / elimination / detonation / defuse. Items 1–4 hold on every map; item 5 holds on Breeze only (Abyss within 0.013), so no map is marked done and `geometry: "own"` stays opt-in.
 
+**2026-11-24, on main `93fce88` + `dea0c35` + the spawn-floor fix** (real rosters, seeds 1..60; Ascent 1..160). The
+numbers in the table are these; the 2026-11-23 numbers are in `NAVIGATION_ENGINE.md` §7.6. Ult orbs: Ascent, Bind,
+Haven, Split only (zone-level, from game knowledge, `verified: false`); the other seven are empty.
+
+Cause work this day, in order:
+1. *Defenders rotated through the attackers' lobbies* — the zone graph lets nobody through a spawn, so the only
+   zone route between the sites ran over attacker ground (Split 6 zones, Pearl 4, Fracture 4, Icebox / Lotus /
+   Breeze 2, Bind via the teleporters; Ascent, Haven, Sunset 0). First kill inside 15 s: Split 91 % → 38 %,
+   Icebox 97 % → 57 % of rounds (Ascent 42 %). Fixed `dea0c35`.
+2. *Planning times forbade spawn floor* — Split A↔B planned at 28.0 s against 18.5 s of floor. Fixed (next commit).
+3. **Still open:** attackers win 0.78–0.90 of rounds after the plant on Abyss, Bind, Fracture, Lotus, Split,
+   Sunset (Ascent 0.71) with about three defenders alive at the plant, and plant rates are 0.72–0.84 on
+   Fracture, Haven, Lotus, Split, Breeze (Ascent 0.62). Not traced to a cause. Static oddities not yet tested:
+   Haven A's main entry sees 10 % of the site and its default plant spot is seen from no entry point; Abyss B's
+   main entry is derived as the jump ledge `b-danger`; Bind B has one derived entry.
+
 | Map | Roadmap gaps | Sight table | Tactics tests | objects.json | Real-roster batch (own geometry) | Done |
 |---|---|---|---|---|---|---|
-| Ascent | none | yes | pass | `3da5f8d` | 160, default geometry: 0.455 / 0.728 / 0.085 / 0.136, 6/8 — gate held (≥6/8, attack 0.455 ± 0.02) | no |
-| Abyss | none | yes | pass | `99427ea` | 60: 0.507 / 0.618 / 0.163 / 0.155, 7/9 — nearly (detonation 0.013 over) | no |
-| Bind | none | yes | pass | `bde66f4` | 60 on the rebuilt roadmap: 0.501 / 0.572 / 0.237 / 0.104, time 0.088, 3/8 — **no**. Before the rebuild (2 nodes fewer, links between zone anchors): 0.502 / 0.751 / 0.135 / 0.083 — the result is not robust to a roadmap resample | no |
-| Breeze | none | yes | pass | `202d8b5` | 60: 0.522 / 0.764 / 0.085 / 0.122, 6/8 — in range (elimination 0.014 over) | no |
-| Fracture | none | yes | pass | `a52a61b` | 60: 0.482 / 0.540 / 0.279 / 0.155, 6/8 — no, detonation high | no |
-| Haven | none | yes | pass | `fe09571` | 60: 0.489 / 0.416 / 0.236 / 0.288, 4/8 — no, elimination low, detonation and defuse high | no |
-| Icebox | none | yes | pass | `a42c3a7` | 60: 0.454 / 0.578 / 0.218 / 0.181, 4/8 — no, detonation high | no |
-| Lotus | none | yes | pass | `0f7041c` | 60: 0.493 / 0.475 / 0.204 / 0.255, 4/8 — no, elimination low, detonation high | no |
-| Pearl | none | yes | pass | `fe09571` | 60: 0.421 / 0.585 / 0.212 / 0.170, 3/8 — no, detonation high; attack at the lower edge | no |
-| Split | none | yes | pass | `fecde40` | 60: 0.496 / 0.594 / 0.209 / 0.172, 3/8 — no, detonation high | no |
-| Sunset | none | yes | pass | `fe09571` | 60: 0.519 / 0.582 / 0.202 / 0.174, 4/8 — no, detonation high | no |
+| Ascent | none | yes | pass | `3da5f8d` | 160, default geometry: 0.499 / 0.688 / 0.082 / 0.179, 13/15 (main `93fce88`: 13/15, 0.512 / 0.677) — gate held | no |
+| Abyss | none | yes | pass | `99427ea` | 0.645 / 0.576 / 0.248 / 0.140 — no (attack high) | no |
+| Bind | none | yes | pass | `bde66f4` | 0.478 / 0.626 / 0.252 / 0.047 — no (detonation high) | no |
+| Breeze | none | yes | pass | `202d8b5` | 0.587 / 0.684 / 0.129 / 0.165 — nearly (attack +0.007) | no |
+| Fracture | none | yes | pass | `a52a61b` | 0.672 / 0.509 / 0.374 / 0.095 — no | no |
+| Haven | none | yes | pass | `fe09571` | 0.653 / 0.462 / 0.306 / 0.203 — no | no |
+| Icebox | none | yes | pass | `a42c3a7` | 0.543 / 0.557 / 0.238 / 0.190 — no (detonation high) | no |
+| Lotus | none | yes | pass | `0f7041c` | 0.666 / 0.496 / 0.296 / 0.180 — no | no |
+| Pearl | none | yes | pass | `fe09571` | 0.482 / 0.583 / 0.186 / 0.200 — nearly | no |
+| Split | none | yes | pass | `fecde40` | 0.659 / 0.505 / 0.375 / 0.103 — no | no |
+| Sunset | none | yes | pass | `fe09571` | 0.441 / 0.628 / 0.185 / 0.087, time 0.099 — nearly | no |
 
 ### Map data for the pro-technique backlog (`docs/research/PRO_TECHNIQUES_BACKLOG.md`, MAP-1…MAP-6)
 
