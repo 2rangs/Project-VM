@@ -16,7 +16,7 @@ import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
 import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
 import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
-import { buildBeliefState } from "@pv/decision-engine";
+import { buildBeliefState, type CommsLedger, type InfoProfile, type InformationTrace } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
 import { spikeBlastRadiusUnits, weaponPrice } from "@pv/game-rules";
 import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
@@ -129,6 +129,14 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   }
   setThrowFloors(floors: ReadonlyMap<string, number> | null): void {
     this.inner.setThrowFloors(floors);
+  }
+  /** Per-player information attributes + the match's call ledger (TeamDecisionPolicy.setInfoProfiles). */
+  setInfoProfiles(profiles: ReadonlyMap<string, InfoProfile> | null, ledger?: CommsLedger): void {
+    this.inner.setInfoProfiles(profiles, ledger);
+  }
+  /** The round's information trace (per-player knowledge, comms, minimap, trust). */
+  informationTrace(): InformationTrace | null {
+    return this.inner.informationTrace();
   }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({

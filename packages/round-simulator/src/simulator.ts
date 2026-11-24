@@ -660,6 +660,9 @@ export class RoundSimulator {
       engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
       cueTrace: this.cfg.traceCommands ? cues : undefined,
       abilityCueTrace: this.cfg.traceCommands ? abilityCues : undefined,
+      ...(this.cfg.traceCommands || this.cfg.recordPerception
+        ? { information: { attack: this.policies.attack.informationTrace?.() ?? null, defense: this.policies.defense.informationTrace?.() ?? null } }
+        : {}),
       ...(collect
         ? {
             stats: {

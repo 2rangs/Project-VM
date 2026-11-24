@@ -436,6 +436,11 @@ export interface RoundResult {
   readonly engagementTrace?: readonly EngagementRecord[];
   /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
   readonly stats?: RoundStats;
+  /**
+   * Each side policy's information trace (per-player knowledge, comms events, minimap spots, trust),
+   * present when config.traceCommands or config.recordPerception is on and the policy provides one.
+   */
+  readonly information?: Readonly<Record<Side, unknown>>;
 }
 
 export interface SimConfig {
