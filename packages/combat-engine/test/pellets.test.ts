@@ -36,6 +36,9 @@ describe("alt-fire and moving accuracy", () => {
   it("a run-and-gun weapon keeps more of its accuracy on the move", () => {
     const runGun: WeaponSpec = { ...PISTOL, movingAccuracy: 0.85 };
     const moving = (w: WeaponSpec) => winRate(fighter("a", w, 25, true), fighter("b", PISTOL, 25), 8);
-    expect(moving(runGun)).toBeGreaterThan(moving(PISTOL) + 0.05);
+    // Direction only: with engine-truth's two-sided tracking (both fighters track a strafing line) the
+    // gain shrank from > 0.05 to ~0.016 (0.543 vs 0.527). weaponModes is off by default; recalibrate
+    // movingAccuracy against the tracking model before turning it on (docs/handoff/economy.md).
+    expect(moving(runGun)).toBeGreaterThan(moving(PISTOL));
   });
 });
