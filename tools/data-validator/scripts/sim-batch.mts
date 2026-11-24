@@ -13,6 +13,7 @@
 //   --matches N        number of matches to simulate (default 20); seeds are seedStart..seedStart+N-1
 //   --seed-start S     first seed (default 1) — deterministic per seed (DECISION-010)
 //   --map NAME         map (default Ascent)
+//   --no-mid-control   mid is only a label (MatchConfig.midControl false): the "off" arm of the mid-control measurement
 //   --geometry own     simulate on the named map's own geometry (zone graph, roadmap, sight table);
 //                      default: every map is simulated on Ascent's geometry (MatchConfig.geometry)
 //   --max-rounds R     safety cap on rounds per match passed to runMatch (default: engine default 60)
@@ -157,7 +158,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["no-mid-control"] === true ? { midControl: false } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };

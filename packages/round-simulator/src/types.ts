@@ -393,6 +393,8 @@ export interface RoundStats {
   readonly minPairDistance: number;
   /** Each attacker's first entry into a plantable (site) zone, in order of arrival. */
   readonly siteArrivals: ReadonlyArray<{ readonly playerId: PlayerId; readonly zoneId: string; readonly atMs: number }>;
+  /** Where the living players of each side stood (zone ids), once per decision step. */
+  readonly zonePresence: ReadonlyArray<{ readonly atMs: number; readonly attack: readonly string[]; readonly defense: readonly string[] }>;
   /** Each attacker's zones in the order walked (repeats collapsed) up to its first site entry, its death or the round end. */
   readonly attackerRoutes: Readonly<Record<PlayerId, readonly string[]>>;
   /** Crowd handling: mover-ticks queued / giving way, give-ups (squeezed past), stack-up waits at boundaries. */

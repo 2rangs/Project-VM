@@ -19,7 +19,7 @@ import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrd
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
 import { spikeBlastRadiusUnits, weaponPrice } from "@pv/game-rules";
-import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
+import type { DecisionPolicy, MidControlState, PlayerProfile, PlayerState, PolicyView, RandomSource, ResolvedMidSidePlan, SpatialQuery } from "@pv/shared-types";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
@@ -93,9 +93,10 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, midControl = true) {
     this.inner = new TeamDecisionPolicy(sq, {
       ...(tactics ? { tactics } : {}),
+      midControl,
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
       // Footsteps carry as far as the spike's blast (game-rules); zone centres let a player judge
@@ -115,6 +116,14 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   /** Per-player "is this gear worth a save?" from the match economy (TeamDecisionPolicy.setSaveWorth). */
   setSaveWorth(worth: ReadonlyMap<string, boolean> | null): void {
     this.inner.setSaveWorth(worth);
+  }
+  /** The team's mid plan for the side this policy plays (TeamDecisionPolicy.setMidPlan; players as sim ids). */
+  setMidPlan(plan: ResolvedMidSidePlan | null): void {
+    this.inner.setMidPlan(plan);
+  }
+  /** The team's own estimate of mid control right now (null: not tracked). */
+  midState(): MidControlState | null {
+    return this.inner.midState();
   }
   /** The plan of the round just played (opening call, final call, revisions). */
   planSummary(): PlanSummary | null {
@@ -162,8 +171,9 @@ export function makeSimPolicies(
   abilityEffect?: (abilityId: string) => string | undefined,
   spatial?: SpatialEngine,
   tactics?: MapTactics,
+  midControl = true,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, midControl), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, midControl) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

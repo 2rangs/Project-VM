@@ -41,6 +41,28 @@ export interface MapTactics {
   readonly attackerGround?: readonly string[];
   /** Which site a zone without a site letter in its name (mid, bridges, ...) leads the attack to. */
   readonly approachSide?: Readonly<Record<string, string>>;
+  /** The map's middle: its zones, chokes and what holding it opens (null / omitted = no mid). */
+  readonly midArea?: MidAreaTactics | null;
   /** Which values came from the map's hand-authored file rather than the rules. */
   readonly authored: readonly string[];
+}
+
+/** The middle of a map as a policy reads it (derived by @pv/spatial-engine `deriveMidArea`). */
+export interface MidAreaTactics {
+  readonly zones: readonly string[];
+  readonly attackEntry: string;
+  readonly attackMs: number;
+  readonly defenseEntry: string;
+  readonly defenseMs: number;
+  /** The mid zone where the two sides meet. */
+  readonly contest: string;
+  readonly chokes: ReadonlyArray<{ readonly zone: string; readonly onto: string; readonly leadsTo: string | null; readonly first: "attack" | "defense" }>;
+  /** Per site letter: the way from mid onto the site past its main entry (the second lane of a split), or null. */
+  readonly siteLinks: Readonly<Record<string, { readonly from: string; readonly path: readonly string[]; readonly entry: string; readonly travelMs: number } | null>>;
+  readonly attackSwitch: ReadonlyArray<{ readonly from: string; readonly to: string; readonly throughMs: number | null; readonly aroundMs: number | null }>;
+  readonly defenseRotate: ReadonlyArray<{ readonly from: string; readonly to: string; readonly throughMs: number | null; readonly aroundMs: number | null }>;
+  /** Share of the attack's site switch that mid saves, 0..1. */
+  readonly attackValue: number;
+  /** Share of the defence's rotation that mid saves, 0..1. */
+  readonly defenseValue: number;
 }

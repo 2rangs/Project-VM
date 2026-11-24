@@ -20,6 +20,7 @@
  */
 import type { TacticalTraits } from "@pv/round-simulator";
 import type { OpponentPrior, SiteKey } from "@pv/team-engine";
+import type { MidPlans } from "@pv/shared-types";
 
 export interface TeamMatchInputs {
   /** Multiplies the team's throw hazard λ₀ (1 = unchanged). */
@@ -34,6 +35,12 @@ export interface TeamMatchInputs {
   readonly opponentPrior?: OpponentPrior;
   /** A conviction that in-match evidence has to outweigh (the team's own game plan). Does not fade. */
   readonly standingPrior?: OpponentPrior;
+  /**
+   * Mid control per map and side (shared-types mid-plans.ts): contest mid, give it up, or leave it
+   * to the IGL ("auto"), how many go and who. Keys are map ids, "*" for every map; the map's own
+   * entry wins field by field. Omitted → the IGL decides everything.
+   */
+  readonly midPlans?: MidPlans;
 }
 
 /**

@@ -264,6 +264,7 @@ export class RoundSimulator {
     const collect = this.cfg.collectStats === true;
     let overlapTicks = 0, minPairDistance = Number.POSITIVE_INFINITY;
     const siteArrivals: Array<{ playerId: string; zoneId: string; atMs: number }> = [];
+    const zonePresence: Array<{ atMs: number; attack: string[]; defense: string[] }> = [];
     const attackerRoutes: Record<string, string[]> = {};
     if (collect) for (const p of state.players) if (p.side === "attack") attackerRoutes[p.id] = [p.zoneId];
     this.steppingOut.clear();
@@ -386,6 +387,13 @@ export class RoundSimulator {
       // faster than its turn rate allows.
       if (this.cfg.gaze) this.updateGaze(state, commands, prevBelief, facingBefore, gazeSource, dt);
       if (collect) {
+        if (state.tick % this.cfg.decisionIntervalTicks === 0) {
+          zonePresence.push({
+            atMs: state.elapsedMs,
+            attack: state.players.filter((p) => p.alive && p.side === "attack").map((p) => p.zoneId),
+            defense: state.players.filter((p) => p.alive && p.side === "defense").map((p) => p.zoneId),
+          });
+        }
         let overlap = false;
         for (let i = 0; i < alive.length; i++) {
           const a = alive[i]!;
@@ -663,7 +671,7 @@ export class RoundSimulator {
       ...(collect
         ? {
             stats: {
-              ticks: state.tick, overlapTicks, minPairDistance, siteArrivals, attackerRoutes,
+              ticks: state.tick, overlapTicks, minPairDistance, siteArrivals, zonePresence, attackerRoutes,
               crowd: {
                 ...this.mover.crowd,
                 stackWaits: stackStats.waits, stackWaitTicks: stackStats.ticks, stackTimeouts: stackStats.timeouts,
