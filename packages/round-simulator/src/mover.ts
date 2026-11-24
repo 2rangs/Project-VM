@@ -42,6 +42,8 @@ const MAX_YIELD_TICKS = 6;
  * reason that is not this mover's (3 s — longer than a stack-up's wait): it squeezes past.
  */
 const MAX_QUEUE_TICKS = 30;
+/** Shorter steps a follower tries when a full one would close the gap to the body it follows. */
+const FOLLOW_STEP_SHARES = [0.75, 0.5, 0.25] as const;
 
 /**
  * What the player will do where it stops — which decides the standing spot it takes in the goal zone.
@@ -768,12 +770,20 @@ export class MovementExecutor {
         m.linkElapsedMs = 0;
       } else {
         if (d > 1e-6) p.facing = this.facingFor(p, m, dx, dy);
-        const stepLen = Math.min(d, speed * budget);
+        let stepLen = Math.min(d, speed * budget);
         // yield to a body just ahead (light separation; never for long)
         let ahead: "queue" | "standing" | null = null;
         if (m.pushTicks > 0) m.pushTicks--;
         else if (stepLen > 0) {
           ahead = this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others);
+          // following: close up to the gap instead of standing the whole tick — a follower that
+          // only moved when a full step fitted ran at half its leader's speed (it is stepped first,
+          // sees the gap one step short, waits; the leader moves; it moves; ...)
+          if (ahead === "queue") {
+            for (const k of FOLLOW_STEP_SHARES) {
+              if (this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen * k, others) === null) { stepLen *= k; ahead = null; break; }
+            }
+          }
           // behind a mover going the same way (or queued at a boundary): simply follow — unless the
           // line has not moved at all for MAX_QUEUE_TICKS (then pass it, as past a standing body)
           if (ahead === "queue") {

@@ -270,9 +270,14 @@ export class RoundMovementStyles {
     return this.defArea;
   }
 
-  /** A quiet lurker walks the last LURK_QUIET_UNITS of its approach while the round is still calm. */
-  pace(p: SimPlayer, mode: "run" | "walk", remainingUnits: number, calm: boolean): "run" | "walk" {
-    if (!this.parts.lurk || mode === "walk" || !calm || this.roles.get(p.id) !== "lurker") return mode;
+  /**
+   * A quiet lurker walks the last LURK_QUIET_UNITS of its approach while the round is still calm —
+   * its own approach only: not with the spike (the plant waits on it), and not when its order sends
+   * it where a teammate is also going (it is joining the execute, not lurking). Measured: walking
+   * every lurker move cost the pistol attack 2 pp (plant rate 0.61 → 0.56).
+   */
+  pace(p: SimPlayer, mode: "run" | "walk", remainingUnits: number, calm: boolean, own: { carrier: boolean; joining: boolean } = { carrier: false, joining: false }): "run" | "walk" {
+    if (!this.parts.lurk || mode === "walk" || !calm || own.carrier || own.joining || this.roles.get(p.id) !== "lurker") return mode;
     const st = this.styles.get(p.id);
     return st && st.quiet >= 0.5 && remainingUnits > 0 && remainingUnits < LURK_QUIET_UNITS ? "walk" : mode;
   }

@@ -429,7 +429,10 @@ export class RoundSimulator {
             ...this.spotIntent(p, cmd, state),
             hazards,
           }, hooks);
-          if (this.styles) p.moveMode = this.styles.pace(p, p.moveMode, this.mover.remainingLength(p), this.calm(state, events));
+          if (this.styles) {
+            const joining = [...commands.values()].some((c) => c.playerId !== p.id && c.kind === "move" && c.targetZone === cmd.targetZone && state.players.some((q) => q.id === c.playerId && q.side === p.side && q.alive));
+            p.moveMode = this.styles.pace(p, p.moveMode, this.mover.remainingLength(p), this.calm(state, events), { carrier: state.spike.carrierId === p.id, joining });
+          }
         } else if (cmd?.kind === "plant" && !this.isMoving(p) && state.spike.carrierId === p.id && this.spatial.isPlantableZone(p.zoneId) && !this.onPlantArea(p)) {
           // Told to plant inside the site but not on its plant area: step onto it first.
           this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: { kind: "plant" }, hazards }, hooks);
