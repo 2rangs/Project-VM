@@ -42,6 +42,8 @@ const MAX_YIELD_TICKS = 6;
  * reason that is not this mover's (3 s — longer than a stack-up's wait): it squeezes past.
  */
 const MAX_QUEUE_TICKS = 30;
+/** Shorter steps a follower tries when a full one would close the gap to the body it follows. */
+const FOLLOW_STEP_SHARES = [0.75, 0.5, 0.25] as const;
 
 /**
  * What the player will do where it stops — which decides the standing spot it takes in the goal zone.
@@ -62,7 +64,8 @@ export type SpotIntent =
   | { readonly kind: "stand" }
   | { readonly kind: "hold"; readonly watchZone: string }
   | { readonly kind: "plant"; readonly node?: number }
-  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } }
+  /** `exact`: the player must end on this very point (the buy phase's setup spot), not merely near it. */
+  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number }; readonly exact?: boolean }
   | { readonly kind: "see"; readonly zone: string }
   | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
 
@@ -270,10 +273,29 @@ export class MovementExecutor {
   /** Is this roadmap node free for this player to stand on (no one else claims it)? */
   spotFree(playerId: string, node: number): boolean {
     const holder = this.claims.get(node);
-    return holder === undefined || holder === playerId;
+    return (holder === undefined || holder === playerId) && !this.heldForOther(playerId, node);
   }
   /** Reserve a standing spot for a player ahead of its move there (its previous claim is released). */
   reserve(playerId: string, node: number): void { this.claim(playerId, node); }
+  /**
+   * Keep a standing spot free for a player that will go there later (the buy phase: each player's
+   * setup spot): nobody else is given it as a standing spot. Unlike a claim, the player keeps its
+   * current spot meanwhile.
+   */
+  holdFor(playerId: string, node: number): void { if (node >= 0) this.held.set(node, playerId); }
+  /** Is this node held for someone other than this player? */
+  heldForOther(playerId: string, node: number): boolean { const h = this.held.get(node); return h !== undefined && h !== playerId; }
+  private readonly held = new Map<number, string>();
+  /**
+   * Crowd rules that came with the movement style (docs/MOVEMENT_STYLE.md), off unless set — the
+   * default round keeps the gated crowd model:
+   *  - followCloseUp: a follower whose full step would close its gap takes a shorter one instead of
+   *    standing the tick (without it, stepped before its leader it moves every other tick);
+   *  - crossingByRank: two bodies crossing each other's way settle by id like head-on (without it
+   *    both queue MAX_QUEUE_TICKS).
+   */
+  followCloseUp = false;
+  crossingByRank = false;
 
   private claim(playerId: string, node: number): void {
     for (const [n, id] of this.claims) if (id === playerId) this.claims.delete(n);
@@ -300,6 +322,7 @@ export class MovementExecutor {
     for (const n of this.nav.zoneNodes(zoneId)) {
       const holder = this.claims.get(n);
       if (holder !== undefined && holder !== playerId) continue;
+      if (this.heldForOther(playerId, n)) continue;
       if (this.blockers.nodeBlocked(n)) continue;
       if (Math.abs(this.nav.nodePosition(n).z - a.z) > 160) continue; // same floor as the zone's anchor
       pool.push(n);
@@ -492,7 +515,7 @@ export class MovementExecutor {
     const respot = sp?.kind === "see" ? !this.seesFromSpot(p, sp)
       : sp?.kind === "plant" ? (this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId))
         || (sp.node !== undefined && Math.hypot(p.position.x - this.nav.nodePosition(sp.node).x, p.position.y - this.nav.nodePosition(sp.node).y) > AT_SPOT_TOLERANCE_UNITS)
-      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > AT_SPOT_TOLERANCE_UNITS
+      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > (sp.exact ? 1 : AT_SPOT_TOLERANCE_UNITS)
       : false;
     if (!respot && p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {
       // already standing in the goal zone: stay on the spot it holds
@@ -763,12 +786,20 @@ export class MovementExecutor {
         m.linkElapsedMs = 0;
       } else {
         if (d > 1e-6) p.facing = this.facingFor(p, m, dx, dy);
-        const stepLen = Math.min(d, speed * budget);
+        let stepLen = Math.min(d, speed * budget);
         // yield to a body just ahead (light separation; never for long)
         let ahead: "queue" | "standing" | null = null;
         if (m.pushTicks > 0) m.pushTicks--;
         else if (stepLen > 0) {
           ahead = this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others);
+          // following: close up to the gap instead of standing the whole tick — a follower that
+          // only moved when a full step fitted ran at half its leader's speed (it is stepped first,
+          // sees the gap one step short, waits; the leader moves; it moves; ...)
+          if (ahead === "queue" && this.followCloseUp) {
+            for (const k of FOLLOW_STEP_SHARES) {
+              if (this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen * k, others) === null) { stepLen *= k; ahead = null; break; }
+            }
+          }
           // behind a mover going the same way (or queued at a boundary): simply follow — unless the
           // line has not moved at all for MAX_QUEUE_TICKS (then pass it, as past a standing body)
           if (ahead === "queue") {
@@ -867,6 +898,12 @@ export class MovementExecutor {
       if (headOn) { if (near && q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
       // beyond a body gap, spacing is kept only behind a teammate going the same way (within ~45°)
       if (!near && (q.teamId !== p.teamId || ql < 1e-6 || (qx * ux + qy * uy) / ql < SAME_WAY_COS)) continue;
+      // two bodies crossing each other's way each have the other ahead: neither is the back of a
+      // queue — judged as queues, both waited MAX_QUEUE_TICKS. As head-on, the lower id goes first.
+      if (this.crossingByRank && ql > 1e-6 && ((p.position.x - q.position.x) * qx + (p.position.y - q.position.y) * qy) / ql > 0) {
+        if (q.id < p.id) found = found ?? "standing";
+        continue;
+      }
       return "queue";
     }
     return found;

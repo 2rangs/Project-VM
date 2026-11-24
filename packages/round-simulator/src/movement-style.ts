@@ -211,6 +211,8 @@ export class RoundMovementStyles {
       const st = this.styles.get(p.id);
       if (st) mover.setStyle(p.id, { ...(this.parts.lanes ? { lane: st.lane } : {}), ...(this.parts.spacing ? { spacing: st.spacing } : {}) });
     }
+    // per-player spacing comes with the crowd rules that keep it from stalling the stack
+    if (this.parts.spacing) { mover.followCloseUp = true; mover.crossingByRank = true; }
     if (!this.parts.routes) return;
     mover.routeChooser = (p, goal, mode, opts) => {
       const st = this.styles.get(p.id);
@@ -270,9 +272,14 @@ export class RoundMovementStyles {
     return this.defArea;
   }
 
-  /** A quiet lurker walks the last LURK_QUIET_UNITS of its approach while the round is still calm. */
-  pace(p: SimPlayer, mode: "run" | "walk", remainingUnits: number, calm: boolean): "run" | "walk" {
-    if (!this.parts.lurk || mode === "walk" || !calm || this.roles.get(p.id) !== "lurker") return mode;
+  /**
+   * A quiet lurker walks the last LURK_QUIET_UNITS of its approach while the round is still calm —
+   * its own approach only: not with the spike (the plant waits on it), and not when its order sends
+   * it where a teammate is also going (it is joining the execute, not lurking). Measured: walking
+   * every lurker move cost the pistol attack 2 pp (plant rate 0.61 → 0.56).
+   */
+  pace(p: SimPlayer, mode: "run" | "walk", remainingUnits: number, calm: boolean, own: { carrier: boolean; joining: boolean } = { carrier: false, joining: false }): "run" | "walk" {
+    if (!this.parts.lurk || mode === "walk" || !calm || own.carrier || own.joining || this.roles.get(p.id) !== "lurker") return mode;
     const st = this.styles.get(p.id);
     return st && st.quiet >= 0.5 && remainingUnits > 0 && remainingUnits < LURK_QUIET_UNITS ? "walk" : mode;
   }

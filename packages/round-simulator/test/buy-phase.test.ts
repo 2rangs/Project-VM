@@ -78,8 +78,11 @@ describe("buy phase", () => {
     const a = runMatchRound(input(11, ON)), b = runMatchRound(input(11, ON)), c = runMatchRound(input(12, ON));
     expect(a.round.buyPhase!.tracks).toEqual(b.round.buyPhase!.tracks);
     expect(a.players).toEqual(b.players);
-    const end = (o: typeof a) => o.round.buyPhase!.tracks!.at(-1)!.players.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(" ");
-    expect(end(a)).not.toBe(end(c));
+    // the way there varies; where it ends does not (each player's setup spot is the calibrated start)
+    const at = (o: typeof a, k: number) => o.round.buyPhase!.tracks![k]!.players.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join(" ");
+    expect(at(a, 150)).not.toBe(at(c, 150));
+    const off = runMatchRound(input(12, { recordTracks: true, buyPhaseMs: 30000 }));
+    expect(at(c, 299)).toBe(at(off, 299));
   });
 
   it("exports a buyPhaseStart and the buy-phase moves at negative times", () => {

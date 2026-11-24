@@ -176,8 +176,9 @@ export interface MatchConfig {
   /**
    * Per-player movement style (round-simulator movement-style.ts). true = every part on; an object
    * turns it on with the listed parts off; false = none (the buy phase then has no per-player script).
-   * Default for now: BUY_PHASE_ONLY_STYLE — the buy-phase script runs, the live-round parts are off,
-   * because with them on real-roster pistol attack measured 0.431–0.438 (gate ≥ 0.45) on the merged engine.
+   * Default BUY_PHASE_ONLY_STYLE: the buy-phase script runs (rounds identical to no buy phase), the
+   * live-round parts are off. With every part on (true / sim-batch --style), real rosters seeds 1–160:
+   * attack 0.471, pistol 0.438 (gate ≥ 0.45) — docs/handoff/movement.md.
    */
   readonly movementStyle?: boolean | { readonly lanes?: boolean; readonly spacing?: boolean; readonly routes?: boolean; readonly checks?: boolean; readonly lurk?: boolean };
   /**

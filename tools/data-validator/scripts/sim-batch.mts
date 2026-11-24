@@ -26,7 +26,7 @@
 //   --sound            sound detail on (SimConfig.soundDetail: landings off drops, gunfire masking)
 //   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
 //   --no-buy-phase     players start where the match sets them (no buy-phase movement)
-//   --style            per-player movement style on (off by default until pistol passes with it)
+//   --style            per-player movement style on, every part (default: buy-phase script only)
 //   --no-style         every player moves the executor's one way (no per-player movement style)
 //   --style-off LIST   switch parts of the movement style off: lanes,spacing,routes,checks,lurk
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
