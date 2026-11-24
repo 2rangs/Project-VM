@@ -158,3 +158,23 @@ describe("attacker ground and the defenders' way between sites", () => {
     expect(theirs).toEqual(plain);
   });
 });
+
+describe("which site an unnamed zone leads the attack to", () => {
+  it.each(MAP_IDS.map((id) => [id] as const))("%s: only zones without a site letter, each on the attackers' way to that site and clearly off the way to the others", (id: MapId) => {
+    const engine = engineOf(id);
+    const t = deriveMapTactics(engine, loadMapData(id).tactics ?? {});
+    for (const [z, site] of Object.entries(t.approachSide)) {
+      const letter = /^([a-z])-/.exec(z)?.[1]?.toUpperCase();
+      expect(t.sites.some((s) => s.site === letter), z).toBe(false);
+      const detour = (s: (typeof t.sites)[number]) => engine.shortestTravelTimeMs(t.attackerSpawn, z)! + engine.shortestTravelTimeMs(z, s.zone)! - s.attackTravelMs!;
+      const own = t.sites.find((s) => s.site === site)!;
+      expect(detour(own), `${z} → ${site}`).toBeLessThanOrEqual(2000);
+      for (const o of t.sites) if (o !== own) expect(detour(o) - detour(own), `${z}: ${o.site}`).toBeGreaterThanOrEqual(4000);
+    }
+  });
+  it("Breeze: Mid Cannon speaks for B, Mid Bottom for neither", () => {
+    const t = loadMapTactics("breeze");
+    expect(t.approachSide["mid-cannon"]).toBe("B");
+    expect(t.approachSide["mid-bottom"]).toBeUndefined();
+  });
+});

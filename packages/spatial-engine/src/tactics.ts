@@ -68,6 +68,13 @@ export interface MapTactics {
    * reach them from theirs (spawns and sites excluded).
    */
   readonly attackerGround: readonly string[];
+  /**
+   * Which site a zone leads the attack to, for zones whose name does not say (mid, bridges, ...):
+   * the zone lies on the attackers' way to that site (a detour of at most APPROACH_DETOUR_MS from
+   * their fastest route) and is at least APPROACH_MARGIN_MS further out of the way to every other
+   * site. A defender who hears or sees the attack there reads it as coming for that site.
+   */
+  readonly approachSide: Readonly<Record<string, string>>;
   /** Which values came from the map's hand-authored file rather than the rules. */
   readonly authored: readonly string[];
 }
@@ -88,6 +95,10 @@ const ATTACKER_SPAWN = "attacker-spawn";
 const DEFENDER_SPAWN = "defender-spawn";
 const DEFENDERS = 5;
 const SMOKE_ANGLES = 2;
+/** A zone is on the attackers' way to a site when passing through it costs them at most this much. */
+const APPROACH_DETOUR_MS = 2000;
+/** ...and it speaks for that site alone when every other site is at least this much further out of the way. */
+const APPROACH_MARGIN_MS = 4000;
 /** A mid position the defenders reach this much after the attackers can still be contested; later than that it cannot. */
 const MID_LATE_MS = 4000;
 
@@ -195,5 +206,21 @@ export function deriveMapTactics(engine: SpatialEngine, overrides: MapTacticsOve
     .filter((z) => { const a = tA(z), d = tD(z); return a !== null && d !== null && a < d; })
     .sort();
 
-  return { mapId: engine.mapId, attackerSpawn: ATTACKER_SPAWN, defenderSpawn: DEFENDER_SPAWN, sites, mid, aim, smokes, defenderStarts, attackerGround, authored };
+  // which site a zone without a site letter leads the attack to
+  const approachSide: Record<string, string> = {};
+  for (const z of engine.zones.map((q) => q.id as string)) {
+    if (z === ATTACKER_SPAWN || z === DEFENDER_SPAWN || siteZones.has(z)) continue;
+    const named = /^([a-z])-/.exec(z)?.[1]?.toUpperCase();
+    if (named && sites.some((s) => s.site === named)) continue; // the name says it
+    const a = tA(z);
+    if (a === null) continue;
+    const detours = sites
+      .map((s) => ({ site: s.site, d: s.attackTravelMs === null ? null : (engine.shortestTravelTimeMs(z, s.zone) ?? Infinity) + a - s.attackTravelMs }))
+      .filter((p): p is { site: string; d: number } => p.d !== null)
+      .sort((p, q) => p.d - q.d);
+    const best = detours[0];
+    if (best && best.d <= APPROACH_DETOUR_MS && (detours.length < 2 || detours[1]!.d - best.d >= APPROACH_MARGIN_MS)) approachSide[z] = best.site;
+  }
+
+  return { mapId: engine.mapId, attackerSpawn: ATTACKER_SPAWN, defenderSpawn: DEFENDER_SPAWN, sites, mid, aim, smokes, defenderStarts, attackerGround, approachSide, authored };
 }

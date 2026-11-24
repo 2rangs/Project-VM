@@ -39,6 +39,8 @@ export interface MapTactics {
    * plant goes round it where the map allows.
    */
   readonly attackerGround?: readonly string[];
+  /** Which site a zone without a site letter in its name (mid, bridges, ...) leads the attack to. */
+  readonly approachSide?: Readonly<Record<string, string>>;
   /** Which values came from the map's hand-authored file rather than the rules. */
   readonly authored: readonly string[];
 }

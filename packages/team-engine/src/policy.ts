@@ -1181,11 +1181,14 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     return m;
   }
 
-  /** Which site's side of the map a zone belongs to ("a-main" → A), or null (mid, spawns). */
+  /** Which site's side of the map a zone belongs to ("a-main" → A; a mid zone that leads to one site → that site), or null. */
   private sideOf(zone: ZoneId, sites: ReadonlyMap<string, ZoneId>): string | null {
     const m = /^([a-z])-/.exec(String(zone));
     const key = m ? m[1]!.toUpperCase() : null;
-    return key && sites.has(key) ? key : null;
+    if (key && sites.has(key)) return key;
+    // a zone whose name does not say (mid, bridges): the site it leads the attack to, from the map
+    const led = this.options.tactics?.approachSide?.[String(zone)];
+    return led && sites.has(led) ? led : null;
   }
 
   /**
