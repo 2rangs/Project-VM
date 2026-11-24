@@ -46,7 +46,9 @@ export function toSimGameEvents(result: RoundResult, opts: { includeMoves?: bool
         out.push({ ...base(e.tick, e.elapsedMs), kind: "abilityUse", playerId: e.actor, abilityId: e.detail ?? null, at: null });
         break;
       case "planted":
-        out.push({ ...base(e.tick, e.elapsedMs), kind: "spikePlanted", playerId: e.actor ?? null, at: null });
+        // where the spike went down and which candidate spot it is (plant-spot.ts; RoundResult.plant)
+        out.push({ ...base(e.tick, e.elapsedMs), kind: "spikePlanted", playerId: e.actor ?? null, at: result.plant?.position ?? null,
+          ...(result.plant ? { siteZone: result.plant.zoneId, spotId: result.plant.spotId, spotKind: result.plant.spotKind } : {}) });
         break;
       case "defused":
         out.push({ ...base(e.tick, e.elapsedMs), kind: "spikeDefused", playerId: e.actor ?? null, at: null });

@@ -20,3 +20,4 @@ export * from "./combat-estimator.js";
 export * from "./decision-policy.js";
 export * from "./map-tactics.js";
 export * from "./scenario-context.js";
+export * from "./plant-plans.js";

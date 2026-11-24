@@ -370,6 +370,20 @@ export function entryWants(ctx: Ctx): UtilityWant[] {
   return wants;
 }
 
+/**
+ * DENY THE DEFUSE. Attack after the plant: when a defuse has started, or the team has evidence of
+ * defenders in the spike's zone, fire / a slow field onto the spike (the simulator lands a ground
+ * ability thrown into the spike's zone on the spike itself). One at a time, like a stall.
+ */
+export function defuseDenyWants(ctx: Ctx): UtilityWant[] {
+  const v = ctx.view;
+  if (v.side !== "attack" || !(v.spike.phase === "planted" || v.spike.phase === "defusing") || !v.spike.position) return [];
+  const z = ctx.spatial.nearestZone(v2(v.spike.position));
+  const contact = v.spike.phase === "defusing" || (ctx.evidence.get(String(z)) ?? 0) >= STALL_EVIDENCE_MIN;
+  if (!contact || hasOwn(ctx, z, "ground")) return [];
+  return [{ purpose: "stall", family: "ground", target: z, reason: `deny the defuse at ${String(z)}` }];
+}
+
 /** Everything the team wants an ability for right now, most time-critical first. */
 export function utilityWants(view: PolicyView, spatial: SpatialQuery, effectOf?: EffectLookup): UtilityWant[] {
   const ctx = buildCtx(view as UtilityView, spatial, effectOf);
@@ -426,6 +440,7 @@ export function planUtility(
   commands: readonly ActionCommand[],
   spatial: SpatialQuery,
   effectOf?: EffectLookup,
+  opts: { readonly groundReserve?: number; readonly denyDefuse?: boolean } = {},
 ): ActionCommand[] {
   const ctx = buildCtx(view as UtilityView, spatial, effectOf);
   if (!ctx) return commands.slice();
@@ -452,8 +467,12 @@ export function planUtility(
   const ownExposure = new Map<string, number>();
   for (const e of exposures(ctx)) ownExposure.set(e.moverId, Math.min(ownExposure.get(e.moverId) ?? Infinity, e.etaMs));
 
+  // ATTACK before the plant: ground charges the post-plant plan keeps for the spike
+  // (PostPlantPlan.utility; opts.groundReserve) are not spent now.
+  let groundLeft = ctx.alive.reduce((n, p) => n + ctx.carried(p).filter((c) => c.family === "ground").length, 0);
+  const reserve = view.side === "attack" && prePlant ? opts.groundReserve ?? 0 : 0;
   const served = new Set<string>();
-  for (const want of orderedWants(ctx)) {
+  for (const want of [...orderedWants(ctx), ...(opts.denyDefuse ? defuseDenyWants(ctx) : [])]) {
     const key = `${want.target}`;
     if (want.purpose !== "blind" && want.purpose !== "scout" && served.has(key)) continue; // one denial / cover per zone
     let pick: { p: Teammate; a: Carried; score: number } | null = null;
@@ -463,6 +482,7 @@ export function planUtility(
         if (busy.has(id)) continue;
         const pz = ctx.zoneOf.get(id)!;
         if (!withinReach(spatial, pz, want.target) || fighting(pz)) continue;
+        if (family === "ground" && groundLeft - 1 < reserve) continue;
         const a = abilityFor(ctx, p, want, family);
         if (!a) continue;
         // Flash: the caster whose own exposure is furthest off. Otherwise: the nearest one.
@@ -474,6 +494,7 @@ export function planUtility(
       if (pick) break;
     }
     if (!pick) continue;
+    if (pick.a.family === "ground") groundLeft--;
     busy.add(String(pick.p.id));
     if (want.purpose !== "blind" && want.purpose !== "scout") served.add(key);
     const cmd: ActionCommand = {

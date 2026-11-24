@@ -18,7 +18,8 @@
  *
  * All fields are optional; an omitted / neutral field leaves the match byte-identical.
  */
-import type { TacticalTraits } from "@pv/round-simulator";
+import type { PlantPreferences, TacticalTraits } from "@pv/round-simulator";
+import type { PostPlantPlans, RetakePlans } from "@pv/shared-types";
 import type { OpponentPrior, SiteKey } from "@pv/team-engine";
 
 export interface TeamMatchInputs {
@@ -34,6 +35,24 @@ export interface TeamMatchInputs {
   readonly opponentPrior?: OpponentPrior;
   /** A conviction that in-match evidence has to outweigh (the team's own game plan). Does not fade. */
   readonly standingPrior?: OpponentPrior;
+  /**
+   * Where the team plants, per site letter, when it attacks (round-simulator PlantChoice): "auto"
+   * (the carrier decides by game sense and situation), a spot kind ("default" | "safe" | "open" |
+   * "cover" | "near"), or `{ spotId }` from `plantSpotsOf(spatial)` (a map's candidate list).
+   */
+  readonly plantPreference?: PlantPreferences;
+  /**
+   * What the team does after its plant, per site letter and plant spot ("*", a spot kind or a spot
+   * id; the most specific wins field by field): hold on / off the spike, a flank watcher, ground
+   * utility kept for the spike, fall back when outnumbered (shared-types PostPlantPlan). Fields
+   * left out are the IGL's call. Recorded per round in decisions.plans[team].postPlant.
+   */
+  readonly postPlantPlans?: PostPlantPlans;
+  /**
+   * How the team retakes, per site letter and plant spot: the entry, stack or split, when to give
+   * the round up (shared-types RetakePlan). Recorded per round in decisions.plans[team].retake.
+   */
+  readonly retakePlans?: RetakePlans;
 }
 
 /**

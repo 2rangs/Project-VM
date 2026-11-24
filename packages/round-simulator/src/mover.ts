@@ -61,7 +61,7 @@ const MAX_QUEUE_TICKS = 30;
 export type SpotIntent =
   | { readonly kind: "stand" }
   | { readonly kind: "hold"; readonly watchZone: string }
-  | { readonly kind: "plant" }
+  | { readonly kind: "plant"; readonly node?: number }
   | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } }
   | { readonly kind: "see"; readonly zone: string }
   | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
@@ -159,7 +159,7 @@ const LANES = [0, -0.7, 0.7, -0.35, 0.35];
 function spotKey(goal: MoveGoal): string {
   const k = goal.spot;
   if (!k || k.kind === "stand") return `${goal.zoneId}|stand`;
-  if (k.kind === "plant") return `${goal.zoneId}|plant`;
+  if (k.kind === "plant") return `${goal.zoneId}|plant${k.node !== undefined ? `|${k.node}` : ""}`;
   if (k.kind === "hold") return `${goal.zoneId}|hold|${k.watchZone}`;
   if (k.kind === "see") return "zone" in k ? `${goal.zoneId}|see|${k.zone}` : `${goal.zoneId}|see|${Math.round(k.point.x)},${Math.round(k.point.y)},${Math.round(k.point.z)}`;
   return `${goal.zoneId}|at|${Math.round(k.position.x)},${Math.round(k.position.y)},${Math.round(k.position.z)}`;
@@ -334,6 +334,11 @@ export class MovementExecutor {
     if (intent.kind === "plant") {
       const onArea = pool.filter((n) => this.spatial.plantZoneAt(this.nav.nodePosition(n))?.zoneId === zoneId);
       if (onArea.length > 0) pool = onArea;
+      // a chosen plant spot (plant-spot.ts): that node, or the free plant-area node nearest to it
+      if (intent.node !== undefined) {
+        const t = this.nav.nodePosition(intent.node);
+        return pick((n) => { const q = this.nav.nodePosition(n); return Math.hypot(q.x - t.x, q.y - t.y, q.z - t.z); });
+      }
     } else {
       // a held angle sees what it watches: only spots with line of sight into the watched zone
       watch = intent.watchZone;
@@ -485,7 +490,8 @@ export class MovementExecutor {
     // from its point.
     const sp = goal.spot;
     const respot = sp?.kind === "see" ? !this.seesFromSpot(p, sp)
-      : sp?.kind === "plant" ? this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId)
+      : sp?.kind === "plant" ? (this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId))
+        || (sp.node !== undefined && Math.hypot(p.position.x - this.nav.nodePosition(sp.node).x, p.position.y - this.nav.nodePosition(sp.node).y) > AT_SPOT_TOLERANCE_UNITS)
       : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > AT_SPOT_TOLERANCE_UNITS
       : false;
     if (!respot && p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {

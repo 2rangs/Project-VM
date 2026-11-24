@@ -399,6 +399,61 @@ blind?: true;               // 플래시에 눈먼 상태(그때 sees = [])
 | 161–320 | 7/8 (권총 0.394) | 0.503 | 13/15 |
 | 321–480 | **8/8** | 0.517 | 13/15 |
 
+## 12. 설치 위치 — 스노볼·포스트플랜트 전략·감독 옵션 (2026-11-24)
+
+> **기본 OFF — `MatchConfig.plantTactics` / `SimConfig.plantTactics` / `TeamPolicyOptions.plantTactics`.** 실제 로스터 게이트(아래 12.5)를 아직 못 넘었다. OFF일 때 기본 게임은 `aca57b7`과 바이트 단위로 같다(4경기 gaze OFF·2경기 gaze ON 대조). 꺼져 있어도 설치 위치 기록(`RoundRecord.plant`, 리플레이 `spikePlanted.at`)은 남고, 팀 입력의 plantPreference / postPlantPlans / retakePlans는 무시된다.
+
+### 12.1 무엇이 바뀌었나
+
+- **검증**: `spatial-engine/src/spots.ts`의 `plantSpots`(default/safe/open)는 sim이 쓰지 않았다. 캐리어는 mover의 "plant" 스팟(경로 입구에 가깝고 덜 노출된 노드)에 설치했다. 이제 쓴다.
+- **후보** (`round-simulator/src/plant-spot.ts`, `plantSpotsOf(spatial)`): 사이트마다 default/safe/open + **cover-R**(리테이크 입구 R마다, R에서 가장 덜 보이는 설치 구역 노드) + **near-E**(공격 입구 E마다 가장 가까운 노드). 후보별로 잰다: 리테이크 입구별 시야(`retakeSight`), 공격 입구에서의 시야(`guardSight` = 사이트 밖에서 지킬 수 있는 정도), 수비 스폰→R→스팟 도달 시간(`retakeReachMs`). 11개 맵 전부 파생, 저작 데이터 없음.
+- **선택** (자동, 캐리어 gameSense g): `U(c) = g·(hidden + support + delay)/3 − reach/slack`. hidden = 리테이크 가중 시야의 역(가중치 = t_min/t_R + 믿는 위협), support = 그 스팟을 보는 살아있는 동료 비율(아무도 못 보면 guardSight 비율), delay = 리테이크 도달 시간 비율, reach/slack = 캐리어 이동 시간 / 남은 시간. 시간이 없으면 서 있는 곳에, 시간과 판단력이 있으면 포스트플랜트를 위해 고른다. 사이트로 처음 보낼 때 정하고, 사이트에 들어설 때 한 번 다시 정한다.
+- **가드 포스트** (`simulator.ts guardPostFor`): 설치 후 홀드 명령을 받은 공격수 각자가 스파이크 구역에 붙은 입구 R 하나를 맡는다(가중치 비례 배분: count_R/w_R 최소). 스파이크 구역 + 공격 입구(=스파이크 위/떨어져서)의 노드 중 **스파이크를 보고 R→스파이크 경로의 어느 점을 보는** 노드에서 `g·(다른 입구 노출 + 처음 보이는 경로 지점의 늦음)/2 + 도달시간/t_R` 최소. 조준점(gaze)은 리테이크가 처음 보이는 경로 지점.
+- **리테이크** (`team-engine retakeApproach`): 구역 단위 시야 대신, 각 구역이 **스파이크 위치**를 보는 비율(`pointSight`, match-runner가 roadmap으로 주입)로 노출 시간을 가중. 설치 위치가 어느 입구가 감시되는지를 정하고, 스택/스플릿은 수비수별 최소 비용 접근에서 나온다.
+- **기록**: `RoundResult.plant` / `RoundRecord.plant` = {zoneId, site, position, atMs, spotId, spotKind, intendedSpotId, by}; 리플레이 `spikePlanted.at`(위치)·`spotId`·`spotKind`; `planted` 이벤트 detail `spot=<id>`.
+
+### 12.2 감독 옵션 (API — 데스크톱 전술 화면용, 공유 타입 `shared-types/src/plant-plans.ts`)
+
+`MatchConfig.teamInputs[slot]`:
+- `plantPreference: { [site]: "auto" | kind | { spotId } }` — 캐리어가 시간 안에 닿을 수 없으면 자동으로.
+- `postPlantPlans: { [site]: { ["*" | kind | spotId]: PostPlantPlan } }` — `hold` (onSpike/offSpike/auto), `flankWatch`, `utility` (savePostPlant/spend/auto=마지막 지면 유틸 보관), `outnumbered` (hold/retreat/auto).
+- `retakePlans: { [site]: { ["*" | kind | spotId]: RetakePlan } }` — `entry` (구역 id), `approach` (stack/split/auto), `save` ("never" | {maxManDeficit, minSpareMs} | auto=란체스터).
+- 키는 구체적인 것이 필드 단위로 이김(spot id > kind > "*"); 빠진 필드·"auto"는 IGL 결정. 결정은 `decisions.plans[team].postPlant` / `.retake`에 기록(`byManager`에 감독이 정한 필드).
+- 후보 목록: `plantSpotsOf(loadMap(id))` (match-runner에서 re-export), 스팟 해석: `planForSpot`, `plantSpotRefOf`.
+
+IGL 자동 규칙(상황 × 속성): hold=가드별 기하·gameSense, flankWatch = 살아있는 수 − 1 ≥ 리테이크 입구 수, outnumbered = 알려진 수비가 더 많고 란체스터 승률 < retakeMinWinChance면 공격 입구로 후퇴, utility = 팀의 마지막 지면 유틸 보관(설치 후 해체가 시작되거나 스파이크 구역에 수비 증거가 있으면 스파이크 위로 — sim이 스파이크 구역에 던진 공격 측 화염/슬로우를 스파이크 위에 떨어뜨림; 궤적 라인업 미모델).
+
+### 12.3 VCT 대조 (vct.duckdb, 6,090 맵 / 129,128 라운드)
+
+| | VCT | sim gaze OFF, 가드 포스트 (60경기) | 가드 포스트 없이 |
+|---|---|---|---|
+| 설치율 (설치/라운드) | 0.685 | 0.562 | 0.556 |
+| 해체 / 설치 | 0.295 | **0.303** | 0.326 |
+| 폭발 / 설치 | 0.155 | **0.146** | 0.128 |
+| 포스트플랜트 공격 승 | ≤ 0.705 (1 − 해체율) | 0.697 | 0.674 |
+
+설치 위치별(gaze OFF, 시드 1–60): safe 0.751 / near 0.681 / default 0.512 — 같은 사이트 안에서 스팟이 라운드를 가른다. VCT에 설치 좌표는 없어 스팟별 대조는 못 한다. 설치율이 실제보다 낮은 것(0.56 vs 0.69)은 설치 전 단계의 문제로 남긴다.
+
+### 12.4 gaze ON — 가드 포스트로 좁혀짐, 아직 기본 불가
+
+| 60경기, 시드 1–60 | 공격 | 포스트플랜트 공격 | 해체/설치 |
+|---|---|---|---|
+| gaze, 가드 포스트 없음 | 0.386 | 0.460 | 0.540 |
+| gaze, 가드 포스트 | **0.412** | 0.496 | 0.504 |
+| (11장 이전 gaze) | 0.28–0.37 | — | — |
+
+가드가 리테이크가 처음 보이는 지점을 보게 되어 B 사이트 포스트플랜트 듀얼의 가드 조준 오차가 53–67° → 34–39°로 줄었다(`postplant-duels.mts`). 남은 차이는 설치 전(공격 0.39 듀얼)과 포스트플랜트 듀얼에서 리테이커의 스윙 우위. 0.47–0.55 전까지 gaze는 OFF.
+
+### 12.5 게이트 (plantTactics ON 상태로 잰 것, 실제 로스터 160경기)
+
+| 시드 | 공격 | 실패 항목 |
+|---|---|---|
+| 1–160 | 0.494 | 권총 0.431, 세미↔에코 0.988 |
+| 161–320 | 0.481 | 권총 0.394 |
+| 321–480 | 0.492 | 풀↔풀 0.440, 세미↔에코 0.979 |
+
+분리(시드 1–160, 160경기): 현재 0.494 / 옛 설치 스팟 0.484(설치율 0.627 vs 0.574) / 옛 리테이크 0.523(해체/설치 0.290). 스팟 선택은 이동 거리로 설치율을 깎고, 스파이크 지점 시야 리테이크는 수비를 ~0.03 강하게 한다. 그 뒤 넣은 것(미측정): 이동 비용을 라운드 시계가 아니라 리테이크 도달 시간(설치 창)으로 재기, 인원 가중 λ = A/(A+D) (PLANT_POSTPLANT.md P3), 플랭크 감시자 = argmax decisionMaking·(1−aggression) (P6).
+
 ## 10. 재현
 
 
@@ -415,4 +470,7 @@ npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160 --tuning '{"dam
 npx tsx tools/data-validator/scripts/diagnose-attributes.mts --matches 60
 npx tsx tools/data-validator/scripts/duel-breakdown.mts --matches 20 --gaze --tuning '{"peekerAdvantageMs":120}'
 npx tsx tools/data-validator/scripts/range-table.mts
+npx tsx tools/data-validator/scripts/plant-spots.mts            # 맵별 설치 후보
+npx tsx tools/data-validator/scripts/sweep.mts --matches 60 --spots [--plant safe] [--gaze]
+npx tsx tools/data-validator/scripts/postplant-duels.mts --matches 8 --gaze
 ```
