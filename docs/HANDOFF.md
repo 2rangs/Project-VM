@@ -114,7 +114,7 @@ cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). app
 | data-validator pytest | 65 통과 |
 | 데스크톱 typecheck·build | 통과 |
 | 데스크톱 test:unit / test:matchday / test:engine | 78 / 58 / 10 통과 |
-| e2e / series / career / club | §WORK_HISTORY 25차 기록 참조 |
+| e2e / series / career / club | 모두 통과(최종 트리) |
 
 ## 8. 운영 메모
 - 세션 15개가 동시에 돌면 무거운 실행 대기열이 60–90분까지 늘었다. 다음 묶음은 세션 수를 줄이거나, 세션별 게이트 대신 통합 게이트 한 번으로 묶는다(이번 마감에서 그렇게 했다).
