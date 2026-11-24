@@ -454,3 +454,13 @@
 .mdx-duels p.first span { margin-left: 8px; } .mdx-duels p.first span.ours { color: var(--mx-ally); } .mdx-duels p.first span.theirs { color: var(--mx-enemy); }
 .mdx-duel-none { margin: 4px 0 0; font-size: 11px; color: var(--mx-muted); }
 .mdx-osd em.gaze { color: var(--mx-dim); } .mdx-osd em.blind { color: #fff; background: #6d6335; padding: 0 4px; }
+
+/* Matchup strip, key hints, bigger economy numbers (UI polish round 2). */
+.mdx-matchup { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 8px; padding: 3px 10px; background: rgba(8, 12, 16, .72); border: 1px solid var(--mx-line); pointer-events: none; }
+.mdx-matchup b { font-family: var(--mx-font); font-size: 18px; line-height: 1; min-width: 14px; text-align: center; } .mdx-matchup b.ally { color: var(--mx-ally); } .mdx-matchup b.enemy { color: var(--mx-enemy, #ff4655); }
+.mdx-mu-bar { position: relative; display: flex; width: 120px; height: 6px; background: var(--mx-line); }
+.mdx-mu-bar i { position: absolute; top: 0; bottom: 0; } .mdx-mu-bar i.ally { right: 50%; background: var(--mx-ally); } .mdx-mu-bar i.enemy { left: 50%; background: var(--mx-enemy, #ff4655); }
+.mdx-mu-bar::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--mx-dim); }
+.mdx-keys { position: absolute; bottom: 6px; left: 8px; z-index: 3; font-size: 10px; letter-spacing: .04em; color: var(--mx-muted); pointer-events: none; }
+.mdx-row.focus { box-shadow: inset 2px 0 0 var(--mx-ink); background: rgba(255, 255, 255, .06); }
+.mdx-eco b { font-size: 14px; } .mdx-eco { font-size: 12px; } .mdx-ultpts { font-size: 12px; }

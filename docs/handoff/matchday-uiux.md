@@ -124,3 +124,9 @@ gaze/blind from the sim. All of it degrades to the previous behaviour when the e
 Blocked on the engine: `RoundRecord.sight` (per-frame sees/facing/gaze/blind, which exist on `RoundResult.tracks`
 only) and `RoundRecord.engagementTrace`; requested from engine-truth, shape in `ipc.ts` (`SightFrame`,
 `EngagementInfo`). UI-4 (comms feed) not built: no data. Not looked at in the running app this round.
+
+## Fourth round (readability, comparison, spatial memory)
+Tactical view: alive-count matchup strip (us vs them, two opposing bars) at the top of the map; keys 1–5 (or a
+click on an ally row) highlight a player with a pulsing ring on the map, Esc clears; site zone labels are larger and
+brighter than the rest (`zone.plantable`/`zoneType`); economy numbers in the roster are larger; a key-hint line sits
+in the map corner. Pure presentation — no engine data involved. Verified: typecheck, 54 matchday tests, main e2e.
