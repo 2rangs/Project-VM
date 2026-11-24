@@ -24,10 +24,15 @@ const DEPTH_KEY = 'pv-career-depth';
 
 /**
  * The world sim depth: how many of the other teams' series the full engine plays (the manager's
- * own match is always played for real). `quick` is the default — a whole season in about a second.
+ * own match is always played for real). The default is `league` (engine for the manager's own
+ * league; the calibrated-but-not-settled quick estimate only for the other regions and the
+ * international events); without the engine process (plain browser) it is `quick`. `quick` plays a
+ * whole season in about a second; `full` puts everything through the engine (~36 min a season).
  */
+export const DEFAULT_SIM_DEPTH: SimDepth = 'league';
 export function simDepth(): SimDepth {
-  try { const v = localStorage.getItem(DEPTH_KEY); return (SIM_DEPTHS as readonly string[]).includes(v ?? '') ? (v as SimDepth) : 'quick'; } catch { return 'quick'; }
+  const fallback: SimDepth = runtime === 'electron' ? DEFAULT_SIM_DEPTH : 'quick';
+  try { const v = localStorage.getItem(DEPTH_KEY); return (SIM_DEPTHS as readonly string[]).includes(v ?? '') ? (v as SimDepth) : fallback; } catch { return fallback; }
 }
 export function setSimDepth(d: SimDepth): void {
   try { localStorage.setItem(DEPTH_KEY, d); } catch { /* no storage */ }

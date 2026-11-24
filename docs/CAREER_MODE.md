@@ -107,34 +107,51 @@ stage through/out; the next bracket opponent; each event's champions; the manage
 and points; **upsets** — a knockout or international playoff won by a team whose strength is at
 least 0.08 (≈ 1.6 sd) below the loser's (`UPSET_GAP`), a handful per season.
 
-## 4. Simulating other teams' series
+## 4. Simulating other teams' series: world sim depth
 
-AI-vs-AI series are simulated when the day they are on is left. Two modes (Settings; default **quick**):
+Per season there are **519 series** (four leagues, three international events, 22 of them the
+manager's). The manager's own match is always played for real; the AI series are played by the
+**world sim depth** (Settings; localStorage `pv-career-depth`; FM style):
 
-- **Quick estimate (default, the browser build, the instant result, tests and the fallback when an
-  engine batch fails — Home then says so):** `quickSeries` plays rounds from the two fives' ability
-  *today* (readiness applied, §4a):
-  `P(round) = sigmoid(5.4 · (s_home − s_away + comfort_home,map − comfort_away,map))`, `s` = mean
-  current ability of the five, `comfort` a stable per-team, per-map lean (σ 0.01). The slope is
-  **fitted to the engine** (`tools/career/calibrate-quick-sim.mts`: 48 engine maps between career
-  fives of the four regions, ability-difference sd 0.052, maximum likelihood on rounds → 5.39; the
-  first version's 2.5 was a guess and was too flat). Maps are first to 13 with a 2-round lead;
-  kills are spread by ability (`exp(8·(ca − team mean))` + noise).
-- **Full engine (Settings):** each series goes to a long-lived tsx subprocess
-  (`scripts/career-sim.mts`) and is played by `runSeries` — veto and every map — with both teams'
-  career fives (readiness applied), analysts and map practice, scouting off. One series at a time,
-  never on the UI thread; the renderer gets progress after each series (the match-day
-  `LoadingScreen` in a box on Home). Per-player kills/deaths come from the engine's kill events
-  (`scripts/kill-lines.mts`).
+| depth | engine plays | quick estimate plays | measured season time (this Mac) |
+|---|---|---|---|
+| `league` (**default in Electron**) | the manager's own league (92 series) | other regions' leagues (318) and the international events (87) | ≈ 8 min of background simulation |
+| `quick` (default in the plain browser, which has no engine process) | nothing | all 497 | **0.6 s** |
+| `full` | everything | nothing | ≈ 36 min |
 
-**Time per season** (`tools/career/season-timing.mts`, this Mac): 74 series per season (11–14 are
-the manager's), 63 of them AI. Quick: **0.3 s for the whole season** including the calendar, the club
-layer and the inbox. Full engine: 2.5 maps and **2.6 s per series** (6-series sample, process
-already warm) → **≈ 2.8 minutes of background simulation per season**. (An earlier figure of 10–25 s
-per series included process start-up and was wrong for a warm host.)
+The engine path: each series goes to a long-lived tsx subprocess (`scripts/career-sim.mts`) and is
+played by `runSeries` — veto and every map — with both teams' career fives (readiness applied),
+analysts and map practice, scouting off; one series at a time, never on the UI thread; progress after
+each series (the match-day `LoadingScreen` in a box on Home). Engine cost per series: 3.0 s
+(international) to 5.1 s (own league), ≈ 4 s on average with other jobs on the machine
+(`tools/career/season-timing.mts`).
+
+**The quick estimate** (`quick-sim.ts`): rounds from the two fives' ability *today* (readiness
+applied) and the teams' map pools:
+`P(round) = sigmoid(roundSlope · (s_home − s_away) + mapSlope · (share_home − share_away) + σ · z)`,
+with the real map win shares since 2025 (shrunk), ban/pick of maps, and one form draw `z ~ N(0,1)`
+per map. Constants and how well they are known (`tools/career/calibrate-quick-sim.mts`: 120 Bo3
+series played by the engine between random teams of the four regions with their career fives,
+286 maps; the engine results are committed in `tools/career/calibration-data.json`, so a re-fit
+takes seconds without `--refit`):
+
+- `roundSlope` = **7.9** (fit 7.76 ± 0.63; the ability-difference sd is 0.046, so 1 sd ≈ 0.36 logit);
+- `mapSlope` = 0.4 (fit 0.28 ± 0.21 — the map-pool effect is weak and barely significant);
+- the engine's round-win intercept is −0.017 (no attack-side bias to correct).
+
+**Not settled — the reason the default keeps the engine for your league.** With these constants and
+no per-map noise the series-level check was overconfident: the series the quick model gave under 30%
+were won 28% of the time (predicted 13%, n = 54), and the Brier score of the quick model was 0.197
+against 0.25 for always saying 50% — better than chance, not calibrated. Engine rounds are not
+independent (round form, tactics, mastery), so series are more upset-prone than the independent-
+rounds model says. The per-map noise term σ (`mapNoiseSd`, currently **0.3, an unfitted
+provisional**) is there to fix that; the scan over σ and the round slope against the cached engine
+series (`calibrate-quick-sim.mts` without `--refit`) was queued but not run before the wrap-up, so
+σ is not verified. Until it is, results of other regions and of the international events (the
+quick path at the default depth) are somewhat too predictable; the manager's league is engine-played.
 
 **Form** per player, updated per map played:
-`perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. The manager's own series now carries engine K/D too.
+`perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. Form is an output (it feeds the head coach's report); the engine reads fatigue and sharpness through readiness (§4a), not form.
 
 ## 4a. Lineup and match readiness
 
@@ -193,9 +210,10 @@ registerCareerHook({
 
 ## 7. Not done
 
-- **Competition:** no Kickoff, Masters or Champions; single- instead of double-elimination
-  playoffs; no promotion/relegation; only the manager's region has a league — other regions'
-  players develop on the status estimate of minutes.
+- **Competition:** regional playoffs are single elimination (only the international events are
+  double elimination); no promotion/relegation; the international draw is not region-protected;
+  no Kickoff-style regional qualification to a lower division; no prize money per event (the club
+  layer pays by regional placing).
 - **Matches:** every map is simulated on Ascent geometry (`SIMULATED_GEOMETRY`) as everywhere in the
   series layer; no substitutions during a series; fatigue is one number per player.
 - **World:** no injuries (the engine has none); AI squads change in `advanceSeason` and the AI
@@ -204,8 +222,8 @@ registerCareerHook({
   Home does not warn yet).
 - **UI:** Opponent Report and Tactics still read the dataset, not the career world. The Quick
   Match sandbox uses dataset rosters; only the career path passes world rosters.
-- **Performance:** the full-engine mode is ≈ 2.8 minutes of background time per season; there is
-  no parallelism (one heavy job at a time on this machine by design).
+- **Performance:** engine depths cost minutes (`league` ≈ 8, `full` ≈ 36 per season); there is no
+  parallelism (one heavy job at a time on this machine by design).
 
 ## 8. Tests
 

@@ -773,7 +773,7 @@ export const en: Record<string, string> = {
   "start.slot.slot3": "Slot 3",
   "start.sim": "World simulation depth",
   "start.sim.quick": "Quick estimate for all",
-  "start.sim.hint": "How the other teams' matches are played (your own are always played for real). The quick estimate uses a formula calibrated against the engine (player ability with today's readiness, map pools) and plays a whole season in about a second. 'Engine for our league' plays the other matches of your league through the match engine and the other regions and international events by the quick estimate. 'Engine for everything' plays every series through the engine (about 25 minutes a season).",
+  "start.sim.hint": "How the other teams' matches are played (your own are always played for real). The default, 'Engine for our league', plays the other matches of your league through the match engine and the other regions and the international events by the quick estimate (about 8 minutes a season). 'Quick estimate for all' uses a formula calibrated against the engine (player ability with today's readiness, map pools) and plays a whole season in about a second, but its series results are more lopsided than the engine's. 'Engine for everything' plays every series through the engine (about 35 minutes a season).",
   "nc.title": "New career",
   "nc.step1": "Manager",
   "nc.step2": "Region · team",
