@@ -401,6 +401,8 @@ blind?: true;               // 플래시에 눈먼 상태(그때 sees = [])
 
 ## 12. 설치 위치 — 스노볼·포스트플랜트 전략·감독 옵션 (2026-11-24)
 
+> **기본 OFF — `MatchConfig.plantTactics` / `SimConfig.plantTactics` / `TeamPolicyOptions.plantTactics`.** 실제 로스터 게이트(아래 12.5)를 아직 못 넘었다. OFF일 때 기본 게임은 `aca57b7`과 바이트 단위로 같다(4경기 gaze OFF·2경기 gaze ON 대조). 꺼져 있어도 설치 위치 기록(`RoundRecord.plant`, 리플레이 `spikePlanted.at`)은 남고, 팀 입력의 plantPreference / postPlantPlans / retakePlans는 무시된다.
+
 ### 12.1 무엇이 바뀌었나
 
 - **검증**: `spatial-engine/src/spots.ts`의 `plantSpots`(default/safe/open)는 sim이 쓰지 않았다. 캐리어는 mover의 "plant" 스팟(경로 입구에 가깝고 덜 노출된 노드)에 설치했다. 이제 쓴다.
@@ -441,6 +443,16 @@ IGL 자동 규칙(상황 × 속성): hold=가드별 기하·gameSense, flankWatc
 | (11장 이전 gaze) | 0.28–0.37 | — | — |
 
 가드가 리테이크가 처음 보이는 지점을 보게 되어 B 사이트 포스트플랜트 듀얼의 가드 조준 오차가 53–67° → 34–39°로 줄었다(`postplant-duels.mts`). 남은 차이는 설치 전(공격 0.39 듀얼)과 포스트플랜트 듀얼에서 리테이커의 스윙 우위. 0.47–0.55 전까지 gaze는 OFF.
+
+### 12.5 게이트 (plantTactics ON 상태로 잰 것, 실제 로스터 160경기)
+
+| 시드 | 공격 | 실패 항목 |
+|---|---|---|
+| 1–160 | 0.494 | 권총 0.431, 세미↔에코 0.988 |
+| 161–320 | 0.481 | 권총 0.394 |
+| 321–480 | 0.492 | 풀↔풀 0.440, 세미↔에코 0.979 |
+
+분리(시드 1–160, 160경기): 현재 0.494 / 옛 설치 스팟 0.484(설치율 0.627 vs 0.574) / 옛 리테이크 0.523(해체/설치 0.290). 스팟 선택은 이동 거리로 설치율을 깎고, 스파이크 지점 시야 리테이크는 수비를 ~0.03 강하게 한다. 그 뒤 넣은 것(미측정): 이동 비용을 라운드 시계가 아니라 리테이크 도달 시간(설치 창)으로 재기, 인원 가중 λ = A/(A+D) (PLANT_POSTPLANT.md P3), 플랭크 감시자 = argmax decisionMaking·(1−aggression) (P6).
 
 ## 10. 재현
 

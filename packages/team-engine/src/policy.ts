@@ -83,6 +83,13 @@ export interface TeamPolicyOptions {
    * plant spot (retakeApproach); without it, whole-zone line of sight onto the plant zone.
    */
   readonly pointSight?: (zoneId: string, point: Vector3) => number;
+  /**
+   * Plant tactics (docs/ENGINE_TRUTH.md §12): post-plant guard orders by plan (on / off the spike,
+   * flank watcher, falling back), retake plans (entry, stack / split, save thresholds), ground
+   * utility kept for the spike and the defuse denial. Off (default): the calibrated post-plant rules,
+   * and the manager's post-plant / retake plans are not read.
+   */
+  readonly plantTactics?: boolean;
   /** Which plant spot a planted spike lies on (site letter, spot id and kind) — what the post-plant and retake plans are keyed by. */
   readonly plantSpotAt?: (point: Vector3) => PlantSpotRef | null;
 }
@@ -662,6 +669,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * site toward the retake. The combat engine then resolves the retake fight.
    */
   private commitPostPlantContest(view: PolicyView, commands: readonly ActionCommand[], rng: RandomSource): ActionCommand[] {
+    if (!this.options.plantTactics) return this.commitPostPlantContestLegacy(view, commands, rng);
     const out = commands.slice();
     if (view.side !== "attack") return out;
     const phase = view.spike.phase;
@@ -714,6 +722,33 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     });
   }
 
+  /** The post-plant contest without plant tactics (TeamPolicyOptions.plantTactics off): the calibrated rule. */
+  private commitPostPlantContestLegacy(view: PolicyView, commands: readonly ActionCommand[], rng: RandomSource): ActionCommand[] {
+    const out = commands.slice();
+    if (view.side !== "attack") return out;
+    const phase = view.spike.phase;
+    if (phase !== "planted" && phase !== "defusing") return out;
+    const pos = view.spike.position;
+    if (!pos) return out;
+    const plantZone = this.spatial.nearestZone({ x: pos.x, y: pos.y });
+    // Where a thrower over-peeks to: one zone out of the site, toward the retake.
+    const pushOut = this.spatial.findPath(plantZone, SAVE_FALLBACK_ZONE as ZoneId, "run")?.path[1];
+    return out.map((c) => {
+      if (c.kind === "useAbility" || c.kind === "defuse") return c; // keep util / (n/a on attack)
+      const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
+      if (!tm) return c;
+      const pz = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
+      const near = pz === plantZone || (this.spatial.shortestTravelTimeMs(pz, plantZone, "run") ?? Infinity) <= 3000;
+      if (!near) return c; // far — let them rotate in / lurk
+      // Throw: gives up the held post-plant angle to go hunting for the retake, with no info.
+      if (pushOut && this.throws(tm.id, rng)) {
+        return pz === pushOut
+          ? { playerId: c.playerId, kind: "hold", executeAtMs: 0, sourceActionId: "throw:overpeek-hold" }
+          : { playerId: c.playerId, kind: "move", targetZone: pushOut, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:overpeek" };
+      }
+      return { playerId: c.playerId, kind: "hold", aimZone: plantZone, executeAtMs: 0, sourceActionId: "attack-postplant-hold" };
+    });
+  }
   /**
    * The attack's post-plant plan for the spot the spike lies on (PostPlantPlan, manager first,
    * then the IGL's call), decided at the plant and kept for the round — except falling back,
@@ -1799,7 +1834,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const spot = this.spotOf(pos, plantZone);
     const key = `${spot?.id ?? ""}|${Math.round(pos.x)},${Math.round(pos.y)}`;
     if (this.retake && this.retake.contextId === ctx && this.retake.key === key) return { plan: this.retake.plan };
-    const plan = planForSpot<RetakePlan>(this.retakePlans, spot) ?? {};
+    const plan = (this.options.plantTactics ? planForSpot<RetakePlan>(this.retakePlans, spot) : null) ?? {};
     const assigned = new Map<string, ZoneId | null>();
     const entries = this.entriesOf(plantZone);
     const timer = view.spike.detonationInMs ?? Infinity;
@@ -1826,7 +1861,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       contextId: ctx, key, plan, assigned,
       decision: { spot, approach: plan.approach ?? "auto", entries: {}, save: plan.save ?? "auto", savedAtMs: null, byManager: Object.keys(plan) },
     };
-    this.retakeStages.clear(); // staging follows the plan
+    if (assigned.size > 0) this.retakeStages.clear(); // staging follows the plan
     return { plan };
   }
 
@@ -1951,7 +1986,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (saveOrders) {
       commands = saveOrders;
     } else {
-      commands = planUtility(view, strategy, commands, this.spatial, this.options.abilityEffect, { groundReserve: this.groundReserve(view, plan.objective) });
+      commands = planUtility(view, strategy, commands, this.spatial, this.options.abilityEffect,
+        this.options.plantTactics ? { groundReserve: this.groundReserve(view, plan.objective), denyDefuse: true } : {});
       this.commitSlowPlan(view, plan, rng);
       commands = this.commitPlanMovement(view, plan, commands, roleOf);
       commands = this.commitSpikeCarrier(view, strategy, commands, plan.objective, plan.executeGo && !plan.uncommitted);

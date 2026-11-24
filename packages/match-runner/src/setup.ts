@@ -126,7 +126,7 @@ export function plantSpotRefOf(spatial: SpatialEngine): (point: { x: number; y: 
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false) {
     this.inner = new TeamDecisionPolicy(sq, {
       ...(tactics ? { tactics } : {}),
       ...(abilityEffect ? { abilityEffect } : {}),
@@ -135,7 +135,7 @@ export class WrappedTeamPolicy implements DecisionPolicy {
       // whether a run is inside an enemy's hearing.
       footstepRadiusUnits: spikeBlastRadiusUnits(),
       ...(spatial ? { zonePosition: (id: string) => spatial.getZone(id)?.position } : {}),
-      ...(spatial?.nav?.hasVisibility ? { ...(process.env.PV_OLD_RETAKE ? {} : { pointSight: pointSightOf(spatial) }), plantSpotAt: plantSpotRefOf(spatial) } : {}),
+      ...(spatial?.nav?.hasVisibility ? { plantSpotAt: plantSpotRefOf(spatial), ...(plantTactics ? { pointSight: pointSightOf(spatial), plantTactics: true } : {}) } : {}),
     });
   }
   /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
@@ -200,8 +200,9 @@ export function makeSimPolicies(
   abilityEffect?: (abilityId: string) => string | undefined,
   spatial?: SpatialEngine,
   tactics?: MapTactics,
+  plantTactics = false,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

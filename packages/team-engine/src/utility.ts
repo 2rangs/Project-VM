@@ -440,7 +440,7 @@ export function planUtility(
   commands: readonly ActionCommand[],
   spatial: SpatialQuery,
   effectOf?: EffectLookup,
-  opts: { readonly groundReserve?: number } = {},
+  opts: { readonly groundReserve?: number; readonly denyDefuse?: boolean } = {},
 ): ActionCommand[] {
   const ctx = buildCtx(view as UtilityView, spatial, effectOf);
   if (!ctx) return commands.slice();
@@ -472,7 +472,7 @@ export function planUtility(
   let groundLeft = ctx.alive.reduce((n, p) => n + ctx.carried(p).filter((c) => c.family === "ground").length, 0);
   const reserve = view.side === "attack" && prePlant ? opts.groundReserve ?? 0 : 0;
   const served = new Set<string>();
-  for (const want of [...orderedWants(ctx), ...defuseDenyWants(ctx)]) {
+  for (const want of [...orderedWants(ctx), ...(opts.denyDefuse ? defuseDenyWants(ctx) : [])]) {
     const key = `${want.target}`;
     if (want.purpose !== "blind" && want.purpose !== "scout" && served.has(key)) continue; // one denial / cover per zone
     let pick: { p: Teammate; a: Carried; score: number } | null = null;

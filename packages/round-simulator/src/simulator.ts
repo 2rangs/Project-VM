@@ -503,7 +503,7 @@ export class RoundSimulator {
             // A post-plant attacker's fire / slow field into the spike's zone goes onto the spike
             // itself (a lineup on the defuse; no throw arc is modelled).
             const sk = state.spike;
-            const onSpike = p.side === "attack" && (sk.phase === "planted" || sk.phase === "defusing") && sk.zoneId === tz.id && sk.position
+            const onSpike = !!this.cfg.plantTactics && p.side === "attack" && (sk.phase === "planted" || sk.phase === "defusing") && sk.zoneId === tz.id && sk.position
               && (spec.effectTypes.includes("molly") || spec.effectTypes.includes("slow"));
             const landing = onSpike ? { ...sk.position! } : this.landingPoint(p, tz.id, cmd.aimZone);
             const inReach = spec.rangeUnits != null ? dist3(p.position, landing) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
@@ -1288,6 +1288,7 @@ export class RoundSimulator {
    * Without plant candidates (no sight table): the mover's own plant-area spot.
    */
   private plantIntent(p: SimPlayer, zoneId: string, state: SimState): SpotIntent {
+    if (!this.cfg.plantTactics) return { kind: "plant" };
     // decided when the carrier is first sent to the site, and once more when it walks onto it
     // (teammates and the clock have moved on since)
     const key = p.zoneId === zoneId ? `${zoneId}|on` : zoneId;
@@ -1305,7 +1306,7 @@ export class RoundSimulator {
       }, this.cfg.plantPreference?.[site.site]) : null;
       this.plantPlans.set(key, plan);
     }
-    return plan && !process.env.PV_OLD_PLANT ? { kind: "plant", node: plan.candidate.node } : { kind: "plant" };
+    return plan ? { kind: "plant", node: plan.candidate.node } : { kind: "plant" };
   }
   /**
    * A post-plant guard's post, chosen once per round from where the spike lies (plant-spot.ts):
@@ -1330,7 +1331,7 @@ export class RoundSimulator {
    */
   private guardPostFor(p: SimPlayer, cmd: ActionCommand, state: SimState): GuardPost | null {
     const sp = state.spike;
-    if (p.side !== "attack" || !(sp.phase === "planted" || sp.phase === "defusing") || !sp.zoneId || !sp.position || cmd.aimZone !== sp.zoneId) return null;
+    if (!this.cfg.plantTactics || p.side !== "attack" || !(sp.phase === "planted" || sp.phase === "defusing") || !sp.zoneId || !sp.position || cmd.aimZone !== sp.zoneId) return null;
     // the team's post-plant plan may name the zone to hold from (on the spike / off it); a new
     // zone is a new post
     const within = cmd.targetZone ?? null;

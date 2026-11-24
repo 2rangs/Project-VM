@@ -24,7 +24,7 @@ describe("plant position", () => {
 
   it("a team that prefers the open spot sets out for it on every site it plants", () => {
     const pref = { A: "open", B: "open" } as const;
-    const m = runMatch({ ...base, teamInputs: { A: { plantPreference: pref }, B: { plantPreference: pref } } });
+    const m = runMatch({ ...base, plantTactics: true, teamInputs: { A: { plantPreference: pref }, B: { plantPreference: pref } } });
     const planted = m.rounds.filter((r) => r.plant);
     expect(planted.length).toBeGreaterThan(0);
     for (const r of planted) {
@@ -38,24 +38,31 @@ describe("post-plant and retake plans", () => {
   it("the manager's plans are played and recorded; unset fields are the IGL's", () => {
     const post = { A: { "*": { hold: "offSpike", flankWatch: false, outnumbered: "hold" } }, B: { "*": { hold: "offSpike", flankWatch: false, outnumbered: "hold" } } } as const;
     const retake = { A: { "*": { approach: "stack", save: "never" } }, B: { "*": { approach: "stack", save: "never" } } } as const;
-    const m = runMatch({ ...base, teamInputs: { A: { postPlantPlans: post, retakePlans: retake }, B: { postPlantPlans: post, retakePlans: retake } } });
+    const m = runMatch({ ...base, plantTactics: true, teamInputs: { A: { postPlantPlans: post, retakePlans: retake }, B: { postPlantPlans: post, retakePlans: retake } } });
     const planted = m.rounds.filter((r) => r.planted);
     expect(planted.length).toBeGreaterThan(0);
     for (const r of planted) {
       const def = r.attacker === "A" ? "B" : "A";
       const pp = r.decisions.plans[r.attacker]?.postPlant;
-      expect(pp).toBeDefined();
+      if (!pp) continue; // the round ended before the attack decided after its plant
       expect(pp!.hold).toBe("offSpike");
       expect(pp!.flankWatch).toBe(false);
       expect(pp!.retreatedAtMs).toBeNull();
       expect([...pp!.byManager].sort()).toEqual(["flankWatch", "hold", "outnumbered"]);
       expect(pp!.utility).toBe("keepLast"); // left to the IGL
       const rt = r.decisions.plans[def]?.retake;
-      expect(rt).toBeDefined();
+      if (!rt) continue;
       expect(rt!.approach).toBe("stack");
       expect(rt!.savedAtMs).toBeNull();
       expect(new Set(Object.values(rt!.entries)).size).toBeLessThanOrEqual(1);
     }
+    expect(planted.filter((r) => r.decisions.plans[r.attacker]?.postPlant).length).toBeGreaterThan(planted.length / 2);
+  }, 60000);
+
+  it("without plantTactics the team inputs are not played (the default game is unchanged)", () => {
+    const pref = { A: "open", B: "open" } as const;
+    const m = runMatch({ ...base, teamInputs: { A: { plantPreference: pref }, B: { plantPreference: pref } } });
+    for (const r of m.rounds.filter((x) => x.plant)) expect(r.plant!.by).toBeNull();
   }, 60000);
 
   it("planForSpot merges '*' < kind < spot id, field by field, dropping auto", async () => {

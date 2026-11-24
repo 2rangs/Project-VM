@@ -152,6 +152,14 @@ export interface MatchConfig {
   readonly collectStats?: boolean;
   /** Keep every duel's engagement record (RoundRecord.engagements; round-simulator traceCommands). Diagnostics; passive. */
   readonly traceEngagements?: boolean;
+  /**
+   * Plant tactics (docs/ENGINE_TRUTH.md §12): the carrier chooses the plant spot (plant-spot.ts),
+   * post-plant guards take posts by the spike's position, the retake reads the spike position, and
+   * the teams' plant preference / post-plant / retake plans (teamInputs) are played. Default OFF
+   * until it passes the real-roster gate: without it those team inputs are ignored. Where the spike
+   * went down is recorded either way (RoundRecord.plant).
+   */
+  readonly plantTactics?: boolean;
   /** Gaze model (round-simulator SimConfig.gaze; docs/ENGINE_TRUTH.md §8). Default off. */
   readonly gaze?: boolean;
   /** Sound detail: landings off drops, gunfire masking (SimConfig.soundDetail; ENGINE_TRUTH §9). Default off. */
@@ -431,7 +439,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
@@ -654,7 +662,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), ...(config.teamInputs?.[attacker]?.plantPreference ? { plantPreference: config.teamInputs[attacker]!.plantPreference! } : {}), ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), ...(config.plantTactics ? { plantTactics: true, ...(config.teamInputs?.[attacker]?.plantPreference ? { plantPreference: config.teamInputs[attacker]!.plantPreference! } : {}) } : {}), ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

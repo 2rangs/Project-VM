@@ -525,6 +525,13 @@ export interface SimConfig {
    * kind, or a spot id). Absent / "auto": the carrier chooses by game sense and situation.
    */
   readonly plantPreference?: PlantPreferences;
+  /**
+   * Plant tactics (plant-spot.ts, ENGINE_TRUTH §12): the carrier plants on a chosen candidate spot,
+   * post-plant guards take posts by the spike's position, and post-plant fire / slow fields thrown
+   * into the spike's zone land on the spike. OFF (undefined) by default; the plant spot is recorded
+   * either way.
+   */
+  readonly plantTactics?: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */

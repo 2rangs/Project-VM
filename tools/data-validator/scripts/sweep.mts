@@ -1,5 +1,6 @@
 // PROJECT V — quick A/B of engine options on real rosters (diagnosis aid; report-only).
 //   npx tsx tools/data-validator/scripts/sweep.mts --matches 40 --seed-start 1 --label X [--tuning '{"damageCarryover":1}'] [--mirror]
+//   [--tactics] plant tactics on (MatchConfig.plantTactics; implied by --plant / --post / --retake)
 //   [--plant default|safe|open|cover|near]  both teams' plant preference on every site (default: auto)
 import { runMatch, simulatableTeamRefs, type MatchConfig } from "../../../packages/match-runner/src/index.ts";
 const a: Record<string, string> = {};
@@ -17,7 +18,7 @@ const every = (j?: string) => (j ? Object.fromEntries(["A", "B", "C"].map((x) =>
 const postPlans = a.post || a.retake ? { ...(a.post ? { postPlantPlans: every(a.post) } : {}), ...(a.retake ? { retakePlans: every(a.retake) } : {}) } : null;
 const plantPref = a.plant ? Object.fromEntries(["A", "B", "C"].map((x) => [x, a.plant as "default"])) : null;
 for (let i = 0; i < matches; i++) {
-  const cfg: MatchConfig = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: (a.map as string) ?? "Ascent", seed: seed0 + i, collectStats: true, ...(tuning ? { tuning } : {}), ...(a.abilities ? { enableAbilities: true } : {}), ...(a.gaze ? { gaze: true } : {}), ...(a.sound ? { soundDetail: true } : {}), ...(plantPref || postPlans ? { teamInputs: { A: { ...(plantPref ? { plantPreference: plantPref } : {}), ...(postPlans ?? {}) }, B: { ...(plantPref ? { plantPreference: plantPref } : {}), ...(postPlans ?? {}) } } } : {}) };
+  const cfg: MatchConfig = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: (a.map as string) ?? "Ascent", seed: seed0 + i, collectStats: true, ...(tuning ? { tuning } : {}), ...(a.abilities ? { enableAbilities: true } : {}), ...(a.gaze ? { gaze: true } : {}), ...(a.sound ? { soundDetail: true } : {}), ...(a.tactics || a.plant || a.post || a.retake ? { plantTactics: true } : {}), ...(plantPref || postPlans ? { teamInputs: { A: { ...(plantPref ? { plantPreference: plantPref } : {}), ...(postPlans ?? {}) }, B: { ...(plantPref ? { plantPreference: plantPref } : {}), ...(postPlans ?? {}) } } } : {}) };
   for (const r of runMatch(cfg).rounds) {
     n++; const w = r.winnerSide === "attack"; if (w) atk++;
     reasons[r.reason] = (reasons[r.reason] ?? 0) + 1;
