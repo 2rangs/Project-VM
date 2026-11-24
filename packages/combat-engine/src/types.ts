@@ -40,6 +40,31 @@ export interface WeaponSpec {
   /** damage bands sorted ascending by maxRangeMeters; last band caps the range. */
   readonly damageBands: readonly DamageBand[];
   readonly provenance: string;
+  /**
+   * Projectiles per trigger pull (shotguns). Default 1. With more than one, the band damage is per
+   * pellet and the share that lands follows `spreadDeg` (combat-engine `pelletLandChance`).
+   */
+  readonly pellets?: number;
+  /** Half-angle (deg) of the pellet cone. Only with pellets > 1. */
+  readonly spreadDeg?: number;
+  /**
+   * Hit-chance multiplier kept while the shooter is moving (run-and-gun weapons: shotguns, SMGs,
+   * Frenzy, Classic). Absent → CombatParams.accuracy.movingPenalty, offset by movement skill. The
+   * better of the two applies.
+   */
+  readonly movingAccuracy?: number;
+  /** A second fire mode used when the duel starts within `useWithinMeters` (Classic right-click burst). */
+  readonly altFire?: AltFire;
+}
+
+export interface AltFire {
+  readonly useWithinMeters: number;
+  /** Bullets per trigger pull, their cone half-angle and trigger pulls per second. */
+  readonly pellets: number;
+  readonly spreadDeg: number;
+  readonly fireRate: number;
+  /** Magazine rounds a pull uses. */
+  readonly ammoPerShot: number;
 }
 
 /** Mechanical ability ratings in [0,1] (README §23.1). Higher is better. */

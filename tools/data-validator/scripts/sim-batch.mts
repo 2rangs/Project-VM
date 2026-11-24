@@ -129,8 +129,10 @@ async function main(): Promise<void> {
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
   const mirror = args["mirror"] === true;
   // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default sim fit).
-  const economy = args["belief-beta"] !== undefined
-    ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : undefined;
+  // --economy '{"ecoSidearms":"always"}': any other economy options (JSON), merged under the belief flags.
+  const economyJson = args["economy"] !== undefined ? JSON.parse(String(args["economy"])) as Record<string, unknown> : {};
+  const economy = args["belief-beta"] !== undefined || args["economy"] !== undefined
+    ? { ...economyJson, ...(args["belief-beta"] !== undefined ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : {}) } : undefined;
   const tuning = typeof args["tuning"] === "string" ? JSON.parse(args["tuning"]) : undefined;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }

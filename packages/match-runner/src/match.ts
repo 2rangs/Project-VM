@@ -573,6 +573,7 @@ export class MatchEngine {
         ownTraits: this.econTraitsBySlot[slot],
         oppTraits: this.econTraitsBySlot[opp],
         pistol,
+        side: slot === attacker ? "attack" : "defense",
         wonLastRound: this.lastWinner === slot && !pistol && roundNumber !== ROUNDS_PER_HALF + 1,
         ...(call ? { call } : {}),
         abilities: this.abilitiesOn,

@@ -66,6 +66,11 @@ export function loadUltOrbs(mapId: string): { id: string; position: { x: number;
   return out;
 }
 
+let catalogCache: Record<string, WeaponSpec> | null = null;
+function weaponCatalog(): Record<string, WeaponSpec> {
+  return (catalogCache ??= loadWeapons());
+}
+
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
 export function loadWeapons(): Record<string, WeaponSpec> {
   const raw = JSON.parse(readFileSync(resolve(here, "..", "data", "weapons.manual-approx.json"), "utf8"));
@@ -98,6 +103,7 @@ export class WrappedTeamPolicy implements DecisionPolicy {
       ...(tactics ? { tactics } : {}),
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
+      weaponFullDamageRangeM: (id: string) => weaponCatalog()[id]?.damageBands[0]?.maxRangeMeters,
       // Footsteps carry as far as the spike's blast (game-rules); zone centres let a player judge
       // whether a run is inside an enemy's hearing.
       footstepRadiusUnits: spikeBlastRadiusUnits(),

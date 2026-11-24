@@ -38,6 +38,9 @@ import { chooseMoveMode, withinEarshot, type MoveIntent } from "./movement.js";
 import { BASE_FAKE_RATE, NO_EVIDENCE, rotationCount, updateHitBelief, type HitBelief, type SiteEvidence } from "./hit-belief.js";
 import { planUtility } from "./utility.js";
 
+
+/** A gun whose full damage ends this close (metres) fights up close: the shotguns (7–10 m). */
+const CLOSE_GUN_MAX_RANGE_M = 12;
 export interface TeamPolicyOptions {
   readonly profiles?: ReadonlyMap<string, PlayerProfile>;
   readonly economy?: EconomyEvaluator;
@@ -53,6 +56,12 @@ export interface TeamPolicyOptions {
    * and the save is decided on the man count alone.
    */
   readonly weaponPrice?: (weaponId: string) => number | undefined;
+  /**
+   * Full-damage range of a weapon (metres: the edge of its first damage band). A defender whose gun
+   * fights only up close (≤ CLOSE_GUN_MAX_RANGE_M: the shotguns) holds the angle up close
+   * (ActionCommand.holdClose). Omitted → nobody does.
+   */
+  readonly weaponFullDamageRangeM?: (weaponId: string) => number | undefined;
   /**
    * Centre of a zone in the same frame as player positions. Lets a player judge whether a run
    * would be inside an enemy's hearing (the audio circle on the minimap). Omitted → the policy
@@ -1121,6 +1130,22 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * at the defender's current zone. Peeks (stationary info) and abilities are kept; a deliberate
    * push happens under the aggroPush strategy, which is left to the draw (not a holding strategy).
    */
+  /**
+   * Before the plant, a defender with a close-range gun (a shotgun on an eco) who holds or takes a
+   * position facing a way in holds it up close (holdClose): its fights start inside the gun's range.
+   */
+  private closeGunHolds(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+    const range = this.options.weaponFullDamageRangeM;
+    if (!range || view.side !== "defense") return commands.slice();
+    if (view.spike.phase !== "carried" && view.spike.phase !== "dropped") return commands.slice();
+    return commands.map((c) => {
+      if ((c.kind !== "hold" && c.kind !== "move") || !c.aimZone) return c;
+      const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
+      const r = range(String(tm?.weapon?.weaponId ?? ""));
+      return r !== undefined && r <= CLOSE_GUN_MAX_RANGE_M ? { ...c, holdClose: true } : c;
+    });
+  }
+
   private commitDefenseHold(view: PolicyView, strategy: TeamStrategy, commands: readonly ActionCommand[]): ActionCommand[] {
     // Holding strategies only; aggroPush is an intentional push and is left to the draw.
     const holdStrategies = strategy === "defaultHold" || strategy === "stackA" || strategy === "stackB" || strategy === "stackC";
@@ -1733,6 +1758,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     }
     commands = this.commitPostPlantContest(view, commands, rng);
     commands = this.commitDefenseHold(view, strategy, commands);
+    commands = this.closeGunHolds(view, commands);
     if (!ordered) commands = this.commitDefenseRotation(view, plan, commands);
     commands = this.commitDefenseChase(view, plan, commands, rng);
     commands = this.commitDefuser(view, commands, rng);

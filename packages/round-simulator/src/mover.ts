@@ -61,7 +61,7 @@ export type SpotIntent =
   | { readonly kind: "hold"; readonly watchZone: string }
   | { readonly kind: "plant" }
   | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } }
-  | { readonly kind: "see"; readonly zone: string }
+  | { readonly kind: "see"; readonly zone: string; readonly close?: boolean }
   | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
 
 /** A body this close (uu) to an "at" spot's point already stands at it. */
@@ -290,7 +290,9 @@ export class MovementExecutor {
       const seeing = pool.filter((n) => this.nodeSees(n, intent));
       if (seeing.length === 0) return pick((n) => flat(n, a) + 350 * hash01(`${playerId}|${n}`)); // nothing sees it from here: stand
       pool = seeing;
-      const ref = opts.from ?? a;
+      // a close hold (ActionCommand.holdClose): nearest to the watched zone itself
+      const watchedAnchor = "zone" in intent && intent.close ? this.nav.anchorNode(intent.zone) : undefined;
+      const ref = watchedAnchor !== undefined ? this.nav.nodePosition(watchedAnchor) : opts.from ?? a;
       if ("zone" in intent) return pick((n) => flat(n, ref) + 350 * hash01(`${playerId}|${n}`));
       // a point (the spike): least seen by the rest of the map first, then nearest
       let maxD = 1, maxE = 1;

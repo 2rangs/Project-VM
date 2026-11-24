@@ -68,7 +68,7 @@ export interface TeamEconomy {
 }
 
 export type BuyTier = "pistol" | "full" | "half" | "force" | "eco" | "bonus";
-export type BuyPlan = "pistol" | "max" | "smg" | "half" | "light" | "eco" | "keep";
+export type BuyPlan = "pistol" | "max" | "smg" | "half" | "light" | "sidearms" | "eco" | "keep";
 
 /** One player's buy this round. */
 export interface PlayerBuy {
@@ -141,6 +141,8 @@ export interface BuyContext {
   readonly ownTraits?: TeamDecisionTraits;
   readonly oppTraits?: TeamDecisionTraits;
   readonly pistol: boolean;
+  /** The side this team plays this round (a defence eco puts a shotgun on a close angle). */
+  readonly side?: "attack" | "defense";
   /** Did this team win the previous round (labels a keep plan a bonus round)? */
   readonly wonLastRound?: boolean;
   readonly call?: EconomyCall;
@@ -189,6 +191,15 @@ export interface EconomyOptions {
    * so full-buy rounds read the same. false → shop prices. Default true.
    */
   readonly armorMatchedValue: boolean;
+  /**
+   * The eco spends what is above the team's next-buy reserve (`sidearms` plan: Sheriff/Ghost and a
+   * light shield, a shotgun for one defender) instead of nothing or a light shield for all (the
+   * `eco` and `light` plans are then not offered). Whether to eco at all stays the
+   * expected-value choice; how much an eco spends is this rule — under the sim's belief and two-round
+   * lookahead, spending the surplus and saving it are within 0.01 of map-win probability, and VCT
+   * teams spend it. false → the old zero-spend eco. Default true.
+   */
+  readonly ecoSidearms: boolean;
 }
 
 export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
@@ -201,6 +212,7 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
   winBelief: SIM_ROUND_WIN_BELIEF,
   saveByCredits: true,
   armorMatchedValue: true,
+  ecoSidearms: true,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -208,6 +220,9 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
 // ---------------------------------------------------------------------------------------------
 
 const TEAM_SIZE = 5;
+/** VCT tiers (economy-engine vctTierForLoadout): a team loadout under 5,000 is an eco, 20,000+ a full buy. */
+const ECO_LOADOUT = 5_000;
+const FULL_BUY_LOADOUT = 20_000;
 const START = ECONOMY_RULES.startingCredits.value; // 800
 const OT_CREDITS = ROUND_RULES.overtimeCredits.value; // 5000
 const WIN_REWARD = ECONOMY_RULES.roundWinReward.value; // 3000
@@ -224,6 +239,10 @@ const HEAVY_PTS = HEAVY.points.value;
 const RIFLE = "Vandal";
 const SMG = "Spectre";
 const SIDEARM = "Sheriff";
+const LIGHT_SIDEARM = "Ghost";
+const SMG_LIGHT = "Stinger";
+/** Close-angle guns for a defence eco, best first. */
+const SHOTGUNS = ["Bucky", "Shorty"] as const;
 const DEFAULT_WEAPON = "Classic";
 const RIFLES = new Set(["Vandal", "Phantom", "Operator"]);
 
@@ -300,8 +319,11 @@ const LADDER: readonly Package[] = [
   { weapon: SMG, armor: HEAVY_PTS, util: true },
   { weapon: SMG, armor: HEAVY_PTS, util: false },
   { weapon: SMG, armor: LIGHT_PTS, util: false },
+  { weapon: SMG_LIGHT, armor: LIGHT_PTS, util: false },
   { weapon: SIDEARM, armor: LIGHT_PTS, util: false },
+  { weapon: LIGHT_SIDEARM, armor: LIGHT_PTS, util: false },
   { weapon: SIDEARM, armor: 0, util: false },
+  { weapon: LIGHT_SIDEARM, armor: 0, util: false },
   { weapon: DEFAULT_WEAPON, armor: LIGHT_PTS, util: false },
   { weapon: DEFAULT_WEAPON, armor: 0, util: false },
 ];
@@ -397,6 +419,17 @@ function allocate(slots: readonly Slot[], startIdx: number, drops: boolean): Ass
       break;
     }
   }
+  // 3. A full buy short of the whole kit buys what of it the credits left allow (a rifle and a heavy
+  //    shield, then utility — the kit is not all-or-nothing).
+  if (startIdx === 0) {
+    for (const s of slots) {
+      const a = out[s.index]!;
+      if (!a.pkg || a.pkg.util || a.pkg.armor < HEAVY_PTS || !RIFLES.has(effectiveWeapon(s, a.pkg))) continue;
+      const left = s.credits - a.spentOwn - a.boughtFor;
+      const util = Math.min(kitCost(s.agent), Math.max(0, left));
+      if (util > 0) out[s.index] = { ...a, spentOwn: a.spentOwn + util, utility: a.utility + util };
+    }
+  }
   return out;
 }
 
@@ -422,6 +455,40 @@ function allocatePistol(slots: readonly Slot[]): Assignment[] {
     const util = Math.min(kitCost(s.agent), s.credits - armor);
     return { pkg: { weapon: DEFAULT_WEAPON, armor: armor ? LIGHT_PTS : 0, util: false }, spentOwn: armor + util, boughtFor: 0, utility: util };
   });
+}
+
+/**
+ * Eco that spends only what next round does not need. Each player keeps a reserve: the credits that,
+ * with the loss bonus they get if this round is lost, still buy their share of a VCT full buy next
+ * round (nextBuyReserve); and the eco stays an eco (team loadout under 5,000). What is above it buys the eco
+ * ladder (Sheriff/Ghost with a light shield, then the sidearm alone, then a light shield), star first,
+ * each player from their own credits. On defence one player (the last in star order who can) takes a
+ * shotgun for a close angle instead. VCT international ecos (vct.duckdb, non-pistol rounds, team
+ * loadout < 5,000): loadout mean 2,736 (median 2,700, 4% under 1,000), bank 8,684.
+ */
+function allocateSidearms(slots: readonly Slot[], reserve: readonly number[], defense: boolean): Assignment[] {
+  const order = [...slots].sort((a, b) => b.priority - a.priority || a.index - b.index);
+  const out: Assignment[] = slots.map(() => ({ pkg: null, spentOwn: 0, boughtFor: 0, utility: 0 }));
+  const ladder = LADDER.slice(LADDER.findIndex((p) => p.weapon === SIDEARM && p.armor === LIGHT_PTS));
+  // An eco stays an eco: the team's loadout stays under the VCT eco line.
+  const keptValue = sum(slots.map((s) => priceOf(s.carried) + armorValue(s.carriedArmor)));
+  let budget = ECO_LOADOUT - 1 - keptValue;
+  const take = (s: Slot, pkgs: readonly Package[]): boolean => {
+    for (const pkg of pkgs) {
+      const c = total(packageCost(s, pkg));
+      if (c === 0) return false; // already carries as much
+      if (c <= Math.min(budget, s.credits - (reserve[s.index] ?? 0))) { out[s.index] = { pkg, spentOwn: c, boughtFor: 0, utility: 0 }; budget -= c; return true; }
+    }
+    return false;
+  };
+  if (defense) {
+    for (const s of [...order].reverse()) {
+      if (priceOf(s.carried) > 0) continue;
+      if (take(s, SHOTGUNS.flatMap((g) => [{ weapon: g, armor: LIGHT_PTS, util: false }, { weapon: g, armor: 0, util: false }]))) break;
+    }
+  }
+  for (const s of order) if (!out[s.index]!.pkg) take(s, ladder);
+  return out;
 }
 
 function toPlayerBuys(slots: readonly Slot[], asg: readonly Assignment[]): PlayerBuy[] {
@@ -463,13 +530,14 @@ function slotsOf(eco: TeamEconomy, ctx: readonly PlayerContext[]): Slot[] {
   }));
 }
 
-function planBuys(plan: BuyPlan, slots: readonly Slot[]): PlayerBuy[] {
+function planBuys(plan: BuyPlan, slots: readonly Slot[], eco?: { reserve: readonly number[]; defense: boolean }): PlayerBuy[] {
   switch (plan) {
     case "pistol": return toPlayerBuys(slots, allocatePistol(slots));
     case "max": return toPlayerBuys(slots, allocate(slots, 0, true));
     case "smg": return toPlayerBuys(slots, allocate(slots, SMG_START, false));
     case "half": return toPlayerBuys(slots, allocate(slots, HALF_START, false));
     case "light": return toPlayerBuys(slots, allocate(slots, LIGHT_START, false));
+    case "sidearms": return toPlayerBuys(slots, allocateSidearms(slots, eco?.reserve ?? slots.map(() => 0), eco?.defense ?? false));
     case "keep": return toPlayerBuys(slots, allocateKeep(slots));
     case "eco": return toPlayerBuys(slots, slots.map(() => ({ pkg: null, spentOwn: 0, boughtFor: 0, utility: 0 })));
   }
@@ -522,17 +590,35 @@ function readyUlts(eco: TeamEconomy, ctx: readonly PlayerContext[]): number {
   return eco.players.filter((p, i) => p.ultPoints >= ultCost(ctx[i]?.agent ?? "")).length;
 }
 
-function candidates(c: { eco: TeamEconomy; ctx: readonly PlayerContext[]; pistol: boolean; call?: EconomyCall; ultValue: number }): Candidate[] {
+/**
+ * Each player's reserve: credits that, with the next loss bonus, still buy their share of a VCT full
+ * buy next round — a team loadout of 20,000 (`FULL_BUY_LOADOUT`): a rifle, a heavy shield and the
+ * first of the kit (4,000 each). Per player, because next round's drops do not pool credits freely
+ * (a team-level reserve left half the next buys short of full). After two losses that is
+ * 4,000 − 2,400 = 1,600 each, 8,000 for the team; VCT eco teams bank 8,684.
+ */
+function nextBuyReserve(eco: TeamEconomy): number[] {
+  const income = lossBonusFor(eco.consecutiveLosses + 1);
+  const perPlayer = FULL_BUY_LOADOUT / TEAM_SIZE;
+  return eco.players.map((p) => {
+    const kept = priceOf(p.weapon) >= priceOf(RIFLE) ? priceOf(p.weapon) : 0;
+    return Math.max(0, perPlayer - kept - income);
+  });
+}
+
+function candidates(c: { eco: TeamEconomy; ctx: readonly PlayerContext[]; pistol: boolean; call?: EconomyCall; ultValue: number; side?: "attack" | "defense"; sidearms: boolean }): Candidate[] {
   const slots = slotsOf(c.eco, c.ctx);
   const plans: BuyPlan[] = c.pistol ? ["pistol"]
     : c.call === "save" ? ["eco"] // a save order spends nothing (kept guns still play)
     : c.call === "force" || c.call === "full" ? ["max"]
+    : c.sidearms ? ["max", "smg", "half", "keep", "sidearms"] // the eco's spend (shields up to sidearms) is the reserve rule
     : ["max", "smg", "half", "keep", "light", "eco"];
+  const ecoCtx = { reserve: nextBuyReserve(c.eco), defense: c.side === "defense" };
   const ready = c.ultValue > 0 ? readyUlts(c.eco, c.ctx) : 0;
   const out: Candidate[] = [];
   for (const plan of plans) {
     if (plan === "keep" && !c.eco.players.some((p) => p.weapon)) continue;
-    const buys = planBuys(plan, slots);
+    const buys = planBuys(plan, slots, ecoCtx);
     const base = sum(buys.map((b) => b.loadoutValue));
     out.push({ plan, ultHold: false, buys, value: base + ready * c.ultValue });
     if (ready > 0 && !c.pistol) out.push({ plan, ultHold: true, buys, value: base });
@@ -633,7 +719,8 @@ function tierOf(plan: BuyPlan, buys: readonly PlayerBuy[], wonLastRound: boolean
       return wonLastRound && buys.filter((b) => b.weaponSource === "kept").length >= 3 ? "bonus" : "force";
     case "smg":
     case "half": return "half";
-    case "light": return "eco";
+    case "light":
+    case "sidearms": return "eco";
     case "keep": return wonLastRound ? "bonus" : "eco";
     case "eco": return "eco";
   }
@@ -655,8 +742,9 @@ export function decideTeamBuy(ctx: BuyContext): BuyDecision {
   const ultValue = ctx.abilities ? o.ultValueCredits : 0;
   const own = { eco: ctx.own, ctx: ctx.ownPlayers, ...(ctx.ownTraits ? { traits: ctx.ownTraits } : {}) };
   const oppSide = { eco: ctx.opp, ctx: ctx.oppPlayers, ...(ctx.oppTraits ? { traits: ctx.oppTraits } : {}) };
-  const ownCands = candidates({ eco: ctx.own, ctx: ctx.ownPlayers, pistol: ctx.pistol, ...(ctx.call ? { call: ctx.call } : {}), ultValue });
-  const oppCands = candidates({ eco: ctx.opp, ctx: ctx.oppPlayers, pistol: ctx.pistol, ultValue });
+  const oppSideOf = ctx.side === "attack" ? "defense" : ctx.side === "defense" ? "attack" : undefined;
+  const ownCands = candidates({ eco: ctx.own, ctx: ctx.ownPlayers, pistol: ctx.pistol, ...(ctx.call ? { call: ctx.call } : {}), ultValue, ...(ctx.side ? { side: ctx.side } : {}), sidearms: o.ecoSidearms });
+  const oppCands = candidates({ eco: ctx.opp, ctx: ctx.oppPlayers, pistol: ctx.pistol, ultValue, ...(oppSideOf ? { side: oppSideOf } : {}), sidearms: o.ecoSidearms });
 
   let chosen: Scored;
   let evaluation: Scored[] = [];
