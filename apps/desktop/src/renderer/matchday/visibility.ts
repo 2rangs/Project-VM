@@ -81,6 +81,8 @@ export interface IntelSound {
   readonly zone: string;
   readonly kind: string;
   readonly ageMs: number;
+  /** The engine marked this cue as masked (drowned out by louder gunfire); undefined when it does not say. */
+  readonly masked?: boolean;
 }
 export interface TeamIntel {
   readonly tMs: number;
@@ -168,7 +170,8 @@ export function teamIntelAt(track: IntelTrack, round: RoundTimeline, team: TeamS
     const ageMs = (s.tMsAgo ?? 0) + (tMs - frame.tMs);
     const key = `${s.zone}|${kind}`;
     const prev = byKey.get(key);
-    if (!prev || ageMs < prev.ageMs) byKey.set(key, { zone: s.zone, kind, ageMs });
+    const masked = (s as { masked?: boolean }).masked;
+    if (!prev || ageMs < prev.ageMs) byKey.set(key, { zone: s.zone, kind, ageMs, ...(masked !== undefined ? { masked } : {}) });
   }
   return { tMs, enemies, sounds: [...byKey.values()], belief: frame.snap.beliefZones };
 }

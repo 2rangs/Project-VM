@@ -314,6 +314,23 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
   CPU-side timings only — GPU time is not measured. Under software GL (the e2e flags) the tactical
   map runs at ≈12 fps; the real mesh is not usable there.
 
+#### Economy, plans, gaze, sound and duels (UI-1 … UI-6)
+Each item reads what the engine records and says so when it falls back (`시야: 근사치`, "no duel records"):
+
+| Item | Where | Reads | Without it |
+|---|---|---|---|
+| **Economy** (UI-6) | our roster rows: weapon + how it was obtained (kept / bought / `<name> 드롭`), credits entering the round, ult points carried in; opponent rows: weapon only | `buys[team].players` (PlayerBuy), `economy[team].players` of this and the previous round | team weapon only, as before |
+| **Buy call** | left panel under the roster, **our team only** (the opponent's reasoning is not information a coach has) | `buys[team].plan / loadoutValue / vctTier / call / evaluation / drops` — plan, coach call, the alternative it beat, who dropped to whom | hidden |
+| **Gaze** (UI-1) | vision cones and the facing used by the 3D cams come from the sim; the cam caption shows what the player is looking at (enemy / threat / holding / route) and a flash-blind tag | `RoundSummary.sight[].facing / gaze / blind` | engine-rule estimate, labelled approximate |
+| **Sound** (UI-3) | rings by kind (footstep, gunfire, landing, defuse / plant in the spike colour); masked cues drawn faint with a slash and tagged | perception `sounds[].kind` and an optional `masked` | footsteps and gunfire only |
+| **Plan** (UI-5) | our plan's mid-round revisions as ticks on the timeline (shown as they are reached); opening → final call and any fake in the round summary | `decisions.plans[team]` (opening, strategy, feint, revisions) | — |
+| **Duel cards** (UI-2) | round summary → "교전 카드": who saw first, pre-aim, crossfire, angle delay, call info, flash, winner | `RoundSummary.engagement` (the engine's `engagementTrace`) | says the engine sent none |
+| **Comms feed** (UI-4) | **not built** — the engine records no calls with delay and noise yet | — | — |
+
+Per-frame `sees`, `facing`, `gaze`, `blind` and the duel records exist on `RoundResult.tracks` /
+`engagementTrace` but are not on `RoundRecord` yet (requested from the engine-truth session); the
+desktop scripts pass them through (`scripts/compact-round.mts`) as soon as the record carries them.
+
 ## Round decisions (post-match Review)
 
 ![Round decisions](docs/desktop-review-decisions.png)
