@@ -63,15 +63,14 @@ behind the barriers, and tick 0 reuses that decision.
   match sets defenders down in (their planned setup). Zones beyond it are sealed with zone blockers in a per-side
   executor, so paths and wanders stay behind the barrier. On Ascent the defenders' side is both sites and their
   backs, market, pizza, mid bottom, cubby, courtyard and A wine.
-- **Setup.** Defenders go to the setup zone the plan sets each of them down in (the map's derived defender starts:
-  anchors on the sites, the mid presence) and stand on a spot of their own there, looking where their first order
-  points; the live round moves them on. (Walking each defender all the way to its first order's target and onto a
-  held angle during the buy phase was measured: attack −3 pp, full-v-full 0.44 on 60 matches — every defender was
-  stationary on its angle at 0:00, which the duel calibration does not assume.) Attackers end on a spot of their own around the middle of their spawn, facing the exit their first
-  move leaves by. A role stack at that exit was built and measured on 60 matches: in the doorway (entry 0.6 m … IGL
-  3.2 m) attack −2.5 pp and full-v-full 0.41 (the five leave in single file); set back and spread (3–6 m) attack
-  0.47 / full-v-full 0.45; around the spawn's middle 0.50 / 0.46. The duel calibration assumes attackers leave from
-  the middle, so the stack is not used.
+- **Setup.** Every player ends the buy phase on its own standing spot in the setup the plan gives it — defenders in the
+  zone the match sets each down in (the map's derived defender starts: anchors on the sites, the mid presence),
+  attackers in their spawn — the same spot the round's executor would have put it on, facing where its first order
+  points (a defender: the zone it is to watch or go to; an attacker: the exit its first move leaves by). The live
+  round starts from the positions the duel calibration was fitted on; the buy phase is how the players get there.
+  Measured and dropped (160 / 60 matches, real rosters): walking each defender all the way to its first order's
+  target and onto a held angle (attack 0.43–0.46, opening duel 0.39–0.40), and a role stack at the attackers' exit —
+  in the doorway, the five leave in single file.
 - **Script.** Everyone starts in its spawn, stands at its buy spot for `buy.buyMs`, wanders idly (walks to free
   spots within its wander radius) while that cannot make it late, then leaves for its setup so as to be set
   `buy.setMarginMs` before the barrier drops — walking there when it is quiet and has time.

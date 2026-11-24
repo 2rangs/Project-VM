@@ -4,11 +4,14 @@
  * Before the round goes live both teams move behind their barriers. The round's plan is made at
  * the start of the buy phase (the team policies' first decision); during the phase each player
  * carries out its part of that plan as far as its barrier lets it:
- *  - attackers stay in their spawn: each ends on a spot of its own around the spawn's middle, facing
- *    the exit its first move leaves by (a stack at that exit was measured and dropped — see below);
+ *  - attackers stay in their spawn and end on their own spot there, facing the exit their first move
+ *    leaves by;
  *  - defenders move freely on their side up to the barrier and get to their setup — the zone the
  *    plan sets each of them down in (an anchor on site, a retake spot, an early mid presence) — on
- *    a standing spot of their own, looking where their first order points.
+ *    their own standing spot, looking where their first order points.
+ * Every player ends on the spot the round's executor would have set it down on, so the live round
+ * starts from the positions the duel calibration was fitted on (docs/MOVEMENT_STYLE.md §2 has what was
+ * measured and dropped: defenders walked onto their angles, a role stack at the attackers' exit).
  * Before setting up, each player stops at its buy spot for a while and may wander idly; when it
  * leaves for its setup, how early it wants to be set and whether it walks follow from its style
  * (movement-style.ts). Where everyone stands when the barrier drops is the result: the plan's
@@ -106,6 +109,8 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
   const { spatial, players } = input;
   const nav = spatial.nav!;
   const setupZone = new Map(players.map((p) => [p.id, p.zoneId]));
+  // each player's own standing spot in its setup zone, as the round's executor placed it
+  const setupSpot = new Map(players.map((p) => [p.id, { ...p.position }]));
   const areas = barrierAreas(spatial, players.filter((p) => p.side === "defense").map((p) => p.zoneId));
 
   // Everyone starts the phase in its spawn (the match may have set defenders down on their setup).
@@ -157,7 +162,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
       // way during the buy phase put every defender on its angle at 0:00 and cost the attack 3 pp).
       const target = cmd?.targetZone && spatial.getZone(cmd.targetZone) ? cmd.targetZone : planZone;
       const zone = areas.defense.has(planZone) ? planZone : SPAWN_ZONE.defense;
-      goal = { zoneId: zone, mode: "run", spot: { kind: "stand" } };
+      goal = { zoneId: zone, mode: "run", spot: zone === planZone ? { kind: "at", position: setupSpot.get(p.id)! } : { kind: "stand" } };
       const watch = cmd?.aimZone && spatial.getZone(cmd.aimZone) ? cmd.aimZone : null;
       const look = spatial.getZone(watch ?? target);
       if (look && look.id !== zone) face = { x: look.position.x, y: look.position.y };
@@ -176,7 +181,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
         }
       }
       void exit; void role;
-      goal = { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "stand" } };
+      goal = { zoneId: SPAWN_ZONE.attack, mode: "run", spot: { kind: "at", position: setupSpot.get(p.id)! } };
       if (target) planZone = target;
     }
     setups.push({ p, planZone });
