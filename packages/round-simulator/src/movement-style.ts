@@ -112,7 +112,7 @@ export function movementStyle(p: Pick<SimPlayer, "id" | "skills" | "traits">, sl
  */
 export function nearOptimalRoutes(
   spatial: SpatialEngine, from: string, to: string, mode: "run" | "walk",
-  opts: { hazardCosts?: ReadonlyMap<string, number>; blockedZones?: readonly string[] }, slack: number,
+  opts: { hazardCosts?: ReadonlyMap<string, number>; blockedZones?: readonly string[]; passableZones?: readonly string[] }, slack: number,
 ): PathResult[] {
   const best = spatial.findPath(from, to, mode, opts);
   if (!best) return [];

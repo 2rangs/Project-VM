@@ -62,7 +62,9 @@ export class SpatialEngine {
 
     for (const z of data.zones) this.zoneById.set(z.id, z);
     this.nav = opts.nav ? new Navigator(opts.nav, data.movement) : null;
-    this.noTransitZones = new Set(data.zones.filter((z) => z.transit === false).map((z) => z.id));
+    // Travel times the tactical layer plans with: the attackers' spawn is no way through; the
+    // defenders' spawn is — it joins the sites on most maps, and a defender's mover walks it.
+    this.noTransitZones = new Set(data.zones.filter((z) => z.transit === false && z.id !== "defender-spawn").map((z) => z.id));
     if (this.nav && opts.visibility) this.nav.setVisibility(opts.visibility);
 
     const m = data.movement;

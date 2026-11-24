@@ -42,6 +42,11 @@ export interface PathOptions {
    * straight-line-time heuristic stays admissible.
    */
   hazardCosts?: ReadonlyMap<string, number>;
+  /**
+   * Non-transit zones this query may still pass through — a team's own spawn. A spawn is no
+   * thoroughfare for the other side, but on most maps it is the defenders' way between the sites.
+   */
+  passableZones?: readonly string[];
 }
 
 export class ZoneGraph {
@@ -161,6 +166,7 @@ export class ZoneGraph {
     const passable = (id: string): boolean => {
       if (id === startId || id === goalId) return true;
       if (blocked && blocked.has(id)) return false;
+      if (opts.passableZones && opts.passableZones.includes(id)) return true;
       return allowNonTransit || this.transit.get(id) === true;
     };
 

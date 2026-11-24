@@ -63,6 +63,11 @@ export interface MapTactics {
   readonly smokes: Readonly<Record<string, readonly string[]>>;
   /** Where the five defenders start, by roster index. */
   readonly defenderStarts: readonly string[];
+  /**
+   * Ground the attack holds first: zones the attackers reach from their spawn before the defenders
+   * reach them from theirs (spawns and sites excluded).
+   */
+  readonly attackerGround: readonly string[];
   /** Which values came from the map's hand-authored file rather than the rules. */
   readonly authored: readonly string[];
 }
@@ -183,5 +188,12 @@ export function deriveMapTactics(engine: SpatialEngine, overrides: MapTacticsOve
     defenderStarts = defenderStarts.slice(0, DEFENDERS);
   }
 
-  return { mapId: engine.mapId, attackerSpawn: ATTACKER_SPAWN, defenderSpawn: DEFENDER_SPAWN, sites, mid, aim, smokes, defenderStarts, authored };
+  // ground the attack holds first
+  const siteZones = new Set(sites.map((s) => s.zone));
+  const attackerGround = engine.zones.map((z) => z.id as string)
+    .filter((z) => z !== ATTACKER_SPAWN && z !== DEFENDER_SPAWN && !siteZones.has(z))
+    .filter((z) => { const a = tA(z), d = tD(z); return a !== null && d !== null && a < d; })
+    .sort();
+
+  return { mapId: engine.mapId, attackerSpawn: ATTACKER_SPAWN, defenderSpawn: DEFENDER_SPAWN, sites, mid, aim, smokes, defenderStarts, attackerGround, authored };
 }

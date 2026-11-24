@@ -115,8 +115,8 @@
   ],
   "objectsNotLocated": [
     {
-      "name": "Ultimate orbs",
-      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+      "name": "Ultimate orbs — exact positions",
+      "reason": "zone-level only (A Showers (A Bath) / B Long, from game knowledge, unverified); no orb object exists in the static scene, so the point given is the zone anchor."
     }
   ],
   "mechanics": [
@@ -133,6 +133,30 @@
       "represented": false,
       "engineNeeds": "zonesByType('mid') is empty; mid-control strategies must be optional",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ],
+  "ultOrbs": [
+    {
+      "id": "orb-a-bath",
+      "zone": "a-bath",
+      "position": {
+        "x": 9087,
+        "y": 4451,
+        "z": 100
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
+    },
+    {
+      "id": "orb-b-long",
+      "zone": "b-long",
+      "position": {
+        "x": 7687,
+        "y": -6499,
+        "z": 171
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
     }
   ]
 }

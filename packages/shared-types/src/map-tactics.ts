@@ -33,6 +33,12 @@ export interface MapTactics {
   readonly smokes: Readonly<Record<string, readonly string[]>>;
   /** Where the five defenders start, by roster index. */
   readonly defenderStarts: readonly string[];
+  /**
+   * Ground the attack holds first: zones the attackers reach from their spawn before the defenders
+   * reach them from theirs (spawns and sites excluded). A defender changing position before the
+   * plant goes round it where the map allows.
+   */
+  readonly attackerGround?: readonly string[];
   /** Which values came from the map's hand-authored file rather than the rules. */
   readonly authored: readonly string[];
 }

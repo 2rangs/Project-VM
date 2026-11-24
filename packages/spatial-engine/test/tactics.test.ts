@@ -132,3 +132,29 @@ describe("three-site maps", () => {
     expect(t.mid === null || !t.defenderStarts.includes(t.mid.zone)).toBe(true); // the third site takes the mid's place
   });
 });
+
+describe("attacker ground and the defenders' way between sites", () => {
+  it.each(MAP_IDS.map((id) => [id] as const))("%s: attacker ground holds no spawn and no site, and every zone of it is reached by the attack first", (id: MapId) => {
+    const engine = engineOf(id);
+    const t = deriveMapTactics(engine, loadMapData(id).tactics ?? {});
+    const sites = new Set(t.sites.map((s) => s.zone));
+    for (const z of t.attackerGround) {
+      expect(z === t.attackerSpawn || z === t.defenderSpawn || sites.has(z), z).toBe(false);
+      expect(engine.shortestTravelTimeMs(t.attackerSpawn, z)!).toBeLessThan(engine.shortestTravelTimeMs(t.defenderSpawn, z)!);
+    }
+  });
+
+  it("Split: the zone route between the sites runs through the attackers' lobbies unless a team may cross its own spawn", () => {
+    const engine = engineOf("split");
+    const ground = new Set(loadMapTactics("split").attackerGround);
+    const plain = engine.graph.findPath("b-site", "a-site", "run")!.path;
+    expect(plain.some((z) => ground.has(z))).toBe(true);
+    expect(plain).not.toContain("defender-spawn");
+    const own = engine.graph.findPath("b-site", "a-site", "run", { passableZones: ["defender-spawn"] })!.path;
+    expect(own).toContain("defender-spawn");
+    expect(own.some((z) => ground.has(z))).toBe(false);
+    // the other side's spawn stays shut
+    const theirs = engine.graph.findPath("b-site", "a-site", "run", { passableZones: ["attacker-spawn"] })!.path;
+    expect(theirs).toEqual(plain);
+  });
+});

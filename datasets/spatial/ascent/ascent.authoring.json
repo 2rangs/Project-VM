@@ -66,12 +66,36 @@
   ],
   "objectsNotLocated": [
     {
-      "name": "Ultimate orbs",
-      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
-    },
-    {
       "name": "A Link Door switch",
       "reason": "no switch object was identified near the A door opening (searched Switch / Breaker / Button / Panel / Lever within 3 m); the B door's BreakerBoxA has no counterpart there."
+    },
+    {
+      "name": "Ultimate orbs — exact positions",
+      "reason": "zone-level only (A Main / B Main, from game knowledge, unverified); no orb object exists in the static scene, so the point given is the zone anchor."
+    }
+  ],
+  "ultOrbs": [
+    {
+      "id": "orb-a-main",
+      "zone": "a-main",
+      "position": {
+        "x": 5340,
+        "y": -4720,
+        "z": 390
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
+    },
+    {
+      "id": "orb-b-main",
+      "zone": "b-main",
+      "position": {
+        "x": -1960,
+        "y": -5820,
+        "z": 96
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
     }
   ]
 }
