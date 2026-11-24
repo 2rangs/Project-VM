@@ -93,7 +93,7 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, midControl = true) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, midControl = false) {
     this.inner = new TeamDecisionPolicy(sq, {
       ...(tactics ? { tactics } : {}),
       midControl,
@@ -171,7 +171,7 @@ export function makeSimPolicies(
   abilityEffect?: (abilityId: string) => string | undefined,
   spatial?: SpatialEngine,
   tactics?: MapTactics,
-  midControl = true,
+  midControl = false,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
   return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, midControl), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, midControl) };
 }

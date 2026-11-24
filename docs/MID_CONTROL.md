@@ -1,5 +1,6 @@
 # PROJECT V — Mid control (engine)
 
+> **Off by default.** Turn on with `MatchConfig.midControl: true` (sim-batch `--mid-control`). It has not been through the real-roster gate.
 > What is built, on `claude/nav-engine`. Research and the gap map it answers: [`research/MID_CONTROL.md`](research/MID_CONTROL.md).
 > Rule kept: attribute × situation → a named formula that acts on belief or on a real route. No flat win bonuses.
 
@@ -117,7 +118,7 @@ midPlans: {
 | `count` | `"auto"` (attack 2, defence 1) or a number |
 | `who` | `"auto"` \| `{ roles }` \| `{ players }` — roster player ids; roles are the engine's tactical roles. Attack: entry, lurker, support, rotator. Defence: anchor (its two most aggressive), rotator |
 
-`resolveMidPlan(plans, mapId, side)` returns the resolved plan and `byManager` (which fields the manager set). `MatchConfig.midControl: false` turns the whole feature off — mid is then only a label, and matches are byte-identical to before it existed (checked with `match-signature.mts --no-mid-control`).
+`resolveMidPlan(plans, mapId, side)` returns the resolved plan and `byManager` (which fields the manager set). The whole feature is behind `MatchConfig.midControl` (default `false`). Off, mid is only a label, `midPlans` is ignored, and matches are byte-identical to before it existed (checked with `match-signature.mts` against the previous commit).
 
 **Output for Review** — `RoundRecord.decisions.plans[slot].mid` (`MidDecision`): `stance` (contest / hold / giveUp), `by` (auto / manager), `reason`, `party` (sim ids), `estimate`, `heldAtMs`, `lostAtMs`, `split`, `fake`, `rotatedAround`. Mid events are also in `plans[slot].revisions` ("mid: contest → mid: give up", "mid is held — hit before the defence adjusts"). The truth is `RoundRecord.mid`.
 

@@ -76,7 +76,8 @@ export interface TeamPolicyOptions {
   /**
    * Mid control (mid-control.ts, docs/MID_CONTROL.md): the team tracks who holds the map's mid and
    * plays on it — a mid party and split hits on attack, rotations through or round mid on
-   * defence. Default true; false → mid is only a label, as before. Needs `tactics` with a mid area.
+   * defence. Default FALSE (not yet through the real-roster gate): mid is only a label, as before.
+   * Needs `tactics` with a mid area.
    */
   readonly midControl?: boolean;
 }
@@ -564,7 +565,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   private midEnabled(): boolean {
-    return this.options.midControl !== false && !!this.options.tactics?.midArea;
+    return this.options.midControl === true && !!this.options.tactics?.midArea;
   }
 
   private midZones(): ReadonlySet<string> {

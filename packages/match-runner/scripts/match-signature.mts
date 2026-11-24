@@ -16,8 +16,8 @@ const pairs: Array<[number, number, number]> = [[0, 1, 1], [2, 3, 7], [4, 5, 42]
 const all = createHash("sha256");
 for (const [i, j, seed] of pairs) {
   const a = teams[i]!, b = teams[j]!;
-  // --no-mid-control: mid as a label only (MatchConfig.midControl false) — must equal the signature from before mid control existed
-  const r = runMatch({ teamA: { id: a.teamId, name: a.name ?? a.teamId }, teamB: { id: b.teamId, name: b.name ?? b.teamId }, map: "Ascent", seed, ...(process.argv.includes("--no-mid-control") ? { midControl: false } : {}) });
+  // --mid-control: turn mid control on (MatchConfig.midControl; default off = the signature from before it existed)
+  const r = runMatch({ teamA: { id: a.teamId, name: a.name ?? a.teamId }, teamB: { id: b.teamId, name: b.name ?? b.teamId }, map: "Ascent", seed, ...(process.argv.includes("--mid-control") ? { midControl: true } : {}) });
   const body = JSON.stringify({
     winner: r.winner, score: r.score, ot: r.wentToOvertime, memory: r.memory,
     rounds: r.rounds.map((x) => ({ n: x.roundNumber, a: x.attacker, w: x.winner, why: x.reason, buys: x.buys, kills: x.kills, eco: x.economy, events: x.events, decisions: x.decisions })),

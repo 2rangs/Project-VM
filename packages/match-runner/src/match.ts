@@ -171,7 +171,8 @@ export interface MatchConfig {
   /**
    * Mid control (docs/MID_CONTROL.md): teams track who holds the map's mid and play on it — a mid
    * party and split hits on attack, rotations through or round mid on defence, the mid player
-   * given up on an eco. Default true; false → mid is only a label, as before (for on/off measurement).
+   * given up on an eco. Default FALSE — it has not been through the real-roster gate yet; off,
+   * mid is only a label and matches are byte-identical to before the feature existed.
    */
   readonly midControl?: boolean;
   /** Pre-match engine options: override any of the calibrated formula constants. */
@@ -433,7 +434,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.midControl !== false);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.midControl === true);
     this.playerIdsBySlot = { A: rosterPlayerIds(config.teamA.id, 5, ro.A), B: rosterPlayerIds(config.teamB.id, 5, ro.B) };
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, ...policyTuning } = config.tuning ?? {};
@@ -503,7 +504,7 @@ export class MatchEngine {
    */
   private defenderStarts(slot: TeamSlot, plan: ResolvedMidSidePlan, eco: boolean): readonly string[] {
     const mid = this.tactics.midArea;
-    if (this.config.midControl === false || !mid || !this.tactics.mid) return this.tactics.defenderStarts;
+    if (this.config.midControl !== true || !mid || !this.tactics.mid) return this.tactics.defenderStarts;
     const call = decideMidCall(plan, mid, { side: "defense", eco, partialBuy: false, calledMid: false, alive: 5 });
     const starts = defenderStartsFor(this.tactics, call.stance, call.count);
     const midZone = this.tactics.mid.zone;
@@ -732,7 +733,7 @@ export class MatchEngine {
     const result = out.round;
 
     const plans = { [attacker]: this.policies.attack.planSummary(), [defender]: this.policies.defense.planSummary() } as Record<TeamSlot, PlanSummary | null>;
-    const midTruth = config.midControl === false ? null : this.midRecord(result.stats, out.events);
+    const midTruth = config.midControl === true ? this.midRecord(result.stats, out.events) : null;
     // --- Each team folds what it OBSERVED this round into its model of the other ---
     const seen = observedTendencies(out.events);
     // Where the attack first SHOWED is what the defense itself heard and saw (its plan keeps it);

@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { runMatch, type MatchConfig } from "../src/index.js";
 
-const base: MatchConfig = { teamA: { id: "sen", name: "Sentinels" }, teamB: { id: "lev", name: "LEV" }, map: "Ascent", seed: 5, maxRounds: 6, collectStats: true };
+const base: MatchConfig = { teamA: { id: "sen", name: "Sentinels" }, teamB: { id: "lev", name: "LEV" }, map: "Ascent", seed: 5, maxRounds: 6, collectStats: true, midControl: true };
 const MID = new Set(["mid-bottom", "mid-catwalk", "mid-courtyard", "mid-cubby", "mid-link", "mid-market", "mid-pizza", "mid-top"]);
 const defenderOf = (r: { attacker: "A" | "B" }): "A" | "B" => (r.attacker === "A" ? "B" : "A");
 
@@ -51,8 +51,10 @@ describe("mid control in a match", () => {
     }
   });
 
-  it("off: no mid decision and no record; the same seed is still deterministic either way", () => {
-    const off = runMatch({ ...base, midControl: false });
+  it("off is the default: no mid decision and no record; the same seed is still deterministic either way", () => {
+    const { midControl: _on, ...plain } = base;
+    const off = runMatch(plain);
+    expect(JSON.stringify(off.rounds.map((r) => [r.winner, r.reason, r.decisions]))).toBe(JSON.stringify(runMatch({ ...base, midControl: false }).rounds.map((r) => [r.winner, r.reason, r.decisions])));
     for (const r of off.rounds) {
       expect(r.decisions.plans[r.attacker]!.mid).toBeUndefined();
       expect(r.mid).toBeUndefined();

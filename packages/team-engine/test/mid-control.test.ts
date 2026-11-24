@@ -259,7 +259,7 @@ describe("mid control: what the attack does with it", () => {
 
 describe("mid control: what the defence does with it", () => {
   const defence = (plan: ResolvedMidSidePlan | null = null) => {
-    const p = new TeamDecisionPolicy(spatial, { tactics: TACTICS });
+    const p = new TeamDecisionPolicy(spatial, { tactics: TACTICS, midControl: true });
     p.setMidPlan(plan);
     return p;
   };

@@ -3,6 +3,58 @@
 Written 2026-11-23 at wrap-up. Branch is on top of main `bcc3458`, **not pushed, not merged**.
 The task is **not finished**: the code for goals 1–3 exists, the validation, tests and docs of goals 5–8 do not.
 
+## Wrap-up 2026-11-24 (read this first)
+
+Branch `claude/nav-engine`, main `65180b9` merged in. Not pushed, not merged to main.
+
+**Default-on (the default game is unchanged by all of it on Ascent's geometry except as measured below)**
+- Per-map data for all eleven maps: roadmap, sight table, derived tactics, `<map>.objects.json`.
+- The three own-geometry fixes: `dea0c35` (a team may route through its own spawn), `f75255a` (planning times and a
+  team's own mover no longer go round the defenders' spawn floor), `d3d3111` (an unnamed zone that leads the attack
+  to one site counts as that site's side in the defence's hit belief).
+- `MapTactics.midArea` (mid zones, chokes, links) — data only; nothing reads it while mid control is off.
+- `RoundStats.zonePresence` (with `collectStats`) — passive.
+
+**Behind a flag, default OFF**
+- **Mid control** — `MatchConfig.midControl: true` (sim-batch `--mid-control`, `match-signature.mts --mid-control`;
+  `TeamPolicyOptions.midControl`). Design and API: `docs/MID_CONTROL.md`; note for the UI and information-layer
+  sessions: `mid-control-api.md` in the shared notes folder. With the flag off, `teamInputs[slot].midPlans` is
+  ignored and the match signature equals the one from before the feature (`d3d3111`), byte for byte.
+- `MatchConfig.geometry: "own"` — still opt-in; only Ascent and Breeze are in range on their own geometry.
+
+**Measured (real rosters; attack / elimination / detonation / defuse)**
+- Ascent, default geometry, 160 matches, seeds 1..160, mid control off: 0.499 / 0.688 / 0.082 / 0.179, 13/15 judged
+  (main `93fce88`: 13/15, 0.512 / 0.677). The two misses are economy cells (eco v semi 0.021, semi v semi 0.550).
+- After `d3d3111`, own geometry, 60 matches: Breeze 0.575 / 0.717 / 0.147 / 0.117 (in range); Pearl 0.531 / 0.601 /
+  0.191 / 0.182 (detonation high). The other eight maps were **not** re-measured after `d3d3111`; their rows below
+  are from after `f75255a`.
+- Mid control ON has **no gate run**. The queued runs (Ascent 160 on seeds 1..160 and 161..320, off on 161..320)
+  were cancelled at wrap-up before they started. The only evidence is a three-match Ascent probe (60 rounds):
+  attack 0.517; mid control called in 9 rounds, 6 of them ended with mid held and a split hit. Too small to judge.
+
+**Unfinished — exact next steps**
+1. Gate mid control: from `tools/data-validator`,
+   `heavy-run.sh "mid on" -- npx tsx scripts/sim-batch.mts --map Ascent --mid-control --matches 160 --out <dir>/on-run.json --report <dir>/on`,
+   then the same with `--seed-start 161`, and without `--mid-control` on 161..320 for the off arm (seeds 1..160 off
+   is the Ascent row above). Each run file carries `rounds[].mid` (each side's decision, its own estimate, the
+   truth), so the on/off change by call and by stance can be read from it. Flip the default only if 8/8 (now 13/15,
+   as main) holds and attack stays in 0.47–0.55.
+2. Re-measure the eight maps not run after `d3d3111` on own geometry (Sunset, Icebox, Bind, Abyss, Lotus, Split,
+   Haven, Fracture), then mid control on for the eight maps that have a mid.
+3. The post-plant gap on own geometry (below, item 3) is still untraced.
+4. Ult orbs for seven maps need callout positions (web sources were unreachable from this session).
+
+**Known risks**
+- Mid control's constants (6 s to take, 15 s decay, 0.35 per kill, hold at 0.4, 5 s before the early commit) are
+  assumed: `vct.duckdb` has no positions or kill events to fit them.
+- Some derived mid links are long ways round (Icebox A, Pearl B, Haven A and C) and have not been checked against
+  the game; Bind, Fracture and Lotus have no mid zones, so the feature does nothing there.
+- With the flag on, the defence gives mid up on every eco round and the attack's slow play commits earlier when it
+  holds mid — both move Ascent's round outcomes; by how much is not measured.
+- `policy.ts` was edited in several places (mid hooks); the engine-truth plant-plan branch edits the same file, so
+  expect merge conflicts there. The mid logic itself is in `team-engine/src/mid-control.ts`.
+- Orbs on Ascent, Bind, Haven, Split are zone-level and `verified: false`.
+
 ## Per-map status (updated as each map lands)
 
 Definition of done per map: (1) roadmap with no unreachable zone, (2) sight table, (3) derived tactics pass
@@ -31,12 +83,12 @@ Cause work this day, in order:
 | Ascent | none | yes | pass | `3da5f8d` | 160, default geometry: 0.499 / 0.688 / 0.082 / 0.179, 13/15 (main `93fce88`: 13/15, 0.512 / 0.677) — gate held | no |
 | Abyss | none | yes | pass | `99427ea` | 0.645 / 0.576 / 0.248 / 0.140 — no (attack high) | no |
 | Bind | none | yes | pass | `bde66f4` | 0.478 / 0.626 / 0.252 / 0.047 — no (detonation high) | no |
-| Breeze | none | yes | pass | `202d8b5` | 0.587 / 0.684 / 0.129 / 0.165 — nearly (attack +0.007) | no |
+| Breeze | none | yes | pass | `202d8b5` | after `d3d3111`: 0.575 / 0.717 / 0.147 / 0.117 — in range | no |
 | Fracture | none | yes | pass | `a52a61b` | 0.672 / 0.509 / 0.374 / 0.095 — no | no |
 | Haven | none | yes | pass | `fe09571` | 0.653 / 0.462 / 0.306 / 0.203 — no | no |
 | Icebox | none | yes | pass | `a42c3a7` | 0.543 / 0.557 / 0.238 / 0.190 — no (detonation high) | no |
 | Lotus | none | yes | pass | `0f7041c` | 0.666 / 0.496 / 0.296 / 0.180 — no | no |
-| Pearl | none | yes | pass | `fe09571` | 0.482 / 0.583 / 0.186 / 0.200 — nearly | no |
+| Pearl | none | yes | pass | `fe09571` | after `d3d3111`: 0.531 / 0.601 / 0.191 / 0.182 — nearly (detonation high) | no |
 | Split | none | yes | pass | `fecde40` | 0.659 / 0.505 / 0.375 / 0.103 — no | no |
 | Sunset | none | yes | pass | `fe09571` | 0.441 / 0.628 / 0.185 / 0.087, time 0.099 — nearly | no |
 
