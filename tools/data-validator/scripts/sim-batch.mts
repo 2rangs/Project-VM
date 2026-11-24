@@ -13,6 +13,7 @@
 //   --matches N        number of matches to simulate (default 20); seeds are seedStart..seedStart+N-1
 //   --seed-start S     first seed (default 1) — deterministic per seed (DECISION-010)
 //   --map NAME         map (default Ascent)
+//   --mid-control      turn mid control on (MatchConfig.midControl; default off): the "on" arm of its measurement
 //   --geometry own     simulate on the named map's own geometry (zone graph, roadmap, sight table);
 //                      default: every map is simulated on Ascent's geometry (MatchConfig.geometry)
 //   --max-rounds R     safety cap on rounds per match passed to runMatch (default: engine default 60)
@@ -161,7 +162,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };
@@ -184,6 +185,13 @@ async function main(): Promise<void> {
           defense: { value: r.buys[def].loadoutValue, bank: r.buys[def].players.reduce((s, b) => s + b.creditsAfter, 0), drops: r.buys[def].drops, pickups: r.pickups.filter((p) => p.team === def).length, roundPickups: r.events.filter((e) => (e.kind as string) === "weaponPickup" && String(e.actor).startsWith("def")).length },
         },
         events: toSimGameEvents({ events: r.events, winner: r.winnerSide, reason: r.reason } as never),
+        // Mid control (report-only): each side's decision and own estimate, the attack's call, and the true record.
+        ...(r.mid || r.decisions.plans[atk]?.mid || r.decisions.plans[def]?.mid ? { mid: {
+          call: r.decisions.plans[atk]?.opening ?? null,
+          attack: r.decisions.plans[atk]?.mid ?? null,
+          defense: r.decisions.plans[def]?.mid ?? null,
+          truth: r.mid ? { final: r.mid.final, heldMs: r.mid.heldMs, firstHeld: r.mid.firstHeld } : null,
+        } } : {}),
       });
       totalRounds++;
       reasonCounts[r.reason] = (reasonCounts[r.reason] ?? 0) + 1;

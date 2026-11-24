@@ -57,8 +57,8 @@ import {
   type TeamDecisionTraits,
 } from "./economy.js";
 import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
-import type { PlayerProfile } from "@pv/shared-types";
-import { OpponentModel, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
+import { resolveMidPlan, type PlayerProfile, type ResolvedMidSidePlan } from "@pv/shared-types";
+import { MidControlTracker, OpponentModel, decideMidCall, defenderStartsFor, type MidControlRecord, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { MAP_IDS, isMapId } from "@pv/spatial-engine";
 import { selectDefenseSetup } from "./defense-setups.js";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
@@ -200,6 +200,13 @@ export interface MatchConfig {
    * false makes both teams play every round as if it were the first.
    */
   readonly opponentMemory?: boolean;
+  /**
+   * Mid control (docs/MID_CONTROL.md): teams track who holds the map's mid and play on it — a mid
+   * party and split hits on attack, rotations through or round mid on defence, the mid player
+   * given up on an eco. Default FALSE — it has not been through the real-roster gate yet; off,
+   * mid is only a label and matches are byte-identical to before the feature existed.
+   */
+  readonly midControl?: boolean;
   /** Pre-match engine options: override any of the calibrated formula constants. */
   readonly tuning?: MatchTuning;
   /**
@@ -266,8 +273,15 @@ export interface RoundRecord {
   /** Report-only movement / crowd measurements of the round; present only when `collectStats` is on. */
   readonly stats?: RoundStats;
   /** Every duel of the round (round-simulator EngagementRecord); present only with `traceEngagements`. */
-  readonly engagements?: readonly EngagementRecord[];  /** Where the spike went down: position, site, candidate spot and its kind, who chose it (planted rounds only). */
+  readonly engagements?: readonly EngagementRecord[];
+  /** Where the spike went down: position, site, candidate spot and its kind, who chose it (planted rounds only). */
   readonly plant?: PlantRecord;
+  /**
+   * Mid control over the round as it truly was — from every player's position and the kills in
+   * mid (team-engine MidControlTracker). Present with `collectStats` on a map that has a mid. Each
+   * team's own estimate, which can differ, is in `decisions.plans[slot].mid`.
+   */
+  readonly mid?: MidControlRecord;
 }
 
 /**
@@ -456,7 +470,8 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true);
+    this.playerIdsBySlot = { A: rosterPlayerIds(config.teamA.id, 5, ro.A), B: rosterPlayerIds(config.teamB.id, 5, ro.B) };
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
@@ -500,6 +515,74 @@ export class MatchEngine {
         this.opponentModels[slot] = model;
       }
     }
+  }
+
+  /** Roster player ids by slot and roster index (null where a seat has no game-data player). */
+  private readonly playerIdsBySlot: Record<TeamSlot, Array<string | null>>;
+
+  /**
+   * A team's mid plan for the side it plays this round, resolved for the map (its own id, then the
+   * geometry's, then "*") with named players re-keyed to this round's sim ids.
+   */
+  private midPlanFor(slot: TeamSlot, side: Side): ResolvedMidSidePlan {
+    const plans = this.config.teamInputs?.[slot]?.midPlans;
+    const key = plans && plans[this.config.map] ? this.config.map : plans && plans[this.config.map.toLowerCase()] ? this.config.map.toLowerCase() : this.tactics.mapId;
+    const plan = resolveMidPlan(plans, key, side === "attack" ? "attack" : "defense");
+    if (plan.who === "auto" || !("players" in plan.who)) return plan;
+    const prefix = side === "attack" ? "atk" : "def";
+    const ids = this.playerIdsBySlot[slot];
+    const players = plan.who.players.map((id) => ids.indexOf(id)).filter((i) => i >= 0).map((i) => `${prefix}${i + 1}`);
+    return { ...plan, who: { players } };
+  }
+
+  /**
+   * Where the five defenders start under the team's mid stance (team-engine defenderStartsFor):
+   * the mid player on a site when mid is given up, more players in mid when it is contested, and
+   * the players the manager named put on the mid starts.
+   */
+  private defenderStarts(slot: TeamSlot, plan: ResolvedMidSidePlan, eco: boolean): readonly string[] {
+    const mid = this.tactics.midArea;
+    if (this.config.midControl !== true || !mid || !this.tactics.mid) return this.tactics.defenderStarts;
+    const call = decideMidCall(plan, mid, { side: "defense", eco, partialBuy: false, calledMid: false, alive: 5 });
+    const starts = defenderStartsFor(this.tactics, call.stance, call.count);
+    const midZone = this.tactics.mid.zone;
+    // who goes: named players (already sim ids), or roles by the defence's own order of aggression
+    // (the two most aggressive are its anchors, the rest rotators — igl.ts assignRoles)
+    let wanted: number[] = [];
+    if (plan.who !== "auto" && "players" in plan.who) wanted = plan.who.players.map((id) => Number(id.slice(3)) - 1);
+    else if (plan.who !== "auto" && "roles" in plan.who) {
+      const order = this.profilesBySlot[slot].map((p, i) => ({ i, a: p.aggression })).sort((p, q) => q.a - p.a || p.i - q.i).map((p) => p.i);
+      const roleOf = (i: number): string => (order.indexOf(i) <= 1 ? "anchor" : "rotator");
+      wanted = plan.who.roles.flatMap((r) => order.filter((i) => roleOf(i) === r));
+    }
+    for (const i of [...new Set(wanted)]) {
+      if (i < 0 || i >= starts.length || starts[i] === midZone) continue;
+      const j = starts.findIndex((z, k) => z === midZone && !wanted.includes(k));
+      if (j < 0) break;
+      [starts[i], starts[j]] = [starts[j]!, starts[i]!];
+    }
+    return starts;
+  }
+
+  /** Mid control over the round as it truly was (positions and kills), from the round's stats. */
+  private midRecord(stats: RoundStats | undefined, events: readonly SimEvent[]): MidControlRecord | null {
+    const mid = this.tactics.midArea;
+    if (!mid || !stats?.zonePresence) return null;
+    const zones = new Set(mid.zones);
+    const sideOf = (id: string | undefined): Side | null => (id?.startsWith("atk") ? "attack" : id?.startsWith("def") ? "defense" : null);
+    const kills = events.filter((e) => e.kind === "kill" && e.zoneId !== undefined && zones.has(e.zoneId));
+    const tracker = new MidControlTracker();
+    let prevMs = 0;
+    for (const s of stats.zonePresence) {
+      const k = kills.filter((e) => e.elapsedMs > prevMs && e.elapsedMs <= s.atMs);
+      tracker.step({
+        attack: s.attack.filter((z) => zones.has(z)).length, defense: s.defense.filter((z) => zones.has(z)).length,
+        killsByAttack: k.filter((e) => sideOf(e.actor as string | undefined) === "attack").length,
+        killsByDefense: k.filter((e) => sideOf(e.actor as string | undefined) === "defense").length,
+      }, s.atMs - prevMs, s.atMs);
+      prevMs = s.atMs;
+    }
+    return tracker.summary();
   }
 
   /** [series] Policy tunables shared by both teams (config.tuning minus the simulator-side fields). */
@@ -660,7 +743,11 @@ export class MatchEngine {
     };
     // Where the five defenders start: the map's derived starts (on Ascent: its two sites twice and
     // mid courtyard, as before). The scripted setups of the abilities mode exist for Ascent only.
-    const defSpawns = this.abilitiesOn && this.tactics.mapId === "ascent" ? selectDefenseSetup(config.seed, roundNumber).spawns : this.tactics.defenderStarts;
+    const midPlans = { attack: this.midPlanFor(attacker, "attack"), defense: this.midPlanFor(defender, "defense") };
+    this.policies.attack.setMidPlan(midPlans.attack);
+    this.policies.defense.setMidPlan(midPlans.defense);
+    const defenseEco = !pistol && buys[defender].tier === "eco";
+    const defSpawns = this.abilitiesOn && this.tactics.mapId === "ascent" ? selectDefenseSetup(config.seed, roundNumber).spawns : this.defenderStarts(defender, midPlans.defense, defenseEco);
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
       economy: toEconomyState(preBuy[defender], "defense", buys[defender]),
@@ -687,6 +774,7 @@ export class MatchEngine {
     const result = out.round;
 
     const plans = { [attacker]: this.policies.attack.planSummary(), [defender]: this.policies.defense.planSummary() } as Record<TeamSlot, PlanSummary | null>;
+    const midTruth = config.midControl === true ? this.midRecord(result.stats, out.events) : null;
     // --- Each team folds what it OBSERVED this round into its model of the other ---
     const seen = observedTendencies(out.events);
     // Where the attack first SHOWED is what the defense itself heard and saw (its plan keeps it);
@@ -782,6 +870,7 @@ export class MatchEngine {
       ...(result.stats ? { stats: result.stats } : {}),
       ...(config.traceEngagements && result.engagementTrace ? { engagements: result.engagementTrace } : {}),
       ...(result.plant ? { plant: result.plant } : {}),
+      ...(midTruth ? { mid: midTruth } : {}),
     };
     this.rounds.push(record);
     this.options.onRound?.(record, { ...score });

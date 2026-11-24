@@ -31,11 +31,11 @@ export function profileFor(
 }
 
 /** Pistol rounds (first round of each half): both sides are equally poor — not an eco. */
-function isPistolRound(view: PolicyView): boolean {
+export function isPistolRound(view: PolicyView): boolean {
   return view.roundNumber === 1 || view.roundNumber === 13;
 }
 
-function isEco(view: PolicyView): boolean {
+export function isEco(view: PolicyView): boolean {
   if (isPistolRound(view)) return false;
   // The match runner's per-player economy says what the team actually bought; without it, a bank
   // threshold stands in.
@@ -48,7 +48,7 @@ function isEco(view: PolicyView): boolean {
  * Such a team cannot win a long post-plant against a full-buy retake, so on attack it plays for
  * picks (the slow default) and hits only when a player up or late, instead of executing at once.
  */
-function isPartialBuy(view: PolicyView): boolean {
+export function isPartialBuy(view: PolicyView): boolean {
   if (isPistolRound(view)) return false;
   return view.economy.buyCall === "force" || view.economy.buyCall === "half";
 }
@@ -138,6 +138,8 @@ function weightedPick<T>(rng: RandomSource, entries: ReadonlyArray<readonly [T, 
  */
 export function selectStrategy(
   view: PolicyView, spatial: SpatialQuery, rng: RandomSource, read?: OpponentRead, sites: readonly string[] = ["A", "B"],
+  /** Weight of the mid-control call (mid-control.ts midCallWeight: what mid is worth on this map). */
+  midWeight = 0.8,
 ): TeamStrategy {
   const planted = view.spike.phase === "planted";
   const bias = enemySiteBias(view, spatial);
@@ -183,7 +185,7 @@ export function selectStrategy(
     return weightedPick(rng, [
       ["aExecute", thin("A") * (1 + TENDENCY_WEIGHT * Math.max(0, -defA))],
       ["bExecute", thin("B") * (1 + TENDENCY_WEIGHT * Math.max(0, defA))],
-      ["midControl", 0.8],
+      ["midControl", midWeight],
       ["fakeAtoB", (bias.A > bias.B ? 0.9 : 0.3) * (1 + TENDENCY_WEIGHT * Math.max(0, defA))],
       ["fakeBtoA", (bias.B > bias.A ? 0.9 : 0.3) * (1 + TENDENCY_WEIGHT * Math.max(0, -defA))],
       ["cExecute", thin("C")],

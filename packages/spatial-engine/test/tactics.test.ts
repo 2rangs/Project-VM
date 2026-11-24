@@ -147,14 +147,96 @@ describe("attacker ground and the defenders' way between sites", () => {
   it("Split: the zone route between the sites runs through the attackers' lobbies unless a team may cross its own spawn", () => {
     const engine = engineOf("split");
     const ground = new Set(loadMapTactics("split").attackerGround);
-    const plain = engine.graph.findPath("b-site", "a-site", "run")!.path;
+    const plain = engine.findPath("b-site", "a-site", "run")!.path;
     expect(plain.some((z) => ground.has(z))).toBe(true);
     expect(plain).not.toContain("defender-spawn");
-    const own = engine.graph.findPath("b-site", "a-site", "run", { passableZones: ["defender-spawn"] })!.path;
+    const own = engine.findPath("b-site", "a-site", "run", { passableZones: ["defender-spawn"] })!.path;
     expect(own).toContain("defender-spawn");
     expect(own.some((z) => ground.has(z))).toBe(false);
     // the other side's spawn stays shut
-    const theirs = engine.graph.findPath("b-site", "a-site", "run", { passableZones: ["attacker-spawn"] })!.path;
+    const theirs = engine.findPath("b-site", "a-site", "run", { passableZones: ["attacker-spawn"] })!.path;
     expect(theirs).toEqual(plain);
+  });
+});
+
+describe("which site an unnamed zone leads the attack to", () => {
+  it.each(MAP_IDS.map((id) => [id] as const))("%s: only zones without a site letter, each on the attackers' way to that site and clearly off the way to the others", (id: MapId) => {
+    const engine = engineOf(id);
+    const t = deriveMapTactics(engine, loadMapData(id).tactics ?? {});
+    for (const [z, site] of Object.entries(t.approachSide)) {
+      const letter = /^([a-z])-/.exec(z)?.[1]?.toUpperCase();
+      expect(t.sites.some((s) => s.site === letter), z).toBe(false);
+      const detour = (s: (typeof t.sites)[number]) => engine.shortestTravelTimeMs(t.attackerSpawn, z)! + engine.shortestTravelTimeMs(z, s.zone)! - s.attackTravelMs!;
+      const own = t.sites.find((s) => s.site === site)!;
+      expect(detour(own), `${z} → ${site}`).toBeLessThanOrEqual(2000);
+      for (const o of t.sites) if (o !== own) expect(detour(o) - detour(own), `${z}: ${o.site}`).toBeGreaterThanOrEqual(4000);
+    }
+  });
+  it("Breeze: Mid Cannon speaks for B, Mid Bottom for neither", () => {
+    const t = loadMapTactics("breeze");
+    expect(t.approachSide["mid-cannon"]).toBe("B");
+    expect(t.approachSide["mid-bottom"]).toBeUndefined();
+  });
+});
+
+describe("the map's mid area", () => {
+  const NO_MID: readonly MapId[] = ["bind", "fracture", "lotus"];
+  it("Bind, Fracture and Lotus have no mid zones; every other map has a mid", () => {
+    for (const id of MAP_IDS) expect(loadMapTactics(id).midArea === null, id).toBe(NO_MID.includes(id));
+  });
+
+  it.each(MAP_IDS.filter((id) => !NO_MID.includes(id)).map((id) => [id] as const))("%s: zones both sides reach, entries, a meeting zone, chokes that leave mid, links that avoid the main entry", (id: MapId) => {
+    const engine = engineOf(id);
+    const t = loadMapTactics(id);
+    const m = t.midArea!;
+    const zoneIds = new Set(loadMapData(id).data.zones.map((z) => z.id as string));
+    expect(m.zones.length).toBeGreaterThan(0);
+    for (const z of m.zones) {
+      expect(zoneIds.has(z), z).toBe(true);
+      expect(engine.shortestTravelTimeMs(t.attackerSpawn, z), `${z} attack`).not.toBeNull();
+      expect(engine.shortestTravelTimeMs(t.defenderSpawn, z), `${z} defence`).not.toBeNull();
+    }
+    for (const z of [m.attackEntry, m.defenseEntry, m.contest]) expect(m.zones).toContain(z);
+    for (const z of m.zones) {
+      expect(engine.shortestTravelTimeMs(t.attackerSpawn, z)!).toBeGreaterThanOrEqual(m.attackMs);
+      expect(engine.shortestTravelTimeMs(t.defenderSpawn, z)!).toBeGreaterThanOrEqual(m.defenseMs);
+    }
+    expect(m.chokes.length).toBeGreaterThan(0);
+    for (const c of m.chokes) {
+      expect(m.zones).toContain(c.zone);
+      expect(m.zones).not.toContain(c.onto);
+      expect(zoneIds.has(c.onto), c.onto).toBe(true);
+      if (c.leadsTo !== null) expect(t.sites.some((s) => s.site === c.leadsTo), `${c.onto} → ${c.leadsTo}`).toBe(true);
+    }
+    expect(Object.keys(m.siteLinks).sort()).toEqual(t.sites.map((s) => s.site).sort());
+    for (const s of t.sites) {
+      const link = m.siteLinks[s.site];
+      if (!link) continue;
+      expect(m.zones).toContain(link.from);
+      expect(link.path[0]).toBe(link.from);
+      expect(link.path[link.path.length - 1]).toBe(s.zone);
+      expect(link.entry).toBe(link.path[link.path.length - 2]);
+      if (s.mainEntry && !m.zones.includes(s.mainEntry)) expect(link.path, `${s.site} link`).not.toContain(s.mainEntry);
+      for (const z of link.path.slice(1, -1)) expect(m.zones.includes(z) || t.sites.some((o) => o.zone === z), `${z} on the ${s.site} link`).toBe(false);
+    }
+    for (const r of [...m.attackSwitch, ...m.defenseRotate]) if (r.throughMs !== null && r.aroundMs !== null) expect(r.aroundMs).toBeGreaterThanOrEqual(r.throughMs);
+    expect(m.attackValue).toBeGreaterThanOrEqual(0);
+    expect(m.attackValue).toBeLessThanOrEqual(1);
+  });
+
+  it("Ascent: the attack comes in at Mid Top, the defence at Market; Cubby opens A through Tree and Market opens B", () => {
+    const m = loadMapTactics("ascent").midArea!;
+    expect(m.attackEntry).toBe("mid-top");
+    expect(m.defenseEntry).toBe("mid-market");
+    expect(m.contest).toBe("mid-catwalk");
+    expect(m.siteLinks["A"]!.path).toEqual(["mid-cubby", "a-tree", "a-site"]);
+    expect(m.siteLinks["B"]!.path).toEqual(["mid-market", "b-site"]);
+    expect(m.attackValue).toBeCloseTo(0.2, 1); // a site switch through mid is a fifth shorter
+  });
+
+  it("mid is worth most where there is no way round it (Icebox, Pearl, Haven) and nothing on Abyss", () => {
+    for (const id of ["icebox", "pearl", "haven"] as const) expect(loadMapTactics(id).midArea!.attackValue, id).toBe(1);
+    expect(loadMapTactics("abyss").midArea!.attackValue).toBe(0);
+    expect(loadMapTactics("breeze").midArea!.attackValue).toBeGreaterThan(loadMapTactics("ascent").midArea!.attackValue);
   });
 });

@@ -21,6 +21,7 @@
 import type { PlantPreferences, TacticalTraits } from "@pv/round-simulator";
 import type { PostPlantPlans, RetakePlans } from "@pv/shared-types";
 import type { OpponentPrior, SiteKey } from "@pv/team-engine";
+import type { MidPlans } from "@pv/shared-types";
 
 export interface TeamMatchInputs {
   /** Multiplies the team's throw hazard λ₀ (1 = unchanged). */
@@ -53,6 +54,12 @@ export interface TeamMatchInputs {
    * the round up (shared-types RetakePlan). Recorded per round in decisions.plans[team].retake.
    */
   readonly retakePlans?: RetakePlans;
+  /**
+   * Mid control per map and side (shared-types mid-plans.ts): contest mid, give it up, or leave it
+   * to the IGL ("auto"), how many go and who. Keys are map ids, "*" for every map; the map's own
+   * entry wins field by field. Omitted → the IGL decides everything.
+   */
+  readonly midPlans?: MidPlans;
 }
 
 /**

@@ -16,11 +16,14 @@ import type {
   DecisionPolicy,
   EconomyEvaluator,
   MapTactics,
+  MidControlState,
+  MidDecision,
   MoveMode,
   PlayerProfile,
   PolicyDecision,
   PolicyView,
   RandomSource,
+  ResolvedMidSidePlan,
   RoleAssignment,
   SpatialQuery,
   TeamStrategy,
@@ -38,7 +41,8 @@ import { planForSpot } from "@pv/shared-types";
 import { buildTeamBelief, enemyPressureOnZone } from "@pv/decision-engine";
 import { generateActions, type GenerationResult } from "@pv/action-generator";
 import { synthContextFromView } from "./view.js";
-import { assignRoles, enemySiteBias, profileFor, reconsider, selectStrategy } from "./igl.js";
+import { assignRoles, enemySiteBias, isEco, isPartialBuy, profileFor, reconsider, selectStrategy } from "./igl.js";
+import { DEFAULT_MID_CONTROL_TUNING, decideMidCall, midCallWeight, midControlState, ownControl, stepMidControl, type MidCall } from "./mid-control.js";
 import { tendencyLean, type OpponentRead } from "./opponent-model.js";
 import { choosePlayerCommand, type PlayerChoice } from "./player-policy.js";
 import { applyTeamwork, type TeamworkEntry } from "./teamwork.js";
@@ -92,6 +96,13 @@ export interface TeamPolicyOptions {
   readonly plantTactics?: boolean;
   /** Which plant spot a planted spike lies on (site letter, spot id and kind) — what the post-plant and retake plans are keyed by. */
   readonly plantSpotAt?: (point: Vector3) => PlantSpotRef | null;
+  /**
+   * Mid control (mid-control.ts, docs/MID_CONTROL.md): the team tracks who holds the map's mid and
+   * plays on it — a mid party and split hits on attack, rotations through or round mid on
+   * defence. Default FALSE (not yet through the real-roster gate): mid is only a label, as before.
+   * Needs `tactics` with a mid area.
+   */
+  readonly midControl?: boolean;
 }
 
 /** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
@@ -211,6 +222,12 @@ function siteLetter(spatial: SpatialQuery, z: ZoneId): string | null {
 const FEINT_SHOW_MS = 18_000;
 /** After a mid-round call change, the new call is held at least this long before another swing. */
 const PLAN_COMMIT_MS = 5000;
+/** An enemy seen in mid counts as standing there for this long after it was last seen. */
+const MID_SEEN_MS = 3000;
+/** ATTACK: mid believed held for this long → the slow play commits (hit before the defence adjusts). */
+const MID_COMMIT_AFTER_MS = 5000;
+/** DEFENCE: with this many or fewer alive before the plant, the mid player falls back to a site. */
+const MID_SHORT_HANDED = 3;
 
 /** A read-only summary of a round's plan: the opening call, where it ended, and each revision. */
 export interface PlanSummary {
@@ -229,6 +246,30 @@ export interface PlanSummary {
   readonly postPlant?: PostPlantDecision;
   /** DEFENSE: the retake plan it played (planted rounds). */
   readonly retake?: RetakeDecision;
+  /** What the team did about mid and how it believed mid stood (null: no mid on the map, or mid control off). */
+  readonly mid?: MidDecision | null;
+}
+
+/** A team's mid play for one round: the call, the players sent, and its own running estimate of control. */
+interface MidRound {
+  readonly call: MidCall;
+  party: string[];
+  /** The team's estimate of mid control, −1 defence .. +1 attack (mid-control.ts), from its own view only. */
+  c: number;
+  heldAtMs: number | null;
+  lostAtMs: number | null;
+  /** The party has given the fight up (lost it, or the team is short-handed). */
+  abandoned: boolean;
+  prevAlive: Set<string>;
+  prevEnemyAlive: number | null;
+  /** Round clock at which an enemy was last sensed in mid (Infinity = never). */
+  enemyAtClockMs: number;
+  /** Own utility in mid counts until the round clock falls to this. */
+  utilityUntilClockMs: number;
+  lastClockMs: number;
+  split: boolean;
+  fake: boolean;
+  rotatedAround: boolean;
 }
 
 /** The team's standing plan for one round (mutable: revised in place as information arrives). */
@@ -270,6 +311,8 @@ interface StandingPlan {
   evidence: Record<string, SiteEvidence>;
   /** DEFENSE: first site where two or more bodies showed. */
   shownSite: string | null;
+  /** Mid play of the round (null: no mid on the map, or mid control off). */
+  mid: MidRound | null;
   decidedAtMs: number;
   lastSeenClockMs: number;
   readonly revisions: Array<{ atMs: number; from: string; to: string; reason: string }>;
@@ -333,6 +376,8 @@ export interface TeamRoundTrace {
     readonly opponentRead: OpponentRead | null;
     /** DEFENSE pre-plant: the belief about what the attack is doing (hit-belief.ts), when computed. */
     readonly hitBelief?: HitBelief | null;
+    /** The team's own estimate of mid control at this decision (mid-control.ts), when tracked. */
+    readonly midControl?: MidControlState | null;
   };
   readonly roles: readonly RoleAssignment[];
   readonly players: ReadonlyArray<{
@@ -371,6 +416,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   private opponentRead: OpponentRead | undefined;
   /** The standing plan for the round in progress. */
   private plan: StandingPlan | null = null;
+  /** The team's pre-match mid plan for this side (see setMidPlan). */
+  private midPlan: ResolvedMidSidePlan | null = null;
   private throwFloors: ReadonlyMap<string, number> | undefined;
   /** Post-plant: the defense has called the retake "go" this round (sticky until the next plant). */
   private retakeCommitted = false;
@@ -478,6 +525,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       showers: p.showers?.length ?? 0, shownSite: p.shownSite, rotations: p.rotations.map((r) => ({ ...r })),
       ...(this.postPlant && this.postPlant.contextId === p.contextId ? { postPlant: this.postPlant.decision } : {}),
       ...(this.retake && this.retake.contextId === p.contextId ? { retake: this.retake.decision } : {}),
+      ...(p.mid ? { mid: this.midDecision(p) } : {}),
     } : null;
   }
 
@@ -492,12 +540,12 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       p.lastSeenClockMs = view.timeRemainingMs;
       return p;
     }
-    const opening = selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters());
+    const opening = selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters(), this.midEnabled() ? midCallWeight(this.options.tactics?.midArea) : undefined);
     this.plan = {
       contextId: view.contextId, side: view.side, opening, strategy: opening,
       objective: null, feint: null, executeGo: false, uncommitted: false, slowSide: null, savedFrom: null, chasers: new Set<string>(),
       showers: null, patrolLeg: new Map(), heard: [], home: new Map(), rotation: { site: null, ids: [], changedAtMs: view.timeRemainingMs },
-      rotations: [], rotated: new Set<string>(), belief: null, evidence: {}, shownSite: null,
+      rotations: [], rotated: new Set<string>(), belief: null, evidence: {}, shownSite: null, mid: null,
       decidedAtMs: view.timeRemainingMs, lastSeenClockMs: view.timeRemainingMs, revisions: [],
     };
     this.bindObjective(view, this.plan, rng);
@@ -528,6 +576,250 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     plan.decidedAtMs = view.timeRemainingMs;
     this.bindObjective(view, plan, rng);
     return { reason: recon.reason };
+  }
+
+  // ---- mid control ---------------------------------------------------------------------------
+
+  /**
+   * The team's pre-match mid plan for the side this policy plays (MatchConfig.teamInputs.midPlans,
+   * resolved for the map). `who.players` must already be sim ids (atk1.. / def1..). null → auto.
+   */
+  setMidPlan(plan: ResolvedMidSidePlan | null): void {
+    this.midPlan = plan;
+  }
+
+  /** The team's current estimate of mid control (its own view only) — an input for team belief. */
+  midState(): MidControlState | null {
+    return this.plan?.mid ? midControlState(this.plan.mid.c) : null;
+  }
+
+  private midEnabled(): boolean {
+    return this.options.midControl === true && !!this.options.tactics?.midArea;
+  }
+
+  private midZones(): ReadonlySet<string> {
+    if (!this.midZoneCache) this.midZoneCache = new Set(this.options.tactics?.midArea?.zones ?? []);
+    return this.midZoneCache;
+  }
+  private midZoneCache: ReadonlySet<string> | null = null;
+
+  private midDecision(plan: StandingPlan): MidDecision | null {
+    const m = plan.mid;
+    if (!m) return null;
+    return {
+      stance: m.call.stance, by: m.call.by, reason: m.call.reason, party: m.party.slice(), estimate: midControlState(m.c),
+      heldAtMs: m.heldAtMs, lostAtMs: m.lostAtMs, split: m.split, fake: m.fake, rotatedAround: m.rotatedAround,
+    };
+  }
+
+  /** This side's control of mid as the team believes it: +1 = we hold it. 0 when mid is not tracked. */
+  private midOwn(plan: StandingPlan): number {
+    return plan.mid ? ownControl(plan.mid.c, plan.side === "attack" ? "attack" : "defense") : 0;
+  }
+
+  /**
+   * Start the round's mid play (once) and update the team's estimate of mid control (every
+   * decision). The estimate is fed ONLY what the team knows: its own living players standing in
+   * mid, enemies it currently sees there (or saw within MID_SEEN_MS), runners it hears there, its
+   * own utility thrown into mid, enemy utility heard there, a teammate who died in mid, and an
+   * enemy who died while the team was fighting in mid. Sharpness = ½ + mean decisionMaking.
+   */
+  private updateMid(view: PolicyView, plan: StandingPlan, rng: RandomSource): void {
+    const mid = this.options.tactics?.midArea;
+    if (!this.midEnabled() || !mid) return;
+    const side = view.side === "attack" ? "attack" : "defense";
+    const zones = this.midZones();
+    const zoneOf = (v: Vector3) => String(this.spatial.nearestZone({ x: v.x, y: v.y }));
+    const alive = view.teammates.filter((p) => p.alive);
+    const now = view.timeRemainingMs;
+    if (!plan.mid) {
+      const resolved: ResolvedMidSidePlan = this.midPlan ?? { stance: "auto", count: "auto", who: "auto", byManager: [] };
+      const call = decideMidCall(resolved, mid, { side, eco: isEco(view), partialBuy: isPartialBuy(view), calledMid: plan.opening === "midControl", alive: alive.length });
+      let party: string[] = [];
+      if (side === "defense") {
+        // the defence's mid players are whoever starts in mid (the match runner places them)
+        party = alive.filter((p) => zones.has(zoneOf(p.position))).map((p) => String(p.id));
+      } else if (call.stance === "contest") {
+        const holder = view.spike.holderId ? String(view.spike.holderId) : null;
+        const pool = alive.filter((p) => String(p.id) !== holder);
+        const roles = assignRoles(view, plan.opening, this.profiles, rng);
+        const roleOf = new Map(roles.map((r) => [String(r.playerId), r.role as string]));
+        const byAggression = pool.map((p) => ({ id: String(p.id), a: profileFor(p.id, this.profiles).aggression })).sort((p, q) => q.a - p.a || (p.id < q.id ? -1 : 1)).map((p) => p.id);
+        let order: string[];
+        const who = resolved.who;
+        if (who !== "auto" && "players" in who) order = [...who.players.filter((id) => byAggression.includes(id)), ...byAggression];
+        else if (who !== "auto" && "roles" in who) order = [...who.roles.flatMap((r) => byAggression.filter((id) => roleOf.get(id) === r)), ...byAggression];
+        // the IGL's pick: the entry takes the fight, the lurker plays mid behind it (a lurk through mid)
+        else order = [...byAggression.slice(0, 1), ...byAggression.filter((id) => roleOf.get(id) === "lurker"), ...byAggression];
+        party = [...new Set(order)].slice(0, call.count);
+      }
+      plan.mid = {
+        call, party, c: 0, heldAtMs: null, lostAtMs: null, abandoned: false,
+        prevAlive: new Set(alive.map((p) => String(p.id))), prevEnemyAlive: view.knownEnemyAliveCount,
+        enemyAtClockMs: Infinity, utilityUntilClockMs: Infinity, lastClockMs: now, split: false, fake: false, rotatedAround: false,
+      };
+    }
+    const m = plan.mid;
+    const dtMs = Math.max(0, m.lastClockMs - now);
+    m.lastClockMs = now;
+    const own = alive.filter((p) => zones.has(zoneOf(p.position))).length;
+    const seen = new Set<string>();
+    for (const e of view.observation.visibleEnemies) {
+      if (!e.currentlyVisible && Math.abs(view.observation.timestampMs - e.lastSeenAtMs) > MID_SEEN_MS) continue;
+      if (zones.has(zoneOf(e.lastSeenPosition))) seen.add(String(e.playerId));
+    }
+    let heard = 0;
+    let enemyUtility = 0;
+    for (const e of view.observation.audibleEvents) {
+      if (!zones.has(zoneOf(e.approxPosition))) continue;
+      if (e.kind === "footstep" || e.kind === "landing") heard++;
+      else if (e.kind === "abilityCast") enemyUtility = 1;
+    }
+    const enemy = Math.max(seen.size, heard);
+    if (enemy > 0) m.enemyAtClockMs = now;
+    const ownUtility = m.utilityUntilClockMs !== Infinity && now >= m.utilityUntilClockMs ? 1 : 0;
+    // fights: a teammate who died in mid; an enemy who died while we stood in mid against one sensed there
+    let lost = 0;
+    for (const p of view.teammates) if (!p.alive && m.prevAlive.has(String(p.id)) && zones.has(zoneOf(p.position))) lost++;
+    const enemyDrop = m.prevEnemyAlive != null && view.knownEnemyAliveCount != null ? Math.max(0, m.prevEnemyAlive - view.knownEnemyAliveCount) : 0;
+    const fighting = (own > 0 || lost > 0) && m.enemyAtClockMs !== Infinity && m.enemyAtClockMs - now <= MID_SEEN_MS;
+    const won = fighting ? enemyDrop : 0;
+    m.prevAlive = new Set(alive.map((p) => String(p.id)));
+    m.prevEnemyAlive = view.knownEnemyAliveCount;
+    const sharpness = 0.5 + (alive.length > 0 ? alive.reduce((sum, p) => sum + profileFor(p.id, this.profiles).decisionMaking, 0) / alive.length : 0.5);
+    const atk = side === "attack";
+    m.c = stepMidControl(m.c, {
+      attack: atk ? own : enemy, defense: atk ? enemy : own,
+      attackUtility: atk ? ownUtility : enemyUtility, defenseUtility: atk ? enemyUtility : ownUtility,
+      killsByAttack: atk ? won : lost, killsByDefense: atk ? lost : won,
+    }, dtMs, sharpness);
+    const mine = ownControl(m.c, side);
+    const theta = DEFAULT_MID_CONTROL_TUNING.holdThreshold;
+    if (mine >= theta && m.heldAtMs === null) m.heldAtMs = now;
+    if (mine <= -theta && m.lostAtMs === null) m.lostAtMs = now;
+
+    // ATTACK: the party gives the fight up when it is lost, or when the team is a player down
+    // with no site named yet (a short-handed team does not split itself).
+    const prePlant = view.spike.phase === "carried" || view.spike.phase === "dropped";
+    if (atk && prePlant && !m.abandoned && m.party.length > 0) {
+      const partyAlive = m.party.filter((id) => alive.some((p) => String(p.id) === id));
+      const down = view.knownEnemyAliveCount != null && alive.length < view.knownEnemyAliveCount;
+      const why = partyAlive.length === 0 ? "the mid party is dead" : mine <= -theta ? "mid is lost" : down && plan.uncommitted ? `a player down ${alive.length}v${view.knownEnemyAliveCount}` : null;
+      if (why) {
+        m.abandoned = true;
+        plan.revisions.push({ atMs: now, from: "mid: contest", to: "mid: give up", reason: `${why} — the team regroups and plays without mid` });
+      }
+    }
+  }
+
+  /** Whether a player is in the attack's mid party and the party is still playing mid. */
+  private inMidParty(plan: StandingPlan, id: string): boolean {
+    const m = plan.mid;
+    return !!m && m.call.stance === "contest" && !m.abandoned && m.party.includes(id);
+  }
+
+  /** ATTACK: where the mid party stands to take mid (where the two sides meet) and what it watches there. */
+  private midTake(): { zone: ZoneId; aim: ZoneId } | null {
+    const mid = this.options.tactics?.midArea;
+    if (!mid) return null;
+    const zone = mid.contest as ZoneId;
+    const toward = this.spatial.findPath(zone, mid.defenseEntry as ZoneId, "run")?.path[1] ?? (this.options.tactics?.aim[mid.contest] as ZoneId | undefined) ?? (mid.defenseEntry as ZoneId);
+    return { zone, aim: toward === zone ? (mid.defenseEntry as ZoneId) : toward };
+  }
+
+  /**
+   * ATTACK: the mid party's own way onto a site — to the mid zone the site's link leaves from,
+   * then down the link (MidArea.siteLinks: past the site's main entry). null when mid opens no
+   * second lane onto that site; the party then comes in with the team.
+   */
+  private midRoute(from: ZoneId, site: ZoneId): ZoneId[] | null {
+    const mid = this.options.tactics?.midArea;
+    const letter = siteLetter(this.spatial, site);
+    const link = mid && letter ? mid.siteLinks[letter] : null;
+    if (!link) return null;
+    const at = link.path.indexOf(String(from));
+    if (at >= 0) return link.path.slice(at) as ZoneId[];
+    const head = this.spatial.findPath(from, link.from as ZoneId, "run")?.path;
+    return head ? [...head, ...(link.path.slice(1) as ZoneId[])] : null;
+  }
+
+  /** Where a mid-party player waits before the hit: the last zone of its mid route the site cannot see. */
+  private midStage(from: ZoneId, site: ZoneId): ZoneId | null {
+    const route = this.midRoute(from, site);
+    if (!route) return null;
+    for (let i = route.length - 2; i >= 0; i--) if (!this.spatial.hasLineOfSight(route[i]!, site)) return route[i]!;
+    return from;
+  }
+
+  /**
+   * Ground a defender changing position goes round: the attack's own ground (MapTactics
+   * .attackerGround), plus mid when the team believes the attack holds it, minus mid when the
+   * team believes it holds mid itself. Losing mid is what makes a rotation long.
+   */
+  private enemyGround(plan: StandingPlan): Set<string> {
+    const ground = new Set(this.options.tactics?.attackerGround ?? []);
+    const m = plan.mid;
+    if (!m) return ground;
+    const mine = ownControl(m.c, "defense");
+    const theta = DEFAULT_MID_CONTROL_TUNING.holdThreshold;
+    if (mine <= -theta) for (const z of this.midZones()) ground.add(z);
+    else if (mine >= theta) for (const z of this.midZones()) ground.delete(z);
+    return ground;
+  }
+
+  /**
+   * DEFENCE before the plant, the mid players:
+   *   short-handed  with MID_SHORT_HANDED or fewer alive, a mid player with nobody in sight falls
+   *                 back to the site with the fewest defenders (its new post) — mid is given up
+   *   contest       (a manager's stance) while the team believes it holds mid, the most aggressive
+   *                 mid player steps up to where the two sides meet and watches the attack's way in
+   */
+  private commitDefenseMid(view: PolicyView, plan: StandingPlan, commands: readonly ActionCommand[]): ActionCommand[] {
+    const m = plan.mid;
+    const mid = this.options.tactics?.midArea;
+    const phase = view.spike.phase;
+    if (view.side !== "defense" || !m || !mid || (phase !== "carried" && phase !== "dropped") || m.party.length === 0) return commands.slice();
+    const alive = view.teammates.filter((p) => p.alive);
+    const zoneOf = (p: PolicyView["teammates"][number]) => this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
+    const contact = view.observation.visibleEnemies.some((e) => e.currentlyVisible);
+    const zones = this.midZones();
+    const sites = this.plantableSites();
+    if (!m.abandoned && alive.length <= MID_SHORT_HANDED && !contact) {
+      m.abandoned = true;
+      plan.revisions.push({ atMs: view.timeRemainingMs, from: "mid: hold", to: "mid: give up", reason: `${alive.length} alive — the mid player falls back to a site` });
+      for (const id of m.party) {
+        const p = alive.find((t) => String(t.id) === id);
+        if (!p || plan.rotated.has(id)) continue;
+        const count = (z: ZoneId) => alive.filter((t) => String(t.id) !== id && zoneOf(t) === z).length;
+        const post = [...sites].sort((a, b) => count(a) - count(b) || this.legMs(zoneOf(p), a) - this.legMs(zoneOf(p), b))[0];
+        if (post) plan.home.set(id, post);
+      }
+    }
+    const theta = DEFAULT_MID_CONTROL_TUNING.holdThreshold;
+    const pusher = m.call.stance === "contest" && !m.abandoned && ownControl(m.c, "defense") >= theta
+      ? m.party.map((id) => ({ id, a: profileFor(id as PolicyView["teammates"][number]["id"], this.profiles).aggression })).sort((p, q) => q.a - p.a || (p.id < q.id ? -1 : 1))[0]?.id ?? null
+      : null;
+    return commands.map((c) => {
+      const id = String(c.playerId);
+      if (!m.party.includes(id) || c.kind === "useAbility" || plan.rotation.ids.includes(id)) return c;
+      const p = alive.find((t) => String(t.id) === id);
+      if (!p) return c;
+      const pz = zoneOf(p);
+      if (m.abandoned) {
+        const home = plan.home.get(id);
+        if (!home || home === pz || zones.has(String(home))) return c;
+        const aim = this.aimOf(home);
+        return { playerId: p.id, kind: "move", targetZone: home, ...(aim ? { aimZone: aim } : {}), moveMode: this.paceFor(view, p, "quiet", Infinity), executeAtMs: 0, sourceActionId: "mid:fall-back" };
+      }
+      if (id === pusher && !contact) {
+        const target = mid.contest as ZoneId;
+        const aim = (this.spatial.findPath(target, mid.attackEntry as ZoneId, "run")?.path[1] ?? (mid.attackEntry as ZoneId)) as ZoneId;
+        return pz === target
+          ? { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: "mid:push-hold" }
+          : { playerId: p.id, kind: "move", targetZone: target, aimZone: aim, moveMode: this.paceFor(view, p, "quiet", Infinity), executeAtMs: 0, sourceActionId: "mid:push" };
+      }
+      return c;
+    });
   }
 
   /** Override any subset of the formula tunables (pre-match option); null restores the defaults. */
@@ -902,7 +1194,11 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const enemies = view.knownEnemyAliveCount;
     const up = enemies != null && enemies < alive;
     const late = view.timeRemainingMs <= this.slowCommitClockMs(view);
-    if (!up && !late) return;
+    // Mid taken: the defence has to guess now — hit before it adjusts (mid-control.ts).
+    const mid = plan.mid;
+    const midHeld = !!mid && mid.call.stance === "contest" && !mid.abandoned && mid.heldAtMs !== null
+      && this.midOwn(plan) >= DEFAULT_MID_CONTROL_TUNING.holdThreshold && mid.heldAtMs - view.timeRemainingMs >= MID_COMMIT_AFTER_MS;
+    if (!up && !late && !midHeld) return;
     const site = (letter: "A" | "B" | "C"): ZoneId | null =>
       this.spatial.zonesByType("site").find((z) => this.spatial.isPlantableZone(z) && siteLetter(this.spatial, z) === letter) ?? null;
     const a = site("A");
@@ -930,8 +1226,29 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     plan.executeGo = false;
     plan.revisions.push({
       atMs: view.timeRemainingMs, from: `${plan.strategy} (slow)`, to: `commit ${siteLetter(this.spatial, plan.objective)}`,
-      reason: up ? `player advantage ${alive}v${enemies} — hit while they are short` : "clock — commit with the information gathered",
+      reason: up ? `player advantage ${alive}v${enemies} — hit while they are short` : midHeld && !late ? "mid is held — hit before the defence adjusts" : "clock — commit with the information gathered",
     });
+    // With mid held and no read of where the defence is thin, the mid party can sell the other
+    // site first: it stands between the two and its noise is believable on either. An IGL does
+    // this in proportion to how well the team reads the game (mean decisionMaking above ¼, at
+    // most every second time), and only with the clock to make the show and still cross.
+    if (midHeld && !c && plan.objective && Math.abs(bias.A - bias.B) < 0.5 && mid) {
+      const living = view.teammates.filter((p) => p.alive);
+      const dm = living.reduce((sum, p) => sum + profileFor(p.id, this.profiles).decisionMaking, 0) / Math.max(1, living.length);
+      const holder = view.spike.holderId ? String(view.spike.holderId) : null;
+      const showers = mid.party.filter((id) => id !== holder && living.some((p) => String(p.id) === id));
+      const clockOk = view.timeRemainingMs - FEINT_SHOW_MS > this.slowCommitClockMs(view);
+      if (showers.length > 0 && living.length - showers.length >= 2 && clockOk && rng.nextFloat() < Math.min(0.5, Math.max(0, dm - 0.25))) {
+        const other = plan.objective === a ? b : a;
+        const from = plan.strategy;
+        plan.strategy = plan.objective === b ? "fakeAtoB" : "fakeBtoA";
+        plan.feint = { site: other, untilClockMs: view.timeRemainingMs - FEINT_SHOW_MS };
+        plan.showers = showers;
+        plan.decidedAtMs = view.timeRemainingMs;
+        mid.fake = true;
+        plan.revisions.push({ atMs: view.timeRemainingMs, from, to: plan.strategy, reason: `mid is held and neither site reads thin — the mid party shows ${siteLetter(this.spatial, other)}, the team hits ${siteLetter(this.spatial, plan.objective)}` });
+      }
+    }
   }
 
   /**
@@ -1001,6 +1318,15 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const moveMode = this.paceFor(view, p, intent, intent === "quiet" ? this.quietSlackMs(view, pz, target, then) : 0);
       return { playerId: p.id, kind: "move", targetZone: this.planRoute(pz, target).waypoint, aimZone: aim, moveMode, executeAtMs: 0, sourceActionId: `plan:${tag}-move` };
     };
+    // A mid-party order: straight to the zone (the party's way is through mid, not round it).
+    const midOrder = (p: Mate, pz: ZoneId, target: ZoneId, aim: ZoneId, tag: string, intent: MoveIntent): ActionCommand => {
+      if (target === pz) return { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: `mid:${tag}-hold` };
+      const moveMode = this.paceFor(view, p, intent, intent === "quiet" ? this.quietSlackMs(view, pz, target, plan.objective) : 0);
+      return { playerId: p.id, kind: "move", targetZone: target, aimZone: aim, moveMode, executeAtMs: 0, sourceActionId: `mid:${tag}-move` };
+    };
+    // The mid party's staging zone for the hit (its own lane onto the site), or null: with the team.
+    const midStageOf = (id: string, pz: ZoneId, site: ZoneId): ZoneId | null =>
+      this.inMidParty(plan, id) && id !== holderId ? (pz === site ? site : this.midStage(pz, site)) : null;
     const isLurker = (id: string) => roleOf.get(id) === "lurker" && id !== holderId;
     // The lurk (slow play only): hold the approach to the site the team is NOT playing toward, out
     // of that site's sight — map presence on the far side — until the team commits to a site; then
@@ -1018,6 +1344,12 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         const p = view.teammates.find((t) => String(t.id) === id && t.alive);
         if (!p || c.kind === "useAbility") return c;
         const pz = zoneOf(p);
+        // The mid party takes mid: it goes to where the two sides meet and holds it, watching the
+        // defenders' way in. The rest hold their lane as on any slow play.
+        if (this.inMidParty(plan, id)) {
+          const take = this.midTake();
+          if (take) return midOrder(p, pz, take.zone, take.aim, "take", "quiet");
+        }
         if (isLurker(id)) return lurk(p, pz, plan.slowSide) ?? c;
         const lane = this.slowLane(plan, pz);
         return lane === pz
@@ -1050,7 +1382,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       let slowest = 0;
       for (const p of team) {
         const pz = zoneOf(p);
-        if (pz !== objective && pz !== this.stagingZone(pz, objective)) staged = false;
+        const midStage = midStageOf(String(p.id), pz, objective);
+        if (pz !== objective && pz !== (midStage ?? this.stagingZone(pz, objective))) staged = false;
         slowest = Math.max(slowest, this.routeCost(this.planRoute(pz, objective).route, () => false).travelMs);
       }
       if (staged || view.timeRemainingMs <= slowest + PLANT_DURATION_MS + EXECUTE_TIME_MARGIN_MS) plan.executeGo = true;
@@ -1061,6 +1394,12 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const p = view.teammates.find((t) => String(t.id) === id && t.alive);
       if (!p || c.kind === "useAbility" || c.kind === "plant") return c;
       const pz = zoneOf(p);
+      // The mid party comes onto the site by mid's own way in — the second lane of a split hit.
+      const midStage = isShower(id) ? null : midStageOf(id, pz, objective);
+      if (midStage) {
+        if (plan.mid) plan.mid.split = true;
+        return plan.executeGo ? midOrder(p, pz, objective, objective, "go", "fast") : midOrder(p, pz, midStage, objective, "stage", "quiet");
+      }
       // go: speed decides the entry — everyone runs.
       if (plan.executeGo) return order(p, pz, objective, objective, "go", "fast");
       // show: the few showers RUN, on purpose, where the feint site can hear them but not see them.
@@ -1199,7 +1538,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    */
   private planRoute(from: ZoneId, to: ZoneId): { route: readonly ZoneId[]; waypoint: ZoneId } {
     if (from === to) return { route: [from], waypoint: to };
-    const key = `${String(from)}>${String(to)}`;
+    // With mid held, mid is the attack's own ground: time spent in it is not time under the sites' eyes.
+    const midOpen = this.midOpen;
+    const key = `${String(from)}>${String(to)}${midOpen ? "|mid" : ""}`;
     const hit = this.routeCache.get(key);
     if (hit) return hit;
     const direct = this.spatial.findPath(from, to, "run")?.path ?? null;
@@ -1215,7 +1556,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       result = direct ? { route: direct, waypoint: to } : around ? { route: around, waypoint: spawn } : { route: [from, to], waypoint: to };
     } else {
       const watched = this.siteWatched();
-      const seen = (z: ZoneId) => watched.has(String(z));
+      const mids = this.midZones();
+      const seen = (z: ZoneId) => watched.has(String(z)) && !(midOpen && mids.has(String(z)));
       const d = this.routeCost(direct, seen);
       const a = this.routeCost(around, seen);
       const goAround = a.exposedMs < d.exposedMs || (a.exposedMs === d.exposedMs && a.travelMs < d.travelMs);
@@ -1224,6 +1566,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     this.routeCache.set(key, result);
     return result;
   }
+
+  /** ATTACK: the team believes it holds mid this decision (set in decideWithTrace; read by planRoute). */
+  private midOpen = false;
 
   /**
    * Where a player waits before the team enters `site`: the last zone of its route (planRoute) the
@@ -1301,9 +1646,11 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * walks alone into five attackers in the first ten seconds. The zone it stands in and the zone it
    * is sent to are never priced, so a deliberate push still goes where it is told.
    */
-  private defenseRoutesOnOwnGround(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
-    const ground = this.options.tactics?.attackerGround;
-    if (view.side !== "defense" || !ground || ground.length === 0) return commands.slice();
+  private defenseRoutesOnOwnGround(view: PolicyView, plan: StandingPlan, commands: readonly ActionCommand[]): ActionCommand[] {
+    if (view.side !== "defense" || !this.options.tactics?.attackerGround) return commands.slice();
+    const ground = this.enemyGround(plan);
+    if (ground.size === 0) return commands.slice();
+    const midLost = !!plan.mid && ownControl(plan.mid.c, "defense") <= -DEFAULT_MID_CONTROL_TUNING.holdThreshold;
     const phase = view.spike.phase;
     if (phase !== "carried" && phase !== "dropped") return commands.slice();
     return commands.map((c) => {
@@ -1312,6 +1659,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const own = me ? String(this.spatial.nearestZone({ x: me.position.x, y: me.position.y })) : "";
       const zoneCosts: Record<string, number> = {};
       for (const z of ground) if (z !== String(c.targetZone) && z !== own) zoneCosts[z] = ENEMY_GROUND_COST;
+      if (midLost && plan.mid && String(c.sourceActionId ?? "").startsWith("rotate:")) plan.mid.rotatedAround = true;
       return Object.keys(zoneCosts).length ? { ...c, routePreference: "SAFEST" as const, zoneCosts } : c;
     });
   }
@@ -1358,11 +1706,14 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     return m;
   }
 
-  /** Which site's side of the map a zone belongs to ("a-main" → A), or null (mid, spawns). */
+  /** Which site's side of the map a zone belongs to ("a-main" → A; a mid zone that leads to one site → that site), or null. */
   private sideOf(zone: ZoneId, sites: ReadonlyMap<string, ZoneId>): string | null {
     const m = /^([a-z])-/.exec(String(zone));
     const key = m ? m[1]!.toUpperCase() : null;
-    return key && sites.has(key) ? key : null;
+    if (key && sites.has(key)) return key;
+    // a zone whose name does not say (mid, bridges): the site it leads the attack to, from the map
+    const led = this.options.tactics?.approachSide?.[String(zone)];
+    return led && sites.has(led) ? led : null;
   }
 
   /**
@@ -1544,7 +1895,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       if (siteZone && rot.ids.includes(id)) {
         // Held site: nobody is watching its entries, so the fastest approach (a zero budget makes
         // retakeApproach pick by time). Fallen site: the least-exposed one, as for a retake.
-        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity, { avoid: new Set(this.options.tactics?.attackerGround ?? []) }).stage;
+        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity, { avoid: this.enemyGround(plan) }).stage;
         const target = pz === siteZone || (held && pz === stage) ? siteZone : stage;
         const aim = target === siteZone ? this.aimOf(siteZone) ?? siteZone : siteZone;
         return target === pz
@@ -2023,6 +2374,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     // The plan persists across decisions: the opening call is made ONCE per round (not re-drawn
     // every 500ms) and then only changes when new information justifies it (reconsider).
     const plan = this.currentPlan(view, rng);
+    this.updateMid(view, plan, rng);
+    this.midOpen = view.side === "attack" && !!plan.mid && !plan.mid.abandoned && this.midOwn(plan) >= DEFAULT_MID_CONTROL_TUNING.holdThreshold;
     const opening = plan.opening;
     const recon = this.revisePlan(view, plan, rng);
     // A coach order (timeout) forces the strategy, overriding the IGL's own call.
@@ -2064,13 +2417,18 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     }
     commands = this.commitPostPlantContest(view, commands, rng);
     commands = this.commitDefenseHold(view, strategy, commands);
+    commands = this.commitDefenseMid(view, plan, commands);
     if (!ordered) commands = this.commitDefenseRotation(view, plan, commands);
     commands = this.commitDefenseChase(view, plan, commands, rng);
     commands = this.commitDefuser(view, commands, rng);
 
     // Route intent: every move order says how it wants to get there (route-intent.ts).
     commands = annotateRoutes(view, strategy, roleOf, commands);
-    commands = this.defenseRoutesOnOwnGround(view, commands);
+    commands = this.defenseRoutesOnOwnGround(view, plan, commands);
+    // own utility thrown into mid counts toward holding it for as long as a smoke lasts
+    if (plan.mid && commands.some((c) => c.kind === "useAbility" && c.targetZone && this.midZones().has(String(c.targetZone)))) {
+      plan.mid.utilityUntilClockMs = view.timeRemainingMs - SMOKE_WINDOW_MS;
+    }
 
     const decision: PolicyDecision = { strategy, roles, commands };
     const trace: TeamRoundTrace = {
@@ -2089,6 +2447,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         siteBias: enemySiteBias(view, this.spatial),
         opponentRead: this.opponentRead ?? null,
         hitBelief: plan.belief,
+        midControl: plan.mid ? midControlState(plan.mid.c) : null,
       },
       roles,
       players: choices.map(({ choice }, i) => ({
