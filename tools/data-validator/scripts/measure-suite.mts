@@ -139,7 +139,7 @@ function main(): void {
     const paths = batchPaths(runDir, b.id);
     if (aborted) { results.push({ id: b.id, label: b.label, status: "skipped", exitCode: null, seconds: null, matches: b.matches, rounds: null, judged: null, headlines: headlineValues([]), error: aborted }); continue; }
     const cmd = batchCommand(b, runDir, SIM_BATCH, lock, runId);
-    console.error(`measure-suite: [${i + 1}/${batches.length}] ${b.id} — ${b.label}${lock ? " (waiting for the lock if another heavy job is running)" : ""}`);
+    console.error(`measure-suite: [${i + 1}/${batches.length}] ${b.label}${lock ? " (waiting for the lock if another heavy job is running)" : ""}`);
     const log = openSync(paths.log, "w");
     const t0 = Date.now();
     const res = spawnSync(cmd[0]!, cmd.slice(1), { cwd: REPO_ROOT, stdio: ["ignore", log, log] });
