@@ -383,6 +383,8 @@ export class InformationLayer {
   private contacts = new Map<string, Contact[]>();
   /** Areas called clear: zone → when it was last known empty (round clock). */
   private cleared = new Map<string, number>();
+  /** Clear calls awaiting judgement: refuted if an enemy turns up in the area soon after. */
+  private clears: Array<{ from: string; zone: string; at: number; judged: boolean }> = [];
   /** When each player last sensed anything (round clock). */
   private lastSensed = new Map<string, number>();
   private calls: PendingCall[] = [];
@@ -466,6 +468,7 @@ export class InformationLayer {
     this.claims = new Map();
     this.contacts = new Map();
     this.cleared = new Map();
+    this.clears = [];
     this.lastSensed = new Map();
     this.calls = [];
     this.spotSince = new Map();
@@ -806,6 +809,7 @@ export class InformationLayer {
     const { ev, item, said } = c;
     if (item.kind === "clear") {
       this.clearArea(said.zone, item.sensedAtMs);
+      this.clears.push({ from: ev.from, zone: said.zone, at: item.sensedAtMs, judged: false });
       return;
     }
     if ((item.kind === "sighting") && said.enemyId) {
@@ -865,6 +869,15 @@ export class InformationLayer {
         c.judged = true;
         this.ledger.note(this.profileOf(c.from).key, this.adjacent(c.zone, g.c.zone));
       }
+    }
+    // a clear call is refuted when an enemy is spotted in the cleared area right after it
+    for (const cl of this.clears) {
+      if (cl.judged) continue;
+      const area = [cl.zone, ...this.neighbours(cl.zone)];
+      if (ground.some((g) => area.includes(g.c.zone) && g.c.sensedAt >= cl.at && g.c.sensedAt - cl.at <= SOUND_CONFIRM_WINDOW_MS)) {
+        cl.judged = true;
+        this.ledger.note(this.profileOf(cl.from).key, false);
+      } else if (now - cl.at > SOUND_CONFIRM_WINDOW_MS) cl.judged = true;
     }
     for (const list of this.contacts.values()) {
       for (const c of list) {
