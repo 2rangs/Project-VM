@@ -19,7 +19,7 @@ number is marked *assumption*. The lurk model therefore needs stated priors and 
 
 **Engine today:** a lurker exists and is *placed* (far-site hold, then collapse), but it has no decision of its own:
 it never hits alone, never cuts a rotation, its sightings are ordinary team intel, and nothing in the buy phase
-differs. Coverage in §7: 3 behaviours covered or partly covered, 10 missing.
+differs. Coverage in §7 (14 behaviours): 3 covered, 4 partly covered, 7 missing.
 
 ## 1. Sources used
 
