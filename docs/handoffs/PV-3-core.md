@@ -470,14 +470,14 @@ as PROJECT V's seams via **structural mirrors** that compile now; swap imports a
 - `observationProviderForPlayer` ← perception-engine `perceive`.
 - `normalization.ts`: agent-slug/team-id/coordinate/time tables + per-branch notation survey
   + KNOWN_MISMATCHES.
-- `docs/INTEGRATION_PLAN.md`: investigated branch inventory, merge order, **collision
+- `docs/archive/INTEGRATION_PLAN.md`: investigated branch inventory, merge order, **collision
   analysis (no path collisions — additive merges)**, post-merge wiring (scope rename
   @project-v→@pv, shared-mirror replacement, lockfile consolidation, import-swap checklist),
   test commands, and the end-to-end Ascent acceptance test.
 
 ## 3. 변경한 파일
 `packages/integration-adapters/**` (new: spatial/combat/economy/ability/observation adapters,
-normalization + tests), `docs/INTEGRATION_PLAN.md`, this handoff section.
+normalization + tests), `docs/archive/INTEGRATION_PLAN.md`, this handoff section.
 
 ## 4. 데이터 출처 (read-only, not merged)
 spatial/combat/perception/ability: `origin/claude/pv-spatial @ e3ad1c54`. economy:
@@ -508,7 +508,7 @@ promote scenarios 07–10 `todo`s, verify the coordinate transform, and add the 
 acceptance test once round-simulator lands.
 
 ## 13. 작업 재개 지점
-`docs/INTEGRATION_PLAN.md`, then `packages/integration-adapters/src/index.ts` and each
+`docs/archive/INTEGRATION_PLAN.md`, then `packages/integration-adapters/src/index.ts` and each
 `*-adapter.ts` header. `pnpm test && pnpm typecheck`.
 
 ---
@@ -517,7 +517,7 @@ acceptance test once round-simulator lands.
 
 **Agent:** PV-3 · **Date:** 2026-11-18 · **Branch:** `claude/pv-core`
 **Scope:** Local integration rehearsal (throwaway dry-run, nothing pushed to remote merges)
-+ pv-core fixes it surfaced. Full report: `docs/INTEGRATION_REHEARSAL.md`.
++ pv-core fixes it surfaced. Full report: `docs/archive/INTEGRATION_REHEARSAL.md`.
 
 ## 1–2. 목표 / 완료
 Executed INTEGRATION_PLAN locally in a detached `git worktree` (`/tmp/pv-rehearsal`, never
@@ -541,7 +541,7 @@ EventLog → replay) plus PV-3's TeamDecisionPolicy through the real spatial-eng
 `packages/integration-adapters/src/spatial-adapter.ts` (injectable minimapToGame),
 `packages/integration-adapters/src/normalization.ts` (VLR-pixel finding + mismatches),
 `packages/integration-adapters/test/adapters.test.ts` (+1 test),
-`docs/INTEGRATION_REHEARSAL.md` (new), `docs/INTEGRATION_PLAN.md` (updated), this section.
+`docs/archive/INTEGRATION_REHEARSAL.md` (new), `docs/archive/INTEGRATION_PLAN.md` (updated), this section.
 
 ## 4–7. 실행 / 검증 / 결과
 Rehearsal in /tmp (discarded). pv-core after fixes: `pnpm typecheck` clean; `pnpm test`
@@ -562,4 +562,4 @@ transform, re-run the rehearsal, inject PV-6's transform, and wire the EventLog�
 validation harness for the real-policy acceptance metric.
 
 ## 13. 작업 재개 지점
-`docs/INTEGRATION_REHEARSAL.md` (findings), then `docs/INTEGRATION_PLAN.md`.
+`docs/archive/INTEGRATION_REHEARSAL.md` (findings), then `docs/archive/INTEGRATION_PLAN.md`.

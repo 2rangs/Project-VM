@@ -1,6 +1,6 @@
 # PROJECT V — Integration Rehearsal (phase 5)
 
-A **local, throwaway dry-run** of `docs/INTEGRATION_PLAN.md`, done by PV-3 to surface hidden
+A **local, throwaway dry-run** of `docs/archive/INTEGRATION_PLAN.md`, done by PV-3 to surface hidden
 problems before the orchestrator's final merge. **Nothing here was pushed to any remote
 branch** — the rehearsal ran in a detached `git worktree` at `/tmp/pv-rehearsal` and was
 discarded. Only this report + the pv-core fixes it prompted are committed (to `claude/pv-core`).
@@ -92,7 +92,7 @@ comparison vs. the scripted policy is **blocked on F2** (team policy cannot yet 
 tick loop) and should be the first post-integration acceptance metric.
 
 ## Plan updates applied
-`docs/INTEGRATION_PLAN.md` §Normalization updated with the VLR-pixel finding (F1) and the
+`docs/archive/INTEGRATION_PLAN.md` §Normalization updated with the VLR-pixel finding (F1) and the
 per-package typecheck/test resolution (F4/F5); risks list updated with F2/F3/F6.
 
 ## Validation harness note
@@ -108,7 +108,7 @@ baselines).
 
 Second local dry-run (detached worktree `/tmp/pv-rehearsal2`, **never pushed**, discarded).
 Merged pv-core `4727805` + pv-spatial `f9f274f` + pv-data `5b390ac` + pv-replay `06b46d66`.
-Harness saved re-runnably at `tools/integration-rehearsal/`.
+Harness saved re-runnably at `docs/archive/integration-rehearsal/`.
 
 ## Headline: F2 is RESOLVED — the real PV-3 policy now drives the sim
 `round-simulator@f9f274f` builds a `PolicyView` per side and calls `policy.decide(view, rng)`

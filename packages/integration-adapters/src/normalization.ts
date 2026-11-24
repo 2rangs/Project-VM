@@ -3,7 +3,7 @@
  *
  * Different branches picked slightly different notations. This is the single place that
  * reconciles them at integration, plus a survey of which branch uses what (read-only
- * investigation; update if a branch changes). See docs/INTEGRATION_PLAN.md §Normalization.
+ * investigation; update if a branch changes). See docs/archive/INTEGRATION_PLAN.md §Normalization.
  */
 
 /** Agent slug aliases → canonical lowercase slug. PV-1/PV-2 use "kay-o"; scenarios "kayo". */

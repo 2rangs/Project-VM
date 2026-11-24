@@ -77,7 +77,7 @@ add those globs then.
 Apply `packages/integration-adapters/src/normalization.ts` at every boundary:
 - **Agent slugs:** `kay-o` (PV-1/PV-2/game-rules) vs `kayo` (scenarios) → `normalizeAgentSlug`.
 - **Team ids:** `team-N` (PV-3) vs `teamIdx 0|1` (PV-2/PV-4) → `teamIdToIdx`/`teamIdxToId`.
-- **Coordinates:** ⚠️ **rehearsal-confirmed (F1, docs/INTEGRATION_REHEARSAL.md):** PV-2
+- **Coordinates:** ⚠️ **rehearsal-confirmed (F1, docs/archive/INTEGRATION_REHEARSAL.md):** PV-2
   minimapUnits are the **VLR minimap PIXEL frame** (x≈92..973, y≈117..844), NOT normalized
   ×1000. The ×1000 fallback mis-maps attacker-spawn→b-main. Inject PV-6's verified
   vlr-pixel↔game transform via `spatialQueryFromEngine(engine, { minimapToGame })`.
