@@ -353,6 +353,27 @@
 - 테스트: core 264/4 todo, career 49, round-simulator 134, match-runner 100, spatial-engine 407, combat-engine 27, perception-engine 32, economy-engine 38, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과.
 - 남은 것: 에코 라운드가 거의 못 이김(에코 플레이 EC-04, 엔진 쪽), 피스톨 승자가 2라운드에 SMG 대신 라이플, 궁극기 오브 위치(맵 데이터) 미연결, 라운드 중 무기 줍기 이벤트 없음.
 
+### 21차 main 머지 (2026-11-24) — 매치데이 UI-1…UI-6, 선수별 경제 표시
+- 합친 브랜치: `claude/matchday-uiux-efc023` @ `6d2e31e`(데스크톱만, 엔진 변경 없음 → 160경기 배치 생략).
+- 내용: 핸드오프 UI-1…UI-6(통신 제외), 경기 화면에 선수별 크레딧·유지 무기·드랍·궁극기 포인트와 팀 구매 이유, 듀얼 표시, 일시정지 중 계산 생략과 전술 맵에서 3D 캔버스 정리(측정상 다른 병목 없음: 프레임 0.05ms, 타임라인 44ms).
+- 테스트: 데스크톱 typecheck·build·unit 61·matchday 54·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과(이 통합 세션 재실행).
+
+### 22차 main 머지 (2026-11-24) — 개인 경제 v1.2
+- 합친 브랜치: `claude/epic-mahavira-18c91b` @ `c4b468e`(상세 `docs/ECONOMY_MODEL.md` "Match economy v1.2").
+- 내용: 2라운드 구매에서 총 가치를 상대 예상 실드에 맞춰 평가(에코 상대 스펙터 ≈1,950) → 피스톨 승자 SMG/보너스 바이, 2–0에서 3라운드 승률 0.438(VCT 0.427). 라운드 중 무기 줍기(`round-simulator/src/floor-items.ts`, 2 m 이내·적 시야 없음·설치/해체 중 아님, `MatchConfig.floorItems` 기본 켬, 킬당 ≈0.03). 궁극기 오브 소비자(`<map>.objects.json` `ultOrbs`, 현재 모든 맵 비어 있어 동작 없음).
+- 검증(실제 로스터, 시드 1–160, 이 통합 세션 재측정): 기존 8개 **8/8**, 공격 0.512, 피스톨 0.463, 전멸 0.681, 해체 0.191, 폭발 0.090, 시간 초과 0.038. 경제 셀 13/15(실패: 세미 vs 에코 0.995, 에코 vs 세미 0.022 — 에코 플레이 EC-04). 세션 보고: 시드 161–320 7/8(피스톨 0.394, 구매 이전에 결정됨), 13/15, 공격 0.503.
+- 테스트: core 264/4 todo, round-simulator 136, match-runner 104, economy-engine 38, spatial-engine 407, combat-engine 27, perception-engine 32, career 49, 데스크톱 typecheck·build·unit·matchday·engine, e2e 4종 통과.
+- 참고: `vct.duckdb`에 무기 열이 없어 2라운드 SMG/라이플 비율 자체는 맞추지 못하고 장비 가치·잔고·승률로 맞춤.
+
+### 23차 main 머지 (2026-11-24) — 럴커 리서치, 매치데이 가독성
+- 합친 브랜치: `claude/suspicious-jones-8af005` @ `eabf93f`(문서만: `docs/research/LURKER_ROLE.md`, `PRO_TECHNIQUES.md`, `PRO_TECHNIQUES_BACKLOG.md`), `claude/matchday-uiux-efc023` @ `495d97e`(데스크톱만: 생존 인원 대비 띠, 1–5 키·로스터 클릭 선수 강조와 Esc 해제, 사이트 라벨 강조, 경제 숫자 확대, 키 안내).
+- 엔진 변경 없음 → 160경기 배치 생략. 데스크톱 typecheck·build·unit·matchday·engine, e2e·시리즈·커리어·구단 운영 e2e 통과(이 통합 세션 재실행, main 기준 별도 워크트리).
+- 보류: 엔진 정합성(`aca57b7`)·맵 데이터(`3083406`)·움직임(`b62abf7`) 합본은 실제 로스터 피스톨 공격 0.438(기존 8개 7/8). 라운드 중 움직임 스타일을 꺼도 바이 페이즈 스크립트가 켜져 있으면 0.438, 스타일 객체 자체를 끄면 0.469(8/8). 움직임 세션이 원인 수정 중이라 main에 넣지 않음.
+
+### 24차 main 머지 (2026-11-24) — 설치·설치 후·미드 주도권 리서치
+- 합친 브랜치: `claude/suspicious-jones-8af005` @ `056ea8f`(문서만: `docs/research/PLANT_POSTPLANT.md` — 엔진 정합성 설치 위치 작업 대비 20행 갭 맵, `docs/research/MID_CONTROL.md` — main·`claude/nav-engine` 대비 12행 갭 맵).
+- 한계: `vct.duckdb`에 이벤트·위치·설치 좌표가 없어 인원 우위·남은 시간·사이트별 설치 후 승률, 첫 킬 위치별 라운드 승률, 스플릿 비율은 계산 못 함(맵별 결과 표로 대체; GRID Open Access나 VOD 코딩이 경로).
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
