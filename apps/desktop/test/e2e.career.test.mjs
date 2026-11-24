@@ -40,6 +40,9 @@ async function saveWhen(pred, timeoutMs = 15000) {
   return last ?? readSave();
 }
 
+const T0 = Date.now();
+const mark = (label) => console.log(`[${Math.round((Date.now() - T0) / 1000)}s] ${label}`);
+
 async function main() {
   const app = await electron.launch({
     executablePath: electronPath,
@@ -58,6 +61,9 @@ async function main() {
   });
   const page = await app.firstWindow();
   page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
+  page.on('crash', () => console.log('[page] renderer crashed'));
+  page.on('close', () => console.log('[page] window closed'));
+  app.on('close', () => console.log('[app] closed'));
   if (process.env.PV_E2E_VERBOSE) app.process().stderr?.on('data', (d) => process.stdout.write(`[main] ${d}`));
   await app.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows()[0].setContentSize(1280, 800); });
   const shot = (name) => page.screenshot({ path: path.join(OUT, `desktop-career-${name}.png`) });
@@ -76,6 +82,7 @@ async function main() {
 
   // ── new career (the manager's club comes from the start menu) ──
   const { teamId, teamName } = await startCareer(page);
+  mark('career started');
   assert.match(await page.getByTestId('home-date').innerText(), /^2026-01-05$/);
   assert.ok(fs.existsSync(path.join(SAVES, 'slot1.json')), 'the new career is saved to slot 1');
   assert.equal(readSave().world.club.userTeamId, teamId, 'the club layer runs for the manager\'s club');
@@ -89,6 +96,7 @@ async function main() {
 
   // ── club: a free agent on a one-year contract, and the training plan ──
   const signed = await clubStep(page, OUT, { years: 1, practiceMap: true });
+  mark('club step done');
   const afterClub = readSave();
   const signedId = Object.keys(afterClub.world.players).find((id) => afterClub.world.players[id].handle === signed);
   assert.equal(afterClub.world.club.contracts[signedId].endSeason, afterClub.world.season, 'one-year contract ends this season');
@@ -128,6 +136,7 @@ async function main() {
     throw new Error('no match day reached');
   };
   await toMatchDay();
+  mark('first match day reached');
   const matchDate = await page.getByTestId('home-date').innerText();
   assert.ok(matchDate >= '2026-01-05' && matchDate < '2026-03-01', `first match day is in the Kickoff window (${matchDate})`); // the circuit calendar starts with Kickoff in January
   const fatigueBefore = readSave().world.club.training.exposure;
@@ -153,6 +162,7 @@ async function main() {
   assert.equal(await page.locator('[data-testid="series-team-a"] option:checked').innerText(), teamName, 'our team is series team A');
   await page.getByTestId('series-start').click();
   await page.waitForSelector('[data-testid="veto-board"]', { timeout: LONG });
+  mark('veto board');
   const phase = () => page.getByTestId('series-screen').getAttribute('data-phase');
   while ((await phase()) === 'veto') {
     const ours = await page.getByTestId('veto-turn').getAttribute('data-step-ours');
@@ -169,6 +179,7 @@ async function main() {
   const a = Number(await page.getByTestId('series-score-a').innerText());
   const b = Number(await page.getByTestId('series-score-b').innerText());
   await page.getByTestId('series-career-record').click();
+  mark('series recorded');
   await page.waitForSelector('[data-testid="home"]', { timeout: 20000 });
 
   // ── the result is in the standings, the minutes and K/D with the players who played ──
@@ -190,8 +201,16 @@ async function main() {
   await page.getByTestId('nav-home').click();
   await page.getByTestId('home-continue').click();
   await page.waitForSelector('[data-testid="career-progress"]', { timeout: 60000 });
+  mark('engine continue started');
   await shot('sim');
-  await page.waitForSelector('[data-testid="home-matchday"], [data-testid="home-awaiting"]', { timeout: LONG * 3 });
+  // Bounded: this Continue plays one week of our league's AI series through the engine (≈ 5 series,
+  // 3–5 s each; the host kills a series stuck for 60 s and the day falls back to the quick estimate).
+  // A wait of minutes means something hung — say what the screen was doing.
+  await page.waitForSelector('[data-testid="home-matchday"], [data-testid="home-awaiting"]', { timeout: 240000 }).catch(async (e) => {
+    const txt = await page.getByTestId('career-progress').innerText().catch(() => '(no progress box)');
+    throw new Error(`the engine Continue did not stop within 4 min — progress box: ${txt.replace(/\s+/g, ' ')} — ${e.message}`);
+  });
+  mark('engine continue stopped');
   assert.equal(await page.getByTestId('home-notice').count(), 0, 'no engine fallback was needed');
   const engineResults = readSave().season.fixtures.filter((f) => f.result?.source === 'engine').length;
   assert.ok(engineResults >= 1, `AI series were played by the engine (${engineResults})`);
@@ -213,6 +232,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('[data-testid="home-matchday"], [data-testid="home-awaiting"], [data-testid="home-season-end"]'), null, { timeout: LONG });
   }
   assert.ok(seasonEnd, 'the season reached its last day');
+  mark('season end reached');
   const endSave = await saveWhen((c) => c.season.fixtures.every((f) => !!f.result));
   const worldFixtures = [...endSave.season.fixtures, ...endSave.others.flatMap((l) => l.fixtures), ...endSave.circuit.events.flatMap((e) => e.fixtures)];
   assert.ok(worldFixtures.every((f) => !!f.result), 'every fixture of the world was played: four leagues, Masters 1/2 and Champions');

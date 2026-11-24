@@ -100,6 +100,13 @@ class SessionHost {
   shutdown(): void { this.started = false; this.worker.kill('session disposed'); }
 }
 const sessionHost = new SessionHost();
+// Diagnostics: a process that disappears leaves a line on stderr (the e2e prints it with
+// PV_E2E_VERBOSE=1). Monitor-only: none of these changes how the app behaves or exits.
+process.on('uncaughtExceptionMonitor', (e, origin) => console.error(`[main] uncaught ${origin}: ${(e as Error)?.stack ?? String(e)}`));
+process.on('unhandledRejection', (r) => console.error(`[main] unhandled rejection: ${(r as Error)?.stack ?? String(r)}`));
+app.on('render-process-gone', (_e, _wc, d) => console.error(`[main] renderer gone: ${d.reason} (exit ${d.exitCode})`));
+app.on('child-process-gone', (_e, d) => console.error(`[main] child process gone: ${d.type} ${d.name ?? ''} ${d.reason} (exit ${d.exitCode})`));
+app.on('before-quit', () => console.error('[main] before-quit'));
 app.on('will-quit', () => { disposeCareer(); seriesHost.shutdown(); sessionHost.shutdown(); matchWorker.kill('app quit'); prematchWorker.kill('app quit'); });
 
 async function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {

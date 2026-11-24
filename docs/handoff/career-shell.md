@@ -150,3 +150,24 @@ through heavy-run.sh; (4) regional playoffs as double elimination; region-protec
 `league` depth is ≈ 8 minutes of waiting per season on this machine; the first career e2e on the new
 circuit has not been run; saves are about 2.5 MB (519 series with per-map K/D) and the browser
 fallback stores them in localStorage (≈ 5 MB limit).
+
+---
+
+## Update 4: `test:e2e:career` on the merged tree
+
+Passing twice in a row plus `test:e2e:club` (through heavy-run.sh, on the final-push tip + this commit).
+Timings of a passing run: club step 9 s, first series recorded 23–26 s, the engine Continue (one week of
+our league's AI series at depth `league`, 1–5 series) 4–17 s, the season played out by 33–45 s.
+- The 15-minute wait seen once was not the step's own cost: one Continue is a day-by-day batch of
+  ≈ 5 engine series (3–5 s each). A first run here died even earlier, in `electron.launch` (180 s) while
+  the machine was loaded by other jobs. Not reproduced since, so no code cause was found; the
+  worst case is now bounded instead: the career sim host kills a series stuck for 60 s
+  (`CAREER_SERIES_TIMEOUT_MS`, env `PV_CAREER_SERIES_TIMEOUT_MS`; it was 300 s), the worker is
+  re-forked and that day falls back to the quick estimate with a notice on Home. The e2e waits 4 min
+  for that step and, on a timeout, reports what the progress box said.
+- The app that closed during the veto (one run, no log): not reproduced. The main process now logs
+  `uncaughtExceptionMonitor`, unhandled rejections, `render-process-gone`, `child-process-gone` and
+  `before-quit` to stderr (monitor-only, no behaviour change) and the e2e prints page crash / window
+  close / app close, so the next occurrence leaves a line (`PV_E2E_VERBOSE=1`).
+- Player-facing speed at the default depth: a week of Continue ≈ 5 engine series ≈ 15–25 s with the
+  progress box; a season ≈ 8 minutes. Slower than quick, by design.

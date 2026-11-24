@@ -11,11 +11,19 @@ import { IPC } from '../shared/ipc.ts';
 import { EngineWorker } from './engine-worker.ts';
 import { SAVE_SLOTS, type CareerSimOutcome, type CareerSimProgress, type CareerSimRequest, type SaveSlot, type SaveSlotInfo } from '../shared/career.ts';
 
+/**
+ * One background series takes 3–5 s (measured on a warm worker, docs/CAREER_MODE.md §4). A series
+ * that takes 60 s is stuck: the worker is killed and re-forked, and the renderer plays that day's
+ * batch with the quick estimate and says so — a player waits at most a minute for a hung engine, not
+ * the old five. PV_CAREER_SERIES_TIMEOUT_MS overrides it (slow machines, tests).
+ */
+export const CAREER_SERIES_TIMEOUT_MS = Number(process.env.PV_CAREER_SERIES_TIMEOUT_MS ?? 60000);
+
 class CareerSimHost {
   // Its own worker: a day's fixtures take minutes and must not hold up the user's own match.
   private readonly worker = new EngineWorker('career');
 
-  async series(req: CareerSimRequest, timeoutMs = 300000): Promise<CareerSimOutcome> {
+  async series(req: CareerSimRequest, timeoutMs = CAREER_SERIES_TIMEOUT_MS): Promise<CareerSimOutcome> {
     return (await this.worker.request<{ outcome: CareerSimOutcome }>('career.series', req, { timeoutMs })).outcome;
   }
 
