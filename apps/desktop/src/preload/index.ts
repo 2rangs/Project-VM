@@ -48,6 +48,8 @@ const bridge: PvBridge = {
   quit: () => ipcRenderer.invoke(IPC.appQuit),
   listBanners: () => ipcRenderer.invoke(IPC.bannerList),
   loadBannerFile: (pack: string, file: string) => ipcRenderer.invoke(IPC.bannerFile, pack, file),
+  mediaManifest: (kind: string) => ipcRenderer.invoke(IPC.mediaManifest, kind),
+  mediaFile: (kind: string, file: string) => ipcRenderer.invoke(IPC.mediaFile, kind, file),
   platform: process.platform,
   isElectron: true,
 };

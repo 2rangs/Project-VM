@@ -296,6 +296,29 @@ ipcMain.handle(IPC.bannerFile, async (_e, pack: string, file: string): Promise<U
   return null;
 });
 
+// Kingdom Archives media the user fetched with scripts/fetch-playercards.mjs:
+// apps/desktop/assets/playercards/ (committed). Read-only; the app never downloads it itself.
+const MEDIA_KINDS = new Set(['playercards']);
+const MEDIA_FILE = /^(?:[\w-]{1,40}\/)?[\w-]{1,60}\.png$/i;
+function mediaDirs(kind: string): string[] {
+  const env = process.env.PV_MEDIA_ASSETS_DIR;
+  return env ? [path.join(env, kind)] : [path.join(app.getAppPath(), 'assets', kind), path.join(dirname, '..', '..', 'assets', kind)];
+}
+ipcMain.handle(IPC.mediaManifest, async (_e, kind: string): Promise<unknown | null> => {
+  if (!MEDIA_KINDS.has(String(kind))) return null;
+  for (const dir of mediaDirs(String(kind))) {
+    try { return JSON.parse(await readFile(path.join(dir, 'manifest.json'), 'utf8')); } catch { /* try the next location */ }
+  }
+  return null;
+});
+ipcMain.handle(IPC.mediaFile, async (_e, kind: string, file: string): Promise<Uint8Array | null> => {
+  if (!MEDIA_KINDS.has(String(kind)) || !MEDIA_FILE.test(String(file))) return null;
+  for (const dir of mediaDirs(String(kind))) {
+    try { return new Uint8Array(await readFile(path.join(dir, String(file)))); } catch { /* try the next location */ }
+  }
+  return null;
+});
+
 ipcMain.handle(IPC.traceList, async (): Promise<string[]> => {
   try {
     const files = await readdir(tracesDir());

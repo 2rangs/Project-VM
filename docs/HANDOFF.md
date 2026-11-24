@@ -96,6 +96,7 @@ main에 들어갔지만 미완성인 것:
 ## 6. 라이선스·자산 (출시 전 필수 재검토)
 - 커밋된 맵 파생물: 11개 `<map>.nav.json`(점·선분), 11개 `<map>.vis.json`(쌍당 1비트), 기타 구역 JSON. 사용자 결정으로 커밋, 출시 전 재검토(`docs/LICENSE_AUDIT.md` §2.0b).
 - **경기 화면이 런타임에 게임 자산을 씀**: valorant-api.com 미니맵·요원 초상·맵 스플래시, kingdomarchives.com 킬 배너 레이어(로컬 gitignore 폴더), VCT 로고 로딩 엠블럼(로컬 gitignore, Riot 상표). 경기 화면 세션 인계서에는 "사용자 결정: 사용 가능"이라고 적혀 있으나, 이 통합 세션에서는 그 결정을 직접 확인하지 못했다. valorant-api의 라이선스는 미확인(`LICENSE_AUDIT.md`). **내부 개발용으로만**.
+- **Kingdom Archives 플레이어카드**: 사용자 결정으로 Kingdom Archives 공개 배포본(원본 게임 파일 아님) 약 19 MB를 `apps/desktop/assets/playercards/`에 **커밋**한다. `scripts/fetch-playercards.mjs`로 갱신. 파일이 없어도 기본 화면으로 동작(e2e는 `PV_MEDIA_ASSETS_DIR`로 빈 폴더 지정). **음성 라인은 사용자 결정으로 폐기**(커밋·재생 없음). **출시 전 라이선스 재검토 대상**.
 - 요원·무기 3D 모델은 오리지널(`ca945d2`). 생성 선수 이름은 오리지널, 실존 핸들 1,227개와 충돌 검사.
 - 원작 명칭(VALORANT, 요원·맵 이름) 사용 자체가 판매를 막을 수 있는 독립 위험 — 독자 세계관 여부를 일찍 결정할 것.
 

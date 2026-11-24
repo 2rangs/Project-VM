@@ -929,6 +929,7 @@ export const ko: Record<string, string> = {
   'load.banner.forge': '포지',
   'load.banner.signal': '시그널',
   'load.match.attacking': '공격',
+  'load.match.level': '계정 레벨',
   'load.match.defending': '수비',
   'load.banner.localHint': '내 배너 사용: 직접 준비한 파일을 apps/desktop/assets/banners/<이름>/1.webm … 5.webm (png·webp·gif·mp4 가능)에 넣으면 여기에 표시됩니다.',
   'load.banner.localFound': '내 배너 {n}개를 찾았습니다 (assets/banners).',

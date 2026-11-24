@@ -318,6 +318,12 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
 Matchup strip (players alive, us vs them), keys **1–5** / roster click to highlight one player with a pulsing ring
 (**Esc** clears), site labels emphasised, key hints in the map corner.
 
+#### Kingdom Archives player cards
+`assets/playercards/` holds a pool of player cards (wide + large art) from [Kingdom Archives](https://kingdomarchives.com)'s public
+distribution, committed at the user's decision (subject to release review); refresh with `node scripts/fetch-playercards.mjs`.
+The match load screen gives every player one (stable per player) plus an account level, like the in-game screen. Without
+the folder it falls back to the plain gradient (e2e runs point `PV_MEDIA_ASSETS_DIR` at an empty folder to cover that).
+
 #### Economy, plans, gaze, sound and duels (UI-1 … UI-6)
 Each item reads what the engine records and says so when it falls back (`시야: 근사치`, "no duel records"):
 

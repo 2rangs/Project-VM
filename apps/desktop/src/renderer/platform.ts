@@ -61,6 +61,8 @@ const browserBridge: PvBridge = {
   async quit() { window.close(); },
   async listBanners() { return []; },
   async loadBannerFile() { return null; },
+  async mediaManifest() { return null; },
+  async mediaFile() { return null; },
   platform: 'browser',
   isElectron: true, // satisfies the interface; `runtime` below is the honest flag
 };
