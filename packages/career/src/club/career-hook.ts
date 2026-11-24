@@ -14,10 +14,10 @@
 //   onAnswer       an incoming bid answered from the inbox → answerIncomingMut
 // After every step the club's outbox is posted to the career inbox.
 import type { World } from "../model.ts";
-import { REGIONS } from "../regions.ts";
 import type { CareerHook } from "../career/hooks.ts";
 import { postInbox } from "../career/inbox.ts";
 import { addDays } from "../career/calendar.ts";
+import { leaguesOf } from "../career/circuit.ts";
 import { stageDone, stagePlacings, STAGES } from "../career/schedule.ts";
 import type { CareerState } from "../career/types.ts";
 import { regionOrder } from "./finance.ts";
@@ -48,21 +48,20 @@ export function syncClubInbox(state: CareerState): void {
 }
 
 /**
- * teamId → place within its region for the club's prize money: the manager's region from the
- * league (mean of the two stage placings; teams outside the league after it, by strength), the
- * other regions by strength with the seeded placement noise.
+ * teamId → place within its region for the club's prize money: every region's league is real now,
+ * so each region's teams are ordered by their mean placing over the regional stages that were
+ * played (teams outside a league after it, by strength with the seeded placement noise).
  */
 export function careerStandings(state: CareerState): Record<string, number> {
   const w = state.world;
   const out: Record<string, number> = {};
   const noisy = regionOrder(w, w.season);
-  for (const r of REGIONS) {
-    if (r !== state.region) { noisy[r]!.forEach((id, i) => { out[id] = i + 1; }); continue; }
-    const lists = STAGES.filter((s) => stageDone(state.season, s)).map((s) => stagePlacings(state.season, s));
+  for (const league of leaguesOf(state)) {
+    const lists = STAGES.filter((s) => stageDone(league, s)).map((s) => stagePlacings(league, s));
     const score = (id: string) => (lists.length ? lists.reduce((s, l) => s + (l.indexOf(id) + 1 || l.length + 1), 0) / lists.length : 99);
-    const league = [...state.season.teams].sort((a, b) => score(a) - score(b) || a.localeCompare(b));
-    const rest = noisy[r]!.filter((id) => !league.includes(id));
-    [...league, ...rest].forEach((id, i) => { out[id] = i + 1; });
+    const members = [...league.teams].sort((a, b) => score(a) - score(b) || a.localeCompare(b));
+    const rest = (noisy[league.region] ?? []).filter((id) => !members.includes(id));
+    [...members, ...rest].forEach((id, i) => { out[id] = i + 1; });
   }
   return out;
 }

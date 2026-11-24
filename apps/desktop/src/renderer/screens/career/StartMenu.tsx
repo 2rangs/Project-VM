@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { bridge, runtime } from '../../platform.ts';
 import { useLang } from '../../i18n/index.tsx';
 import type { SaveSlot, SaveSlotInfo } from '../../../shared/career.ts';
-import { loadCareer, setSimMode, useCareer } from '../../career/session.ts';
+import { loadCareer, setSimDepth, useCareer } from '../../career/session.ts';
 import { LoadingScreen } from '../../loading/Loading.tsx';
 
 export function StartMenu({ onNewCareer, onQuickMatch }: { onNewCareer: () => void; onQuickMatch: () => void }) {
@@ -80,8 +80,9 @@ export function StartMenu({ onNewCareer, onQuickMatch }: { onNewCareer: () => vo
           <div className="start-setting">
             <b>{t('start.sim')}</b>
             <div className="md-modetoggle">
-              <button className={cs.simMode === 'engine' ? 'on' : ''} onClick={() => setSimMode('engine')} disabled={runtime !== 'electron'} data-testid="sim-engine">{t('start.sim.engine')}</button>
-              <button className={cs.simMode === 'quick' ? 'on' : ''} onClick={() => setSimMode('quick')} data-testid="sim-quick">{t('start.sim.quick')}</button>
+              <button className={cs.simDepth === 'quick' ? 'on' : ''} onClick={() => setSimDepth('quick')} data-testid="sim-quick">{t('start.sim.quick')}</button>
+              <button className={cs.simDepth === 'league' ? 'on' : ''} onClick={() => setSimDepth('league')} disabled={runtime !== 'electron'} data-testid="sim-league">{t('start.sim.league')}</button>
+              <button className={cs.simDepth === 'full' ? 'on' : ''} onClick={() => setSimDepth('full')} disabled={runtime !== 'electron'} data-testid="sim-full">{t('start.sim.full')}</button>
             </div>
             <span className="small muted">{t('start.sim.hint')}</span>
           </div>

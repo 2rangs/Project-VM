@@ -6,14 +6,22 @@ import type { IsoDate } from "./calendar.ts";
 import type { InboxItem } from "./inbox.ts";
 
 export type SeriesFormatId = "bo1" | "bo3" | "bo5";
-export type StageId = "stage1" | "stage2";
+/** The three regional stages of the circuit, in the order they are played. */
+export type StageId = "kickoff" | "stage1" | "stage2";
+/** The international events: Masters after Stage 1 and Stage 2, Champions at the end. */
+export type IntlId = "masters1" | "masters2" | "champions";
+export type CompetitionId = StageId | IntlId;
+/** Regional groups; international groups are "a".."d". */
 export type GroupId = "alpha" | "omega";
 export type PlayoffRound = "qf" | "sf" | "final";
+/** Double-elimination rounds of an international playoff: upper (u), lower (l), grand final. */
+export type BracketRound = "ubr1" | "lbr1" | "ubr2" | "lbr2" | "lbr3" | "ubf" | "lbf" | "gf";
 
-/** Where a playoff slot's team comes from before it is known. */
+/** Where a slot's team comes from before it is known. */
 export type SlotSource =
-  | { readonly kind: "seed"; readonly group: GroupId; readonly rank: number }
-  | { readonly kind: "winner"; readonly fixtureId: string };
+  | { readonly kind: "seed"; readonly group: string; readonly rank: number }
+  | { readonly kind: "winner"; readonly fixtureId: string }
+  | { readonly kind: "loser"; readonly fixtureId: string };
 
 export interface MapResult {
   readonly map: string;
@@ -38,11 +46,13 @@ export interface SeriesOutcome {
 export interface Fixture {
   readonly id: string;
   readonly season: number;
-  readonly stage: StageId;
+  readonly stage: CompetitionId;
   readonly phase: "group" | "playoff";
-  readonly group?: GroupId;
-  /** Group round number (1-based) or the playoff round. */
-  readonly round: number | PlayoffRound;
+  readonly group?: string;
+  /** Group round number (1-based), the regional playoff round or the double-elimination round. */
+  readonly round: number | PlayoffRound | BracketRound;
+  /** The region of a regional fixture (absent for internationals). */
+  readonly region?: Region;
   readonly date: IsoDate;
   readonly format: SeriesFormatId;
   home: string | null;
@@ -78,6 +88,43 @@ export interface SeasonState {
   ended: boolean;
 }
 
+/** One international event: Masters (12 teams) or Champions (16): groups, then 8-team double elimination. */
+export interface IntlEvent {
+  readonly id: IntlId;
+  /** Qualified teams in seed order (best Champions Points first); empty until drawn. */
+  teams: string[];
+  /** Why each team is there: teamId → its region and Champions Points at the draw. */
+  qualified: Record<string, { region: Region; points: number }>;
+  /** Group draw: "a".."d" → team ids. */
+  groups: Record<string, string[]>;
+  fixtures: Fixture[];
+  start: IsoDate | null;
+  end: IsoDate | null;
+  champion: string | null;
+  /** Final placing of every team (1 = champion), once the event is over. */
+  placings: string[];
+}
+
+/** Champions Points awarded for a placing in a competition. */
+export interface PointsAward {
+  readonly event: CompetitionId;
+  readonly region?: Region;
+  readonly teamId: string;
+  readonly place: number;
+  readonly points: number;
+}
+
+/** The international side of the season: events, and the Champions Points that qualify for them. */
+export interface CircuitState {
+  readonly season: number;
+  events: IntlEvent[];
+  /** Champions Points this season, by team. */
+  points: Record<string, number>;
+  awards: PointsAward[];
+  /** Competitions whose points have been awarded and news posted ("kickoff:pacific", "masters1"). */
+  done: string[];
+}
+
 export interface PlayerSeasonLine {
   /** Maps played this season (development uses it as playing time). */
   maps: number;
@@ -105,14 +152,14 @@ export interface Manager {
 
 export interface SeasonSummary {
   readonly season: number;
-  readonly champions: Partial<Record<StageId, string>>;
-  readonly userFinish: Partial<Record<StageId, number>>;
+  readonly champions: Partial<Record<CompetitionId, string>>;
+  readonly userFinish: Partial<Record<CompetitionId, number>>;
   readonly objective?: string;
   readonly objectiveMet?: boolean;
 }
 
 export interface CareerState {
-  readonly version: 1;
+  readonly version: 2;
   /** Career seed (the world has its own seed, derived from this). */
   readonly seed: number;
   readonly manager: Manager;
@@ -120,7 +167,12 @@ export interface CareerState {
   readonly region: Region;
   date: IsoDate;
   world: World;
+  /** The manager's own league (their region). */
   season: SeasonState;
+  /** The other three regions' leagues, played in parallel (they meet the manager's region only at internationals). */
+  others: SeasonState[];
+  /** The international circuit: events, Champions Points. */
+  circuit: CircuitState;
   /** Current-season playing time and form per player. */
   stats: Record<string, PlayerSeasonLine>;
   inbox: InboxItem[];
@@ -137,6 +189,11 @@ export interface CareerState {
   ext: Record<string, unknown>;
 }
 
+/** league = the manager's own league, international = Masters/Champions, other = other regions' leagues. */
+export type SimScope = "league" | "international" | "other";
+/** World sim depth: which AI series the full engine plays (the rest use the calibrated quick estimate). */
+export type SimDepth = "quick" | "league" | "full";
+
 /** One side of a series to simulate: the team, today's five and its analyst. */
 export interface SeriesSide {
   readonly teamId: string;
@@ -148,6 +205,8 @@ export interface SeriesSide {
 /** A fixture ready to simulate (both teams known, not yet played). */
 export interface SeriesRequest {
   readonly fixtureId: string;
+  /** Where the fixture belongs (decides engine vs quick under the world sim depth setting). */
+  readonly scope: SimScope;
   readonly seed: number;
   readonly format: SeriesFormatId;
   readonly home: SeriesSide;

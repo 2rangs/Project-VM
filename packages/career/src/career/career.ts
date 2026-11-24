@@ -27,10 +27,12 @@ import { addDays, isMonthStart, monthOf, type IsoDate } from "./calendar.ts";
 import { careerHooks, type CareerHook, type HookContext } from "./hooks.ts";
 import { awaitingAnswer, postInbox, type InboxDraft, type InboxItem } from "./inbox.ts";
 import {
-  buildSeason, careerStartDate, drawNextStage, groupStageDone, groupStandings, GROUPS, resolvePlayoffs,
-  stageDone, stagePlacings, STAGES, teamStrength,
+  buildSeason, careerStartDate, GROUPS, resolvePlayoffs, stageDone, stagePlacings, STAGES, teamStrength,
 } from "./schedule.ts";
-import type { CareerState, Fixture, Manager, SeasonSummary, SeriesOutcome, SeriesRequest, StageId } from "./types.ts";
+import { allFixtures, eventOf, INTL_EVENTS, isIntl, leaguesOf, newCircuit, resolveEvent } from "./circuit.ts";
+import { circuitProgress, upsetNews } from "./progress.ts";
+import { REGIONS } from "../regions.ts";
+import type { CareerState, CompetitionId, Fixture, Manager, SeasonSummary, SeriesOutcome, SeriesRequest, SimDepth, SimScope } from "./types.ts";
 
 export const CAREER_MODE = {
   /** Form update rate per map (see PlayerSeasonLine.form). */
@@ -98,15 +100,24 @@ export function newCareer(world: World, opts: NewCareerOptions, rt?: CareerRunti
   const team = world.teams[opts.userTeamId];
   if (!team) throw new Error(`unknown team ${opts.userTeamId}`);
   const seed = opts.seed >>> 0;
-  const season = buildSeason(world, team.region, team.teamId, world.season, seed);
   const state: CareerState = {
-    version: 1, seed, manager: { ...opts.manager }, userTeamId: team.teamId, region: team.region,
-    date: careerStartDate(world.season), world, season, stats: {}, inbox: [], nextInboxId: 0, history: [], objective: null, ext: {},
+    version: 2, seed, manager: { ...opts.manager }, userTeamId: team.teamId, region: team.region,
+    date: careerStartDate(world.season), world, ...buildLeagues(world, team.region, team.teamId, world.season, seed),
+    stats: {}, inbox: [], nextInboxId: 0, history: [], objective: null, ext: {},
   };
   postInbox(state, { category: "board", key: "welcome", from: "board", params: { team: team.name, manager: state.manager.name } });
   seasonOpeningMail(state);
   runHooks(state, rt, (h, ctx) => h.onCareerStart?.(state.world, ctx));
   return state;
+}
+
+/** The manager's league, the three other regions' leagues (played in parallel) and a fresh circuit. */
+function buildLeagues(world: World, region: CareerState["region"], userTeamId: string, season: number, seed: number): Pick<CareerState, "season" | "others" | "circuit"> {
+  return {
+    season: buildSeason(world, region, userTeamId, season, seed),
+    others: REGIONS.filter((r) => r !== region).map((r) => buildSeason(world, r, null, season, seed)),
+    circuit: newCircuit(season),
+  };
 }
 
 const teamName = (state: CareerState, id: string | null): string => (id ? state.world.teams[id]?.name ?? id : "?");
@@ -117,9 +128,9 @@ function strengthRank(state: CareerState): number {
 }
 
 /** The board's expectation from where the squad ranks in the league. */
-export function suggestedObjective(state: CareerState): "title" | "playoffs" | "midtable" {
+export function suggestedObjective(state: CareerState): "title" | "international" | "playoffs" | "midtable" {
   const r = strengthRank(state);
-  return r <= 2 ? "title" : r <= 7 ? "playoffs" : "midtable";
+  return r <= 1 ? "title" : r <= 3 ? "international" : r <= 8 ? "playoffs" : "midtable";
 }
 
 function seasonOpeningMail(state: CareerState): void {
@@ -130,7 +141,7 @@ function seasonOpeningMail(state: CareerState): void {
   postInbox(state, {
     category: "board", key: "board.objective", from: "board",
     params: { season: state.season.season, suggested: suggestedObjective(state), rank: strengthRank(state), teams: state.season.teams.length },
-    options: [{ id: "title" }, { id: "playoffs" }, { id: "midtable" }],
+    options: [{ id: "title" }, { id: "international" }, { id: "playoffs" }, { id: "midtable" }],
   });
   postInbox(state, {
     category: "competition", key: "league.schedule", from: "league",
@@ -158,9 +169,25 @@ function seasonOpeningMail(state: CareerState): void {
 
 export const isUserFixture = (state: CareerState, f: Fixture): boolean => f.home === state.userTeamId || f.away === state.userTeamId;
 
-/** The manager's next unplayed fixture (teams known), if any this season. */
+const byDate = (a: Fixture, b: Fixture): number => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id.localeCompare(b.id));
+
+/** The manager's next unplayed fixture (teams known), in their league or at an international event. */
 export function nextUserFixture(state: CareerState): Fixture | null {
-  return state.season.fixtures.find((f) => !f.result && f.date >= state.date && isUserFixture(state, f)) ?? null;
+  return allFixtures(state).filter((f) => !f.result && f.date >= state.date && f.home && f.away && isUserFixture(state, f)).sort(byDate)[0] ?? null;
+}
+
+/**
+ * World sim depth (FM style): which AI series the full match engine plays; the rest use the
+ * calibrated quick estimate. `quick`: none (the manager's own match is always played for real);
+ * `league`: the manager's own league; `full`: every region and the international events.
+ */
+export const SIM_DEPTH_ENGINE: Readonly<Record<SimDepth, readonly SimScope[]>> = { quick: [], league: ["league"], full: ["league", "international", "other"] };
+export const SIM_DEPTHS: readonly SimDepth[] = ["quick", "league", "full"];
+export const usesEngine = (depth: SimDepth, scope: SimScope): boolean => SIM_DEPTH_ENGINE[depth].includes(scope);
+
+/** Where a fixture is simulated from (the world sim depth setting): our league, an international event, or another region. */
+export function fixtureScope(state: CareerState, f: Fixture): SimScope {
+  return isIntl(f.stage) ? "international" : f.region === state.region ? "league" : "other";
 }
 
 export interface DayAgenda {
@@ -172,7 +199,7 @@ export interface DayAgenda {
 }
 
 export function dayAgenda(state: CareerState): DayAgenda {
-  const today = state.season.fixtures.filter((f) => f.date === state.date && !f.result && f.home && f.away);
+  const today = allFixtures(state).filter((f) => f.date === state.date && !f.result && f.home && f.away).sort(byDate);
   return {
     date: state.date,
     userFixture: today.find((f) => isUserFixture(state, f)) ?? null,
@@ -214,7 +241,7 @@ export function seriesRequest(state: CareerState, f: Fixture): SeriesRequest {
     lineup: lineupFor(state, id),
     analyst: teamStaffInputs(state.world, id).analyst,
   });
-  return { fixtureId: f.id, seed: deriveSeed(state.seed, `series:${f.id}`), format: f.format, home: side(f.home), away: side(f.away) };
+  return { fixtureId: f.id, scope: fixtureScope(state, f), seed: deriveSeed(state.seed, `series:${f.id}`), format: f.format, home: side(f.home), away: side(f.away) };
 }
 
 // --- results ------------------------------------------------------------------------------------------
@@ -239,7 +266,7 @@ function creditPlayers(state: CareerState, lineup: readonly string[], f: Fixture
 
 /** Record a played series: standings, playing time and form, the bracket, inbox, hooks. */
 export function recordResult(state: CareerState, fixtureId: string, outcome: SeriesOutcome, rt?: CareerRuntime): Fixture {
-  const f = state.season.fixtures.find((x) => x.id === fixtureId);
+  const f = allFixtures(state).find((x) => x.id === fixtureId);
   if (!f) throw new Error(`unknown fixture ${fixtureId}`);
   if (f.result) throw new Error(`fixture ${fixtureId} already has a result`);
   if (!f.home || !f.away) throw new Error(`fixture ${fixtureId} has no teams yet`);
@@ -247,8 +274,8 @@ export function recordResult(state: CareerState, fixtureId: string, outcome: Ser
   f.result = { ...outcome, mapsWon: [outcome.mapsWon[0], outcome.mapsWon[1]], maps: outcome.maps.map((m) => ({ ...m, score: [m.score[0], m.score[1]] as const })) };
   creditPlayers(state, outcome.lineups.home, f, true);
   creditPlayers(state, outcome.lineups.away, f, false);
-  applyMatchLoad(state, outcome.lineups.home, outcome.maps.length);
-  applyMatchLoad(state, outcome.lineups.away, outcome.maps.length);
+  applyMatchLoad(state, outcome.lineups.home, outcome.maps.length, f.home === state.userTeamId);
+  applyMatchLoad(state, outcome.lineups.away, outcome.maps.length, f.away === state.userTeamId);
   if (isUserFixture(state, f)) {
     const home = f.home === state.userTeamId;
     const won = outcome.winner === state.userTeamId;
@@ -262,15 +289,18 @@ export function recordResult(state: CareerState, fixtureId: string, outcome: Ser
       ref: { fixtureId: f.id },
     });
   }
-  for (const nf of resolvePlayoffs(state.season)) {
+  // Brackets: regional playoffs of every league and the international double-elimination brackets.
+  const resolved = [...leaguesOf(state).flatMap((l) => resolvePlayoffs(l)), ...state.circuit.events.flatMap((e) => resolveEvent(e))];
+  for (const nf of resolved) {
     if (isUserFixture(state, nf)) {
       postInbox(state, {
-        category: "competition", key: "competition.nextRound", from: "league",
+        category: "competition", key: isIntl(nf.stage) ? "circuit.nextRound" : "competition.nextRound", from: "league",
         params: { round: String(nf.round), opponent: teamName(state, nf.home === state.userTeamId ? nf.away : nf.home), date: nf.date, stage: nf.stage },
         ref: { fixtureId: nf.id },
       });
     }
   }
+  upsetNews(state, f);
   runHooks(state, rt, (h, ctx) => h.onMatchResult?.(state.world, f, ctx));
   return f;
 }
@@ -288,56 +318,31 @@ export async function simulateToday(state: CareerState, sim: BatchSimulator, rt?
 
 // --- leaving a day ------------------------------------------------------------------------------------
 
-function stageEvents(state: CareerState): void {
-  const season = state.season;
-  for (const stage of season.stages) {
-    if (!stage.start) continue;
-    // Group stage just finished today: who goes through.
-    const groupDone = groupStageDone(season, stage.id);
-    const flag = `groups:${season.season}:${stage.id}`;
-    const core = (state.ext.career ??= { flags: [] as string[] }) as { flags: string[] };
-    if (groupDone && !core.flags.includes(flag)) {
-      core.flags.push(flag);
-      const g = GROUPS.find((x) => stage.groups[x].includes(state.userTeamId))!;
-      const rank = groupStandings(season, stage.id, g).findIndex((r) => r.teamId === state.userTeamId) + 1;
-      postInbox(state, { category: "competition", key: rank <= 4 ? "competition.qualified" : "competition.eliminated", from: "league", params: { stage: stage.id, rank, group: g } });
-    }
-    const doneFlag = `champion:${season.season}:${stage.id}`;
-    if (stageDone(season, stage.id) && !core.flags.includes(doneFlag)) {
-      core.flags.push(doneFlag);
-      const placings = stagePlacings(season, stage.id);
-      stage.champion = placings[0]!;
-      postInbox(state, { category: "competition", key: "competition.champion", from: "league", params: { stage: stage.id, team: teamName(state, stage.champion), place: placings.indexOf(state.userTeamId) + 1 } });
-      const drawn = drawNextStage(season, state.seed);
-      if (drawn) {
-        const s2 = season.stages.find((s) => s.id === drawn)!;
-        const g = GROUPS.find((x) => s2.groups[x].includes(state.userTeamId)) ?? "alpha";
-        const first = nextUserFixture(state);
-        postInbox(state, {
-          category: "competition", key: "competition.drawn", from: "league",
-          params: { stage: drawn, group: g, date: first?.date ?? "", opponent: first ? teamName(state, first.home === state.userTeamId ? first.away : first.home) : "" },
-          ...(first ? { ref: { fixtureId: first.id } } : {}),
-        });
-      }
-    }
-  }
-}
-
-function objectiveMet(objective: string | null, finish: Partial<Record<StageId, number>>): boolean | undefined {
+/** The manager's league stages and the international events: finish places (1 = champions; absent = not played / not in it). */
+function objectiveMet(objective: string | null, finish: Partial<Record<CompetitionId, number>>): boolean | undefined {
   if (!objective) return undefined;
-  const places = STAGES.map((s) => finish[s] ?? 99);
-  if (objective === "title") return places.some((p) => p === 1);
-  if (objective === "playoffs") return places.every((p) => p <= 8);
-  return places.some((p) => p <= 8);
+  const stages = STAGES.map((st) => finish[st] ?? 99);
+  const intl = INTL_EVENTS.map((e) => finish[e] ?? 99);
+  if (objective === "title") return [...stages, ...intl].some((p) => p === 1);
+  if (objective === "international") return intl.some((p) => p < 99);
+  if (objective === "playoffs") return stages.filter((p) => p <= 8).length >= 2;
+  return stages.some((p) => p <= 8);
 }
 
-function seasonFinish(state: CareerState): { finish: Partial<Record<StageId, number>>; champions: Partial<Record<StageId, string>>; met: boolean | undefined } {
-  const finish: Partial<Record<StageId, number>> = {};
-  const champions: Partial<Record<StageId, string>> = {};
+function seasonFinish(state: CareerState): { finish: Partial<Record<CompetitionId, number>>; champions: Partial<Record<CompetitionId, string>>; met: boolean | undefined } {
+  const finish: Partial<Record<CompetitionId, number>> = {};
+  const champions: Partial<Record<CompetitionId, string>> = {};
   for (const s of STAGES) {
     if (!stageDone(state.season, s)) continue;
     const pl = stagePlacings(state.season, s);
     finish[s] = pl.indexOf(state.userTeamId) + 1; champions[s] = pl[0]!;
+  }
+  for (const id of INTL_EVENTS) {
+    const ev = eventOf(state.circuit, id);
+    if (!ev.champion) continue;
+    champions[id] = ev.champion;
+    const p = ev.placings.indexOf(state.userTeamId) + 1;
+    if (p > 0) finish[id] = p;
   }
   return { finish, champions, met: objectiveMet(state.objective, finish) };
 }
@@ -347,7 +352,11 @@ function seasonReviewMail(state: CareerState): void {
   const { finish, met } = seasonFinish(state);
   postInbox(state, {
     category: "season", key: "season.review", from: "board",
-    params: { season: state.season.season, stage1: finish.stage1 ?? 0, stage2: finish.stage2 ?? 0, objective: state.objective ?? "none", met: met === undefined ? "none" : met ? "yes" : "no" },
+    params: {
+      season: state.season.season, kickoff: finish.kickoff ?? 0, stage1: finish.stage1 ?? 0, stage2: finish.stage2 ?? 0,
+      m1: finish.masters1 ? String(finish.masters1) : "–", m2: finish.masters2 ? String(finish.masters2) : "–", ch: finish.champions ? String(finish.champions) : "–",
+      objective: state.objective ?? "none", met: met === undefined ? "none" : met ? "yes" : "no",
+    },
   });
 }
 
@@ -363,7 +372,7 @@ function endSeason(state: CareerState, rt?: CareerRuntime): void {
   // Playing time: the real count for every player of a league team (0 for those who never played);
   // players elsewhere keep the status estimate.
   const mapsPlayed: Record<string, number> = {};
-  for (const tid of season.teams) for (const pid of state.world.teams[tid]?.roster ?? []) mapsPlayed[pid] = 0;
+  for (const l of leaguesOf(state)) for (const tid of l.teams) for (const pid of state.world.teams[tid]?.roster ?? []) mapsPlayed[pid] = 0;
   for (const [pid, line] of Object.entries(state.stats)) mapsPlayed[pid] = line.maps;
   const before = new Set(state.world.teams[state.userTeamId]?.roster ?? []);
   // Development with the season's training focus; the manager's squad is left to the manager.
@@ -377,7 +386,7 @@ function endSeason(state: CareerState, rt?: CareerRuntime): void {
     category: "squad", key: "squad.changes", from: "headCoach",
     params: { season: state.world.season, joined: joined.map(name).join(", ") || "—", left: left.map(name).join(", ") || "—", retired: rec.retiredPlayers.length },
   });
-  state.season = buildSeason(state.world, state.region, state.userTeamId, state.world.season, state.seed);
+  Object.assign(state, buildLeagues(state.world, state.region, state.userTeamId, state.world.season, state.seed));
   state.stats = {};
   state.objective = null;
   seasonOpeningMail(state);
@@ -394,7 +403,7 @@ export function endDay(state: CareerState, rt?: CareerRuntime): void {
   if (ag.userFixture) throw new Error("play today's match first");
   if (ag.aiFixtures.length) throw new Error("today's fixtures are not played yet");
   if (ag.awaiting.length) throw new Error("answer the waiting messages first");
-  stageEvents(state);
+  circuitProgress(state);
   runHooks(state, rt, (h, ctx) => h.onDay?.(state.world, state.date, ctx));
   if (isMonthStart(state.date)) runHooks(state, rt, (h, ctx) => h.onMonth?.(state.world, state.date, ctx));
   const seasonEnd = state.date === state.season.end && !state.season.ended;

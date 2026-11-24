@@ -68,7 +68,7 @@ test('the manager\'s series is recorded home/away as scheduled, with the career\
   assert.deepEqual(out.maps[0]!.score, userHome ? [13, 7] : [7, 13]);
   recordResult(c, f.id, out);
   const g = c.season.stages[0]!.groups.alpha.includes(c.userTeamId) ? 'alpha' : 'omega';
-  const row = groupStandings(c.season, 'stage1', g).find((r) => r.teamId === c.userTeamId)!;
+  const row = groupStandings(c.season, 'kickoff', g).find((r) => r.teamId === c.userTeamId)!;
   assert.equal(row.wins, 1);
   assert.equal(row.mapsWon, 2);
   assert.equal(row.roundsWon, 38);
@@ -88,7 +88,7 @@ test('every inbox message of a season renders in Korean and English (no raw keys
   }
   await continueCareer(c, sim); // season transition mail
   const keys = new Set(c.inbox.map((m) => m.key));
-  for (const k of ['welcome', 'board.objective', 'league.schedule', 'squad.overview', 'competition.champion', 'competition.drawn', 'season.review', 'squad.changes', 'staff.formReport']) {
+  for (const k of ['welcome', 'board.objective', 'league.schedule', 'squad.overview', 'competition.champion', 'competition.drawn', 'season.review', 'squad.changes', 'staff.formReport', 'circuit.race', 'circuit.draw', 'circuit.champion']) {
     assert.ok(keys.has(k), `season produced no ${k}`);
   }
   for (const [lang, d] of [['ko', ko], ['en', en]] as const) {

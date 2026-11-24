@@ -115,8 +115,8 @@ export const CLUB_MODEL = {
   windows: [
     { id: "preseason", from: "01-01", to: "02-15" },
     { id: "midseason", from: "06-01", to: "06-30" },
-    // The offseason after the season ends on 1 September (continues into the preseason window).
-    { id: "offseason", from: "09-02", to: "12-31" },
+    // The offseason after the season ends on 15 September (continues into the preseason window).
+    { id: "offseason", from: "09-16", to: "12-31" },
   ] as ReadonlyArray<{ id: string; from: string; to: string }>,
   /** Seller's asking price = value · (1 + starterPremium · [starter] + shortPremium · [would leave fewer than five]). */
   starterPremium: 0.35,
@@ -188,8 +188,8 @@ export const CLUB_MODEL = {
   // --- calendar (career mode owns it: career/schedule.ts SCHEDULE_MODEL) ----------------------------
   /** A career's first day of a season and the season's last day (month, day) — career mode's dates. */
   seasonStart: [1, 5] as readonly [number, number],
-  seasonEnd: [9, 1] as readonly [number, number],
-  /** The month a "contracts expiring" notice goes out (the season ends on 1 September). */
+  seasonEnd: [9, 15] as readonly [number, number],
+  /** The month a "contracts expiring" notice goes out (the season ends on 15 September). */
   expiryNoticeMonth: 7,
   /** Ledger entries kept per team, monthly summaries kept for AI clubs. */
   maxLedger: 400,
