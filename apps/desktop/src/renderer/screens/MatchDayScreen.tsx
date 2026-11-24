@@ -78,6 +78,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   const [mgrOpen, setMgrOpen] = useState(false);
   const [pausedFor, setPausedFor] = useState('');
   const [opponentMemory, setOpponentMemory] = useState(true);
+  const [mgrExperimental, setMgrExperimental] = useState(false); // [manager] flags, default off
   const [minThrow, setMinThrow] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const sess = useMatchSession();
 
@@ -91,7 +92,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   // [series] teams / seed are fixed by the series, and a map is played once.
   const busyControls = running || sess.busy || (!!series && (match !== null || (sess.state?.finished ?? false)));
   const lockSetup = !!series;
-  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0;
+  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0 || mgrExperimental;
   // Only non-default choices are sent, so a default match is the engine's own default config.
   const matchOptions = (): MatchOptions | undefined => {
     const teams: Record<string, number> = {};
@@ -99,6 +100,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
     if (minThrow.B > 0) teams[refOf(teamB).id] = minThrow.B;
     const o: MatchOptions = {
       ...(opponentMemory ? {} : { opponentMemory: false }),
+      ...(mgrExperimental ? { moodEffects: true, aiManager: true, timeoutsPerHalf: 1 } : {}),
       ...(Object.keys(teams).length > 0 ? { minThrowRates: { teams } } : {}),
     };
     return Object.keys(o).length > 0 ? o : undefined;
@@ -280,8 +282,13 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
               ))}
               <span className="muted small">{t('md.opts.throw.hint')}</span>
             </div>
+            <label className="md-opt">
+              <input type="checkbox" checked={mgrExperimental} onChange={(e) => setMgrExperimental(e.target.checked)} disabled={busyControls || sess.active} data-testid="opt-manager-experimental" />
+              <b>{t('md.opts.mgr')}</b>
+              <span className="muted small">{t('md.opts.mgr.hint')}</span>
+            </label>
             <div className="md-optfoot">
-              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
+              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); setMgrExperimental(false); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
               {sess.active && <span className="muted small">{t('md.opts.locked')}</span>}
             </div>
           </div>

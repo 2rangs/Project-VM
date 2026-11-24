@@ -333,6 +333,8 @@ export interface PolicyOrder {
   readonly strategy?: TeamStrategy;
   readonly tempo?: "slow" | "normal" | "fast";
   readonly roles?: { readonly entry?: string; readonly lurker?: string };
+  /** [manager] The forced strategy is also the round's opening call (its objective follows it). Default false. */
+  readonly asOpening?: boolean;
 }
 
 export class TeamDecisionPolicy implements DecisionPolicy {
@@ -467,7 +469,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     // [manager] A coach's forced strategy for this side is the round's opening call, so the plan's
     // objective (the site the attack goes to, the site the defense stacks) follows the order —
     // before, the order only relabelled a plan bound to the IGL's own call. No order → unchanged.
-    const forced = this.order?.strategy;
+    // Only for orders that ask for it (asOpening) — other orders keep the old relabel-only behaviour.
+    const forced = this.order?.asOpening ? this.order.strategy : undefined;
     const opening = forced && strategySide(forced) === view.side ? forced : selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters());
     this.plan = {
       contextId: view.contextId, side: view.side, opening, strategy: opening,

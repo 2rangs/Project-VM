@@ -6,6 +6,7 @@ import {
   alertsAfterRound,
   buildOpponentReport,
   createManagedSession,
+  createMatchSession,
   mindRoundInputs,
   moodAfterRound,
   moodAfterTimeout,
@@ -137,6 +138,16 @@ describe("manager levers depend on personalities and attributes", () => {
 });
 
 describe("managed session: levers reach the match", () => {
+  it("default options: a managed session with no manager action plays exactly like createMatchSession", () => {
+    const plain = createMatchSession(base, { aiTeams: ["A", "B"] });
+    while (!plain.isFinished()) plain.playNextRound();
+    const managed = createManagedSession(base, { aiTeams: ["A", "B"] });
+    while (!managed.isFinished()) managed.playNextRound();
+    const sig = (r: ReturnType<typeof plain.result>) => r.rounds.map((x) => `${x.winner}${x.reason[0]}${x.kills.A}${x.kills.B}:${x.decisions.plans.A?.opening}/${x.decisions.plans.B?.opening}`).join(",");
+    expect(sig(managed.result())).toBe(sig(plain.result()));
+    expect(managed.result().timeoutLog).toEqual(plain.result().timeoutLog);
+  }, LONG);
+
   it("counterfactual: a strategy change sends the attack where it says (the order is the opening call)", () => {
     const plantsOn = (attack: "aExecute" | "bExecute") => {
       const s = createManagedSession(base, { aiTeams: ["B"] });
@@ -150,8 +161,8 @@ describe("managed session: levers reach the match", () => {
     expect(plantsOn("bExecute")).toBeLessThan(0.2);
   }, LONG);
 
-  it("timeouts: one per half, two per map; a timeout recovers tilt and is logged with what followed", () => {
-    const s = createManagedSession(base, { aiTeams: ["B"] });
+  it("timeouts (timeoutsPerHalf: 1): one per half, two per map; a timeout recovers tilt and is logged with what followed", () => {
+    const s = createManagedSession(base, { aiTeams: ["B"], timeoutsPerHalf: 1 });
     for (let i = 0; i < 4; i++) s.playNextRound();
     const tiltBefore = s.state().manager.minds.A.tilt;
     expect(s.state().manager.timeoutsLeftThisHalf.A).toBe(1);
@@ -173,7 +184,7 @@ describe("managed session: levers reach the match", () => {
   }, LONG);
 
   it("half-time: a talk only then, once; the AI gives its own; effects differ by player", () => {
-    const s = createManagedSession(base, { aiTeams: ["B"] });
+    const s = createManagedSession(base, { aiTeams: ["B"], aiManager: true });
     expect(() => s.teamTalk("A", "encourage")).toThrow(/half-time/);
     while (s.state().roundNumber <= 12) s.playNextRound();
     const ht = s.state().manager.halfTime!;
@@ -205,7 +216,7 @@ describe("managed session: levers reach the match", () => {
 
   it("deterministic: same seed, plans and actions → the same match; the AI manager differs by attributes", () => {
     const play = (tactical: number) => {
-      const s = createManagedSession(base, { aiTeams: ["A", "B"], managers: { B: { tactical, motivating: tactical } } });
+      const s = createManagedSession(base, { aiTeams: ["A", "B"], aiManager: true, moodEffects: true, managers: { B: { tactical, motivating: tactical } } });
       while (!s.isFinished()) s.playNextRound();
       return s;
     };

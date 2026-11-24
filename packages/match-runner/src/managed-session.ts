@@ -104,6 +104,20 @@ export interface ManagedSessionOptions extends MatchSessionOptions {
   readonly plans?: Partial<Record<TeamSlot, MatchPlan>>;
   /** The opponent's film each team scouted (for plan.useScouting), with the roster uptake. */
   readonly scouting?: Partial<Record<TeamSlot, { readonly logs: readonly TeamGameLog[]; readonly uptake?: number }>>;
+  /**
+   * FLAG (default false): the players' state of mind feeds the sim (round form σ, throw hazard,
+   * trading / gameSense). Off: moods are still tracked and shown, but play is unaffected.
+   * Not validated against the real-roster gate.
+   */
+  readonly moodEffects?: boolean;
+  /**
+   * FLAG (default false): AI managers use shouts, half-time talks and attribute-driven timeouts
+   * (aiManagerDecision). Off: the AI behaves exactly as createMatchSession's AI (timeout on a ≥3 loss
+   * streak or at match point, save/force + reset call).
+   */
+  readonly aiManager?: boolean;
+  /** Timeouts allowed per half (default: no per-half limit — only the per-map rule, 2). Design option, unverified for VCT. */
+  readonly timeoutsPerHalf?: number;
 }
 
 /** MatchConfig with each plan's match-long inputs merged into its team's inputs. */
@@ -150,9 +164,13 @@ export function createManagedSession(config0: MatchConfig, options: ManagedSessi
   const tiltByRound: Record<TeamSlot, number[]> = { A: [], B: [] };
 
   const mind = (slot: TeamSlot): TeamMind => summarizeMind(people[slot].map((p, i) => withMood(p, mood[slot][i] ?? 0)));
+  const perHalf = options.timeoutsPerHalf ?? TIMEOUTS_PER_MAP;
+  const moodEffects = options.moodEffects ?? false;
+  const aiManager = options.aiManager ?? false;
+  const roundInputsOn: Record<TeamSlot, boolean> = { A: false, B: false };
   const timeoutsLeftThisHalf = (slot: TeamSlot): number => {
     const h = halfOf(engine.currentRound);
-    return Math.max(0, Math.min(TIMEOUT_MODEL.perHalf - usedByHalf[slot][h], TIMEOUTS_PER_MAP - usedTotal[slot]));
+    return Math.max(0, Math.min(perHalf - usedByHalf[slot][h], TIMEOUTS_PER_MAP - usedTotal[slot]));
   };
   const snapshot = (slot: TeamSlot) => {
     const m = mind(slot);
@@ -235,10 +253,28 @@ export function createManagedSession(config0: MatchConfig, options: ManagedSessi
     return perPlayer;
   };
 
+  /** The AI as createMatchSession has it (aiManager off): timeout on a ≥3 loss streak or at match point. */
+  const legacyAi = (t: TeamSlot): void => {
+    if (timeoutActive[t] || activeOrder[t] || timeoutsLeftThisHalf(t) <= 0) return;
+    const s = state();
+    const eco = s.economy[t];
+    if (!(eco.consecutiveLosses >= 3 || s.score[other(t)] === WIN_ROUNDS - 1)) return;
+    const order: TeamOrder = {
+      economy: eco.credits / eco.players.length < 2000 ? "save" : "force",
+      strategy: s.attacker === t ? "default" : "aggroPush",
+      tempo: "slow",
+    };
+    takeTimeout(t, "ai");
+    activeOrder[t] = { order, roundsLeft: 1 };
+    timeoutLog.push({ round: s.roundNumber, team: t, by: "ai", order });
+    decisions.push({ round: s.roundNumber, team: t, by: "ai", kind: "orders", order, before: snapshot(t) });
+  };
+
   /** The AI managers act before a round: talk at half-time, then timeout / shouts. */
   const aiActs = (): void => {
     for (const t of SLOTS) {
       if (!aiTeams.has(t)) continue;
+      if (!aiManager) { legacyAi(t); continue; }
       if (halfTime?.pending[t]) teamTalk(t, aiTeamTalk(managers[t], halfTime.situation[t], mind(t)));
       const s = state();
       const eco = s.economy[t];
@@ -273,6 +309,10 @@ export function createManagedSession(config0: MatchConfig, options: ManagedSessi
     const pistolLost = (round === 2 || round === ROUNDS_PER_HALF + 2) && records.at(-1)?.phase === "pistol" && records.at(-1)!.winner !== t;
     if (!economy && pistolLost && plan?.afterPistolLoss) economy = plan.afterPistolLoss;
     const out: TeamOrder = { ...(explicit ?? {}), ...(strat ? { strategy: strat } : {}), ...(economy ? { economy } : {}) };
+    // A manager's lever names the round's call (asOpening). The legacy AI's timeout order does not
+    // (aiManager off), so its rounds play exactly as under createMatchSession.
+    const legacy = aiTeams.has(t) && !aiManager;
+    if (strat && !legacy) return { ...out, asOpening: true };
     return Object.keys(out).length ? out : undefined;
   };
 
@@ -286,7 +326,9 @@ export function createManagedSession(config0: MatchConfig, options: ManagedSessi
     for (const t of SLOTS) {
       const o = orderFor(t, round);
       if (o) orders[t] = o;
-      engine.setRoundInputs(t, mindRoundInputs(mind(t), shouts[t].risk));
+      // State of mind reaches the sim only with moodEffects; a risk shout always does (a manager's choice).
+      const inputs = mindRoundInputs(moodEffects ? mind(t) : summarizeMind([]), shouts[t].risk);
+      if (inputs || roundInputsOn[t]) { engine.setRoundInputs(t, inputs); roundInputsOn[t] = inputs !== null; }
     }
     halfTime = null;
     const before = { A: mind("A"), B: mind("B") };

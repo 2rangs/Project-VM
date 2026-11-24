@@ -83,6 +83,11 @@ export interface MatchOptions {
   opponentMemory?: boolean;
   /** Minimum throw rates (/s of holding a post-plant posture), keyed by game-data team / player id. */
   minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> };
+  /** [manager] FLAGS, default off (not validated against the real-roster gate): state of mind feeds the sim,
+   *  the AI manager uses shouts / talks / attribute-driven timeouts, timeouts limited per half. */
+  moodEffects?: boolean;
+  aiManager?: boolean;
+  timeoutsPerHalf?: number;
 }
 
 // ── Round decisions: WHY a round went the way it did. Mirrors match-runner

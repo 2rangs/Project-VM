@@ -22,7 +22,7 @@ interface Cfg {
   teamA: { id: string; name: string }; teamB: { id: string; name: string };
   map?: string; seed?: number; aiTeams?: ('A' | 'B')[];
   /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
-  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> }; moodEffects?: boolean; aiManager?: boolean; timeoutsPerHalf?: number };
   /** [manager] Our pre-match plan, and the opponent film our report was read from. */
   plan?: MatchPlan;
   scouting?: { logs: TeamGameLog[]; uptake?: number };
@@ -43,6 +43,10 @@ const session: ManagedSession = createManagedSession(
   },
   {
     aiTeams: cfg.aiTeams ?? ['B'],
+    // [manager] flags, default off (src/shared/ipc.ts MatchOptions)
+    ...(cfg.options?.moodEffects ? { moodEffects: true } : {}),
+    ...(cfg.options?.aiManager ? { aiManager: true } : {}),
+    ...(cfg.options?.timeoutsPerHalf ? { timeoutsPerHalf: cfg.options.timeoutsPerHalf } : {}),
     ...(cfg.plan ? { plans: { [human]: cfg.plan } } : {}),
     ...(cfg.scouting?.logs?.length ? { scouting: { [human]: cfg.scouting } } : {}),
   },
