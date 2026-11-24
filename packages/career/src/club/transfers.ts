@@ -24,6 +24,7 @@ import {
 import { abilityScale } from "./market.ts";
 import { DEPTH_MODEL } from "./constants.ts";
 import type { ClubState, Contract, OfferKind, OfferTerms, PlayerUtility, Text, TransferOffer } from "./types.ts";
+import { estimateForTeam } from "../knowledge.ts";
 
 const M = CLUB_MODEL;
 const T = (ko: string, en: string): Text => ({ ko, en });
@@ -128,7 +129,7 @@ export function playerUtility(w: World, p: WorldPlayer, kind: OfferKind, toTeamI
   const effWage = effectiveWage(w, toTeamId, terms);
   const wage = M.wWage * Math.log(Math.max(1, effWage) / Math.max(1, ref));
   const length = M.wLength * -Math.abs(terms.years - preferredYears(p.age)) / 3;
-  const est = estimateAbility(w, teamScout(w, toTeamId), p);
+  const est = estimateForTeam(w, toTeamId, p);
   const defaultClause = M.buyoutValueMult * valueFrom(w, est.ca, est.pa, p.age, terms.years - 1);
   const clause = clauseTerm(ambition, terms.releaseClause, defaultClause);
   if (kind === "renewal") {
@@ -269,7 +270,7 @@ function complete(w: World, o: TransferOffer, date: string): void {
   }
   club.loans = club.loans.filter((l) => l.playerId !== p.playerId);
   joinRoster(w, p, o.toTeamId);
-  const est = estimateAbility(w, teamScout(w, o.toTeamId), p);
+  const est = estimateForTeam(w, o.toTeamId, p);
   const value = valueFrom(w, est.ca, est.pa, p.age, o.terms.years - 1);
   const c: Contract = {
     personId: p.playerId, kind: "player", teamId: o.toTeamId, salary: o.terms.wage,
@@ -398,7 +399,7 @@ export function releasePlayer(world: World, playerId: string, date = world.club!
 /** Suggested terms for an offer as the buyer's scout sees the player (fee = asking-like value, wage = market). */
 export function suggestedTerms(w: World, playerId: string, buyerTeamId: string, kind: OfferKind): OfferTerms {
   const p = w.players[playerId]!;
-  const est = estimateAbility(w, teamScout(w, buyerTeamId), p);
+  const est = estimateForTeam(w, buyerTeamId, p);
   const rep = reputations(w)[buyerTeamId] ?? 0.5;
   const wage = clubSalary(marketWage(w, p, w.teams[buyerTeamId]!.region, est), rep);
   const years = Math.round(preferredYears(p.age));

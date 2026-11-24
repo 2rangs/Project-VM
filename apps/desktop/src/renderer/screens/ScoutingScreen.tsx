@@ -13,8 +13,10 @@ import {
 } from '../career/world.ts';
 import { GenTag, PlayerDetail, squadRow, type SquadRow } from './SquadScreen.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx'; // [loading]
+import { AssignPanel, ClubYouthTable, ReportTable, ShortlistTable } from './scouting/tables.tsx';
+import { fogged } from '../career/scouting.ts';
 
-type Tab = 'prospects' | 'free' | 'staff';
+type Tab = 'prospects' | 'free' | 'staff' | 'assign' | 'reports' | 'shortlist' | 'club';
 
 const to20 = (v: number) => Math.max(1, Math.min(20, Math.round(1 + v * 19)));
 
@@ -45,7 +47,8 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
   // [career] in a career the world advances through the calendar and our own scout judges players.
   const career = useCareer().career;
   const viewer = career?.userTeamId ?? null;
-  const [tab, setTab] = useState<Tab>('prospects');
+  const fog = fogged(w);
+  const [tab, setTab] = useState<Tab>(fog ? 'reports' : 'prospects');
   const [advancing, setAdvancing] = useState(false); // [loading]
   const [advanceError, setAdvanceError] = useState<string | null>(null);
   const pop = populationSummary(w);
@@ -94,11 +97,18 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
         {!career && <button className="career-reset" onClick={() => { setDetail(null); resetWorld(); }} data-testid="career-reset">{t('career.reset')}</button>}
       </div>
       <div className="md-tabs">
+        {fog && (['reports', 'assign', 'shortlist', 'club'] as const).map((k) => (
+          <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)} data-testid={`scout-tab-${k}`}>{t(`scout.tab.${k}`)}</button>
+        ))}
         <button className={tab === 'prospects' ? 'on' : ''} onClick={() => setTab('prospects')} data-testid="career-tab-prospects">{t('career.tab.prospects', { season: w.season, n: prospects.length })}</button>
         <button className={tab === 'free' ? 'on' : ''} onClick={() => setTab('free')} data-testid="career-tab-free">{t('career.tab.free', { n: free.length })}</button>
         <button className={tab === 'staff' ? 'on' : ''} onClick={() => setTab('staff')} data-testid="career-tab-staff">{t('career.tab.staff', { n: staff.length })}</button>
       </div>
-      <p className="small muted">{t(`career.hint.${tab}`)}</p>
+      <p className="small muted">{t(fog && ['reports', 'assign', 'shortlist', 'club'].includes(tab) ? `scout.hint.${tab}` : `career.hint.${tab}`)}</p>
+      {tab === 'reports' && fog && <ReportTable onOpen={openPlayer} />}
+      {tab === 'assign' && fog && <AssignPanel />}
+      {tab === 'shortlist' && fog && <ShortlistTable onOpen={openPlayer} />}
+      {tab === 'club' && fog && <ClubYouthTable onOpen={openPlayer} />}
       {tab === 'prospects' && (
         <DataTable rows={prospects} columns={playerCols} filterKey={(p) => `${p.handle} ${p.name ?? ''} ${p.role} ${p.country ?? ''}`}
           initialSort={{ key: 'pa', dir: 'desc' }} rowId={(p) => p.playerId} onRowClick={openPlayer} />

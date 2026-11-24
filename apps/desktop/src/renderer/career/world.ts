@@ -3,7 +3,7 @@
 // the season loop that brings new ones in. The package is pure TS and imported by relative path
 // so the node:test unit tests can load this module without the Vite alias.
 import {
-  createWorld, deserializeWorld, serializeWorld, toScale200, estimateAbility, teamScout,
+  createWorld, deserializeWorld, serializeWorld, toScale200, estimateForTeam,
   type RealPlayerInput, type RealTeamInput, type World, type WorldPlayer,
 } from '../../../../../packages/career/src/index.ts';
 
@@ -53,7 +53,8 @@ export { serializeWorld };
 
 /** CA / PA as the viewer's scouts see them, on the 1–200 scale. */
 export function scoutedAbility(w: World, viewerTeamId: string | null, p: WorldPlayer) {
-  const e = estimateAbility(w, teamScout(w, viewerTeamId), p);
+  // The manager's club sees through its scouting knowledge (attribute fog); others through their scout.
+  const e = estimateForTeam(w, viewerTeamId, p);
   return {
     ca: toScale200(e.ca)!, caLo: toScale200(e.caLo)!, caHi: toScale200(e.caHi)!,
     pa: toScale200(e.pa)!, paLo: toScale200(e.paLo)!, paHi: toScale200(e.paHi)!,

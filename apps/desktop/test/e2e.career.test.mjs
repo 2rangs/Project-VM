@@ -97,6 +97,25 @@ async function main() {
   assert.ok(plan.map, 'a practice map is set');
   await page.getByTestId('nav-home').click();
 
+  // ── scouting: a scout on the region's youth; another club's player is seen as ranges ──
+  await page.getByTestId('nav-scouting').click();
+  await page.waitForSelector('[data-testid="career-screen"]', { timeout: 20000 });
+  await page.getByTestId('scout-tab-assign').click();
+  await page.waitForSelector('[data-testid="assign-panel"]', { timeout: 10000 });
+  await page.selectOption('[data-testid="assign-kind-0"]', 'youth');
+  await page.getByTestId('assign-save-0').click();
+  await page.waitForFunction(() => /유스|Youth/.test(document.querySelector('[data-testid="assign-current-0"]')?.textContent ?? ''), null, { timeout: 10000 });
+  const scouted = await saveWhen((c) => (c.world.scouting?.assignments ?? []).some((x) => x.kind === 'youth'));
+  assert.ok(scouted.world.scouting.assignments.some((x) => x.kind === 'youth'), 'the assignment is saved');
+  await shot('scouting-assign');
+  await page.getByTestId('career-tab-free').click();
+  await page.getByTestId('dt-row').first().click();
+  await page.waitForSelector('[data-testid="player-detail"] [data-testid="knowledge-pct"]', { timeout: 10000 });
+  assert.ok(await page.locator('[data-testid="player-detail"] [data-testid="attr-range"]').count() >= 5, 'attributes are shown as ranges');
+  assert.equal(await page.locator('[data-testid="player-detail"] [data-testid="knowledge-own"]').count(), 0, 'not our player');
+  await shot('scouting-player');
+  await page.getByTestId('nav-home').click();
+
   // ── Continue → first match day ──
   // (an AI club may bid for one of our players on the way: that is a question, answered by rejecting)
   const toMatchDay = async () => {
@@ -159,6 +178,11 @@ async function main() {
   assert.equal(cells[a > b ? 3 : 4], '1', 'the win / loss is counted');
   assert.equal(cells[5], `${a}–${b}`, 'maps won–lost');
   await shot('standings');
+  // Mondays have passed: the scouts have filed reports.
+  await page.getByTestId('nav-scouting').click();
+  await page.getByTestId('scout-tab-reports').click();
+  await page.waitForSelector('[data-testid="report-table"] [data-testid="dt-row"]', { timeout: 10000 });
+  await shot('scouting-reports');
   const afterMatch = readSave();
   const line = afterMatch.stats[signedId];
   assert.ok(line && line.maps === a + b, `the signing played ${a + b} maps (${JSON.stringify(line)})`);
@@ -225,6 +249,16 @@ async function main() {
   assert.ok(expiredMsg && expiredMsg.text.en.body.includes(signed), 'the inbox tells us who left');
   for (const id of [...next.world.teams[teamId].roster, ...next.world.teams[teamId].academy]) assert.ok(rosterBefore.has(id), 'no player was added by the season loop');
   assert.equal(next.history.length, 1, 'the season is in the history');
+
+  // ── our squad after a season: each player's development history ──
+  await page.getByTestId('nav-scouting').click();
+  await page.getByTestId('scout-tab-club').click();
+  await page.waitForSelector('[data-testid="club-youth-table"] [data-testid="dt-row"]', { timeout: 10000 });
+  await page.getByTestId('dt-row').first().click();
+  await page.waitForSelector('[data-testid="player-detail"] [data-testid="dev-chart"]', { timeout: 10000 });
+  assert.ok(await page.locator('[data-testid="player-detail"] [data-testid="knowledge-own"]').count() === 1, 'our own player');
+  assert.ok(await page.locator('[data-testid="own-morale"]').count() === 1, 'morale is shown');
+  await shot('development');
 
   // ── main menu → Continue reproduces the save ──
   await page.getByTestId('nav-standings').click();

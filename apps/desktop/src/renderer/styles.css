@@ -317,3 +317,18 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .career-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin:6px 0 10px; }
 .career-advance, .career-reset { padding:5px 12px; border-radius:6px; border:1px solid var(--line); background:#1b2230; color:inherit; cursor:pointer; }
 .career-advance { margin-left:auto; border-color:#7ee78788; }
+
+/* scouting knowledge / development (screens/scouting) */
+.range-band { position:absolute; top:0; height:100%; background:#58a6ff55; border-radius:999px; }
+.range-tick { position:absolute; top:-1px; width:2px; height:9px; background:#e6edf3; margin-left:-1px; }
+.rating.range .rating-num { min-width:38px; }
+.know-badge { font-size:10px; padding:1px 6px; border-radius:999px; border:1px solid var(--line); margin-left:6px; }
+.know-badge.hi { color:#7ee787; border-color:#7ee78766; } .know-badge.mid { color:#e3b341; border-color:#e3b34166; } .know-badge.lo { color:#ff7b72; border-color:#ff7b7266; }
+.report-box { margin:8px 0; padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+.rec { font-weight:600; } .rec-sign { color:#7ee787; } .rec-monitor { color:#e3b341; } .rec-pass { color:#8b949e; }
+.own-panel { margin:8px 0; } .own-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; align-items:center; }
+.own-mentor select, .own-loan select, .scout-this select, .assign-table select { background:#1b2230; color:inherit; border:1px solid var(--line); border-radius:4px; padding:2px 4px; }
+.dev-chart { margin:8px 0; } .dev-chart svg { background:#0d1117; border-radius:6px; }
+.dev-axis { stroke:#30363d; } .dev-line { fill:none; stroke:#58a6ff; stroke-width:2; } .dev-dot { fill:#58a6ff; } .dev-band { stroke:#58a6ff88; stroke-width:5; stroke-linecap:round; }
+.dev-tick { fill:#8b949e; font-size:9px; }
+.assign-table { width:100%; border-collapse:collapse; font-size:12px; } .assign-table td, .assign-table th { padding:6px; border-bottom:1px solid var(--line); text-align:left; }

@@ -18,10 +18,11 @@ import { CAREER_MODEL, closingRate, coachFactor, declineLoss, playTimeFactor, un
 import { compositeOf } from "./calibration.ts";
 import { generatePlayer, generateStaff, staffQuality, STAFF_MODEL } from "./generate.ts";
 import {
-  ABILITY_KEYS, STAFF_ROLES,
+  ABILITY_KEYS, DEV_HISTORY_MAX, STAFF_ROLES,
   type AbilityKey, type RatedAttr, type SeasonRecord, type StaffRole, type World, type WorldPlayer, type WorldStaff, type WorldTeam,
 } from "./model.ts";
 import { REGIONS, type Region } from "./regions.ts";
+import { developmentFactors, developmentMorale } from "./development.ts";
 import { estimateAbility, teamScout, UNRATED_ABILITY } from "./scouting.ts";
 import { clamp, normal, streamFor, weightedIndex } from "./rng.ts";
 import { DEPTH_MODEL } from "./club/constants.ts";
@@ -98,8 +99,10 @@ function coachDevelopment(w: World, teamId: string | null): number {
  *   x' = x + clamp(r(t) · P · C · F · (1 + σ·z), 0, 1) · (peak − x) − λ·max(0, t + 1 − D)
  * clamped to [real min, peak]. r = maturity-curve closing rate, P = playing time, C = coach,
  * F = training focus factor of the attribute (club/training.ts; 1 without a training plan).
+ * `factors` (development.ts): D multiplies the growth term (personality · morale · mentor), and
+ * the decline term is multiplied by its own personality factor. Omitted → 1 (the original formula).
  */
-export function developPlayer(w: World, p: WorldPlayer, maps: number, coachDev: number, season: number, focus?: Partial<Record<AbilityKey, number>>): void {
+export function developPlayer(w: World, p: WorldPlayer, maps: number, coachDev: number, season: number, focus?: Partial<Record<AbilityKey, number>>, factors?: { readonly growth: number; readonly decline: number }): void {
   const cal = w.calibration;
   const attrs = p.attributes;
   if (!p.hasRatings || !attrs) return;
@@ -111,9 +114,10 @@ export function developPlayer(w: World, p: WorldPlayer, maps: number, coachDev: 
     if (!slot || typeof slot.value !== "number") continue;
     const peak = p.peak?.[k] ?? slot.value;
     const F = focus?.[k] ?? 1;
-    const growth = clamp(closingRate(p.age, k) * P * C * F * (1 + CAREER_MODEL.developmentNoise * normal(rng)), 0, 1);
+    const D = factors?.growth ?? 1;
+    const growth = clamp(closingRate(p.age, k) * P * C * F * D * (1 + CAREER_MODEL.developmentNoise * normal(rng)), 0, 1);
     const grown = slot.value + growth * Math.max(0, peak - slot.value);
-    const next = clamp(grown - declineLoss(p.age, k), cal.min[k], Math.max(cal.min[k], peak));
+    const next = clamp(grown - declineLoss(p.age, k) * (factors?.decline ?? 1), cal.min[k], Math.max(cal.min[k], peak));
     slot.value = r4(next);
   }
   p.careerMaps += maps;
@@ -362,6 +366,13 @@ export interface AdvanceSeasonOptions {
    * releases. Retirement still applies.
    */
   readonly managedTeams?: readonly string[];
+  /**
+   * Season form per player (career stats, 0.5 = par) for morale (development.ts). Players not
+   * listed have par form. Personality, morale and the manager's mentors (World.development) always
+   * shape growth and decline; set `personality: false` for the bare age/minutes/coach/focus formula.
+   */
+  readonly form?: Readonly<Record<string, number>>;
+  readonly personality?: boolean;
 }
 /** Kept for the club-ops callers. */
 export type AdvanceOptions = AdvanceSeasonOptions;
@@ -376,7 +387,16 @@ export function advanceSeason(world: World, opts: AdvanceSeasonOptions = {}): Wo
   // 1. development (from the season just played)
   const played = opts.mapsPlayed ?? {};
   const maps = new Map(Object.values(w.players).map((p) => [p.playerId, played[p.playerId] ?? seasonMaps(w, p)]));
-  for (const p of Object.values(w.players)) developPlayer(w, p, maps.get(p.playerId)!, coachDevelopment(w, p.teamId), ending, opts.focus?.[p.playerId]);
+  const mentors = w.development?.mentors ?? {};
+  const morale = new Map(Object.values(w.players).map((p) => [p.playerId, developmentMorale(w, p, opts.form?.[p.playerId] ?? 0.5)]));
+  const factors = new Map(opts.personality === false ? [] : Object.values(w.players).map((p) => [p.playerId, developmentFactors(w, p, morale.get(p.playerId)!, mentors[p.playerId])]));
+  for (const p of Object.values(w.players)) developPlayer(w, p, maps.get(p.playerId)!, coachDevelopment(w, p.teamId), ending, opts.focus?.[p.playerId], factors.get(p.playerId));
+  for (const p of Object.values(w.players)) {
+    if (p.ca === null) continue;
+    const h = (p.history ??= []);
+    h.push({ season: ending, age: p.age, ca: p.ca, maps: maps.get(p.playerId)!, morale: Math.round(morale.get(p.playerId)! * 100) / 100 });
+    if (h.length > DEV_HISTORY_MAX) h.splice(0, h.length - DEV_HISTORY_MAX);
+  }
   for (const s of Object.values(w.staff)) developStaff(s);
 
   // 2. aging
@@ -389,6 +409,7 @@ export function advanceSeason(world: World, opts: AdvanceSeasonOptions = {}): Wo
     if (u >= retirementHazard(w, p)) continue;
     detachPlayer(w, p);
     delete w.players[p.playerId];
+    if (w.development) for (const [a, b] of Object.entries(w.development.mentors)) if (a === p.playerId || b === p.playerId) delete w.development.mentors[a];
     rec.retiredPlayers.push(p.playerId);
     w.retired.push({ id: p.playerId, kind: "player", label: p.handle ?? p.playerId, generated: p.generated, season, age: p.age });
   }
