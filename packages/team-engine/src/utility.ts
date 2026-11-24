@@ -38,6 +38,8 @@ export interface UtilityAbilityFact {
   readonly effectType: string;
   readonly durationMs?: number | null;
   readonly flashDurationMs?: number | null;
+  /** Catalogued throw range (world units); null/absent = not catalogued (reach then goes by the map, `withinReach`). */
+  readonly rangeUnits?: number | null;
 }
 
 /**
@@ -129,8 +131,9 @@ export interface UtilityWant {
   /** stall: other families that would serve when this one is not available, in order. */
   readonly fallback?: readonly UtilityFamily[];
   /**
-   * cover: the zone whose sight onto `target` the smoke is there to cut. Sent as the command's
-   * `aimZone`, so the smoke lands on the side of `target` that faces it (round-simulator landingPoint).
+   * cover: the zone (the team's lane) the smoke is there to hide from `target` (where the holders
+   * are). Sent as the command's `screenZone`: the round simulator lands it where it cuts the most of
+   * `target`'s view of the lane while keeping off the walkway (round-simulator screenPoint).
    */
   readonly screen?: ZoneId;
   readonly reason: string;
@@ -173,6 +176,7 @@ interface Carried {
   readonly effectType: string;
   readonly durationMs: number | null;
   readonly blindMs: number;
+  readonly rangeUnits: number | null;
 }
 
 interface Ctx {
@@ -188,6 +192,8 @@ interface Ctx {
   readonly held: ReadonlySet<string>;
   /** Zones with any living teammate in them. */
   readonly occupied: ReadonlySet<string>;
+  /** Zones a living teammate is on its way through (remaining route waypoints). */
+  readonly routed: ReadonlySet<string>;
   readonly carried: (p: Teammate) => Carried[];
 }
 
@@ -212,6 +218,7 @@ function buildCtx(view: UtilityView, spatial: SpatialQuery, effectOf?: EffectLoo
         abilityId: String(a.abilityId), family, effectType: f.effectType,
         durationMs: f.durationMs ?? null,
         blindMs: f.flashDurationMs ?? f.durationMs ?? DEFAULT_BLIND_MS,
+        rangeUnits: f.rangeUnits ?? null,
       });
     }
     return out;
@@ -222,11 +229,13 @@ function buildCtx(view: UtilityView, spatial: SpatialQuery, effectOf?: EffectLoo
   const zoneOf = new Map<string, ZoneId>();
   const held = new Set<string>();
   const occupied = new Set<string>();
+  const routed = new Set<string>();
   for (const p of alive) {
     const z = spatial.nearestZone(v2(p.position));
     zoneOf.set(String(p.id), z);
     occupied.add(String(z));
     if (!p.transit || p.transit.waitingAtEdge) held.add(String(z));
+    for (const w of p.transit?.path ?? []) routed.add(String(w));
   }
   const effects = view.visibleEffects ?? [];
   const smokedPairs: Array<readonly [ZoneId, ZoneId]> = [];
@@ -234,7 +243,7 @@ function buildCtx(view: UtilityView, spatial: SpatialQuery, effectOf?: EffectLoo
     if (e.effectType !== "smoke" && e.effectType !== "wall") continue;
     for (const n of spatial.visibleZonesFrom(e.zoneId as ZoneId)) smokedPairs.push([e.zoneId as ZoneId, n]);
   }
-  return { view, spatial, alive, zoneOf, evidence: enemyEvidenceByZone(view, spatial), effects, smokedPairs, held, occupied, carried };
+  return { view, spatial, alive, zoneOf, evidence: enemyEvidenceByZone(view, spatial), effects, smokedPairs, held, occupied, routed, carried };
 }
 
 /** Throw reach by the map: the caster's own zone, a zone next to it, or one it has a sightline onto. */
@@ -242,6 +251,21 @@ export function withinReach(spatial: SpatialQuery, from: ZoneId, to: ZoneId): bo
   if (from === to) return true;
   if (spatial.hasLineOfSight(from, to)) return true;
   return spatial.findPath(from, to, "run")?.path.length === 2;
+}
+
+/** Run speed in world units per ms (VALORANT base move speed 6.75 m/s). */
+const RUN_UNITS_PER_MS = 0.675;
+
+/**
+ * Whether an ability reaches `to` from `from`: by the map (withinReach), or — when the catalog gives
+ * a range — when the zones are surely within it. The run-route length (travel time × run speed) is
+ * never shorter than the straight line, so a route that fits inside the range is a throw that does.
+ */
+export function abilityReaches(spatial: SpatialQuery, from: ZoneId, to: ZoneId, rangeUnits: number | null): boolean {
+  if (withinReach(spatial, from, to)) return true;
+  if (rangeUnits == null) return false;
+  const t = spatial.shortestTravelTimeMs(from, to, "run");
+  return t !== null && t * RUN_UNITS_PER_MS <= rangeUnits;
 }
 
 /** A zone the team does not hold and has a reason to expect enemies in. */
@@ -258,6 +282,7 @@ function contested(ctx: Ctx, zone: ZoneId): boolean {
   return false;
 }
 
+const prePlantPhase = (v: PolicyView): boolean => v.spike.phase === "carried" || v.spike.phase === "dropped" || v.spike.phase === "planting";
 const openSight = (ctx: Ctx, a: ZoneId, b: ZoneId): boolean => ctx.spatial.hasLineOfSight(a, b, { smokedPairs: ctx.smokedPairs });
 const hasOwn = (ctx: Ctx, zone: ZoneId, family: UtilityFamily): boolean =>
   ctx.effects.some((e) => e.own && e.zoneId === zone && FAMILY_OF[e.effectType] === family);
@@ -279,6 +304,10 @@ export function stallWants(ctx: Ctx): UtilityWant[] {
     if (ev < STALL_EVIDENCE_MIN) continue;
     const z = zone as ZoneId;
     if (ctx.occupied.has(zone)) continue;
+    // Never deny a zone the team itself has to go through: one a teammate is routed through, or —
+    // for the attack before the plant — a site it has to take.
+    if (ctx.routed.has(zone)) continue;
+    if (ctx.view.side === "attack" && prePlantPhase(ctx.view) && ctx.spatial.isPlantableZone(z)) continue;
     const atDoor = [...ctx.held].some((h) => withinReach(ctx.spatial, h as ZoneId, z));
     if (!atDoor) continue;
     if (hasOwn(ctx, z, "ground") || hasOwn(ctx, z, "vision")) continue;
@@ -316,9 +345,12 @@ function exposures(ctx: Ctx): Exposure[] {
 
 /**
  * COVER. A teammate is about to step into a zone that lies in open sight of the contested zone
- * after it on its route: a smoke on the zone it steps into cuts that sightline, so the approach is
- * hidden. Thrown only when the smoke would still stand when the teammate reaches the far side
- * (duration ≥ time to the zone + the crossing).
+ * after it on its route. The smoke is thrown INTO the contested zone, to screen the step zone off
+ * from it (`target` = where the watchers are, `screen` = the lane): the round simulator puts it
+ * where it cuts the most of the watchers' view of the lane while keeping off the walkway, so the
+ * team walks into the site beside the smoke rather than out of it into a held angle. Thrown only
+ * when the smoke would still stand when the teammate reaches the far side (duration ≥ time to the
+ * zone + the crossing).
  */
 export function coverWants(ctx: Ctx): UtilityWant[] {
   const best = new Map<string, UtilityWant>();
@@ -336,7 +368,7 @@ export function coverWants(ctx: Ctx): UtilityWant[] {
     const prev = best.get(step);
     if (!prev || need > (prev.minDurationMs ?? 0)) {
       best.set(step, {
-        purpose: "cover", family: "vision", target: step, screen: far, minDurationMs: need,
+        purpose: "cover", family: "vision", target: far, screen: step, minDurationMs: need,
         reason: `${String(p.id)} steps into ${step} in ${Math.round(t.nextArrivalMs)}ms, in open sight of ${far}`,
       });
     }
@@ -481,10 +513,10 @@ export function planUtility(
         const id = String(p.id);
         if (busy.has(id)) continue;
         const pz = ctx.zoneOf.get(id)!;
-        if (!withinReach(spatial, pz, want.target) || fighting(pz)) continue;
+        if (fighting(pz)) continue; // reach is checked per ability below (abilityReaches)
         if (family === "ground" && groundLeft - 1 < reserve) continue;
         const a = abilityFor(ctx, p, want, family);
-        if (!a) continue;
+        if (!a || !abilityReaches(spatial, pz, want.target, a.rangeUnits)) continue;
         // Flash: the caster whose own exposure is furthest off. Otherwise: the nearest one.
         const score = family === "flash"
           ? -(ownExposure.get(id) ?? Number.POSITIVE_INFINITY)
@@ -499,7 +531,7 @@ export function planUtility(
     if (want.purpose !== "blind" && want.purpose !== "scout") served.add(key);
     const cmd: ActionCommand = {
       playerId: pick.p.id, kind: "useAbility", abilityId: pick.a.abilityId as ActionCommand["abilityId"], targetZone: want.target,
-      ...(want.screen ? { aimZone: want.screen } : {}),
+      ...(want.screen ? { screenZone: want.screen } : {}),
       executeAtMs: 0, sourceActionId: `utility:${want.purpose}:${pick.a.effectType}`,
     };
     const idx = out.findIndex((c) => String(c.playerId) === String(pick!.p.id));

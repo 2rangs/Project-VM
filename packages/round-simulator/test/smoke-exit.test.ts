@@ -100,6 +100,13 @@ describe("smoke is passable — and what happens on the far side follows from wh
     expect(flashed.elapsedMs).toBe(plain.elapsedMs);
   });
 
+  it("counterfactual — the holder looks away from the pop: the same flash does not blind it", () => {
+    const facing = need(run({ support: "flash" }).duel);
+    const away = need(run({ support: "flash", holderAim: "a-rafters" }).duel);
+    expect(facing.defenderFlashedMs).toBeGreaterThan(0);
+    expect(away.defenderFlashedMs).toBe(0);
+  });
+
   it("counterfactual — a fresh recon call: the pusher still does not see first, but comes out pre-aimed", () => {
     const plain = need(run().duel);
     const called = need(run({ support: "recon" }).duel);

@@ -50,6 +50,14 @@ export interface ActionCommand {
    */
   readonly aimZone?: ZoneId;
   /**
+   * useAbility with a vision blocker (smoke): the zone to HIDE from `targetZone`'s view. The smoke
+   * is thrown into `targetZone` and lands where it cuts the most of that zone's view of
+   * `screenZone` while keeping off the walkway between the two (a cover smoke on the holders' side
+   * of an entry, which the team then walks in beside rather than out of). Optional; without it the
+   * landing follows `aimZone` / the thrower as before.
+   */
+  readonly screenZone?: ZoneId;
+  /**
    * How the route to `targetZone` should be chosen. The policy picks the goal and the purpose;
    * the navigation layer finds the path. Default FASTEST.
    */

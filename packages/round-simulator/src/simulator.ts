@@ -7,6 +7,7 @@ import {
   landingSound,
   traversalSound,
   EYE_HEIGHT_UNITS,
+  segmentHitsSphere,
   type SightOccluder,
   type SightPoint,
   type PlayerState as PPlayerState,
@@ -32,6 +33,7 @@ import {
   activeGroundPatches,
   deployedEffects,
   visionOccluders,
+  DEFAULT_OCCLUDER_RADIUS_UNITS,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
@@ -149,6 +151,16 @@ const STACK_WINDOW_MS = 1500;
 const STACK_MAX_WAIT_MS = 2000;
 /** Half field of view (radians): a holder is "watching" an edge when it lies inside this cone. */
 const HALF_FOV_RAD = (PERCEPTION_PARAMS.vision.halfFovDeg * Math.PI) / 180;
+/**
+ * A flash pops in the air, not on the floor. Without a sight query for a point in the air, the
+ * pop is taken as seen by anyone who sees some of the floor within this distance of where it
+ * landed (≈ how far a pop's light spreads over the floor it is above). manual-approx.
+ */
+const FLASH_POP_SPREAD_UNITS = 300;
+/** A screening smoke keeps this far (beyond its radius) off the walkway the team will use (a body's width; manual-approx). */
+const SMOKE_WALKWAY_MARGIN_UNITS = 100;
+/** At most this many watch / lane points are scored when choosing where a screening smoke lands (cost bound). */
+const SMOKE_SCORE_POINTS = 40;
 
 /** What a mover needs to know about the ground ahead (built once per tick). */
 interface MoveWorld {
@@ -546,13 +558,18 @@ export class RoundSimulator {
         if (!isMovement && cmd.targetZone) {
           const tz = this.spatial.getZone(cmd.targetZone);
           if (tz) {
-            // Where it lands: the floor of the target zone nearest the thrower (landingPoint).
-            // A post-plant attacker's fire / slow field into the spike's zone goes onto the spike
-            // itself (a lineup on the defuse; no throw arc is modelled).
+            // Where it lands: a post-plant attacker's fire / slow field into the spike's zone goes onto
+            // the spike itself (a lineup on the defuse; no throw arc is modelled). A smoke ordered to
+            // hide a zone from the target zone (screenZone) goes where it cuts the most of the target
+            // zone's view of it while keeping off the walkway between them (screenPoint); anything else
+            // lands on the floor of the target zone nearest the thrower, or its side facing aimZone.
             const sk = state.spike;
             const onSpike = !!this.cfg.plantTactics && p.side === "attack" && (sk.phase === "planted" || sk.phase === "defusing") && sk.zoneId === tz.id && sk.position
               && (spec.effectTypes.includes("molly") || spec.effectTypes.includes("slow"));
-            const landing = onSpike ? { ...sk.position! } : this.landingPoint(p, tz.id, cmd.aimZone);
+            const screen = !onSpike && spec.blocksVision && cmd.screenZone && cmd.screenZone !== tz.id
+              ? this.screenPoint(p, tz.id, cmd.screenZone, spec.radiusUnits ?? DEFAULT_OCCLUDER_RADIUS_UNITS, spec.rangeUnits)
+              : null;
+            const landing = onSpike ? { ...sk.position! } : screen ?? this.landingPoint(p, tz.id, cmd.aimZone);
             const inReach = spec.rangeUnits != null ? dist3(p.position, landing) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
             if (!inReach) {
               trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
@@ -916,6 +933,68 @@ export class RoundSimulator {
     return p.zoneId === zoneId ? { ...p.position } : { ...z.position };
   }
 
+  /**
+   * Where a smoke lands that is thrown to screen `laneZone` off from `watchZone` (a cover smoke:
+   * the team will walk through `laneZone`, defenders watch it from `watchZone`). Map geometry only —
+   * every position a body could stand on, never where an enemy actually is:
+   *   watch points  roadmap nodes of watchZone that see laneZone, weighted by how much of it they see
+   *   lane points   nodes of laneZone seen from watchZone
+   *   walkway       the roadmap route from laneZone's standing point to watchZone's
+   * Each candidate floor point of the two zones that lies more than (radius + a body) off the
+   * walkway scores Σ weight(w) over the visible pairs (w, l) whose eye-to-eye line passes through a
+   * sphere of the smoke's radius around it; the best one within the thrower's range is chosen. So the
+   * smoke goes on the holders' side of the angle — the walkway is left clear, and the team does not
+   * have to walk out of its own smoke into the angle. null → no sight table, or no point cuts
+   * anything (the caller falls back on landingPoint).
+   */
+  private screenPoint(p: SimPlayer, watchZone: string, laneZone: string, radius: number, rangeUnits: number | null): { x: number; y: number; z: number } | null {
+    const nav = this.spatial.nav;
+    if (!nav || !nav.hasVisibility) return null;
+    const key = `${watchZone}|${laneZone}|${Math.round(radius)}`;
+    let ranked = this.screenCache.get(key);
+    if (!ranked) {
+      const top = (nodes: readonly number[], w: (n: number) => number) =>
+        nodes.map((n) => [n, w(n)] as const).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, SMOKE_SCORE_POINTS);
+      const watch = top(nav.zoneNodes(watchZone), (n) => nav.sightInto(n, laneZone));
+      const lane = top(nav.zoneNodes(laneZone), (n) => nav.sightInto(n, watchZone));
+      const eye = (n: number) => { const q = nav.nodePosition(n); return { x: q.x, y: q.y, z: q.z + EYE_HEIGHT_UNITS }; };
+      const pairs: Array<{ a: ReturnType<typeof eye>; b: ReturnType<typeof eye>; w: number }> = [];
+      for (const [w, wt] of watch) for (const [l] of lane) if (nav.nodesVisible(w, l)) pairs.push({ a: eye(w), b: eye(l), w: wt });
+      const route = nav.findPath({ actorId: "screen", start: this.spatial.standPosition(laneZone), destination: this.spatial.standPosition(watchZone), movementMode: "run", routePreference: "FASTEST" });
+      const walk = route.status === "SUCCESS" ? route.waypoints.map((wp) => wp.position) : [];
+      const clear = radius + SMOKE_WALKWAY_MARGIN_UNITS;
+      const offWalk = (q: { x: number; y: number; z: number }) => walk.every((r) => Math.hypot(r.x - q.x, r.y - q.y) > clear);
+      const scored: Array<{ at: { x: number; y: number; z: number }; score: number }> = [];
+      for (const c of [...nav.zoneNodes(watchZone), ...nav.zoneNodes(laneZone)]) {
+        const at = nav.nodePosition(c);
+        if (!offWalk(at)) continue;
+        let score = 0;
+        for (const pr of pairs) if (segmentHitsSphere(pr.a, pr.b, at, radius)) score += pr.w;
+        if (score > 0) scored.push({ at: { x: at.x, y: at.y, z: at.z }, score });
+      }
+      ranked = scored.sort((a, b) => b.score - a.score);
+      this.screenCache.set(key, ranked);
+    }
+    const reach = rangeUnits ?? Number.POSITIVE_INFINITY;
+    return ranked.find((r) => dist3(p.position, r.at) <= reach)?.at ?? null;
+  }
+  private readonly screenCache = new Map<string, Array<{ at: { x: number; y: number; z: number }; score: number }>>();
+
+  /**
+   * Does `e` see a flash that pops above `center`? The pop is in the air, so it is seen by anyone
+   * who sees the landing point or some floor within FLASH_POP_SPREAD_UNITS of it (manual-approx,
+   * standing in for an airborne sight query the map does not offer yet).
+   */
+  private seesPop(center: { x: number; y: number; z: number }, centerZone: string, e: SimPlayer): boolean {
+    if (this.lineOf({ position: center, zoneId: centerZone }, e)) return true;
+    const nav = this.spatial.nav;
+    if (!nav) return false;
+    for (const n of nav.withinDisc(center, FLASH_POP_SPREAD_UNITS).nodes) {
+      if (this.lineOf({ position: nav.nodePosition(n), zoneId: nav.nodeZone(n) }, e)) return true;
+    }
+    return false;
+  }
+
   private refreshSightBlockers(abilityEngine: AbilityEngine): void {
     this.sightBlockers = visionOccluders(abilityEngine);
   }
@@ -1202,24 +1281,21 @@ export class RoundSimulator {
   /**
    * Enemies of `caster` blinded/suppressed by an effect centred at `center` (the caster, or a
    * thrown target point): alive, within `radiusUnits`, in the centre zone or with LoS to it.
-   * `needsSight` (a flash): only someone LOOKING toward where the flash comes from is blinded —
-   * for an enemy inside the target zone that is the side it was thrown from (the caster's zone),
-   * for one watching the target zone from elsewhere it is the target itself. A flash that pops in
-   * the caster's own zone is in the face of everyone there.
+   * `needsSight` (a flash): the pop is in the air and blinds whoever SEES it (seesPop) and has it
+   * on screen — within the field of view of where it pops. A flash that pops in the caster's own
+   * zone is in the face of everyone there.
    */
   private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number, center?: { x: number; y: number; z: number }, needsSight = false): string[] {
     const centerPos = center ?? caster.position;
     const centerZone = this.spatial.nearestZone(centerPos).id;
-    const casterZonePos = this.spatial.getZone(caster.zoneId)?.position ?? caster.position;
     const out: string[] = [];
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
       if (dist3(centerPos, e.position) > radiusUnits) continue;
-      if (!this.lineOf({ position: centerPos, zoneId: centerZone }, e)) continue;
-      if (needsSight && e.zoneId !== caster.zoneId) {
-        const popFrom = e.zoneId === centerZone ? casterZonePos : centerPos;
-        if (facingAngleTo(e.facing, e.position, popFrom) > HALF_FOV_RAD) continue;
-      }
+      if (needsSight) {
+        if (!this.seesPop(centerPos, centerZone, e)) continue;
+        if (e.zoneId !== caster.zoneId && facingAngleTo(e.facing, e.position, centerPos) > HALF_FOV_RAD) continue;
+      } else if (!this.lineOf({ position: centerPos, zoneId: centerZone }, e)) continue;
       out.push(e.id);
     }
     return out;
