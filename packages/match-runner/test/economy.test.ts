@@ -170,8 +170,11 @@ describe("floor items", () => {
     expect(floor.get("def2")).toBe("Classic");
   });
 
-  it("no orb points on Ascent yet → no orbs (the consumer is a no-op until maps data adds them)", () => {
-    expect(loadUltOrbs("ascent")).toEqual([]);
+  it("orb points come from the map's objects file: two on Ascent (zone-level, unverified), none where maps data has none", () => {
+    const ascent = loadUltOrbs("ascent");
+    expect(ascent).toHaveLength(2);
+    for (const o of ascent) for (const v of [o.position.x, o.position.y, o.position.z]) expect(Number.isFinite(v)).toBe(true);
+    expect(loadUltOrbs("abyss")).toEqual([]); // not filled: the callouts are not known with confidence
     expect(loadUltOrbs("no-such-map")).toEqual([]);
   });
 });
