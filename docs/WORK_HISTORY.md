@@ -383,6 +383,14 @@
 - 마무리(통합자 요청): 실제 로스터 게이트를 거치지 않은 시뮬 변경은 플래그로 기본 꺼짐 — `moodEffects`, `aiManager`, `timeoutsPerHalf`, `TeamOrder.asOpening`. 기본 옵션의 감독 세션은 `createMatchSession`과 라운드 단위로 동일(테스트). 인수인계: `docs/handoff/match-management.md`.
 
 
+### 25차 main 머지 (2026-11-24) — 이번 작업 묶음 마감(14개 세션 통합)
+- 방식: 사용자 요청으로 마감. 모든 세션에 "새 실험 중단, 게이트 미통과 시뮬 변경은 기본 OFF 플래그 뒤로, 영역 handoff 작성, 커밋" 지시 → 통합 브랜치에서 한 번에 합치고 **통합 게이트 한 번**(세션별 게이트 대기열이 60–90분까지 늘어서).
+- 합친 브랜치(순서): `claude/festive-brattain-042f51` @ `5d7e267`(4개 지역 리그·국제 대회·챔피언스 포인트·빠른 시뮬·시뮬 깊이), `claude/happy-newton-649a94` @ `d2e656c`(에이전트·보너스·조항·보드·스태프 시장, `moraleInMatch` OFF), `claude/peaceful-agnesi-b01f91` @ `24b7b25`(설치 지점·설치 후·리테이크 계획, `plantTactics` OFF), `claude/infallible-wing-679e6e` @ `0dffaa8`(바이 페이즈가 라운드를 바꾸지 않게 수정, 라운드 중 스타일 OFF), `claude/nav-engine` @ `0af2233`(미드 주도권 `midControl` OFF, 자기 지형 수정 3건, 4개 맵 궁극기 오브), `claude/epic-mahavira-18c91b` @ `e1ef793`(무기 목록 확장, `ecoSidearms`·`weaponModes` OFF), `claude/amazing-mayer-2f95d0` @ `d273af5`(정보 계층 `informationLayer` OFF), `claude/ability-realism-6cc513` @ `d6fa030`(스킬 OFF 유지, 켜면 4/8·0.474), `claude/series-veto-dc09f7` @ `1d47acd`(경기 중 관리·팀 토크·경기 전 보고서, 효과 플래그 OFF), `claude/matchday-uiux-efc023` @ `776e46d`(선수 카드 로딩 화면, 음성 폐기), `claude/loving-meninsky-767c08` @ `c7d444c`(스카우팅 안개·성장·아카데미), `claude/wider-validation-metrics` @ `704c01d`(지표 확장·`pnpm sim:suite`), `claude/serene-goldberg-b05635` @ `0664142`(오퍼레이터 애니메이션·무기 종류), `claude/desktop-decisions-3de329` @ `194fe8a`(엔진 번들 워커·macOS 패키징·감독 계층 포팅).
+- 직접 푼 충돌: 리테이크 경로(`retakeApproach`)를 옵션 객체 하나로(맵의 "공격 점유 지역 회피" + 엔진 정합성의 "스파이크 위치·계획 입구"), 정책·`makeSimPolicies`가 `plantTactics`·`midControl`·`information` 셋 다 받음, `moraleOf` 이름 충돌 → 성장 쪽 `developmentMorale`, `playerUtility` 바이아웃이 `estimateForTeam` 사용, 스카우팅 테스트 2개는 국제 대회 달력(첫 경기일이 첫 월요일 보고보다 빠름)에 맞춤, 런앤건 테스트는 양방향 추적과 겹쳐 방향만 확인. 데스크톱 엔진 호스트로의 감독 계층 이식은 데스크톱 세션이 직접 포팅(`194fe8a`).
+- 검증(실제 로스터, 이 통합 세션): 시드 1–160 기존 8개 **8/8**, 공격 0.499, 피스톨 0.469, 전멸 0.688, 해체 0.179, 폭발 0.082, 시간 초과 0.051, 전체 13/15(에코 대 세미 0.021, 세미 대 세미 0.550). 시드 161–320 7/8(피스톨 0.397 — 직전 main 0.394와 같은 기존 문제), 공격 0.483, 14/15. 번들 엔진 데이터 캐시 전후 6경기 결과 동일.
+- 테스트: 루트 307/4 todo, round-simulator 165, match-runner 135, spatial 442, combat 36, perception 32, economy 38, career 99, data-validator pytest 65, 데스크톱 typecheck·build·unit 78·matchday 58·engine 10. e2e 4종은 아래 줄.
+- 정리: 끝난 일회성 문서 6개와 통합 리허설 하네스를 `docs/archive/`로, `docs/README.md`(문서 지도) 추가, main에 합쳐진 로컬 브랜치 5개·작업 폴더 1개 삭제, 무거운 실행 잠금을 선착순으로(`heavy-run.sh --status`), `sim-batch --plant-tactics` 추가. `docs/HANDOFF.md` 전면 갱신.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.

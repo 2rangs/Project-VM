@@ -1,10 +1,8 @@
-# PROJECT V — HANDOFF (2026-11-23, 작업 일시 정지 시점)
+# PROJECT V — HANDOFF (2026-11-24, 이번 작업 묶음 마감 시점)
 
-> 이 문서가 **현재 상태의 정본**이다. 이전 판(2026-11-18, PV-1 작성)은 git 이력에 있다.
-> 만든 과정은 `docs/DEVELOPMENT_PROCESS.md`, 머지별 수치는 `docs/WORK_HISTORY.md`,
-> 독립 진단은 `docs/research/STATUS_AUDIT_2026-11-23.md`(근거 수준 표기 포함)를 본다.
-> 세션별 상세 인계: `docs/handoff/career-shell.md`, `club-ops.md`, `matchday-uiux.md`, 그리고
-> 브랜치에만 있는 맵 전술 작업(아래 §4).
+> 이 문서가 **현재 상태의 정본**이다. 문서 지도는 `docs/README.md`.
+> 만든 과정·게이트는 `docs/DEVELOPMENT_PROCESS.md`, 머지별 수치는 `docs/WORK_HISTORY.md`,
+> 영역별 상세(무엇이 켜져 있고 무엇이 플래그 뒤에 있는지, 다음 한 걸음)는 `docs/handoff/<영역>.md`.
 
 ---
 
@@ -12,13 +10,20 @@
 
 | 영역 | 상태 | 한 줄 |
 |---|---|---|
-| 라운드·경기·시리즈 엔진 | 작동, 검증 조건 문제 있음 | 공식으로 결과를 내는 엔진. **검증은 실제 로스터로 6/8**(§3) |
-| 이동·내비게이션 | 작동(Ascent) | 실제 맵 경로 위 연속 이동, 벽 통과 없음. 다른 맵은 옵트인·불안정 |
-| 시야 | 혼재 | Ascent는 위치 기반, 10개 맵은 표만 있음. 스모크·설치·플래시 LOS는 구역 단위 |
-| 스킬 | 기본 OFF | 켜면 공격 과다(0.695, 미러 조건 측정) |
-| 커리어(FM식) | 1차 구현 | 시작 메뉴·새 커리어·홈·계속·일정·순위·받은메일·저장, 생성 선수·스태프 |
-| 구단 운영 | 1차 구현, **커리어와 미연결** | 계약·재정·이적·훈련 화면과 모델. 커리어 달력 훅에 아직 안 붙음 |
-| 경기 화면 | 작동 | 전술 맵·팀 캠(3D), 라운드 전체 재생, 로딩 화면. 일부 미확인 |
+| 라운드·경기·시리즈 엔진 | 작동, **실제 로스터 8/8** | 공식(능력치 × 상황 × 결정)으로 결과를 낸다. 검증 수치 §3 |
+| 개인 경제 | 작동(v1.2) | 선수별 크레딧·무기 유지·드랍·라운드 중 줍기·궁극기 포인트, 2라운드 SMG |
+| 이동·바이 페이즈 | 작동 | 30초 바이 페이즈(선수별 스크립트) 기본 ON. 라운드 중 선수별 이동 스타일은 플래그 뒤 |
+| 설치 위치·설치 후·리테이크 | 플래그 뒤 | `plantTactics`: 설치 지점 선택, 위치별 설치 후 대형·리테이크 계획, 감독 설정 |
+| 미드 주도권 | 플래그 뒤 | `midControl`: 8개 맵 미드 영역, 주도권 상태, 공수 행동, 감독 설정 |
+| 선수별 정보·보고·IGL | 플래그 뒤 | `informationLayer`: 선수별 지식 → 보고(지연·오류) → IGL 융합, 럴커·앵커 클리어 콜 |
+| 시야·시선 | 위치 기반 LOS 기본, 시선 모델은 플래그 뒤 | `gaze`: 피크 기법(워크인·스윙·각쪼개기·지글·리피크) 포함, 공격 0.39–0.41로 아직 미달 |
+| 스킬 | 기본 OFF | 켜면 4/8, 공격 0.474(이전 3/8, 0.281) |
+| 커리어(FM식) | 작동 | 4개 지역 리그 동시 진행, 국제 대회(킥오프→마스터스 1·2→챔피언스), 챔피언스 포인트, 뉴스 |
+| 구단 운영 | 작동 | 에이전트·보너스·바이아웃·셀온·재계약 거부, 보드(목표·신뢰·경질), 스태프 시장(피지오 포함) |
+| 생성 선수·스카우팅 | 작동 | 능력치 안개(스카우팅 지식만큼 범위), 잠재력·나이 곡선·은퇴, 아카데미·임대 |
+| 경기 중 관리 | 작동(효과 플래그 뒤) | 타임아웃·지시·전략 변경·팀 토크·경기 전 상대 보고서와 계획 화면 |
+| 경기 화면 | 작동 | 전술 맵·3D 팀 캠(오리지널 오퍼레이터 애니메이션·무기 종류), 경제 표시, 선수 카드 로딩 화면 |
+| 데스크톱 패키징 | 작동(내부용) | 엔진을 앱 안 워커로 번들(tsx 하위 프로세스 제거), macOS 앱 빌드(서명·공증 없음) |
 | 출시 가능성 | 불가 | IP·자산 라이선스 미해결(§6) |
 
 ## 2. 실행 방법
@@ -26,90 +31,91 @@
 ```bash
 nvm use 22.13.1
 npx -y pnpm@10.28.0 install --frozen-lockfile     # corepack pnpm은 서명 오류
-cd apps/desktop && npm run dev                     # 데스크톱(Electron)
+cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). apps/desktop는 pnpm 워크스페이스 밖(npm)
 ```
 
-- 시작하면 **시작 메뉴**: 새 커리어 / 계속 / 불러오기 / 설정 / 빠른 경기(엔진·시리즈·개발 도구) / 종료.
-- 검증: `npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160 --out <a> --report <b>`
-  (`PYTHON=`에 jsonschema가 있는 venv). 기본은 **실제 로스터**, `--mirror`가 예전(평균 선수 미러) 조건, `--abilities`로 스킬 on.
-- 무거운 실행(배치·e2e·캡처·성능)은 **하나씩**: `/Users/yi-rang/ProjectV-assets/tools/heavy-run.sh "<label>" -- <cmd>`.
-- e2e: `PLAYWRIGHT_REQUIRE_BASE=<playwright가 있는 node_modules의 상위>` 필요. 끝나면 `apps/desktop/docs/*.png` 되돌리기.
-- 맵 원본(Blender, .glb, 메시)은 저장소 밖 `/Users/yi-rang/ProjectV-assets/`. 팀 캠 실제 메시는 gitignore된 `apps/desktop/assets/maps/`.
+- 시작 메뉴: 새 커리어 / 계속 / 불러오기 / 설정 / 빠른 경기(엔진·시리즈·개발 도구) / 종료.
+- 검증(실제 로스터, 기본): `npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160 --out <a> --report <b>` (`--out`과 `--report`는 다른 경로, `PYTHON=`에 jsonschema가 있는 venv — 없으면 이제 바로 알려 준다).
+  정기 측정 묶음: `pnpm sim:suite`(기본 160 → 시드 161–320 → 스킬 on → 맵별 자기 지형, 이전 실행과 비교표).
+- 무거운 실행(배치·e2e·캡처·성능·Blender)은 **하나씩**: `/Users/yi-rang/ProjectV-assets/tools/heavy-run.sh "<label>" -- <cmd>`. 이제 **먼저 줄 선 순서대로** 돈다. `heavy-run.sh --status`로 실행 중·대기 순서 확인. 단위 테스트·타입체크는 잠금 없이.
+- e2e: `PLAYWRIGHT_REQUIRE_BASE=<playwright가 있는 node_modules의 상위>`. 끝나면 `git checkout -- apps/desktop/docs; git clean -fq apps/desktop/docs`.
+- 맵 원본(Blender, .glb, 메시)은 저장소 밖 `/Users/yi-rang/ProjectV-assets/`. **절대 커밋하지 않는다.**
 
-## 3. 검증 상태 — 반드시 먼저 읽을 것
+## 3. 검증 상태
 
-**지금까지 보고된 "160경기 8/8, 공격 0.521"은 양쪽 10명이 모두 리그 평균(0.6) 선수인 미러 경기였다.**
-`sim-batch`가 팀 id를 `t.id`로 읽었는데 필드는 `teamId`였다(`6bfb689`에서 수정, `--mirror`로 재현 가능).
-14·15차 머지 기록의 8/8도 같은 조건이다.
+기준: Ascent, 실제 로스터(46팀), 시드당 160경기, 기존 8개 판정 지표(전멸·폭발·해체·시간 초과·공격 승률·첫 교전·피스톨·풀 대 풀) + 경제 대결 셀(전체 15개 판정).
 
-| 조건 (Ascent, 시드 1–160) | 판정 | 공격 승률 | 비고 |
+| 조건 | 기존 8개 | 공격 | 전체 판정 | 비고 |
+|---|---|---|---|---|
+| **이번 통합 트리, 시드 1–160** | **8/8** | 0.499 | 13/15 | 피스톨 0.469, 전멸 0.688, 해체 0.179, 폭발 0.082, 시간 초과 0.051 |
+| 이번 통합 트리, 시드 161–320 | 7/8 | 0.483 | 14/15 | 피스톨 0.397 미달 — 이번 작업 전 main도 0.394(같은 문제) |
+| main `65180b9`(이번 묶음 직전), 시드 1–160 | 8/8 | 0.512 | 13/15 | 경제 v1.2 |
+
+- 남은 실패 셀: 에코 대 세미 0.021(VCT 0.072), 세미 대 세미 0.550(허용 0.50±0.05). 에코 쪽 해법은 플래그 뒤에 있다(`ecoSidearms`, §4).
+- 피스톨(시드 161–320): 원인 미확인. 양쪽 장비가 같은데 공격 0.447(960라운드 합산). 상수로 덮지 않았다(`docs/handoff/engine-truth.md`).
+- 데스크톱 번들 엔진 캐시 전후로 6경기 결과가 바이트 단위로 같음(이번 통합 세션 확인).
+- 맵 자기 지형(`geometry: "own"`): 범위 안은 Breeze뿐, Pearl·Sunset 근접, 나머지 7개는 설치 후 공격 승률이 0.78–0.90로 높아 폭발이 많다(`docs/handoff/maps-tactics.md`).
+
+## 4. 플래그 뒤에 있는 것 (기본 OFF — 켜기 전에 실제 로스터 게이트 필요)
+
+| 플래그 | 무엇 | 마지막 측정 | 상세 |
 |---|---|---|---|
-| 미러(예전 기준) | 8/8 | 0.521 | 시드 161–320도 8/8(0.535) |
-| 실제 로스터(재보정 전) | 6/8 | 0.460 | 시드 161–320: 6/8, 0.484. 해체 적고 시간 초과 많음 |
-| **실제 로스터, 엔진 정합성 1단계 후 (18차)** | **8/8** | **0.501** | 시드 161–320 7/8(0.485), 321–480 8/8(0.507). 스킬 on 3/8, 0.281 |
-| 실제 로스터, 이 정리 시점 main | 6/8 | 0.455 | 피스톨 0.444, 전멸 0.728, 해체 0.136, 폭발 0.085, 시간 초과 0.051 |
-
-- 스킬 OFF, Ascent 한 맵, 평균 미러에서만 보정됐다. **모든 보정 상수를 실제 로스터 조건에서 다시 봐야 한다**(감사 보고서 P0).
-- 능력치 영향은 크다: 최상위 vs 최하위 로스터 24전 24승(감사 실측).
-- 결과에 영향 없는 것: 값이 빈 능력치 10개 + weaponControl, outcome-predictor·lookahead·simulation-core, economy-engine 가치 평가, 상대 기억(끄더라도 차이 미검출), 스카우팅(검출 불가).
-
-## 4. 브랜치와 미완성 작업
-
-main에 모두 합쳐져 있다. 단, 아래는 **main에 없는 미완성 작업**이다.
-
-| 브랜치 | 내용 | 상태 |
-|---|---|---|
-| `claude/nav-engine` (`11ec870`, 원격에 push) | Haven B 사이트 도달 불가·Pearl B 클럽 위치 원본 데이터 수정(재생성된 nav/vis/mesh JSON + 파이프라인·테스트) | **검증 안 됨**(세션 사용량 한도로 중단). main에는 `27bac33`까지 |
-| `claude/matchday-uiux-efc023` | main과 같음(최종 머지에 포함) | — |
-
-main에 들어갔지만 미완성인 것:
-- **맵별 전술**(`557b672`, `20779a1`, `27bac33`): 맵에서 유도한 수비 위치·설치 후 위치, 3사이트 어휘. 다른 맵 자기 지형 결과는 측정 전. `geometry.test.ts`(Bind "own", 선수가 바닥에서 838 떨어짐) **실패 중** — 옵트인 경로만 해당.
-- **커리어 ↔ 구단 운영 연결 안 됨**: 구단 운영은 자체 `CareerHooks`와 임시 `+일/주/월` 버튼으로 돌고, 커리어 셸의 `registerCareerHook`에 붙지 않았다. 연결 방법은 `docs/handoff/club-ops.md` §"Connecting". 두 층이 `InboxItem`·`addDays`·`teamStrength`를 따로 가짐(현재 `club*` 별칭으로 공존).
-- **홈 화면 두 개**: 커리어 셸의 허브가 쓰이고, 경기 화면 세션의 로비(`screens/home/`)는 트리에 있으나 마운트 안 됨(`nav.home` 중복 항목).
-- **경기 로딩 화면(`MatchLoadScreen`)·배너 선택**: 타입체크만, 실행 화면 미확인.
-- AI 팀 경기를 엔진으로 전부 돌리면 시즌당 20–30분.
+| `MatchConfig.plantTactics` (`--plant-tactics`) | 설치 지점 선택(기본·안전·노출·엄폐·근접), 스파이크 위치별 설치 후 경계, 리테이크 계획, 감독 설정(`teamInputs.plantPreference/postPlantPlans/retakePlans`) | 켜면 공격 −0.02, 피스톨·풀 대 풀 셀 실패 | `engine-truth.md` §12, `research/PLANT_POSTPLANT.md` |
+| `MatchConfig.midControl` (`--mid-control`) | 미드 주도권 상태·미드 파티·스플릿·로테이션, 감독 설정(`teamInputs.midPlans`) | 게이트 미실행(꺼짐은 기존과 동일 확인) | `maps-tactics.md`, `research/MID_CONTROL.md` |
+| `MatchConfig.informationLayer` (`--information`) | 선수별 지식 → 보고 → IGL 융합, 클리어 콜 | 12/15(전멸 0.672 < 0.674), 공격 0.536 | `information-layer.md`, `INFORMATION_LAYER.md` |
+| `MatchConfig.gaze` (`--gaze`) | 시선 상태, Fitts 조준 시간, 피크 기법, 양방향 추적 | 공격 0.39–0.41 | `engine-truth.md` §7–11 |
+| `MatchConfig.soundDetail` (`--sound`) | 착지음·총성 마스킹·로프·짚라인·텔레포터 소리 | 보정 안 됨 | `engine-truth.md` |
+| `MatchConfig.movementStyle` (`--style`, 기본 `BUY_PHASE_ONLY_STYLE`) | 라운드 중 레인·간격·경로 선택·멈춰서 확인·럴커 걷기 | 켜면 피스톨 0.436(1.5–2%p 낮음) | `movement.md`, `MOVEMENT_STYLE.md` |
+| `EconomyOptions.ecoSidearms` (`--economy '{"ecoSidearms":true}'`) | 에코가 다음 구매 예비분을 넘는 돈을 고스트·셰리프·샷건·경량 실드에 씀 | 게이트 미실행 | `economy.md` |
+| `MatchConfig.weaponModes` (`--weapon-modes`) | 클래식 점사, 이동 사격 정확도 | 양방향 추적과 겹쳐 효과 축소(0.016) — 재보정 필요 | `economy.md` |
+| `MatchConfig.enableAbilities` (`--abilities`) | 스킬 | 4/8, 공격 0.474 | `ability-realism.md` |
+| `CLUB_FLAGS.moraleInMatch` | 사기가 커리어 경기 로스터에 반영 | 측정상 효과 없음 | `club-ops.md` |
+| `ManagedSessionOptions.moodEffects / aiManager / timeoutsPerHalf` | 감독 개입의 경기 효과, AI 감독, 하프당 타임아웃 | 게이트 미실행 | `match-management.md` |
 
 ## 5. 부족한 점 (우선순위 순)
 
-### P0 — 측정 기준 바로잡기
-1. 실제 로스터 조건에서 재보정(지금 6/8). 원인부터 측정: 해체 감소·시간 초과 증가가 어느 팀 강도 차에서 나오는지. 상수로 덮지 말 것.
-2. 검증 지표 확장(리포트 전용부터): 첫 킬 시점, 플로리스, 포스 승률, 라운드 시간, 사이트 도착 간격, 경로 다양성, 몸체 겹침률.
-3. 다른 맵·스킬 on 조건의 배치를 정기 측정에 포함.
+### P0 — 엔진 정합성
+1. **피스톨(시드 161–320, 0.397)** 원인 찾기. 장비 동일 조건에서 공격 0.447.
+2. **에코 라운드**: `ecoSidearms`를 게이트에 올리기(에코 대 세미 0.021 → VCT 0.072). 무기 목록 확장분은 이미 들어 있음.
+3. **시선 모델 재보정**: 설치 후 공격 경계가 리테이크 진입 방향에서 약 38° 벗어나 있음 → `plantTactics`의 위치별 경계와 함께 맞춘 뒤 `gaze` 기본 ON 검토.
+4. **라운드 중 움직임 스타일**을 피스톨 손실 없이 켜기(따라가기 정체는 고침, 남은 1.5–2%p).
 
-### P1 — 시스템 일관성
-4. **시야 진실 하나로**: 플래시·정찰·트레이서·크로스파이어·데스크톱 시야 오버레이를 `vision.ts`의 위치 LOS로 통일.
-5. 스모크를 위치 기반 차단으로, 설치·해체를 다각형·거리로(`isPointPlantable` 사용).
-6. 스킬 on을 제품 기본으로 할지 결정 → 켜고 실제 로스터로 검증(현재 공격 과다).
-7. 맵 선택이 지형을 바꾸게: 맵별 전술 완성 → `geometry: "own"`을 기본으로. 끊긴 구역(Haven B, Pearl 4곳, Split Mid Vent, Icebox A Nest, Abyss 2곳) 수정 브랜치 검증.
-8. 능력치 정리: 빈 10개는 출처를 정하거나 UI에서 제거, weaponControl 연결, 속성별 ±1σ 효과 표.
-9. 커리어 ↔ 구단 운영 훅 연결, 홈 화면 하나로, 시즌 진행이 감독 팀 로스터를 자동 변경하지 않게, 감독 경기 선수별 K/D 기록, 라인업 선택.
+### P1 — 켜야 할 시스템
+5. `plantTactics`, `midControl`, `informationLayer`를 하나씩 게이트 통과시켜 기본 ON(각자 handoff에 다음 한 걸음).
+6. 맵 자기 지형: 7개 맵의 설치 후 공격 과다 원인(설치 시점 가장 가까운 수비 57–81 m vs Ascent 27 m) → `geometry: "own"` 기본화.
+7. 스킬 기본 ON 결정(지금 4/8, 0.474).
+8. 궁극기 오브 위치: 4개 맵만(검증 안 된 구역 기준점). 나머지 7개 맵 콜아웃 필요.
 
-### P2 — 품질
-10. 군중 이동: 몸체 통과(양보 0.6초 후 1.5초간 무시), 큐 3초 타임아웃, 5인 도착 간격이 기계적(최대 정확히 3.0초), 사망자 위치 점유 미해제.
-11. 성능: 경기마다 nav/vis JSON 재파싱, 틱당 O(n²), `routeCache` 무효화 없음, 데스크톱이 경기마다 `npx tsx` 하위 프로세스(90초 타임아웃), 시즌 AI 시뮬 20–30분. round-simulator 성능 테스트는 부하 시 60초 한도 초과.
-12. 계약 세부(에이전트·보너스·셀온·수입 규정), 보드 목표, 스태프 시장, 피로의 경기 반영, 국제 대회(킥오프·마스터스), 다른 지역 리그.
-13. 계획 변경 사유 현지화, 데스크톱 `test/review.test.ts`(JSON import attribute) 실패.
+### P2 — 품질·깊이
+9. 빠른 시뮬(커리어 AI 경기)이 강팀을 과신(예측 13% vs 실측 28%), 맵별 노이즈 0.3은 추정값 → 엔진 데이터로 적합.
+10. 사기 두 개 통합: 구단 운영의 추적 사기(`moraleOf`)와 성장의 시즌 사기(`developmentMorale`).
+11. 데이터: `vct.duckdb`에 위치·이벤트·설치 좌표가 없어 설치 후 인원 우위별 승률, 첫 킬 위치별 승률, 스플릿 비율을 못 구함(GRID Open Access 또는 VOD 코딩).
+12. 군중 이동 세부, 성능(틱당 O(n²), `routeCache`).
 
 ### P3 — 제품화
-14. **IP 방향 결정**(§6). 15. 패키징(tsx 하위 프로세스 제거), 튜토리얼, Steam.
+13. **IP 방향 결정**(§6). 14. 서명·공증, Windows/Linux 빌드, 튜토리얼, Steam.
 
 ## 6. 라이선스·자산 (출시 전 필수 재검토)
-- 커밋된 맵 파생물: 11개 `<map>.nav.json`(점·선분), 11개 `<map>.vis.json`(쌍당 1비트), 기타 구역 JSON. 사용자 결정으로 커밋, 출시 전 재검토(`docs/LICENSE_AUDIT.md` §2.0b).
-- **경기 화면이 런타임에 게임 자산을 씀**: valorant-api.com 미니맵·요원 초상·맵 스플래시, kingdomarchives.com 킬 배너 레이어(로컬 gitignore 폴더), VCT 로고 로딩 엠블럼(로컬 gitignore, Riot 상표). 경기 화면 세션 인계서에는 "사용자 결정: 사용 가능"이라고 적혀 있으나, 이 통합 세션에서는 그 결정을 직접 확인하지 못했다. valorant-api의 라이선스는 미확인(`LICENSE_AUDIT.md`). **내부 개발용으로만**.
-- **Kingdom Archives 플레이어카드**: 사용자 결정으로 Kingdom Archives 공개 배포본(원본 게임 파일 아님) 약 19 MB를 `apps/desktop/assets/playercards/`에 **커밋**한다. `scripts/fetch-playercards.mjs`로 갱신. 파일이 없어도 기본 화면으로 동작(e2e는 `PV_MEDIA_ASSETS_DIR`로 빈 폴더 지정). **음성 라인은 사용자 결정으로 폐기**(커밋·재생 없음). **출시 전 라이선스 재검토 대상**.
-- 요원·무기 3D 모델은 오리지널(`ca945d2`). 생성 선수 이름은 오리지널, 실존 핸들 1,227개와 충돌 검사.
+- 커밋된 맵 파생물: 11개 `<map>.nav.json`(점·선분), `<map>.vis.json`(쌍당 1비트), `<map>.objects.json`, 구역 JSON. 사용자 결정으로 커밋, 출시 전 재검토(`docs/LICENSE_AUDIT.md` §2.0b). 메시·.blend·.glb는 커밋 금지.
+- 런타임 게임 자산(gitignore, 내부 개발용): valorant-api.com 미니맵·요원 초상·맵 스플래시, kingdomarchives.com 킬 배너, VCT 로고. valorant-api 라이선스 미확인.
+- **Kingdom Archives 플레이어 카드**: 사용자 결정(2026-11-24)으로 공개 배포본(원본 게임 파일 아님)을 `apps/desktop/assets/playercards/`에 커밋. 파일이 없어도 기본 화면으로 동작. **음성 라인은 사용자 결정으로 폐기**. 출시 전 재검토 대상.
+- 요원·무기·오퍼레이터 3D 모델과 애니메이션은 오리지널. 생성 선수 이름은 오리지널, 실존 핸들 1,227개와 충돌 검사.
 - 원작 명칭(VALORANT, 요원·맵 이름) 사용 자체가 판매를 막을 수 있는 독립 위험 — 독자 세계관 여부를 일찍 결정할 것.
 
-## 7. 테스트 상태 (이 정리 시점, 통합 브랜치에서 측정)
+## 7. 테스트 상태 (이번 통합 트리)
 
 | 묶음 | 결과 |
 |---|---|
-| 루트 vitest(코어) | 259 통과, 4 todo |
-| career | 45 통과 |
-| round-simulator | 121 통과, 1 skip |
-| match-runner | 87 통과, **1 실패**(`geometry.test.ts` Bind own — main에서도 동일) |
-| spatial-engine | 278 통과, 22 skip(로컬 보행 격자 필요) |
-| ability-engine / combat-engine | 21 / 21 통과 |
+| 루트 vitest(코어·team-engine·decision-engine) | 307 통과, 4 todo |
+| round-simulator / match-runner | 165 통과(1 skip) / 135 통과 |
+| spatial-engine | 442 통과, 22 skip(로컬 보행 격자 필요) |
+| combat / perception / economy-engine | 36 / 32 / 38 통과 |
+| career | 99 통과, 1 skip(옵트인 엔진 테스트) |
+| data-validator pytest | 65 통과 |
 | 데스크톱 typecheck·build | 통과 |
-| 데스크톱 test:unit / test:matchday / test:engine | 58 / 34 / 4 통과 |
-| e2e / series / career / club | 모두 통과(공용 잠금으로 하나씩 실행) |
+| 데스크톱 test:unit / test:matchday / test:engine | 78 / 58 / 10 통과 |
+| e2e / series / career / club | §WORK_HISTORY 25차 기록 참조 |
+
+## 8. 운영 메모
+- 세션 15개가 동시에 돌면 무거운 실행 대기열이 60–90분까지 늘었다. 다음 묶음은 세션 수를 줄이거나, 세션별 게이트 대신 통합 게이트 한 번으로 묶는다(이번 마감에서 그렇게 했다).
+- 브랜치를 합칠 때 겹친 곳은 대부분 "양쪽이 같은 자리에 기능 추가"였다. 같은 함수를 두 세션이 동시에 고친 경우(리테이크 경로, `moraleOf`, 데스크톱 엔진 호스트)는 맡은 세션이 직접 포팅하는 편이 안전했다.

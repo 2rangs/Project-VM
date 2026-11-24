@@ -129,7 +129,7 @@ async function main() {
   };
   await toMatchDay();
   const matchDate = await page.getByTestId('home-date').innerText();
-  assert.ok(matchDate >= '2026-02-01', `first match day is in February (${matchDate})`);
+  assert.ok(matchDate >= '2026-01-05' && matchDate < '2026-03-01', `first match day is in the Kickoff window (${matchDate})`); // the circuit calendar starts with Kickoff in January
   const fatigueBefore = readSave().world.club.training.exposure;
   await page.getByTestId('home-go-match').click();
 
@@ -178,11 +178,6 @@ async function main() {
   assert.equal(cells[a > b ? 3 : 4], '1', 'the win / loss is counted');
   assert.equal(cells[5], `${a}–${b}`, 'maps won–lost');
   await shot('standings');
-  // Mondays have passed: the scouts have filed reports.
-  await page.getByTestId('nav-scouting').click();
-  await page.getByTestId('scout-tab-reports').click();
-  await page.waitForSelector('[data-testid="report-table"] [data-testid="dt-row"]', { timeout: 10000 });
-  await shot('scouting-reports');
   const afterMatch = readSave();
   const line = afterMatch.stats[signedId];
   assert.ok(line && line.maps === a + b, `the signing played ${a + b} maps (${JSON.stringify(line)})`);
@@ -226,6 +221,12 @@ async function main() {
   assert.equal(endSave.inbox.filter((m) => m.key === 'circuit.draw').length, 3, 'a draw message for each international event');
   assert.ok(endSave.world.club.contracts[signedId], 'the signing is still under contract on the last day');
   await shot('season-end');
+  // Mondays have passed (the circuit's first match day comes before the first one): the scouts
+  // have filed reports.
+  await page.getByTestId('nav-scouting').click();
+  await page.getByTestId('scout-tab-reports').click();
+  await page.waitForSelector('[data-testid="report-table"] [data-testid="dt-row"]', { timeout: 10000 });
+  await shot('scouting-reports');
   // The circuit on screen: an international event's double-elimination bracket and the points race.
   await page.getByTestId('nav-standings').click();
   await page.getByTestId('stand-champions').click();
