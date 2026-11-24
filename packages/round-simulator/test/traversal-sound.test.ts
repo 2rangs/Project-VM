@@ -14,7 +14,7 @@ const dir = resolve(here, "../../../datasets/spatial/bind");
 const j = (f: string) => JSON.parse(readFileSync(resolve(dir, f), "utf8"));
 const cs = JSON.parse(readFileSync(resolve(here, "../../../datasets/spatial/ascent/coordinate-system.json"), "utf8"));
 const roadmap = j("bind.nav.json") as { links: Array<{ from: number; to: number; kind: string; travelTimeMs: number }> };
-const spatial = createEngine(j("bind.navgraph.json"), (j("coordinate-system.json") ?? cs).transform, roadmap, j("bind.vis.json"));
+const spatial = createEngine(j("bind.navgraph.json"), (j("coordinate-system.json") ?? cs).transform, roadmap as never, j("bind.vis.json"));
 const objects = j("bind.objects.json") as { traversals: Array<{ fromNode: number; toNode: number; soundSource: { x: number; y: number; z: number }; soundSourceExit: { x: number; y: number; z: number } }> };
 
 describe("teleporter sounds (mover hook, sound detail)", () => {

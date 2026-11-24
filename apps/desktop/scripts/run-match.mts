@@ -9,6 +9,7 @@
 //
 // Usage: tsx run-match.mts '<json config>'
 import { runMatch } from '../../../packages/match-runner/src/index.ts';
+import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-round.mts';
 
 interface Cfg {
   teamA: { id: string; name: string }; teamB: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean;
@@ -57,21 +58,16 @@ const out = {
     planted: r.planted,
     score: r.score,
     kills: r.kills,
-    economy: {
-      A: { credits: r.economy.A.credits, ultPoints: r.economy.A.ultPoints },
-      B: { credits: r.economy.B.credits, ultPoints: r.economy.B.ultPoints },
-    },
-    buys: {
-      A: { tier: r.buys.A.tier, weapon: r.buys.A.weapon },
-      B: { tier: r.buys.B.tier, weapon: r.buys.B.weapon },
-    },
+    economy: { A: compactEconomy(r.economy.A), B: compactEconomy(r.economy.B) },
+    buys: { A: compactBuy(r.buys.A), B: compactBuy(r.buys.B) },
     replayEvents: r.replay.events,
     // Per-team PerceptionTrack[] for this round (side-keyed, round-relative tMs);
     // the parent remaps side→real-team and offsets tMs onto the match timeline.
     // Absent on match-runner versions without recordPerception.
     perception: r.replay.meta.perception ?? null,
     // per-tick sight decided by the sim (engine-truth), when the engine records it
-    sight: (r as unknown as { sight?: unknown }).sight ?? (r.replay.meta as unknown as { sight?: unknown }).sight ?? null,
+    sight: sightOf(r),
+    engagement: engagementOf(r),
     // Why each team played the round the way it did (plans, pre-round opponent reads,
     // what the round let them observe). Plain JSON; null on engines that predate it.
     decisions: r.decisions ?? null,

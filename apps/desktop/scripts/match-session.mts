@@ -11,6 +11,7 @@
 //   playNextRound returns {round:<compact RoundRecord>, state}; errors come back {ok:false,error}.
 // Config (teams/seed/aiTeams) is argv[2] JSON. Diagnostics go to stderr only.
 import { createInterface } from 'node:readline';
+import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-round.mts';
 import { createMatchSession, type MatchSession } from '../../../packages/match-runner/src/index.ts';
 import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
 
@@ -42,18 +43,13 @@ function compactRound(r: ReturnType<MatchSession['playNextRound']>) {
     roundNumber: r.roundNumber, phase: r.phase, attacker: r.attacker,
     winner: r.winner, winnerSide: r.winnerSide, reason: r.reason, planted: r.planted,
     score: r.score, kills: r.kills,
-    economy: {
-      A: { credits: r.economy.A.credits, ultPoints: r.economy.A.ultPoints },
-      B: { credits: r.economy.B.credits, ultPoints: r.economy.B.ultPoints },
-    },
-    buys: {
-      A: { tier: r.buys.A.tier, weapon: r.buys.A.weapon },
-      B: { tier: r.buys.B.tier, weapon: r.buys.B.weapon },
-    },
+    economy: { A: compactEconomy(r.economy.A), B: compactEconomy(r.economy.B) },
+    buys: { A: compactBuy(r.buys.A), B: compactBuy(r.buys.B) },
     replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
     // per-tick sight decided by the sim (engine-truth), when the engine records it
-    sight: (r as unknown as { sight?: unknown }).sight ?? (r.replay.meta as unknown as { sight?: unknown }).sight ?? null,
+    sight: sightOf(r),
+    engagement: engagementOf(r),
     decisions: r.decisions ?? null,
     nav: r.navTrace ?? null,
   };

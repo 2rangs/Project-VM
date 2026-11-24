@@ -119,6 +119,8 @@ export type SimEventKind =
   | "engage"
   | "kill"
   | "spikePickup"
+  | "weaponPickup"
+  | "orbPickup"
   | "plantStart"
   | "planted"
   | "defuseStart"
@@ -494,6 +496,11 @@ export interface SimConfig {
    * for listeners it is much louder for (isMasked). OFF by default until measured into calibration.
    */
   readonly soundDetail?: boolean;
+  /**
+   * Floor items (floor-items.ts): dropped guns can be picked up mid-round, and ultimate orbs at
+   * `orbs` (from the map's objects data) are taken once per round. OFF (undefined) by default.
+   */
+  readonly floorItems?: { readonly orbs?: readonly { readonly id: string; readonly position: Vector3 }[] };
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */

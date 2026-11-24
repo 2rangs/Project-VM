@@ -60,6 +60,7 @@ import { deriveSeed } from "./rng.js";
 import { MovementExecutor, type MoverHooks, type NavEvent, type SpotIntent } from "./mover.js";
 import { offsetDeg, rotateToward, turnRateRadPerMs, type GazeSource } from "./gaze.js";
 import { CHECKED_SPOT_DEG, choosePeek, jiggleExposureMs, lateralSpeed, type PeekKind } from "./peek.js";
+import { FloorItems } from "./floor-items.js";
 
 export interface RoundSimulatorDeps {
   readonly spatial: SpatialEngine;
@@ -315,6 +316,9 @@ export class RoundSimulator {
 
     const push = (e: SimEvent) => events.push(e);
     push({ kind: "roundStart", tick: 0, elapsedMs: 0 });
+    const floorItems = this.cfg.floorItems
+      ? new FloorItems({ priceOf: (w) => this.weapons[w]?.cost ?? 0, defaultWeaponId: "Classic", ...(this.cfg.floorItems.orbs ? { orbs: this.cfg.floorItems.orbs } : {}) })
+      : null;
 
     let ended: { winner: Side; reason: RoundEndReason } | null = null;
     const maxTicks = Math.ceil((this.cfg.roundTimeMs + this.cfg.spikeTimerMs + 5000) / this.cfg.tickMs);
@@ -625,6 +629,11 @@ export class RoundSimulator {
           push({ kind: "spikePickup", tick: state.tick, elapsedMs: state.elapsedMs, actor: picker.id, zoneId: picker.zoneId });
         }
       }
+
+      // 5d. floor items: dropped guns and ultimate orbs (off unless config.floorItems)
+      floorItems?.step(state, (p) => this.lastSight.has(p.id)
+        || (state.spike.phase === "planting" && state.spike.carrierId === p.id)
+        || (state.spike.phase === "defusing" && state.spike.defuserId === p.id), push);
 
       // 6. spike progression
       this.stepSpike(state, commands, dt, events, trace);
