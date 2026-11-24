@@ -215,10 +215,12 @@ export class RoundMovementStyles {
    * is not down, into a zone that may hold an enemy — the team's belief says so (threat ≥
    * CHECK_THREAT_MIN), or the enemy could have reached it by now (enemyReachMs ≤ elapsed) — that no
    * teammate already stands in (cleared) and this player has not checked yet, while it has checks left.
+   * Only a walking player checks (a slow play, a lurk, a careful approach); a running one is executing.
    */
   checkPauseMs(p: SimPlayer, toZone: string, threat: number, calm: boolean, elapsedMs = 0, cleared = false): number {
     const st = this.styles.get(p.id);
-    if (!st || !calm || cleared) return 0;
+    // a run is an execute or a rotation: nobody stops to clear angles mid-sprint; a walk is a slow play
+    if (!st || !calm || cleared || p.moveMode !== "walk") return 0;
     if (threat < CHECK_THREAT_MIN && this.enemyReachMs(p.side, toZone) > elapsedMs) return 0;
     const key = `${p.id}|${toZone}`;
     if (this.checked.has(key)) return 0;

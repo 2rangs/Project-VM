@@ -40,9 +40,11 @@ side's belief `threatZones`, never true positions), and one is drawn by a softma
 fixed for (round, player, from, to) — the same request keeps the same route on every replan. A lurker's wide slack
 is what takes it away from the group.
 
-**Stop-and-check.** Before the round's first kill and while the spike is not down, a mover reaching the edge of a
-zone its team believes may hold an enemy (threat ≥ 0.2) that it has not checked yet pauses `checkMs` there, while
-it has checks left. The pause is owed like a slow field's delay (`edgeProgressMs < 0`).
+**Stop-and-check.** Before the round's first kill and while the spike is not down, a *walking* mover (a slow play,
+a lurk, a careful approach — a running one is executing) reaching the edge of a zone that may hold an enemy — its
+team's belief says so (threat ≥ 0.2), or the enemy could have reached it by now from the map alone (defenders from
+anywhere behind their barrier, attackers from their spawn; graph run times × 1/1.5) — that no teammate already
+stands in and that it has not checked yet, pauses `checkMs` there, while it has checks left. The pause is owed like a slow field's delay (`edgeProgressMs < 0`).
 
 **Pace.** The tactical layer decides run/walk for its orders; the style only adds the quiet lurk: a lurker with
 `quiet ≥ 0.5` walks the last 1500 uu of its approach while the round is calm.
