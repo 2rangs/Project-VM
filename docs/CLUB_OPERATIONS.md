@@ -168,14 +168,21 @@ The expected playing-time share by role is starter 0.9, rotation 0.3, academy 0.
 - Weekly: `m ← m + 0.3 · (T − m)`, where `T = 0.5 + 0.3·(r5 − 0.5) + 0.25·(share − expected) + 0.2·clamp(ln(salary/market), −0.5, 0.5) + 0.2·(coach.motivation − 0.5)` and `r5` is the club's share of its last five series won.
 - After a series, the five who played move ±0.03.
 
-**Into the match** (career/readiness.ts `matchAttributes`, the roster the engine and the quick sim read):
+**Into the match — behind `CLUB_FLAGS.moraleInMatch`, default OFF** (career/readiness.ts `matchAttributes`, the roster the engine and the quick sim read; `setClubFlags({ moraleInMatch: true })` turns it on):
 - Readiness (fatigue, sharpness) scales the ability attributes toward the floor, as before.
-- Then morale, with `d = m − 0.5`, moves `consistency ± 0.2·d` and `clutch ± 0.2·d`.
+- Then morale, with `d = m − 0.5`, scales the same span by `(1 + 0.1·d)` (capped at the real maximum) and moves `consistency ± 0.2·d` and `clutch ± 0.2·d`.
 - In match-runner (teams.ts, unchanged) consistency feeds the decision profile's `discipline` and the round-form σ. Clutch feeds `decisionMaking` (mean of impact and clutch) and the pressure form.
 - Fatigue reaches decisions the same way, through the readiness-scaled `consistency` and `impact`.
 - No match-runner or round-simulator file changed, and the default engine path (no career roster) is untouched. At neutral morale the roster is byte-identical (tested).
 
-**Measured** (`test/morale-match.test.ts`, opt-in `PV_MORALE_MATCH=1`, run through heavy-run.sh): the same five against the same opponent on the same 16 seeds, morale 1 vs 0.5 vs 0. RESULT_PLACEHOLDER
+**Measured** (`test/morale-match.test.ts`, opt-in `PV_MORALE_MATCH=1`, run through heavy-run.sh): the same five against the same opponent on the same 16 seeds, morale 1 vs 0.5 vs 0. Rounds won by the five:
+
+| run | high morale | neutral | low morale | rounds played |
+|---|---|---|---|---|
+| decision terms only, N = 16 | 142 | 145 | 151 | 340 |
+| with the level term, N = 30 | 281 | 279 | 281 | 628 |
+
+Neither run shows a measurable effect: the spread is within paired-seed noise. That is why the flag stays off. Next step: check how strongly the engine responds to roster ability at all (a probe with every ability attribute at the floor was queued and cancelled at wrap-up), then size `moraleAbility` from that response.
 
 ## 11. Board
 
