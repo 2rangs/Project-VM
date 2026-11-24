@@ -44,7 +44,12 @@ Real rosters, Ascent.
 **Gate with every part on** (`--style`, before merging main 65180b9), seeds 1–160:
 - 7/8 original metrics: attack 0.471, opening duel 0.429, pistol 0.438 (fail), full-v-full 0.461.
 - Judged 13/15 (fails: pistol, full-v-semi 0.625).
-- Seeds 161–320: see the closing report.
+
+Seeds 161–320:
+- 7/8 original metrics: attack 0.475, opening duel 0.447, pistol 0.434 (fail).
+- Judged 13/15 (fails: pistol, semi-v-eco 0.978).
+
+Pooled over 640 pistol rounds that is 0.436, which agrees with the ablation's 0.436. With every part on, pistol is about 1.5–2 pp below the no-style level, consistently on both seed sets. That is why the live parts stay off by default.
 
 The default (buy-phase script only) is the integrator's no-style run: 8/8, pistol 0.469.
 
