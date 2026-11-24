@@ -16,7 +16,7 @@ import {
 } from "../src/economy.js";
 import { runMatch, simulatableTeamRefs, type MatchConfig, type MatchResult } from "../src/index.js";
 import { armorMatchedPrice } from "../src/weapon-worth.js";
-import { loadUltOrbs } from "../src/setup.js";
+import { loadUltOrbs, loadWeapons } from "../src/setup.js";
 
 const AGENTS = ["omen", "sova", "kayo", "killjoy", "jett"];
 const CTX = AGENTS.map((agent, i) => ({ agent, priority: 0.6 + 0.01 * i }));
@@ -157,6 +157,44 @@ describe("round 2 after a pistol win (armor-matched gun worth)", () => {
   });
 });
 
+describe("eco: spend what next round does not need (sidearms)", () => {
+  const ecoBuy = (credits: number, losses: number, side: "attack" | "defense", ecoSidearms = true) => // the option is off by default
+    decideTeamBuy({ roundNumber: 6, score: [2, 3], own: eco(five(credits), [], losses), opp: RICH, ownPlayers: CTX, oppPlayers: CTX, pistol: false, side, options: { ecoSidearms } });
+
+  it("keeps the team's next rifle + heavy buy and spends the rest on sidearms and light shields, star first", () => {
+    // 3000 each after two losses: reserve 4000 − 2900 = 1100 each; loadout capped under 5000.
+    const b = ecoBuy(3_000, 2, "attack");
+    expect(b.tier).toBe("eco");
+    expect(b.plan).toBe("sidearms");
+    const left = b.players.reduce((s, p) => s + p.creditsAfter, 0);
+    expect(left).toBeGreaterThanOrEqual(5_500);
+    expect(b.players[4]!.weapon).toBe("Sheriff"); // the star (highest priority in CTX) first
+    expect(b.players.filter((p) => p.armor === 25).length).toBeGreaterThanOrEqual(4);
+    expect(b.loadoutValue).toBeGreaterThan(3_000);
+    expect(b.loadoutValue).toBeLessThan(5_000);
+    // The old eco buys nothing.
+    const old = ecoBuy(3_000, 2, "attack", false);
+    expect(old.tier).toBe("eco");
+    expect(old.players.every((p) => p.weapon === "Classic")).toBe(true);
+  });
+
+  it("on defence one player takes a shotgun for a close angle", () => {
+    const b = ecoBuy(3_000, 2, "defense");
+    const attack = ecoBuy(3_000, 2, "attack");
+    const shotguns = (x: typeof b) => x.players.filter((p) => p.weapon === "Bucky" || p.weapon === "Shorty").length;
+    expect(b.plan).toBe("sidearms");
+    expect(shotguns(b)).toBe(1);
+    expect(shotguns(attack)).toBe(0);
+  });
+
+  it("a team below its reserve spends nothing", () => {
+    // 1500 each after one loss: reserve 4000 − 2400 = 1600 each > 1500 = all of it.
+    const b = ecoBuy(1_500, 1, "attack");
+    expect(b.tier).toBe("eco");
+    expect(b.cost).toBe(0);
+  });
+});
+
 describe("floor items", () => {
   it("a gun taken off a body mid-round leaves the taker's old gun there; the taker dies with the new one", () => {
     const start = new Map([["atk1", "Vandal"], ["def1", "Spectre"], ["def2", "Classic"]]);
@@ -168,6 +206,13 @@ describe("floor items", () => {
     expect(floor.get("atk1")).toBe("Spectre"); // what lies on atk1's body now
     expect(floor.get("def1")).toBe("Vandal"); // def1 died holding the Vandal
     expect(floor.get("def2")).toBe("Classic");
+  });
+
+  it("weapon modes (Classic burst, run-and-gun accuracy) are off unless MatchConfig.weaponModes", () => {
+    expect(loadWeapons().Classic!.altFire).toBeUndefined();
+    expect(loadWeapons().Classic!.movingAccuracy).toBeUndefined();
+    expect(loadWeapons({ modes: true }).Classic!.altFire?.useWithinMeters).toBe(3);
+    expect(loadWeapons().Bucky!.pellets).toBe(15); // a shotgun keeps its pellets
   });
 
   it("orb points come from the map's objects file: two on Ascent (zone-level, unverified), none where maps data has none", () => {

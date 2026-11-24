@@ -188,6 +188,12 @@ export interface MatchConfig {
    */
   readonly floorItems?: boolean;
   /**
+   * Weapon modes from the catalogue: the Classic's close burst (altFire) and run-and-gun accuracy
+   * (movingAccuracy on Classic, shotguns, Frenzy, Stinger). Default false until it passes the
+   * real-roster gate (it changes pistol rounds); docs/handoff/economy.md.
+   */
+  readonly weaponModes?: boolean;
+  /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
    * coordinate ATTACKER utility to execute, so enabling it makes defense dominant (attack win
@@ -423,7 +429,7 @@ export function runMatch(config: MatchConfig, options: RunMatchOptions = {}): Ma
  */
 export class MatchEngine {
   private readonly spatial: ReturnType<typeof loadSpatial>;
-  private readonly weapons = loadWeapons();
+  private readonly weapons: ReturnType<typeof loadWeapons>;
   private readonly sq: ReturnType<typeof makeSpatialQuery>;
   /** The map's tactical data, derived from its geometry (sites, entries, aims, defender starts). */
   private readonly tactics: ReturnType<typeof loadTactics>;
@@ -457,6 +463,7 @@ export class MatchEngine {
   private readonly econTraitsBySlot: Record<TeamSlot, TeamDecisionTraits>;
 
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
+    this.weapons = loadWeapons({ modes: config.weaponModes === true });
     this.spatial = loadSpatial(geometryOf(config));
     this.sq = makeSpatialQuery(this.spatial);
     this.tactics = loadTactics(geometryOf(config), this.spatial);
@@ -693,6 +700,7 @@ export class MatchEngine {
         ownTraits: this.econTraitsBySlot[slot],
         oppTraits: this.econTraitsBySlot[opp],
         pistol,
+        side: slot === attacker ? "attack" : "defense",
         wonLastRound: this.lastWinner === slot && !pistol && roundNumber !== ROUNDS_PER_HALF + 1,
         ...(call ? { call } : {}),
         abilities: this.abilitiesOn,

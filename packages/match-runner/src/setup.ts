@@ -66,10 +66,22 @@ export function loadUltOrbs(mapId: string): { id: string; position: { x: number;
   return out;
 }
 
+let catalogCache: Record<string, WeaponSpec> | null = null;
+function weaponCatalog(): Record<string, WeaponSpec> {
+  return (catalogCache ??= loadWeapons());
+}
+
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
-export function loadWeapons(): Record<string, WeaponSpec> {
+export function loadWeapons(opts: { modes?: boolean } = {}): Record<string, WeaponSpec> {
   const raw = JSON.parse(readFileSync(resolve(here, "..", "data", "weapons.manual-approx.json"), "utf8"));
-  return buildCatalog(raw.weapons as WeaponSpec[]);
+  const weapons = (raw.weapons as WeaponSpec[]).map((w) => {
+    if (opts.modes) return w;
+    // Without weapon modes (MatchConfig.weaponModes, default off): no alt-fire, no run-and-gun
+    // accuracy — the six v1.2 guns duel exactly as before. Pellets stay (a shotgun needs them).
+    const { altFire: _alt, movingAccuracy: _mov, ...rest } = w;
+    return rest;
+  });
+  return buildCatalog(weapons);
 }
 
 export const NO_ABILITIES: AbilityCatalog = {};
@@ -132,6 +144,7 @@ export class WrappedTeamPolicy implements DecisionPolicy {
       midControl,
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
+      weaponFullDamageRangeM: (id: string) => weaponCatalog()[id]?.damageBands[0]?.maxRangeMeters,
       // Footsteps carry as far as the spike's blast (game-rules); zone centres let a player judge
       // whether a run is inside an enemy's hearing.
       footstepRadiusUnits: spikeBlastRadiusUnits(),

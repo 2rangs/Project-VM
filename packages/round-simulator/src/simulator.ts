@@ -1316,7 +1316,7 @@ export class RoundSimulator {
     }
     if (this.cfg.coverSpots && cmd.aimZone && cmd.aimZone !== targetZone) return { spot: { kind: "hold", watchZone: cmd.aimZone } };
     const watch = this.watchIntent(p, cmd.aimZone, targetZone, state);
-    return watch ? { spot: watch } : {};
+    return watch ? { spot: cmd.holdClose && "zone" in watch ? { ...watch, close: true } : watch } : {};
   }
 
   /**

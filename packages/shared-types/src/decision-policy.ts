@@ -59,6 +59,11 @@ export interface ActionCommand {
    * suspected enemies, utility, teammates' lanes. Never true enemy positions. Ignored by FASTEST.
    */
   readonly zoneCosts?: Readonly<Record<string, number>>;
+  /**
+   * A defender holding with a close-range gun (a shotgun) holds the angle up close: of the spots that
+   * see the watched zone, the one nearest to it, so a fight starts within the gun's range. Default false.
+   */
+  readonly holdClose?: boolean;
 }
 
 /**

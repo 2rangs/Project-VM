@@ -134,8 +134,10 @@ async function main(): Promise<void> {
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
   const mirror = args["mirror"] === true;
   // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default sim fit).
-  const economy = args["belief-beta"] !== undefined
-    ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : undefined;
+  // --economy '{"ecoSidearms":true}': any other economy options (JSON), merged under the belief flags.
+  const economyJson = args["economy"] !== undefined ? JSON.parse(String(args["economy"])) as Record<string, unknown> : {};
+  const economy = args["belief-beta"] !== undefined || args["economy"] !== undefined
+    ? { ...economyJson, ...(args["belief-beta"] !== undefined ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : {}) } : undefined;
   const tuning = typeof args["tuning"] === "string" ? JSON.parse(args["tuning"]) : undefined;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
@@ -162,7 +164,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["weapon-modes"] === true ? { weaponModes: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };

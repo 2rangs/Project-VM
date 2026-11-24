@@ -14,7 +14,7 @@ import {
 } from "@pv/team-engine";
 import { loadDecisionContext } from "@pv/world-state";
 import { SeededRng } from "@pv/simulation-core";
-import type { PolicyView } from "@pv/shared-types";
+import type { PolicyView, WeaponId } from "@pv/shared-types";
 import { AscentSpatialStub } from "./fixtures/ascent-stub.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -262,5 +262,26 @@ describe("throws (proportional hazard)", () => {
     const cautious = new TeamDecisionPolicy(spatial);
     cautious.setTuning({ retakeMinWinChance: 0.4 });
     expect(saves(cautious)).toBe(true);
+  });
+});
+
+describe("close-range guns hold up close (eco shotgun)", () => {
+  it("a defender with a shotgun holds its angle up close; rifle holders do not", () => {
+    const base = loadView("03"); // defense, before the plant
+    const view: PolicyView = { ...base, teammates: base.teammates.map((t, i) => (i === 0 ? { ...t, weapon: { ...t.weapon!, weaponId: "bucky" as WeaponId } } : t)) };
+    const policy = new TeamDecisionPolicy(spatial, { weaponFullDamageRangeM: (id) => (id === "bucky" ? 8 : 50) });
+    let closeHolds = 0;
+    for (const seed of [1, 2, 3]) {
+      for (const c of policy.decide(view, rng(seed)).commands) {
+        if (c.holdClose) {
+          expect(String(c.playerId)).toBe(String(view.teammates[0]!.id));
+          closeHolds++;
+        }
+      }
+    }
+    expect(closeHolds).toBeGreaterThan(0);
+    // Without the range lookup nobody holds close.
+    const plain = new TeamDecisionPolicy(spatial).decide(view, rng(1)).commands;
+    expect(plain.some((c) => c.holdClose)).toBe(false);
   });
 });
