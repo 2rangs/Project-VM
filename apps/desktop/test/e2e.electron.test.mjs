@@ -192,6 +192,7 @@ async function main() {
   await page.getByTestId('pre-use-suggested').click();
   assert.ok(await page.getByTestId('pre-plant-A').isDisabled(), 'plant-spot choice waits for engine support');
   await page.selectOption('[data-testid="pre-tempo"]', 'fast');
+  await page.screenshot({ path: path.join(OUT, 'desktop-prematch.png') });
   await page.getByTestId('prematch-toggle').click();
   await page.getByTestId('start-interactive').click();
   await page.waitForSelector('[data-testid="session-bar"]', { timeout: 60000 });
@@ -205,6 +206,7 @@ async function main() {
   await page.selectOption('[data-testid="mgr-strat-defense"]', 'stackB');
   await page.getByTestId('mgr-strat-apply').click();
   await page.waitForSelector('[data-testid="mgr-strat-active"]', { timeout: 30000 });
+  await page.screenshot({ path: path.join(OUT, 'desktop-manager.png') });
   await page.getByTestId('mgr-toggle').click();
   await page.getByTestId('next-round').click();            // play round 1
   await page.waitForTimeout(1500);
@@ -228,6 +230,7 @@ async function main() {
   // [manager] the post-match summary lists our decisions with what followed them
   await page.waitForSelector('[data-testid="post-match-summary"]', { timeout: 10000 });
   assert.ok(await page.locator('[data-testid="post-decisions-A"] [data-testid="post-decision-row"]').count() >= 3, 'shouts, strategy and timeout are in the decision summary');
+  await page.getByTestId('post-match-summary').screenshot({ path: path.join(OUT, 'desktop-post-match.png') });
   await page.screenshot({ path: path.join(OUT, 'desktop-review-interactive.png') });
   await page.getByTestId('session-stop').click().catch(() => {});
 
