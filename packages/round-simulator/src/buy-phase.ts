@@ -29,12 +29,16 @@ import type { Side, SimPlayer, TrackFrame } from "./types.js";
 
 /** A zone is behind the defenders' barrier when d / (a + d) ≤ this (d, a: run times from each spawn). */
 export const DEFENDER_BARRIER_SHARE = 0.45;
-/** How far behind the exit (uu, along the floor) each role stacks in the attackers' spawn. */
+/**
+ * How far behind the exit (uu) each role sets up in the attackers' spawn. Set back from the door, not
+ * in it: five bodies stacked in the doorway leave it in single file when the barrier drops (measured,
+ * 60 matches: attack −2.5 pp, full-v-full 0.41 against 0.46 with the attackers spread in spawn).
+ */
 const STACK_DEPTH: Record<PlayerRole | "none", number> = {
-  entry: 60, support: 220, igl: 320, lurker: 120, anchor: 260, rotator: 260, none: 260,
+  entry: 300, support: 500, igl: 600, lurker: 350, anchor: 450, rotator: 450, none: 450,
 };
 /** Spread of a player's stack spot (uu) around its role's depth — its own preference this round. */
-const STACK_JITTER = 160;
+const STACK_JITTER = 300;
 /** An idle wander is a walk of at most this long (ms) — it is never started if it would make the player late. */
 const WANDER_BUDGET_MS = 3500;
 
@@ -250,7 +254,8 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
       });
     }
   }
-  for (const p of players) p.moveMode = "run";
+  // the barrier drops: nobody carries a buy-phase route into the round
+  for (const p of players) { p.moveMode = "run"; p.path = []; p.pathIndex = 0; p.edgeProgressMs = 0; }
 
   return {
     durationMs: input.durationMs,

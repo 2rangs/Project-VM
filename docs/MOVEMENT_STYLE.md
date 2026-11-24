@@ -67,8 +67,9 @@ behind the barriers, and tick 0 reuses that decision.
   anchors on the sites, the mid presence) and stand on a spot of their own there, looking where their first order
   points; the live round moves them on. (Walking each defender all the way to its first order's target and onto a
   held angle during the buy phase was measured: attack −3 pp, full-v-full 0.44 on 60 matches — every defender was
-  stationary on its angle at 0:00, which the duel calibration does not assume.) Attackers stack in spawn by role at the exit their first move leaves by: the entry at the door
-  (≈ 0.6 m), the lurker at its own exit (≈ 1.2 m), the support (≈ 2.2 m) and IGL (≈ 3.2 m) behind, each ± 0.8 m.
+  stationary on its angle at 0:00, which the duel calibration does not assume.) Attackers set up in spawn by role toward the exit their first move leaves by, back from the door:
+  the entry ≈ 3 m, the lurker ≈ 3.5 m (at its own exit), the support ≈ 5 m, the IGL ≈ 6 m, each ± 1.5 m. (A tight
+  stack in the doorway — 0.6–3.2 m — was measured: the five leave in single file, attack −2.5 pp, full-v-full 0.41.)
 - **Script.** Everyone starts in its spawn, stands at its buy spot for `buy.buyMs`, wanders idly (walks to free
   spots within its wander radius) while that cannot make it late, then leaves for its setup so as to be set
   `buy.setMarginMs` before the barrier drops — walking there when it is quiet and has time.
