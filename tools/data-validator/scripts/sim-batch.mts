@@ -181,6 +181,13 @@ async function main(): Promise<void> {
           defense: { value: r.buys[def].loadoutValue, bank: r.buys[def].players.reduce((s, b) => s + b.creditsAfter, 0), drops: r.buys[def].drops, pickups: r.pickups.filter((p) => p.team === def).length, roundPickups: r.events.filter((e) => (e.kind as string) === "weaponPickup" && String(e.actor).startsWith("def")).length },
         },
         events: toSimGameEvents({ events: r.events, winner: r.winnerSide, reason: r.reason } as never),
+        // Mid control (report-only): each side's decision and own estimate, the attack's call, and the true record.
+        ...(r.mid || r.decisions.plans[atk]?.mid || r.decisions.plans[def]?.mid ? { mid: {
+          call: r.decisions.plans[atk]?.opening ?? null,
+          attack: r.decisions.plans[atk]?.mid ?? null,
+          defense: r.decisions.plans[def]?.mid ?? null,
+          truth: r.mid ? { final: r.mid.final, heldMs: r.mid.heldMs, firstHeld: r.mid.firstHeld } : null,
+        } } : {}),
       });
       totalRounds++;
       reasonCounts[r.reason] = (reasonCounts[r.reason] ?? 0) + 1;
