@@ -60,7 +60,7 @@ const nav: NavTraceEvent[] = [
 ];
 const summary = { roundNumber: 1, nav } as unknown as MatchRoundSummary;
 const round: RoundTimeline = {
-  roundNum: 1, startMs: 1000, endMs: 60000, attacker: 'A', players: [walker, stuck, dead, enemy],
+  roundNum: 1, startMs: 1000, buyStartMs: 1000, endMs: 60000, attacker: 'A', players: [walker, stuck, dead, enemy],
   kills: [], plant: null, defuse: null, endReason: null, summary, hasTracks: true,
 };
 const posAt = (t: number) => (p: PlayerRound) => trailOf(p, t).at(-1)!;

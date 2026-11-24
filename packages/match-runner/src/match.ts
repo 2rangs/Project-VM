@@ -148,6 +148,14 @@ export interface MatchConfig {
   /** Sound detail: landings off drops, gunfire masking (SimConfig.soundDetail; ENGINE_TRUTH §9). Default off. */
   readonly soundDetail?: boolean;
   /**
+   * Simulate the buy phase (ROUND_RULES.buyPhaseMs) before each round: both teams move behind their
+   * barriers into the round plan's setup (round-simulator buy-phase.ts). Default true; false starts
+   * every round with the players where the match sets them down.
+   */
+  readonly buyPhase?: boolean;
+  /** Per-player movement style (round-simulator movement-style.ts). Default true. */
+  readonly movementStyle?: boolean;
+  /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
    * coordinate ATTACKER utility to execute, so enabling it makes defense dominant (attack win
@@ -629,7 +637,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle !== false, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

@@ -43,7 +43,9 @@ export function fromSimEventLog(events: readonly SimEvent[], meta: ConvertSimMet
   const trackMap = new Map<string, TrackKeyframe[]>();
   const seenPlayers = new Set<string>();
   // mutable builder (ReplayRound.endMs is readonly in the final shape)
-  const rounds: Array<{ roundNum: number; startMs: number; endMs: number | null }> = [];
+  const rounds: Array<{ roundNum: number; startMs: number; endMs: number | null; buyStartMs?: number }> = [];
+  // a buyPhaseStart seen before the next roundStart belongs to that round
+  let pendingBuyStart: number | null = null;
   const outEvents: ReplayEvent[] = [];
   let curRound: number | null = null;
 
@@ -59,7 +61,7 @@ export function fromSimEventLog(events: readonly SimEvent[], meta: ConvertSimMet
         const m = e as unknown as SimMoveEvent;
         const kf = ensureTrack(m.playerId);
         // seed with `from` the first time we see a player so a track has a start
-        if (kf.length === 0) kf.push({ tMs: Math.max(0, m.timeMs - 1), pos: m.from, facingDeg: null, state: 'alive' });
+        if (kf.length === 0) kf.push({ tMs: m.timeMs - 1, pos: m.from, facingDeg: null, state: 'alive' });
         kf.push({ tMs: m.timeMs, pos: m.to, facingDeg: null, state: 'alive' });
         break;
       }
@@ -67,8 +69,13 @@ export function fromSimEventLog(events: readonly SimEvent[], meta: ConvertSimMet
         const r = e as unknown as SimRoundStart;
         curRound = r.roundNumber;
         if (rounds.length) rounds[rounds.length - 1].endMs = e.timeMs;
-        rounds.push({ roundNum: r.roundNumber, startMs: e.timeMs, endMs: null });
+        rounds.push({ roundNum: r.roundNumber, startMs: e.timeMs, endMs: null, ...(pendingBuyStart !== null ? { buyStartMs: pendingBuyStart } : {}) });
+        pendingBuyStart = null;
         outEvents.push({ tMs: e.timeMs, roundNum: curRound, kind: 'roundStart' });
+        break;
+      }
+      case 'buyPhaseStart': {
+        pendingBuyStart = e.timeMs;
         break;
       }
       case 'roundEnd': {

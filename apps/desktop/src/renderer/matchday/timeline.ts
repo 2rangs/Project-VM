@@ -85,7 +85,13 @@ export interface SpikeAction {
 
 export interface RoundTimeline {
   readonly roundNum: number;
+  /** When the barrier drops (the round goes live; the round clock starts). */
   readonly startMs: number;
+  /**
+   * When the round's buy phase began (= startMs when the replay has none). Players move behind
+   * their barriers from here until startMs.
+   */
+  readonly buyStartMs: number;
   /** Time of the roundEnd event (or the last event when the round has none yet). */
   readonly endMs: number;
   readonly attacker: TeamSlot;
@@ -176,8 +182,10 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
 
   for (let i = 0; i < sortedRounds.length; i++) {
     const rd = sortedRounds[i];
-    const nextStart = sortedRounds[i + 1]?.startMs ?? Infinity;
-    const inRound = (t: number) => t >= rd.startMs && t < nextStart;
+    const buyStartMs = Math.min(rd.buyStartMs ?? rd.startMs, rd.startMs);
+    const next = sortedRounds[i + 1];
+    const nextStart = next ? Math.min(next.buyStartMs ?? next.startMs, next.startMs) : Infinity;
+    const inRound = (t: number) => t >= buyStartMs && t < nextStart;
     const evs = events.filter((e) => inRound(e.tMs));
     const endEv = evs.find((e) => e.kind === 'roundEnd');
     const lastEvMs = evs.length > 0 ? evs[evs.length - 1].tMs : rd.startMs;
@@ -197,13 +205,13 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
     for (const id of [...ids].sort()) {
       const track = replay.tracks.find((tr) => tr.playerId === id);
       // convert-sim seeds the first keyframe 1 ms before the first move, so allow that slack.
-      const kfs = (track?.keyframes ?? []).filter((k) => k.tMs >= rd.startMs - 1 && k.tMs < nextStart);
+      const kfs = (track?.keyframes ?? []).filter((k) => k.tMs >= buyStartMs - 1 && k.tMs < nextStart);
       const death = deaths.get(id) ?? null;
       if (kfs.length === 0 && !evs.some((e) => e.actorId === id || e.victimId === id)) continue;
       if (kfs.length > 0) hasTracks = true;
       const spawn = kfs[0]?.pos ?? { x: 0, y: 0, z: 0 };
       const hops = kfs.length > 0
-        ? buildHops(kfs.slice(1).map((k) => ({ tMs: k.tMs, pos: k.pos })), spawn, rd.startMs, nav)
+        ? buildHops(kfs.slice(1).map((k) => ({ tMs: k.tMs, pos: k.pos })), spawn, buyStartMs, nav)
         : [];
       players.push({
         id, team: teamOfId(id, attacker), side: sideOfId(id), slot: slotOfId(id),
@@ -214,7 +222,7 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
     }
 
     const partial: RoundTimeline = {
-      roundNum: rd.roundNum, startMs: rd.startMs, endMs: endEv?.tMs ?? lastEvMs, attacker, players,
+      roundNum: rd.roundNum, startMs: rd.startMs, buyStartMs, endMs: endEv?.tMs ?? lastEvMs, attacker, players,
       kills: [], plant: null, defuse: null,
       endReason: ((endEv?.data as { reason?: string } | undefined)?.reason) ?? summary?.reason ?? null,
       summary, hasTracks,
@@ -252,7 +260,7 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
 
   return {
     rounds,
-    startMs: rounds[0]?.startMs ?? 0,
+    startMs: rounds[0]?.buyStartMs ?? 0,
     endMs: rounds.length > 0 ? rounds[rounds.length - 1].endMs : 0,
     hasTracks: rounds.some((r) => r.hasTracks),
   };
@@ -283,7 +291,7 @@ export function isAlive(p: PlayerRound, tMs: number): boolean { return p.deathMs
 
 export function roundIndexAt(tl: MatchTimeline, tMs: number): number {
   let idx = 0;
-  for (let i = 0; i < tl.rounds.length; i++) if (tMs >= tl.rounds[i].startMs) idx = i;
+  for (let i = 0; i < tl.rounds.length; i++) if (tMs >= tl.rounds[i].buyStartMs) idx = i;
   return idx;
 }
 

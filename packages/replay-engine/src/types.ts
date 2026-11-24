@@ -61,6 +61,8 @@ export interface ReplayRound {
   readonly roundNum: number;
   readonly startMs: number;
   readonly endMs: number | null;
+  /** When the round's buy phase began (barrier up), if the replay has one; it ends at `startMs`. */
+  readonly buyStartMs?: number;
 }
 
 export interface TrackKeyframe {

@@ -53,10 +53,12 @@ import {
   patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, TRACER_CUE_CONFIDENCE,
 } from "./situational.js";
-import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
+import type { ActionCommand, BeliefState, DecisionPolicy, PolicyDecision, PolicyView, TeammateTransit } from "./policy-contract.js";
 import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 import { MovementExecutor, type MoverHooks, type NavEvent, type SpotIntent } from "./mover.js";
+import { RoundMovementStyles } from "./movement-style.js";
+import { runBuyPhase, type BuyPhaseResult } from "./buy-phase.js";
 import { offsetDeg, rotateToward, turnRateRadPerMs, type GazeSource } from "./gaze.js";
 
 export interface RoundSimulatorDeps {
@@ -279,6 +281,32 @@ export class RoundSimulator {
       attack: new SeededRandomSource(deriveSeed(this.cfg.seed, "policy:attack")),
       defense: new SeededRandomSource(deriveSeed(this.cfg.seed, "policy:defense")),
     } as const;
+    // Movement style (movement-style.ts) and the buy phase (buy-phase.ts). The round's plan is made
+    // when the buy phase starts — the very decision tick 0 would make, from the same state — and the
+    // buy phase carries it out behind the barriers; tick 0 then reuses it.
+    this.styles = this.cfg.movementStyle ? new RoundMovementStyles(this.spatial, deriveSeed(this.cfg.seed, "movement")) : null;
+    const opening: Partial<Record<Side, { view: PolicyView; decision: PolicyDecision }>> = {};
+    let buyPhase: BuyPhaseResult | null = null;
+    if ((this.cfg.buyPhaseMs ?? 0) > 0 && this.spatial.nav) {
+      for (const side of ["attack", "defense"] as const) {
+        const view = buildPolicyView(side, state, perception, spatialQuery, null, 0, {
+          activeAbilities: toPerceptionAbilityStates(abilityEngine), abilityEngine, cues, elapsedMs: state.elapsedMs,
+          abilityCues, abilityCatalog: this.abilitiesCatalog, transitOf: (p) => this.transitOf(p), stationaryIds: this.edgeWaiting,
+        });
+        opening[side] = { view, decision: this.policies[side].decide(view, rngOf[side]) };
+      }
+      this.styles?.assign(state.players, [opening.attack!.decision, opening.defense!.decision]);
+      buyPhase = runBuyPhase({
+        spatial: this.spatial, players: state.players,
+        opening: { attack: opening.attack!.decision, defense: opening.defense!.decision },
+        styles: new Map(state.players.map((p) => [p.id, this.styles?.styleOf(p.id)]).filter((e): e is [string, NonNullable<ReturnType<RoundMovementStyles["styleOf"]>>] => !!e[1])),
+        durationMs: this.cfg.buyPhaseMs!, tickMs: this.cfg.tickMs, seed: deriveSeed(this.cfg.seed, "buyPhase"),
+        speeds: { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC }, record: this.cfg.recordTracks,
+      });
+      this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
+      this.mover.reset(state.players);
+      this.publishZones(state);
+    }
 
     const push = (e: SimEvent) => events.push(e);
     push({ kind: "roundStart", tick: 0, elapsedMs: 0 });
@@ -292,10 +320,11 @@ export class RoundSimulator {
       // 1. decisions (every N ticks): one TEAM decision per side (PV-3 contract).
       if (state.tick % this.cfg.decisionIntervalTicks === 0) {
         const activeAbilities = toPerceptionAbilityStates(abilityEngine);
+        const decided: PolicyDecision[] = [];
         for (const side of ["attack", "defense"] as const) {
           const dt = prevBelief[side] ? decisionDtMs : 0;
           const sound = this.cfg.soundDetail ? this.soundWindow(state.elapsedMs, decisionDtMs) : null;
-          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, {
+          const view = state.tick === 0 && opening[side] ? opening[side]!.view : buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, {
             ...(sound ? { extraSounds: sound.extraSounds, maskers: sound.maskers } : {}),
             activeAbilities, abilityEngine, cues, elapsedMs: state.elapsedMs,
             abilityCues, abilityCatalog: this.abilitiesCatalog, transitOf: (p) => this.transitOf(p), stationaryIds: this.edgeWaiting,
@@ -305,7 +334,9 @@ export class RoundSimulator {
           if (this.cfg.recordPerception && state.tick % perceptionInterval === 0) {
             perceptionSnaps[side].push(toPerceptionSnapshot(view, spatialQuery, state.elapsedMs));
           }
-          const decision = this.policies[side].decide(view, rngOf[side]);
+          const decision = state.tick === 0 && opening[side] ? opening[side]!.decision : this.policies[side].decide(view, rngOf[side]);
+          decided.push(decision);
+          if (this.styles) for (const r of decision.roles) this.styles.roles.set(String(r.playerId), r.role);
           for (const c of decision.commands) {
             commands.set(c.playerId, c);
             trace(
@@ -317,6 +348,10 @@ export class RoundSimulator {
               `issued:${c.playerId}:${c.kind}:${c.targetZone ?? c.abilityId ?? ""}:${c.executeAtMs ?? 0}`,
             );
           }
+        }
+        if (this.styles && state.tick === 0) {
+          if (!this.styles.assigned) this.styles.assign(state.players, decided);
+          this.styles.install(this.mover, state.players, (side, z) => this.threatOf(side, z));
         }
       }
 
@@ -357,6 +392,7 @@ export class RoundSimulator {
             ...this.spotIntent(p, cmd, state),
             hazards,
           }, hooks);
+          if (this.styles) p.moveMode = this.styles.pace(p, p.moveMode, this.mover.remainingLength(p), this.calm(state, events));
         } else if (cmd?.kind === "plant" && !this.isMoving(p) && state.spike.carrierId === p.id && this.spatial.isPlantableZone(p.zoneId) && !this.onPlantArea(p)) {
           // Told to plant inside the site but not on its plant area: step onto it first.
           this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: { kind: "plant" }, hazards }, hooks);
@@ -640,6 +676,7 @@ export class RoundSimulator {
       },
       roster: Object.fromEntries(state.players.map((p) => [p.id, p.side])),
       tracks: this.cfg.recordTracks ? tracks : undefined,
+      ...(buyPhase ? { buyPhase: { durationMs: buyPhase.durationMs, ...(this.cfg.recordTracks ? { tracks: buyPhase.frames } : {}), setups: buyPhase.setups } } : {}),
       navTrace: this.cfg.traceCommands || this.cfg.recordTracks ? navEvents : undefined,
       perception: this.cfg.recordPerception
         ? ([
@@ -1120,7 +1157,12 @@ export class RoundSimulator {
             return false;
           }
         }
-        return this.stackedUp(p, toZone, world);
+        if (!this.stackedUp(p, toZone, world)) return false;
+        // stop and check the zone before stepping in (movement-style.ts): a pause owed like a slow field's
+        const cleared = this.styles ? world.state.players.some((q) => q.alive && q.side === p.side && q.id !== p.id && q.zoneId === toZone) : true;
+        const check = this.styles ? this.styles.checkPauseMs(p, toZone, this.threatOf(p.side, toZone), this.calm(world.state, world.events), world.state.elapsedMs, cleared) : 0;
+        if (check > 0) { p.edgeProgressMs = -check; return false; }
+        return true;
       },
       onZoneChange: (p, fromZone, toZone) => {
         world.lastHop.set(p.id, { fromZone, tick: world.state.tick });
@@ -1313,6 +1355,21 @@ export class RoundSimulator {
   private readonly guardTaken = new Map<string, string>();
   /** Each side's latest belief (for gaze and the guards' entries). */
   private beliefNow: Record<Side, BeliefState | null> = { attack: null, defense: null };
+  /** The round's movement styles (config.movementStyle), or null. */
+  private styles: RoundMovementStyles | null = null;
+
+  /** The threat level a side's belief puts on a zone (0 when it has none). */
+  private threatOf(side: Side, zoneId: string): number {
+    for (const t of this.beliefNow[side]?.threatZones ?? []) if (t.zoneId === zoneId) return t.threatLevel;
+    return 0;
+  }
+
+  /** Before the first kill, with the spike not yet down: players still move at their own pace. */
+  private calm(state: SimState, events: readonly SimEvent[]): boolean {
+    if (state.spike.phase === "planted" || state.spike.phase === "defusing") return false;
+    for (const e of events) if (e.kind === "kill") return false;
+    return true;
+  }
 
   /** The zone the defenders enter `zoneId` through on a retake: the predecessor on defender-spawn → zone. */
   private retakeEntryOf(zoneId: string, originOf: Record<Side, string>): string | undefined {

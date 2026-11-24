@@ -43,7 +43,7 @@ export function usePlayback(tl: MatchTimeline, tempo: Tempo, onRoundEnd?: (round
       const { tl: cur, tempo: tp, onRoundEnd: done } = live.current;
       if (playingRef.current && cur.rounds.length > 0) {
         const round = cur.rounds[roundIndexAt(cur, tRef.current)];
-        const next = Math.max(round.startMs, tRef.current) + dt * tp;
+        const next = Math.max(round.buyStartMs, tRef.current) + dt * tp;
         if (next >= round.endMs) {
           tRef.current = round.endMs;
           setPlay(false);

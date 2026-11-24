@@ -30,6 +30,8 @@ const WALL_MARGIN = 10;
 const OFF_ROUTE_PENALTY = 0.6;
 /** Zone-graph cost (ms) per unit of belief-supplied zone cost, per preference. */
 const ZONE_COST_MS: Record<RoutePreference, number> = { FASTEST: 0, TACTICAL: 2500, SAFEST: 7000, STEALTH: 7000 };
+/** A follower keeps its spacing only behind a teammate heading within this cosine of its own heading (~45°). */
+const SAME_WAY_COS = 0.7;
 /** A mover yields to a body this close ahead of it (uu). */
 const YIELD_DISTANCE = 2 * PLAYER_RADIUS_UNITS * 0.85;
 /** ...but not for longer than this many consecutive ticks (then it squeezes past). */
@@ -145,6 +147,8 @@ interface Mover {
   dirX: number;
   dirY: number;
   advanced: boolean;
+  /** Follow-distance multiplier behind a teammate going the same way (movement-style.ts; 1 = body gap). */
+  spacing: number;
 }
 
 const LANES = [0, -0.7, 0.7, -0.35, 0.35];
@@ -190,6 +194,20 @@ export class MovementExecutor {
     this.speeds = { run: speeds.runUnitsPerSec / 1000, walk: speeds.walkUnitsPerSec / 1000 };
   }
 
+  /**
+   * Optional zone-route chooser (movement-style.ts): given the request, returns the route the player
+   * takes among the near-optimal ones, or null to keep the single best route.
+   */
+  routeChooser: ((p: SimPlayer, goal: MoveGoal, mode: MoveMode, opts: { hazardCosts: ReadonlyMap<string, number>; blockedZones: readonly string[] }) => string[] | null) | null = null;
+
+  /** A player's own lane (lateral share of the corridor) and follow spacing for the round. */
+  setStyle(playerId: string, style: { lane?: number; spacing?: number }): void {
+    const m = this.movers.get(playerId);
+    if (!m) return;
+    if (style.lane !== undefined) m.lane = Math.max(-1, Math.min(1, style.lane));
+    if (style.spacing !== undefined) m.spacing = Math.max(1, style.spacing);
+  }
+
   /** Seal a whole zone's floor / a disc of floor against bodies. */
   addZoneBlocker(id: string, zoneId: string): void {
     this.blockers.addZone(id, zoneId);
@@ -214,7 +232,7 @@ export class MovementExecutor {
       perTeam.set(p.teamId, slot + 1);
       const m: Mover = {
         goal: null, spot: -1, spotKey: "", atNode: -1, waypoints: [], index: 0, zoneCursor: 0, blockersVersion: this.blockers.version,
-        linkElapsedMs: 0, failure: null, yieldTicks: 0, queueTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false,
+        linkElapsedMs: 0, failure: null, yieldTicks: 0, queueTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false, spacing: 1,
       };
       this.movers.set(p.id, m);
       const zone = this.spatial.getZone(p.zoneId);
@@ -241,6 +259,14 @@ export class MovementExecutor {
       for (const [n, id] of this.claims) if (id === p.id) this.claims.delete(n);
     }
   }
+
+  /** Is this roadmap node free for this player to stand on (no one else claims it)? */
+  spotFree(playerId: string, node: number): boolean {
+    const holder = this.claims.get(node);
+    return holder === undefined || holder === playerId;
+  }
+  /** Reserve a standing spot for a player ahead of its move there (its previous claim is released). */
+  reserve(playerId: string, node: number): void { this.claim(playerId, node); }
 
   private claim(playerId: string, node: number): void {
     for (const [n, id] of this.claims) if (id === playerId) this.claims.delete(n);
@@ -398,7 +424,12 @@ export class MovementExecutor {
       if (c > 0) hazardCosts.set(z.id, c * w);
     }
     const blockedZones = this.blockers.ids().map((id) => this.zoneOfBlocker.get(id)).filter((z): z is string => !!z);
-    const r = this.spatial.findPath(p.zoneId, goal.zoneId, pref === "STEALTH" ? "walk" : goal.mode, { hazardCosts, blockedZones });
+    const mode = pref === "STEALTH" ? "walk" : goal.mode;
+    if (this.routeChooser) {
+      const chosen = this.routeChooser(p, goal, mode, { hazardCosts, blockedZones });
+      if (chosen) return chosen;
+    }
+    const r = this.spatial.findPath(p.zoneId, goal.zoneId, mode, { hazardCosts, blockedZones });
     return r ? r.path : null;
   }
 
@@ -794,16 +825,20 @@ export class MovementExecutor {
    */
   private bodyAhead(p: SimPlayer, ux: number, uy: number, stepLen: number, others: readonly SimPlayer[]): "queue" | "standing" | null {
     const nx = p.position.x + ux * stepLen, ny = p.position.y + uy * stepLen;
+    // a teammate going the same way is followed at this player's own spacing; everything else at a body gap
+    const follow = YIELD_DISTANCE * (this.movers.get(p.id)?.spacing ?? 1);
     let found: "queue" | "standing" | null = null;
     for (const q of others) {
       if (q.id === p.id || !q.alive) continue;
       if (Math.abs(q.position.z - p.position.z) > 120) continue;
       const ox = q.position.x - nx, oy = q.position.y - ny;
-      if (ox * ox + oy * oy >= YIELD_DISTANCE * YIELD_DISTANCE) continue;
+      const d2 = ox * ox + oy * oy;
+      if (d2 >= follow * follow) continue;
       if ((q.position.x - p.position.x) * ux + (q.position.y - p.position.y) * uy <= 0) continue; // not ahead
       const mq = this.movers.get(q.id);
       const qMoving = !!mq && mq.index < mq.waypoints.length;
-      if (!qMoving) { found = found ?? "standing"; continue; }
+      const near = d2 < YIELD_DISTANCE * YIELD_DISTANCE;
+      if (!qMoving) { if (near) found = found ?? "standing"; continue; }
       // Which way q WANTS to go — toward its next waypoint — not whether it advanced last tick:
       // two movers that meet head-on are both stopped, and judged by "advanced" each took the
       // other for the back of a queue and neither ever moved again.
@@ -811,7 +846,9 @@ export class MovementExecutor {
       const qx = wq.x - q.position.x, qy = wq.y - q.position.y;
       const ql = Math.hypot(qx, qy);
       const headOn = ql > 1e-6 ? (qx * ux + qy * uy) / ql < -0.3 : mq!.advanced && mq!.dirX * ux + mq!.dirY * uy < -0.3;
-      if (headOn) { if (q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
+      if (headOn) { if (near && q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
+      // beyond a body gap, spacing is kept only behind a teammate going the same way (within ~45°)
+      if (!near && (q.teamId !== p.teamId || ql < 1e-6 || (qx * ux + qy * uy) / ql < SAME_WAY_COS)) continue;
       return "queue";
     }
     return found;

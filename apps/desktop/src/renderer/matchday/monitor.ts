@@ -66,8 +66,10 @@ export interface Situation {
     /** 0..1 progress of the plant or defuse in progress. */
     readonly progress: number | null;
   };
-  /** Round clock: time left in the round before the plant, spike time after it. */
+  /** Round clock: time left in the round before the plant, spike time after it; in the buy phase, the buy time left. */
   readonly clockMs: number;
+  /** The barrier is still up (the round's buy phase). */
+  readonly buyPhase: boolean;
   readonly over: boolean;
 }
 
@@ -104,8 +106,9 @@ export function situationAt(round: RoundTimeline, tMs: number): Situation {
     }
   }
   const elapsed = Math.min(tMs, round.endMs) - round.startMs;
-  const clockMs = remainingMs != null ? remainingMs : Math.max(0, ENGINE.roundTimeMs - elapsed);
-  return { alive, clutch, spike: { phase, site: plant?.site ?? null, remainingMs, progress }, clockMs, over };
+  const buyPhase = tMs < round.startMs;
+  const clockMs = buyPhase ? round.startMs - tMs : remainingMs != null ? remainingMs : Math.max(0, ENGINE.roundTimeMs - elapsed);
+  return { alive, clutch, spike: { phase, site: plant?.site ?? null, remainingMs, progress }, clockMs, buyPhase, over };
 }
 
 /** mm:ss for a round clock (rounded up, like a game HUD). */
@@ -150,7 +153,8 @@ export function eventJump(round: RoundTimeline, nowMs: number, dir: 1 | -1): num
   }
   if (dir === 1) return targets.find((t) => t > nowMs + 100) ?? null;
   for (let i = targets.length - 1; i >= 0; i--) if (targets[i] < nowMs - 700) return targets[i];
-  return nowMs > round.startMs + 700 ? round.startMs : null;
+  if (nowMs > round.startMs + 700) return round.startMs;
+  return nowMs > round.buyStartMs + 700 ? round.buyStartMs : null;
 }
 
 // ── firing (first-person view model) ────────────────────────────────────────────────────────

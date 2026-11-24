@@ -55,6 +55,10 @@ export function mergeMatch(raw: RawMatch): MergedMatch {
   let seq = 0;
   for (const r of raw.rounds) {
     const defender: 'A' | 'B' = r.attacker === 'A' ? 'B' : 'A';
+    // the buy phase comes before the round (negative round-relative times): make room for it
+    let lead = 0;
+    for (const src of r.replayEvents) lead = Math.max(lead, -((src.timeMs as number) ?? 0));
+    offset += lead;
     let maxT = 0;
     for (const src of r.replayEvents) {
       const t = (src.timeMs as number) ?? 0;

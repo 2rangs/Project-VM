@@ -540,6 +540,7 @@ export const en: Record<string, string> = {
   'mdx.round.n': 'Round {n}',
   'mdx.round.next': 'Next · Round {n}',
   'mdx.phase.pistol': 'Pistol',
+  'mdx.phase.buy': 'Buy phase',
   'mdx.phase.ot': 'OT',
   'mdx.phase.matchPoint': 'Match point',
   'mdx.fog': 'Vision',

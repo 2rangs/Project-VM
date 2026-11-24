@@ -542,6 +542,7 @@ export const ko: Record<string, string> = {
   'mdx.round.n': '라운드 {n}',
   'mdx.round.next': '다음 · 라운드 {n}',
   'mdx.phase.pistol': '피스톨',
+  'mdx.phase.buy': '구매 단계',
   'mdx.phase.ot': '연장',
   'mdx.phase.matchPoint': '매치 포인트',
   'mdx.fog': '시야',

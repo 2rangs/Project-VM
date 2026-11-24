@@ -100,9 +100,15 @@ test('run-match output carries positions for every player and the navigation tra
   const raw = runMatch({ ...TEAMS, seed: 7, recordPerception: false });
   const r = raw.rounds[0];
   const moves = r.replayEvents.filter((e) => e.kind === 'move') as Array<{ playerId: string; timeMs: number; from: { x: number; y: number }; to: { x: number; y: number } }>;
-  // every player has a position from the first instant, also those who never leave their spot
-  const atStart = new Set(moves.filter((m) => m.timeMs === 0 && m.from.x === m.to.x && m.from.y === m.to.y).map((m) => m.playerId));
+  // every player has a position from the first instant — the buy phase's start (−30 s) — also
+  // those who never leave their spot
+  const firstMs = Math.min(...moves.map((m) => m.timeMs));
+  assert.equal(firstMs, -30000, 'the buy phase is in the replay');
+  assert.equal(r.replayEvents.find((e) => e.kind === 'buyPhaseStart')?.timeMs, -30000, 'a buyPhaseStart marks it');
+  const atStart = new Set(moves.filter((m) => m.timeMs === firstMs && m.from.x === m.to.x && m.from.y === m.to.y).map((m) => m.playerId));
   assert.equal(atStart.size, 10, 'a spawn position per player');
+  // players move during the buy phase
+  assert.ok(new Set(moves.filter((m) => m.timeMs < 0 && m.timeMs > firstMs).map((m) => m.playerId)).size >= 8, 'players move behind the barriers');
   // continuous movement: consecutive samples, never a jump between zone centres
   const longest = moves.reduce((m, e) => Math.max(m, Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y)), 0);
   assert.ok(longest > 0 && longest <= 120, `longest recorded step ${longest.toFixed(0)} uu is one tick of movement`);
