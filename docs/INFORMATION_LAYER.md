@@ -17,7 +17,7 @@ One engine, but every team decision is built from each player's information one 
 Before: `buildPolicyView` pooled every player's sight and hearing into one `ObservationState`, and the IGL decided on it. The moment
 anyone sensed something, the whole team knew it, exactly and at once.
 
-Now With the layer on, `TeamDecisionPolicy` passes the view through `InformationLayer.step` first and replaces `view.observation` and `view.belief`
+Now, with the layer on, `TeamDecisionPolicy` passes the view through `InformationLayer.step` first and replaces `view.observation` and `view.belief`
 with the IGL's fused picture. Everything downstream works unchanged: strategy, reconsider, hit belief, rotations, slow-plan
 commit, pace, and utility. Only what reaches it is different. A view with no per-player observations (a scenario-built view)
 passes through unchanged. The layer is off by default; `TeamPolicyOptions.information: true` (or `MatchConfig.informationLayer`) turns it on.
