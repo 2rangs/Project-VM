@@ -115,3 +115,12 @@ Parked: UI-1…UI-6 of `docs/research/PRO_TECHNIQUES_BACKLOG.md` (branch claude/
 need engine fields that are not recorded yet (per-frame facing, engagement trace, sound rule, comms, plan events,
 per-player economy). Build each as "draw when present, label approximate otherwise", like the sight overlay.
 Not touched on request: `screens/matchday/models.ts`, `tools/map-mesh/blender/export-web-glb.py` (modelling session).
+
+## Third round (UI-1…UI-6 + economy)
+Built and unit-tested (54 matchday tests): per-player economy on Match Day (our rows: weapon + source, credits
+entering, carried ult points; opponent rows: weapon only; "buy call" panel for our team: plan, coach call, plan it
+beat, drops), plan ticks on the timeline + plan/fake in the round summary, duel cards, sound kinds + masked cues,
+gaze/blind from the sim. All of it degrades to the previous behaviour when the engine does not provide the data.
+Blocked on the engine: `RoundRecord.sight` (per-frame sees/facing/gaze/blind, which exist on `RoundResult.tracks`
+only) and `RoundRecord.engagementTrace`; requested from engine-truth, shape in `ipc.ts` (`SightFrame`,
+`EngagementInfo`). UI-4 (comms feed) not built: no data. Not looked at in the running app this round.

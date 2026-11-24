@@ -37,3 +37,5 @@ export {
   smokeExitDelayMs, patchExposureMs, slowFieldDelayMs, abilityCastCueConfidence,
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, ABILITY_CAST_LOUDNESS, ABILITY_CAST_AUDIBLE_THRESHOLD,
 } from "./situational.js";
+export { FloorItems, PICKUP_REACH_UNITS } from "./floor-items.js";
+export type { FloorWeapon, OrbPoint, FloorItemsOptions } from "./floor-items.js";

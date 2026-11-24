@@ -25,6 +25,10 @@ export interface FrameUnit {
   readonly status: MonitorStatus;
   readonly view: PlayerView;
   readonly kills: number;
+  /** What the player is looking at (sim gaze model), or null when the engine does not record it. */
+  readonly gaze: 'enemy' | 'threat' | 'hold' | 'route' | null;
+  /** Blinded by a flash this tick (engine sight only). */
+  readonly blind: boolean;
 }
 
 export interface FrameEnemy {
@@ -85,6 +89,8 @@ export function computeFrame(replay: Replay, tl: MatchTimeline, nav: NavModel, t
     status: monitorStatusAt(round, p.id, t),
     view: engineSight ? engineView(round, p, t, nav, intel, engineSight.sees[p.id] ?? []) : playerViewAt(nav, round, p.id, t, intel),
     kills: tally.get(p.id) ?? 0,
+    gaze: engineSight?.gaze[p.id] ?? null,
+    blind: !!engineSight?.blind.includes(p.id),
   }));
 
   const seenBy = new Map<string, string[]>();

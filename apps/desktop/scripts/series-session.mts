@@ -15,6 +15,7 @@
 //   stop
 // Config is argv[2] JSON (SeriesStartRequest + filmGames). Diagnostics go to stderr only.
 import { createInterface } from 'node:readline';
+import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-round.mts';
 import { listSimulatableTeams, getMapComps } from '../../../packages/game-data/src/index.ts';
 import {
   createSeriesSession, runMatch, teamGameLog, DEFAULT_MAP_POOL, SIMULATED_GEOMETRY,
@@ -87,12 +88,13 @@ function compactRound(ctx: SeriesGameContext, r: ReturnType<MatchSession['playNe
     roundNumber: r.roundNumber, phase: r.phase, attacker: uiOf(ctx, r.attacker),
     winner: uiOf(ctx, r.winner), winnerSide: r.winnerSide, reason: r.reason, planted: r.planted,
     score: byUi(ctx, r.score), kills: byUi(ctx, r.kills),
-    economy: { A: { credits: eco.A.credits, ultPoints: eco.A.ultPoints }, B: { credits: eco.B.credits, ultPoints: eco.B.ultPoints } },
-    buys: { A: { tier: buys.A.tier, weapon: buys.A.weapon }, B: { tier: buys.B.tier, weapon: buys.B.weapon } },
+    economy: { A: compactEconomy(eco.A), B: compactEconomy(eco.B) },
+    buys: { A: compactBuy(buys.A), B: compactBuy(buys.B) },
     replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
     // per-tick sight decided by the sim (engine-truth), when the engine records it
-    sight: (r as unknown as { sight?: unknown }).sight ?? (r.replay.meta as unknown as { sight?: unknown }).sight ?? null,
+    sight: sightOf(r),
+    engagement: engagementOf(r),
     decisions: r.decisions ? { plans: byUi(ctx, r.decisions.plans), opponentReadBefore: byUi(ctx, r.decisions.opponentReadBefore), observed: r.decisions.observed } : null,
     nav: r.navTrace ?? null,
   };

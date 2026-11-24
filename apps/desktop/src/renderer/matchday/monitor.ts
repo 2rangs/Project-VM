@@ -175,3 +175,22 @@ export function firingAt(kills: ReadonlyArray<{ tMs: number; killerId: string | 
   const dt = tMs - last;
   return { kick: Number.isFinite(dt) ? Math.exp(-dt / BURST.kickMs) : 0, flash: dt >= 0 && dt < BURST.flashMs };
 }
+
+// ── our plan on the timeline (UI-5) ────────────────────────────────────────────────────────────
+
+export interface PlanMark { readonly tMs: number; readonly from: string; readonly to: string; readonly reason: string }
+export interface PlanInfo { readonly opening: string; readonly strategy: string; readonly objective: string | null; readonly feint: string | null; readonly marks: readonly PlanMark[] }
+
+/**
+ * A team's plan for the round: the opening call, the final call, a fake (feint) if it ran one, and
+ * every mid-round revision with the time it happened (match ms). Reasons are the engine's own text.
+ * Only call this for the viewer's own team — the opponent's plan is not information the coach has.
+ */
+export function planOf(round: RoundTimeline, team: TeamSlot): PlanInfo | null {
+  const plan = (round.summary?.decisions?.plans as Record<string, { opening: string; strategy: string; objective: string | null; feint: string | null; revisions: Array<{ atMs: number; from: string; to: string; reason: string }> } | null> | undefined)?.[team];
+  if (!plan) return null;
+  return {
+    opening: plan.opening, strategy: plan.strategy, objective: plan.objective, feint: plan.feint,
+    marks: plan.revisions.map((r) => ({ tMs: round.startMs + r.atMs, from: r.from, to: r.to, reason: r.reason })),
+  };
+}

@@ -1,5 +1,54 @@
 # PROJECT V — ECONOMY & ULTIMATE MODEL
 
+## Match economy v1.2 — round-2 buys, mid-round pickups, ult-orb consumer (2026-11-24)
+
+**Round 2 after a pistol win.** VCT international (vct.duckdb, 2248 pistol wins): the winners field
+16,023 (median 16,100) in round 2, keep 2,538 banked and convert 0.878; teams 2–0 up then play round 3
+on 17,435 with 11,992 banked and win 0.427. The database has team loadout and bank only, no weapons, so
+the "ratio" is matched through these. Before: the sim's winners bought rifles with light shields
+(round-3 bonus 0.57 on 20,700 — kept rifles). The buy is still the expected-value choice; what changed
+is what a gun is worth in this round's belief:
+- `weapon-worth.ts` `armorMatchedPrice`: a gun's price scaled by its kill time against the shield it
+  meets, relative to the Vandal, from the sim's own damage table (100 hp, shields block first, 27%
+  head shots = VCT mean, range mix 8/22/40 m at 0.4/0.4/0.2 — provisional). Equal to the price against
+  heavy shields, so full-buy rounds read as before; a Spectre against light shields ≈ 1,950.
+- `score()` reads both loadouts at that worth against the other side's expected shields
+  (`EconomyOptions.armorMatchedValue`, default true). The lookahead keeps shop prices.
+- New plan `smg` (Spectre + heavy + kit, tier label `half`) beside `max`/`half`/`keep`/`light`/`eco`.
+
+Seeds 1–160 / 161–320: round-2 winners field 14,113 / 13,947 (median 14,950 / 14,650), bank 2,884 /
+3,041, rifles-for-all in 63 / 56 of 318 (plan "half" — SMGs — 171 / 171); round 3 after 2–0:
+19,417 / 19,201, bank 7,608 / 8,117, **win 0.438 / 0.427 (VCT 0.427; was 0.572 / 0.567)**. Round-2
+conversion is 0.943 / 0.943 (VCT 0.878; was 0.931 / 0.909) — report only; the sim's pistols-vs-SMG
+fights are one-sided.
+
+**Mid-round pickups** (round-simulator `floor-items.ts`, `SimConfig.floorItems`, off unless set;
+match-runner sets it, `MatchConfig.floorItems` default true). A dead player's gun lies where they
+fell; a living player within 2 m (same height band) who sees no enemy and is not planting or defusing
+takes it when it is worth more than theirs and drops their own there. Nothing moves players to a gun.
+Event `weaponPickup` (actor, target = whose gun, detail "taken|dropped"); match-runner
+`floorAfterRound` updates what lies on each body before the post-round pickups. 0.029–0.030 pickups
+per kill mid-round; post-round pickups fell from 0.031 to 0.026 of player-rounds.
+
+**Ult orbs.** `setup.ts` `loadUltOrbs(map)` reads `<map>.objects.json` `ultOrbs` (`position {x,y,z}` or
+`x,y,z`, optional `id`); the floor-items step emits `orbPickup` for the first player in reach (once per
+orb per round) and settlement already credits a point per event. Every map's `ultOrbs` is empty today,
+so this is a no-op until maps data adds the points.
+
+**Gate** (real rosters, 160 matches, defaults; `docs/research/SIM_ECONOMY_V12_2026-11-24.json`):
+
+| | v1.1 1–160 | **v1.2 1–160** | v1.1 161–320 | **v1.2 161–320** |
+|---|---|---|---|---|
+| Original 8 | 8/8 | **8/8** | 7/8 | **7/8** (pistol 0.394, pre-buy) |
+| Judged cells | 13/15 | **13/15** | 13/15 | **13/15** |
+| Elimination (≥ 0.674) | 0.677 | 0.681 | 0.682 | 0.687 |
+| Defuse (≤ 0.200) | 0.194 | 0.191 | 0.190 | 0.176 |
+| Attack | 0.503 | 0.512 | 0.489 | 0.503 |
+| Force vs full (VCT 0.340) | 0.291 | 0.346 | 0.328 | 0.368 |
+
+Failing cells: 1–160 semi-vs-eco 0.995 and eco-vs-semi 0.022 (EC-04 eco play); 161–320 semi-vs-semi
+0.551 (tolerance 0.50 ± 0.05; inside the real CI) and pistol.
+
 ## Match economy v1.1 — on the recalibrated engine (2026-11-23)
 
 Main `4f72e64` (engine-truth: damage carryover 0.4, positional smoke/plant, post-plant guards) passes the

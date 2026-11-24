@@ -34,6 +34,7 @@ import {
   makeSimPolicies,
   toSimPolicies,
   NO_ABILITIES,
+  loadUltOrbs,
 } from "./setup.js";
 import { loadAbilityCatalog, agentAbilityLoadout, ASCENT_COMP } from "./abilities.js";
 import {
@@ -43,6 +44,7 @@ import {
   settleRound,
   saveWorth,
   postRoundPickups,
+  floorAfterRound,
   halfReset,
   overtimeReset,
   ultCost,
@@ -155,6 +157,12 @@ export interface MatchConfig {
   readonly buyPhase?: boolean;
   /** Per-player movement style (round-simulator movement-style.ts). Default true. */
   readonly movementStyle?: boolean;
+  /**
+   * Floor items in the round (round-simulator floor-items.ts): dropped guns picked up mid-round, and
+   * ultimate orbs at the map's `<map>.objects.json` `ultOrbs` points (none yet on any map → no orbs).
+   * Default true; false → guns are picked up only after the round, as before.
+   */
+  readonly floorItems?: boolean;
   /**
    * Deploy agent abilities (game-data comp + ability catalog). Default false. WIP: abilities
    * deploy correctly and bring opening-duel to the real rate (~0.45), but the policy does not yet
@@ -378,6 +386,7 @@ export class MatchEngine {
   private readonly sq: ReturnType<typeof makeSpatialQuery>;
   /** The map's tactical data, derived from its geometry (sites, entries, aims, defender starts). */
   private readonly tactics: ReturnType<typeof loadTactics>;
+  private readonly orbs: ReturnType<typeof loadUltOrbs>;
   private readonly maxRounds: number;
   private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
   private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
@@ -410,6 +419,7 @@ export class MatchEngine {
     this.spatial = loadSpatial(geometryOf(config));
     this.sq = makeSpatialQuery(this.spatial);
     this.tactics = loadTactics(geometryOf(config), this.spatial);
+    this.orbs = loadUltOrbs(geometryOf(config));
     this.maxRounds = config.maxRounds ?? 60;
     const ro = config.rosters ?? {};
     this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5, ro.A), B: rosterSkills(config.teamB.id, 5, ro.B) };
@@ -637,7 +647,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle !== false, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle !== false, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);
@@ -674,7 +684,7 @@ export class MatchEngine {
     const endZone = new Map(out.players.map((p) => [p.id, p.endZoneId]));
     const picked = postRoundPickups({
       kills: out.events.filter((e) => e.kind === "kill" && e.target).map((e) => ({ ...(e.actor ? { killer: String(e.actor) } : {}), victim: String(e.target), ...(e.zoneId ? { zoneId: e.zoneId } : {}) })),
-      startWeapon, survivors, endZone,
+      startWeapon: floorAfterRound(startWeapon, out.events), survivors, endZone,
     });
     const pickedBy = new Map(picked.map((p) => [p.playerId, p.weapon]));
     const orbs = (id: string) => out.events.filter((e) => (e.kind as string) === "orbPickup" && e.actor === id).length;

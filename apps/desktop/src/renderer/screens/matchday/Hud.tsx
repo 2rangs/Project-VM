@@ -6,15 +6,23 @@ import type { MatchSummary, SessionState } from '../../../shared/ipc.ts';
 import type { TFn } from '../../i18n/index.tsx';
 import type { Frame, FrameUnit } from '../../matchday/frame.ts';
 import type { MonitorStatus } from '../../matchday/monitor.ts';
-import { formatClock, roundMarks } from '../../matchday/monitor.ts';
+import { formatClock, planOf, roundMarks } from '../../matchday/monitor.ts';
+import { duelCards } from '../../matchday/duels.ts';
+import { parseCall, type CallLabel } from '../../decisions.ts';
 import { isAlive, teamPlayers, type MatchTimeline, type RoundTimeline, type TeamSlot } from '../../matchday/timeline.ts';
 import { TEMPOS, type Tempo, type ViewMode } from '../../matchday/prefs.ts';
 import { agentOfSlot } from '../../matchday/roster.ts';
+import { buyReason, dropsOf, playerEco, type PlayerEco } from '../../matchday/economy.ts';
 import { Icon, ROLE_ICON, STATE_ICON, type IconName } from './Icons.tsx';
 
 export type NameOf = (id: string) => string;
 export type ZoneName = (id: string | null | undefined) => string;
 const other = (t: TeamSlot): TeamSlot => (t === 'A' ? 'B' : 'A');
+/** Engine id of a team's roster slot in the round on screen (atk3 / def3). */
+function playerId(round: RoundTimeline | null, team: TeamSlot, slot: number): string {
+  const prefix = round && round.attacker === team ? 'atk' : 'def';
+  return `${prefix}${slot}`;
+}
 
 /** One line describing what a player is doing, for roster rows and monitor captions. */
 export function statusText(t: TFn, s: MonitorStatus, zoneName: ZoneName, nameOf: NameOf): string {
@@ -140,6 +148,50 @@ function buyLine(t: TFn, round: RoundTimeline | null, team: TeamSlot): ReactNode
   return <><span className={`mdx-buy buy-${buy.tier}`}>{t(`buy.${buy.tier}`)}</span> {buy.weapon}</>;
 }
 
+/** Weapon + where it came from + (for our players) what they have to spend, as one compact cell. */
+function EcoCell({ t, eco, weapon, alive, nameOfSlot, kills }: { t: TFn; eco: PlayerEco | null; weapon: string; alive: boolean; nameOfSlot: (slot: number) => string; kills: number }) {
+  const src = eco?.source;
+  const tag = src === 'kept' ? t('mdx.eco.kept') : src === 'dropped' ? t('mdx.eco.dropped', { name: eco!.droppedBySlot ? nameOfSlot(eco!.droppedBySlot) : '?' }) : src === 'bought' ? t('mdx.eco.bought') : '';
+  return (
+    <span className="mdx-row-side">
+      <span className="mdx-weapon" title={tag}>
+        {alive ? <>{weapon}{tag && <em className={`mdx-ecotag ${src}`}>{tag}</em>}</> : <Icon name="dead" size={11} />}
+      </span>
+      {eco ? (
+        <span className="mdx-k mdx-eco" title={t('mdx.eco.tip', { spent: eco.spent, util: eco.utility, armor: eco.armor })}>
+          <Icon name="credits" size={9} />{eco.creditsBefore.toLocaleString()}
+          {eco.ultBefore > 0 && <span className="mdx-ultpts"><Icon name="ult" size={9} />{eco.ultBefore}</span>}
+          {kills > 0 && <b>{t('mdx.kills', { n: kills })}</b>}
+        </span>
+      ) : <span className="mdx-k">{kills > 0 ? t('mdx.kills', { n: kills }) : ''}</span>}
+    </span>
+  );
+}
+
+/** Why our team bought what it did (the plan, the call that forced it, the alternative it beat), and who got a dropped weapon. */
+export function BuyReasonPanel({ t, frame, nameOf }: { t: TFn; frame: Frame | null; nameOf: NameOf }) {
+  const round = frame?.round;
+  const buy = round?.summary?.buys[frame!.team];
+  const reason = buyReason(buy);
+  if (!round || !reason) return null;
+  const drops = dropsOf(buy);
+  const slotName = (slot: number) => nameOf(`${round.players.find((p) => p.team === frame!.team)?.id.replace(/\d+$/, '') ?? 'atk'}${slot}`);
+  return (
+    <div className="mdx-intel mdx-buyreason" data-testid="buy-reason">
+      <div className="mdx-feedhead"><i>//</i>{t('mdx.buy')}</div>
+      <p className="mdx-buyline"><b>{t(`mdx.plan.${reason.plan}`)}</b>
+        {reason.loadoutValue != null && <span>{t('mdx.buy.value', { n: reason.loadoutValue.toLocaleString() })}</span>}
+        {reason.vctTier && <span className={`mdx-buy buy-${reason.tier}`}>{reason.vctTier}</span>}
+      </p>
+      {reason.call && <p className="mdx-buynote call">{t('mdx.buy.call', { call: t(`oecon.${reason.call}`) })}</p>}
+      {reason.chosen && reason.beat && (
+        <p className="mdx-buynote" title={t('mdx.buy.beat.tip')}>{t('mdx.buy.beat', { a: t(`mdx.plan.${reason.chosen.plan}`), av: reason.chosen.value.toFixed(2), b: t(`mdx.plan.${reason.beat.plan}`), bv: reason.beat.value.toFixed(2) })}</p>
+      )}
+      {drops.length > 0 && <p className="mdx-buynote">{drops.map((d) => t('mdx.buy.drop', { from: slotName(d.from), to: slotName(d.to), weapon: d.weapon })).join(' · ')}</p>}
+    </div>
+  );
+}
+
 export function AllyPanel({ t, frame, teamName, nameOf, zoneName, bank, onPick, focusId, children }: {
   t: TFn; frame: Frame | null; teamName: string; nameOf: NameOf; zoneName: ZoneName;
   bank: { credits: number; ultPoints: number } | null; onPick?: (u: FrameUnit) => void; focusId?: string | null; children?: ReactNode;
@@ -158,10 +210,7 @@ export function AllyPanel({ t, frame, teamName, nameOf, zoneName, bank, onPick, 
               <span className="mdx-nameline"><b className="mdx-name">{nameOf(u.id)}</b><AgentTag slot={u.slot} t={t} /></span>
               <span className="mdx-status"><Icon name={STATE_ICON[u.status.state] ?? 'hold'} size={11} />{statusText(t, u.status, zoneName, nameOf)}</span>
             </span>
-            <span className="mdx-row-side">
-              <span className="mdx-weapon">{u.pose.alive ? weapon : <Icon name="dead" size={11} />}</span>
-              <span className="mdx-k">{u.kills > 0 ? t('mdx.kills', { n: u.kills }) : ''}</span>
-            </span>
+            <EcoCell t={t} eco={playerEco(round?.summary ?? null, round?.prevSummary ?? null, frame!.team, u.slot, !!frame?.situation.over)} weapon={playerEco(round?.summary ?? null, round?.prevSummary ?? null, frame!.team, u.slot, false)?.weapon ?? weapon} alive={u.pose.alive} nameOfSlot={(sl) => nameOf(playerId(round, frame!.team, sl))} kills={u.kills} />
             {(u.status.state === 'planting' || u.status.state === 'defusing') && <i className="mdx-progress" style={{ width: `${Math.round((u.status.progress ?? 0) * 100)}%` }} />}
           </li>
         ))}
@@ -198,7 +247,7 @@ export function EnemyPanel({ t, frame, teamName, nameOf, zoneName, bank, childre
                 <span className="mdx-nameline"><b className="mdx-name">{nameOf(p.id)}</b><AgentTag slot={p.slot} t={t} /></span>
                 <span className="mdx-status">{intel}</span>
               </span>
-              <span className="mdx-row-side"><span className="mdx-weapon">{alive ? weapon : <Icon name="dead" size={11} />}</span></span>
+              <span className="mdx-row-side"><span className="mdx-weapon">{alive ? (round?.summary?.buys[enemy].players?.[p.slot - 1]?.weapon ?? weapon) : <Icon name="dead" size={11} />}</span></span>
             </li>
           );
         })}
@@ -239,6 +288,9 @@ export function KillFeed({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; fr
   );
 }
 
+const SOUND_KEYS: Record<string, string> = { footstep: 'footstep', gunfire: 'gunfire', landing: 'landing', spikeDefuse: 'defuse', spikePlant: 'plant', abilityCast: 'ability' };
+const SOUND_ICONS: Record<string, IconName> = { footstep: 'footstep', gunfire: 'gunfire', landing: 'footstep', spikeDefuse: 'spike', spikePlant: 'spike', abilityCast: 'ult' };
+
 /** What the team knows about the enemy right now: contacts, remembered sightings, sound cues. */
 export function IntelPanel({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; frame: Frame | null; nameOf: NameOf; zoneName: ZoneName; limit?: number }) {
   const rows: Array<{ key: string; cls: string; icon: IconName; text: string; right: string }> = [];
@@ -247,7 +299,8 @@ export function IntelPanel({ t, frame, nameOf, zoneName, limit = 6 }: { t: TFn; 
     for (const g of frame.ghosts) rows.push({ key: `g${g.id}`, cls: 'enemy', icon: 'lastSeen', text: t('mdx.intel.row.ghost', { name: nameOf(g.id), s: Math.round(g.ageMs / 1000) }), right: zoneName(g.zone) });
     for (const s of frame.sounds) {
       if (s.kind !== 'footstep' && s.ageMs > 3000) continue;
-      rows.push({ key: `a${s.zone}${s.kind}`, cls: 'sound', icon: s.kind === 'gunfire' ? 'gunfire' : 'footstep', text: t(s.kind === 'footstep' ? 'mdx.sound.footstep' : s.kind === 'gunfire' ? 'mdx.sound.gunfire' : 'mdx.sound.other'), right: zoneName(s.zone) });
+      const label = t(`mdx.sound.${SOUND_KEYS[s.kind] ?? 'other'}`);
+      rows.push({ key: `a${s.zone}${s.kind}`, cls: s.masked ? 'sound masked' : 'sound', icon: SOUND_ICONS[s.kind] ?? 'footstep', text: s.masked ? `${label} · ${t('mdx.sound.masked')}` : label, right: zoneName(s.zone) });
     }
   }
   return (
@@ -295,16 +348,47 @@ export function Banners({ t, frame, nameOf, viewTeam }: { t: TFn; frame: Frame |
   );
 }
 
+/** A plan call in the same words the Review uses ("A 실행", "A 사이트 커밋", "… (슬로우)"). */
+export function callText(t: TFn, text: string): string {
+  const c: CallLabel = parseCall(text);
+  if (c.kind === 'commit') return t('rev.dec.call.commit', { site: c.site });
+  if (c.kind === 'raw') return c.text;
+  const key = `ostrat.${c.id}`; const label = t(key); const base = label === key ? c.id : label;
+  return c.slow ? t('rev.dec.call.slow', { call: base }) : base;
+}
+
+/** Duel cards: for each fight of the round, who saw first, who was pre-aimed, who was crossfired, what the angle cost. */
+export function DuelCards({ t, round, viewTeam, nameOf, zoneName }: { t: TFn; round: RoundTimeline; viewTeam: TeamSlot; nameOf: NameOf; zoneName: ZoneName }) {
+  const cards = duelCards(round.summary?.engagement, round.startMs, round.attacker, viewTeam);
+  if (cards.length === 0) return <p className="mdx-duel-none" data-testid="duel-cards-none">{t('mdx.duel.none')}</p>;
+  const side = (f: typeof cards[number]['ours']) => [
+    f.preAim && t('mdx.duel.preaim'), f.moving && t('mdx.duel.moving'), f.crossfire && t('mdx.duel.crossfire'), f.info && t('mdx.duel.info'),
+    f.angleDelayMs != null && f.angleDelayMs > 0 && t('mdx.duel.angle', { ms: Math.round(f.angleDelayMs) }), f.flashedMs > 0 && t('mdx.duel.flashed'),
+  ].filter(Boolean).join(' · ') || '—';
+  return (
+    <ol className="mdx-duels" data-testid="duel-cards">
+      {cards.slice(0, 8).map((c, i) => (
+        <li key={i} className={c.winner ?? ''}>
+          <header><span>{formatClock(c.tMs - round.startMs)}</span><b className="ally">{nameOf(c.ours.id)}</b><i>vs</i><b className="enemy">{nameOf(c.theirs.id)}</b><em>{zoneName(c.zone)} · {c.distanceM}m</em></header>
+          <p className="first">{t(`mdx.duel.first.${c.firstSight}`)}{c.winner && <span className={c.winner}>{t(`mdx.duel.won.${c.winner}`)}</span>}</p>
+          <p><b className="ally">{nameOf(c.ours.id)}</b> {side(c.ours)}</p>
+          <p><b className="enemy">{nameOf(c.theirs.id)}</b> {side(c.theirs)}</p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /** Plan data a round may carry (RoundRecord.decisions, when the bridge passes it through). */
-interface PlanLike { opening?: string | null; strategy?: string | null; revisions?: ReadonlyArray<{ atMs: number; from: string; to: string; reason?: string }> }
+interface PlanLike { opening?: string | null; strategy?: string | null; feint?: string | null; revisions?: ReadonlyArray<{ atMs: number; from: string; to: string; reason?: string }> }
 
 /**
  * Between-rounds summary: shown only once playback has reached the end of the round. Result and
  * reason, kills, economy after the round, our own plan changes (never the opponent's), and the
  * way forward.
  */
-export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel, onNext, nextDisabled }: {
-  t: TFn; round: RoundTimeline; viewTeam: TeamSlot; score: Record<TeamSlot, number>; teams: MatchSummary['teams']; hint: string | null;
+export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel, onNext, nextDisabled, nameOf, zoneName }: {
+  t: TFn; round: RoundTimeline; viewTeam: TeamSlot; score: Record<TeamSlot, number>; teams: MatchSummary['teams']; hint: string | null; nameOf: NameOf; zoneName: ZoneName;
   nextLabel: string | null; onNext: () => void; nextDisabled: boolean;
 }) {
   const sum = round.summary;
@@ -324,12 +408,16 @@ export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel,
         <div><dt>{t('mdx.sum.buys')}</dt><dd>{t(`buy.${sum.buys[viewTeam].tier}`)} / {t(`buy.${sum.buys[enemy].tier}`)}</dd></div>
         {plan && (
           <div className="wide"><dt>{t('mdx.sum.plan')}</dt>
-            <dd>{plan.opening ?? '—'}{plan.strategy && plan.strategy !== plan.opening ? ` → ${plan.strategy}` : ''}
-              {(plan.revisions ?? []).map((r, i) => <span key={i} className="mdx-result-rev">{formatClock(r.atMs)} {r.from} → {r.to}{r.reason ? ` (${r.reason})` : ''}</span>)}
+            <dd>{callText(t, plan.opening ?? '—')}{plan.strategy && plan.strategy !== plan.opening ? ` → ${callText(t, plan.strategy)}` : ''}
+              {plan.feint && <span className="mdx-result-rev">{t('mdx.plan.feint', { site: plan.feint.replace(/^([a-z])-.*/, (_m, c) => c.toUpperCase()) })}</span>}
+              {(plan.revisions ?? []).map((r, i) => <span key={i} className="mdx-result-rev">{formatClock(r.atMs)} {callText(t, r.from)} → {callText(t, r.to)}{r.reason ? ` (${r.reason})` : ''}</span>)}
             </dd>
           </div>
         )}
       </dl>
+      {round.summary?.engagement !== undefined && (
+        <details className="mdx-duelbox"><summary>{t('mdx.duel.title')}</summary><DuelCards t={t} round={round} viewTeam={viewTeam} nameOf={nameOf} zoneName={zoneName} /></details>
+      )}
       {hint && <span className="mdx-result-hint">{hint}</span>}
       {nextLabel && <button className="mdx-btn primary" onClick={onNext} disabled={nextDisabled} data-testid="summary-next"><Icon name="play" size={13} />{nextLabel}</button>}
     </div>
@@ -393,6 +481,10 @@ export function BottomBar({
           <div className="mdx-scrub">
             <i className="mdx-scrub-fill" style={{ width: round ? pct(tMs) : '0%' }} />
             {timeouts.map((team) => <i key={team} className={`mdx-tick timeout ${team === viewTeam ? 'ally' : 'enemy'}`} style={{ left: 0 }} title={t('mdx.timeout')} />)}
+            {/* our plan's mid-round revisions (our team only), revealed as they are reached */}
+            {round && planOf(round, viewTeam)?.marks.filter((m) => m.tMs <= watchedTo).map((m, i) => (
+              <i key={`pl${i}`} className="mdx-tick plan" style={{ left: pct(m.tMs) }} title={`${callText(t, m.from)} → ${callText(t, m.to)}${m.reason ? ` (${m.reason})` : ''}`} />
+            ))}
             {/* events appear on the timeline as they are reached — the future stays unmarked */}
             {round && roundMarks(round).filter((m) => m.tMs <= watchedTo && m.kind !== 'end').map((m, i) => (
               <i key={i} className={`mdx-tick ${m.kind === 'kill' ? (m.team === viewTeam ? 'ally' : 'enemy') : m.kind === 'plant' ? 'spike' : 'defuse'}`} style={{ left: pct(m.tMs) }} />

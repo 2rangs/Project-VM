@@ -178,8 +178,8 @@ async function main(): Promise<void> {
         // The team's own call (pistol / full / half / force / eco / bonus) and what it bought.
         plans: { attack: r.buys[atk].tier, defense: r.buys[def].tier },
         econ: {
-          attack: { value: r.buys[atk].loadoutValue, drops: r.buys[atk].drops, pickups: r.pickups.filter((p) => p.team === atk).length },
-          defense: { value: r.buys[def].loadoutValue, drops: r.buys[def].drops, pickups: r.pickups.filter((p) => p.team === def).length },
+          attack: { value: r.buys[atk].loadoutValue, bank: r.buys[atk].players.reduce((s, b) => s + b.creditsAfter, 0), drops: r.buys[atk].drops, pickups: r.pickups.filter((p) => p.team === atk).length, roundPickups: r.events.filter((e) => (e.kind as string) === "weaponPickup" && String(e.actor).startsWith("atk")).length },
+          defense: { value: r.buys[def].loadoutValue, bank: r.buys[def].players.reduce((s, b) => s + b.creditsAfter, 0), drops: r.buys[def].drops, pickups: r.pickups.filter((p) => p.team === def).length, roundPickups: r.events.filter((e) => (e.kind as string) === "weaponPickup" && String(e.actor).startsWith("def")).length },
         },
         events: toSimGameEvents({ events: r.events, winner: r.winnerSide, reason: r.reason } as never),
       });
