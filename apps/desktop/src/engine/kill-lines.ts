@@ -1,7 +1,7 @@
 // Kills / deaths per player of one series game, from the engine's kill events. In a round the
 // attacking slot's players are `atk1..5` and the defenders `def1..5`, in roster order, so `atk3`
-// is index 2 of the attacking team's five. Used by career-sim.mts and series-session.mts.
-import type { SeriesGameResult } from '../../../packages/match-runner/src/index.ts';
+// is index 2 of the attacking team's five. Used by career-sim.ts and series-session.ts.
+import type { SeriesGameResult } from '../../../../packages/match-runner/src/index.ts';
 
 export function killLines(g: SeriesGameResult, lineupA: readonly string[], lineupB: readonly string[]): Record<string, { k: number; d: number }> {
   const out: Record<string, { k: number; d: number }> = {};
@@ -16,7 +16,7 @@ export function killLines(g: SeriesGameResult, lineupA: readonly string[], lineu
       if (!m) return null;
       return lineup[m[1] === 'atk' ? atkTeam : defTeam][Number(m[2]) - 1] ?? null;
     };
-    for (const e of r.replay.events as Array<{ kind?: string; killer?: string | null; victim?: string }>) {
+    for (const e of r.replay.events as ReadonlyArray<{ kind?: string; killer?: string | null; victim?: string }>) {
       if (e.kind !== 'kill') continue;
       const k = who(e.killer); const v = who(e.victim);
       if (k && out[k]) out[k].k += 1;

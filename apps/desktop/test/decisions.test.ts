@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import {
   adaptationSummary, confidenceLevel, formatClock, matchNotes, parseCall, roundNote, siteOfZone,
 } from '../src/renderer/decisions.ts';
+import { parseReason, seatOf } from '../src/renderer/decision-reasons.ts';
 import { mergeMatch, type RawMatch } from '../src/shared/match-merge.ts';
 import type { MatchRoundSummary, MatchSummary, OpponentRead, RoundDecisions, TendencyEstimate } from '../src/shared/ipc.ts';
 
@@ -103,6 +104,8 @@ test('a revision keeps its round clock, both calls and the engine reason verbati
     from: { kind: 'strategy', id: 'defaultHold', slow: false },
     to: { kind: 'strategy', id: 'stackB', slow: false },
     reason: 'enemies reading B — rotate/stack B',
+    // an older engine's sentence the parser no longer knows: kept verbatim
+    why: { kind: 'raw', text: 'enemies reading B — rotate/stack B' },
   }]);
   assert.equal(n.revised, true);
   assert.equal(n.feint, false);
@@ -289,4 +292,75 @@ test('mergeMatch carries decisions and the pre-match options into the summary th
   assert.equal('decisions' in summary.rounds[1], false);
   assert.deepEqual(summary.options, { opponentMemory: false, minThrowRates: { teams: { b: 0.01 } } });
   assert.equal(matchNotes(summary).length, 1);
+});
+
+// ── plan-change reasons (engine sentences → parts the UI localises) ──
+test('parseCall: defensive rotations and the stand-down', () => {
+  assert.deepEqual(parseCall('stack A ×3'), { kind: 'rotate', mode: 'stack', site: 'A', count: 3 });
+  assert.deepEqual(parseCall('support B ×1'), { kind: 'rotate', mode: 'support', site: 'B', count: 1 });
+  assert.deepEqual(parseCall('hold'), { kind: 'hold' });
+  assert.deepEqual(parseCall('cExecute'), { kind: 'strategy', id: 'cExecute', slow: false });
+  assert.deepEqual(parseCall('default (slow)'), { kind: 'strategy', id: 'default', slow: true });
+});
+
+test('parseReason recognises every sentence the engine writes today', () => {
+  assert.deepEqual(parseReason('spike planted — retake call'), { kind: 'spikePlanted' });
+  assert.deepEqual(parseReason('clock — commit with the information gathered'), { kind: 'clockCommit' });
+  assert.deepEqual(parseReason('A is stacked — swing to B'), { kind: 'siteStacked', from: 'A', to: 'B' });
+  assert.deepEqual(parseReason('C is stacked — swing to A'), { kind: 'siteStacked', from: 'C', to: 'A' });
+  assert.deepEqual(parseReason('player advantage 4v2 — hit while they are short'), { kind: 'playerAdvantage', us: 4, them: 2 });
+  assert.deepEqual(parseReason('man count even again (3v3) — play it out'), { kind: 'evenAgain', us: 3, them: 3 });
+  assert.deepEqual(parseReason('round lost 1v3 before the plant (Lanchester 0.04 < 0.1) — save'), { kind: 'roundLost', us: 1, them: 3, chance: 4, floor: 10 });
+  assert.deepEqual(parseReason('attack is 1v4 down with nothing to play for — def4 leaves the angle to chase the exit kill'), { kind: 'exitChase', atk: 1, def: 4, player: 'def4' });
+  assert.deepEqual(seatOf('def4'), { side: 'defense', n: 4 });
+  assert.deepEqual(seatOf('atk1'), { side: 'attack', n: 1 });
+  assert.equal(seatOf('player_9'), null);
+});
+
+test('parseReason: defensive rotation evidence, odds and call', () => {
+  assert.deepEqual(parseReason('3 runners heard on B, no contact on A — P(hit B) 0.62, fake 0.11 — rotate 2'), {
+    kind: 'rotation', site: 'B', n: 3, evidence: 'heard', contact: false,
+    elsewhere: [{ kind: 'none', site: 'A' }], hit: 62, fake: 11, rotate: 2,
+  });
+  assert.deepEqual(parseReason('1 runner heard on A, 2 on B — P(hit A) 0.31, fake 0.40 — stand down, hold'), {
+    kind: 'rotation', site: 'A', n: 1, evidence: 'heard', contact: false,
+    elsewhere: [{ kind: 'count', site: 'B', n: 2 }], hit: 31, fake: 40, rotate: 0,
+  });
+  assert.deepEqual(parseReason('5 runners heard on A with contact, no contact on B — P(hit A) 0.90, fake 0.02 — rotate 3'), {
+    kind: 'rotation', site: 'A', n: 5, evidence: 'heard', contact: true,
+    elsewhere: [{ kind: 'none', site: 'B' }], hit: 90, fake: 2, rotate: 3,
+  });
+  // three sites: two "elsewhere" clauses, one of them a fight
+  assert.deepEqual(parseReason('2 seen on C, contact on A, no contact on B — P(hit C) 0.55, fake 0.20 — rotate 1'), {
+    kind: 'rotation', site: 'C', n: 2, evidence: 'seen', contact: false,
+    elsewhere: [{ kind: 'contact', site: 'A' }, { kind: 'none', site: 'B' }], hit: 55, fake: 20, rotate: 1,
+  });
+});
+
+test('parseReason: an unknown or malformed sentence is kept verbatim, never dropped', () => {
+  for (const text of ['some new engine reason', '', '3 runners heard on B, weird clause — P(hit B) 0.62, fake 0.11 — rotate 2', '3 runners heard on B — P(hit A) 0.62, fake 0.11 — rotate 2']) {
+    assert.deepEqual(parseReason(text), { kind: 'raw', text });
+  }
+});
+
+test('a revision carries both the engine sentence and its parsed form', () => {
+  const d: RoundDecisions = {
+    plans: {
+      A: { opening: 'aExecute', strategy: 'aExecute', objective: 'a-site', feint: null, revisions: [] },
+      B: {
+        opening: 'defaultHold', strategy: 'retake', objective: null, feint: null,
+        revisions: [
+          { atMs: 71000, from: 'defaultHold', to: 'support A ×2', reason: '4 runners heard on A, no contact on B — P(hit A) 0.71, fake 0.08 — rotate 2' },
+          { atMs: 52000, from: 'stackA', to: 'retake', reason: 'spike planted — retake call' },
+        ],
+      },
+    },
+    opponentReadBefore: { A: null, B: null },
+    observed: { plantSite: 'A', firstContactSite: 'A', defendersMet: { A: 2 } },
+  };
+  const revs = roundNote(round(4, 'A', 'A', d))!.teams.B.plan!.revisions;
+  assert.deepEqual(revs[0].to, { kind: 'rotate', mode: 'support', site: 'A', count: 2 });
+  assert.equal(revs[0].reason, '4 runners heard on A, no contact on B — P(hit A) 0.71, fake 0.08 — rotate 2');
+  assert.equal(revs[0].why.kind, 'rotation');
+  assert.deepEqual(revs[1].why, { kind: 'spikePlanted' });
 });

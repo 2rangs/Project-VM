@@ -369,6 +369,8 @@ export function Banners({ t, frame, nameOf, viewTeam }: { t: TFn; frame: Frame |
 export function callText(t: TFn, text: string): string {
   const c: CallLabel = parseCall(text);
   if (c.kind === 'commit') return t('rev.dec.call.commit', { site: c.site });
+  if (c.kind === 'rotate') return t(`rev.dec.call.${c.mode}`, { site: c.site, n: c.count });
+  if (c.kind === 'hold') return t('rev.dec.call.hold');
   if (c.kind === 'raw') return c.text;
   const key = `ostrat.${c.id}`; const label = t(key); const base = label === key ? c.id : label;
   return c.slow ? t('rev.dec.call.slow', { call: base }) : base;

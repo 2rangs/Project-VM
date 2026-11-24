@@ -19,7 +19,8 @@ Contents: [Run](#run--build--verify) · [Screens](#screens--data-sources) ·
 ## Run / build / verify
 
 ```bash
-# once, at the repo root: the match runs from workspace source via tsx
+# once, at the repo root: the engine packages are bundled from workspace source at build time
+# (the tsx reference scripts and test:engine also need this install)
 pnpm install --frozen-lockfile
 cd apps/desktop
 npm install
@@ -31,22 +32,25 @@ npm run build                                 # → out/{main,preload,renderer}
 
 npm run test:unit                             # IPC contract, trace parser, i18n, match merge, round decisions, series view, navigation debug model (48)
 npm run test:matchday                         # live match view logic: graph, timeline, visibility, monitors, playback, blockout (29)
-npm run test:engine                           # desktop ↔ live engine contract: run-match.mts output, options, tracks + navigation trace (4)
+npm run build && npm run test:engine          # engine contract (run-match output, options, tracks) + bundled-engine determinism: bundle vs. tsx source, staged data (9)
+npm run package:mac                           # → dist/mac-arm64/PROJECT V.app (build + stage engine data + electron-builder + content check)
+npm run test:e2e:packaged                     # copies the .app out of the repo, plays a quick match, screenshots it
 npm run build && npm run test:e2e             # Playwright _electron E2E + screenshots (macOS / Windows: opens a real window)
 npm run build && xvfb-run -a npm run test:e2e # the same on Linux, headless
 npm run build && npm run test:e2e:series      # full Bo3 through the veto + Match Day, in Korean and English
 ```
 
 Notes:
-- The match itself does not run inside the app bundle. The main process spawns
-  `scripts/run-match.mts` (one-shot), `scripts/match-session.mts` (round by round) or
-  `scripts/series-session.mts` (series) with `npx tsx` from the repo root, so **Node 22 and the
-  repo-root install are needed at run time**, not only for tests.
+- The match engine runs **inside the app**: `@pv/match-runner` and everything under it are bundled
+  into `out/main/engine-host.js` and run in Electron utility processes (see "How a match reaches
+  the screen"). At run time the app needs **no tsx, no Node on PATH and no workspace install**;
+  in development it reads the engine's data files straight from the repository.
 - The shared `ReplayViewer` source lives in `../replay-viewer`; `react` / `pixi.js`
   are resolved from *this* app's `node_modules` (`resolve.dedupe` in
   `electron.vite.config.ts`, `paths` in `tsconfig.json`), so no install is needed there.
-- `test:engine` needs the repo-root install (`node_modules/.bin/tsx`) and skips with
-  a message without it. Run it after any engine change that touches `RoundRecord`.
+- `test:engine` needs the repo-root install (`node_modules/.bin/tsx`) and, for the determinism
+  half, a current `npm run build` (it **fails**, not skips, without the bundle). Run it after any
+  engine change: it proves the bundled engine and the tsx source path give the same bytes.
 - `test:e2e` needs Playwright, which is not a dependency of this app: set
   `PLAYWRIGHT_REQUIRE_BASE` to a directory whose `node_modules` has `playwright`
   (e.g. `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i playwright` in a temp dir; no
@@ -58,8 +62,8 @@ Notes:
   English: a first ban against the staff advice, the AI's replies, map 1 through Match Day in one
   go, map 2 round by round, a decider if needed, the summary — checks for sideways overflow at
   1280×720 and 1920×1080, and writes `docs/desktop-veto*.png` / `desktop-series-summary*.png`.
-- `test/review.test.ts` is not in `test:unit`: `src/renderer/data.ts` imports JSON
-  without an import attribute, which Node's test runner rejects (Vite is fine).
+- Heavy runs (every e2e, the packaged smoke test) go one at a time on the shared Mac:
+  `/Users/yi-rang/ProjectV-assets/tools/heavy-run.sh "<label>" -- npm run test:e2e`.
 
 Windows is the first target (README §07). Development and verification were on Linux
 (Electron under `xvfb` + SwiftShader) and, since 2026-11-20, on macOS. If Electron can't be
@@ -379,12 +383,18 @@ of the engine data (with/against the read, read right/wrong) are computed and
 documented in `decisions.ts`; everything else is shown as recorded. Matches from an
 engine without `decisions` (or the browser stub) show "판단 기록이 없습니다".
 
-**Not localised yet:** revision `reason` strings ("spike planted — retake call",
-"enemies reading B — rotate/stack B", …) are free English text built inside
-`@pv/team-engine` and are shown verbatim in both languages. Localising them needs
-the engine to emit a reason *key* (+ params) per revision; the UI would then map it
-through `ko.ts` / `en.ts`. Revision `from` / `to` are parsed on the desktop side
-(`parseCall`: strategy ids, the `" (slow)"` suffix, `"commit A|B"`) and are localised.
+**Plan-change reasons are localised by parsing.** The engine writes each revision's `reason` as
+an English sentence ("spike planted — retake call", "3 runners heard on B, no contact on A —
+P(hit B) 0.62, fake 0.11 — rotate 2", …). `src/renderer/decision-reasons.ts` (`parseReason`)
+recognises every sentence `@pv/team-engine` writes today — retake call, swing off a stacked site,
+clock commit, player advantage, save / un-save, exit-kill chase, and the defensive rotation with
+its evidence and odds — and the Review renders them from `rev.dec.reason.*` in Korean or English
+(probabilities as percentages; the engine sentence stays in the tooltip). A sentence the parser
+does not know is shown verbatim, so a new engine reason is never lost, only untranslated; add a
+case to `parseReason`, the keys to `ko.ts` / `en.ts`, and a line to `test/decisions.test.ts`.
+Revision `from` / `to` are parsed the same way (`parseCall`: strategy ids incl. the three-site
+`cExecute` / `stackC`, the `" (slow)"` suffix, `"commit A|B"`, `"stack A ×3"`, `"support B ×1"`,
+`"hold"`). If the engine later emits a reason key + params, both parsers can be dropped.
 
 ## Series · map veto
 
@@ -428,8 +438,8 @@ Flow:
 
 ![Series summary](docs/desktop-series-summary.png)
 
-Data path: `scripts/series-session.mts` (one long-lived tsx subprocess hosting
-`createSeriesSession`; line-delimited JSON like `match-session.mts`) ⇄ `src/main/series-host.ts`
+Data path: `src/engine/series-session.ts` (`createSeriesSession` behind a command handler, living
+in the `series` engine worker) ⇄ `src/main/series-host.ts`
 ⇄ IPC `pv:series:{start,cmd,stop}` ⇄ `src/renderer/series/useSeries.ts` → view logic
 `src/renderer/series/view.ts` (pure; `test/series-view.test.ts`) → `screens/series/*`. The host
 reports every game from **our seat** (our team is always slot A, whichever side it starts on), so
@@ -448,22 +458,73 @@ mid-series (the host keeps running, the screen state is not restored).
 ## How a match reaches the screen
 
 ```
-renderer (React)  ──IPC──▶  main process  ──spawn `npx tsx`──▶  scripts/*.mts  ──▶  @pv/match-runner (workspace source)
-      ▲                         │                                   │
-      └──── Replay + MatchSummary ◀── mergeMatch (src/shared/match-merge.ts) ◀── JSON on stdout / line protocol
+renderer (React) ──IPC──▶ main process ──utilityProcess──▶ out/main/engine-host.js (the whole engine, one bundle)
+      ▲                       │    EngineWorker: match · session · series · career      │
+      └── Replay + MatchSummary ◀── mergeMatch (src/shared/match-merge.ts) ◀── result (JSON text) + progress events
 ```
 
-- **One-shot map**: `scripts/run-match.mts` prints the whole match as JSON; `mergeMatch` puts every
-  round on one timeline (events, perception per real team) and keeps per-round extras (`decisions`,
-  `nav`) in the summary.
-- **Round by round**: `scripts/match-session.mts` is one long-lived subprocess speaking
-  line-delimited JSON (`state`, `callTimeout`, `setOrders`, `playNextRound`, `result`, `stop`).
-- **Series**: `scripts/series-session.mts` ⇄ `src/main/series-host.ts` (same protocol, plus the veto).
+- **Engine host** (`src/engine/host.ts` → `out/main/engine-host.js`): `@pv/match-runner`, every
+  engine package under it and the desktop's own projections, bundled by electron-vite into one
+  entry. No `npx tsx`, no cold start per match. `src/main/engine-worker.ts` runs it in Electron
+  **utility processes**, forked on first use and kept alive: one worker each for one-shot matches,
+  the interactive session, the series and the career background sim, so a day of AI fixtures never
+  holds up the user's own match. The engine is synchronous; a request that times out (or a session
+  disposed mid-round) ends its worker, and the next request forks a new one.
+- **Same contracts as before**: the renderer-facing IPC (`src/shared/ipc.ts`, `series.ts`,
+  `career.ts`) is unchanged; results cross the process boundary as JSON text, so payloads are what
+  the old stdout-JSON subprocesses produced.
+- **Map data is parsed once per process**: `packages/match-runner/src/setup.ts` caches the parsed
+  nav / vis / tactics / objects / weapons JSON; every match still builds its own engine from it.
+- **Where the engine finds its data** (`src/engine/root.ts`): the engine packages locate JSON via
+  `import.meta.url`; the build rewrites those to paths inside an *engine data root* shaped like the
+  repository — the repository itself in development, `Resources/engine` in the packaged app.
+- **What runs in the worker** (`src/engine/*.ts`, shared with the tsx reference scripts):
+  `run-match.ts` (a whole map; one progress event per round), `match-session.ts` (round by round:
+  `state`, `callTimeout`, `setOrders`, `playNextRound`, `result`), `series-session.ts` (the same
+  plus the veto), `career-sim.ts` (one AI series). `mergeMatch` then puts every round on one
+  timeline and keeps per-round extras (`decisions`, `nav`) in the summary.
+- **tsx reference path** (`scripts/run-match.mts`, `match-session.mts`, `series-session.mts`,
+  `career-sim.mts`): thin stdin/stdout wrappers around the same modules, run from workspace source.
+  The app no longer spawns them; they are the reference `test/engine-bundle.test.ts` compares the
+  bundle against, byte for byte, and remain usable from the command line.
 - **In-app round simulator** (`src/shared/real-sim.ts`, run in `src/main/sim-worker.ts` off the UI
-  thread): `@pv/round-simulator` bundled from source with scripted policies, used by the simulation
-  runner path; its data inputs are the JSON copies under `src/data/sim/` (zone graph, roadmap,
-  visibility table, coordinate system, weapons — see the README there).
-- Types shared by both sides: `src/shared/ipc.ts`.
+  thread): `@pv/round-simulator` bundled from source with scripted policies; the fallback if the
+  engine host fails, and the simulation-runner path. Its data inputs are the JSON copies under
+  `src/data/sim/` (zone graph, roadmap, visibility table, coordinate system, weapons).
+- Types shared by both sides: `src/shared/ipc.ts`; worker messages: `src/engine/protocol.ts`.
+
+## Packaged build (macOS)
+
+```bash
+npm run package:mac            # → dist/mac-arm64/PROJECT V.app
+npm run test:e2e:packaged      # copy it out of the repo, launch, play a quick match → docs/desktop-packaged.png
+```
+
+`package:mac` = `electron-vite build` → `scripts/stage-engine-data.mjs dist/engine-data` →
+`electron-builder --mac --dir` (`electron-builder.yml`) → `scripts/verify-package.mjs`. The
+result runs with no repository, no `node_modules` and no tsx:
+
+| In the app | From | Notes |
+|---|---|---|
+| `Resources/app.asar` → `out/{main,preload,renderer}` | electron-vite | main, preload, renderer, the engine host bundle. Renderer dependencies are bundled by Vite, so **no `node_modules` ships** |
+| `app.asar` → `test/fixtures/traces/*.json` | repo | Decision Debugger traces |
+| `Resources/engine/**` | `stage-engine-data.mjs` | the engine's data, laid out like the repo: `packages/game-data/data`, `packages/match-runner/data`, per map `datasets/spatial/<map>/{<map>.navgraph,<map>.nav,<map>.vis,<map>.tactics,<map>.objects,coordinate-system}.json`, `datasets/synthetic/setups` — 70 files, 5.6 MB |
+| `app.asar` → `assets/playercards/**` | repo (when present) | Kingdom Archives player cards: committed by the owner's decision and allowed in internal builds; **release review required** |
+
+**Never shipped** (and checked by `verify-package.mjs`, which fails the build otherwise): anything
+git-ignored — local map meshes (`assets/maps/*.glb`, `.blend`), loading banners
+(`assets/banners/`) — raw map extractions (`datasets/spatial/*/mesh`, `*.raw.json`,
+`*.source.json`, `*.authoring.json`), TypeScript sources and scripts. Engine data is copied from
+an **allowlist intersected with `git ls-files`**, so an untracked file cannot ship by accident, and
+`test/engine-bundle.test.ts` runs the engine from a staged copy alone, so a data file the engine
+starts to need without being allow-listed fails that test. A packaged app still *reads* a local
+map mesh from `~/ProjectV-assets/maps/glb` if the user has one there; it does not contain it.
+
+Status: **internal pre-release only.** The bundle is ad-hoc signed (`scripts/adhoc-sign.cjs`;
+enough to launch on the Mac that built it — Apple Silicon refuses unsigned code), not signed with a
+Developer ID and not notarised; the icon is Electron's default; Windows / Linux targets are not
+configured. The shipped map derivatives and player cards, and the runtime images from
+`valorant-api.com`, are the open licence questions of `docs/HANDOFF.md` §6.
 
 ## Security posture
 - `contextIsolation: true`, `nodeIntegration: false`; the renderer reaches
@@ -481,8 +542,8 @@ renderer (React)  ──IPC──▶  main process  ──spawn `npx tsx`──�
    before another map can be shown.
 3. **Options without UI** — per-player minimum throw rates, the team game plan (site leans),
    both-teams-human veto, and every `MatchConfig.tuning` field.
-4. **Not localised** — plan-revision reasons and the navigation view's "why" lines are engine
-   English in both languages.
+4. **Not localised** — the navigation view's "why" lines are engine English in both languages
+   (plan-change reasons are localised by parsing; see "Round decisions").
 5. **A series does not survive leaving the screen's route** mid-series (the host keeps running,
    the screen state is not restored).
 6. **`test:e2e` has fixed waits** in its interactive part (1.5 s after "next round"); it timed out

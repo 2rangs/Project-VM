@@ -1,64 +1,25 @@
 // Career mode in the main process:
-//  - CareerSimHost: one long-lived tsx subprocess (scripts/career-sim.mts) that plays a day's AI
-//    fixtures through @pv/match-runner, one series at a time, off the UI thread; progress is
-//    streamed to the renderer after each series.
+//  - CareerSimHost: one long-lived bundled engine worker (src/engine/career-sim.ts) that plays a
+//    day's AI fixtures through @pv/match-runner, one series at a time, off the UI thread; progress
+//    is streamed to the renderer after each series.
 //  - save slots: <userData>/saves/<slot>.json (the whole career as one JSON document), written
 //    atomically (temp file + rename) so a crash mid-write never corrupts a slot.
 import { app, ipcMain } from 'electron';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { createInterface, type Interface as ReadlineInterface } from 'node:readline';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { IPC } from '../shared/ipc.ts';
+import { EngineWorker } from './engine-worker.ts';
 import { SAVE_SLOTS, type CareerSimOutcome, type CareerSimProgress, type CareerSimRequest, type SaveSlot, type SaveSlotInfo } from '../shared/career.ts';
 
-interface Reply { id?: number; ok: boolean; error?: string; outcome?: CareerSimOutcome }
-
 class CareerSimHost {
-  private child: ChildProcessWithoutNullStreams | null = null;
-  private rl: ReadlineInterface | null = null;
-  private seq = 0;
-  private pending = new Map<number, { resolve: (r: Reply) => void; reject: (e: Error) => void }>();
+  // Its own worker: a day's fixtures take minutes and must not hold up the user's own match.
+  private readonly worker = new EngineWorker('career');
 
-  constructor(private readonly script: () => string, private readonly cwd: () => string) {}
-
-  private ensure(): ChildProcessWithoutNullStreams {
-    if (this.child) return this.child;
-    const child = spawn('npx', ['tsx', this.script()], { cwd: this.cwd(), env: process.env });
-    this.child = child;
-    this.rl = createInterface({ input: child.stdout });
-    this.rl.on('line', (line) => {
-      let msg: Reply;
-      try { msg = JSON.parse(line.trim()); } catch { return; }
-      if (typeof msg.id !== 'number') return;
-      const p = this.pending.get(msg.id);
-      if (!p) return;
-      this.pending.delete(msg.id);
-      if (msg.ok) p.resolve(msg); else p.reject(new Error(msg.error ?? 'career sim error'));
-    });
-    const fail = (e: Error) => { for (const p of this.pending.values()) p.reject(e); this.pending.clear(); };
-    child.on('exit', () => { fail(new Error('career sim ended')); if (this.child === child) { this.child = null; this.rl = null; } });
-    child.on('error', fail);
-    return child;
+  async series(req: CareerSimRequest, timeoutMs = 300000): Promise<CareerSimOutcome> {
+    return (await this.worker.request<{ outcome: CareerSimOutcome }>('career.series', req, { timeoutMs })).outcome;
   }
 
-  series(req: CareerSimRequest, timeoutMs = 300000): Promise<CareerSimOutcome> {
-    const child = this.ensure();
-    const id = ++this.seq;
-    return new Promise<CareerSimOutcome>((resolve, reject) => {
-      const timer = setTimeout(() => { if (this.pending.delete(id)) reject(new Error('career sim timed out')); }, timeoutMs);
-      this.pending.set(id, {
-        resolve: (r) => { clearTimeout(timer); resolve(r.outcome!); },
-        reject: (e) => { clearTimeout(timer); reject(e); },
-      });
-      child.stdin.write(JSON.stringify({ id, cmd: 'series', req }) + '\n');
-    });
-  }
-
-  dispose(): void {
-    if (this.child) { try { this.child.stdin.write(JSON.stringify({ id: ++this.seq, cmd: 'stop' }) + '\n'); } catch { /* */ } try { this.child.kill(); } catch { /* */ } }
-    this.child = null; this.rl?.close(); this.rl = null;
-  }
+  dispose(): void { this.worker.kill('career sim disposed'); }
 }
 
 function savesDir(): string { return process.env.PV_SAVES_DIR ?? path.join(app.getPath('userData'), 'saves'); }
@@ -76,8 +37,8 @@ function metaOf(text: string): SaveSlotInfo['meta'] {
   } catch { return null; }
 }
 
-export function registerCareerIpc(opts: { script: () => string; cwd: () => string }): () => void {
-  const host = new CareerSimHost(opts.script, opts.cwd);
+export function registerCareerIpc(): () => void {
+  const host = new CareerSimHost();
   /** One batch at a time; a second request waits for the first. */
   let queue: Promise<unknown> = Promise.resolve();
 

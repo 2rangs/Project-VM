@@ -11,6 +11,7 @@ import type {
   MatchRoundSummary, MatchSummary, OpponentRead, PlanSummary, RoundObserved,
   SiteKey, TeamSlot, TendencyEstimate,
 } from '../shared/ipc.ts';
+import { parseReason, type ReasonLabel } from './decision-reasons.ts';
 
 export type Side = 'attack' | 'defense';
 
@@ -38,17 +39,24 @@ export function confidenceLevel(confidence: number): ConfidenceLevel {
 // default commits as "midControl (slow)" → "commit B". Parse what we recognise so it
 // can be localised; anything else is shown raw.
 const STRATEGY_IDS = new Set([
-  'default', 'aExecute', 'bExecute', 'midControl', 'fakeAtoB', 'fakeBtoA', 'lurkDefault', 'save',
-  'defaultHold', 'aggroPush', 'stackA', 'stackB', 'retake',
+  'default', 'aExecute', 'bExecute', 'cExecute', 'midControl', 'fakeAtoB', 'fakeBtoA', 'lurkDefault', 'save',
+  'defaultHold', 'aggroPush', 'stackA', 'stackB', 'stackC', 'retake',
 ]);
 export type CallLabel =
   | { kind: 'strategy'; id: string; slow: boolean }
   | { kind: 'commit'; site: string }
+  /** A defensive rotation: everyone available stacks the site, or `count` players support it. */
+  | { kind: 'rotate'; mode: 'stack' | 'support'; site: string; count: number }
+  /** The rotation is stood down: back to holding. */
+  | { kind: 'hold' }
   | { kind: 'raw'; text: string };
 
 export function parseCall(text: string): CallLabel {
   const commit = /^commit ([A-Za-z])$/.exec(text);
   if (commit) return { kind: 'commit', site: commit[1].toUpperCase() };
+  const rotate = /^(stack|support) ([A-Z]) ×(\d+)$/.exec(text);
+  if (rotate) return { kind: 'rotate', mode: rotate[1] as 'stack' | 'support', site: rotate[2], count: Number(rotate[3]) };
+  if (text === 'hold') return { kind: 'hold' };
   const slow = / \(slow\)$/.test(text);
   const id = slow ? text.replace(/ \(slow\)$/, '') : text;
   return STRATEGY_IDS.has(id) ? { kind: 'strategy', id, slow } : { kind: 'raw', text };
@@ -83,7 +91,13 @@ export interface TendencyView {
 }
 export interface ReadView { attack: TendencyView; defense: TendencyView }
 
-export interface RevisionView { atMs: number; clock: string; from: CallLabel; to: CallLabel; reason: string }
+export interface RevisionView {
+  atMs: number; clock: string; from: CallLabel; to: CallLabel;
+  /** The engine's sentence, verbatim (English). */
+  reason: string;
+  /** The same reason parsed for localisation (`raw` when the sentence is not recognised). */
+  why: ReasonLabel;
+}
 export interface PlanView {
   opening: CallLabel;
   final: CallLabel;
@@ -166,7 +180,7 @@ function planView(plan: PlanSummary | null): PlanView | null {
     objective: siteOfZone(plan.objective),
     feint: siteOfZone(plan.feint),
     revisions: plan.revisions.map((r) => ({
-      atMs: r.atMs, clock: formatClock(r.atMs), from: parseCall(r.from), to: parseCall(r.to), reason: r.reason,
+      atMs: r.atMs, clock: formatClock(r.atMs), from: parseCall(r.from), to: parseCall(r.to), reason: r.reason, why: parseReason(r.reason),
     })),
   };
 }
