@@ -14,9 +14,12 @@ import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import type { NavModel, Vec3 } from '../../matchday/nav.ts';
 import type { Frame } from '../../matchday/frame.ts';
 import { EYE_HEIGHT_M, firstPersonPose, toScene, type Blockout } from '../../matchday/world3d.ts';
-import { firingAt } from '../../matchday/monitor.ts';
 import { HeadingSmoother } from '../../matchday/heading.ts';
-import { animateOperator, buildOperator, buildWeapon, isSidearm, modelMaterials, roleForSlot, weaponClassOf, type ModelMaterials, type Operator, type Role, type WeaponClass } from './models.ts';
+import {
+  ABILITY_LIFE_MS, FirstPersonRig, abilityKindOf, animInputFor, applyMapLighting, buildAbilityProp, buildOperator, buildSpike, poseOperator, pulseSpike,
+  roleForSlot, selectAnimState, setOperatorWeapon, updateAbilityProp, weaponClassOf,
+  type AbilityKind, type AnimState, type Operator, type Role, type WeaponClass,
+} from './models.ts';
 import { C, FONT } from '../../matchday/theme.ts';
 
 /** Upper bound on 3D wall renders per second: the display's own rate up to a 144 Hz panel. */
@@ -73,13 +76,10 @@ class Figure {
   private readonly marker: THREE.Mesh | null = null;
   private label: THREE.Sprite | null = null;
   private labelText = '';
-  private weapon: THREE.Group | null = null;
   private weaponCls: WeaponClass | null = null;
-  private readonly gunMats: ModelMaterials;
 
   constructor(private readonly color: number, private readonly enemy: boolean, role: Role) {
     this.op = buildOperator(role, color);
-    this.gunMats = modelMaterials(color);
     this.group.add(this.op.root);
     this.setWeapon('rifle');
     if (enemy) {
@@ -96,11 +96,8 @@ class Figure {
   /** Carry the model for this weapon class (long guns in both hands, sidearms in the trigger hand). */
   setWeapon(cls: WeaponClass): void {
     if (cls === this.weaponCls) return;
-    if (this.weapon) this.op.gunMount.remove(this.weapon);
-    const w = buildWeapon(cls, this.gunMats);
-    if (isSidearm(cls)) w.position.set(0.02, 0.0, 0.0);
-    this.op.gunMount.add(w);
-    this.weapon = w; this.weaponCls = cls;
+    setOperatorWeapon(this.op, cls, this.color);
+    this.weaponCls = cls;
   }
 
   setLabel(text: string): void {
@@ -119,100 +116,10 @@ class Figure {
     this.group.rotation.y = Math.atan2(-dirZ, dirX);
   }
 
-  /** Walk cycle while moving, idle sway while standing; `tMs` is match time, so it pauses with playback. */
-  animate(moving: boolean, tMs: number, phase: number): void {
-    animateOperator(this.op, moving, tMs, phase);
+  /** Pose from the animation state (idle/walk/run/crouch, aim/peek/shoot, reload, plant/defuse, throw, death); `tMs` is match time, so it pauses with playback. */
+  animate(st: AnimState, tMs: number, phase: number): void {
+    poseOperator(this.op, st, tMs, phase);
     if (this.marker) this.marker.rotation.y = tMs / 400;
-  }
-}
-
-/** A capsule between two points (view-model space). */
-function capsuleBetween(a: THREE.Vector3, b: THREE.Vector3, r: number, mat: THREE.Material): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, Math.max(0.001, a.distanceTo(b) - r), 4, 12), mat);
-  m.position.copy(a).add(b).multiplyScalar(0.5);
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
-  return m;
-}
-
-/**
- * A gloved hand at `wrist` with its sleeved forearm running back to `elbow` (the weapon's hold
- * frame: +X forward, +Y up, +Z to the viewer's right; the camera sits behind and above the grip).
- */
-function viewArm(mats: ModelMaterials, wrist: readonly [number, number, number], elbow: readonly [number, number, number]): THREE.Group {
-  const g = new THREE.Group();
-  const w = new THREE.Vector3(...wrist), e = new THREE.Vector3(...elbow);
-  const dir = e.clone().sub(w).normalize();
-  const cuffAt = w.clone().addScaledVector(dir, 0.06);
-  const glove = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 10), mats.trim);
-  glove.position.copy(w); glove.scale.set(1.25, 0.8, 1);
-  const cuff = capsuleBetween(cuffAt, cuffAt.clone().addScaledVector(dir, 0.03), 0.046, mats.glow);
-  const sleeve = capsuleBetween(cuffAt.clone().addScaledVector(dir, 0.03), e, 0.05, mats.cloth);
-  g.add(glove, cuff, sleeve);
-  return g;
-}
-
-/**
- * First-person view model: our own gloved hands holding the team's weapon class, drawn in its own
- * tiny scene on top of each monitor. Bobs while the player moves and kicks while they fire.
- */
-export class ViewModel {
-  readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(50, 1, 0.01, 10);
-  private readonly rig = new THREE.Group();
-  private readonly hold = new THREE.Group();
-  private readonly guns = new Map<WeaponClass, THREE.Group>();
-  private readonly flash: THREE.Mesh;
-  private readonly arms = new Map<WeaponClass, THREE.Group>();
-  private readonly mats: ModelMaterials;
-  private cls: WeaponClass | null = null;
-
-  constructor(accent: number) {
-    this.scene.add(new THREE.HemisphereLight(0xe8f1ff, 0x3a3128, 1.4));
-    const key = new THREE.DirectionalLight(0xffe7cc, 1.6); key.position.set(-1, 2, 1); this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0x9fc4ff, 0.6); rim.position.set(1, 0.5, -1); this.scene.add(rim);
-    this.mats = modelMaterials(accent, 'duelist');
-    // weapons are modelled along +X; the view looks down −Z
-    this.hold.rotation.y = Math.PI / 2;
-    this.flash = new THREE.Mesh(new THREE.OctahedronGeometry(0.05), new THREE.MeshBasicMaterial({ color: 0xffe9a8 }));
-    this.hold.add(this.flash);
-    this.rig.add(this.hold);
-    this.scene.add(this.rig);
-    this.setWeapon('rifle');
-  }
-
-  private setWeapon(cls: WeaponClass): void {
-    if (cls === this.cls) return;
-    for (const g of this.guns.values()) g.visible = false;
-    let g = this.guns.get(cls);
-    if (!g) { g = buildWeapon(cls, modelMaterials(this.accentOf())); this.hold.add(g); this.guns.set(cls, g); }
-    g.visible = true;
-    for (const a of this.arms.values()) a.visible = false;
-    let arms = this.arms.get(cls);
-    if (!arms) {
-      const fg = g.userData.foregrip as [number, number, number];
-      arms = new THREE.Group();
-      arms.add(viewArm(this.mats, [-0.005, -0.035, 0.03], [-0.3, -0.22, 0.16]));           // trigger hand on the grip
-      if (!isSidearm(cls)) arms.add(viewArm(this.mats, [fg[0], fg[1] + 0.025, -0.035], [fg[0] - 0.32, -0.24, -0.22])); // support hand on the handguard
-      this.hold.add(arms); this.arms.set(cls, arms);
-    }
-    arms.visible = true;
-    this.cls = cls;
-  }
-  private accentOf(): number { return (this.mats.glow as THREE.MeshStandardMaterial).color.getHex(); }
-
-  /** `kick` 0..1 = recoil right now; `flash` = muzzle flash visible. */
-  update(cls: WeaponClass, moving: boolean, tMs: number, kick: number, flash: boolean): void {
-    this.setWeapon(cls);
-    const side = isSidearm(cls);
-    const bobX = moving ? Math.cos(tMs / 190) * 0.008 : 0;
-    const bobY = moving ? Math.abs(Math.sin(tMs / 190)) * 0.012 : Math.sin(tMs / 1300) * 0.002;
-    const back = cls === 'sniper' ? -0.62 : side ? -0.38 : -0.5;
-    this.rig.position.set((side ? 0.12 : 0.17) + bobX, (side ? -0.15 : -0.2) - bobY + kick * 0.012, back + kick * 0.05);
-    this.rig.rotation.set(kick * 0.09, -0.06, 0);
-    const mz = this.guns.get(cls)!.userData.muzzle as [number, number, number];
-    this.flash.visible = flash;
-    this.flash.position.set(mz[0] + 0.02, mz[1], 0);
-    this.flash.scale.setScalar(0.8 + ((tMs * 7) % 5) / 6);
   }
 }
 
@@ -225,8 +132,11 @@ export class CamStage3D {
   private readonly allies: Figure[] = [];
   private readonly enemies: Figure[] = [];
   private readonly beacons: THREE.Mesh[] = [];
-  private readonly spike: THREE.Mesh;
-  private readonly spikeLight: THREE.PointLight;
+  private readonly spikeProp = buildSpike(C.enemy);
+  private readonly spike: THREE.Group = this.spikeProp.group;
+  private mapId = 'ascent';
+  private readonly abilityProps = new Map<string, { g: THREE.Group; seen: number }>();
+  private abilitySweep = 0;
   private glb: THREE.Object3D | null = null;
   private readonly ray = new THREE.Raycaster();
   private readonly groundCache = new Map<string, number>();
@@ -239,7 +149,7 @@ export class CamStage3D {
   private blank = false; // the canvas is already cleared (no monitors to draw)
   private samples: number[] = [];
   private host: HTMLElement | null = null;
-  private readonly viewModel = new ViewModel(C.ally);
+  private readonly fp = new FirstPersonRig(C.ally);
   readonly perf: CamPerf = { lastMs: 0, avgMs: 0, maxMs: 0, renders: 0, triangles: 0, calls: 0, map: 'blockout', views: 0 };
 
   constructor(private readonly nav: NavModel, blockout: Blockout) {
@@ -258,10 +168,7 @@ export class CamStage3D {
       const b = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 7, 20, 1, true), beaconMat.clone());
       b.visible = false; this.beacons.push(b); this.scene.add(b);
     }
-    this.spike = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.42, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: C.enemy, emissiveIntensity: 1.4 }));
     this.spike.visible = false;
-    this.spikeLight = new THREE.PointLight(C.enemy, 0, 14);
-    this.spike.add(this.spikeLight);
     this.scene.add(this.spike);
   }
 
@@ -401,8 +308,12 @@ export class CamStage3D {
     renderer.setScissorTest(true);
     renderer.setViewport(0, 0, 1, 1); renderer.setScissor(0, 0, 1, 1);
     this.camera.aspect = 1; this.camera.updateProjectionMatrix();
+    this.spike.visible = true;
+    const warm = (['smoke', 'wall', 'area', 'flash', 'orb'] as const).map((k) => { const g = buildAbilityProp(k, C.ally); g.position.copy(this.camera.position); this.scene.add(g); return g; });
     renderer.render(this.scene, this.camera);
-    renderer.render(this.viewModel.scene, this.viewModel.camera);
+    for (const g of warm) { this.scene.remove(g); g.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) (m.material as THREE.Material).dispose(); }); }
+    this.spike.visible = false;
+    renderer.render(this.fp.scene, this.fp.camera);
     renderer.setScissorTest(false);
     renderer.setClearColor(0x000000, 0); renderer.clear();
     for (const f of [...this.allies, ...this.enemies]) f.group.visible = false;
@@ -414,23 +325,12 @@ export class CamStage3D {
    * shadow map covers the whole mesh (drawn once — see init), and a haze the colour of the sky.
    */
   private lightForMap(root: THREE.Object3D): void {
-    const box = new THREE.Box3().setFromObject(root);
-    const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
-    const r = Math.max(size.x, size.z) / 2 + 4;
-    this.hemi.color.set(0xcfe3f5); this.hemi.groundColor.set(0x6e5a44); this.hemi.intensity = 1.15;
-    this.sun.color.set(0xffe2bf); this.sun.intensity = 2.4;
-    this.sun.position.set(c.x - r * 0.55, c.y + r * 0.9, c.z + r * 0.35);
-    this.sun.target.position.copy(c); this.sun.target.updateMatrixWorld();
-    this.sun.castShadow = true;
-    const cam = this.sun.shadow.camera;
-    cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r; cam.near = 1; cam.far = r * 4;
-    cam.updateProjectionMatrix();
-    this.sun.shadow.mapSize.set(4096, 4096);
-    this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.03;
-    this.scene.fog = new THREE.Fog(SKY, 35, 160);
-    this.clear = SKY;
+    this.clear = applyMapLighting({ hemi: this.hemi, sun: this.sun, scene: this.scene }, root, this.mapId);
     if (this.renderer) this.renderer.shadowMap.needsUpdate = true;
   }
+
+  /** Which map's light preset (models.ts MAP_LIGHTING) the loaded mesh gets; call before setMapScene / setMapGlb. */
+  setMapId(mapId: string): void { this.mapId = mapId.toLowerCase(); }
 
   /** Floor height (scene metres) under a game position: the navgraph height on the blockout, a downward ray on the real mesh. */
   private groundY(pos: Vec3): number {
@@ -481,8 +381,12 @@ export class CamStage3D {
     const t = frame.tMs;
     for (const f of [...this.allies, ...this.enemies]) f.group.visible = false;
     const buys = frame.round.summary?.buys;
-    const ourGun = weaponClassOf(buys?.[frame.team]?.weapon);
-    const theirGun = weaponClassOf(buys?.[frame.team === 'A' ? 'B' : 'A']?.weapon);
+    const foe = frame.team === 'A' ? 'B' : 'A';
+    const gunOf = (team: 'A' | 'B', slot: number): WeaponClass => weaponClassOf(buys?.[team]?.players?.[slot - 1]?.weapon ?? buys?.[team]?.weapon);
+    const round = frame.round;
+    const abilityBy = new Map<string, number[]>();
+    for (const a of round.abilities ?? []) { const l = abilityBy.get(a.playerId); if (l) l.push(a.tMs); else abilityBy.set(a.playerId, [a.tMs]); }
+    const states = new Map<string, { st: AnimState; cls: WeaponClass }>();
     const allyBy = new Map<string, Figure>();
     for (const u of frame.units) {
       const fig = this.allies[u.slot - 1]; if (!fig) continue;
@@ -490,16 +394,21 @@ export class CamStage3D {
       const yaw = this.heading.get(u.id, u.facingRad, t);
       fig.place(s.x, this.groundY(u.pose.pos), s.z, Math.cos(yaw), Math.sin(yaw));
       fig.setLabel(opts.nameOf(u.id));
-      fig.setWeapon(ourGun);
-      fig.animate(u.pose.moving, t, u.slot * 1.3);
+      const cls = gunOf(frame.team, u.slot);
+      fig.setWeapon(cls);
+      const pr = round.players.find((p) => p.id === u.id);
+      const st = selectAnimState({ ...animInputFor(round, { id: u.id, deathMs: pr?.deathMs ?? null }, u.pose, t, cls, abilityBy.get(u.id)), headingRad: yaw });
+      fig.animate(st, t, u.slot * 1.3);
+      states.set(u.id, { st, cls });
       allyBy.set(u.id, fig);
     }
     const enemyBy = new Map<string, { fig: Figure; seenBy: readonly string[] }>();
     for (const e of frame.seen) {
       const fig = this.enemies[e.slot - 1]; if (!fig) continue;
       fig.setLabel(opts.nameOf(e.id));
-      fig.setWeapon(theirGun);
-      fig.animate(false, t, e.slot);
+      const cls = gunOf(foe, e.slot);
+      fig.setWeapon(cls);
+      fig.animate(selectAnimState(animInputFor(round, { id: e.id, deathMs: null }, { alive: true, moving: false, moveMode: null }, t, cls, abilityBy.get(e.id))), t, e.slot);
       enemyBy.set(e.id, { fig, seenBy: e.seenBy });
     }
     const { plant } = frame.round;
@@ -508,10 +417,10 @@ export class CamStage3D {
     this.spike.visible = spikeOn;
     if (spikeOn) {
       const s = toScene(plant!.pos!);
-      this.spike.position.set(s.x, this.groundY(plant!.pos!) + 0.21, s.z);
-      const period = (sp.remainingMs ?? 0) < 10000 ? 450 : 1100;
-      this.spikeLight.intensity = 6 + 22 * (1 - (t % period) / period);
+      this.spike.position.set(s.x, this.groundY(plant!.pos!), s.z);
+      pulseSpike(this.spikeProp, sp.remainingMs ?? null, t);
     }
+    this.updateAbilities(frame, t);
 
     renderer.setScissorTest(true);
     for (const view of views) {
@@ -522,7 +431,10 @@ export class CamStage3D {
         const u = frame.units.find((x) => x.id === id)!;
         // players of one zone share its centre in the engine: a teammate inside arm's reach would fill the lens
         const near = Math.hypot(fig.group.position.x - eye.position.x, fig.group.position.z - eye.position.z) < 2.4;
-        fig.group.visible = id !== me.id && u.pose.alive && !near;
+        // a fallen player stays on the floor for a few seconds (death animation, then the body)
+        const pr = frame.round.players.find((p) => p.id === id);
+        const down = !u.pose.alive && pr?.deathMs != null && t - pr.deathMs < 6000;
+        fig.group.visible = id !== me.id && (u.pose.alive || down) && !near;
       }
       for (const [id, e] of enemyBy) {
         e.fig.group.visible = e.seenBy.includes(me.id);
@@ -556,16 +468,55 @@ export class CamStage3D {
       renderer.clear();
       renderer.render(this.scene, this.camera);
       // first-person view model on top (own depth range)
-      const firing = firingAt(frame.round.kills, me.id, t);
-      this.viewModel.update(ourGun, me.pose.moving, t, firing.kick, firing.flash);
-      this.viewModel.camera.aspect = view.w / view.h;
-      this.viewModel.camera.updateProjectionMatrix();
+      const mine = states.get(me.id);
+      this.fp.update(mine?.cls ?? 'rifle', mine?.st ?? selectAnimState({ tMs: t, alive: true, moving: me.pose.moving, moveMode: me.pose.moveMode }), t);
+      this.fp.camera.aspect = view.w / view.h;
+      this.fp.camera.updateProjectionMatrix();
       renderer.clearDepth();
-      renderer.render(this.viewModel.scene, this.viewModel.camera);
+      renderer.render(this.fp.scene, this.fp.camera);
       this.perf.views += 1;
     }
     this.sample(performance.now() - now, renderer);
     return true;
+  }
+
+  /**
+   * Placeholders for abilities in use: one pooled group per use, shown for its lifetime (ABILITY_LIFE_MS) at the
+   * position the engine reported. Our own team's are always drawn; an enemy's only while that player is in view,
+   * so utility never gives away what the team has not seen.
+   */
+  private updateAbilities(frame: Frame, t: number): void {
+    const uses = frame.round.abilities ?? [];
+    const sweep = ++this.abilitySweep;
+    const visibleEnemy = new Set(frame.seen.map((e) => e.id));
+    uses.forEach((a, i) => {
+      const kind: AbilityKind = abilityKindOf(a.abilityId);
+      const age = t - a.tMs;
+      if (age < 0 || age >= ABILITY_LIFE_MS[kind] || !a.pos) return;
+      const ours = frame.units.some((u) => u.id === a.playerId);
+      if (!ours && !visibleEnemy.has(a.playerId)) return;
+      const key = `${frame.round.roundNum}:${i}`;
+      let rec = this.abilityProps.get(key);
+      if (!rec) {
+        const g = buildAbilityProp(kind, ours ? C.ally : C.enemy);
+        const caster = frame.units.find((u) => u.id === a.playerId);
+        const s = toScene(a.pos);
+        g.position.set(s.x, this.groundY(a.pos) + (kind === 'orb' || kind === 'flash' ? 1.2 : 0), s.z);
+        g.userData.baseY = g.position.y;
+        if (caster) g.rotation.y = Math.atan2(-Math.sin(caster.facingRad), Math.cos(caster.facingRad));
+        this.scene.add(g);
+        rec = { g, seen: sweep }; this.abilityProps.set(key, rec);
+      }
+      rec.seen = sweep;
+      updateAbilityProp(rec.g, age);
+    });
+    for (const [key, rec] of this.abilityProps) {
+      if (rec.seen !== sweep) { // out of its lifetime or scrubbed away: drop it
+        this.scene.remove(rec.g);
+        rec.g.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) (m.material as THREE.Material).dispose(); });
+        this.abilityProps.delete(key);
+      }
+    }
   }
 
   private sample(ms: number, renderer: THREE.WebGLRenderer): void {

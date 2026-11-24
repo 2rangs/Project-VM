@@ -83,6 +83,14 @@ export interface SpikeAction {
   readonly site: 'A' | 'B' | null;
 }
 
+/** An ability the engine reported (replay `abilitySpawn`): who used what, where (null when unknown). */
+export interface AbilityUse {
+  readonly tMs: number;
+  readonly playerId: string;
+  readonly abilityId: string;
+  readonly pos: Vec3 | null;
+}
+
 export interface RoundTimeline {
   readonly roundNum: number;
   /** When the barrier drops (the round goes live; the round clock starts). */
@@ -99,6 +107,8 @@ export interface RoundTimeline {
   readonly kills: readonly KillEvent[];
   readonly plant: SpikeAction | null;
   readonly defuse: SpikeAction | null;
+  /** Abilities used this round (cams show a placeholder per use); may be absent on hand-built rounds. */
+  readonly abilities?: readonly AbilityUse[];
   readonly endReason: string | null;
   readonly summary: MatchRoundSummary | null;
   /** The previous round's summary (carried ultimate points / credits), or null for round 1. */
@@ -257,7 +267,12 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
     // A defuse happens on the planted spike.
     const defuseOnSpike = defuse && plant ? { ...defuse, pos: plant.pos, zone: plant.zone, site: plant.site } : defuse;
 
-    rounds.push({ ...partial, kills, plant, defuse: defuseOnSpike });
+    const abilities: AbilityUse[] = evs.filter((e) => e.kind === 'abilitySpawn' && e.actorId).map((e) => ({
+      tMs: e.tMs, playerId: e.actorId!, abilityId: String((e.data as { abilityId?: unknown } | undefined)?.abilityId ?? ''),
+      pos: e.pos ?? (() => { const a = players.find((p) => p.id === e.actorId); return a && hasTracks ? logicalAt(a, e.tMs).pos : null; })(),
+    }));
+
+    rounds.push({ ...partial, kills, plant, defuse: defuseOnSpike, abilities });
   }
 
   return {

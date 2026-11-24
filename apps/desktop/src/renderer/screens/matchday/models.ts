@@ -32,22 +32,28 @@ export type Role = 'controller' | 'initiator' | 'sentinel' | 'duelist';
 export const ROLE_BY_SLOT: readonly Role[] = ['controller', 'initiator', 'initiator', 'sentinel', 'duelist'];
 export const roleForSlot = (slot: number): Role => ROLE_BY_SLOT[(((slot - 1) % ROLE_BY_SLOT.length) + ROLE_BY_SLOT.length) % ROLE_BY_SLOT.length]!;
 
-export type WeaponClass = 'rifle' | 'carbine' | 'sniper' | 'smg' | 'shotgun' | 'lmg' | 'pistol' | 'handcannon';
-export const WEAPON_CLASSES: readonly WeaponClass[] = ['rifle', 'carbine', 'sniper', 'smg', 'shotgun', 'lmg', 'pistol', 'handcannon'];
+/** rifle/carbine/lmg: long guns; sniper: heavy scoped; marksman: slim scoped bolt/lever; smg; shotgun: semi-auto; pump: pump-action; sawnoff: short two-barrel sidearm;
+ *  pistol; autopistol: machine pistol; handcannon: big revolver-style sidearm. */
+export type WeaponClass = 'rifle' | 'carbine' | 'sniper' | 'marksman' | 'smg' | 'shotgun' | 'pump' | 'sawnoff' | 'lmg' | 'pistol' | 'autopistol' | 'handcannon';
+export const WEAPON_CLASSES: readonly WeaponClass[] = ['rifle', 'carbine', 'sniper', 'marksman', 'smg', 'shotgun', 'pump', 'sawnoff', 'lmg', 'pistol', 'autopistol', 'handcannon'];
 /** Which of our models stands in for a bought weapon (the engine names weapons; the model is generic). */
 export function weaponClassOf(name: string | null | undefined): WeaponClass {
   const n = (name ?? '').toLowerCase();
-  if (/phantom|guardian/.test(n)) return 'carbine';
+  if (/phantom/.test(n)) return 'carbine';
+  if (/guardian|marshal|outlaw/.test(n)) return 'marksman';
   if (/vandal|bulldog|rifle/.test(n)) return 'rifle';
-  if (/operator|marshal|outlaw|sniper/.test(n)) return 'sniper';
+  if (/operator|sniper/.test(n)) return 'sniper';
   if (/spectre|stinger|smg/.test(n)) return 'smg';
-  if (/judge|bucky|shotgun/.test(n)) return 'shotgun';
+  if (/bucky/.test(n)) return 'pump';
+  if (/judge|shotgun/.test(n)) return 'shotgun';
+  if (/shorty/.test(n)) return 'sawnoff';
   if (/odin|ares|lmg/.test(n)) return 'lmg';
   if (/sheriff|cannon/.test(n)) return 'handcannon';
-  if (/classic|ghost|frenzy|shorty|pistol/.test(n)) return 'pistol';
+  if (/frenzy/.test(n)) return 'autopistol';
+  if (/classic|ghost|pistol/.test(n)) return 'pistol';
   return 'rifle';
 }
-export const isSidearm = (c: WeaponClass): boolean => c === 'pistol' || c === 'handcannon';
+export const isSidearm = (c: WeaponClass): boolean => c === 'pistol' || c === 'handcannon' || c === 'autopistol' || c === 'sawnoff';
 
 // ── palette ─────────────────────────────────────────────────────────────────────────────────
 
@@ -262,6 +268,53 @@ function weaponGeo(c: WeaponClass): WeaponGeo {
       k.profile('polymer', [[-0.035, 0.0], [0.07, 0.0], [0.07, 0.032], [-0.045, 0.032], [-0.06, -0.11], [-0.005, -0.115]], 0.034);
       k.rbox('glow', 0.12, 0.006, 0.036, [0.08, 0.076, 0], [0, 0, 0], 0.002);
       muzzle = [0.2, 0.053, 0]; foregrip = [0, -0.06, 0]; magazine = [0.03, 0.05, 0.03];
+      break;
+    }
+    case 'autopistol': {   // machine pistol: long slide with port cuts, compensator, extended straight magazine
+      k.profile('metal', [[-0.045, 0.03], [0.19, 0.03], [0.195, 0.05], [0.19, 0.075], [-0.04, 0.077], [-0.05, 0.055]], 0.034);
+      for (let i = 0; i < 3; i++) k.rbox('trim', 0.012, 0.03, 0.036, [0.07 + i * 0.03, 0.074, 0], [0, 0, 0.5], 0.002);   // slide ports
+      k.rbox('trim', 0.05, 0.03, 0.03, [0.2, 0.062, 0], [0, 0, 0], 0.005);                // compensator
+      k.profile('polymer', [[-0.03, 0.0], [0.12, 0.0], [0.12, 0.03], [-0.04, 0.03], [-0.055, -0.1], [-0.005, -0.105]], 0.036);
+      k.rbox('metal', 0.034, 0.17, 0.028, [-0.03, -0.17, 0], [0, 0, 0.05], 0.005);        // extended magazine
+      k.rbox('glow', 0.1, 0.005, 0.036, [0.06, 0.078, 0], [0, 0, 0], 0.002);
+      muzzle = [0.225, 0.058, 0]; foregrip = [0, -0.06, 0]; magazine = [-0.03, -0.17, 0];
+      break;
+    }
+    case 'sawnoff': {      // short two-barrel sidearm
+      k.profile('polymer', [[-0.03, 0.0], [0.07, 0.0], [0.07, 0.03], [-0.04, 0.03], [-0.065, -0.1], [-0.01, -0.105]], 0.036);
+      k.rbox('metal', 0.1, 0.05, 0.05, [0.04, 0.05, 0], [0, 0, 0], 0.008);                // breech block
+      k.tube('trim', 0.015, 0.09, 0.3, 0.05, 0.016, 12); k.tube('trim', 0.015, 0.09, 0.3, 0.05, -0.016, 12); // twin barrels
+      k.tube('metal', 0.017, 0.29, 0.3, 0.05, 0.016, 12); k.tube('metal', 0.017, 0.29, 0.3, 0.05, -0.016, 12);
+      k.rbox('glow', 0.08, 0.006, 0.05, [0.05, 0.078, 0], [0, 0, 0], 0.002);
+      muzzle = [0.3, 0.05, 0]; foregrip = [0, -0.06, 0]; magazine = [0.15, 0.04, 0];
+      break;
+    }
+    case 'pump': {         // pump-action: long barrel, under-barrel tube, sliding forend sleeve
+      k.profile('trim', [[-0.07, 0.0], [0.24, 0.0], [0.27, 0.03], [0.25, 0.07], [0.0, 0.08], [-0.07, 0.055]], 0.046);
+      k.rbox('glow', 0.12, 0.008, 0.048, [0.1, 0.052, 0], [0, 0, 0], 0.003);
+      k.profile('trim', [[-0.07, 0.012], [-0.3, -0.03], [-0.34, 0.01], [-0.33, 0.07], [-0.07, 0.07]], 0.04);   // stock
+      k.rbox('polymer', 0.025, 0.1, 0.044, [-0.335, 0.02, 0], [0, 0, 0], 0.006);
+      grip(0);
+      k.tube('metal', 0.017, 0.24, 0.78, 0.045); k.tube('trim', 0.019, 0.24, 0.7, -0.005);     // barrel + magazine tube
+      k.rbox('polymer', 0.16, 0.05, 0.062, [0.44, -0.005, 0], [0, 0, 0], 0.015);               // pump forend
+      k.tube('trim', 0.02, 0.78, 0.8, 0.045, 0, 10);
+      k.rbox('trim', 0.05, 0.02, 0.03, [0.16, 0.088, 0], [0, 0, 0], 0.004);                    // rear sight
+      muzzle = [0.8, 0.045, 0]; foregrip = [0.44, -0.012, 0]; magazine = [0.18, 0.0, 0];
+      break;
+    }
+    case 'marksman': {     // slim scoped rifle with a long thin barrel and a bolt knob
+      k.profile('trim', [[-0.06, 0.0], [0.3, 0.0], [0.32, 0.028], [0.3, 0.066], [-0.02, 0.072], [-0.06, 0.05]], 0.042);
+      k.rbox('glow', 0.14, 0.007, 0.044, [0.12, 0.05, 0], [0, 0, 0], 0.003);
+      k.profile('polymer', [[-0.06, 0.0], [-0.22, -0.045], [-0.34, -0.04], [-0.35, 0.065], [-0.06, 0.068]], 0.038);
+      k.rbox('polymer', 0.025, 0.09, 0.04, [-0.345, 0.012, 0], [0, 0, 0], 0.006);
+      grip(0);
+      k.tube('metal', 0.0105, 0.32, 0.78, 0.04); k.tube('trim', 0.016, 0.78, 0.84, 0.04, 0, 8);
+      k.profile('polymer', [[0.3, 0.004], [0.55, 0.012], [0.55, 0.05], [0.3, 0.06]], 0.036);   // slim handguard
+      k.tube('trim', 0.02, 0.07, 0.27, 0.11, 0, 14); k.tube('glow', 0.021, 0.27, 0.274, 0.11, 0, 14); // scope
+      k.rbox('trim', 0.02, 0.04, 0.024, [0.12, 0.085, 0], [0, 0, 0], 0.003); k.rbox('trim', 0.02, 0.04, 0.024, [0.22, 0.085, 0], [0, 0, 0], 0.003);
+      k.tube('metal', 0.007, 0.09, 0.13, 0.065, 0.034, 8); k.rbox('metal', 0.02, 0.02, 0.02, [0.13, 0.065, 0.054], [0, 0, 0], 0.004); // bolt handle
+      k.rbox('metal', 0.045, 0.06, 0.03, [0.15, -0.035, 0], [0, 0, 0], 0.006);               // short magazine
+      muzzle = [0.84, 0.04, 0]; foregrip = [0.4, 0.0, 0]; magazine = [0.15, -0.05, 0];
       break;
     }
     case 'pistol':
@@ -526,7 +579,7 @@ export function drawCallsOf(obj: THREE.Object3D): number {
 // ── animation state from the track ───────────────────────────────────────────────────────────
 
 export type Locomotion = 'idle' | 'walk' | 'run' | 'crouch' | 'crouchWalk';
-export type Action = 'none' | 'aim' | 'shoot' | 'reload' | 'plant' | 'defuse' | 'throw';
+export type Action = 'none' | 'aim' | 'peek' | 'shoot' | 'reload' | 'plant' | 'defuse' | 'throw';
 export type AnimStateName = Locomotion | Exclude<Action, 'none'> | 'dead';
 
 export interface AnimState {
@@ -571,6 +624,8 @@ export interface AnimInput {
   readonly defuse?: { readonly startMs: number; readonly endMs: number } | null;
   /** Times this player used an ability (replay `abilityUse` events). */
   readonly abilityMs?: readonly number[];
+  /** Times this player starts a peek (leans out of cover toward the gaze, 800 ms). Without it a peek is inferred in the lead-up to a shot. */
+  readonly peekMs?: readonly number[];
   readonly weapon?: WeaponClass;
   /** Movement heading (world x/y, radians). Defaults to the body direction the caller places the figure with. */
   readonly headingRad?: number | null;
@@ -588,8 +643,8 @@ export const ANIM = {
   shotKickMs: 90, flashMs: 45, shootHoldMs: 160,
   aimLeadMs: 450, aimHoldMs: 1000,
   reloadDelayMs: 1100,
-  reloadMs: { rifle: 2200, carbine: 2100, sniper: 3000, smg: 2000, shotgun: 2400, lmg: 3600, pistol: 1500, handcannon: 1800 } as Record<WeaponClass, number>,
-  throwMs: 650, fallMs: 650,
+  reloadMs: { rifle: 2200, carbine: 2100, sniper: 3000, marksman: 2600, smg: 2000, shotgun: 2400, pump: 2800, sawnoff: 1600, lmg: 3600, pistol: 1500, autopistol: 1500, handcannon: 1800 } as Record<WeaponClass, number>,
+  throwMs: 650, fallMs: 650, peekMs: 800,
   walkStrideMs: 900, runStrideMs: 620,
 } as const;
 
@@ -627,6 +682,9 @@ export function selectAnimState(i: AnimInput): AnimState {
   const pT = win(i.plant), dT = win(i.defuse);
   let throwT: number | null = null;
   for (const a of i.abilityMs ?? []) if (t >= a && t < a + ANIM.throwMs) throwT = clamp01((t - a) / ANIM.throwMs);
+  let peekT: number | null = null;
+  for (const pk of i.peekMs ?? []) if (t >= pk && t < pk + ANIM.peekMs) peekT = clamp01((t - pk) / ANIM.peekMs);
+  if (peekT == null && i.peekMs == null && next - t < ANIM.aimLeadMs * 2 && next - t >= ANIM.aimLeadMs) peekT = clamp01(1 - (next - t - ANIM.aimLeadMs) / ANIM.aimLeadMs); // inferred
   const reloadMs = ANIM.reloadMs[i.weapon ?? 'rifle'];
   const reloadT = Number.isFinite(last) && since >= ANIM.reloadDelayMs && since < ANIM.reloadDelayMs + reloadMs
     ? clamp01((since - ANIM.reloadDelayMs) / reloadMs) : null;
@@ -636,6 +694,7 @@ export function selectAnimState(i: AnimInput): AnimState {
   else if (throwT != null) { action = 'throw'; actionT = throwT; }
   else if (since >= 0 && since < ANIM.shootHoldMs) action = 'shoot';
   else if (next - t < ANIM.aimLeadMs) action = 'aim';
+  else if (peekT != null) { action = 'peek'; actionT = peekT; }
   else if (reloadT != null) { action = 'reload'; actionT = reloadT; }
   else if (since < ANIM.aimHoldMs) action = 'aim';
 
@@ -785,7 +844,7 @@ export function poseOperator(op: Operator, st: AnimState, tMs: number, phase = 0
   }
 
   // ── upper body: blade the torso (support shoulder forward) and place the gun
-  const aiming = st.action === 'aim' || st.action === 'shoot';
+  const aiming = st.action === 'aim' || st.action === 'shoot' || st.action === 'peek';
   const blade = side ? 0.15 : aiming ? 0.5 : 0.3;
   // Gaze off the walking direction: past ±FOOT_LIMIT the whole figure turns its feet, the rest is shared
   // by torso (60 %, ≤ 0.9 rad) and head; the gun hangs off the spine so it follows the aim.
@@ -818,6 +877,15 @@ export function poseOperator(op: Operator, st: AnimState, tMs: number, phase = 0
   if (side) gunPoint(op, [-0.01, -0.06, -0.05], _tL); else gunPoint(op, [pts.foregrip[0], pts.foregrip[1] - 0.03, -0.01], _tL);
 
   switch (st.action) {
+    case 'peek': {
+      // lean out toward the gaze (right shoulder by default), step sideways, gun already up
+      const lean = ease(Math.min(1, st.actionT * 1.6)) * (1 - 0.3 * Math.max(0, st.actionT - 0.7) / 0.3);
+      const sgn = st.aimYawRel > 0.15 ? -1 : 1;      // game yaw is counter-clockwise: a left look (+) leans to the figure's left (−Z)
+      op.hips.position.z += sgn * 0.17 * lean;
+      op.spine.rotation.x = -sgn * 0.3 * lean;
+      op.thighL.rotation.x = sgn * 0.2 * lean; op.thighR.rotation.x = sgn * 0.2 * lean;
+      break;
+    }
     case 'reload': {
       const t = st.actionT;
       gm.position.set(0.22, 0.33, 0.04);
@@ -963,7 +1031,7 @@ export class FirstPersonRig {
     const f = run ? 150 : 210, ampX = run ? 0.012 : 0.007, ampY = run ? 0.018 : 0.01;
     const bobX = moving ? Math.cos(tMs / f) * ampX : 0;
     const bobY = moving ? Math.abs(Math.sin(tMs / f)) * ampY : Math.sin(tMs / 1300) * 0.002;
-    const aiming = st.action === 'aim' || st.action === 'shoot';
+    const aiming = st.action === 'aim' || st.action === 'shoot' || st.action === 'peek';
     const back = cls === 'sniper' ? -0.62 : side ? -0.38 : -0.5;
     const k = st.kick;
     const x = (side ? 0.12 : aiming ? 0.11 : 0.17) + bobX;
@@ -1013,6 +1081,105 @@ export class FirstPersonRig {
     this.flash.position.set(pts.muzzle[0] + 0.02, pts.muzzle[1], 0);
     this.flash.scale.setScalar(0.8 + ((tMs * 7) % 5) / 6);
   }
+}
+
+// ── props: the spike and ability placeholders ────────────────────────────────────────────────
+
+export interface SpikeProp { readonly group: THREE.Group; readonly light: THREE.PointLight }
+/**
+ * Our own spike device: a hex-sided charge with a ribbed collar, a pulsing core and four team-coloured
+ * vents. 0.4 m tall, origin on the floor. `pulseSpike` drives the core (fast in the last 10 s).
+ * 3 draw calls (body, glow core, glow vents).
+ */
+export function buildSpike(accent: number): SpikeProp {
+  const k = new Kit().on(-1);
+  k.cyl('trim', 0.2, 0.24, 0.12, [0, 0.06, 0], [0, 0, 0], 6)
+    .cyl('metal', 0.16, 0.2, 0.1, [0, 0.17, 0], [0, 0, 0], 6)
+    .cyl('trim', 0.18, 0.18, 0.03, [0, 0.235, 0], [0, 0, 0], 6)
+    .cyl('polymer', 0.1, 0.13, 0.1, [0, 0.3, 0], [0, 0, 0], 6)
+    .cyl('glow', 0.07, 0.07, 0.05, [0, 0.365, 0], [0, 0, 0], 6);
+  for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; k.rbox('glow', 0.02, 0.06, 0.012, [Math.cos(a) * 0.17, 0.17, Math.sin(a) * 0.17], [0, -a, 0], 0.003); }
+  const built = k.build('gun', accent, false);
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(built.body!, BODY));
+  if (built.glow) group.add(new THREE.Mesh(built.glow, new THREE.MeshStandardMaterial({ color: accent, emissive: accent, emissiveIntensity: 1.4, roughness: 0.3 })));
+  const light = new THREE.PointLight(accent, 0, 14); light.position.y = 0.45; group.add(light);
+  group.userData.core = group.children[1];
+  return { group, light };
+}
+/** Blink the spike: slow ~1.1 s period, 0.45 s in the last 10 s. */
+export function pulseSpike(sp: SpikeProp, remainingMs: number | null, tMs: number): void {
+  const period = (remainingMs ?? 99_999) < 10_000 ? 450 : 1100;
+  const ph = (tMs % period) / period;
+  sp.light.intensity = 6 + 22 * (1 - ph);
+  const core = sp.group.userData.core as THREE.Mesh | undefined;
+  if (core) (core.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.6 + 2.2 * (1 - ph);
+}
+
+export type AbilityKind = 'smoke' | 'wall' | 'area' | 'flash' | 'orb';
+/** Which placeholder stands for an ability (engine ids/names are catalog strings; we classify by keyword). */
+export function abilityKindOf(abilityId: string | null | undefined): AbilityKind {
+  const n = (abilityId ?? '').toLowerCase();
+  if (/smoke|cloud|sky|dark.?cover|eclipse|cove|mist|dome|veil|nebula/.test(n)) return 'smoke';
+  if (/wall|barrier|fortif|prism|bladestorm.*wall|curtain|screen/.test(n)) return 'wall';
+  if (/molly|incend|snake|nano|hot.?hand|blaze|burn|fire|toxic|poison|acid|lingering|inferno|shock|mine|trap|cage/.test(n)) return 'area';
+  if (/flash|blind|dazzle|strobe|flare/.test(n)) return 'flash';
+  return 'orb';
+}
+/** Lifetime of the placeholder in match ms (the engine has no expiry event). */
+export const ABILITY_LIFE_MS: Readonly<Record<AbilityKind, number>> = { smoke: 14_000, wall: 8_000, area: 6_500, flash: 450, orb: 1_600 };
+
+const abilityMat = (colour: number, opacity: number, emissive = 0.4, depthWrite = false): THREE.MeshStandardMaterial =>
+  new THREE.MeshStandardMaterial({ color: colour, emissive: colour, emissiveIntensity: emissive, transparent: true, opacity, depthWrite, roughness: 0.9, side: THREE.DoubleSide });
+const abilityGeo: { [K in AbilityKind]?: THREE.BufferGeometry } = {};
+
+/**
+ * One placeholder: smoke = soft grey-blue sphere (4 m), wall = translucent slab with a bright top edge,
+ * area = a glowing ground disc with a rim (molly-style zone, 4.5 m), flash = a bright burst, orb = a small
+ * team-coloured projectile / device. Geometry shared per kind; own materials so fades are per instance.
+ */
+export function buildAbilityProp(kind: AbilityKind, accent: number): THREE.Group {
+  const g = new THREE.Group();
+  const geo = (key: AbilityKind, make: () => THREE.BufferGeometry): THREE.BufferGeometry => (abilityGeo[key] ??= make());
+  switch (kind) {
+    case 'smoke': {
+      const m = new THREE.Mesh(geo('smoke', () => new THREE.IcosahedronGeometry(4, 2)), abilityMat(0xb8c4d0, 0.82, 0.05, true));
+      m.position.y = 3.2; m.scale.y = 0.85; g.add(m); break;
+    }
+    case 'wall': {
+      const m = new THREE.Mesh(geo('wall', () => new THREE.BoxGeometry(0.3, 4, 9)), abilityMat(accent, 0.38, 0.6));
+      m.position.y = 2; g.add(m);
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 9.04), abilityMat(accent, 0.95, 2.0)); edge.position.y = 4; g.add(edge); break;
+    }
+    case 'area': {
+      const disc = new THREE.Mesh(geo('area', () => new THREE.CircleGeometry(4.5, 28)), abilityMat(0xff7a2e, 0.42, 0.9));
+      disc.rotation.x = -Math.PI / 2; disc.position.y = 0.06; g.add(disc);
+      const rim = new THREE.Mesh(new THREE.RingGeometry(4.2, 4.5, 28), abilityMat(0xffb060, 0.9, 1.6));
+      rim.rotation.x = -Math.PI / 2; rim.position.y = 0.07; g.add(rim); break;
+    }
+    case 'flash': {
+      g.add(new THREE.Mesh(geo('flash', () => new THREE.IcosahedronGeometry(0.5, 1)), abilityMat(0xffffff, 0.95, 3.0))); break;
+    }
+    default: {
+      g.add(new THREE.Mesh(geo('orb', () => new THREE.IcosahedronGeometry(0.16, 1)), abilityMat(accent, 0.95, 2.0)));
+    }
+  }
+  g.userData.kind = kind;
+  return g;
+}
+/** Grow / fade a placeholder by its age (ms since it appeared). Returns false once it is over. */
+export function updateAbilityProp(g: THREE.Group, ageMs: number): boolean {
+  const kind = g.userData.kind as AbilityKind;
+  const life = ABILITY_LIFE_MS[kind];
+  if (ageMs < 0 || ageMs >= life) { g.visible = false; return false; }
+  g.visible = true;
+  const grow = Math.min(1, ageMs / (kind === 'smoke' ? 600 : kind === 'wall' ? 400 : kind === 'flash' ? 120 : 250));
+  const fade = Math.min(1, (life - ageMs) / Math.min(1200, life * 0.3));
+  g.scale.setScalar(kind === 'smoke' || kind === 'area' || kind === 'flash' ? 0.2 + 0.8 * grow : 1);
+  if (kind === 'wall') g.scale.y = grow;
+  if (kind === 'orb') g.position.y = Math.max(g.userData.baseY ?? 0, 0) + 0.2 * Math.sin(ageMs / 160);
+  g.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) { const mat = m.material as THREE.MeshStandardMaterial; mat.userData.base ??= mat.opacity; mat.opacity = (mat.userData.base as number) * fade; } });
+  return true;
 }
 
 // ── per-map light presets ─────────────────────────────────────────────────────────────────────
