@@ -7,6 +7,7 @@ import {
   type SessionState, type SimProgress, type SimResult, type SimRunRequest, type TeamOrder, type TeamSlot,
 } from '../shared/ipc.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
+import type { PrematchRequest } from '../shared/manager.ts';
 import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot } from '../shared/career.ts';
 
 const cmd = (c: SessionCommand): Promise<SessionReply> => ipcRenderer.invoke(IPC.sessionCmd, c);
@@ -34,6 +35,11 @@ const bridge: PvBridge = {
   seriesStart: (req: SeriesStartRequest): Promise<SeriesView> => ipcRenderer.invoke(IPC.seriesStart, req),
   seriesCmd: (c: SeriesCommand): Promise<SeriesReply> => ipcRenderer.invoke(IPC.seriesCmd, c),
   seriesStop: () => ipcRenderer.invoke(IPC.seriesStop),
+  // [manager]
+  sessionSetShouts: async (team, shouts) => (await cmd({ cmd: 'setShouts', team, shouts })).state!,
+  sessionSetStrategy: async (team, strategy) => (await cmd({ cmd: 'setStrategy', team, strategy })).state!,
+  sessionTeamTalk: async (team, talk) => { const r = await cmd({ cmd: 'teamTalk', team, talk }); return { state: r.state!, reactions: r.talk ?? [] }; },
+  prematchReport: (req: PrematchRequest) => ipcRenderer.invoke(IPC.prematchReport, req),
   loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
   // [career]
   async careerSimulate(reqs: CareerSimRequest[], onProgress: (p: CareerSimProgress) => void): Promise<CareerSimOutcome[]> {

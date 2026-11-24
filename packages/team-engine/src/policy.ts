@@ -416,6 +416,12 @@ export interface TeamRoundTrace {
   readonly decision: PolicyDecision;
 }
 
+/** [manager] The side a strategy belongs to (a defense call cannot open an attack round and vice versa). */
+const DEFENSE_STRATEGIES: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>(["defaultHold", "aggroPush", "stackA", "stackB", "stackC", "retake"]);
+function strategySide(s: TeamStrategy): "attack" | "defense" {
+  return DEFENSE_STRATEGIES.has(s) ? "defense" : "attack";
+}
+
 /**
  * A coach/IGL order the policy follows for the round(s) it is set. A forced `strategy` overrides
  * the IGL's own selection; `tempo` nudges aggression; `roles` pins the entry/lurker. Set via
@@ -425,6 +431,8 @@ export interface PolicyOrder {
   readonly strategy?: TeamStrategy;
   readonly tempo?: "slow" | "normal" | "fast";
   readonly roles?: { readonly entry?: string; readonly lurker?: string };
+  /** [manager] The forced strategy is also the round's opening call (its objective follows it). Default false. */
+  readonly asOpening?: boolean;
 }
 
 export class TeamDecisionPolicy implements DecisionPolicy {
@@ -596,7 +604,12 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       p.lastSeenClockMs = view.timeRemainingMs;
       return p;
     }
-    const opening = selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters(), this.midEnabled() ? midCallWeight(this.options.tactics?.midArea) : undefined);
+    // [manager] A coach's forced strategy for this side is the round's opening call, so the plan's
+    // objective (the site the attack goes to, the site the defense stacks) follows the order —
+    // before, the order only relabelled a plan bound to the IGL's own call. No order → unchanged.
+    // Only for orders that ask for it (asOpening) — other orders keep the old relabel-only behaviour.
+    const forced = this.order?.asOpening ? this.order.strategy : undefined;
+    const opening = forced && strategySide(forced) === view.side ? forced : selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters(), this.midEnabled() ? midCallWeight(this.options.tactics?.midArea) : undefined);
     this.plan = {
       contextId: view.contextId, side: view.side, opening, strategy: opening,
       objective: null, feint: null, executeGo: false, uncommitted: false, slowSide: null, savedFrom: null, chasers: new Set<string>(),

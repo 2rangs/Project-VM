@@ -22,6 +22,12 @@ import { Icon } from './matchday/Icons.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx';
 import { MatchLoadScreen } from '../loading/MatchLoadScreen.tsx';
 import { preloadMatchAssets } from './matchday/assets.ts';
+// [manager] in-match management, half-time talk, pre-match report + plan, post-match summary
+import { ManagerPanel } from './matchday/ManagerPanel.tsx';
+import { PrematchPanel } from './matchday/PrematchPanel.tsx';
+import { PostMatchSummary } from './matchday/PostMatchSummary.tsx';
+import { EMPTY_PLAN, alertKey, ourAlerts, planForEngine, talkPending } from '../matchday/manager.ts';
+import type { MatchPlan, OpponentReportView } from '../../shared/manager.ts';
 
 /**
  * [series] Optional: this Match Day plays the NEXT MAP of a live series (teams, map and seed come
@@ -65,7 +71,14 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   const [ordersOpen, setOrdersOpen] = useState(false);
   // Pre-match options (a team's / organiser's choice). Engine physics tunables are not exposed.
   const [optsOpen, setOptsOpen] = useState(false);
+  // [manager] pre-match report + plan, and the in-match drawer
+  const [prepOpen, setPrepOpen] = useState(false);
+  const [plan, setPlan] = useState<MatchPlan>(EMPTY_PLAN);
+  const [report, setReport] = useState<OpponentReportView | null>(null);
+  const [mgrOpen, setMgrOpen] = useState(false);
+  const [pausedFor, setPausedFor] = useState('');
   const [opponentMemory, setOpponentMemory] = useState(true);
+  const [mgrExperimental, setMgrExperimental] = useState(false); // [manager] flags, default off
   const [minThrow, setMinThrow] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const sess = useMatchSession();
 
@@ -79,7 +92,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   // [series] teams / seed are fixed by the series, and a map is played once.
   const busyControls = running || sess.busy || (!!series && (match !== null || (sess.state?.finished ?? false)));
   const lockSetup = !!series;
-  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0;
+  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0 || mgrExperimental;
   // Only non-default choices are sent, so a default match is the engine's own default config.
   const matchOptions = (): MatchOptions | undefined => {
     const teams: Record<string, number> = {};
@@ -87,6 +100,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
     if (minThrow.B > 0) teams[refOf(teamB).id] = minThrow.B;
     const o: MatchOptions = {
       ...(opponentMemory ? {} : { opponentMemory: false }),
+      ...(mgrExperimental ? { moodEffects: true, aiManager: true, timeoutsPerHalf: 1 } : {}),
       ...(Object.keys(teams).length > 0 ? { minThrowRates: { teams } } : {}),
     };
     return Object.keys(o).length > 0 ? o : undefined;
@@ -100,6 +114,16 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   // In interactive mode, mirror the session's live replay into shared ctx (Dev etc.).
   useEffect(() => { if (interactive && sess.replay) ctx.setReplay(sess.replay); }, [interactive, sess.replay, ctx]);
   // (Auto-play now lives in LiveMatch: it advances once the round has been watched.)
+  // [manager] Something needs a call (0-4 run, broken economy, a player tilting, half-time):
+  // stop auto-play and open the manager drawer — once per round's set of alerts.
+  const alerts = ourAlerts(sess.state);
+  const alertsKey = alertKey(alerts);
+  useEffect(() => {
+    if (!alertsKey || alertsKey === pausedFor) return;
+    setPausedFor(alertsKey);
+    setAutoPlay(false);
+    setMgrOpen(true);
+  }, [alertsKey, pausedFor]);
 
   async function runMatch() {
     setRunning(true); setPct(0); setLog([]); setMatch(null); setSimStep(null); setRunError(null); setLoadPhase('work');
@@ -128,7 +152,9 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
     setSessPreparing(true); setLoadPhase('work');
     const assets = preloadMatchAssets();
     try {
-      await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions(), ...(series ? { seriesGame: true } : {}) });
+      const enginePlan = series ? undefined : planForEngine(plan); // [manager] a series map uses the series' own setup
+      const scouting = !series && plan.useScouting && report && report.them.id === refOf(teamB).id ? { logs: report.logs } : undefined;
+      await sess.start({ mapId: 'ascent', seed, teamA: refOf(teamA), teamB: refOf(teamB), aiTeams: ['B'], options: matchOptions(), ...(series ? { seriesGame: true } : {}), ...(enginePlan ? { plan: enginePlan } : {}), ...(scouting ? { scouting } : {}) });
       setLoadPhase('assets');
       await assets;
     } finally { setSessPreparing(false); setLoadPhase(null); }
@@ -168,6 +194,15 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
         autoPlay={autoPlay} onAutoPlay={setAutoPlay}
         onExit={() => setImmersive(false)}
         onReview={matchForView ? () => { setImmersive(false); setTab('review'); } : null}
+        managerOverlay={interactive && st?.manager ? (
+          <ManagerPanel
+            state={st} busy={sess.busy} open={mgrOpen || talkPending(st.manager)} onOpen={setMgrOpen} alerts={alerts} reactions={sess.talkReactions}
+            onShouts={(s) => { void sess.setShouts('A', s); }}
+            onStrategy={(s) => { void sess.setStrategy('A', s); }}
+            onTimeout={() => { setMgrOpen(false); void callTimeout(); }}
+            onTalk={(k) => { void sess.teamTalk('A', k); }}
+          />
+        ) : undefined}
       />
       </>
     );
@@ -247,10 +282,28 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
               ))}
               <span className="muted small">{t('md.opts.throw.hint')}</span>
             </div>
+            <label className="md-opt">
+              <input type="checkbox" checked={mgrExperimental} onChange={(e) => setMgrExperimental(e.target.checked)} disabled={busyControls || sess.active} data-testid="opt-manager-experimental" />
+              <b>{t('md.opts.mgr')}</b>
+              <span className="muted small">{t('md.opts.mgr.hint')}</span>
+            </label>
             <div className="md-optfoot">
-              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
+              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); setMgrExperimental(false); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
               {sess.active && <span className="muted small">{t('md.opts.locked')}</span>}
             </div>
+          </div>
+        )}
+
+        {/* [manager] pre-match opponent report + match plan (interactive matches outside a series) */}
+        {interactive && !series && (
+          <div className="md-prep">
+            <button className={`md-optsbtn ${prepOpen ? 'on' : ''}`} onClick={() => setPrepOpen((v) => !v)} aria-expanded={prepOpen} data-testid="prematch-toggle">
+              {t('pre.toggle')}{planForEngine(plan) && <span className="md-optsdot" title={t('md.opts.changed')}>●</span>}
+            </button>
+            {prepOpen && (
+              <PrematchPanel us={refOf(teamA)} them={refOf(teamB)} seed={seed} disabled={busyControls || sess.active}
+                plan={plan} onPlan={setPlan} report={report} onReport={setReport} />
+            )}
           </div>
         )}
 
@@ -262,7 +315,10 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
         )}
 
         {tab === 'review' && matchForView ? (
-          <ReviewPanel match={matchForView} replay={replay} timeoutLog={interactive ? sess.timeoutLog : []} />
+          <>
+            {interactive && sess.managerResult && <PostMatchSummary result={sess.managerResult} teams={matchForView.teams} />}
+            <ReviewPanel match={matchForView} replay={replay} timeoutLog={interactive ? sess.timeoutLog : []} />
+          </>
         ) : (
           <MatchHub
             match={matchForView} session={interactive ? st : null} engineLabel={engineLabel}

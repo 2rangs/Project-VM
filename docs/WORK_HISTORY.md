@@ -374,6 +374,15 @@
 - 합친 브랜치: `claude/suspicious-jones-8af005` @ `056ea8f`(문서만: `docs/research/PLANT_POSTPLANT.md` — 엔진 정합성 설치 위치 작업 대비 20행 갭 맵, `docs/research/MID_CONTROL.md` — main·`claude/nav-engine` 대비 12행 갭 맵).
 - 한계: `vct.duckdb`에 이벤트·위치·설치 좌표가 없어 인원 우위·남은 시간·사이트별 설치 후 승률, 첫 킬 위치별 라운드 승률, 스플릿 비율은 계산 못 함(맵별 결과 표로 대체; GRID Open Access나 VOD 코딩이 경로).
 
+### 브랜치 작업 (2026-11-24, `claude/series-veto-dc09f7`) — 경기 중 감독 운영 · 하프타임 · 경기 준비
+- 요청: FM식 경기 중 운영(반당 타임아웃, 지시, 전략 변경, 확인이 필요할 때 자동 진행 멈춤, 같은 레버를 쓰는 AI 감독), 하프타임 팀 토크와 경기 후 결정 요약, 상대 분석 리포트 → 경기 계획.
+- 엔진(`docs/MATCH_MANAGEMENT.md`): 선수 상태(누설 적분기, 침착함 = clutch·consistency) → 기존 수식의 라운드별 값(`MatchEngine.setRoundInputs`). 지시는 코치 지시·라운드 값으로만. `createManagedSession`(createMatchSession 상위 호환), `buildOpponentReport`·`MatchPlan`.
+- 고친 결함: 코치의 공격 전략 지시가 목표 사이트를 바꾸지 못하던 문제(`policy.ts` currentPlan) — 지시가 오프닝 콜이 됨. A 7/0 ↔ B 0/10 설치.
+- 데스크톱: 감독 패널(알림·타임아웃·지시·전략·선수 상태), 하프타임 토크 창, 리뷰의 결정 요약, 경기일 설정의 리포트·계획 패널(엔진 대기 옵션은 비활성). 시리즈 맵도 감독 계층.
+- 검증: `runMatch` 해시 불변. match-runner 118, 루트 264/4 todo, 데스크톱 단위 69·매치데이 54·엔진 계약 4. 승률 효과는 측정하지 않음.
+- 마무리(통합자 요청): 실제 로스터 게이트를 거치지 않은 시뮬 변경은 플래그로 기본 꺼짐 — `moodEffects`, `aiManager`, `timeoutsPerHalf`, `TeamOrder.asOpening`. 기본 옵션의 감독 세션은 `createMatchSession`과 라운드 단위로 동일(테스트). 인수인계: `docs/handoff/match-management.md`.
+
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.

@@ -64,7 +64,7 @@ import { MidControlTracker, OpponentModel, decideMidCall, defenderStartsFor, typ
 import { MAP_IDS, isMapId } from "@pv/spatial-engine";
 import { toPolicyOrder, type TeamOrder } from "./orders.js";
 // [series] per-team inputs + series metadata (additive; see ./team-inputs.ts)
-import { applyTraitDelta, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
+import { applyTraitDelta, type RoundTeamInputs, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
 import { FORM_SIGMA_MAX } from "./teams.js";
 import { DEFAULT_POLICY_TUNING } from "@pv/team-engine";
 
@@ -617,18 +617,41 @@ export class MatchEngine {
   /** [series] Policy tunables shared by both teams (config.tuning minus the simulator-side fields). */
   private readonly basePolicyTuning: Partial<PolicyTuning>;
 
+  /** [manager] Per-round inputs set between rounds by a manager layer (setRoundInputs). */
+  private readonly roundInputs: Partial<Record<TeamSlot, RoundTeamInputs>> = {};
+  /** [manager] Once any round inputs were set, side policies are re-tuned every round (so a cleared input does not linger). */
+  private perTeamTuning = false;
+
+  /**
+   * [manager] Set (or clear with null) a team's per-round inputs for the rounds that follow —
+   * state of mind and risk shouts (manager.ts). They compose with config.teamInputs: scales
+   * multiply, deltas add. Neutral / null → rounds play exactly as without a manager layer.
+   */
+  setRoundInputs(slot: TeamSlot, inputs: RoundTeamInputs | null): void {
+    if (inputs) this.roundInputs[slot] = inputs; else delete this.roundInputs[slot];
+    this.perTeamTuning = true;
+  }
+
+  /** [manager] This round's traits: the match traits with the round's trait delta applied. */
+  private traitsFor(slot: TeamSlot): TacticalTraits[] {
+    const d = this.roundInputs[slot]?.traitDelta;
+    return d ? applyTraitDelta(this.traitsBySlot[slot], d) : this.traitsBySlot[slot];
+  }
+
   /** [series] The side policy's tunables for the team playing that side this round. */
   private policyTuningFor(slot: TeamSlot): Partial<PolicyTuning> {
-    const scale = this.config.teamInputs?.[slot]?.throwRateScale;
-    if (scale === undefined || scale === 1) return this.basePolicyTuning;
-    const base = this.basePolicyTuning.throwRatePerSec ?? DEFAULT_POLICY_TUNING.throwRatePerSec;
-    return { ...this.basePolicyTuning, throwRatePerSec: base * Math.max(0, scale) };
+    const round = this.roundInputs[slot]; // [manager]
+    const scale = (this.config.teamInputs?.[slot]?.throwRateScale ?? 1) * (round?.throwRateScale ?? 1);
+    const base = round?.tuning ? { ...this.basePolicyTuning, ...round.tuning } : this.basePolicyTuning;
+    if (scale === 1) return base;
+    const rate = base.throwRatePerSec ?? DEFAULT_POLICY_TUNING.throwRatePerSec;
+    return { ...base, throwRatePerSec: rate * Math.max(0, scale) };
   }
 
   /** [series] Form σ ceiling for a team: the match value, scaled by the team's formSigmaScale. */
   private formSigmaFor(slot: TeamSlot): number | undefined {
-    const scale = this.config.teamInputs?.[slot]?.formSigmaScale;
-    if (scale === undefined || scale === 1) return this.formSigmaMax;
+    const scale = (this.config.teamInputs?.[slot]?.formSigmaScale ?? 1) * (this.roundInputs[slot]?.formSigmaScale ?? 1); // [manager] × round
+    if (scale === 1) return this.formSigmaMax;
     return (this.formSigmaMax ?? FORM_SIGMA_MAX) * Math.max(0, scale);
   }
 
@@ -644,7 +667,7 @@ export class MatchEngine {
         this.consistencyBySlot[slot][i] ?? 0.6,
         rng(),
         rng(),
-        pressure ? { clutch: this.traitsBySlot[slot][i]?.clutch ?? 0.6 } : undefined,
+        pressure ? { clutch: this.traitsFor(slot)[i]?.clutch ?? 0.6 } : undefined, // [manager] round traits
         this.formSigmaFor(slot), // [series] was this.formSigmaMax — identical when no teamInputs
       );
     });
@@ -757,7 +780,7 @@ export class MatchEngine {
     this.policies.attack.setOpponentRead(readBefore[attacker]);
     this.policies.defense.setOpponentRead(readBefore[defender]);
     // [series] The side policies are shared, so per-team tunables are re-bound to whoever plays the side.
-    if (config.teamInputs) {
+    if (config.teamInputs || this.perTeamTuning) { // [manager] or round inputs were ever set
       this.policies.attack.setTuning(this.policyTuningFor(attacker));
       this.policies.defense.setTuning(this.policyTuningFor(defender));
     }
@@ -776,7 +799,7 @@ export class MatchEngine {
       teamId: this.teamRef(attacker).id,
       // Pre-buy bank (what the team could field this round), not the leftover after buying.
       economy: toEconomyState(preBuy[attacker], "attack", buys[attacker]),
-      players: makeRoster("attack", buys[attacker], preBuy[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsBySlot[attacker]),
+      players: makeRoster("attack", buys[attacker], preBuy[attacker], this.formSkills(attacker, seed, pressure), this.abilitiesOn, undefined, this.traitsFor(attacker)), // [manager] round traits
     };
     // Where the five defenders start: the map's derived starts (on Ascent: its two sites twice and
     // mid courtyard), with abilities on or off — abilities change what players can do, not where the
@@ -790,7 +813,7 @@ export class MatchEngine {
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
       economy: toEconomyState(preBuy[defender], "defense", buys[defender]),
-      players: makeRoster("defense", buys[defender], preBuy[defender], this.formSkills(defender, seed, pressure), this.abilitiesOn, defSpawns, this.traitsBySlot[defender]),
+      players: makeRoster("defense", buys[defender], preBuy[defender], this.formSkills(defender, seed, pressure), this.abilitiesOn, defSpawns, this.traitsFor(defender)), // [manager] round traits
     };
     const out = runMatchRound({
       spatial: this.spatial,

@@ -22,6 +22,11 @@ export interface TeamOrder {
   readonly roles?: { readonly entry?: string; readonly lurker?: string };
   /** Apply the order for this many upcoming rounds (default 1). */
   readonly durationRounds?: number;
+  /**
+   * [manager] Make the forced strategy the round's opening call, so the attack goes to the site it
+   * names (PolicyOrder.asOpening). Default false: the strategy only relabels the IGL's own plan, as before.
+   */
+  readonly asOpening?: boolean;
 }
 
 /** Map an order's strategy string to the policy's TeamStrategy; `split` → mid split (midControl). */
@@ -40,5 +45,6 @@ export function toPolicyOrder(order: TeamOrder | null | undefined): PolicyOrder 
     ...(strategy ? { strategy } : {}),
     ...(order.tempo ? { tempo: order.tempo } : {}),
     ...(order.roles ? { roles: order.roles } : {}),
+    ...(order.asOpening && strategy ? { asOpening: true } : {}),
   };
 }

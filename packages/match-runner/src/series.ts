@@ -22,6 +22,10 @@ import type { OpponentPrior } from "@pv/team-engine";
 import type { MatchConfig, Side, TeamRef, TeamSlot } from "./match.js";
 import type { RosterPlayer } from "./teams.js";
 import { createMatchSession, type MatchSession, type MatchSessionResult } from "./session.js";
+// [manager] maps of an interactive series can be played with the manager layer
+import { createManagedSession, type ManagedSession } from "./managed-session.js";
+import type { ManagerProfile } from "./manager.js";
+import type { MatchPlan } from "./prep.js";
 import { gamePlanPrior, type GamePlan, type SeriesGameContext, type TeamMatchInputs } from "./team-inputs.js";
 import { leagueMasteryReference, mapMastery, masteryEngineInputs, type MapMastery } from "./mastery.js";
 import { buildScoutingReport, opponentPriorFromLogs, teamGameLog, type ScoutingReport, type TeamGameLog, type WeightedLog } from "./scouting.js";
@@ -148,6 +152,8 @@ export interface SeriesGameSession {
   readonly context: SeriesGameContext;
   /** The interactive match (rounds, timeouts, orders). Engine slots: `context.slots`. */
   readonly session: MatchSession;
+  /** [manager] The same session with the manager layer, when the series is played managed. */
+  readonly managed: ManagedSession | null;
 }
 
 export interface SeriesSession {
@@ -175,6 +181,14 @@ export interface SeriesSession {
 export interface SeriesSessionOptions {
   /** Series teams the AI drives (veto choices, and timeouts inside games). Default: both. */
   readonly aiTeams?: readonly SeriesTeam[];
+  /**
+   * [manager] Play each map with the manager layer (createManagedSession: state of mind, shouts,
+   * half-time talks, AI managers). Default false — runSeries and its measured effects are unchanged.
+   */
+  readonly managed?: boolean;
+  readonly managers?: Partial<Record<SeriesTeam, ManagerProfile>>;
+  /** [manager] Pre-match plan per SERIES team, used on every map. */
+  readonly plans?: Partial<Record<SeriesTeam, MatchPlan>>;
 }
 
 const TEAMS: readonly SeriesTeam[] = ["A", "B"];
@@ -317,9 +331,16 @@ export function createSeriesSession(config: SeriesConfig, options: SeriesSession
         ? { rosters: { ...(cfg.A.roster ? { [slots.A]: cfg.A.roster } : {}), ...(cfg.B.roster ? { [slots.B]: cfg.B.roster } : {}) } as Partial<Record<TeamSlot, readonly RosterPlayer[]>> }
         : {}),
     };
-    const session = createMatchSession(matchConfig, { aiTeams: TEAMS.filter((t) => aiTeams.has(t)).map((t) => slots[t]) });
+    const engineAi = TEAMS.filter((t) => aiTeams.has(t)).map((t) => slots[t]);
+    const bySlot = <T,>(rec: Partial<Record<SeriesTeam, T>> | undefined): Partial<Record<TeamSlot, T>> => {
+      const out: Partial<Record<TeamSlot, T>> = {};
+      for (const t of TEAMS) if (rec?.[t] !== undefined) out[slots[t]] = rec[t];
+      return out;
+    };
+    const managed = options.managed ? createManagedSession(matchConfig, { aiTeams: engineAi, managers: bySlot(options.managers), plans: bySlot(options.plans) }) : null;
+    const session: MatchSession = managed ?? createMatchSession(matchConfig, { aiTeams: engineAi });
     open = { context, session, mastery: { A: perTeam.A.mastery, B: perTeam.B.mastery }, inputs: { A: perTeam.A.inputs, B: perTeam.B.inputs } };
-    return { context, session };
+    return { context, session, managed };
   };
 
   const finishGame = (): SeriesGameResult => {

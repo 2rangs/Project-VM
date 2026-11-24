@@ -10,7 +10,7 @@
 // The coach view is our team's fog of war: our own players, what they observe, what the team
 // remembers, what it hears. The opponent's real positions are never drawn unless a player of
 // ours sees them. (The fog POV can be switched to the opponent for debugging, as before.)
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Replay } from '@pv/replay-engine';
 import type { MatchSummary, SessionState, TeamOrder, TimeoutLogEntry } from '../../../shared/ipc.ts';
 import { ASCENT_TRANSFORM } from '../../../shared/ascent-transform.ts';
@@ -74,12 +74,14 @@ export interface LiveMatchProps {
   onAutoPlay: (v: boolean) => void;
   onExit: () => void;
   onReview: (() => void) | null;
+  /** [manager] In-match manager controls drawn over the stage (screens/matchday/ManagerPanel.tsx). */
+  managerOverlay?: ReactNode;
 }
 
 /** A rectangle of the stage: `map2d` views are drawn by PixiJS, `cam3d` views by three.js. */
 interface ViewSpec { key: string; slot: number | null; detail: 'full' | 'compact'; kind: 'map2d' | 'cam3d' }
 
-export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay, onAutoPlay, onExit, onReview }: LiveMatchProps) {
+export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay, onAutoPlay, onExit, onReview, managerOverlay }: LiveMatchProps) {
   const t = useT();
   const [prefs, setPrefs] = useState<MatchPrefs>(loadPrefs);
   const [pov, setPov] = useState<TeamSlot>(OUR_TEAM);
@@ -362,6 +364,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       )}
       {session?.busy && !session.ordersOpen && <div className="mdx-loadchip center"><LoadingInline label={t('load.round', { n: session.state.roundNumber })} testId="loading-round" /></div>}
       {toast && <div className="mdx-toast" role="status">{toast}</div>}
+      {managerOverlay /* [manager] */}
       {session?.error && <div className="mdx-toast err" role="alert"><Icon name="warn" size={12} /> {session.error}</div>}
       {replay && tl.rounds.length > 0 && !tl.hasTracks && <div className="mdx-toast warn">{t('mdx.noTracks')}</div>}
     </>

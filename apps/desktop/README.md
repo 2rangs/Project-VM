@@ -386,6 +386,33 @@ the engine to emit a reason *key* (+ params) per revision; the UI would then map
 through `ko.ts` / `en.ts`. Revision `from` / `to` are parsed on the desktop side
 (`parseCall`: strategy ids, the `" (slow)"` suffix, `"commit A|B"`) and are localised.
 
+## In-match management, half-time, match prep
+
+Full model and formulas: `docs/MATCH_MANAGEMENT.md` at the repo root (Korean).
+
+- **Match Day → 상대 분석 · 경기 계획 / Opponent report · match plan** (interactive mode): build the opponent report
+  (their simulated recent film read through the scouting model: preferred sites, pistol and eco habits, key players,
+  map mastery; thin samples are tagged), take its suggested plan or set your own (attack / defensive lean, tempo,
+  risk, defensive set-up, pistol calls, the call after a lost pistol, start our read of them from the report).
+  Plant spot, post-plant, retake and mid control are shown disabled — they wait for the engine-truth / maps-data work.
+- **Live view → 감독 지시 / Manager** (top right): alerts, the timeout left this half (opens the orders panel), standing
+  instructions (tempo / risk / defense), a strategy for the next N rounds, and each player's state of mind
+  (★ key player, tilted / shaky / steady / confident, personality tags). A 0–4 run, a broken economy, a player
+  tipping into tilt or half-time **stops auto-play and opens the panel**.
+- **Half-time team talk**: four talks; each player reacts by personality (lifted / unmoved / rattled). Skippable.
+- **Review → 감독 결정 요약 / Manager decisions**: both managers' decisions (the opponent's is the AI) with the rounds won
+  in the three rounds before and after, tilt three rounds later, talk reactions, and a tilt chart per team.
+- Series maps are played with the same layer (through the series host). One-shot matches stay plain `runMatch`.
+- **Default off — Match options → 감독 실험 기능 / Manager experimental**: turns on the engine flags `moodEffects`
+  (state of mind affects play), `aiManager` (AI uses shouts, talks, attribute-driven timeouts) and `timeoutsPerHalf: 1`.
+  Off, moods are shown but do not affect play, and the AI behaves as before. Not validated against the balance gate.
+
+Data path: `scripts/match-session.mts` (now `createManagedSession`; commands `setShouts`, `setStrategy`, `teamTalk`)
+and `scripts/series-session.mts` (same commands, seat ⇄ slot) → `scripts/manager-view.mts` (state from our seat) →
+`src/shared/manager.ts` → `useMatchSession` → `screens/matchday/{ManagerPanel,PostMatchSummary}.tsx`;
+`scripts/prematch.mts` → IPC `pv:prematch:report` → `PrematchPanel.tsx`. View logic: `src/renderer/matchday/manager.ts`
+(unit-tested in `test/manager-view.test.ts`).
+
 ## Series · map veto
 
 ![Map veto](docs/desktop-veto.png)

@@ -1,4 +1,5 @@
-// Stateful interactive match host. Wraps PV-3's createMatchSession and exposes it
+// Stateful interactive match host. Wraps the managed match session (createManagedSession: the
+// match plus the manager layer — docs/MATCH_MANAGEMENT.md) and exposes it
 // over a line-delimited JSON protocol on stdin/stdout, so the Electron main process
 // can drive a tactical-timeout match one round at a time (the session is a live
 // stateful object and the match-runner can't be bundled into the app — it runs here,
@@ -8,22 +9,28 @@
 //   → {"id":1,"cmd":"state"}
 //   ← {"id":1,"ok":true,"state":{...}}
 //   cmd ∈ state | callTimeout(team) | setOrders(team,order) | playNextRound | result | stop
+//         | setShouts(team,shouts) | setStrategy(team,strategy) | teamTalk(team,talk)   [manager]
 //   playNextRound returns {round:<compact RoundRecord>, state}; errors come back {ok:false,error}.
 // Config (teams/seed/aiTeams) is argv[2] JSON. Diagnostics go to stderr only.
 import { createInterface } from 'node:readline';
 import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-round.mts';
-import { createMatchSession, type MatchSession } from '../../../packages/match-runner/src/index.ts';
-import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
+import { createManagedSession, type ManagedSession, type MatchPlan, type Shouts, type TeamTalk, type TeamGameLog } from '../../../packages/match-runner/src/index.ts';
+import type { StrategyOrder, TeamOrder } from '../../../packages/match-runner/src/orders.ts';
+import { managerResultView, managerView } from './manager-view.mts';
 
 interface Cfg {
   teamA: { id: string; name: string }; teamB: { id: string; name: string };
   map?: string; seed?: number; aiTeams?: ('A' | 'B')[];
   /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
-  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> }; moodEffects?: boolean; aiManager?: boolean; timeoutsPerHalf?: number };
+  /** [manager] Our pre-match plan, and the opponent film our report was read from. */
+  plan?: MatchPlan;
+  scouting?: { logs: TeamGameLog[]; uptake?: number };
 }
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
+const human = (['A', 'B'] as const).find((t) => !(cfg.aiTeams ?? ['B']).includes(t)) ?? 'A';
 
-const session: MatchSession = createMatchSession(
+const session: ManagedSession = createManagedSession(
   {
     teamA: cfg.teamA ?? { id: 'A', name: 'Team A' },
     teamB: cfg.teamB ?? { id: 'B', name: 'Team B' },
@@ -34,11 +41,21 @@ const session: MatchSession = createMatchSession(
     ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
     ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
   },
-  { aiTeams: cfg.aiTeams ?? ['B'] },
+  {
+    aiTeams: cfg.aiTeams ?? ['B'],
+    // [manager] flags, default off (src/shared/ipc.ts MatchOptions)
+    ...(cfg.options?.moodEffects ? { moodEffects: true } : {}),
+    ...(cfg.options?.aiManager ? { aiManager: true } : {}),
+    ...(cfg.options?.timeoutsPerHalf ? { timeoutsPerHalf: cfg.options.timeoutsPerHalf } : {}),
+    ...(cfg.plan ? { plans: { [human]: cfg.plan } } : {}),
+    ...(cfg.scouting?.logs?.length ? { scouting: { [human]: cfg.scouting } } : {}),
+  },
 );
+/** Session state + the manager layer (our seat = engine slot here). */
+const stateOf = () => { const s = session.state(); return { ...s, manager: managerView(s.manager) }; };
 
 // Compact a RoundRecord to the serializable shape mergeMatch/ipc expect (same as run-match.mts).
-function compactRound(r: ReturnType<MatchSession['playNextRound']>) {
+function compactRound(r: ReturnType<ManagedSession['playNextRound']>) {
   return {
     roundNumber: r.roundNumber, phase: r.phase, attacker: r.attacker,
     winner: r.winner, winnerSide: r.winnerSide, reason: r.reason, planted: r.planted,
@@ -61,17 +78,20 @@ const rl = createInterface({ input: process.stdin });
 rl.on('line', (line) => {
   const text = line.trim();
   if (!text) return;
-  let msg: { id?: number; cmd?: string; team?: 'A' | 'B'; order?: TeamOrder };
+  let msg: { id?: number; cmd?: string; team?: 'A' | 'B'; order?: TeamOrder; shouts?: Partial<Shouts>; strategy?: { attack?: StrategyOrder; defense?: StrategyOrder; rounds?: number } | null; talk?: TeamTalk };
   try { msg = JSON.parse(text); } catch (e) { reply({ ok: false, error: `bad json: ${(e as Error).message}` }); return; }
   const id = msg.id;
   try {
     switch (msg.cmd) {
-      case 'state': reply({ id, ok: true, state: session.state() }); break;
-      case 'callTimeout': session.callTimeout(msg.team!); reply({ id, ok: true, state: session.state() }); break;
-      case 'setOrders': session.setOrders(msg.team!, msg.order ?? {}); reply({ id, ok: true, state: session.state() }); break;
+      case 'state': reply({ id, ok: true, state: stateOf() }); break;
+      case 'callTimeout': session.callTimeout(msg.team!); reply({ id, ok: true, state: stateOf() }); break;
+      case 'setOrders': session.setOrders(msg.team!, msg.order ?? {}); reply({ id, ok: true, state: stateOf() }); break;
+      case 'setShouts': session.setShouts(msg.team!, msg.shouts ?? {}); reply({ id, ok: true, state: stateOf() }); break;
+      case 'setStrategy': session.setStrategy(msg.team!, msg.strategy ?? null); reply({ id, ok: true, state: stateOf() }); break;
+      case 'teamTalk': { const talk = session.teamTalk(msg.team!, msg.talk!); reply({ id, ok: true, talk, state: stateOf() }); break; }
       case 'playNextRound': {
         const round = compactRound(session.playNextRound());
-        reply({ id, ok: true, round, state: session.state() });
+        reply({ id, ok: true, round, state: stateOf() });
         break;
       }
       case 'result': {
@@ -81,6 +101,7 @@ rl.on('line', (line) => {
         reply({ id, ok: true, result: {
           winner: r.winner, score: r.score, wentToOvertime: r.wentToOvertime,
           timeoutLog: r.timeoutLog,
+          manager: managerResultView(r),
         } });
         break;
       }
