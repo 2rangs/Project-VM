@@ -172,6 +172,8 @@ export class MovementExecutor {
   /** zone → (node → player id) so two players never share a standing spot. */
   private readonly claims = new Map<number, string>();
   private readonly noTransit: ReadonlySet<string>;
+  private readonly noTransitDefense: ReadonlySet<string>;
+  private readonly noTransitAttack: ReadonlySet<string>;
   /** blocker id → the zone it seals (zone blockers only), for the strategic route. */
   private readonly zoneOfBlocker = new Map<string, string>();
   private readonly speeds: { run: number; walk: number }; // uu per ms
@@ -187,6 +189,9 @@ export class MovementExecutor {
     this.nav = spatial.nav;
     this.blockers = new NavBlockers(this.nav);
     this.noTransit = new Set(spatial.zones.filter((z) => z.transit === false).map((z) => z.id));
+    // a team's own spawn floor is ordinary floor to it (the defenders' way between the sites on most maps)
+    this.noTransitDefense = new Set([...this.noTransit].filter((z) => z !== "defender-spawn"));
+    this.noTransitAttack = new Set([...this.noTransit].filter((z) => z !== "attacker-spawn"));
     this.speeds = { run: speeds.runUnitsPerSec / 1000, walk: speeds.walkUnitsPerSec / 1000 };
   }
 
@@ -504,7 +509,7 @@ export class MovementExecutor {
       const r = this.nav.findPath({
         ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
         actorId: p.id, start: p.position, destination: this.nav.nodePosition(anchor), movementMode: goal.mode,
-        routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
+        routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: p.side === "defense" ? this.noTransitDefense : this.noTransitAttack,
         startNodes: this.startNodes(m),
         ...(goal.zoneCost ? { zoneCost: goal.zoneCost } : {}),
       });
@@ -526,7 +531,7 @@ export class MovementExecutor {
     const r = this.nav.findPath({
       ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
       actorId: p.id, start: p.position, destination: this.nav.nodePosition(spot), movementMode: goal.mode,
-      routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
+      routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: p.side === "defense" ? this.noTransitDefense : this.noTransitAttack,
       startNodes: this.startNodes(m),
       ...(goal.zoneCost ? { zoneCost: goal.zoneCost } : {}), ...(goal.zoneEntryMs ? { zoneEntryMs: goal.zoneEntryMs } : {}),
       ...(goal.hazards && goal.hazards.length > 0 ? { hazards: goal.hazards } : {}),
