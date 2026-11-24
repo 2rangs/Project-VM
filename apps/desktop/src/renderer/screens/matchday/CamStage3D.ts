@@ -236,6 +236,7 @@ export class CamStage3D {
   private readonly hemi = new THREE.HemisphereLight(0xdcecff, 0x1a242e, 1.25);
   private clear = BG;
   private lastSig = '';
+  private blank = false; // the canvas is already cleared (no monitors to draw)
   private samples: number[] = [];
   private host: HTMLElement | null = null;
   private readonly viewModel = new ViewModel(C.ally);
@@ -448,13 +449,24 @@ export class CamStage3D {
 
   // ── frame ──────────────────────────────────────────────────────────────────────────────
 
-  render(frame: Frame | null, views: readonly CamView[], opts: CamOptions): void {
+  /**
+   * Draw one wall frame. Returns true when the canvas is up to date for these inputs (rendered, or
+   * nothing to draw / unchanged), false when the frame rate cap made it skip and the caller should
+   * offer the same frame again.
+   */
+  render(frame: Frame | null, views: readonly CamView[], opts: CamOptions): boolean {
     const renderer = this.renderer; const host = this.host;
-    if (!renderer || !host) return;
+    if (!renderer || !host) return true;
+    if (views.length === 0) {
+      // tactical map mode: no monitors — clear the canvas once instead of 30 times a second
+      if (!this.blank) { renderer.setScissorTest(false); renderer.setClearColor(0x000000, 0); renderer.clear(); this.blank = true; this.lastSig = ''; }
+      return true;
+    }
+    this.blank = false;
     const now = performance.now();
     const sig = `${frame?.tMs ?? -1}|${views.map((v) => `${v.key}:${Math.round(v.x)},${Math.round(v.y)},${Math.round(v.w)},${Math.round(v.h)}:${v.followId}`).join('|')}|${this.perf.map}`;
-    if (sig === this.lastSig) return;
-    if (now - this.lastRender < 1000 / CAMS_FPS - 1) return;
+    if (sig === this.lastSig) return true;
+    if (now - this.lastRender < 1000 / CAMS_FPS - 1) return false;
     this.lastRender = now; this.lastSig = sig;
 
     const hostH = host.clientHeight;
@@ -463,7 +475,7 @@ export class CamStage3D {
     renderer.setClearColor(0x000000, 0);
     renderer.clear();
     this.perf.views = 0;
-    if (!frame) { this.sample(performance.now() - now, renderer); return; }
+    if (!frame) { this.sample(performance.now() - now, renderer); return true; }
 
     // scene state shared by all monitors
     const t = frame.tMs;
@@ -553,6 +565,7 @@ export class CamStage3D {
       this.perf.views += 1;
     }
     this.sample(performance.now() - now, renderer);
+    return true;
   }
 
   private sample(ms: number, renderer: THREE.WebGLRenderer): void {

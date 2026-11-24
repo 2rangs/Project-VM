@@ -116,6 +116,8 @@ export interface PlayerRoundOutcome {
   readonly weaponRetained: string | null;
   /** Armor points retained; survivors keep their remaining shield, dead players keep none. */
   readonly armorRetained: number;
+  /** Zone the player ended the round in (where a dead player died) — for post-round weapon pickups. */
+  readonly endZoneId?: string;
   /** Remaining ability charges (survivors only; dead players re-equip next round). */
   readonly abilitiesRemaining: readonly { readonly abilityId: string; readonly charges: number }[];
 
@@ -279,6 +281,7 @@ function outcomeFor(p: SimPlayer, events: readonly SimEvent[], input: MatchRound
     kills,
     weaponRetained: survived ? p.weaponId : null,
     armorRetained: survived ? p.armor : 0,
+    endZoneId: p.zoneId,
     abilitiesRemaining: survived
       ? p.abilities.map((a) => ({ abilityId: a.abilityId, charges: a.chargesRemaining }))
       : [],

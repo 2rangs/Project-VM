@@ -13,7 +13,7 @@ import { mergeMatch, type RawMatch } from '../../src/shared/match-merge.ts';
 import { fromSimEventLog, type Replay } from '../../../../packages/replay-engine/src/index.ts';
 import { buildNav, type NavData } from '../../src/renderer/matchday/nav.ts';
 import {
-  ENGINE, buildHops, buildTimeline, displayPos, engineFacing, findPlayer, isAlive, logicalAt, playerIdFor,
+  ENGINE, buildHops, buildTimeline, displayPos, engineFacing, facingAt, findPlayer, isAlive, logicalAt, playerIdFor,
   poseAt, scoreAt, teamOfId, teamPlayers, type MatchTimeline, type RoundTimeline,
 } from '../../src/renderer/matchday/timeline.ts';
 import {
@@ -422,4 +422,105 @@ test('view model: a player fires only around the kills they are part of', () => 
   assert.ok(firingAt(r3.kills, 'atk4', kill + 600).kick < 0.01, 'recoil settles');
   assert.equal(firingAt(r3.kills, 'atk3', kill).kick, 0, 'a teammate who is not in the duel does not fire');
   assert.equal(firingAt(r3.kills, 'def2', kill).flash, true, 'the victim was shooting back');
+});
+
+test('sight: the sim\'s own per-tick sight and zones win over the approximation; without it the source is "approx"', async () => {
+  const { sightAt, zoneOf } = await import('../../src/renderer/matchday/timeline.ts');
+  const before = computeFrame(replay, tl, nav, 'A', at(r3, 5000))!;
+  assert.equal(before.sightSource, 'approx');
+  // attach a sight record to round 3: at 5 s atk1 sees def5 and stands in mid-catwalk per the sim
+  const sight: Array<{ tMs: number; zones: Record<string, string>; sees: Record<string, string[]> }> = [{ tMs: 0, zones: { atk1: 'attacker-spawn' }, sees: {} }, { tMs: 5000, zones: { atk1: 'mid-catwalk' }, sees: { atk1: ['def5', 'atk2'] } }];
+  const r3s = { ...r3, summary: { ...r3.summary!, sight } };
+  const tl2 = { ...tl, rounds: [tl.rounds[0], r3s] };
+  assert.equal(sightAt(r3s, at(r3, 4999))?.zones.atk1, 'attacker-spawn');
+  assert.equal(zoneOf(r3s, findPlayer(r3s, 'atk1')!, at(r3, 5000)), 'mid-catwalk', 'the sim\'s zone, not the nearest centre');
+  const f = computeFrame(replay, tl2, nav, 'A', at(r3, 5000))!;
+  assert.equal(f.sightSource, 'engine');
+  const atk1 = f.units.find((u) => u.id === 'atk1')!;
+  assert.deepEqual(atk1.view.enemies, [{ enemyId: 'def5', via: 'sight' }], 'exactly the enemies the sim says — teammates ignored');
+  assert.equal(atk1.pose.zone, 'mid-catwalk');
+  assert.deepEqual(f.seen.map((e) => e.id), ['def5']);
+});
+
+// ── economy, duels, sim gaze/plan (UI-1…UI-6) ───────────────────────────────────────────────
+import { buyReason, dropsOf, playerEco } from '../../src/renderer/matchday/economy.ts';
+import { duelCards } from '../../src/renderer/matchday/duels.ts';
+import { planOf } from '../../src/renderer/matchday/monitor.ts';
+import type { MatchRoundSummary, PlayerBuyInfo } from '../../src/shared/ipc.ts';
+
+const pbuy = (index: number, over: Partial<PlayerBuyInfo> = {}): PlayerBuyInfo => ({
+  index, creditsBefore: 3000 + index * 100, creditsAfter: 100, spent: 2900, weapon: 'Vandal', weaponSource: 'bought', armor: 0, armorBought: 'heavy', utility: 300, loadoutValue: 4000, ...over,
+});
+const ecoRound = (): MatchRoundSummary => ({
+  ...(r3.summary as MatchRoundSummary),
+  buys: {
+    A: { tier: 'full', weapon: 'Vandal', plan: 'max', cost: 13000, loadoutValue: 21000, vctTier: 'full', drops: 1, call: 'full',
+      evaluation: [{ plan: 'light', ultHold: false, value: 0.51, winNow: 0.5 }, { plan: 'max', ultHold: false, value: 0.62, winNow: 0.55 }],
+      players: [pbuy(0), pbuy(1, { weaponSource: 'dropped', droppedBy: 0, creditsBefore: 900 }), pbuy(2, { weaponSource: 'kept', weapon: 'Phantom' }), pbuy(3), pbuy(4)] },
+    B: { tier: 'eco', weapon: 'Classic' },
+  },
+  economy: {
+    A: { credits: 5000, ultPoints: 3, players: [0, 1, 2, 3, 4].map((i) => ({ credits: 700 + i, weapon: i === 2 ? 'Phantom' : null, armor: 0, ultPoints: i })) },
+    B: { credits: 1000, ultPoints: 0 },
+  },
+});
+
+test('economy: a player\'s entering state is shown during the round; the after-state only once it is over', () => {
+  const round = ecoRound(), prev = { ...ecoRound(), economy: { ...ecoRound().economy, A: { ...ecoRound().economy.A, players: [0, 1, 2, 3, 4].map((i) => ({ credits: 1, weapon: null, armor: 0, ultPoints: 4 + i })) } } };
+  const live = playerEco(round, prev, 'A', 2, false)!;
+  assert.equal(live.creditsBefore, 900);
+  assert.equal(live.source, 'dropped');
+  assert.equal(live.droppedBySlot, 1, 'roster index 0 is slot 1');
+  assert.equal(live.ultBefore, 5, 'ult points carried in come from the previous round');
+  assert.equal(live.creditsAfter, null, 'the credits after the round do not spoil it');
+  assert.equal(live.armor, 50, 'a bought heavy shield counts');
+  const done = playerEco(round, prev, 'A', 3, true)!;
+  assert.equal(done.creditsAfter, 702); assert.equal(done.keeps, 'Phantom');
+  assert.equal(playerEco(round, prev, 'B', 1, false), null, 'no per-player data → null (older engine)');
+});
+
+test('economy: the buy reason names the plan, the coach call and the alternative it beat; drops are attributed', () => {
+  const buy = ecoRound().buys.A;
+  const r = buyReason(buy)!;
+  assert.equal(r.plan, 'max'); assert.equal(r.call, 'full'); assert.equal(r.loadoutValue, 21000);
+  assert.deepEqual(r.chosen, { plan: 'max', value: 0.62, ultHold: false });
+  assert.deepEqual(r.beat, { plan: 'light', value: 0.51, ultHold: false });
+  assert.deepEqual(dropsOf(buy), [{ from: 1, to: 2, weapon: 'Vandal' }]);
+  assert.equal(buyReason(ecoRound().buys.B), null, 'an engine without plans gives no reason');
+});
+
+test('duel cards: our side first, first sight and winner from the viewer\'s point of view', () => {
+  const eng = [{ elapsedMs: 10700, attackerId: 'atk4', defenderId: 'def2', attackerZone: 'a-main', defenderZone: 'a-site', distanceMeters: 31.6, firstSight: 'attacker' as const,
+    attackerPreAim: true, defenderPreAim: false, attackerMoving: false, defenderMoving: true, angleDelayMs: { attacker: 0, defender: 120 }, crossfire: { attacker: false, defender: true },
+    info: { attacker: true, defender: false }, attackerFlashedMs: 0, defenderFlashedMs: 0, winnerSide: 'attack' as const }];
+  const mine = duelCards(eng, r3.startMs, 'A', 'A')[0];
+  assert.equal(mine.ours.id, 'atk4'); assert.equal(mine.firstSight, 'ours'); assert.equal(mine.winner, 'ours');
+  assert.equal(mine.theirs.crossfire, true); assert.equal(mine.theirs.angleDelayMs, 120); assert.equal(mine.distanceM, 32);
+  const theirs = duelCards(eng, r3.startMs, 'A', 'B')[0];
+  assert.equal(theirs.ours.id, 'def2'); assert.equal(theirs.firstSight, 'theirs'); assert.equal(theirs.winner, 'theirs');
+  assert.equal(duelCards(null, 0, 'A', 'A').length, 0);
+});
+
+test('plan: our plan revisions are placed on the match clock; nothing for a round without decisions', () => {
+  const plan = { opening: 'aExecute', strategy: 'commit A', objective: 'a-site', feint: 'b-site', revisions: [{ atMs: 26600, from: 'aExecute', to: 'commit A', reason: 'clock' }] };
+  const r = { ...r3, summary: { ...r3.summary!, decisions: { plans: { A: plan, B: null }, opponentReadBefore: { A: null, B: null }, observed: { plantSite: null, firstContactSite: null, defendersMet: {} } } } } as unknown as RoundTimeline;
+  const p = planOf(r, 'A')!;
+  assert.equal(p.feint, 'b-site'); assert.equal(p.marks[0].tMs, r3.startMs + 26600);
+  assert.equal(planOf(r, 'B'), null);
+  assert.equal(planOf(r3, 'A'), null);
+});
+
+test('sim gaze: the recorded facing wins over the engine-rule estimate, blind and gaze are reported', () => {
+  const sight = [{ tMs: 0, facing: { atk1: { x: 0, y: 1 } }, gaze: { atk1: 'hold' as const } }, { tMs: 6000, facing: { atk1: { x: 1, y: 0 } }, gaze: { atk1: 'enemy' as const }, blind: ['atk1'] }];
+  const r = { ...r3, summary: { ...r3.summary!, sight } } as unknown as RoundTimeline;
+  const atk1 = findPlayer(r, 'atk1')!;
+  assert.deepEqual(facingAt(r, atk1, at(r3, 3000), nav), { x: 0, y: 1 });
+  assert.deepEqual(facingAt(r, atk1, at(r3, 6500), nav), { x: 1, y: 0 });
+  const f = computeFrame(replay, { ...tl, rounds: [tl.rounds[0], r] }, nav, 'A', at(r3, 6500))!;
+  const u = f.units.find((x) => x.id === 'atk1')!;
+  assert.equal(u.gaze, 'enemy'); assert.equal(u.blind, true);
+  assert.equal(f.units.find((x) => x.id === 'atk2')!.gaze, null, 'no record for that player: no gaze claimed');
+  // without a sight record the estimate is used and no gaze is claimed
+  const g = computeFrame(replay, tl, nav, 'A', at(r3, 6500))!;
+  assert.equal(g.units[0].gaze, null);
 });

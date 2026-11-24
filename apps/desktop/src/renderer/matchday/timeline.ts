@@ -95,6 +95,8 @@ export interface RoundTimeline {
   readonly defuse: SpikeAction | null;
   readonly endReason: string | null;
   readonly summary: MatchRoundSummary | null;
+  /** The previous round's summary (carried ultimate points / credits), or null for round 1. */
+  readonly prevSummary?: MatchRoundSummary | null;
   /** False when the replay carries no positions for this round (engine did not record tracks). */
   readonly hasTracks: boolean;
 }
@@ -217,7 +219,7 @@ export function buildTimeline(replay: Replay, match: MatchSummary | null, nav: N
       roundNum: rd.roundNum, startMs: rd.startMs, endMs: endEv?.tMs ?? lastEvMs, attacker, players,
       kills: [], plant: null, defuse: null,
       endReason: ((endEv?.data as { reason?: string } | undefined)?.reason) ?? summary?.reason ?? null,
-      summary, hasTracks,
+      summary, hasTracks, prevSummary: match?.rounds.find((r) => r.roundNumber === rd.roundNum - 1) ?? null,
     };
 
     const kills: KillEvent[] = evs.filter((e) => e.kind === 'kill' && e.victimId).map((e) => {
@@ -382,6 +384,9 @@ export function displayPos(p: PlayerRound, tMs: number): Vec3 {
 
 /** Facing for display: the engine rule, turned toward the opponent during a duel. */
 export function facingAt(round: RoundTimeline, p: PlayerRound, tMs: number, nav: NavModel): Vec2 {
+  // the sim's own gaze, when it recorded one, is the truth: no estimate on top of it
+  const recorded = isAlive(p, tMs) ? sightAt(round, tMs)?.facing[p.id] : undefined;
+  if (recorded && (recorded.x !== 0 || recorded.y !== 0)) return recorded;
   const t = p.deathMs != null ? Math.min(tMs, p.deathMs - 1) : tMs;
   const contact = contactAt(round, p.id, t);
   if (contact) {
@@ -400,7 +405,7 @@ export function poseAt(round: RoundTimeline, p: PlayerRound, tMs: number, nav: N
   const hop = alive ? activeHop(p, t) : null;
   const logical = logicalAt(p, t);
   return {
-    pos: displayPos(p, t), logicalPos: logical.pos, zone: logical.zone, alive,
+    pos: displayPos(p, t), logicalPos: logical.pos, zone: sightAt(round, t)?.zones[p.id] ?? logical.zone, alive,
     hopProgress: hop && !hop.sampled ? Math.min(1, Math.max(0, (t - hop.departMs) / Math.max(1, hop.arriveMs - hop.departMs))) : null,
     moving: !!hop, moveMode: hop?.mode ?? null, toZone: hop?.toZone ?? null,
     facing: facingAt(round, p, t, nav),
@@ -431,4 +436,52 @@ export function scoreAt(tl: MatchTimeline, tMs: number): Record<TeamSlot, number
 /** True once playback has reached the round's end event. */
 export function roundOver(round: RoundTimeline, tMs: number): boolean {
   return round.endReason != null && tMs >= round.endMs;
+}
+
+// ── sight decided by the sim (when the engine records it) ───────────────────────────────────
+
+export interface SightNow {
+  readonly zones: Readonly<Record<string, string>>;
+  readonly sees: Readonly<Record<string, readonly string[]>>;
+  /** Gaze (unit vector, game x/y) per player as the sim recorded it. */
+  readonly facing: Readonly<Record<string, { x: number; y: number }>>;
+  readonly gaze: Readonly<Record<string, 'enemy' | 'threat' | 'hold' | 'route'>>;
+  readonly blind: readonly string[];
+}
+
+const sightCache = new WeakMap<object, { idx: number; val: SightNow }>();
+
+/**
+ * The sim's latest sight frame at or before tMs for this round (match ms), or null without data.
+ * Sparse records are fine: zones / facing / gaze carry forward, `sees` and `blind` are the latest
+ * frame's. Cached per round and extended incrementally, so playback stays cheap.
+ */
+export function sightAt(round: RoundTimeline, tMs: number): SightNow | null {
+  const frames = round.summary?.sight;
+  if (!frames || frames.length === 0) return null;
+  const rel = tMs - round.startMs;
+  let lo = 0, hi = frames.length - 1, ans = -1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (frames[mid].tMs <= rel) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+  if (ans < 0) return null;
+  const cached = sightCache.get(frames);
+  if (cached && cached.idx === ans) return cached.val;
+  let zones: Record<string, string> = {}, facing: Record<string, { x: number; y: number }> = {}, gaze: Record<string, 'enemy' | 'threat' | 'hold' | 'route'> = {};
+  let from = 0;
+  if (cached && cached.idx < ans) { zones = { ...cached.val.zones }; facing = { ...cached.val.facing }; gaze = { ...cached.val.gaze }; from = cached.idx + 1; }
+  let blind: readonly string[] = [];
+  for (let k = from; k <= ans; k++) {
+    const f = frames[k];
+    if (f.zones) Object.assign(zones, f.zones);
+    if (f.facing) Object.assign(facing, f.facing);
+    if (f.gaze) Object.assign(gaze, f.gaze);
+  }
+  for (let k = ans; k >= 0; k--) { if (frames[k].blind) { blind = frames[k].blind!; break; } if (k < ans - 40) break; }
+  const val: SightNow = { zones, sees: frames[ans].sees ?? {}, facing, gaze, blind };
+  sightCache.set(frames, { idx: ans, val });
+  return val;
+}
+
+/** The zone a player is in: the sim's own zone when recorded, else the nearest-centre estimate. */
+export function zoneOf(round: RoundTimeline, p: PlayerRound, tMs: number): string {
+  return sightAt(round, tMs)?.zones[p.id] ?? logicalAt(p, tMs).zone;
 }

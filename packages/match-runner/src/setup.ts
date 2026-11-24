@@ -46,6 +46,26 @@ export function loadTactics(mapId: string, spatial: SpatialEngine): MapTactics {
   return deriveMapTactics(spatial, overrides);
 }
 
+/**
+ * A map's ultimate-orb points from `<map>.objects.json` `ultOrbs` (maps data). Accepts entries with
+ * `position: {x, y, z}` or `x, y, z` (game uu) and an optional `id`. Empty when the file or the points
+ * are missing — every map today: orbs are spawned actors the scene export does not contain.
+ */
+export function loadUltOrbs(mapId: string): { id: string; position: { x: number; y: number; z: number } }[] {
+  const path = resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.objects.json`);
+  if (!existsSync(path)) return [];
+  const raw = JSON.parse(readFileSync(path, "utf8")) as { ultOrbs?: unknown[] };
+  const out: { id: string; position: { x: number; y: number; z: number } }[] = [];
+  (raw.ultOrbs ?? []).forEach((o, i) => {
+    const r = o as { id?: unknown; position?: { x?: unknown; y?: unknown; z?: unknown }; x?: unknown; y?: unknown; z?: unknown };
+    const src = r.position ?? r;
+    const [x, y, z] = [src.x, src.y, src.z];
+    if (typeof x !== "number" || typeof y !== "number") return;
+    out.push({ id: typeof r.id === "string" ? r.id : `orb${i + 1}`, position: { x, y, z: typeof z === "number" ? z : 0 } });
+  });
+  return out;
+}
+
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
 export function loadWeapons(): Record<string, WeaponSpec> {
   const raw = JSON.parse(readFileSync(resolve(here, "..", "data", "weapons.manual-approx.json"), "utf8"));
@@ -91,6 +111,10 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   /** Bind the real roster's decision profiles (keyed by this round's sim player ids). */
   setProfiles(profiles: ReadonlyMap<string, PlayerProfile> | null): void {
     this.inner.setProfiles(profiles);
+  }
+  /** Per-player "is this gear worth a save?" from the match economy (TeamDecisionPolicy.setSaveWorth). */
+  setSaveWorth(worth: ReadonlyMap<string, boolean> | null): void {
+    this.inner.setSaveWorth(worth);
   }
   /** The plan of the round just played (opening call, final call, revisions). */
   planSummary(): PlanSummary | null {

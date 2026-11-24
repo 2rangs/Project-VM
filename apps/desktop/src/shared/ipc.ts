@@ -134,6 +134,8 @@ export interface LocalBannerPack {
   id: string; files: Record<number, string>;
   /** Layered kill banner (frame / ring / emblem / pip images): composited by the app, one pip per step. */
   layers?: { frame: string; ring: string; emblem: string; pip: string };
+  /** Optional sound per step (kill1 … kill5), played only when the player turns banner sounds on. */
+  sounds?: Record<number, string>;
 }
 
 export interface SimRunRequest {
@@ -174,6 +176,32 @@ export interface NavTraceEvent {
 }
 
 /** Per-round summary from @pv/match-runner (real economy / ultimate / score). */
+/** One player's economy after a round (match-runner PlayerEconomy). Index = roster slot - 1. */
+export interface PlayerEconomyInfo { credits: number; weapon: string | null; armor: number; ultPoints: number }
+/** One player's buy this round (match-runner PlayerBuy). Index = roster slot - 1. */
+export interface PlayerBuyInfo {
+  index: number; creditsBefore: number; creditsAfter: number; spent: number; weapon: string;
+  weaponSource: 'kept' | 'bought' | 'dropped' | 'default'; droppedBy?: number;
+  armor: number; armorBought: 'light' | 'heavy' | 'none'; utility: number; loadoutValue: number; ultHeld?: boolean;
+}
+/** The engine's duel record (round-simulator EngagementRecord), the fields the duel cards read. */
+export interface EngagementInfo {
+  elapsedMs: number; attackerId: string; defenderId: string; attackerZone: string; defenderZone: string;
+  distanceMeters: number; firstSight: 'attacker' | 'defender' | 'mutual'; attackerPreAim: boolean; defenderPreAim: boolean;
+  attackerMoving: boolean; defenderMoving: boolean; angleDelayMs?: { attacker: number; defender: number };
+  crossfire?: { attacker: boolean; defender: boolean }; info?: { attacker: boolean; defender: boolean };
+  attackerFlashedMs: number; defenderFlashedMs: number; winnerSide: 'attack' | 'defense' | null;
+}
+
+export interface TeamEconomyInfo { credits: number; ultPoints: number; players?: PlayerEconomyInfo[] }
+export interface TeamBuyInfo {
+  tier: string; weapon: string;
+  /** Present on engines with the per-player economy. */
+  plan?: string; cost?: number; loadoutValue?: number; vctTier?: string; drops?: number; call?: string;
+  evaluation?: Array<{ plan: string; ultHold: boolean; value: number; winNow: number }>;
+  players?: PlayerBuyInfo[];
+}
+
 export interface MatchRoundSummary {
   roundNumber: number;
   phase: 'pistol' | 'regulation' | 'overtime';
@@ -184,12 +212,31 @@ export interface MatchRoundSummary {
   planted: boolean;
   score: { A: number; B: number };
   kills: { A: number; B: number };
-  economy: { A: { credits: number; ultPoints: number }; B: { credits: number; ultPoints: number } };
-  buys: { A: { tier: string; weapon: string }; B: { tier: string; weapon: string } };
+  economy: { A: TeamEconomyInfo; B: TeamEconomyInfo };
+  buys: { A: TeamBuyInfo; B: TeamBuyInfo };
   /** Plans, pre-round opponent reads and observations. Absent on engines that predate it. */
   decisions?: RoundDecisions | null;
   /** Navigation trace of the round (developer view). Absent when the engine recorded none. */
   nav?: NavTraceEvent[] | null;
+  /**
+   * What the sim's sight model decided, per tick (round-relative ms): the zone the sim has each
+   * player in, and the enemies each player sees. Absent on engines that do not record it — the live
+   * view then falls back to its zone-sightline approximation (labelled as approximate).
+   */
+  sight?: SightFrame[] | null;
+  /** The engine's duel records of the round (round-relative ms), for the duel cards. Absent when not recorded. */
+  engagement?: EngagementInfo[] | null;
+}
+
+export interface SightFrame {
+  tMs: number;
+  zones?: Record<string, string>;
+  sees?: Record<string, string[]>;
+  /** Gaze (unit vector, horizontal, game x/y) and what the player is looking at. */
+  facing?: Record<string, { x: number; y: number }>;
+  gaze?: Record<string, 'enemy' | 'threat' | 'hold' | 'route'>;
+  /** Players blinded by a flash this tick. */
+  blind?: string[];
 }
 
 export interface MatchSummary {

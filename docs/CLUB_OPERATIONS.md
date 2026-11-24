@@ -104,26 +104,39 @@ tactics week on map m: each starter's practice games on m += 6 scrims · 0.25 = 
 - **Transfers**: window status, budgets, search (role, max age, min scouted CA, max value, free agents only, all regions), shortlist, our offers (accept counter / withdraw), incoming bids (accept / reject). CA/PA are always the user scout's ranges.
 - **Training**: team focus, practice map, per-player focus, fatigue, this season's growth factors.
 - **Contract panel** (player detail on Squad/Transfers/Finance/Training): contract, value estimate, shortlist, offer form (transfer / loan / free / renewal) with the player's utility breakdown, release.
-- The managed club is NRG (`DEFAULT_USER_TEAM`, Match Day's default team) until the shell's start menu picks one. `+1 day / +1 week / +1 month` run the local driver.
-- Tests: `test/club-ops.test.ts` (in `test:unit`), `npm run test:e2e:club` (release a player, sign a free agent, see him in the wage list, set a training focus). The same step is in `test:e2e`.
+- The managed club is the career's (start menu → new career). The club screens exist only inside a career; time moves only with **Continue** on Home (the club's own +day/week/month buttons are gone). Club actions change the career's world and autosave; the club's messages are career-inbox items (source `club`), and the Finance "board" tab lists them.
+- Tests: `test/club-ops.test.ts` (`test:unit`, through a real career), `packages/career/test/club.test.ts`, `npm run test:e2e:club` (start a career, release a player, sign a free agent, see them in the wage list, set a training focus) and `npm run test:e2e:career` (the whole loop, below).
 
-## 7. Hooking into the career shell
+## 7. Inside the career shell
 
-`club/hooks.ts` defines `CareerHooks { onDay, onMonth, onSeasonEnd, postInbox }` and `registerClubOps(hooks)`. The shell's hook API was not on its branch when this was written, so this interface is the contract. `createLocalDriver` is a stand-in calendar for tests and the desktop buttons. The shell must:
+The club layer is built into career mode: `club/career-hook.ts` exports `clubCareerHook`, which `career/career.ts` runs right after the core hook (order 10) on every career. The club's own `CareerHooks` interface and local driver are gone. What it does on the career's calendar (docs/CAREER_MODE.md §6 is the hook API):
 
-1. after the user picks a club: `world = initClub(world, { userTeamId, date })`;
-2. every day: run the onDay handlers with the new date; on the 1st, also the onMonth handlers (booking a month twice is a no-op);
-3. at season end: run the onSeasonEnd handler with `{ standings }`. **It calls `advanceSeason` itself** (with the training focus), so the shell must not call it too. A shell that must call `advanceSeason` itself uses `clubBeforeSeasonEnd` → `advanceSeason(w, { focus: seasonFocus(w) })` → `clubAfterSeasonAdvance` instead;
-4. show what `postInbox` receives (bilingual `{ko, en}` title/body and a `route`). The messages are also kept in `world.club.messages`.
+1. `onCareerStart`: `initClub(world, { userTeamId: <the manager's club>, date })`;
+2. `onDay`: `clubOnDayMut` for the day that begins (windows, expiring bids; Mondays the training tick and, in a window, an AI market round); `onMonth`: `clubOnMonthMut` (the ledger, board checks, the July "contracts expiring" notice);
+3. `onSeasonEnd`: `clubBeforeSeasonEndMut` with `careerStandings` (the manager's region from the league's two stage placings, other regions by strength with the seeded placement noise): loans return, prize money, fanbase, contracts expire or are renewed. Then the career runs `advanceSeason(world, { mapsPlayed, focus: seasonFocus(world), managedTeams: [the manager's club] })`;
+4. `onSeasonStart`: `clubAfterSeasonAdvanceMut` (contracts for the season loop's signings, the new budgets, the training reset);
+5. inbox: every club message is queued in `club.outbox` as a career inbox draft (ko/en `text`) and drained after each step; a bid for one of our players is an inbox item with accept / reject and is closed when it is answered in Transfers or lapses (`syncClubInbox`).
 
-The desktop's "Continue" button, the store's `advanceDays`, and the Scouting screen's season button (`advanceWorld` → `clubSeasonEnd`) are the places to swap for the shell's calendar.
+One package-wide definition each: `InboxItem` (career/inbox.ts), the date helpers (career/calendar.ts; `club/calendar.ts` keeps only the window calendar and the season dates), `teamStrength` (club/market.ts, re-exported by career/schedule.ts). The calendar is career mode's: the season runs 5 January – 1 September, windows are pre-season (1 Jan – 15 Feb), mid-season (June) and the off-season (2 Sep – 31 Dec).
+
+**The season loop leaves the manager's squad alone.** `advanceSeason`'s `managedTeams` skips academy picks and releases, promotions, free-agent signings and roster-cap releases for those clubs; only the manager and club-ops transfers change the squad (retirement still applies). A manager whose contracts expire below five players must sign players: the lineup screen needs five.
+
+## 7a. Matches read the club (docs/CAREER_MODE.md §4)
+
+- **Lineup:** the manager picks the five from the squad (roster + academy) before each match (`setLineup`, `lineupFor`); the choice is kept.
+- **Fatigue → match form, by formula.** Match readiness `R = (1 − 0.25·max(0, f − 0.3)) · (1 − 0.08·(1 − s))` with `f` the training fatigue above plus match load (0.03 per map played) and `s` the match sharpness (each map: `s ← s + 0.2·(1 − s)`; fades `exp(−days/30)`; 0.6 before a player has played). For the match each ability attribute becomes `x' = floor + R·(x − floor)` (floor = the calibration minimum): a tired or rusty player plays below their rating in proportion to how good they are; nothing is added. The engine's rosters and the quick estimate both read `x'`.
+- **Map practice → map mastery:** the team's `mapPractice` is added to game-data's map records (`withPractice`) and passed as the series team's `mapRecords`, so the continuity component C of mastery reads it, in the manager's series and in the background simulation.
+- **Playing time → development:** the maps each player actually played (K/D too, from the engine) go to `advanceSeason({ mapsPlayed })`.
+
+## 7b. The career e2e
+
+`npm run test:e2e:career`: start menu → new career → the board's question → a free agent signed on a one-year contract → training focus and practice map → Continue to the first match day → a lineup that includes the signing → the series through the engine → recorded (standings, minutes, kills/deaths) → other teams' series through the engine in the background → the season played out → the contract expires at the season end, the season loop adds nobody to the squad → Continue from the main menu reproduces the save.
 
 ## 8. Not done
 
-- **The user's squad is still touched by the season loop.** `advanceSeason`'s squad step signs free agents for short rosters and releases beyond 8 for every club, including the user's (it acts like an assistant manager). The shell should skip the user's club there.
-- **No fatigue/sharpness in matches.** Fatigue only scales training exposure; the match engine does not read it.
-- **Match Day / Series do not yet read the world's rosters or practice records.** `practiceAdjustedRecords` and `startingFive` exist, but the series screen still uses dataset rosters and records.
+- **Short squads:** nothing refills the manager's squad after contracts expire; below five players the lineup screen cannot be confirmed (the manager must sign someone, the Home screen does not warn yet).
+- **The manager's matches record map scores plus engine K/D; map practice only shapes mastery, not tactics.** Fatigue is a single number per player.
 - **No agents, sell-on clauses, signing bonuses, or performance bonuses.** There are no import limits beyond AI clubs shopping in their own region, and no international events or their prize money.
 - **The board has no expectations beyond money** (no placement targets, no sacking).
 - **Staff hiring and firing** stays automatic (the season loop fills vacancies). There is no staff market screen.
-- **The full `test:e2e` currently fails before the club step** at the nav-debug block (pre-existing, see the regens handover), and with that block skipped, at the Review scoreboard. `test:e2e:club` runs the club step on its own and passes.
+- **The full `test:e2e` currently fails before its club step was removed** at the nav-debug block (pre-existing, see the regens handover); `test:e2e:club` and `test:e2e:career` cover the club screens.

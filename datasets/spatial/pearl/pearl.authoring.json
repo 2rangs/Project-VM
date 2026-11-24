@@ -1,6 +1,50 @@
 {
   "mapId": "pearl",
-  "note": "Hand-authored inputs for tools/map-processor/build_map.py. Everything here is manual-approx.",
+  "note": "Hand-authored inputs for tools/map-processor/build_map.py and tools/map-mesh/pipeline/measure_map.py. Everything here is manual-approx unless an entry states its own provenance.",
+  "zoneAnchorsNote": "Pearl's valorant-api callout heights do not match the floors (median floor-minus-callout +0.68 m, MAD 1.08 m: mesh/pearl-blender-to-game-transform.json), so the mesh stage places every zone by x,y alone. Five labels do not stand on their zone's floor at all: four lie inside a building's footprint, where the only surface under the label is a roof, and B Club shares Mid Shops' x,y exactly. Each entry below names the floor object the zone was matched to and the numbers measured on the mesh (game metres, x,y,z). The zone's position keeps the callout's x,y; only its standing point (anchor) and height move.",
+  "zoneAnchors": {
+    "b-club": {
+      "x": 1525,
+      "y": -2426,
+      "z": 850,
+      "basis": "Callout (8.00, -14.50, z 4.75) has the same x,y as Mid Shops' (z 7.75): both snapped to one cell, the 10.00 m street floor at the mouth of the club tunnel (Shell_0_ClubTunnelA, y -14.7..-19.1). No floor exists 3 m under that point. The club is the room behind the tunnel: floor Shell_0_ArcadeGround at z 8.50 m under Shell_0_ArcadeRoof (x 7.6..28.0, y -31.8..-19.0), entered through Prop_0_ClubArchA (y -18.6..-19.1, base z 8.50), with Sign_0_ClubSignA / Door_0_ClubDoorB on its far wall (y -31.7, base z 8.49). Its 8.50 m floor is 597 walk cells (149 m2) on the main walk component, 1.50 m below Mid Shops' floor; centroid (15.28, -24.03), 12.2 m from the callout. Anchor = the main-walk-component cell nearest the centroid of that floor's walkable cells.",
+      "provenance": "measured-on-mesh (object names, heights, floor extent, cell); manual-approx (that this named floor is the callout's zone)"
+    },
+    "mid-plaza": {
+      "x": 3775,
+      "y": 774,
+      "z": 800,
+      "basis": "Callout (27.50, -3.25, z 7.75) lies inside the footprint of building Shell_0_AtkMidBldA (x 25.2..33.5, y -6.5..0.0, walls z 8.00..18.56); the only surface under it is Shell_0_AtkMidBldARoof, where the zone was snapped (z 19.64 m, an island of 226 cells, 11.6 m above the plaza). The plaza is the open floor Shell_0_MidGround / Shell_0_MidGroundB at z 8.00 m (x 28.0..52.5, y -3.0..20.1) between Mid Top's ramp and the mid doors (Prop_0_MidDoorB, x 46.0..48.6): west of the doors 1223 walk cells (306 m2) on the main walk component; centroid (37.70, 7.93), 15.0 m from the callout; its nearest cell to the callout is 5.50 m away. Anchor = the main-walk-component cell nearest the centroid of that floor's walkable cells.",
+      "provenance": "measured-on-mesh (object names, heights, floor extent, cell); manual-approx (that this named floor is the callout's zone)"
+    },
+    "b-link": {
+      "x": 5325,
+      "y": -626,
+      "z": 692,
+      "basis": "Callout (45.03, -5.92, z 2.65) lies on the wall line of building Shell_0_MidToBBldB (x 45.5..49.5, y -12.0..1.0); the zone was snapped to Shell_0_MidToBBldBRoof (z 15.22 m, an island of 45 cells). The floor from the mid doors down to B Site is the street Shell_0_MidToBGround (x 47.0..58.1, y -20.0..6.1, z 8.00 falling to 3.50 m): 755 walk cells (189 m2) on the main walk component; centroid (53.14, -6.37), 8.2 m from the callout; its nearest cell to the callout is 4.72 m away. Anchor = the main-walk-component cell nearest the centroid of that floor's walkable cells.",
+      "provenance": "measured-on-mesh (object names, heights, floor extent, cell); manual-approx (that this named floor is the callout's zone)"
+    },
+    "a-link": {
+      "x": 6675,
+      "y": 2674,
+      "z": 503,
+      "basis": "Callout (60.55, 37.83, z 2.65) lies inside a building: the only surfaces under it are Shell_0_CathedralArchwayRoof (z 14.1) and Shell_0_ASiteBldARoof, where the zone was snapped (z 16.25 m, an island of 313 cells). The floor from Mid Connector to A Site is Shell_0_MidToAGround (collection Pitt_Art_AtkPathMidToA; x 45.7..77.8, y 17.0..37.5, z 8.00 falling to 3.00 m). Its west end at z 7.00 m is where A Art's callout stands; the zone was matched to its 5.00 m landing (x 55.5..73.0, y 22.5..31.5) between the stairs down from A Art and the stairs down to A Site: 406 walk cells (102 m2) on the main walk component; centroid (66.58, 26.94), 12.7 m from the callout; its nearest cell to the callout is 7.09 m away (beyond the 6 m snap radius). Anchor = the main-walk-component cell nearest the centroid of that floor's walkable cells.",
+      "provenance": "measured-on-mesh (object names, heights, floor extent, cell); manual-approx (that this named floor is the callout's zone)"
+    },
+    "defender-water": {
+      "x": 7925,
+      "y": 1174,
+      "z": 559,
+      "basis": "Callout (78.08, 18.00, z 3.68) lies on the north edge of the water (Shell_0_SewerWater2, x 75.6..95.5, y 10.2..18.0) with no floor under it; the zone was snapped to the top of wall Shell_0_AtkPathToASiteWall3 (z 13.21 m, an island of 373 cells). The floor at the callout's x is the water channel Shell_0_SewerFloor1 (x 75.5..84.0, y 8.0..14.4, z 7.00 falling to 4.00 m): 152 walk cells (38 m2) on the main walk component; centroid (79.37, 11.66), 6.4 m from the callout; its nearest cell to the callout is 4.26 m away. Anchor = the main-walk-component cell nearest the centroid of that floor's walkable cells.",
+      "provenance": "measured-on-mesh (object names, heights, floor extent, cell); manual-approx (that this named floor is the callout's zone)"
+    }
+  },
+  "objectsNotLocated": [
+    {
+      "name": "Ultimate orbs",
+      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+    }
+  ],
   "mechanics": [
     {
       "kind": "none",

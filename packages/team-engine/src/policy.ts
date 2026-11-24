@@ -332,6 +332,8 @@ export interface PolicyOrder {
 export class TeamDecisionPolicy implements DecisionPolicy {
   private order: PolicyOrder | null = null;
   private profiles: ReadonlyMap<string, PlayerProfile> | undefined;
+  /** Per player (sim id): would saving their gear change their next buy? (match economy; see setSaveWorth). */
+  private saveWorth: ReadonlyMap<string, boolean> | undefined;
   private tuning: PolicyTuning = DEFAULT_POLICY_TUNING;
   /** What this team has learned about the opponent in earlier rounds (null = no memory). */
   private opponentRead: OpponentRead | undefined;
@@ -370,6 +372,16 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    */
   setProfiles(profiles: ReadonlyMap<string, PlayerProfile> | null): void {
     this.profiles = profiles ?? undefined;
+  }
+
+  /**
+   * The match economy's answer, per player (sim id), to "is this player's gear worth a save?": true
+   * when their own credits next round could NOT buy it back, false when they could. Set each round by
+   * the match runner from per-player credits; a player missing from the map (or no map) falls back on
+   * the weapon-price rule (tuning.saveMinWeaponValue).
+   */
+  setSaveWorth(worth: ReadonlyMap<string, boolean> | null): void {
+    this.saveWorth = worth ?? undefined;
   }
 
   /**
@@ -647,6 +659,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * Saving only makes sense with something to save: the round is given up only if a survivor holds
    * a weapon worth at least tuning.saveMinWeaponValue (default: the smallest loss bonus — what the
    * team gets for losing anyway). A pistol or a cheap SMG is not worth a round; they play it out.
+   * With the match economy's per-player view (setSaveWorth) a gun also counts only if its holder
+   * could not buy it back next round from their own credits — a rich player plays the round out.
    * The call is recorded as a plan revision, holds for the round, and is lifted only if the man
    * count comes back to even. Deterministic (no RNG draw). Returns the save orders, or null.
    */
@@ -668,7 +682,10 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       const floor = hero ? Math.min(t.heroMinWinChance, t.attackSaveMinWinChance) : t.attackSaveMinWinChance;
       if (chance >= floor) return null;
       const price = this.options.weaponPrice;
-      const worthSaving = !price || alive.some((p) => (price(String(p.weapon?.weaponId ?? "")) ?? 0) >= t.saveMinWeaponValue);
+      const priceWorth = (p: (typeof alive)[number]) => !price || (price(String(p.weapon?.weaponId ?? "")) ?? 0) >= t.saveMinWeaponValue;
+      // The gun must be worth keeping at all (price rule), and — when the match economy says so —
+      // its holder must be unable to buy it back next round with their own credits.
+      const worthSaving = alive.some((p) => priceWorth(p) && (this.saveWorth?.get(String(p.id)) ?? true));
       if (!worthSaving) return null; // nothing worth keeping — play the round out
       plan.revisions.push({
         atMs: view.timeRemainingMs, from: plan.strategy, to: "save",
@@ -1159,7 +1176,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     for (const e of view.observation.audibleEvents) {
       const side = this.sideOf(zoneAt(e.approxPosition), sites);
       if (!side) continue;
-      if (e.kind === "footstep") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
+      // a landing off a drop is a body arriving there, as a running step is
+      if (e.kind === "footstep" || e.kind === "landing") runnersNow.set(side, (runnersNow.get(side) ?? 0) + 1);
       else if (e.kind === "gunfire") contact.add(side);
       else if (e.kind === "abilityCast") utility.add(side);
     }

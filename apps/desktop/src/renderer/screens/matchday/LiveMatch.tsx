@@ -34,7 +34,7 @@ import { MatchStage, type StageView } from './MatchStage.ts';
 import { CamStage3D, type CamView } from './CamStage3D.ts';
 import { buildBlockout } from '../../matchday/world3d.ts';
 import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
-import { AgentTag, AllyPanel, Banners, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
 import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
@@ -278,35 +278,43 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   }, [assets.mesh]);
 
   useEffect(() => {
-    let lastSig = '';
+    let lastSig = ''; let lastDone = true;
     return playback.subscribe((tMs) => {
       const stage = stageRef.current; const host = hostRef.current;
       if (!stage?.isReady || !host) return;
       const L = liveRef.current;
       const base = host.getBoundingClientRect();
-      const frameNow = L.replay && L.tl.rounds.length > 0 ? computeFrame(L.replay, L.tl, nav, L.viewTeam, tMs) : null;
-      const views: StageView[] = [];
-      const cams: CamView[] = [];
+      // 1. cheap: where every view is. Together with the playhead and the React render counter this
+      //    is the whole input of a frame, so a paused screen skips the (expensive) frame below.
+      const rects: Array<{ s: ViewSpec; rect: { x: number; y: number; w: number; h: number } }> = [];
       let sig = `${tMs}|${L.version}|${mapOk}`;
       for (const s of L.specs) {
         const el = viewEls.current.get(s.key);
         if (!el) continue;
         const r = el.getBoundingClientRect();
         if (r.width < 8 || r.height < 8) continue;
-        const followId = s.slot != null && frameNow ? playerIdFor(OUR_TEAM, s.slot, frameNow.round.attacker) : null;
-        const rect = { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height };
-        if (s.kind === 'cam3d') { if (followId) cams.push({ key: s.key, ...rect, followId }); }
-        else views.push({ key: s.key, ...rect, followId, detail: s.detail });
+        rects.push({ s, rect: { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height } });
         sig += `|${s.key}:${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
       }
-      // The 3D wall paces itself (CAMS_FPS) and skips identical frames on its own.
-      camStageRef.current?.render(frameNow, cams, { nameOf: L.nameOf });
-      if (sig === lastSig) return; // paused and nothing moved: keep the last picture
-      lastSig = sig;
-      const dbg = L.showGraph && frameNow
-        ? navDebugAt(frameNow.round, L.viewTeam, frameNow.tMs, (p) => displayPos(p, frameNow.tMs))
-        : null;
-      stage.render(frameNow, views, { showBelief: L.belief, showGraph: L.showGraph, navDebug: dbg, nameOf: L.nameOf });
+      if (sig === lastSig && lastDone) return; // paused and nothing moved: keep the last picture
+      // 2. the frame (team knowledge at this instant), computed once for both stages
+      const frameNow = L.replay && L.tl.rounds.length > 0 ? computeFrame(L.replay, L.tl, nav, L.viewTeam, tMs) : null;
+      const views: StageView[] = [];
+      const cams: CamView[] = [];
+      for (const { s, rect } of rects) {
+        const followId = s.slot != null && frameNow ? playerIdFor(OUR_TEAM, s.slot, frameNow.round.attacker) : null;
+        if (s.kind === 'cam3d') { if (followId) cams.push({ key: s.key, ...rect, followId }); }
+        else views.push({ key: s.key, ...rect, followId, detail: s.detail });
+      }
+      // The 3D wall paces itself (CAMS_FPS); it reports false while it still owes this frame.
+      const done3d = camStageRef.current ? camStageRef.current.render(frameNow, cams, { nameOf: L.nameOf }) : true;
+      if (sig !== lastSig) {
+        const dbg = L.showGraph && frameNow
+          ? navDebugAt(frameNow.round, L.viewTeam, frameNow.tMs, (p) => displayPos(p, frameNow.tMs))
+          : null;
+        stage.render(frameNow, views, { showBelief: L.belief, showGraph: L.showGraph, navDebug: dbg, nameOf: L.nameOf });
+      }
+      lastSig = sig; lastDone = done3d;
     });
   }, [playback.subscribe, mapOk]);
 
@@ -340,7 +348,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       <Banners t={t} frame={frame} nameOf={nameOf} viewTeam={viewTeam} />
       {round && over && !session?.ordersOpen && (
         <RoundResult t={t} round={round} viewTeam={viewTeam} score={score} teams={teams} hint={resultHint}
-          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} />
+          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} nameOf={nameOf} zoneName={zoneName} />
       )}
       {preRound && !session!.ordersOpen && (
         <div className="mdx-result neutral" data-testid="pre-match">
@@ -351,7 +359,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       )}
       {session?.busy && !session.ordersOpen && <div className="mdx-loadchip center"><LoadingInline label={t('load.round', { n: session.state.roundNumber })} testId="loading-round" /></div>}
       {toast && <div className="mdx-toast" role="status">{toast}</div>}
-      {session?.error && <div className="mdx-toast err" role="alert">⚠ {session.error}</div>}
+      {session?.error && <div className="mdx-toast err" role="alert"><Icon name="warn" size={12} /> {session.error}</div>}
       {replay && tl.rounds.length > 0 && !tl.hasTracks && <div className="mdx-toast warn">{t('mdx.noTracks')}</div>}
     </>
   );
@@ -407,6 +415,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
           <div className="mdx-tac">
             <AllyPanel t={t} frame={frame} teamName={teams[viewTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(viewTeam)}>
               <OrderChip t={t} order={activeOrder} />
+              {viewTeam === OUR_TEAM && <BuyReasonPanel t={t} frame={frame} nameOf={nameOf} />}
               <IntelPanel t={t} frame={frame} nameOf={nameOf} zoneName={zoneName} />
             </AllyPanel>
             <div className="mdx-mapcol">
@@ -424,6 +433,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                   <span><i className="lg ghost" />{t('mdx.legend.ghost')}</span>
                   <span><i className="lg sound" />{t('mdx.legend.sound')}</span>
                   <span><i className="lg dest" />{t('mdx.legend.dest')}</span>
+                  {frame && <span className={`lg-src ${frame.sightSource}`} data-testid="sight-source" title={t(`mdx.sight.${frame.sightSource}.hint`)}>{t(`mdx.sight.${frame.sightSource}`)}</span>}
                 </div>
               </div>
             </div>
@@ -452,7 +462,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
                       {unit ? <><Icon name={STATE_ICON[state] ?? 'hold'} size={12} className={`mdx-stateicon st-${state}`} />{statusText(t, unit.status, zoneName, nameOf)}</> : t('mdx.waiting')}
                     </span>
                     <span className="mdx-osd br">
-                      {unit && unit.pose.alive ? <>{zoneName(unit.pose.zone)}{unit.view.enemies.length > 0 && <em className="contact">{t('mdx.cam.contact', { n: unit.view.enemies.length })}</em>}</> : ''}
+                      {unit && unit.pose.alive ? <>{zoneName(unit.pose.zone)}{unit.blind && <em className="blind">{t('mdx.gaze.blind')}</em>}{unit.gaze && <em className="gaze">{t(`mdx.gaze.${unit.gaze}`)}</em>}{unit.view.enemies.length > 0 && <em className="contact">{t('mdx.cam.contact', { n: unit.view.enemies.length })}</em>}</> : ''}
                     </span>
                     {state !== 'dead' && <><i className="mdx-xhair" aria-hidden /><span className="mdx-radar" ref={setViewEl(`radar${slot}`)} aria-hidden /></>}
                     {state === 'dead' && (

@@ -99,3 +99,28 @@ Merged onto `origin/main` (bcc3458): `claude/nav-engine`, `claude/happy-newton-6
 - **Not run after the merge**: any e2e. The main e2e still opens on this branch's lobby
   (`home-screen` → `home-play`), but the app now starts on career-shell's start menu, so the e2e
   entry steps must be updated to go through the start menu first.
+
+## Update after the final merge (second round)
+Done and verified: match load screen and banner picker in the app (1920×1080 / 1280×720, ko/en; real kill-banner
+layers, agent portraits and map splash load); `review.test.ts` runs in `test:unit` via a JSON-import hook
+(`test/support/json-imports.mjs`); opt-in banner sounds with a volume slider (only shown when a local pack has
+sounds; sound playback itself not listened to); main e2e passes (load screen, banner choice, isolated assets);
+the series e2e passed earlier this round but was **not re-run** after restoring the e2e asset isolation
+(its run was queued behind another session's job and was stopped at wrap-up).
+Implemented, only unit-tested with synthetic data: the live view reads the sim's per-tick sight
+(`MatchRoundSummary.sight`: `{tMs, zones, sees}`) and the sim's zones when present, else keeps the zone-sightline
+estimate labelled "시야: 근사치" (`Frame.sightSource`). The engine does not record it yet; the shape was sent to
+engine-truth and is not confirmed — adapt `sightAt` / the scripts' `sight` pass-through if theirs differs.
+Parked: UI-1…UI-6 of `docs/research/PRO_TECHNIQUES_BACKLOG.md` (branch claude/suspicious-jones-8af005) — all
+need engine fields that are not recorded yet (per-frame facing, engagement trace, sound rule, comms, plan events,
+per-player economy). Build each as "draw when present, label approximate otherwise", like the sight overlay.
+Not touched on request: `screens/matchday/models.ts`, `tools/map-mesh/blender/export-web-glb.py` (modelling session).
+
+## Third round (UI-1…UI-6 + economy)
+Built and unit-tested (54 matchday tests): per-player economy on Match Day (our rows: weapon + source, credits
+entering, carried ult points; opponent rows: weapon only; "buy call" panel for our team: plan, coach call, plan it
+beat, drops), plan ticks on the timeline + plan/fake in the round summary, duel cards, sound kinds + masked cues,
+gaze/blind from the sim. All of it degrades to the previous behaviour when the engine does not provide the data.
+Blocked on the engine: `RoundRecord.sight` (per-frame sees/facing/gaze/blind, which exist on `RoundResult.tracks`
+only) and `RoundRecord.engagementTrace`; requested from engine-truth, shape in `ipc.ts` (`SightFrame`,
+`EngagementInfo`). UI-4 (comms feed) not built: no data. Not looked at in the running app this round.

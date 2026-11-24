@@ -8,7 +8,7 @@
 import type { Replay } from '@pv/replay-engine';
 import type { NavModel, Vec3 } from './nav.ts';
 import {
-  displayPos, findPlayer, formationOffset, isAlive, poseAt, roundIndexAt, smoothFacingRad, teamPlayers,
+  displayPos, findPlayer, formationOffset, isAlive, poseAt, roundIndexAt, sightAt, smoothFacingRad, teamPlayers,
   type KillEvent, type MatchTimeline, type PlayerRound, type Pose, type RoundTimeline, type TeamSlot,
 } from './timeline.ts';
 import {
@@ -25,6 +25,10 @@ export interface FrameUnit {
   readonly status: MonitorStatus;
   readonly view: PlayerView;
   readonly kills: number;
+  /** What the player is looking at (sim gaze model), or null when the engine does not record it. */
+  readonly gaze: 'enemy' | 'threat' | 'hold' | 'route' | null;
+  /** Blinded by a flash this tick (engine sight only). */
+  readonly blind: boolean;
 }
 
 export interface FrameEnemy {
@@ -54,6 +58,8 @@ export interface Frame {
   readonly kills: readonly KillEvent[];
   /** Last known zone + staleness per living enemy slot, for the opponent roster. */
   readonly lastKnown: ReadonlyMap<string, { zone: string; ageMs: number; visible: boolean }>;
+  /** Where `seen` comes from: the sim's own per-tick sight ('engine') or the renderer's zone-sightline estimate ('approx'). */
+  readonly sightSource: 'engine' | 'approx';
 }
 
 const intelCache = new WeakMap<RoundTimeline, Partial<Record<TeamSlot, IntelTrack>>>();
@@ -75,13 +81,16 @@ export function computeFrame(replay: Replay, tl: MatchTimeline, nav: NavModel, t
   const intel: TeamIntel = teamIntelAt(intelFor(replay, round, team), round, team, t);
   const tally = killsUpTo(round, t);
 
+  const engineSight = sightAt(round, t);
   const units: FrameUnit[] = teamPlayers(round, team).map((p: PlayerRound) => ({
     id: p.id, slot: p.slot,
     pose: poseAt(round, p, t, nav),
     facingRad: smoothFacingRad(round, p, isAlive(p, t) ? t : p.deathMs! - 1, nav),
     status: monitorStatusAt(round, p.id, t),
-    view: playerViewAt(nav, round, p.id, t, intel),
+    view: engineSight ? engineView(round, p, t, nav, intel, engineSight.sees[p.id] ?? []) : playerViewAt(nav, round, p.id, t, intel),
     kills: tally.get(p.id) ?? 0,
+    gaze: engineSight?.gaze[p.id] ?? null,
+    blind: !!engineSight?.blind.includes(p.id),
   }));
 
   const seenBy = new Map<string, string[]>();
@@ -114,5 +123,14 @@ export function computeFrame(replay: Replay, tl: MatchTimeline, nav: NavModel, t
     situation: situationAt(round, t),
     kills: round.kills.filter((k) => k.tMs <= t),
     lastKnown,
+    sightSource: engineSight ? 'engine' : 'approx',
   };
+}
+
+/** A player's view when the sim recorded who sees whom: exactly those enemies (alive ones), plus hearing and watched zones as usual. */
+function engineView(round: RoundTimeline, p: PlayerRound, t: number, nav: NavModel, intel: TeamIntel, seesIds: readonly string[]): PlayerView {
+  if (!isAlive(p, t)) return { enemies: [], sounds: [], watched: [] };
+  const approx = playerViewAt(nav, round, p.id, t, intel); // for hearing + watched zones (not decided by the sight record)
+  const enemies = seesIds.filter((id) => { const e = findPlayer(round, id); return !!e && e.team !== p.team && isAlive(e, t); }).map((enemyId) => ({ enemyId, via: 'sight' as const }));
+  return { ...approx, enemies };
 }

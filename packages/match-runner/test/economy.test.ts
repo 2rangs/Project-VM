@@ -1,0 +1,222 @@
+/**
+ * Per-player economy (EC-01/02/03/05): rules, plans and counterfactuals that check direction AND size.
+ */
+import { describe, expect, it } from "vitest";
+import { roundWinBelief } from "@pv/economy-engine";
+import {
+  decideTeamBuy,
+  floorAfterRound,
+  newTeamEconomy,
+  postRoundPickups,
+  saveWorth,
+  settleRound,
+  type BuyContext,
+  type PlayerEconomy,
+  type TeamEconomy,
+} from "../src/economy.js";
+import { runMatch, simulatableTeamRefs, type MatchConfig, type MatchResult } from "../src/index.js";
+import { armorMatchedPrice } from "../src/weapon-worth.js";
+import { loadUltOrbs } from "../src/setup.js";
+
+const AGENTS = ["omen", "sova", "kayo", "killjoy", "jett"];
+const CTX = AGENTS.map((agent, i) => ({ agent, priority: 0.6 + 0.01 * i }));
+const RIFLES = new Set(["Vandal", "Phantom", "Operator"]);
+
+function eco(credits: readonly number[], extra: Partial<PlayerEconomy>[] = [], losses = 0): TeamEconomy {
+  const players = credits.map((c, i) => ({ credits: c, weapon: null, armor: 0, ultPoints: 0, ...(extra[i] ?? {}) }));
+  return { ...newTeamEconomy(), players, credits: credits.reduce((a, b) => a + b, 0), consecutiveLosses: losses, ultPoints: players.reduce((s, p) => s + p.ultPoints, 0) };
+}
+const five = (c: number) => [c, c, c, c, c];
+const RICH = eco(five(6000));
+const buy = (own: TeamEconomy, extra: Partial<BuyContext> = {}) =>
+  decideTeamBuy({ roundNumber: 5, score: [2, 2], own, opp: RICH, ownPlayers: CTX, oppPlayers: CTX, pistol: false, ...extra });
+const rifles = (b: ReturnType<typeof buy>) => b.players.filter((p) => RIFLES.has(p.weapon)).length;
+
+describe("per-player economy rules", () => {
+  it("survivors keep weapon and shield; the dead keep nothing; credits are capped per player", () => {
+    const next = settleRound(eco(five(8_500)), {
+      won: true, planted: false, attacking: false,
+      players: [
+        { alive: true, kills: 2, weaponAfter: "Vandal", armorRetained: 50, ultimatePointsEnd: 3 },
+        { alive: false, kills: 0, weaponAfter: null, armorRetained: 0, ultimatePointsEnd: 1 },
+        { alive: true, kills: 0, weaponAfter: "Classic", armorRetained: 25, ultimatePointsEnd: 0 },
+        { alive: false, kills: 1, weaponAfter: null, armorRetained: 0, ultimatePointsEnd: 2 },
+        { alive: true, kills: 0, weaponAfter: "Spectre", armorRetained: 0, ultimatePointsEnd: 0 },
+      ],
+    });
+    expect(next.players.map((p) => p.weapon)).toEqual(["Vandal", null, null, null, "Spectre"]);
+    expect(next.players.map((p) => p.armor)).toEqual([50, 0, 25, 0, 0]);
+    expect(next.players.every((p) => p.credits === 9_000)).toBe(true); // 8500 + 3000 → cap
+  });
+
+  it("the loss bonus climbs the ladder per player (1900 → 2400 → 2900) and resets on a win", () => {
+    const dead = { alive: false, kills: 0, weaponAfter: null, armorRetained: 0, ultimatePointsEnd: 0 };
+    let e = eco(five(0));
+    const seen: number[] = [];
+    for (let k = 0; k < 4; k++) {
+      e = { ...e, players: e.players.map((p) => ({ ...p, credits: 0 })) }; // spent everything
+      const before = 0;
+      e = settleRound(e, { won: false, planted: false, attacking: true, players: five(0).map(() => dead) });
+      seen.push(e.players[0]!.credits - before);
+    }
+    expect(seen).toEqual([1900, 2400, 2900, 2900]);
+    e = settleRound(e, { won: true, planted: false, attacking: true, players: five(0).map(() => dead) });
+    expect(e.consecutiveLosses).toBe(0);
+  });
+
+  it("a survivor picks up a better gun off the player they killed", () => {
+    const picks = postRoundPickups({
+      kills: [{ killer: "atk1", victim: "def1", zoneId: "a-site" }, { killer: "def2", victim: "atk2", zoneId: "mid" }],
+      startWeapon: new Map([["def1", "Vandal"], ["atk2", "Classic"]]),
+      survivors: new Map([["atk1", "Classic"], ["def2", "Vandal"]]),
+    });
+    expect(picks).toEqual([{ playerId: "atk1", weapon: "Vandal", from: "def1" }]);
+  });
+});
+
+describe("buy decisions — counterfactuals (direction and size)", () => {
+  it("more credits buy a better loadout: 1000 → 6000 each takes the team from a save to five rifles", () => {
+    const values = [1000, 2000, 3000, 4000, 5000, 6000].map((c) => buy(eco(five(c), [], 1)));
+    for (let i = 1; i < values.length; i++) expect(values[i]!.loadoutValue).toBeGreaterThanOrEqual(values[i - 1]!.loadoutValue);
+    expect(values[0]!.loadoutValue).toBeLessThan(5_000); // VCT eco
+    expect(rifles(values[5]!)).toBe(5);
+    expect(values[5]!.tier).toBe("full");
+    expect(values[5]!.loadoutValue).toBeGreaterThanOrEqual(20_000); // VCT full
+  });
+
+  it("a drop rifles a poor player: +1 rifle, paid by the richest teammate, and a higher round-win belief", () => {
+    const withDonors = buy(eco([9_000, 9_000, 9_000, 9_000, 800]));
+    const noDonors = buy(eco([4_000, 4_000, 4_000, 4_000, 800]));
+    const poor = withDonors.players[4]!;
+    expect(poor.weapon).toBe("Vandal");
+    expect(poor.weaponSource).toBe("dropped");
+    expect(withDonors.drops).toBe(1);
+    expect(withDonors.players[poor.droppedBy!]!.spent).toBeGreaterThanOrEqual(2_900);
+    expect(RIFLES.has(noDonors.players[4]!.weapon)).toBe(false);
+    expect(rifles(withDonors) - rifles(noDonors)).toBeGreaterThanOrEqual(1);
+    const gain = roundWinBelief(withDonors.loadoutValue, 22_800) - roundWinBelief(noDonors.loadoutValue, 22_800);
+    expect(gain).toBeGreaterThan(0.02);
+  });
+
+  it("a bonus round keeps the won guns and buys no new weapons", () => {
+    const own = eco(five(1_500), AGENTS.map(() => ({ weapon: "Spectre", armor: 25 })));
+    const opp = eco(five(2_400), [], 2);
+    const b = decideTeamBuy({ roundNumber: 3, score: [2, 0], own, opp, ownPlayers: CTX, oppPlayers: CTX, pistol: false, wonLastRound: true });
+    expect(b.tier).toBe("bonus");
+    expect(b.players.every((p) => p.weapon === "Spectre" && p.weaponSource === "kept")).toBe(true);
+    expect(b.players.every((p) => p.spent <= 1_000)).toBe(true); // shields at most
+    // Without the kept guns the same credits field far less.
+    const bare = decideTeamBuy({ roundNumber: 3, score: [2, 0], own: eco(five(1_500)), opp, ownPlayers: CTX, oppPlayers: CTX, pistol: false, wonLastRound: true });
+    expect(b.loadoutValue - bare.loadoutValue).toBeGreaterThan(4_000);
+  });
+
+  it("ultimate readiness changes buy timing: a team on 3000 each saves without ults and buys with five ready", () => {
+    const noUlt = buy(eco(five(3_000), [], 1), { abilities: true });
+    const ults = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
+    expect(noUlt.plan).toBe("eco");
+    expect(ults.plan).not.toBe("eco");
+    expect(ults.cost).toBeGreaterThan(noUlt.cost);
+    // With abilities off an ultimate does nothing in the sim, so it does not move the buy.
+    const off = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
+    expect(off.plan).toBe(noUlt.plan);
+  });
+
+  it("an undisciplined team weighs the next round less (team trait as belief)", () => {
+    const at = (discipline: number) => buy(eco(five(2_000), [], 1), { ownTraits: { discipline, gameSense: 0.6 } });
+    const ev = (b: ReturnType<typeof buy>, plan: string) => b.evaluation.find((e) => e.plan === plan && !e.ultHold)!.value;
+    // The gap between buying now and saving grows as discipline falls.
+    expect(ev(at(0.2), "max") - ev(at(0.2), "eco")).toBeGreaterThan(ev(at(1.0), "max") - ev(at(1.0), "eco"));
+  });
+});
+
+describe("round 2 after a pistol win (armor-matched gun worth)", () => {
+  it("a gun is worth its price against heavy shields; against an eco's light shield an SMG is worth more", () => {
+    expect(armorMatchedPrice("Vandal", 2900, 50)).toBeCloseTo(2900, 6);
+    expect(armorMatchedPrice("Spectre", 1600, 50)).toBeCloseTo(1600, 6);
+    expect(armorMatchedPrice("Vandal", 2900, 25)).toBeCloseTo(2900, 6); // the reference
+    const light = armorMatchedPrice("Spectre", 1600, 25);
+    expect(light).toBeGreaterThan(1800); // ≈ 1950: the Spectre's kill time falls ~20% from heavy to light
+    expect(light).toBeLessThan(2400);
+  });
+
+  it("pistol winners buy SMGs with heavy shields instead of rifles with light ones", () => {
+    const at = (credits: number, armorMatchedValue: boolean) => {
+      const own = eco(five(credits), AGENTS.map(() => ({ armor: 25 })));
+      const opp = eco([2_000, 2_000, 2_000, 2_100, 2_200], [], 1);
+      return decideTeamBuy({ roundNumber: 2, score: [1, 0], own, opp, ownPlayers: CTX, oppPlayers: CTX, pistol: false, wonLastRound: true, options: { armorMatchedValue } });
+    };
+    const credits = [3_400, 3_600, 3_800, 4_000];
+    const rifleCount = (on: boolean) => credits.reduce((n, c) => n + rifles(at(c, on)), 0);
+    // Shop prices: rifles at 3400–3800 (15 of 20). Armor-matched: no rifles — SMG + heavy + kit at
+    // 3400–3600, SMG + light with the rest banked at 3800–4000.
+    expect(rifleCount(false)).toBeGreaterThanOrEqual(15);
+    expect(rifleCount(true)).toBe(0);
+    const smg = at(3_400, true);
+    expect(smg.plan).toBe("smg");
+    expect(smg.players.every((p) => p.weapon === "Spectre" && p.armor === 50)).toBe(true);
+  });
+});
+
+describe("floor items", () => {
+  it("a gun taken off a body mid-round leaves the taker's old gun there; the taker dies with the new one", () => {
+    const start = new Map([["atk1", "Vandal"], ["def1", "Spectre"], ["def2", "Classic"]]);
+    const floor = floorAfterRound(start, [
+      { kind: "kill", actor: "def1", target: "atk1" },
+      { kind: "weaponPickup", actor: "def1", target: "atk1", detail: "Vandal|Spectre" },
+      { kind: "kill", actor: "atk2", target: "def1" },
+    ]);
+    expect(floor.get("atk1")).toBe("Spectre"); // what lies on atk1's body now
+    expect(floor.get("def1")).toBe("Vandal"); // def1 died holding the Vandal
+    expect(floor.get("def2")).toBe("Classic");
+  });
+
+  it("no orb points on Ascent yet → no orbs (the consumer is a no-op until maps data adds them)", () => {
+    expect(loadUltOrbs("ascent")).toEqual([]);
+    expect(loadUltOrbs("no-such-map")).toEqual([]);
+  });
+});
+
+describe("save worth (per-player credits)", () => {
+  it("a gun is worth a save only to a player who could not buy it back next round", () => {
+    // Next loss bonus 1900; a rifle + heavy shield costs 3900.
+    // Size: a player left with 2000+ after a rifle buy plays the round out; one left with ~0 saves.
+    const rich = saveWorth(eco(five(9_000), [], 0), buy(eco(five(9_000), [], 0)));
+    const poor = saveWorth(eco(five(3_900), [], 0), buy(eco(five(3_900), [], 0)));
+    expect(rich.every((w) => !w)).toBe(true);
+    expect(poor.filter(Boolean).length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("saving players (match level)", () => {
+  const teams = simulatableTeamRefs();
+  const run = (seed: number, tuning?: MatchConfig["tuning"]): MatchResult =>
+    runMatch({ teamA: teams[2 * seed]!, teamB: teams[2 * seed + 1]!, map: "Ascent", seed, ...(tuning ? { tuning } : {}) });
+
+  it("a saving attack gives lost rounds up and carries its guns into the next buy", () => {
+    const tally = (ms: MatchResult[]) => {
+      let lost = 0, saves = 0, keptNext = 0;
+      for (const m of ms) {
+        m.rounds.forEach((r, k) => {
+          const atk = r.attacker;
+          if (r.winner === atk) return;
+          lost++;
+          if (r.decisions.plans[atk]?.revisions.some((v) => v.to === "save")) saves++;
+          const next = m.rounds[k + 1];
+          if (next && next.phase === "regulation" && next.roundNumber !== 13) keptNext += next.buys[atk].players.filter((p) => p.weaponSource === "kept").length;
+        });
+      }
+      return { lost, saves, keptPerLost: keptNext / lost };
+    };
+    const seeds = [1, 2, 3, 4, 5, 6];
+    const saving = tally(seeds.map((s) => run(s)));
+    const never = tally(seeds.map((s) => run(s, { attackSaveMinWinChance: 0 })));
+    expect(saving.saves).toBeGreaterThan(0);
+    expect(never.saves).toBe(0);
+    expect(saving.keptPerLost).toBeGreaterThanOrEqual(never.keptPerLost);
+    // Size (seeds 1–6, round-2 SMG buys and mid-round pickups, 2026-11-24): 2 saves in 60 lost rounds;
+    // guns kept into the next buy 0.133 vs 0.131 per lost round (60 and 61 lost rounds). Saves are
+    // rare: a Spectre (1600) is below saveMinWeaponValue and a gun its holder can rebuy is not worth
+    // saving (saveWorth); kept guns now also come from mid-round pickups by survivors. History:
+    // seeds 1–3 on 1ed75c7: 2 saves in 36, 0.083 vs 0.048.
+  }, 240_000);
+});

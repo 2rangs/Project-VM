@@ -3,7 +3,7 @@
 import type { SeriesView } from '../../shared/series.ts';
 import type { SimRosterPlayer } from '../../shared/career.ts';
 import {
-  isUserFixture, startingFive, teamStaffInputs, seriesRequest,
+  isUserFixture, lineupFor, matchRoster, teamStaffInputs, seriesRequest,
   type CareerState, type Fixture, type InboxItem, type SeriesOutcome,
 } from './world.ts';
 
@@ -31,8 +31,9 @@ export function userScore(c: CareerState, f: Fixture): { text: string; won: bool
   return { text: `${a}–${b}`, won: f.result.winner === c.userTeamId };
 }
 
-const rosterOf = (c: CareerState, teamId: string): SimRosterPlayer[] =>
-  startingFive(c.world, teamId).map((p) => ({ playerId: p.playerId, attributes: p.attributes, hasRatings: p.hasRatings }));
+/** Today's five for the match: the manager's lineup / roster order, readiness applied. */
+const rosterOf = (c: CareerState, teamId: string): SimRosterPlayer[] => matchRoster(c, lineupFor(c, teamId));
+const practiceOf = (c: CareerState, teamId: string) => c.world.club?.training.mapPractice[teamId] ?? {};
 
 /** Everything the series screen needs to play the manager's fixture with the career's teams. */
 export function seriesSetup(c: CareerState, f: Fixture) {
@@ -46,6 +47,7 @@ export function seriesSetup(c: CareerState, f: Fixture) {
     seed: req.seed,
     analyst: teamStaffInputs(c.world, c.userTeamId).analyst,
     rosters: { A: rosterOf(c, c.userTeamId), B: rosterOf(c, opp) },
+    practice: { A: practiceOf(c, c.userTeamId), B: practiceOf(c, opp) },
   };
 }
 
@@ -55,11 +57,12 @@ export function outcomeFromSeries(c: CareerState, f: Fixture, view: SeriesView):
   const userHome = f.home === c.userTeamId;
   const opp = opponentOf(c, f)!;
   const orient = (a: number, b: number): [number, number] => (userHome ? [a, b] : [b, a]);
-  const lineups = { user: startingFive(c.world, c.userTeamId).map((p) => p.playerId), opp: startingFive(c.world, opp).map((p) => p.playerId) };
+  const lineups = { user: lineupFor(c, c.userTeamId), opp: lineupFor(c, opp) };
   return {
     winner: view.winner === 'A' ? c.userTeamId : opp,
     mapsWon: orient(view.score.A, view.score.B),
-    maps: view.games.map((g) => ({ map: g.map, score: orient(g.score.A, g.score.B), ...(g.overtime ? { overtime: true } : {}) })),
+    // Per-player kills/deaths from the engine (series-session) → form and the season line.
+    maps: view.games.map((g) => ({ map: g.map, score: orient(g.score.A, g.score.B), ...(g.overtime ? { overtime: true } : {}), ...(g.players ? { players: g.players } : {}) })),
     source: 'user',
     lineups: userHome ? { home: lineups.user, away: lineups.opp } : { home: lineups.opp, away: lineups.user },
   };

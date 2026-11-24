@@ -1,0 +1,486 @@
+{
+ "mapId": "split",
+ "schemaVersion": "1.0.0",
+ "note": "Gameplay objects as points and types, game uu (100 uu = 1 m); no surfaces. drops: the roadmap's one-way drops (from/to are roadmap nodes of <map>.nav.json; fallMeters = height lost). traversals: one per roadmap link, in the roadmap's link order (from/to are the roadmap nodes the link joins; ropes also name bottom/top and whether from->to ascends; soundSource / soundSourceExit are the points its sound is emitted from at the entry and the exit, soundRadiusUu is null and soundVerified false until a value is measured). doors / breakables: position on the floor in the opening, zones = the zone of the nearest roadmap point on each side of the opening (one zone for a prop; gates, where present, is the zone-graph edge the door is attached to), defaultState open/closed/intact/unknown. notLocated: mechanics known for the map that no scene object or floor measurement could place. ultOrbs: orb positions, empty where the scene has no orb object. Every entry states its own provenance.",
+ "provenance": "measured-on-mesh (positions: scene object bounding boxes and walk-grid cells; drops and the zones: the navigation roadmap); manual-approx (travel times and speeds, default states, and the reading of which scene object is which gameplay object)",
+ "roadmapBounds": {
+  "min": {
+   "x": -3432,
+   "y": -13440,
+   "z": -100
+  },
+  "max": {
+   "x": 8218,
+   "y": 910,
+   "z": 925
+  }
+ },
+ "counts": {
+  "drops": 75,
+  "traversals": 7,
+  "doors": 0,
+  "breakables": 0,
+  "ultOrbs": 0,
+  "notLocated": 1
+ },
+ "drops": [
+  {"from":{"x":3968,"y":-11790,"z":575},"to":{"x":3968,"y":-11840,"z":500},"fallMeters":0.75,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":773,"toNode":802},
+  {"from":{"x":2168,"y":-3790,"z":651},"to":{"x":2118,"y":-3790,"z":451},"fallMeters":2.0,"fromZone":"mid-top","toZone":"mid-top","fromNode":709,"toNode":803},
+  {"from":{"x":3968,"y":-11440,"z":564},"to":{"x":3968,"y":-11490,"z":500},"fallMeters":0.64,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":875,"toNode":862},
+  {"from":{"x":3368,"y":-10840,"z":573},"to":{"x":3368,"y":-10790,"z":500},"fallMeters":0.73,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":820,"toNode":876},
+  {"from":{"x":-1032,"y":-4090,"z":394},"to":{"x":-1082,"y":-4090,"z":300},"fallMeters":0.94,"fromZone":"b-garage","toZone":"b-garage","fromNode":817,"toNode":877},
+  {"from":{"x":3968,"y":-10540,"z":588},"to":{"x":3968,"y":-10490,"z":500},"fallMeters":0.88,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":874,"toNode":878},
+  {"from":{"x":3118,"y":-10940,"z":573},"to":{"x":3118,"y":-10990,"z":500},"fallMeters":0.73,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":879,"toNode":870},
+  {"from":{"x":3218,"y":-5240,"z":649},"to":{"x":3268,"y":-5240,"z":250},"fallMeters":3.99,"fromZone":"mid-vent","toZone":"mid-vent","fromNode":27,"toNode":26},
+  {"from":{"x":-182,"y":-5390,"z":916},"to":{"x":-232,"y":-5390,"z":500},"fallMeters":4.16,"fromZone":"b-tower","toZone":"b-tower","fromNode":33,"toNode":32},
+  {"from":{"x":3968,"y":-11690,"z":562},"to":{"x":3968,"y":-11640,"z":500},"fallMeters":0.62,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":880,"toNode":881},
+  {"from":{"x":3968,"y":-10540,"z":588},"to":{"x":4018,"y":-10540,"z":500},"fallMeters":0.88,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":874,"toNode":882},
+  {"from":{"x":3968,"y":-11640,"z":565},"to":{"x":3968,"y":-11690,"z":500},"fallMeters":0.65,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":883,"toNode":884},
+  {"from":{"x":3218,"y":-10840,"z":572},"to":{"x":3218,"y":-10790,"z":500},"fallMeters":0.72,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":885,"toNode":886},
+  {"from":{"x":-1032,"y":-4190,"z":375},"to":{"x":-1082,"y":-4190,"z":300},"fallMeters":0.75,"fromZone":"b-garage","toZone":"b-garage","fromNode":668,"toNode":887},
+  {"from":{"x":6168,"y":-2840,"z":299},"to":{"x":6118,"y":-2840,"z":-94},"fallMeters":3.93,"fromZone":"a-lobby","toZone":"a-sewer","fromNode":37,"toNode":888},
+  {"from":{"x":3218,"y":-5490,"z":649},"to":{"x":3268,"y":-5490,"z":250},"fallMeters":3.99,"fromZone":"mid-vent","toZone":"mid-vent","fromNode":25,"toNode":889},
+  {"from":{"x":3668,"y":-6190,"z":651},"to":{"x":3618,"y":-6190,"z":250},"fallMeters":4.01,"fromZone":"a-tower","toZone":"mid-vent","fromNode":29,"toNode":890},
+  {"from":{"x":3668,"y":-5940,"z":651},"to":{"x":3618,"y":-5940,"z":250},"fallMeters":4.01,"fromZone":"a-tower","toZone":"mid-vent","fromNode":31,"toNode":891},
+  {"from":{"x":-532,"y":-5590,"z":763},"to":{"x":-532,"y":-5540,"z":500},"fallMeters":2.63,"fromZone":"b-tower","toZone":"b-rafters","fromNode":675,"toNode":892},
+  {"from":{"x":5818,"y":-6340,"z":400},"to":{"x":5868,"y":-6340,"z":100},"fallMeters":3.0,"fromZone":"a-rafters","toZone":"a-site","fromNode":893,"toNode":894},
+  {"from":{"x":2168,"y":-3940,"z":651},"to":{"x":2118,"y":-3940,"z":497},"fallMeters":1.54,"fromZone":"mid-top","toZone":"mid-top","fromNode":895,"toNode":708},
+  {"from":{"x":4018,"y":-10390,"z":578},"to":{"x":4018,"y":-10340,"z":500},"fallMeters":0.78,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":896,"toNode":897},
+  {"from":{"x":2168,"y":-4090,"z":651},"to":{"x":2118,"y":-4090,"z":547},"fallMeters":1.04,"fromZone":"mid-top","toZone":"mid-top","fromNode":898,"toNode":833},
+  {"from":{"x":-1332,"y":-5090,"z":502},"to":{"x":-1332,"y":-5140,"z":300},"fallMeters":2.02,"fromZone":"b-tower","toZone":"b-site","fromNode":667,"toNode":899},
+  {"from":{"x":-232,"y":-5590,"z":764},"to":{"x":-232,"y":-5540,"z":500},"fallMeters":2.64,"fromZone":"b-tower","toZone":"b-tower","fromNode":677,"toNode":900},
+  {"from":{"x":-982,"y":-6590,"z":797},"to":{"x":-1032,"y":-6590,"z":400},"fallMeters":3.97,"fromZone":"b-rafters","toZone":"b-site","fromNode":901,"toNode":902},
+  {"from":{"x":5468,"y":-6190,"z":550},"to":{"x":5468,"y":-6140,"z":101},"fallMeters":4.49,"fromZone":"a-rafters","toZone":"a-site","fromNode":903,"toNode":904},
+  {"from":{"x":-282,"y":-5590,"z":765},"to":{"x":-282,"y":-5540,"z":500},"fallMeters":2.65,"fromZone":"b-tower","toZone":"b-tower","fromNode":781,"toNode":905},
+  {"from":{"x":-182,"y":-5590,"z":916},"to":{"x":-232,"y":-5590,"z":764},"fallMeters":1.52,"fromZone":"b-tower","toZone":"b-tower","fromNode":906,"toNode":677},
+  {"from":{"x":-832,"y":-5240,"z":398},"to":{"x":-882,"y":-5240,"z":300},"fallMeters":0.98,"fromZone":"b-rafters","toZone":"b-site","fromNode":907,"toNode":908},
+  {"from":{"x":7318,"y":-4940,"z":300},"to":{"x":7268,"y":-4940,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":909,"toNode":910},
+  {"from":{"x":5818,"y":-6240,"z":400},"to":{"x":5868,"y":-6240,"z":100},"fallMeters":3.0,"fromZone":"a-rafters","toZone":"a-site","fromNode":911,"toNode":912},
+  {"from":{"x":3218,"y":-5340,"z":649},"to":{"x":3268,"y":-5340,"z":250},"fallMeters":3.99,"fromZone":"mid-vent","toZone":"mid-vent","fromNode":913,"toNode":914},
+  {"from":{"x":2218,"y":-3790,"z":651},"to":{"x":2218,"y":-3740,"z":450},"fallMeters":2.01,"fromZone":"mid-top","toZone":"mid-bottom","fromNode":915,"toNode":916},
+  {"from":{"x":2168,"y":-3990,"z":651},"to":{"x":2118,"y":-3990,"z":513},"fallMeters":1.38,"fromZone":"mid-top","toZone":"mid-top","fromNode":917,"toNode":918},
+  {"from":{"x":7218,"y":-2040,"z":375},"to":{"x":7168,"y":-2040,"z":301},"fallMeters":0.74,"fromZone":"a-lobby","toZone":"a-lobby","fromNode":919,"toNode":920},
+  {"from":{"x":-782,"y":-6690,"z":924},"to":{"x":-832,"y":-6690,"z":797},"fallMeters":1.27,"fromZone":"b-rafters","toZone":"b-rafters","fromNode":921,"toNode":922},
+  {"from":{"x":5768,"y":-6390,"z":399},"to":{"x":5768,"y":-6440,"z":100},"fallMeters":2.99,"fromZone":"a-rafters","toZone":"a-site","fromNode":923,"toNode":924},
+  {"from":{"x":5618,"y":-6390,"z":548},"to":{"x":5668,"y":-6390,"z":402},"fallMeters":1.46,"fromZone":"a-rafters","toZone":"a-rafters","fromNode":925,"toNode":926},
+  {"from":{"x":3218,"y":-11290,"z":572},"to":{"x":3218,"y":-11340,"z":500},"fallMeters":0.72,"fromZone":"defender-spawn","toZone":"defender-spawn","fromNode":928,"toNode":929},
+  {"from":{"x":-782,"y":-6540,"z":924},"to":{"x":-832,"y":-6540,"z":797},"fallMeters":1.27,"fromZone":"b-rafters","toZone":"b-rafters","fromNode":930,"toNode":931},
+  {"from":{"x":5818,"y":-6190,"z":400},"to":{"x":5818,"y":-6140,"z":100},"fallMeters":3.0,"fromZone":"a-rafters","toZone":"a-site","fromNode":932,"toNode":933},
+  {"from":{"x":-1032,"y":-5090,"z":500},"to":{"x":-1032,"y":-5140,"z":300},"fallMeters":2.0,"fromZone":"b-tower","toZone":"b-site","fromNode":934,"toNode":935},
+  {"from":{"x":-1682,"y":-940,"z":380},"to":{"x":-1682,"y":-990,"z":301},"fallMeters":0.79,"fromZone":"b-lobby","toZone":"b-lobby","fromNode":936,"toNode":937},
+  {"from":{"x":5618,"y":-6540,"z":548},"to":{"x":5668,"y":-6540,"z":100},"fallMeters":4.48,"fromZone":"a-rafters","toZone":"a-site","fromNode":939,"toNode":940},
+  {"from":{"x":-582,"y":-5590,"z":925},"to":{"x":-532,"y":-5590,"z":763},"fallMeters":1.62,"fromZone":"b-rafters","toZone":"b-tower","fromNode":943,"toNode":675},
+  {"from":{"x":7318,"y":-4090,"z":300},"to":{"x":7268,"y":-4090,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":944,"toNode":945},
+  {"from":{"x":7318,"y":-4740,"z":300},"to":{"x":7268,"y":-4740,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":946,"toNode":947},
+  {"from":{"x":2418,"y":-3790,"z":651},"to":{"x":2418,"y":-3740,"z":450},"fallMeters":2.01,"fromZone":"mid-top","toZone":"mid-bottom","fromNode":948,"toNode":949},
+  {"from":{"x":5618,"y":-6290,"z":548},"to":{"x":5668,"y":-6290,"z":402},"fallMeters":1.46,"fromZone":"a-rafters","toZone":"a-rafters","fromNode":950,"toNode":951},
+  {"from":{"x":7218,"y":-1940,"z":375},"to":{"x":7168,"y":-1940,"z":301},"fallMeters":0.74,"fromZone":"a-lobby","toZone":"a-lobby","fromNode":952,"toNode":953},
+  {"from":{"x":5618,"y":-7040,"z":548},"to":{"x":5668,"y":-7040,"z":100},"fallMeters":4.48,"fromZone":"a-rafters","toZone":"a-site","fromNode":954,"toNode":955},
+  {"from":{"x":-982,"y":-6690,"z":797},"to":{"x":-982,"y":-6740,"z":400},"fallMeters":3.97,"fromZone":"b-rafters","toZone":"b-site","fromNode":956,"toNode":957},
+  {"from":{"x":-832,"y":-5290,"z":395},"to":{"x":-832,"y":-5340,"z":303},"fallMeters":0.92,"fromZone":"b-rafters","toZone":"b-site","fromNode":958,"toNode":959},
+  {"from":{"x":7318,"y":-4390,"z":300},"to":{"x":7268,"y":-4390,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":961,"toNode":962},
+  {"from":{"x":7318,"y":-4640,"z":300},"to":{"x":7268,"y":-4640,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":963,"toNode":964},
+  {"from":{"x":7318,"y":-4290,"z":300},"to":{"x":7268,"y":-4290,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":965,"toNode":966},
+  {"from":{"x":-382,"y":-5590,"z":765},"to":{"x":-382,"y":-5540,"z":500},"fallMeters":2.65,"fromZone":"b-tower","toZone":"b-tower","fromNode":967,"toNode":968},
+  {"from":{"x":2368,"y":-3790,"z":651},"to":{"x":2368,"y":-3740,"z":450},"fallMeters":2.01,"fromZone":"mid-top","toZone":"mid-bottom","fromNode":969,"toNode":970},
+  {"from":{"x":-982,"y":-6490,"z":797},"to":{"x":-982,"y":-6440,"z":400},"fallMeters":3.97,"fromZone":"b-rafters","toZone":"b-site","fromNode":971,"toNode":972},
+  {"from":{"x":5618,"y":-6640,"z":548},"to":{"x":5668,"y":-6640,"z":100},"fallMeters":4.48,"fromZone":"a-rafters","toZone":"a-site","fromNode":973,"toNode":974},
+  {"from":{"x":7318,"y":-3940,"z":300},"to":{"x":7268,"y":-3940,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":975,"toNode":976},
+  {"from":{"x":-782,"y":-5540,"z":401},"to":{"x":-832,"y":-5540,"z":300},"fallMeters":1.01,"fromZone":"b-rafters","toZone":"b-site","fromNode":977,"toNode":978},
+  {"from":{"x":-732,"y":-890,"z":423},"to":{"x":-682,"y":-890,"z":300},"fallMeters":1.23,"fromZone":"b-lobby","toZone":"b-lobby","fromNode":979,"toNode":980},
+  {"from":{"x":-1482,"y":-890,"z":424},"to":{"x":-1482,"y":-940,"z":300},"fallMeters":1.24,"fromZone":"b-lobby","toZone":"b-lobby","fromNode":981,"toNode":982},
+  {"from":{"x":6168,"y":-2990,"z":298},"to":{"x":6118,"y":-2990,"z":-94},"fallMeters":3.92,"fromZone":"a-lobby","toZone":"a-sewer","fromNode":983,"toNode":984},
+  {"from":{"x":1418,"y":-4840,"z":797},"to":{"x":1418,"y":-4790,"z":686},"fallMeters":1.11,"fromZone":"mid-mail","toZone":"mid-mail","fromNode":985,"toNode":986},
+  {"from":{"x":5668,"y":-6190,"z":400},"to":{"x":5668,"y":-6140,"z":100},"fallMeters":3.0,"fromZone":"a-rafters","toZone":"a-site","fromNode":987,"toNode":988},
+  {"from":{"x":-732,"y":-740,"z":425},"to":{"x":-682,"y":-740,"z":300},"fallMeters":1.25,"fromZone":"b-lobby","toZone":"b-lobby","fromNode":989,"toNode":990},
+  {"from":{"x":7318,"y":-4540,"z":300},"to":{"x":7268,"y":-4540,"z":200},"fallMeters":1.0,"fromZone":"a-main","toZone":"a-main","fromNode":991,"toNode":992},
+  {"from":{"x":5618,"y":-6840,"z":548},"to":{"x":5668,"y":-6840,"z":100},"fallMeters":4.48,"fromZone":"a-rafters","toZone":"a-site","fromNode":993,"toNode":994},
+  {"from":{"x":318,"y":-2790,"z":465},"to":{"x":318,"y":-2740,"z":384},"fallMeters":0.81,"fromZone":"b-link","toZone":"b-link","fromNode":995,"toNode":996},
+  {"from":{"x":-832,"y":-5090,"z":500},"to":{"x":-832,"y":-5140,"z":316},"fallMeters":1.84,"fromZone":"b-tower","toZone":"b-site","fromNode":997,"toNode":998},
+  {"from":{"x":218,"y":-2890,"z":465},"to":{"x":168,"y":-2890,"z":350},"fallMeters":1.15,"fromZone":"b-link","toZone":"b-link","fromNode":999,"toNode":1000},
+  {"from":{"x":-632,"y":-5590,"z":914},"to":{"x":-632,"y":-5540,"z":499},"fallMeters":4.15,"fromZone":"b-rafters","toZone":"b-rafters","fromNode":1001,"toNode":1002}
+ ],
+ "traversals": [
+  {
+   "id": "vent-rope-1",
+   "name": "Vent pit rope to Mid Vent (south)",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 602,
+   "from": {
+    "x": 3268,
+    "y": -5540,
+    "z": 249
+   },
+   "to": {
+    "x": 3218,
+    "y": -5490,
+    "z": 649
+   },
+   "fromNode": 24,
+   "toNode": 25,
+   "zones": [
+    "mid-vent",
+    "mid-vent"
+   ],
+   "lengthMeters": 4.06,
+   "bottom": {
+    "x": 3268,
+    "y": -5540,
+    "z": 249
+   },
+   "top": {
+    "x": 3218,
+    "y": -5490,
+    "z": 649
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 3268,
+    "y": -5540,
+    "z": 249
+   },
+   "soundSourceExit": {
+    "x": 3218,
+    "y": -5490,
+    "z": 649
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA.002"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.002 (x,y 32.71, -55.15; housing z 9.06..9.52). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.06 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "vent-rope-2",
+   "name": "Vent pit rope to Mid Vent (north)",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 596,
+   "from": {
+    "x": 3268,
+    "y": -5240,
+    "z": 250
+   },
+   "to": {
+    "x": 3218,
+    "y": -5240,
+    "z": 649
+   },
+   "fromNode": 26,
+   "toNode": 27,
+   "zones": [
+    "mid-vent",
+    "mid-vent"
+   ],
+   "lengthMeters": 4.02,
+   "bottom": {
+    "x": 3268,
+    "y": -5240,
+    "z": 250
+   },
+   "top": {
+    "x": 3218,
+    "y": -5240,
+    "z": 649
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 3268,
+    "y": -5240,
+    "z": 250
+   },
+   "soundSourceExit": {
+    "x": 3218,
+    "y": -5240,
+    "z": 649
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA.003"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.003 (x,y 32.70, -52.40; housing z 9.06..9.52). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.03 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "ramps-rope-1",
+   "name": "Vent pit rope to A Ramps side (south)",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 612,
+   "from": {
+    "x": 3568,
+    "y": -6190,
+    "z": 250
+   },
+   "to": {
+    "x": 3668,
+    "y": -6190,
+    "z": 651
+   },
+   "fromNode": 28,
+   "toNode": 29,
+   "zones": [
+    "mid-vent",
+    "a-tower"
+   ],
+   "lengthMeters": 4.13,
+   "bottom": {
+    "x": 3568,
+    "y": -6190,
+    "z": 250
+   },
+   "top": {
+    "x": 3668,
+    "y": -6190,
+    "z": 651
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 3568,
+    "y": -6190,
+    "z": 250
+   },
+   "soundSourceExit": {
+    "x": 3668,
+    "y": -6190,
+    "z": 651
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA (x,y 35.91, -62.08; housing z 8.96..9.41). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.13 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "ramps-rope-2",
+   "name": "Vent pit rope to A Ramps side (north)",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 613,
+   "from": {
+    "x": 3568,
+    "y": -5940,
+    "z": 250
+   },
+   "to": {
+    "x": 3668,
+    "y": -5940,
+    "z": 651
+   },
+   "fromNode": 30,
+   "toNode": 31,
+   "zones": [
+    "mid-vent",
+    "a-tower"
+   ],
+   "lengthMeters": 4.13,
+   "bottom": {
+    "x": 3568,
+    "y": -5940,
+    "z": 250
+   },
+   "top": {
+    "x": 3668,
+    "y": -5940,
+    "z": 651
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 3568,
+    "y": -5940,
+    "z": 250
+   },
+   "soundSourceExit": {
+    "x": 3668,
+    "y": -5940,
+    "z": 651
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA.001"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.001 (x,y 35.90, -59.41; housing z 8.96..9.41). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is the pit under the vent (152 walk cells at z 2.50, x 32.4..36.4, y -62.2..-52.2), entered by dropping from either side.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.13 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "b-tower-rope",
+   "name": "B Tower rope",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 620,
+   "from": {
+    "x": -232,
+    "y": -5390,
+    "z": 500
+   },
+   "to": {
+    "x": -182,
+    "y": -5390,
+    "z": 916
+   },
+   "fromNode": 32,
+   "toNode": 33,
+   "zones": [
+    "b-tower",
+    "b-tower"
+   ],
+   "lengthMeters": 4.19,
+   "bottom": {
+    "x": -232,
+    "y": -5390,
+    "z": 500
+   },
+   "top": {
+    "x": -182,
+    "y": -5390,
+    "z": 916
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": -232,
+    "y": -5390,
+    "z": 500
+   },
+   "soundSourceExit": {
+    "x": -182,
+    "y": -5390,
+    "z": 916
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA.004"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.004 (x,y -2.52, -54.04; housing z 13.43..13.88). a = the walk cell at its foot, b = the nearest cell of the floor it reaches. The foot is a 224-cell floor at z 5.00 that is an island of the walk grid; the top is the B Tower floor.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.19 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "sewer-rope-1",
+   "name": "A Sewer rope (south)",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 600,
+   "from": {
+    "x": 6068,
+    "y": -3140,
+    "z": -94
+   },
+   "to": {
+    "x": 6168,
+    "y": -3140,
+    "z": 299
+   },
+   "fromNode": 34,
+   "toNode": 35,
+   "zones": [
+    "a-sewer",
+    "a-lobby"
+   ],
+   "lengthMeters": 4.06,
+   "bottom": {
+    "x": 6068,
+    "y": -3140,
+    "z": -94
+   },
+   "top": {
+    "x": 6168,
+    "y": -3140,
+    "z": 299
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 6068,
+    "y": -3140,
+    "z": -94
+   },
+   "soundSourceExit": {
+    "x": 6168,
+    "y": -3140,
+    "z": 299
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA.005"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.005 (x,y 60.75, -31.49; housing z 5.48..6.04). a = the walk cell at its foot, b = the nearest cell of the floor it reaches.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.05 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  },
+  {
+   "id": "sewer-rope-2",
+   "name": "A Sewer rope (north)",
+   "kind": "rope",
+   "bidirectional": true,
+   "travelTimeMs": 607,
+   "from": {
+    "x": 6068,
+    "y": -2840,
+    "z": -99
+   },
+   "to": {
+    "x": 6168,
+    "y": -2840,
+    "z": 299
+   },
+   "fromNode": 36,
+   "toNode": 37,
+   "zones": [
+    "a-sewer",
+    "a-lobby"
+   ],
+   "lengthMeters": 4.1,
+   "bottom": {
+    "x": 6068,
+    "y": -2840,
+    "z": -99
+   },
+   "top": {
+    "x": 6168,
+    "y": -2840,
+    "z": 299
+   },
+   "ascending": true,
+   "soundSource": {
+    "x": 6068,
+    "y": -2840,
+    "z": -99
+   },
+   "soundSourceExit": {
+    "x": 6168,
+    "y": -2840,
+    "z": 299
+   },
+   "objectNames": [
+    "Kingdom_0_VertAscenderA.006"
+   ],
+   "speedMetersPerSec": 6.75,
+   "basis": "Game metres. Rope under the ascender Kingdom_0_VertAscenderA.006 (x,y 60.75, -28.52; housing z 5.48..6.04). a = the walk cell at its foot, b = the nearest cell of the floor it reaches.",
+   "provenance": "measured-on-mesh (object position, the two walk cells, length 4.10 m); manual-approx (travel time = length / 6.75 m/s — speed assumed equal to the movement model's run speed (6.75 m/s): the game's rope / zipline speed was not measured; that the object is a usable rope: object name and game knowledge)",
+   "soundRadiusUu": null,
+   "soundVerified": false
+  }
+ ],
+ "doors": [],
+ "breakables": [],
+ "ultOrbs": [],
+ "notLocated": [
+  {
+   "name": "Ultimate orbs",
+   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+  }
+ ],
+ "generatedBy": "tools/map-mesh/pipeline/objects_map.py"
+}

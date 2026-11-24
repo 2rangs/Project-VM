@@ -93,7 +93,7 @@ h2 { font-size:17px; margin:0 0 10px; } h3 { font-size:14px; margin:0 0 8px; }
 .k-kill { color:#ff7b72; } .k-plant { color:#ffd166; } .k-roundStart,.k-roundEnd { color:var(--muted); } .k-abilitySpawn { color:#b388ff; }
 .md-side { display:flex; flex-direction:column; gap:12px; } .md-card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
 .econ-team, .ult-team { display:flex; align-items:center; gap:10px; padding:4px 0; } .econ-credits, .ult-pts { font-variant-numeric:tabular-nums; margin-left:auto; }
-.buy-badge { font-size:10px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); } .buy-eco { color:#8b98a9; } .buy-half { color:#79c0ff; } .buy-force { color:#f0b429; } .buy-full { color:#7ee787; }
+.buy-badge { font-size:10px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); } .buy-eco { color:#8b98a9; } .buy-half { color:#79c0ff; } .buy-force { color:#f0b429; } .buy-full { color:#7ee787; } .buy-bonus { color:#d2a8ff; }
 .save-alert { margin-top:8px; font-size:12px; color:#f0b429; background:#f0b4291a; border-radius:6px; padding:6px 8px; }
 .coachnote .note { font-size:13px; line-height:1.6; color:#cdd9e5; } .rtl { display:flex; gap:4px; flex-wrap:wrap; } .rtl-round { font-size:11px; padding:3px 8px; background:#1b2230; border-radius:6px; }
 .dev-note { border-bottom:1px solid var(--line); }

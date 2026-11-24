@@ -304,10 +304,15 @@ export class MatchStage {
       const p = this.toScreen(cam, z.position);
       const fade = s.kind === 'footstep' ? 1 : 1 - s.ageMs / 3000;
       const base = compact ? 9 : 12;
+      // masked cues (drowned out by louder gunfire) are drawn fainter and thinner; a defuse tap / spike
+      // sound uses the spike colour so it reads as the objective, not a footstep
+      const masked = s.masked === true;
+      const ring = s.kind === 'spikeDefuse' || s.kind === 'spikePlant' ? C.enemy : C.sound;
       for (let i = 0; i < 2; i++) {
         const ph = ((t / 900 + i * 0.5) % 1 + 1) % 1;
-        over.circle(p.x, p.y, base + ph * base * 1.7).stroke({ color: C.sound, width: 1.5, alpha: (1 - ph) * 0.8 * fade });
+        over.circle(p.x, p.y, base + ph * base * 1.7).stroke({ color: ring, width: masked ? 1 : 1.5, alpha: (1 - ph) * (masked ? 0.3 : 0.8) * fade });
       }
+      if (masked) over.moveTo(p.x - base * 0.6, p.y + base * 0.6).lineTo(p.x + base * 0.6, p.y - base * 0.6).stroke({ color: C.sound, width: 1.5, alpha: 0.6 });
       if (s.kind === 'gunfire') {
         const r = base * 0.75;
         over.poly([p.x, p.y - r, p.x + r * 0.3, p.y - r * 0.3, p.x + r, p.y, p.x + r * 0.3, p.y + r * 0.3, p.x, p.y + r, p.x - r * 0.3, p.y + r * 0.3, p.x - r, p.y, p.x - r * 0.3, p.y - r * 0.3]).fill({ color: C.sound, alpha: fade });

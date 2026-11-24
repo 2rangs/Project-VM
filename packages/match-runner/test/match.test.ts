@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
 import { runMatch, attackerFor, resolveTeamRef, teamSkills, type MatchConfig, type MatchResult, type RoundRecord } from "../src/index.js";
-import { newTeamEconomy, decideBuy, applyRoundOutcome } from "../src/economy.js";
+import { newTeamEconomy, decideBuy, settleRound, type PlayerSettlement } from "../src/economy.js";
 import { ECONOMY_RULES, ROUND_RULES } from "@pv/game-rules";
 
 const cfg = (seed: number, extra: Partial<MatchConfig> = {}): MatchConfig => ({
@@ -70,22 +70,25 @@ describe("Match Runner", () => {
     expect(pistol.tier).toBe("pistol");
     expect(pistol.cost).toBeLessThanOrEqual(start);
 
-    // Win reward.
-    const won = applyRoundOutcome(newTeamEconomy(), { won: true, kills: 0, planted: false });
-    expect(won.credits).toBe(start + ECONOMY_RULES.roundWinReward.value);
+    // Per player: win reward to everyone.
+    const dead = (kills = 0): PlayerSettlement => ({ alive: false, kills, weaponAfter: null, armorRetained: 0, ultimatePointsEnd: 0 });
+    const five = (f: (i: number) => PlayerSettlement) => Array.from({ length: 5 }, (_, i) => f(i));
+    const won = settleRound(newTeamEconomy(), { won: true, planted: false, attacking: true, players: five(() => dead()) });
+    expect(won.players.every((p) => p.credits === start + ECONOMY_RULES.roundWinReward.value)).toBe(true);
+    expect(won.credits).toBe(5 * (start + ECONOMY_RULES.roundWinReward.value));
     expect(won.consecutiveLosses).toBe(0);
 
-    // First loss → loss bonus ladder[0]; streak grows.
-    const l1 = applyRoundOutcome(newTeamEconomy(), { won: false, kills: 0, planted: false });
-    expect(l1.credits).toBe(start + ECONOMY_RULES.lossBonusLadder.value[0]!);
+    // First loss → loss bonus ladder[0] to every player; streak grows.
+    const l1 = settleRound(newTeamEconomy(), { won: false, planted: false, attacking: true, players: five(() => dead()) });
+    expect(l1.players[0]!.credits).toBe(start + ECONOMY_RULES.lossBonusLadder.value[0]!);
     expect(l1.consecutiveLosses).toBe(1);
 
-    // Kills + plant add their rewards; ult points accrue.
-    const withKills = applyRoundOutcome(newTeamEconomy(), { won: true, kills: 3, planted: true });
-    expect(withKills.credits).toBe(
+    // Kill reward to the killer; the plant reward to every attacker.
+    const withKills = settleRound(newTeamEconomy(), { won: true, planted: true, attacking: true, players: five((i) => dead(i === 0 ? 3 : 0)) });
+    expect(withKills.players[0]!.credits).toBe(
       start + ECONOMY_RULES.roundWinReward.value + 3 * ECONOMY_RULES.killReward.value + ECONOMY_RULES.spikePlantReward.value,
     );
-    expect(withKills.ultPoints).toBe(3 + 1);
+    expect(withKills.players[1]!.credits).toBe(start + ECONOMY_RULES.roundWinReward.value + ECONOMY_RULES.spikePlantReward.value);
   });
 
   it("match credits never exceed the rules cap and never go negative", () => {
@@ -93,7 +96,11 @@ describe("Match Runner", () => {
     for (const r of m.rounds) {
       for (const slot of ["A", "B"] as const) {
         expect(r.economy[slot].credits).toBeGreaterThanOrEqual(0);
-        expect(r.economy[slot].credits).toBeLessThanOrEqual(ECONOMY_RULES.maxCredits.value);
+        for (const p of r.economy[slot].players) {
+          expect(p.credits).toBeGreaterThanOrEqual(0);
+          expect(p.credits).toBeLessThanOrEqual(ECONOMY_RULES.maxCredits.value);
+        }
+        for (const b of r.buys[slot].players) expect(b.creditsAfter).toBeGreaterThanOrEqual(0);
       }
     }
   });

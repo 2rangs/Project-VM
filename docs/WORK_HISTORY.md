@@ -325,6 +325,46 @@
 - 문서: `docs/HANDOFF.md`(현재 상태 정본으로 재작성), `docs/DEVELOPMENT_PROCESS.md`(신규), `docs/research/STATUS_AUDIT_2026-11-23.md`(독립 진단, 신규).
 - 미완성 브랜치: `claude/nav-engine` `11ec870`(Haven/Pearl 원본 데이터 수정, 미검증).
 
+### 17차 main 머지 (2026-11-23) — 커리어+구단 운영 통합 · 11개 맵 3D · 오리지널 모델 · 경기 화면
+- 합친 브랜치: `claude/festive-brattain-042f51`(`0918e78`), `claude/serene-goldberg-b05635`(`9692d0b`), `claude/matchday-uiux-efc023`(`10028ee`).
+- 커리어: 구단 운영이 `registerCareerHook`로 커리어 달력 위에서 동작(받은메일·달력·팀 전력 하나로), 감독 팀 로스터 자동 변경 제거, 경기 전 라인업 선택, 준비도 R = (1 − 0.25·max(0, 피로 − 0.3))·(1 − 0.08·(1 − 샤프니스)), 선수별 K/D·맵 연습이 경기에 반영, AI 시즌은 보정된 빠른 시뮬이 기본.
+- 모델링: 11개 맵 웹 GLB(저장소 밖 `~/ProjectV-assets/maps/glb`, 맵 좌표 보정·바닥/시야 일치 확인), 스키닝된 오리지널 선수·무기 모델, 엔진 트랙 기반 애니메이션 상태·시선·옆걸음, 1인칭 리그, 맵별 조명. 메시·GLB·.blend는 미커밋.
+- 경기 화면: 엔진이 판정한 시야 표시(없으면 근사로 표시), 킬 배너 소리(선택), 오리지널 아이콘 세트, VCT 로고 로딩 엠블럼(로컬·gitignore, 대체 그림 있음 — 상표, 내부용).
+- 검증: 엔진 변경 없음(실제 로스터 6/8, 공격 0.455 유지). 루트 259, career 49, round-simulator 121, match-runner 87(+1 기존 실패: Bind own geometry, 맵 세션 담당), spatial-engine 278, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과(커리어 e2e는 영입 → 라인업 → 시즌 종료 → 계약 만료 → 다음 시즌까지).
+
+### 18차 main 머지 (2026-11-23) — 엔진 정합성 1단계: 시야 하나로, 위치 기반 스모크·설치, 실제 로스터 재보정
+- 합친 브랜치: `claude/peaceful-agnesi-b01f91` @ `2e2a7bf`(engine-truth 1–6단계, 상세 `docs/ENGINE_TRUTH.md`).
+- 내용: 검증 리포트 전용 지표 + sim-batch 실제 로스터 확인 테스트, 플래시·정찰·트레이서·크로스파이어가 `vision.ts`와 같은 위치 LOS 사용 + 틱별 시야 기록, 스모크는 착탄 지점 볼륨으로 차단, 설치는 사이트 다각형·해체는 거리, 사망자 스팟 해제, 설치 후 가드가 리테이크 진입로를 봄, 듀얼 피해 이월 0.4(실제 로스터 시드 1–160 적합).
+- 검증(실제 로스터, 이 통합 세션 재측정, 시드 1–160): **8/8**, 공격 0.501, 피스톨 0.463, 전멸 0.686, 해체 0.185, 폭발 0.082, 시간 초과 0.047. 세션 보고: 시드 161–320 7/8(0.485), 321–480 8/8(0.507). 스킬 on: 3/8, 공격 0.281(수비 쏠림, 원인은 ENGINE_TRUTH.md) — 기본 OFF 유지.
+- 함께 고친 것: 커리어 저장이 겹칠 때 `.tmp` 이름 충돌(ENOENT) → 슬롯별 순차 쓰기, 커리어 e2e가 자동 저장을 기다림(3/3 연속 통과).
+- 테스트: core 259/4 todo, career 49, round-simulator 128, match-runner 87(+1 기존 실패: Bind own geometry), spatial-engine 278, ability-engine 21, combat-engine 21, perception-engine 27, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과.
+
+### 19차 main 머지 (2026-11-23) — 11개 맵 데이터·전술 완료, 시선·소리 모델(기본 OFF) · 개인 경제는 보류
+- 합친 브랜치: `claude/peaceful-agnesi-b01f91`(`7daae91`, 시선 모델 `--gaze`·소리 디테일 `--sound`, 둘 다 기본 OFF), `claude/nav-engine`(`f8d905b`, 11개 맵 끊긴 구역 0, 시야 표, 전술, `<map>.objects.json`, Bind own geometry 테스트 수정).
+- **보류: `claude/epic-mahavira-18c91b`(개인 경제).** 함께 합치면 실제 로스터 기존 8개 지표가 **6/8**(전멸 0.661, 해체 0.204)로 떨어짐. 경제만 뺀 같은 조합은 8/8(공격 0.501)로 main과 동일 → 원인은 경제. 경제는 엔진 재보정 전 기반에서 만들어져 현재 엔진에서 다시 맞춰야 함(경제 세션에 전달). 포스 승률 0.10 → 0.26–0.31 등 개선은 브랜치에 있음.
+- 검증(실제 로스터, 시드 1–160, 이 통합 세션 측정): **8/8**, 공격 0.501(경제 제외 조합). 맵별 자기 지형: 공격 승률은 11개 맵 모두 범위, 라운드 종료 비율은 Breeze만 범위 → `geometry: "own"`은 옵트인 유지(`NAVIGATION_ENGINE.md` §7.6).
+- 시선 모델을 켜면 공격 0.25–0.36(피커스 어드밴티지 상수와 이중 계산) — 지글·리피크·각쪼개기·정지 시간과 함께 재보정 후 기본 적용 예정(`ENGINE_TRUTH.md` §7–9).
+- 테스트: core 263/4 todo, round-simulator 134, match-runner 90(Bind own 통과), spatial-engine 407, combat-engine 27, perception-engine 27→32, 데스크톱 typecheck·build·unit·matchday·engine 통과. e2e 4종은 경제 포함 조합에서 통과(데스크톱 차이는 경제의 3줄뿐).
+
+### 20차 main 머지 (2026-11-23) — 개인 경제 v1.1
+- 합친 브랜치: `claude/epic-mahavira-18c91b` @ `1ed75c7`(19차에서 보류된 개인 경제를 현재 엔진 위에서 재보정, 상세 `docs/ECONOMY_MODEL.md`).
+- 내용: 선수별 크레딧(승리 보상·연패 사다리·킬 200·설치 300·상한 9000), 생존자 무기·실드 유지, 라운드 뒤 더 좋은 무기 줍기, 드랍(부자 → 가난한 동료, 에이스 우선), 팀 구매 계획 = 이번 라운드 + 2라운드 앞을 본 맵 승리 기대값 최대화(풀/포스·하프·라이트 에코·에코·보너스), 궁극기 포인트 이월과 구매 영향, 라운드 기록에 선수별 구매·드랍·줍기·계획 평가.
+- 검증(실제 로스터, 시드 1–160, 이 통합 세션 재측정): 기존 8개 **8/8**, 공격 0.503, 피스톨 0.463, 전멸 0.677, 해체 0.194, 폭발 0.090, 시간 초과 0.039. 경제 셀 포함 13/15(실패: 세미 vs 에코 0.981 > 0.953, 그리고 1개). 세션 보고: 시드 161–320 7/8(피스톨, 경제 이전부터), 공격 0.489.
+- 테스트: core 264/4 todo, career 49, round-simulator 134, match-runner 100, spatial-engine 407, combat-engine 27, perception-engine 32, economy-engine 38, 데스크톱 typecheck·build·unit 61·matchday 49·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과.
+- 남은 것: 에코 라운드가 거의 못 이김(에코 플레이 EC-04, 엔진 쪽), 피스톨 승자가 2라운드에 SMG 대신 라이플, 궁극기 오브 위치(맵 데이터) 미연결, 라운드 중 무기 줍기 이벤트 없음.
+
+### 21차 main 머지 (2026-11-24) — 매치데이 UI-1…UI-6, 선수별 경제 표시
+- 합친 브랜치: `claude/matchday-uiux-efc023` @ `6d2e31e`(데스크톱만, 엔진 변경 없음 → 160경기 배치 생략).
+- 내용: 핸드오프 UI-1…UI-6(통신 제외), 경기 화면에 선수별 크레딧·유지 무기·드랍·궁극기 포인트와 팀 구매 이유, 듀얼 표시, 일시정지 중 계산 생략과 전술 맵에서 3D 캔버스 정리(측정상 다른 병목 없음: 프레임 0.05ms, 타임라인 44ms).
+- 테스트: 데스크톱 typecheck·build·unit 61·matchday 54·engine 4, e2e·시리즈·커리어·구단 운영 e2e 통과(이 통합 세션 재실행).
+
+### 22차 main 머지 (2026-11-24) — 개인 경제 v1.2
+- 합친 브랜치: `claude/epic-mahavira-18c91b` @ `c4b468e`(상세 `docs/ECONOMY_MODEL.md` "Match economy v1.2").
+- 내용: 2라운드 구매에서 총 가치를 상대 예상 실드에 맞춰 평가(에코 상대 스펙터 ≈1,950) → 피스톨 승자 SMG/보너스 바이, 2–0에서 3라운드 승률 0.438(VCT 0.427). 라운드 중 무기 줍기(`round-simulator/src/floor-items.ts`, 2 m 이내·적 시야 없음·설치/해체 중 아님, `MatchConfig.floorItems` 기본 켬, 킬당 ≈0.03). 궁극기 오브 소비자(`<map>.objects.json` `ultOrbs`, 현재 모든 맵 비어 있어 동작 없음).
+- 검증(실제 로스터, 시드 1–160, 이 통합 세션 재측정): 기존 8개 **8/8**, 공격 0.512, 피스톨 0.463, 전멸 0.681, 해체 0.191, 폭발 0.090, 시간 초과 0.038. 경제 셀 13/15(실패: 세미 vs 에코 0.995, 에코 vs 세미 0.022 — 에코 플레이 EC-04). 세션 보고: 시드 161–320 7/8(피스톨 0.394, 구매 이전에 결정됨), 13/15, 공격 0.503.
+- 테스트: core 264/4 todo, round-simulator 136, match-runner 104, economy-engine 38, spatial-engine 407, combat-engine 27, perception-engine 32, career 49, 데스크톱 typecheck·build·unit·matchday·engine, e2e 4종 통과.
+- 참고: `vct.duckdb`에 무기 열이 없어 2라운드 SMG/라이플 비율 자체는 맞추지 못하고 장비 가치·잔고·승률로 맞춤.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.

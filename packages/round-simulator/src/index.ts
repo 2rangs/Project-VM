@@ -7,7 +7,7 @@
 
 export * from "./types.js";
 export * from "./policy-contract.js";
-export { RoundSimulator } from "./simulator.js";
+export { RoundSimulator, DEFUSE_REACH_UNITS } from "./simulator.js";
 export type { RoundSimulatorDeps } from "./simulator.js";
 // Match-level round-execution API (PV-3 Match Runner entry point).
 export { runMatchRound } from "./match-round.js";
@@ -37,3 +37,5 @@ export {
   smokeExitDelayMs, patchExposureMs, slowFieldDelayMs, abilityCastCueConfidence,
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, ABILITY_CAST_LOUDNESS, ABILITY_CAST_AUDIBLE_THRESHOLD,
 } from "./situational.js";
+export { FloorItems, PICKUP_REACH_UNITS } from "./floor-items.js";
+export type { FloorWeapon, OrbPoint, FloorItemsOptions } from "./floor-items.js";

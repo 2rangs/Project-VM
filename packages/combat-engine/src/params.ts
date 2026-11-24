@@ -52,6 +52,29 @@ export interface CombatParams {
     /** Fraction of a hit absorbed by shield while shield remains (rest hits health). */
     readonly shieldAbsorb: number;
   };
+  /**
+   * Gaze-based time to first shot (used when a posture carries `aimOffsetDeg`):
+   *   ready = seesEnemyAt + perception(reaction) + a + b(aim) · log2(1 + D/W)
+   * perception = simple visual reaction time; the Fitts term is the time to bring the crosshair
+   * onto the target (Fitts 1954; MacKenzie 1992 for mouse pointing: throughput ≈ 4.9 bit/s for
+   * ordinary users — skilled FPS players are faster, hence b(aim) below). D = angle off target,
+   * widened by the crosshair-height error σ·(1 − crosshairPlacement); W = the body's angular width.
+   * All manual-approx (literature ranges, not fitted to win rates).
+   */
+  readonly aim: {
+    /** Simple visual reaction time (ms) at skill.reaction = 0 and = 1. */
+    readonly perceptionSlowMs: number;
+    readonly perceptionFastMs: number;
+    /** Fitts intercept a (ms): the click with the crosshair already on target. */
+    readonly fittsA: number;
+    /** Fitts slope b (ms per bit) at skill.aim = 0 and = 1. */
+    readonly fittsBSlowMs: number;
+    readonly fittsBFastMs: number;
+    /** Half the body's width (m) — the target a first shot has to land on. */
+    readonly bodyHalfWidthM: number;
+    /** Crosshair height error (deg) at crosshairPlacement 0; it shrinks linearly to 0 at 1. */
+    readonly placementSigmaDeg: number;
+  };
   /** Hard cap so a duel where both keep missing still terminates. */
   readonly timeBudgetMs: number;
 }
@@ -71,6 +94,15 @@ export const DEFAULT_PARAMS: CombatParams = {
   },
   headshot: { baseLow: 0.05, baseHigh: 0.45, movingMultiplier: 0.5, flashedMultiplier: 0.2 },
   armor: { shieldAbsorb: 0.66 },
+  aim: {
+    perceptionSlowMs: 220, // ordinary gamer simple RT (human-benchmark median ≈ 250–270 ms incl. click)
+    perceptionFastMs: 140, // top-end pro simple RT
+    fittsA: 30, // the old pre-aim reaction (crosshair already on target)
+    fittsBSlowMs: 150, // ≈ 6.7 bit/s
+    fittsBFastMs: 75, // ≈ 13 bit/s (flick specialists)
+    bodyHalfWidthM: 0.35,
+    placementSigmaDeg: 10,
+  },
   timeBudgetMs: 12000,
 };
 

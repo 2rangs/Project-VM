@@ -64,6 +64,8 @@ class CareerSimHost {
 function savesDir(): string { return process.env.PV_SAVES_DIR ?? path.join(app.getPath('userData'), 'saves'); }
 const isSlot = (s: unknown): s is SaveSlot => typeof s === 'string' && (SAVE_SLOTS as readonly string[]).includes(s);
 const slotFile = (slot: SaveSlot) => path.join(savesDir(), `${slot}.json`);
+/** One write chain per save slot (see saveWrite). */
+const saveQueue = new Map<SaveSlot, Promise<void>>();
 
 /** The header of a save without parsing the world: the meta object is written first. */
 function metaOf(text: string): SaveSlotInfo['meta'] {
@@ -104,10 +106,18 @@ export function registerCareerIpc(opts: { script: () => string; cwd: () => strin
   });
   ipcMain.handle(IPC.saveWrite, async (_e, slot: unknown, text: unknown): Promise<void> => {
     if (!isSlot(slot) || typeof text !== 'string') throw new Error('bad save');
-    await mkdir(savesDir(), { recursive: true });
-    const tmp = `${slotFile(slot)}.tmp`;
-    await writeFile(tmp, text, 'utf8');
-    await rename(tmp, slotFile(slot));
+    // Autosaves can overlap. Writes to one slot run one after another, in the order they arrived, so
+    // the newest save is always the one left on disk (a shared `.tmp` used to be renamed away by the
+    // other write → ENOENT; unique temp files alone would let an older write land last).
+    const prev = saveQueue.get(slot) ?? Promise.resolve();
+    const next = prev.catch(() => undefined).then(async () => {
+      await mkdir(savesDir(), { recursive: true });
+      const tmp = `${slotFile(slot)}.tmp`;
+      await writeFile(tmp, text, 'utf8');
+      await rename(tmp, slotFile(slot));
+    });
+    saveQueue.set(slot, next);
+    try { await next; } finally { if (saveQueue.get(slot) === next) saveQueue.delete(slot); }
   });
   ipcMain.handle(IPC.saveDelete, async (_e, slot: unknown): Promise<void> => {
     if (!isSlot(slot)) throw new Error('bad slot');

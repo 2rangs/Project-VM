@@ -187,6 +187,21 @@ travel connection (teleporters excluded), so no zone is isolated. Consequence: A
 
 ## 4. Measured versus approximated, per map
 
+> **Update 2026-11-23 — no approx-link remains on any map.** The table below is the state before that date.
+> - Haven `b-site` and Pearl's five zones stand on their floor through `zoneAnchors` in `<map>.authoring.json`
+>   (a floor point for a zone whose callout is off its floor; `"smallFloor": true` allows a floor under the
+>   snap's 40-cell minimum) — `b0ed5ed`.
+> - Abyss `a-secret` / `b-danger` are ledges 2.0–2.5 m from the nearest floor with nothing in the gap; four
+>   `kind: "jump"` links join measured cells. That the gaps are jumpable both ways is game knowledge — `99427ea`.
+> - Icebox `a-nest` is reached by a measured rope and zipline — `a42c3a7`.
+> - Split `mid-vent` walks to Mid Top; a light fixture under the doorway floor had been merged into the floor
+>   layer (`geometry.dropObjectRegex` for that one object) — `fecde40`.
+> - Every zone pair is reachable on every map (`ROADMAP_GAPS` in `spatial-engine/test/navigation.test.ts` is empty).
+> - New authoring key `traversals` (both end cells, zones, travel time, object names, basis): each end becomes
+>   a roadmap node and the pair a typed link (`rope`, `zipline`, `teleporter`, `jump`). End points are measured
+>   under the scene objects; **times are length ÷ 6.75 m/s (run speed assumed — rope speed not measured)**, and
+>   Bind's teleporter 1.5 s is still an estimate.
+
 | Map | Approx-links (straight-line lower bound) | Other approximations specific to the map |
 |---|---|---|
 | Abyss | `a-security↔a-secret`, `b-nest↔b-danger` | Callout z is a label height (floor ≈ 1.2 m below) |
@@ -203,6 +218,18 @@ travel connection (teleporters excluded), so no zone is isolated. Consequence: A
 Every such record is tagged in the navgraph (`edge.provenance`, `edge.kind`, `dataQuality.approxLinks`).
 
 ## 5. Map mechanics
+
+> **Update 2026-11-23.** Now links in the roadmap: Abyss 4 jumps; Bind 2 teleporters (entry under each frame,
+> arrival mid-room); Breeze 1 rope; Fracture 1 zipline + 2 ropes; Icebox 4 ropes + 1 zipline; Lotus 1 rope;
+> Split 7 ropes. Not located (moving actors absent from the static scenes, listed under `notLocated`): Ascent's
+> door leaves and A switch, Breeze mid / A-hall doors, Lotus rotating doors and breakable wall, Sunset B Market
+> door, Icebox Mid Boiler rope, Fracture's second zipline, ult orbs on every map.
+>
+> **`<map>.objects.json`** (points and types only; generator `tools/map-mesh/pipeline/objects_map.py`, test
+> `spatial-engine/test/objects.test.ts`): `drops` (one-way edges with fall height), `traversals` (kind, both
+> ends, zones, `travelMs`, `soundSource`, `soundSourceExit`, `soundRadiusUu: null`, `soundVerified: false`),
+> `doors`, `breakables`, `ultOrbs` (empty everywhere), `notLocated`, plus `schemaVersion`, `provenance`, `note`.
+> A door's two `zones` are often the same zone (the door sits inside one zone's cell).
 
 Represented in the graph:
 

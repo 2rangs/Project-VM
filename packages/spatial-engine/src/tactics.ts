@@ -22,10 +22,13 @@
 //                   the forward edge of what the defense can hold. If the defenders are first to
 //                   none, the zone where the two arrive closest to together, but only if the
 //                   defenders are at most MID_LATE_MS behind; otherwise the map has no mid anchor
+//   hold / plant    named standing points per site (standard and off-angle holding spots per entry;
+//   spots           default / safe / open plant points) — see spots.ts
 //   defender starts five zones: one per site; then the mid anchor (two-site maps only — a third
 //                   site takes its place); then one more per site, the sites the attack reaches
 //                   soonest first. Listed site by site in letter order, the mid anchor last.
 import type { SpatialEngine } from "./engine.js";
+import { deriveSiteSpots, type HoldSpot, type PlantSpot } from "./spots.js";
 
 export interface SiteTactics {
   /** Site letter: "A", "B", "C". */
@@ -41,6 +44,10 @@ export interface SiteTactics {
   /** Attackers' and defenders' fastest run to the site (ms); null if unreachable. */
   readonly attackTravelMs: number | null;
   readonly defenseTravelMs: number | null;
+  /** Named holding spots (standard and off-angle) per entry, as points (spots.ts); empty without a sight table. */
+  readonly holdSpots: readonly HoldSpot[];
+  /** Default / safe / open plant points on the site's plantable area (spots.ts). */
+  readonly plantSpots: readonly PlantSpot[];
 }
 
 export interface MapTactics {
@@ -125,7 +132,8 @@ export function deriveMapTactics(engine: SpatialEngine, overrides: MapTacticsOve
         .map((p) => p.n);
       const smokes = overrides.smokes?.[zone] ?? smokesFor(zone, mainEntry);
       if (overrides.smokes?.[zone]) authored.push(`smokes.${zone}`);
-      return { site, zone, mainEntry, entries: [...(mainEntry ? [mainEntry] : []), ...others], smokes: [...smokes], attackTravelMs: reach, defenseTravelMs: tD(zone) };
+      const entries = [...(mainEntry ? [mainEntry] : []), ...others];
+      return { site, zone, mainEntry, entries, smokes: [...smokes], attackTravelMs: reach, defenseTravelMs: tD(zone), ...deriveSiteSpots(engine, zone, entries) };
     });
 
   // the defenders' mid position

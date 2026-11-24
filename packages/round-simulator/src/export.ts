@@ -24,7 +24,10 @@ export function toSimGameEvents(result: RoundResult, opts: { includeMoves?: bool
   let seq = 0;
   const base = (tick: number, timeMs: number) => ({ id: `e${seq}`, seq: seq++, tick, timeMs });
 
-  if (opts.includeMoves && result.tracks) out.push(...moveEvents(result.tracks, () => seq++));
+  if (opts.includeMoves && result.tracks) {
+    out.push(...moveEvents(result.tracks, () => seq++));
+    out.push(...sightEvents(result.tracks, () => seq++));
+  }
 
   for (const e of result.events) {
     switch (e.kind) {
@@ -78,6 +81,30 @@ function moveEvents(tracks: readonly TrackFrame[], nextSeq: () => number): SimGa
       if (pp.x === p.x && pp.y === p.y && pp.z === p.z) continue; // no movement
       const s = nextSeq();
       out.push({ id: `m${s}`, seq: s, tick: cur.tick, timeMs: cur.elapsedMs, kind: "move", playerId: p.id, from: { x: pp.x, y: pp.y, z: pp.z }, to: { x: p.x, y: p.y, z: p.z } });
+    }
+  }
+  return out;
+}
+
+/**
+ * Per-tick perception as replay events: one `sight` event for a player whenever the set of enemies
+ * it sees changes (and one at its first frame), carrying the full new set:
+ *   { kind: "sight", playerId, sees: PlayerId[] (sorted), blind: boolean }
+ * Replaying the latest `sight` event per player at time t gives exactly who saw whom in the
+ * simulation at t (TrackFrame.sees). Dead players emit nothing further; replay-engine ignores the
+ * kind until a consumer (the desktop sight overlay) reads it. Contract: docs/ENGINE_TRUTH.md §2.
+ */
+function sightEvents(tracks: readonly TrackFrame[], nextSeq: () => number): SimGameEvent[] {
+  const out: SimGameEvent[] = [];
+  const last = new Map<string, string>();
+  for (const f of tracks) {
+    for (const p of f.players) {
+      if (!p.sees) continue;
+      const key = `${p.blind ? "b" : ""}|${p.sees.join(",")}`;
+      if (last.get(p.id) === key) continue;
+      last.set(p.id, key);
+      const s = nextSeq();
+      out.push({ id: `s${s}`, seq: s, tick: f.tick, timeMs: f.elapsedMs, kind: "sight", playerId: p.id, sees: [...p.sees], blind: p.blind === true });
     }
   }
   return out;

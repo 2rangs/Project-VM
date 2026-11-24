@@ -15,6 +15,7 @@
 //   stop
 // Config is argv[2] JSON (SeriesStartRequest + filmGames). Diagnostics go to stderr only.
 import { createInterface } from 'node:readline';
+import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-round.mts';
 import { listSimulatableTeams, getMapComps } from '../../../packages/game-data/src/index.ts';
 import {
   createSeriesSession, runMatch, teamGameLog, DEFAULT_MAP_POOL, SIMULATED_GEOMETRY,
@@ -22,6 +23,9 @@ import {
 } from '../../../packages/match-runner/src/index.ts';
 import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
 import type { RosterPlayer } from '../../../packages/match-runner/src/teams.ts';
+import { getTeamMapRecords } from '../../../packages/game-data/src/index.ts';
+import { withPractice } from '../../../packages/career/src/club/training.ts';
+import { killLines } from './kill-lines.mts';
 
 type Team = 'A' | 'B';
 interface Cfg {
@@ -31,6 +35,8 @@ interface Cfg {
   filmGames?: number;
   /** [career] Today's five per team (career world); every map and the film use them. */
   rosters?: { A?: RosterPlayer[]; B?: RosterPlayer[] };
+  /** [career] Training map practice per team → added to its map records (mastery continuity). */
+  practice?: { A?: Record<string, Record<string, number>>; B?: Record<string, Record<string, number>> };
 }
 const cfg: Cfg = JSON.parse(process.argv[2] ?? '{}');
 const seed = cfg.seed ?? 1;
@@ -49,11 +55,15 @@ function film(team: { id: string; name: string }, salt: number, roster?: RosterP
   }
   return logs;
 }
+/** [career] A team's map records with its training map practice added (mastery continuity C). */
+function practiceRecords(teamId: string, practice?: Record<string, Record<string, number>>) {
+  return practice && Object.keys(practice).length ? { mapRecords: withPractice(getTeamMapRecords(teamId), practice) as ReturnType<typeof getTeamMapRecords> } : {};
+}
 process.stderr.write('series-session: preparing scouting film\n');
 const series: SeriesSession = createSeriesSession(
   {
-    teamA: { ...cfg.teamA, scouting: cfg.scouting ?? true, staff: { analyst: cfg.analyst ?? 0.5 }, history: film(cfg.teamA, 1, cfg.rosters?.A), ...(cfg.rosters?.A ? { roster: cfg.rosters.A } : {}) },
-    teamB: { ...cfg.teamB, history: film(cfg.teamB, 2, cfg.rosters?.B), ...(cfg.rosters?.B ? { roster: cfg.rosters.B } : {}) },
+    teamA: { ...cfg.teamA, scouting: cfg.scouting ?? true, staff: { analyst: cfg.analyst ?? 0.5 }, history: film(cfg.teamA, 1, cfg.rosters?.A), ...(cfg.rosters?.A ? { roster: cfg.rosters.A } : {}), ...practiceRecords(cfg.teamA.id, cfg.practice?.A) },
+    teamB: { ...cfg.teamB, history: film(cfg.teamB, 2, cfg.rosters?.B), ...(cfg.rosters?.B ? { roster: cfg.rosters.B } : {}), ...practiceRecords(cfg.teamB.id, cfg.practice?.B) },
     format: cfg.format ?? 'bo3',
     seed,
     match: { recordPerception: true, recordTracks: true }, // positions + navigation trace for the live view
@@ -78,10 +88,13 @@ function compactRound(ctx: SeriesGameContext, r: ReturnType<MatchSession['playNe
     roundNumber: r.roundNumber, phase: r.phase, attacker: uiOf(ctx, r.attacker),
     winner: uiOf(ctx, r.winner), winnerSide: r.winnerSide, reason: r.reason, planted: r.planted,
     score: byUi(ctx, r.score), kills: byUi(ctx, r.kills),
-    economy: { A: { credits: eco.A.credits, ultPoints: eco.A.ultPoints }, B: { credits: eco.B.credits, ultPoints: eco.B.ultPoints } },
-    buys: { A: { tier: buys.A.tier, weapon: buys.A.weapon }, B: { tier: buys.B.tier, weapon: buys.B.weapon } },
+    economy: { A: compactEconomy(eco.A), B: compactEconomy(eco.B) },
+    buys: { A: compactBuy(buys.A), B: compactBuy(buys.B) },
     replayEvents: r.replay.events,
     perception: r.replay.meta.perception ?? null,
+    // per-tick sight decided by the sim (engine-truth), when the engine records it
+    sight: sightOf(r),
+    engagement: engagementOf(r),
     decisions: r.decisions ? { plans: byUi(ctx, r.decisions.plans), opponentReadBefore: byUi(ctx, r.decisions.opponentReadBefore), observed: r.decisions.observed } : null,
     nav: r.navTrace ?? null,
   };
@@ -145,6 +158,7 @@ function view() {
   const games = gamesSoFar.map((g) => ({
     gameNumber: g.gameNumber, map: g.map, pickedBy: g.pickedBy, startingSides: g.startingSides,
     winner: g.winner, score: g.score, overtime: g.match.wentToOvertime,
+    ...(cfg.rosters?.A && cfg.rosters?.B ? { players: killLines(g, cfg.rosters.A.map((p) => p.playerId), cfg.rosters.B.map((p) => p.playerId)) } : {}),
   }));
   const next = st.phase === 'playing' ? st.maps[st.gamesPlayed] : undefined;
   return {

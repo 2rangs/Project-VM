@@ -719,6 +719,38 @@
       }
     },
     {
+      "from": "mid-top",
+      "to": "mid-vent",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1669,
+      "distanceMeters": 16.69,
+      "runTimeMs": 2473,
+      "walkTimeMs": 4909,
+      "provenance": "measured-on-mesh (walkable route)",
+      "kind": "walk",
+      "beforeRoute": {
+        "distanceUnits": 1610,
+        "distanceMeters": 16.1,
+        "runTimeMs": 2385,
+        "walkTimeMs": 4735,
+        "provenance": "measured-on-mesh"
+      },
+      "route": {
+        "waypoints": [
+          [2018, -4590, 650],
+          [2468, -5440, 648],
+          [3168, -5340, 650]
+        ],
+        "lengthMeters": 16.69,
+        "runTimeMs": 2473,
+        "walkTimeMs": 4909,
+        "drops": 0,
+        "provenance": "measured-on-mesh (walkable route)"
+      }
+    },
+    {
       "from": "mid-bottom",
       "to": "mid-top",
       "bidirectional": true,
@@ -1478,18 +1510,34 @@
       }
     },
     {
-      "from": "a-ramps",
-      "to": "mid-vent",
+      "from": "mid-vent",
+      "to": "a-tower",
       "bidirectional": true,
       "door": null,
       "destructible": null,
-      "distanceUnits": 1316,
-      "distanceMeters": 13.16,
-      "runTimeMs": 1949,
-      "walkTimeMs": 3870,
-      "provenance": "manual-approx (straight-line lower bound; the walk grid did not connect this zone)",
-      "kind": "approx-link",
-      "routeStatus": "straight (no walkable route on the grid)"
+      "distanceUnits": 2045,
+      "distanceMeters": 20.45,
+      "runTimeMs": 612,
+      "walkTimeMs": 612,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'ramps-rope-1' in the authoring file",
+      "kind": "rope",
+      "traversal": "ramps-rope-1",
+      "routeStatus": "straight (special traversal (no walking route applies))"
+    },
+    {
+      "from": "a-sewer",
+      "to": "a-lobby",
+      "bidirectional": true,
+      "door": null,
+      "destructible": null,
+      "distanceUnits": 1968,
+      "distanceMeters": 19.68,
+      "runTimeMs": 600,
+      "walkTimeMs": 600,
+      "provenance": "manual-approx (travel time); measured-on-mesh end points: traversal 'sewer-rope-1' in the authoring file",
+      "kind": "rope",
+      "traversal": "sewer-rope-1",
+      "routeStatus": "straight (special traversal (no walking route applies))"
     }
   ],
   "sightlines": [
@@ -1730,7 +1778,7 @@
       "b": "mid-top",
       "type": "angle",
       "smokeable": true,
-      "visibility": 0.09,
+      "visibility": 0.049,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
     },
     {
@@ -1754,7 +1802,7 @@
       "b": "mid-vent",
       "type": "angle",
       "smokeable": true,
-      "visibility": 0.188,
+      "visibility": 0.16,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
     },
     {
@@ -1762,7 +1810,7 @@
       "b": "mid-top",
       "type": "angle",
       "smokeable": true,
-      "visibility": 0.458,
+      "visibility": 0.431,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
     },
     {
@@ -1778,7 +1826,7 @@
       "b": "mid-vent",
       "type": "angle",
       "smokeable": true,
-      "visibility": 0.222,
+      "visibility": 0.264,
       "provenance": "measured-on-mesh (visibility); derived-by-rule (type, smokeable)"
     }
   ],
@@ -1810,6 +1858,12 @@
     {
       "a": "b-back",
       "b": "b-site",
+      "attenuation": 0.2,
+      "provenance": "derived-by-rule"
+    },
+    {
+      "a": "mid-top",
+      "b": "mid-vent",
       "attenuation": 0.2,
       "provenance": "derived-by-rule"
     },
@@ -1946,7 +2000,7 @@
       "provenance": "derived-by-rule"
     },
     {
-      "a": "a-ramps",
+      "a": "a-tower",
       "b": "mid-vent",
       "attenuation": 0.2,
       "provenance": "derived-by-rule"
@@ -1955,9 +2009,10 @@
   "routes": {
     "provenance": "measured-on-mesh",
     "source": "tools/map-mesh/pipeline/route_map.py",
-    "edgesWithWalkableRoute": 27,
+    "edgesWithWalkableRoute": 28,
     "edgesFlaggedStraight": [
-      "a-ramps->mid-vent"
+      "mid-vent->a-tower",
+      "a-sewer->a-lobby"
     ],
     "note": "edge.route.waypoints run from edge.from to edge.to in game uu and include both zone anchors. A bidirectional edge is walked back along the reversed waypoints unless edge.routeReverse exists. Edge length/time are the route's; the earlier values are under edge.beforeRoute."
   },
@@ -1965,23 +2020,28 @@
     {
       "kind": "rope",
       "name": "Vertical ropes (A Sewer/Ramps side, Mid Vent, B Tower)",
-      "represented": false,
-      "engineNeeds": "rope edges with ascend/descend time and the 'on rope' state",
-      "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+      "represented": true,
+      "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
+      "how": "seven roadmap links kind=rope between measured cells (traversals in this file): two pairs in the vent pit, B Tower, a pair in A Sewer. The 'on rope' state is NOT modelled"
     }
   ],
   "dataQuality": {
     "edgeKinds": {
-      "walk": 25,
+      "walk": 26,
       "drop": 2,
-      "approx-link": 1
+      "rope": 2
     },
-    "approxLinks": [
-      "a-ramps<->mid-vent"
-    ],
+    "approxLinks": [],
     "zonesWithoutMeasuredSightlines": [],
+    "traversalsOnRoadmapOnly": [
+      "vent-rope-1",
+      "vent-rope-2",
+      "ramps-rope-2",
+      "b-tower-rope",
+      "sewer-rope-2"
+    ],
     "doorsNotAttached": [],
-    "zonesOnMainWalkComponent": "23/24"
+    "zonesOnMainWalkComponent": "24/24"
   },
   "generatedBy": "tools/map-processor/build_map.py"
 }

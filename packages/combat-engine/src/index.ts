@@ -11,7 +11,7 @@ export { monteCarloDuel } from "./montecarlo.js";
 export type { DuelStats } from "./montecarlo.js";
 export { damageForRange, applyDamage } from "./damage.js";
 export type { HpState } from "./damage.js";
-export { hitChance, headshotChance, readyDelayMs, stoppedAtMs, movingAt } from "./skills.js";
+export { hitChance, headshotChance, readyDelayMs, stoppedAtMs, movingAt, aimTimeMs, bodyAngularWidthDeg, effectiveAimOffsetDeg } from "./skills.js";
 export { buildCatalog, requireWeapon } from "./weapons.js";
 export type { WeaponCatalog } from "./weapons.js";
 export { DEFAULT_PARAMS } from "./params.js";

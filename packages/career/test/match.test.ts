@@ -1,6 +1,8 @@
 // A generated player plays a real match through match-runner (MatchConfig.rosters).
 import { describe, it, expect } from "vitest";
-import { runMatch, runSeries } from "@pv/match-runner";
+import { prepareSeries, runMatch, runSeries } from "@pv/match-runner";
+import { getTeamMapRecords } from "@pv/game-data";
+import { withPractice } from "../src/index.ts";
 import { rosterSkills } from "../../match-runner/src/teams.ts";
 import { worldFromGameData } from "../src/game-data.ts";
 import { advanceSeason, startingFive, type RatedAttr } from "../src/index.ts";
@@ -47,5 +49,16 @@ describe("generated players in a match", () => {
     const g = r.games[0]!;
     expect(g.match.config.rosters?.[g.slots.A]?.map((p) => p.playerId)).toEqual(fiveA.map((p) => p.playerId));
     expect(g.match.config.rosters?.[g.slots.B]?.map((p) => p.playerId)).toEqual(fiveB.map((p) => p.playerId));
+  });
+
+  it("map practice reaches the series: mastery continuity rises with the practice records", () => {
+    const w = worldFromGameData(7);
+    const t = Object.values(w.teams).filter((x) => x.roster.length >= 5).sort((a, b) => a.teamId.localeCompare(b.teamId))[0]!;
+    const five = startingFive(w, t.teamId);
+    const map = "Lotus";
+    const practice = { [map]: Object.fromEntries(five.map((p) => [p.playerId, 12])) };
+    const base = prepareSeries({ teamA: { id: t.teamId, name: t.name, scouting: false, roster: five }, teamB: { id: "x", name: "x", scouting: false }, seed: 1 });
+    const prac = prepareSeries({ teamA: { id: t.teamId, name: t.name, scouting: false, roster: five, mapRecords: withPractice(getTeamMapRecords(t.teamId), practice) as ReturnType<typeof getTeamMapRecords> }, teamB: { id: "x", name: "x", scouting: false }, seed: 1 });
+    expect(prac.mastery.A[map]!.continuity.value).toBeGreaterThan(base.mastery.A[map]!.continuity.value);
   });
 });

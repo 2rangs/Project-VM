@@ -19,7 +19,7 @@ function run(o: Opts = {}) {
   const smoke = o.smoke ?? true;
   const views: PolicyView[] = [];
   const attack = scripted((p, v) => {
-    if (p.id === "smk") return smoke && charges(p, SMOKE) > 0 ? { kind: "useAbility", abilityId: SMOKE, targetZone: "a-main" } : undefined;
+    if (p.id === "smk") return smoke && charges(p, SMOKE) > 0 ? { kind: "useAbility", abilityId: SMOKE, targetZone: "a-main", aimZone: "a-site" } : undefined;
     if (p.id === "sup") {
       const entry = v.teammates.find((t) => t.id === "atk")?.transit;
       const ability = o.support === "flash" ? FLASH : o.support === "recon" ? RECON : null;

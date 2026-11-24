@@ -12,3 +12,4 @@ export * from "./weapons.js";
 export * from "./rounds.js";
 export * from "./spike.js";
 export * from "./ultimate.js";
+export * from "./utility.js";

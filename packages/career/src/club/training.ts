@@ -143,8 +143,15 @@ export interface MapRecordLike { readonly games: number; readonly wins: number |
  * playerGames: practice}; a record whose playerGames are allocated (null) is left as it is.
  */
 export function practiceAdjustedRecords(w: World, teamId: string, base: Readonly<Record<string, MapRecordLike>>): Record<string, MapRecordLike> {
+  return withPractice(base, w.club?.training.mapPractice[teamId] ?? {});
+}
+
+/**
+ * The same, from a team's practice table alone (map → playerId → game-equivalents) — what a
+ * process without the World (the series host) applies to game-data's records.
+ */
+export function withPractice(base: Readonly<Record<string, MapRecordLike>>, practice: Readonly<Record<string, Readonly<Record<string, number>>>>): Record<string, MapRecordLike> {
   const out: Record<string, MapRecordLike> = { ...base };
-  const practice = w.club?.training.mapPractice[teamId] ?? {};
   for (const [map, games] of Object.entries(practice)) {
     const key = Object.keys(out).find((m) => m.toLowerCase() === map.toLowerCase());
     const rec = key ? out[key]! : undefined;
