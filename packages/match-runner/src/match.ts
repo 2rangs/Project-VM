@@ -172,6 +172,12 @@ export interface MatchConfig {
   /** Pre-match engine options: override any of the calibrated formula constants. */
   readonly tuning?: MatchTuning;
   /**
+   * Information layer (docs/INFORMATION_LAYER.md): each player knows what they sensed, the team
+   * knows what was called, the IGL decides on the fused picture. Default false — the pooled
+   * picture, as calibrated. Experimental: at 12/15 on the real-roster gate (elimination 0.672).
+   */
+  readonly informationLayer?: boolean;
+  /**
    * Minimum throw rates (throws per second of holding a post-plant posture). A player's floor is
    * the larger of their team's and their own entry; nobody throws less often than their floor,
    * however disciplined their ratings. Keys are game-data team ids / player ids.
@@ -427,7 +433,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.informationLayer === true);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);

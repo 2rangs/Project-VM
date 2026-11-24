@@ -69,7 +69,7 @@ function holdSeed(options: TeamPolicyOptions): number {
  * Returns the clock (ms remaining) of the first decision that sent anyone to rotate, or null.
  */
 function firstRotation(n: number, opts: { anchor?: Partial<InfoProfile>; igl?: Partial<InfoProfile>; options?: TeamPolicyOptions; hearMs?: number; until?: number; zone?: string; listener?: number } = {}) {
-  const options: TeamPolicyOptions = { zonePosition, ...opts.options };
+  const options: TeamPolicyOptions = { zonePosition, information: true, ...opts.options };
   const seed = holdSeed(options);
   const policy = new TeamDecisionPolicy(spatial, options);
   const r = rng(seed);

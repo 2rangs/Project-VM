@@ -93,8 +93,9 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, information = false) {
     this.inner = new TeamDecisionPolicy(sq, {
+      ...(information ? { information: true } : {}),
       ...(tactics ? { tactics } : {}),
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
@@ -170,8 +171,9 @@ export function makeSimPolicies(
   abilityEffect?: (abilityId: string) => string | undefined,
   spatial?: SpatialEngine,
   tactics?: MapTactics,
+  information = false,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, information), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, information) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

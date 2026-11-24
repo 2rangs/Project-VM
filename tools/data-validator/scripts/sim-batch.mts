@@ -26,6 +26,7 @@
 //   --sound            sound detail on (SimConfig.soundDetail: landings off drops, gunfire masking)
 //   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
+//   --information      information layer on (MatchConfig.informationLayer; default off)
 //   --teams-only       print the paired teams' first-five combat skills as JSON and exit (the
 //                      roster check in tests/test_sim_batch_runner.py uses it)
 //   --mirror           both teams league-average players (every attribute and trait at the
@@ -157,7 +158,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["information"] === true ? { informationLayer: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };

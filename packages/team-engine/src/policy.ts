@@ -71,8 +71,9 @@ export interface TeamPolicyOptions {
   readonly tactics?: MapTactics;
   /**
    * The information layer (decision-engine information.ts): the team decides on what its players
-   * CALLED (and the minimap showed), not on the pooled observation. Default on; false keeps the
-   * pooled picture (the pre-layer engine, for counterfactuals).
+   * CALLED (and the minimap showed), not on the pooled observation. Default OFF (the pooled picture,
+   * the calibrated engine) until the layer passes the real-roster gate; true turns it on. See
+   * docs/INFORMATION_LAYER.md and docs/handoff/information-layer.md.
    */
   readonly information?: boolean;
   /** Test hook: replace the information layer's deterministic draws (salt → u in [0,1)). */
@@ -376,7 +377,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   ) {
     this.profiles = options.profiles;
     const zonePosition = options.zonePosition;
-    this.info = options.information === false ? null : new InformationLayer(spatial, {
+    this.info = options.information !== true ? null : new InformationLayer(spatial, {
       ...(zonePosition ? { zoneCentre: (z: string) => zonePosition(z) } : {}),
       ...(options.informationDraw ? { draw: options.informationDraw } : {}),
     });
