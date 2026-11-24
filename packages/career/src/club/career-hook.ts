@@ -23,6 +23,8 @@ import type { CareerState } from "../career/types.ts";
 import { regionOrder } from "./finance.ts";
 import { clubAfterSeasonAdvanceMut, clubBeforeSeasonEndMut, clubOnDayMut, clubOnMonthMut, initClub } from "./ops.ts";
 import { answerIncomingMut } from "./transfers.ts";
+import { clubSeriesResultMut } from "./people.ts";
+import { boardOnSeries } from "./board.ts";
 
 /** Post the club layer's queued messages into the career inbox (source "club"). */
 export function drainClubOutbox(state: CareerState): void {
@@ -101,6 +103,15 @@ export const clubCareerHook: CareerHook = {
     const state = ctx.career;
     if (!state.world.club) return;
     clubAfterSeasonAdvanceMut(state.world, state.date);
+    after(state);
+  },
+  onMatchResult(_w, fixture, ctx) {
+    const state = ctx.career;
+    const r = fixture.result;
+    if (!state.world.club || !r || !fixture.home || !fixture.away) return;
+    clubSeriesResultMut(state.world, { date: state.date, home: fixture.home, away: fixture.away, winner: r.winner, maps: r.maps.length, lineups: r.lineups });
+    const uid = state.world.club.userTeamId;
+    if (uid && (fixture.home === uid || fixture.away === uid)) boardOnSeries(state.world, state.date, fixture.home === uid ? fixture.away : fixture.home, r.winner === uid);
     after(state);
   },
   onAnswer(_w, item, answer, ctx) {

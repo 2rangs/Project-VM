@@ -37,6 +37,8 @@ export const NAV: NavGroup[] = [
       { id: 'finance', icon: '$', career: true }, // club ops: budget, ledger, wage list (screens/club/FinanceScreen.tsx)
       { id: 'transfers', icon: '⇄', career: true }, // club ops: search, offers, window (screens/club/TransfersScreen.tsx)
       { id: 'training', icon: '◳', career: true }, // club ops: weekly + individual focus (screens/club/TrainingScreen.tsx)
+      { id: 'board', icon: '♜', career: true }, // club ops: board confidence, objectives, requests (screens/club/BoardScreen.tsx)
+      { id: 'staff', icon: '☷', career: true }, // club ops: staff market (screens/club/StaffScreen.tsx)
       { id: 'scouting', icon: '🔍' }, // career world: new prospects, free agents, staff (screens/ScoutingScreen.tsx)
     ],
   },

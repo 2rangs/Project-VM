@@ -93,3 +93,24 @@ test('Continue books the month in the career, and the career save (with the club
   const text = serializeCareer(c, 'fixed');
   assert.equal(serializeCareer(deserializeCareer(text), 'fixed'), text);
 });
+
+test('club depth in a career: board objectives and requests, a staff market with all four roles, morale on the training rows', async () => {
+  const { boardRequest, staffMarket, hireStaff, STAFF_ROLES, agentFee } = await import('../src/renderer/career/world.ts');
+  const w = fresh();
+  const b = w.club!.board!;
+  assert.ok(b.objectives && b.objectives.leaguePlace >= 1, 'the board set objectives at career start');
+  assert.ok(b.confidence > 0 && b.confidence <= 1);
+  const r = boardRequest(w, 'transferBudget');
+  assert.equal(typeof r.answer.granted, 'boolean');
+  assert.equal(boardRequest(r.world, 'transferBudget').answer.granted, false, 'one request of a kind per season');
+  assert.deepEqual([...STAFF_ROLES], ['headCoach', 'analyst', 'scout', 'physio']);
+  for (const role of STAFF_ROLES) assert.ok(staffMarket(w, USER, role).length > 0, `${role} market`);
+  const free = staffMarket(w, USER, 'physio').find((x) => !x.current)!;
+  const rich = structuredClone(w); rich.club!.finances[USER]!.wageBudget = 1e9;
+  const h = hireStaff(rich, USER, free.staff.staffId, free.demand);
+  assert.equal(h.error, null);
+  assert.equal(h.world.teams[USER]!.staff.physio, free.staff.staffId);
+  const rows = trainingRows(w);
+  assert.ok(rows.every((x) => x.morale === 0.5), 'morale starts neutral');
+  assert.ok(agentFee(w, rows[0]!.playerId, { fee: 0, wage: 100_000, years: 2 }) > 0);
+});

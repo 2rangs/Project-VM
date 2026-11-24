@@ -17,6 +17,7 @@
 //   teamplay  → trading, consistency
 import type { AbilityKey, World } from "../model.ts";
 import { CLUB_MODEL } from "./constants.ts";
+import { physioFactor } from "./staff-market.ts";
 import type { Exposure, FocusGroup, IndivFocus, TeamFocus, TrainingPlan, TrainingState } from "./types.ts";
 
 const M = CLUB_MODEL;
@@ -56,9 +57,12 @@ export function weeklyVector(team: TeamFocus, indiv: IndivFocus): Record<FocusGr
   return { mechanics: M.teamWeight * a.mechanics + iw * b.mechanics, utility: M.teamWeight * a.utility + iw * b.utility, teamplay: M.teamWeight * a.teamplay + iw * b.teamplay };
 }
 
-/** Fatigue after a week: f' = clamp(f + load − recovery) (rest: f − restRecovery). */
-export function nextFatigue(f: number, team: TeamFocus): number {
-  const v = team === "rest" ? f - M.restRecovery : f + (team === "tactics" ? M.loadTactics : M.loadTraining) - M.recoveryPerWeek;
+/**
+ * Fatigue after a week: f' = clamp(f + load − recovery · k) (rest: f − restRecovery · k), where k is
+ * the club's physio factor (staff-market.ts physioFactor; 1 without a physio).
+ */
+export function nextFatigue(f: number, team: TeamFocus, k = 1): number {
+  const v = team === "rest" ? f - M.restRecovery * k : f + (team === "tactics" ? M.loadTactics : M.loadTraining) - M.recoveryPerWeek * k;
   return Math.min(1, Math.max(0, v));
 }
 
@@ -72,6 +76,7 @@ export function trainingWeek(w: World, date: string): void {
   for (const [teamId, plan] of Object.entries(tr.plans).sort(([a], [b]) => a.localeCompare(b))) {
     const t = w.teams[teamId];
     if (!t) continue;
+    const physio = physioFactor(w, teamId);
     for (const id of [...t.roster, ...t.academy]) {
       const e: Exposure = (tr.exposure[id] ??= { mechanics: 0, utility: 0, teamplay: 0, weeks: 0, fatigue: M.fatigueStart });
       const v = weeklyVector(plan.teamFocus, plan.individual[id] ?? "balanced");
@@ -80,7 +85,7 @@ export function trainingWeek(w: World, date: string): void {
       e.utility += v.utility * eff;
       e.teamplay += v.teamplay * eff;
       e.weeks += 1;
-      e.fatigue = nextFatigue(e.fatigue, plan.teamFocus);
+      e.fatigue = nextFatigue(e.fatigue, plan.teamFocus, physio);
     }
     if (plan.teamFocus === "tactics" && plan.map) {
       const byMap = (tr.mapPractice[teamId] ??= {});

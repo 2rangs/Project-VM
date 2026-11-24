@@ -24,6 +24,7 @@ import {
 import { REGIONS, type Region } from "./regions.ts";
 import { estimateAbility, teamScout, UNRATED_ABILITY } from "./scouting.ts";
 import { clamp, normal, streamFor, weightedIndex } from "./rng.ts";
+import { DEPTH_MODEL } from "./club/constants.ts";
 
 export const SEASON_MODEL = {
   /** Starters per team (the five who play). */
@@ -78,10 +79,16 @@ export function seasonMaps(w: World, p: WorldPlayer): number {
   return roster.indexOf(p.playerId) < SEASON_MODEL.starters ? m.mapsStarter : m.mapsBench;
 }
 
+/**
+ * Training quality the coach factor reads: the head coach's development plus the club's facilities,
+ * dev + facilityWeight · (facilities − 0.5) (club/board.ts; facilities absent = 0.5 → the coach alone).
+ */
 function coachDevelopment(w: World, teamId: string | null): number {
   if (!teamId) return 0;
   const id = w.teams[teamId]?.staff.headCoach;
-  return id ? w.staff[id]?.attributes.development ?? 0 : 0;
+  const dev = id ? w.staff[id]?.attributes.development ?? 0 : 0;
+  const fac = w.club?.facilities?.[teamId];
+  return fac === undefined ? dev : dev + DEPTH_MODEL.facilityWeight * (fac - 0.5);
 }
 
 // --- 1. development -------------------------------------------------------------------------------

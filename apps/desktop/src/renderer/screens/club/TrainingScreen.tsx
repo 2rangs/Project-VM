@@ -35,6 +35,7 @@ export function TrainingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
         </select>
       ),
     },
+    { key: 'morale', header: t('club.train.morale'), render: (r) => <span className={r.morale < 0.4 ? 'warn' : r.morale > 0.6 ? 'pos' : ''} data-testid={`morale-${r.playerId}`}>{pct(r.morale)}</span>, sortValue: (r) => r.morale, width: '8%' },
     { key: 'fatigue', header: t('club.train.fatigue'), render: (r) => <span className={r.fatigue > 0.3 ? 'warn' : ''}>{pct(r.fatigue)}</span>, sortValue: (r) => r.fatigue, width: '10%' },
     {
       key: 'dir', header: t('club.train.direction'),

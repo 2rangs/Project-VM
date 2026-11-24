@@ -26,11 +26,25 @@ export interface Contract {
   staffRole?: StaffRole;
   /** YYYY-MM-DD of signing. */
   signedOn: string;
+  /** Bonuses agreed (players). */
+  bonuses?: ContractBonuses;
+  /** A share of the next fee goes to this club (sell-on clause). */
+  sellOn?: { teamId: string; pct: number };
+}
+
+export interface ContractBonuses {
+  /** Paid at the end of the contract if the player stays to its end. */
+  loyalty?: number;
+  /** Per series won by the club in which the player played. */
+  perWin?: number;
+  /** When the club wins its region. */
+  perTitle?: number;
 }
 
 export type LedgerKind =
   | "stipend" | "sponsorship" | "prize" | "wages" | "staffWages" | "operations" | "reinvestment"
-  | "transferIn" | "transferOut" | "severance" | "ownerSupport" | "loanWages";
+  | "transferIn" | "transferOut" | "severance" | "ownerSupport" | "loanWages"
+  | "agentFee" | "bonus" | "sellOn" | "facilities";
 
 export interface LedgerEntry {
   readonly date: string;
@@ -75,6 +89,15 @@ export interface OfferTerms {
   years: number;
   /** Loans: share of the wage the borrower pays. */
   wageShare?: number;
+  /** One-time payment at signing. */
+  signingBonus?: number;
+  loyaltyBonus?: number;
+  winBonus?: number;
+  titleBonus?: number;
+  /** Release clause asked for (default: the club's usual 1.5 × value). */
+  releaseClause?: number;
+  /** Sell-on share kept by the selling club (transfers). */
+  sellOn?: number;
 }
 
 export interface TransferOffer {
@@ -109,6 +132,15 @@ export interface PlayerUtility {
   readonly role: number;
   readonly length: number;
   readonly ref: number;
+  /** Renewals: morale, playing time; transfers: 0. */
+  readonly morale?: number;
+  readonly playTime?: number;
+  /** Release-clause term. */
+  readonly clause?: number;
+  /** The margin the player (his agent) needs U to reach. */
+  readonly margin?: number;
+  /** Effective yearly wage the utility read (salary + valued bonuses). */
+  readonly effWage?: number;
 }
 
 export interface Loan {
@@ -157,6 +189,33 @@ export interface TrainingState {
   lastTick: string | null;
 }
 
+export type BoardRequestKind = "transferBudget" | "wageBudget" | "facilities" | "staffBudget";
+
+export interface BoardObjectives {
+  readonly season: number;
+  /** Target place in the region (1 = first). */
+  readonly leaguePlace: number;
+  /** Asked to qualify for an international event (finish within internationalSlots). */
+  readonly international: boolean;
+  /** Keep the wage bill within the wage budget. */
+  readonly wageBudget: boolean;
+  /** The expected place the target came from (stature). */
+  readonly expectedPlace: number;
+}
+
+export interface BoardState {
+  confidence: number;
+  objectives: BoardObjectives | null;
+  /** Season → request kinds already made (one of each per season). */
+  requests: Record<string, BoardRequestKind[]>;
+  warned: boolean;
+  sacked: boolean;
+  /** Last season's review (for the UI). */
+  lastReview?: { season: number; place: number; leagueMet: boolean; internationalMet: boolean | null; wageMet: boolean; delta: number };
+  /** Confidence history (month or event, value). */
+  history: Array<{ date: string; value: number; why: string }>;
+}
+
 export interface ClubState {
   readonly version: 1;
   /** Current club date, YYYY-MM-DD (the shell's calendar date). */
@@ -177,4 +236,17 @@ export interface ClubState {
   /** AI purchases per team in the current window: `${windowKey}` → teamId → count. */
   aiBuys: Record<string, Record<string, number>>;
   nextId: number;
+  // --- depth (optional: older saves start without them) ---
+  /** Player morale 0..1 (neutral 0.5; absent = 0.5). */
+  morale?: Record<string, number>;
+  /** Maps played this season per player, and per club (playing-time share). */
+  playTime?: { players: Record<string, number>; teams: Record<string, number> };
+  /** Last series results per club (1 won, 0 lost), newest last. */
+  recent?: Record<string, number[]>;
+  /** Date each free agent became free (free-agent market timing). */
+  freeSince?: Record<string, string>;
+  /** The user's board. */
+  board?: BoardState;
+  /** Training facilities per club 0..1 (absent = 0.5). */
+  facilities?: Record<string, number>;
 }
