@@ -22,10 +22,13 @@
 //   --stdout          Print the Markdown report to stdout as well.
 //   --python <bin>    Python interpreter (default: $PYTHON or python3).
 //
-// Exit code mirrors the harness: non-zero if any judged metric fails (so CI can gate on it).
+// Exit codes: 0 all judged metrics pass · 1 a judged metric fails (so CI can gate on it) ·
+// 2 usage error · 3 the Python environment or the harness is broken (nothing was judged; the
+// environment is checked BEFORE anything else runs — see python-env.mjs).
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { checkPythonEnv, formatEnvError, harnessPythonPath, resolvePython, ENV_ERROR_EXIT } from "./python-env.mjs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -100,6 +103,11 @@ function assertSimRun(obj, source) {
 function main() {
   const args = parseArgs(process.argv.slice(2));
 
+  // Fail early, and clearly, when the Python side cannot run at all.
+  const python = resolvePython(args.python);
+  const pyEnv = checkPythonEnv(python, TOOL_DIR);
+  if (!pyEnv.ok) { console.error(formatEnvError(pyEnv)); process.exit(ENV_ERROR_EXIT); }
+
   // era: CLI flag > env PV_SIM_ERA > default "all" (PV-2 recommendation: era-stable, tighter CIs).
   const era = args.era ?? process.env.PV_SIM_ERA ?? "all";
   if (!VALID_ERAS.has(era)) fail(`invalid --era ${JSON.stringify(era)} (expected: ${[...VALID_ERAS].join(", ")})`);
@@ -129,7 +137,6 @@ function main() {
   const outPrefix = resolvePath(args.outPrefix, "reports/sim-validation");
   mkdirSync(dirname(outPrefix), { recursive: true });
 
-  const python = args.python ?? process.env.PYTHON ?? "python3";
   let comparePath = null;
   if (args.compare) {
     comparePath = resolvePath(args.compare);
@@ -143,23 +150,32 @@ function main() {
   console.error(`sim:validate: era=${era} scope=${args.scope} priors=${rel(priorsDir)}`);
   console.error(`sim:validate: validating ${rel(logsPath)} → ${rel(outPrefix)}.{json,md}`);
 
+  const reportJson = `${outPrefix}.json`;
+  const startedAt = Date.now();
   const res = spawnSync(python, pyArgs, {
     cwd: REPO_ROOT,
     stdio: args.stdout ? "inherit" : ["inherit", "pipe", "inherit"],
-    env: { ...process.env, PYTHONPATH: join(TOOL_DIR, "src") + pathSep() + (process.env.PYTHONPATH ?? "") },
+    env: { ...process.env, PYTHONPATH: harnessPythonPath(TOOL_DIR) },
   });
 
   if (res.error) {
-    if (res.error.code === "ENOENT") fail(`python interpreter not found: ${python} (set --python or $PYTHON)`);
-    fail(`failed to run validator: ${res.error.message}`);
+    console.error(`sim:validate: failed to run the validator with ${python}: ${res.error.message}`);
+    process.exit(ENV_ERROR_EXIT);
   }
   if (!args.stdout && res.stdout) process.stderr.write(res.stdout); // keep our stdout clean-ish
+  // The harness exits 0 (all pass) or 1 (a judged metric fails) and always writes the report. Any
+  // other outcome — a crash, a signal, no fresh report — is a tooling failure, not a verdict.
+  const wroteReport = existsSync(reportJson) && statSync(reportJson).mtimeMs >= startedAt - 1000;
+  if ((res.status !== 0 && res.status !== 1) || !wroteReport) {
+    console.error(`sim:validate: the Python harness did not produce a report (exit ${res.status ?? `signal ${res.signal}`}). ` +
+      `This is a tooling failure, not a failed metric — see the Python error above. Nothing was judged (exit ${ENV_ERROR_EXIT}).`);
+    process.exit(ENV_ERROR_EXIT);
+  }
   // Print the one-line verdict path for humans/CI.
   console.error(`sim:validate: report written to ${rel(outPrefix)}.md and ${rel(outPrefix)}.json (exit ${res.status})`);
   process.exit(res.status ?? 1);
 }
 
 function rel(p) { return p.startsWith(REPO_ROOT) ? p.slice(REPO_ROOT.length + 1) : p; }
-function pathSep() { return process.platform === "win32" ? ";" : ":"; }
 
 main();

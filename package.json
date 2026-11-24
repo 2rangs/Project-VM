@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "sim:match": "pnpm --filter @pv/match-runner sim:match",
     "sim:validate": "node tools/data-validator/scripts/sim-validate.mjs",
-    "sim:batch": "tsx tools/data-validator/scripts/sim-batch.mts"
+    "sim:batch": "tsx tools/data-validator/scripts/sim-batch.mts",
+    "sim:suite": "tsx tools/data-validator/scripts/measure-suite.mts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

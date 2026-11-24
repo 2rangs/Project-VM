@@ -108,6 +108,88 @@ in `docs/research/SIM_BASELINE_<date>.md`. **Root wiring** (root owner):
 > Needs the pnpm workspace installed (`pnpm install`) so tsx can resolve the engine packages. The
 > pytest smoke test skips cleanly when it isn't.
 
+### Report-only play metrics
+Besides the judged metrics, every report lists how the rounds were *played*. None of these is judged
+or changes the exit code; where VCT Reference can back one, the real figure is shown in the `Real`
+column as a reference (`note: reference only: <prior>`).
+
+| Metric (report row) | What | VCT reference |
+|---|---|---|
+| `first_kill_time_s`, `first_kill_early` | seconds to the first kill (mean, p10/p50/p90); share within 15 s | none — no kill timestamps |
+| `flawless_rounds` | rounds the winner took without losing a player | none — no per-round deaths |
+| `economy` → `force_vs_full_win` | force buy into a full buy | `economy_matchup` semi vs full (tier definitions differ) |
+| `round_duration_s` | round length (mean, p10/p50/p90; p50 by outcome) | none — the source has map duration incl. buy phases and pauses |
+| `plant_to_end_s` | seconds from the plant to the round end (and p50 by outcome) | none |
+| `site_arrival_spread_s` | first→last attacker onto the site; gap between consecutive arrivals | none — no positions |
+| `route_diversity` | entropy (bits) and count of the lead attacker's routes; entropy over all routes | none |
+| `body_overlap` | share of ticks / rounds with two bodies closer than 30 uu | none |
+| `trade_rate_3s` | deaths avenged by a teammate within 3 s (`trade_rate` keeps the 5 s window) | none |
+| `clutch_win_rate` | 1vX clutches won / attempted, by X | none — the source lists clutches won, not attempts |
+| `clutch_wins_per_round` | share of rounds won by a 1vX clutch, by X and `any` | `clutch_wins_per_round.json` |
+| `post_plant` | plant rate, post-plant attack win rate, share of plants that detonate | `plant_post_plant.json` |
+| `post_plant_by_advantage` | post-plant attack win by attackers − defenders alive at the plant | none — no per-round kill sequence |
+| `kast` | Kill / Assist / Survive / Traded (3 s) share of player-rounds, all and per side | `kast.json` — the simulator records no assists, so its value is K+S+T |
+| `role_kill_share` | kills / (kills + deaths) by agent role (K/D in the note) | `role_kill_share.json` |
+
+The event-derived ones are computed by the harness from the bundle; the positional ones are measured
+by the engine (`MatchConfig.collectStats`) and reach the report through the bundle's `engine` block,
+which `sim:batch` writes. A bundle without `roles` or `engine` simply has no rows for those metrics.
+Definitions, the baselines and which of them could become judged: `docs/VALIDATION_BASELINES.md` §8.
+
+### Measurement suite (one command)
+```bash
+npx tsx tools/data-validator/scripts/measure-suite.mts        # or: pnpm sim:suite
+```
+runs the regular set of batches — **one at a time**, each through the machine's heavy-run lock — and
+writes one comparison table against the previous comparable run:
+
+| Batch | What |
+|---|---|
+| `default` | 160 matches, seeds 1..160, Ascent — the judged baseline condition |
+| `seed161` | 160 matches, seeds 161..320 — is a result specific to the calibration seeds? |
+| `abilities` | 160 matches with agent abilities on |
+| `map-<id>` | 60 matches on each map's own geometry (`--geometry own`), every map in the registry |
+
+Output goes to `reports/suite/<run-id>/` (not committed): `SUITE.md` (the table: judged metrics,
+report-only metrics, verdicts that flipped), `suite.json`, `comparison.csv`, and per batch
+`<batch>.run.json` (bundle), `<batch>.json` / `.md` (report), `<batch>.engine.json`, `<batch>.log` —
+every file has its own path. The previous run is the most recent earlier one **with the same match
+counts** (a small dry run never becomes the baseline of a full run); `--compare DIR` picks one,
+`--compare none` writes the table without changes.
+
+```bash
+# options: --matches N (Ascent batches, default 160)   --map-matches M (per map, default 60)
+#          --maps a,b,c   --only default,map-haven   --run-id ID   --out-dir DIR   --python BIN
+#          --lock PATH (default $PV_HEAVY_RUN, else the project's shared lock)   --no-lock
+#          --plan         print the batches and commands as JSON; runs nothing
+npx tsx tools/data-validator/scripts/measure-suite.mts --matches 2 --map-matches 1 --maps ascent,haven   # dry run
+```
+Each batch is started as `<lock> "suite <run>: <batch>" -- npx tsx sim-batch.mts …`: it waits behind
+any other heavy job on the machine and frees the lock when it ends. A batch that does not finish
+(e.g. a map whose own geometry still breaks) is marked **failed** in the table and the suite goes on;
+the exit code is then 4. Judged-metric failures are the report's business, not an error (exit 0).
+
+### Python environment and exit codes
+`sim:validate` needs only a Python ≥ 3.11 — the sim harness is standard-library only (`jsonschema` is
+needed by the *dataset* validator, `pv_data_validator.cli`, not by this). The interpreter is
+`--python`, else `$PYTHON`, else `python3`. It is checked **before** anything else runs, so a missing
+interpreter, a virtualenv whose base Python is gone, or a too-old Python fails in under a second with
+a plain message — `sim:batch` and the suite check it before simulating a single match.
+
+| Exit | Meaning |
+|---|---|
+| 0 | every judged metric passes |
+| 1 | a judged metric fails |
+| 2 | usage error |
+| 3 | the Python environment or the harness is broken — nothing was judged |
+| 4 | (suite only) at least one batch did not finish |
+
+### Tests
+```bash
+cd tools/data-validator && python -m pytest          # harness, play metrics, env check, runners (needs pytest; the TS runners need `pnpm install`)
+npx vitest run --config tools/data-validator/vitest.config.ts   # TS tooling: suite planning / comparison, env check
+```
+
 ## Tests
 ```bash
 cd tools/data-validator && python3 -m pytest -q

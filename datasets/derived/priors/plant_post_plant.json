@@ -1,0 +1,147 @@
+{
+  "priorId": "plant_post_plant",
+  "description": "Plant rate (plants / rounds) and post-plant results: attack win rate after a plant (1 - defuses / plants) and the share of plants that detonate.",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "performanceAvailable": true,
+      "era": "all",
+      "winnerKnown": true
+    }
+  },
+  "method": {
+    "statistic": "plants per round; post-plant outcome shares",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": [
+      "plant_rate: n = rounds, successes = plants (player_map.plants summed per map).",
+      "post_plant_*: n = plants. A planted round is lost by the attack only through a defuse."
+    ]
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-24T06:31:08+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "scope": "all_maps",
+        "measure": "plant_rate"
+      },
+      "n": 24291,
+      "successes": 16678,
+      "rate": 0.6865917417973735,
+      "wilsonLow": 0.6807291154578872,
+      "wilsonHigh": 0.6923953610020643,
+      "bootstrapLow": 0.6786408553377612,
+      "bootstrapHigh": 0.6946704300182633,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "measure": "post_plant_attack_win"
+      },
+      "n": 16678,
+      "successes": 11829,
+      "rate": 0.7092577047607627,
+      "wilsonLow": 0.7023183491033407,
+      "wilsonHigh": 0.7161006855835794,
+      "bootstrapLow": 0.7014520696511418,
+      "bootstrapHigh": 0.7167441579614757,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "measure": "post_plant_detonation"
+      },
+      "n": 16678,
+      "successes": 2580,
+      "rate": 0.154694807530879,
+      "wilsonLow": 0.14928629560619167,
+      "wilsonHigh": 0.16026235173994763,
+      "bootstrapLow": 0.14887263863497868,
+      "bootstrapHigh": 0.16085985145824527,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "measure": "plant_rate"
+      },
+      "n": 3106,
+      "successes": 1866,
+      "rate": 0.6007726980038635,
+      "wilsonLow": 0.5834352586526765,
+      "wilsonHigh": 0.6178611766445072,
+      "bootstrapLow": 0.5806554247534202,
+      "bootstrapHigh": 0.6210458360232408,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "measure": "post_plant_attack_win"
+      },
+      "n": 1866,
+      "successes": 1377,
+      "rate": 0.7379421221864951,
+      "wilsonLow": 0.7175150830602793,
+      "wilsonHigh": 0.7573914903344833,
+      "bootstrapLow": 0.7166577396893412,
+      "bootstrapHigh": 0.758695652173913,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "measure": "post_plant_detonation"
+      },
+      "n": 1866,
+      "successes": 262,
+      "rate": 0.14040728831725616,
+      "wilsonLow": 0.12538212310630767,
+      "wilsonHigh": 0.15690996980385966,
+      "bootstrapLow": 0.12425393380358112,
+      "bootstrapHigh": 0.15626638699528053,
+      "matches": 145,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-24T06:31:08+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}
