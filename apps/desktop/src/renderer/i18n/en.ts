@@ -531,6 +531,8 @@ export const en: Record<string, string> = {
 
   // ── live match screen (screens/matchday) — added by the matchday UI/UX work; keep as one block ──
   'mdx.exit': 'Lobby',
+  'mdx.keys': '1–5 highlight player · Esc clear · Space play · ←/→ event · M mode',
+  'mdx.matchup.hint': 'Players alive — us vs them',
   'mdx.exit.hint': 'Close the match view and return to the manager shell (the session keeps running)',
   'mdx.mode.label': 'View mode',
   'mdx.mode.tactical': 'Tactical map',
