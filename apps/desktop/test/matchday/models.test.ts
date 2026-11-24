@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import {
   ANIM, BONE, FirstPersonRig, MAP_LIGHTING, OPERATOR_DRAW_CALLS, WEAPON_CLASSES, WEAPON_DRAW_CALLS, animInputFor,
   applyMapLighting, buildOperator, buildWeapon, drawCallsOf, lightingFor, poseOperator, selectAnimState,
-  setOperatorWeapon, shotTimesFor, type AnimInput, type Role,
+  setOperatorWeapon, shotTimesFor, weaponClassOf, isSidearm, abilityKindOf, buildAbilityProp, updateAbilityProp, buildSpike, pulseSpike, ABILITY_LIFE_MS, type AnimInput, type Role,
 } from '../../src/renderer/screens/matchday/models.ts';
 
 const ROLES: Role[] = ['controller', 'initiator', 'sentinel', 'duelist'];
@@ -203,4 +203,43 @@ test('gaze poses: head/torso turn with the aim, feet turn past the neck limit, n
   assert.ok(b.spine < a.spine && b.head < a.head, 'left look turns torso and head (scene yaw is opposite)');
   assert.ok(Math.abs(a.root) < 1e-9); assert.ok(Math.abs(b.root) < 1e-9); assert.ok(c.root < -0.8, 'feet turn for a look behind');
   for (const y of [-3, -1.2, 0, 1.2, 3]) { at(y); assert.ok(finite(op.root)); }
+});
+
+test('weapon names map to the right class (the player holds the right kind of gun)', () => {
+  const want: Record<string, string> = {
+    Vandal: 'rifle', Bulldog: 'rifle', Phantom: 'carbine', Guardian: 'marksman', Marshal: 'marksman', Outlaw: 'marksman', Operator: 'sniper',
+    Spectre: 'smg', Stinger: 'smg', Judge: 'shotgun', Bucky: 'pump', Shorty: 'sawnoff', Ares: 'lmg', Odin: 'lmg',
+    Classic: 'pistol', Ghost: 'pistol', Frenzy: 'autopistol', Sheriff: 'handcannon',
+  };
+  for (const [name, cls] of Object.entries(want)) assert.equal(weaponClassOf(name), cls, name);
+  assert.ok(isSidearm('sawnoff') && isSidearm('autopistol') && !isSidearm('pump') && !isSidearm('marksman'));
+  const lens = (c: Parameters<typeof buildWeapon>[0]) => buildWeapon(c, 0xffffff).userData.muzzle[0] as number;
+  assert.ok(lens('pump') > lens('shotgun') && lens('sawnoff') < lens('pistol') * 2.1 && lens('marksman') > lens('rifle'));
+});
+
+test('peek: inferred lead-up to a shot, explicit windows, leans the hips out', () => {
+  const lead = selectAnimState({ ...base, tMs: 9_300, shotsMs: [10_000] });
+  assert.equal(lead.name, 'peek');
+  assert.equal(selectAnimState({ ...base, tMs: 9_300, shotsMs: [10_000], peekMs: [] }).name, 'idle', 'explicit peek list switches inference off');
+  const ex = selectAnimState({ ...base, tMs: 9_400, peekMs: [9_000] });
+  assert.equal(ex.name, 'peek'); assert.ok(Math.abs(ex.actionT - 0.5) < 1e-9);
+  const op = buildOperator('duelist', 0x3fd0ff); setOperatorWeapon(op, 'rifle', 0x3fd0ff);
+  poseOperator(op, selectAnimState({ ...base, tMs: 9_400, peekMs: [9_000] }), 9_400, 0);
+  assert.ok(Math.abs(op.hips.position.z) > 0.05 && finite(op.root));
+});
+
+test('props: spike and ability placeholders — bounded draw calls, lifetimes, no NaN', () => {
+  const sp = buildSpike(0xff4655);
+  assert.ok(drawCallsOf(sp.group) <= 3 && finite(sp.group));
+  pulseSpike(sp, 5000, 123); assert.ok(sp.light.intensity >= 6);
+  assert.equal(abilityKindOf('Smoke Cloud'), 'smoke'); assert.equal(abilityKindOf('Barrier Wall'), 'wall');
+  assert.equal(abilityKindOf('Incendiary'), 'area'); assert.equal(abilityKindOf('Flashpoint'), 'flash'); assert.equal(abilityKindOf('recon dart'), 'orb');
+  assert.equal(abilityKindOf(''), 'orb');
+  for (const kind of ['smoke', 'wall', 'area', 'flash', 'orb'] as const) {
+    const g = buildAbilityProp(kind, 0x3fd0ff);
+    assert.ok(drawCallsOf(g) <= 2, kind);
+    assert.equal(updateAbilityProp(g, -1), false);
+    assert.equal(updateAbilityProp(g, ABILITY_LIFE_MS[kind] / 2), true); assert.ok(finite(g));
+    assert.equal(updateAbilityProp(g, ABILITY_LIFE_MS[kind] + 1), false); assert.equal(g.visible, false);
+  }
 });
