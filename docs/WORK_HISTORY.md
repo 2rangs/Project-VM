@@ -365,6 +365,11 @@
 - 테스트: core 264/4 todo, round-simulator 136, match-runner 104, economy-engine 38, spatial-engine 407, combat-engine 27, perception-engine 32, career 49, 데스크톱 typecheck·build·unit·matchday·engine, e2e 4종 통과.
 - 참고: `vct.duckdb`에 무기 열이 없어 2라운드 SMG/라이플 비율 자체는 맞추지 못하고 장비 가치·잔고·승률로 맞춤.
 
+### 23차 main 머지 (2026-11-24) — 럴커 리서치, 매치데이 가독성
+- 합친 브랜치: `claude/suspicious-jones-8af005` @ `eabf93f`(문서만: `docs/research/LURKER_ROLE.md`, `PRO_TECHNIQUES.md`, `PRO_TECHNIQUES_BACKLOG.md`), `claude/matchday-uiux-efc023` @ `495d97e`(데스크톱만: 생존 인원 대비 띠, 1–5 키·로스터 클릭 선수 강조와 Esc 해제, 사이트 라벨 강조, 경제 숫자 확대, 키 안내).
+- 엔진 변경 없음 → 160경기 배치 생략. 데스크톱 typecheck·build·unit·matchday·engine, e2e·시리즈·커리어·구단 운영 e2e 통과(이 통합 세션 재실행, main 기준 별도 워크트리).
+- 보류: 엔진 정합성(`aca57b7`)·맵 데이터(`3083406`)·움직임(`b62abf7`) 합본은 실제 로스터 피스톨 공격 0.438(기존 8개 7/8). 라운드 중 움직임 스타일을 꺼도 바이 페이즈 스크립트가 켜져 있으면 0.438, 스타일 객체 자체를 끄면 0.469(8/8). 움직임 세션이 원인 수정 중이라 main에 넣지 않음.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
