@@ -39,8 +39,8 @@ export const CLUB_MODEL = {
 
   // --- staff wages ----------------------------------------------------------------------------------
   /** Staff wage = (floor[role] + span[role] · quality^staffWageExp) · regionMarket. */
-  staffWageFloor: { headCoach: 60_000, analyst: 35_000, scout: 30_000 },
-  staffWageSpan: { headCoach: 160_000, analyst: 70_000, scout: 60_000 },
+  staffWageFloor: { headCoach: 60_000, analyst: 35_000, scout: 30_000, physio: 30_000 },
+  staffWageSpan: { headCoach: 160_000, analyst: 70_000, scout: 60_000, physio: 50_000 },
   staffWageExp: 1.5,
 
   /** Market size per region: scales wages, sponsorship (design; Americas and EMEA pay most). */
@@ -198,3 +198,111 @@ export const CLUB_MODEL = {
 } as const;
 
 export type ClubModel = typeof CLUB_MODEL;
+
+/**
+ * Club-management depth (docs/CLUB_OPERATIONS.md §9–12): agents and contract clauses, morale,
+ * the board, the staff market. Design values, like CLUB_MODEL.
+ */
+export const DEPTH_MODEL = {
+  // --- agents -------------------------------------------------------------------------------------
+  /** Every player has an agent with a hardness h ∈ [0,1] (uniform, seeded per player). */
+  /** Agent fee (paid by the buying club at signing) = (agentFeeMin + agentFeeSpan · h) · wage · years. */
+  agentFeeMin: 0.03,
+  agentFeeSpan: 0.07,
+  /** A hard agent wants more: the player accepts at U ≥ acceptMargin + agentMarginSpan · h, and counters to that. */
+  agentMarginSpan: 0.15,
+
+  // --- bonuses and clauses ----------------------------------------------------------------------------
+  /**
+   * Bonuses enter the player's utility as an effective yearly wage:
+   *   W_eff = wage + bonusValue · (signingBonus/years + loyaltyBonus/years + winBonus · E[series wins] + titleBonus · P(title))
+   *   E[series wins] = seriesPerSeason · σ(winSlope · (S_to − 0.5)),  P(title) = σ(titleSlope · (S_to − titleCentre))
+   * bonusValue < 1: money that depends on the future is worth less to the player than salary.
+   */
+  bonusValue: 0.8,
+  seriesPerSeason: 12,
+  winSlope: 6,
+  titleSlope: 10,
+  titleCentre: 0.8,
+  /** Release clause in the player's utility: + wClause · ambition · clamp((default − clause)/default, −1, 1). */
+  wClause: 0.15,
+  /** Sell-on: the selling club counts fee + sellOn · sellOnExpectation · its value of the player. */
+  sellOnExpectation: 0.5,
+  maxSellOn: 0.3,
+
+  // --- renewals and the free-agent market -------------------------------------------------------------
+  /**
+   * Renewal utility adds what a player feels about staying:
+   *   + wMorale · 2(m − 0.5) + wPlayTime · (share − expected share) + wAmbition · ambition · (S_club − v(CA)) · renewAmbitionShare
+   * and he refuses to talk (whatever the wage) when those non-wage terms are below −refuseBelow.
+   */
+  wMorale: 0.3,
+  wPlayTime: 0.4,
+  renewAmbitionShare: 0.6,
+  refuseBelow: 0.45,
+  /** A free agent's expectation falls with time unsigned: ref · max(faFloor, 1 − faDecayPerMonth · months). */
+  faDecayPerMonth: 0.06,
+  faFloor: 0.6,
+
+  // --- morale -------------------------------------------------------------------------------------
+  /**
+   * Morale m ∈ [0,1], neutral 0.5. Weekly: m ← m + moraleRate · (T − m),
+   *   T = 0.5 + wResults · (r5 − 0.5) + wTime · (share − expected) + wPay · clamp(ln(salary/market), −0.5, 0.5) + wCoach · (motivation − 0.5)
+   * r5 = the club's share of its last five series won. After a series the five who played move by ±moraleSeries.
+   */
+  moraleRate: 0.3,
+  wResults: 0.3,
+  wTime: 0.25,
+  wPay: 0.2,
+  wCoach: 0.2,
+  moraleSeries: 0.03,
+  recentSeries: 5,
+  /** Expected share of the club's maps by squad role. */
+  expectedShare: { starter: 0.9, rotation: 0.3, academy: 0.05, staff: 0 } as Record<string, number>,
+  /**
+   * Morale into the match (career/readiness.ts): with d = m − 0.5,
+   *   consistency' = clamp(consistency + moraleConsistency · d)   → decision discipline and round-form σ
+   *   clutch'      = clamp(clutch + moraleClutch · d)             → decisionMaking and pressure form
+   * Neutral morale (0.5) leaves the player exactly as rated.
+   */
+  moraleConsistency: 0.2,
+  moraleClutch: 0.2,
+
+  // --- board --------------------------------------------------------------------------------------
+  confidenceStart: 0.6,
+  /** Match: c += boardMatchRate · (result − pExpected), pExpected = σ(winSlope · (S_us − S_them)). */
+  boardMatchRate: 0.03,
+  /** Month: c += boardFinanceRate · (finance score ∈ [−1, 1]: +1 within budget and in the black, −1 per breach). */
+  boardFinanceRate: 0.02,
+  /** Season: league objective ± boardLeagueWeight · clamp((target − place)/2 ± 0.5, −1, 1); international ± boardIntlWeight; wages ± boardWageWeight. */
+  boardLeagueWeight: 0.2,
+  boardIntlWeight: 0.1,
+  boardWageWeight: 0.05,
+  warnBelow: 0.35,
+  sackBelow: 0.15,
+  /** Places per region that qualify for an international event; a club targeting a place ≤ this is asked to qualify. */
+  internationalSlots: 3,
+  /** Target place = expected place by stature (strength order in the region), one better when the club's budget is above its region's median. */
+  /** Requests: the minimum confidence to grant, and what granting costs. */
+  requestConfidence: { transferBudget: 0.5, wageBudget: 0.55, facilities: 0.5, staffBudget: 0.45 } as Record<string, number>,
+  requestCost: 0.03,
+  /** Transfer budget request: + min(transferStepShare · expected income, ½ · cash above the reserve). */
+  transferStepShare: 0.25,
+  /** Wage budget request: up to +10 %, never above wageShareMax · expected income. */
+  wageStep: 0.1,
+  wageShareMax: 0.7,
+  /** Facilities: level f ∈ [0,1] (start 0.5); one step +0.1 costs facilityCost. */
+  facilityStep: 0.1,
+  facilityCost: 400_000,
+  /** Facilities feed training quality: the coach factor reads development + facilityWeight · (f − 0.5). */
+  facilityWeight: 0.5,
+  /** Staff budget request: the wage budget grows by this much, for staff. */
+  staffBudgetStep: 60_000,
+
+  // --- staff market -------------------------------------------------------------------------------
+  /** A staff member's wage demand = staffWage · (1 + staffStatureSpan · (quality − club reputation)). */
+  staffStatureSpan: 0.3,
+  /** Physio: weekly fatigue recovery × (physioBase + physioSlope · physiotherapy) — 1 at 0.5 (and with no physio). */
+  physioBase: 0.75,
+  physioSlope: 0.5,
+} as const;

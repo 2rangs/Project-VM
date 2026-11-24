@@ -41,6 +41,8 @@ import './screens/career/career.css';
 import { FinanceScreen } from './screens/club/FinanceScreen.tsx'; // [club-ops]
 import { TransfersScreen } from './screens/club/TransfersScreen.tsx'; // [club-ops]
 import { TrainingScreen } from './screens/club/TrainingScreen.tsx'; // [club-ops]
+import { BoardScreen } from './screens/club/BoardScreen.tsx'; // [club-ops]
+import { StaffScreen } from './screens/club/StaffScreen.tsx'; // [club-ops]
 
 export type DetailPanel = { title: string; body: ReactNode } | null;
 
@@ -130,6 +132,8 @@ export default function App() {
           {route === 'finance' && c && <FinanceScreen setDetail={setDetail} />}
           {route === 'transfers' && c && <TransfersScreen setDetail={setDetail} />}
           {route === 'training' && c && <TrainingScreen setDetail={setDetail} />}
+          {route === 'board' && c && <BoardScreen />}
+          {route === 'staff' && c && <StaffScreen setDetail={setDetail} />}
           {route === 'opponent' && <OpponentScreen setDetail={setDetail} />}
           {route === 'tactics' && <TacticsScreen setDetail={setDetail} />}
           {route === 'agents' && <AgentSelectScreen setDetail={setDetail} />}

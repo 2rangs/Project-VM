@@ -3,7 +3,7 @@
 // another club's player comes through the user's scout (ranges), never the true CA/PA.
 import {
   playerValue, scoutedAbility, seasonFocus, suggestedTerms, wageBill, windowStatus,
-  exposureShares, CLUB_MODEL,
+  exposureShares, moraleOf, CLUB_MODEL,
   type Contract, type IndivFocus, type OfferKind, type TransferOffer, type World, type WorldPlayer,
 } from './world.ts';
 
@@ -143,7 +143,7 @@ export function windowInfo(w: World) {
   return windowStatus(w.club?.date ?? `${w.season}-01-01`);
 }
 
-export interface TrainingRow { player: WorldPlayer; playerId: string; handle: string; role: string; age: number; focus: IndivFocus; fatigue: number; shares: { mechanics: number; utility: number; teamplay: number } | null; factors: Record<string, number> | null }
+export interface TrainingRow { morale: number; player: WorldPlayer; playerId: string; handle: string; role: string; age: number; focus: IndivFocus; fatigue: number; shares: { mechanics: number; utility: number; teamplay: number } | null; factors: Record<string, number> | null }
 
 export function trainingRows(w: World): TrainingRow[] {
   const uid = userTeamId(w);
@@ -154,7 +154,7 @@ export function trainingRows(w: World): TrainingRow[] {
   return [...t.roster, ...t.academy].map((id) => w.players[id]).filter((p): p is WorldPlayer => !!p).map((p) => {
     const e = w.club!.training.exposure[p.playerId];
     return {
-      player: p, playerId: p.playerId, handle: p.handle ?? p.playerId, role: p.role ?? '—', age: p.age,
+      player: p, playerId: p.playerId, handle: p.handle ?? p.playerId, role: p.role ?? '—', age: p.age, morale: moraleOf(w.club, p.playerId),
       focus: plan?.individual[p.playerId] ?? 'balanced', fatigue: e?.fatigue ?? CLUB_MODEL.fatigueStart,
       shares: exposureShares(e), factors: (focus[p.playerId] as Record<string, number> | undefined) ?? null,
     };

@@ -20,6 +20,8 @@ import { MSG, pushMessage } from "./messages.ts";
 import { emptyTraining, resetTrainingSeason, seasonFocus, trainingWeek } from "./training.ts";
 import { aiMarketRound, expireOffers, joinRoster, playerAnswer, preferredYears } from "./transfers.ts";
 import type { ClubState, Contract } from "./types.ts";
+import { boardOnMonth, boardSeasonReview, emptyBoard, setObjectives } from "./board.ts";
+import { markFree, moraleWeek, payLoyalty, resetPlayTime, seasonBonusesMut } from "./people.ts";
 
 const M = CLUB_MODEL;
 const clone = <V>(v: V): V => JSON.parse(JSON.stringify(v)) as V;
@@ -39,7 +41,9 @@ export function initClub(world: World, opts: InitClubOptions): World {
   const club: ClubState = {
     version: 1, date, userTeamId: opts.userTeamId, contracts: {}, finances: {}, offers: [], loans: [], transfers: [],
     shortlist: [], training: emptyTraining(), outbox: [], aiBuys: {}, nextId: 1,
+    morale: {}, playTime: { players: {}, teams: {} }, recent: {}, freeSince: {}, board: emptyBoard(), facilities: {},
   };
+  for (const p of Object.values(w.players)) if (p.status === "free") club.freeSince![p.playerId] = date;
   w.club = club;
   const rep = reputations(w);
   for (const t of Object.values(w.teams).sort((a, b) => a.teamId.localeCompare(b.teamId))) {
@@ -55,6 +59,7 @@ export function initClub(world: World, opts: InitClubOptions): World {
     }
   }
   initFinances(w, date);
+  setObjectives(w, date);
   return w;
 }
 
@@ -80,6 +85,7 @@ export function reconcileContracts(w: World, date: string): void {
     if (loan ? p.teamId !== loan.toTeamId : p.teamId !== where) {
       if (club.finances[c.teamId]) book(club, c.teamId, date, "severance", -M.severanceShare * c.salary * Math.max(0, c.endSeason - w.season + 1), label(p));
       club.transfers.push({ date, season: w.season, playerId: p.playerId, fromTeamId: c.teamId, toTeamId: null, fee: 0, kind: "release" });
+      if (p.status === "free") markFree(club, p.playerId, date);
       delete club.contracts[c.personId];
       club.loans = club.loans.filter((l) => l.playerId !== c.personId);
     }
@@ -114,6 +120,7 @@ export function clubOnDayMut(w: World, date: string): void {
   expireOffers(w, date);
   if (dayOfWeek(date) === 1) {
     trainingWeek(w, date);
+    moraleWeek(w);
     if (win.open) aiMarketRound(w, date);
   }
 }
@@ -134,6 +141,7 @@ export function clubOnMonthMut(w: World, date: string): void {
   const anyTeam = club.finances[Object.keys(club.finances).sort()[0] ?? ""];
   if (anyTeam?.monthly.some((m) => m.month === monthKey(date))) return;
   monthlyFinance(w, date);
+  boardOnMonth(w, date);
   if (monthOf(date) === M.expiryNoticeMonth && club.userTeamId && uf) {
     const ending = Object.values(club.contracts).filter((c) => c.kind === "player" && c.teamId === club.userTeamId && c.endSeason <= w.season);
     if (ending.length) pushMessage(club, date, MSG.expiring(ending.map((c) => label(w.players[c.personId]!)).filter(Boolean)));
@@ -169,7 +177,9 @@ export function clubBeforeSeasonEndMut(w: World, ctx: SeasonEndContext = {}): vo
     if (p && w.teams[l.fromTeamId]) joinRoster(w, p, l.fromTeamId);
   }
   club.loans = club.loans.filter((x) => x.endSeason > w.season);
-  seasonEndFinance(w, date, ctx.standings);
+  const places = seasonEndFinance(w, date, ctx.standings);
+  seasonBonusesMut(w, date, places);
+  boardSeasonReview(w, date, ctx.standings);
   // Expiring contracts.
   const rep = reputations(w);
   const left: string[] = [];
@@ -183,12 +193,15 @@ export function clubBeforeSeasonEndMut(w: World, ctx: SeasonEndContext = {}): vo
     const p = w.players[c.personId];
     if (!p) { delete club.contracts[c.personId]; continue; }
     if (c.squadRole === "academy" || p.status === "academy") { c.endSeason = w.season + 1; continue; }
+    // The contract ran to its end with the player at the club: the loyalty bonus is due.
+    payLoyalty(w, c, date);
     if (c.teamId !== club.userTeamId && renewAi(w, p, c, rep[c.teamId] ?? 0.5)) continue;
     if (c.teamId === club.userTeamId) left.push(label(p));
     const t = w.teams[c.teamId];
     if (t) { t.roster = t.roster.filter((id) => id !== p.playerId); t.academy = t.academy.filter((id) => id !== p.playerId); }
     p.teamId = null;
     p.status = "free";
+    markFree(club, p.playerId, date);
     club.transfers.push({ date, season: w.season, playerId: p.playerId, fromTeamId: c.teamId, toTeamId: null, fee: 0, kind: "expiry" });
     delete club.contracts[c.personId];
   }
@@ -227,9 +240,11 @@ export function clubAfterSeasonAdvanceMut(w: World, date: string = seasonStartDa
   if (!club) return;
   club.date = date;
   resetTrainingSeason(club.training);
+  resetPlayTime(club);
   reconcileContracts(w, date);
   for (const k of Object.keys(club.aiBuys)) if (Number(k.slice(0, 4)) < w.season) delete club.aiBuys[k];
   setSeasonBudgets(w, date);
+  setObjectives(w, date);
 }
 
 /**

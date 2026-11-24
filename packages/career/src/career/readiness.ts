@@ -11,11 +11,17 @@
 //
 // R scales a player's ability attributes toward the league floor for that match only:
 //   x' = min_k + R · (x − min_k)                (min_k = the calibration's real minimum)
+// Morale m (club/people.ts, neutral 0.5) then moves two decision attributes, d = m − 0.5:
+//   consistency' = clamp(consistency + moraleConsistency · d)   → discipline (decision profile) and round-form σ
+//   clutch'      = clamp(clutch + moraleClutch · d)             → decisionMaking (profile) and pressure form
+// Both reach the engine through match-runner's existing roster → profile/form path (teams.ts
+// rosterProfiles, rosterConsistency); at neutral morale the player is exactly as rated.
 // so a tired or rusty player plays below their rating in proportion to how good they are — no flat
 // bonus. The engine (match-runner rosters) and the quick estimate (lineup ability) both read x'.
 import type { AttrSlot, World, WorldPlayer } from "../model.ts";
 import { ABILITY_KEYS } from "../model.ts";
-import { CLUB_MODEL } from "../club/constants.ts";
+import { CLUB_MODEL, DEPTH_MODEL } from "../club/constants.ts";
+import { moraleOf } from "../club/people.ts";
 import { daysBetween, type IsoDate } from "./calendar.ts";
 import type { CareerState } from "./types.ts";
 
@@ -60,11 +66,18 @@ export function matchAttributes(state: CareerState, p: WorldPlayer): Record<stri
   if (!p.attributes) return null;
   const R = readiness(state, p.playerId);
   const min = state.world.calibration.min;
+  const d = moraleOf(state.world.club, p.playerId) - 0.5;
   const out: Record<string, AttrSlot> = {};
   for (const [k, slot] of Object.entries(p.attributes)) {
-    if (slot.value === null || !(ABILITY_KEYS as readonly string[]).includes(k)) { out[k] = slot; continue; }
-    const lo = min[k as keyof typeof min] ?? 0;
-    out[k] = { ...slot, value: Math.round((lo + R * (slot.value - lo)) * 10000) / 10000 };
+    if (slot.value === null) { out[k] = slot; continue; }
+    let v = slot.value;
+    if ((ABILITY_KEYS as readonly string[]).includes(k)) {
+      const lo = min[k as keyof typeof min] ?? 0;
+      v = lo + R * (v - lo);
+    }
+    if (d !== 0 && k === "consistency") v = Math.min(1, Math.max(0, v + DEPTH_MODEL.moraleConsistency * d));
+    if (d !== 0 && k === "clutch") v = Math.min(1, Math.max(0, v + DEPTH_MODEL.moraleClutch * d));
+    out[k] = v === slot.value ? slot : { ...slot, value: Math.round(v * 10000) / 10000 };
   }
   return out;
 }

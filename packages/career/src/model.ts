@@ -103,8 +103,8 @@ export interface WorldPlayer {
   careerMaps: number;
 }
 
-export type StaffRole = "headCoach" | "analyst" | "scout";
-export const STAFF_ROLES: readonly StaffRole[] = ["headCoach", "analyst", "scout"];
+export type StaffRole = "headCoach" | "analyst" | "scout" | "physio";
+export const STAFF_ROLES: readonly StaffRole[] = ["headCoach", "analyst", "scout", "physio"];
 
 /**
  * Staff attributes — only the ones something reads:
@@ -113,11 +113,14 @@ export const STAFF_ROLES: readonly StaffRole[] = ["headCoach", "analyst", "scout
  *                                 opponent-mastery estimate error); see teamStaffInputs()
  *   scout.judgingAbility        → error of the CA estimate shown for a player (scouting.ts here)
  *   scout.judgingPotential      → error of the PA estimate, and which prospects an academy picks
+ *   headCoach.motivation        → the morale target (club/people.ts)
+ *   physio.physiotherapy        → weekly fatigue recovery (club/training.ts)
  */
 export const STAFF_ATTRS: Readonly<Record<StaffRole, readonly string[]>> = {
-  headCoach: ["development"],
+  headCoach: ["development", "motivation"],
   analyst: ["analysis"],
   scout: ["judgingAbility", "judgingPotential"],
+  physio: ["physiotherapy"],
 };
 
 export interface WorldStaff {

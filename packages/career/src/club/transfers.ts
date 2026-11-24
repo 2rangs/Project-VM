@@ -18,6 +18,11 @@ import {
   ambitionOf, clubSalary, expectedRole, marketWage, playerValue, reputations, roundTo, squadRoleOf, teamStrength, valueFrom,
 } from "./market.ts";
 import { MSG, pushMessage } from "./messages.ts";
+import {
+  agentFee, clauseTerm, effectiveWage, freeAgentTimeFactor, markFree, moraleOf, playTimeGap, requiredMargin,
+} from "./people.ts";
+import { abilityScale } from "./market.ts";
+import { DEPTH_MODEL } from "./constants.ts";
 import type { ClubState, Contract, OfferKind, OfferTerms, PlayerUtility, Text, TransferOffer } from "./types.ts";
 
 const M = CLUB_MODEL;
@@ -80,39 +85,61 @@ export function clubAnswer(w: World, offer: Pick<TransferOffer, "kind" | "player
     return { decision: "accept", asking: 0, reason: T("출전 시간이 필요한 선수라 임대에 동의합니다.", "He needs games; the loan is agreed.") };
   }
   const asking = askingPrice(w, p);
-  const fee = offer.terms.fee;
-  if (contract?.buyout != null && fee >= contract.buyout) return { decision: "accept", asking, reason: T("바이아웃 금액을 충족해 거절할 수 없습니다.", "The bid meets the release clause.") };
+  // Sell-on: the seller counts a share of the next fee, at sellOnExpectation of its value of the player.
+  const sellOn = Math.min(DEPTH_MODEL.maxSellOn, Math.max(0, offer.terms.sellOn ?? 0));
+  const fee = offer.terms.fee + sellOn * DEPTH_MODEL.sellOnExpectation * playerValue(w, p, seller);
+  if (contract?.buyout != null && offer.terms.fee >= contract.buyout) return { decision: "accept", asking, reason: T("바이아웃 금액을 충족해 거절할 수 없습니다.", "The bid meets the release clause.") };
   if (fee >= asking) return { decision: "accept", asking, reason: T("제시액이 구단의 평가액 이상입니다.", "The bid meets the club's valuation.") };
-  if (fee >= M.counterShare * asking) return { decision: "counter", asking, counter: { ...offer.terms, fee: asking }, reason: T(`구단은 ${asking.toLocaleString()}달러를 원합니다.`, `The club wants $${asking.toLocaleString()}.`) };
+  if (fee >= M.counterShare * asking) return { decision: "counter", asking, counter: { ...offer.terms, fee: Math.max(offer.terms.fee, roundTo(asking - (fee - offer.terms.fee), M.feeStep)) }, reason: T(`구단은 ${asking.toLocaleString()}달러를 원합니다.`, `The club wants $${asking.toLocaleString()}.`) };
   return { decision: "reject", asking, reason: T("제시액이 구단 평가액에 한참 못 미칩니다.", "The bid is far below the club's valuation.") };
 }
 
 /** Preferred contract length L*(age) = clamp(1 + (age − 20)/4, 1, 3). */
 export const preferredYears = (age: number): number => Math.min(3, Math.max(1, 1 + (age - 20) / 4));
 
-/** The player's utility of an offer (see the header). */
+/**
+ * The player's utility of an offer (see the header), with the depth terms (DEPTH_MODEL):
+ *   the wage term reads W_eff (salary + valued bonuses); a free agent's reference falls with time unsigned;
+ *   release clause: + wClause · ambition · (default − asked)/default;
+ *   renewal: + wMorale · 2(m − 0.5) + wPlayTime · (share − expected) + wAmbition · ambition · (S_club − v(CA)) · renewAmbitionShare.
+ * The player (his agent) agrees at U ≥ margin = acceptMargin + agentMarginSpan · hardness.
+ */
 export function playerUtility(w: World, p: WorldPlayer, kind: OfferKind, toTeamId: string, terms: OfferTerms): PlayerUtility {
+  const club = w.club!;
   const toRegion = w.teams[toTeamId]!.region;
   const market = marketWage(w, p, toRegion);
-  const contract = w.club!.contracts[p.playerId];
+  const contract = club.contracts[p.playerId];
   const current = contract?.kind === "player" ? contract.salary : 0;
   const fromTeam = kind === "renewal" ? toTeamId : p.teamId;
-  const ref = kind === "free" || !contract ? M.freeAgentRefShare * market : Math.max(current, M.refMarketShare * market);
+  const ref = kind === "free" || !contract
+    ? M.freeAgentRefShare * market * freeAgentTimeFactor(club, p.playerId, club.date)
+    : Math.max(current, M.refMarketShare * market);
   const ambition = ambitionOf(w, p.playerId);
   const sFrom = fromTeam ? teamStrength(w, fromTeam) : 0;
   const sTo = teamStrength(w, toTeamId);
   const rFrom = expectedRole(w, fromTeam, p, p.status === "academy");
   const rTo = expectedRole(w, toTeamId, p);
+  const margin = requiredMargin(w, p.playerId);
   if (kind === "loan") {
     const role = M.wRole * (rTo - rFrom);
     const amb = M.wAmbition * ambition * (sTo - sFrom) * 0.5;
-    return { total: role + amb, wage: 0, ambition: amb, role, length: 0, ref };
+    return { total: role + amb, wage: 0, ambition: amb, role, length: 0, ref, margin: 0 };
   }
-  const wage = M.wWage * Math.log(Math.max(1, terms.wage) / Math.max(1, ref));
-  const amb = kind === "renewal" ? 0 : M.wAmbition * ambition * (sTo - sFrom);
-  const role = kind === "renewal" ? 0 : M.wRole * (rTo - rFrom);
+  const effWage = effectiveWage(w, toTeamId, terms);
+  const wage = M.wWage * Math.log(Math.max(1, effWage) / Math.max(1, ref));
   const length = M.wLength * -Math.abs(terms.years - preferredYears(p.age)) / 3;
-  return { total: wage + amb + role + length, wage, ambition: amb, role, length, ref };
+  const est = estimateAbility(w, teamScout(w, toTeamId), p);
+  const defaultClause = M.buyoutValueMult * valueFrom(w, est.ca, est.pa, p.age, terms.years - 1);
+  const clause = clauseTerm(ambition, terms.releaseClause, defaultClause);
+  if (kind === "renewal") {
+    const morale = DEPTH_MODEL.wMorale * 2 * (moraleOf(club, p.playerId) - 0.5);
+    const playTime = DEPTH_MODEL.wPlayTime * playTimeGap(club, contract, p.playerId, toTeamId);
+    const amb = M.wAmbition * ambition * (sTo - abilityScale(w, p.ca ?? 0.6)) * DEPTH_MODEL.renewAmbitionShare;
+    return { total: wage + amb + length + clause + morale + playTime, wage, ambition: amb, role: 0, length, ref, morale, playTime, clause, margin, effWage };
+  }
+  const amb = M.wAmbition * ambition * (sTo - sFrom);
+  const role = M.wRole * (rTo - rFrom);
+  return { total: wage + amb + role + length + clause, wage, ambition: amb, role, length, ref, clause, margin, effWage };
 }
 
 export interface PlayerAnswer { decision: "accept" | "counter" | "reject"; utility: PlayerUtility; counter?: OfferTerms; reason: Text }
@@ -120,11 +147,19 @@ export interface PlayerAnswer { decision: "accept" | "counter" | "reject"; utili
 export function playerAnswer(w: World, offer: Pick<TransferOffer, "kind" | "playerId" | "toTeamId" | "terms">): PlayerAnswer {
   const p = w.players[offer.playerId]!;
   const u = playerUtility(w, p, offer.kind, offer.toTeamId, offer.terms);
-  if (u.total >= 0) return { decision: "accept", utility: u, reason: T("선수가 조건에 동의했습니다.", "The player agreed to the terms.") };
+  const margin = offer.kind === "loan" ? 0 : u.margin ?? M.acceptMargin;
+  // A renewal the player does not want whatever the money (unhappy, benched, or too good for the club).
+  if (offer.kind === "renewal" && (u.morale ?? 0) + (u.playTime ?? 0) + u.ambition < -DEPTH_MODEL.refuseBelow) {
+    return { decision: "reject", utility: u, reason: T("선수가 재계약을 원하지 않습니다 (사기·출전 시간·야망).", "The player does not want to stay (morale, playing time, ambition).") };
+  }
+  if (u.total >= margin) return { decision: "accept", utility: u, reason: T("선수가 조건에 동의했습니다.", "The player agreed to the terms.") };
   if (offer.kind === "loan") return { decision: "reject", utility: u, reason: T("선수가 더 많은 출전을 보장받지 못한다고 봅니다.", "The player does not see more playing time there.") };
-  const needed = roundTo(Math.ceil(offer.terms.wage * Math.exp((M.acceptMargin - u.total) / M.wWage) / M.wageStep) * M.wageStep, M.wageStep);
+  // The salary that brings U to the margin, with the bonuses held as offered.
+  const eff = u.effWage ?? offer.terms.wage;
+  const effNeeded = eff * Math.exp((margin - u.total) / M.wWage);
+  const needed = Math.ceil((offer.terms.wage + effNeeded - eff) / M.wageStep) * M.wageStep;
   if (needed <= offer.terms.wage * M.maxCounterRaise) {
-    return { decision: "counter", utility: u, counter: { ...offer.terms, wage: needed }, reason: T(`선수는 연봉 ${needed.toLocaleString()}달러를 원합니다.`, `The player wants $${needed.toLocaleString()} a year.`) };
+    return { decision: "counter", utility: u, counter: { ...offer.terms, wage: needed }, reason: T(`선수(에이전트)는 연봉 ${needed.toLocaleString()}달러를 원합니다.`, `The player's agent wants $${needed.toLocaleString()} a year.`) };
   }
   return { decision: "reject", utility: u, reason: T("선수가 이 이적에 관심이 없습니다.", "The player is not interested in this move.") };
 }
@@ -210,6 +245,9 @@ function complete(w: World, o: TransferOffer, date: string): void {
     c.salary = o.terms.wage;
     c.endSeason = w.season + Math.max(1, o.terms.years) - 1;
     c.signedOn = date;
+    if (o.terms.releaseClause !== undefined) c.buyout = o.terms.releaseClause;
+    applyBonusTerms(c, o.terms);
+    payOnSigning(w, o, date);
     club.transfers.push({ date, season: w.season, playerId: p.playerId, fromTeamId: o.toTeamId, toTeamId: o.toTeamId, fee: 0, kind: "renewal" });
     return;
   }
@@ -221,7 +259,11 @@ function complete(w: World, o: TransferOffer, date: string): void {
   }
   if (o.terms.fee > 0 && from) {
     book(club, o.toTeamId, date, "transferOut", -o.terms.fee, label(p));
-    book(club, from, date, "transferIn", o.terms.fee, label(p));
+    // An earlier sell-on clause takes its share of the fee from the seller.
+    const prior = club.contracts[p.playerId]?.sellOn;
+    const cut = prior && club.finances[prior.teamId] ? roundTo(prior.pct * o.terms.fee, M.feeStep) : 0;
+    book(club, from, date, "transferIn", o.terms.fee - cut, label(p));
+    if (cut > 0) book(club, prior!.teamId, date, "sellOn", cut, label(p));
     club.finances[o.toTeamId]!.transferBudget = Math.max(0, club.finances[o.toTeamId]!.transferBudget - o.terms.fee);
     club.finances[from]!.transferBudget += roundTo(M.transferShare * o.terms.fee, M.feeStep);
   }
@@ -232,15 +274,33 @@ function complete(w: World, o: TransferOffer, date: string): void {
   const c: Contract = {
     personId: p.playerId, kind: "player", teamId: o.toTeamId, salary: o.terms.wage,
     startSeason: w.season, endSeason: w.season + Math.max(1, o.terms.years) - 1,
-    buyout: Math.max(o.terms.wage, roundTo(M.buyoutValueMult * value, M.feeStep)),
+    buyout: o.terms.releaseClause ?? Math.max(o.terms.wage, roundTo(M.buyoutValueMult * value, M.feeStep)),
     squadRole: squadRoleOf(w, o.toTeamId, p), signedOn: date,
   };
+  applyBonusTerms(c, o.terms);
+  if (o.kind === "transfer" && from && (o.terms.sellOn ?? 0) > 0) c.sellOn = { teamId: from, pct: Math.min(DEPTH_MODEL.maxSellOn, o.terms.sellOn!) };
   club.contracts[p.playerId] = c;
+  if (club.freeSince) club.freeSince[p.playerId] = "";
+  payOnSigning(w, o, date);
   club.transfers.push({ date, season: w.season, playerId: p.playerId, fromTeamId: from, toTeamId: o.toTeamId, fee: o.terms.fee, kind: o.kind });
   if (o.toTeamId === club.userTeamId) pushMessage(club, date, MSG.signed(label(p), o.terms.fee, o.terms.wage, o.terms.years));
   if (from && from === club.userTeamId) pushMessage(club, date, MSG.sold(label(p), w.teams[o.toTeamId]!.name, o.terms.fee));
   // Other open offers for this player are void.
   for (const x of club.offers) if (x !== o && x.playerId === p.playerId && (x.status === "pending" || x.status === "countered")) { x.status = "withdrawn"; x.stage = "done"; x.updated = date; }
+}
+
+function applyBonusTerms(c: Contract, t: OfferTerms): void {
+  const b = { ...(t.loyaltyBonus ? { loyalty: t.loyaltyBonus } : {}), ...(t.winBonus ? { perWin: t.winBonus } : {}), ...(t.titleBonus ? { perTitle: t.titleBonus } : {}) };
+  c.bonuses = Object.keys(b).length ? b : undefined;
+}
+
+/** Agent fee and signing-on bonus, paid by the signing club. */
+function payOnSigning(w: World, o: TransferOffer, date: string): void {
+  const club = w.club!;
+  const p = w.players[o.playerId];
+  const fee = agentFee(w, o.playerId, o.terms);
+  if (fee > 0) book(club, o.toTeamId, date, "agentFee", -fee, p?.handle ?? o.playerId);
+  if ((o.terms.signingBonus ?? 0) > 0) book(club, o.toTeamId, date, "bonus", -o.terms.signingBonus!, `${p?.handle ?? o.playerId} signing`);
 }
 
 /** Make an offer (mutating `w`): validates, then runs the selling club's and the player's answers. */
@@ -324,6 +384,7 @@ export function releasePlayerMut(w: World, playerId: string, date: string): bool
     delete club.contracts[playerId];
   }
   detach(w, p);
+  markFree(club, playerId, date);
   club.transfers.push({ date, season: w.season, playerId, fromTeamId: teamId, toTeamId: null, fee: 0, kind: "release" });
   return true;
 }

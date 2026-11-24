@@ -135,8 +135,79 @@ One package-wide definition each: `InboxItem` (career/inbox.ts), the date helper
 ## 8. Not done
 
 - **Short squads:** nothing refills the manager's squad after contracts expire; below five players the lineup screen cannot be confirmed (the manager must sign someone, the Home screen does not warn yet).
-- **The manager's matches record map scores plus engine K/D; map practice only shapes mastery, not tactics.** Fatigue is a single number per player.
-- **No agents, sell-on clauses, signing bonuses, or performance bonuses.** There are no import limits beyond AI clubs shopping in their own region, and no international events or their prize money.
-- **The board has no expectations beyond money** (no placement targets, no sacking).
-- **Staff hiring and firing** stays automatic (the season loop fills vacancies). There is no staff market screen.
-- **The full `test:e2e` currently fails before its club step was removed** at the nav-debug block (pre-existing, see the regens handover); `test:e2e:club` and `test:e2e:career` cover the club screens.
+- **Fatigue and morale are single numbers per player.** There are no injuries, so the physio only speeds fatigue recovery.
+- **The sack is a flag.** `club.board.sacked` is set, the inbox and the Board screen say so, and the board stops taking requests. Career mode does not yet end the career or offer another job.
+- **AI clubs have no board, morale, bonuses or agent fees** (they stay neutral: morale 0.5, no bonuses). Only the manager's club carries them. AI transfers still pay the agent fee (it is on every signing).
+- **No import limits** beyond AI clubs shopping in their own region. No international events or their prize money: "international qualification" is judged as finishing within the region's top `internationalSlots`.
+- **Staff vacancies at AI clubs** are still filled by the season loop at season start (no mid-season AI staff market).
+- **Scouted attribute ranges:** the scout's error is the CA/PA band (`estimateAbility`). If per-attribute ranges arrive (generated-players session), they should read the same scout attributes (`judgingAbility`, `judgingPotential`), so the staff market feeds them without changes. A proposal is in the shared notes (`scouting-interface.md`).
+- **The full `test:e2e`** fails at the nav-debug block (pre-existing, see the regens handover); `test:e2e:club` and `test:e2e:career` cover the club screens.
+
+## 9. Agents, bonuses, clauses, renewals, free-agent timing
+
+Constants: `DEPTH_MODEL` in `club/constants.ts`. Code: `club/people.ts`, `club/transfers.ts`.
+
+| | formula |
+|---|---|
+| agent | hardness `h ∈ [0,1]`, seeded per player |
+| agent fee | `(0.03 + 0.07·h) · wage · years`, paid by the signing club at signing (every signing, AI included) |
+| player's margin | accepts at `U ≥ acceptMargin + 0.15·h`; a counter asks the wage that brings U to that margin |
+| bonuses in the utility | `W_eff = wage + 0.8 · (signing/years + loyalty/years + perWin · E[wins] + perTitle · P(title))`, with `E[wins] = 12 · σ(6·(S_to − 0.5))` and `P(title) = σ(10·(S_to − 0.8))`. The wage term is `ln(W_eff / ref)` |
+| bonus costs | signing at signing; perWin after each series won where the player played; perTitle when the club wins its region; loyalty when the contract runs to its end at the club |
+| release clause | the player's utility `+ 0.15 · ambition · clamp((default − asked)/default, −1, 1)`. A fee ≥ the clause must be accepted (§4) |
+| sell-on | the selling club counts `fee + sellOn · 0.5 · its value of the player` against its asking price (max 30 %). On the next sale, `pct · fee` goes to the old club |
+| renewal feelings | `+ 0.3 · 2(m − 0.5) + 0.4 · (share − expected share) + 1.2 · ambition · (S_club − v(CA)) · 0.6` |
+| renewal refusal | when those non-wage terms are below −0.45, the player refuses whatever the wage |
+| free-agent timing | a free agent's reference wage `× max(0.6, 1 − 0.06 · months unsigned)` |
+
+The expected playing-time share by role is starter 0.9, rotation 0.3, academy 0.05. Shares come from maps actually played this season (`club.playTime`, filled after every series in the league).
+
+## 10. Morale and condition in the match
+
+**Morale** `m ∈ [0,1]` (neutral 0.5) for the manager's squad.
+- Weekly: `m ← m + 0.3 · (T − m)`, where `T = 0.5 + 0.3·(r5 − 0.5) + 0.25·(share − expected) + 0.2·clamp(ln(salary/market), −0.5, 0.5) + 0.2·(coach.motivation − 0.5)` and `r5` is the club's share of its last five series won.
+- After a series, the five who played move ±0.03.
+
+**Into the match** (career/readiness.ts `matchAttributes`, the roster the engine and the quick sim read):
+- Readiness (fatigue, sharpness) scales the ability attributes toward the floor, as before.
+- Then morale, with `d = m − 0.5`, moves `consistency ± 0.2·d` and `clutch ± 0.2·d`.
+- In match-runner (teams.ts, unchanged) consistency feeds the decision profile's `discipline` and the round-form σ. Clutch feeds `decisionMaking` (mean of impact and clutch) and the pressure form.
+- Fatigue reaches decisions the same way, through the readiness-scaled `consistency` and `impact`.
+- No match-runner or round-simulator file changed, and the default engine path (no career roster) is untouched. At neutral morale the roster is byte-identical (tested).
+
+**Measured** (`test/morale-match.test.ts`, opt-in `PV_MORALE_MATCH=1`, run through heavy-run.sh): the same five against the same opponent on the same 16 seeds, morale 1 vs 0.5 vs 0. RESULT_PLACEHOLDER
+
+## 11. Board
+
+Code: `club/board.ts`. Board state lives in `club.board` (the manager's club only).
+
+- **Objectives (season start).** The expected place is the club's strength rank in its region (stature). The target is that place, one better when the club's wage + transfer budget is above its region's median. "International" is set when the target is within the top 3. The wage objective always applies.
+- **Confidence** starts at 0.6 and moves:
+  - After each of the manager's series: `+0.03 · (result − σ(6·(S_us − S_them)))`.
+  - Monthly: `+0.02 · score`, where score is +1 when clean, −1 for each breach (wage bill over budget, balance negative).
+  - At season end: league `±0.2 · clamp((target − place)/2 ± 0.5, −1, 1)`, international ±0.1, wages ±0.05.
+- **Warning and sack.** A warning comes once below 35 %. Below 15 % the manager is sacked (§8).
+- **Requests** (one of each kind per season, granted at confidence ≥ 0.5 / 0.55 / 0.5 / 0.45; granting costs 0.03 confidence):
+  - Transfer budget: `+min(0.25 · expected income, ½ · cash above the reserve)`.
+  - Wage budget: up to +10 %, capped at 0.7 · expected income.
+  - Facilities: +0.1 for $400K, if cash stays above the reserve.
+  - Staff budget: +$60K of wage budget.
+- **Facilities** (0..1, neutral 0.5) feed the development formula's coach factor input: `development + 0.5·(facilities − 0.5)` (season.ts `coachDevelopment`). A club without a facilities entry develops exactly as before.
+
+## 12. Staff market
+
+Code: `club/staff-market.ts`. Roles: head coach (development, motivation), analyst (analysis), scout (judging ability and potential), and a new physio (physiotherapy). Every team gets a physio from the season loop.
+
+| staff | feeds (existing formula) |
+|---|---|
+| headCoach.development | coach factor C of the development formula (+ facilities) |
+| headCoach.motivation | the morale target `T` (§10) |
+| analyst.analysis | the series analyst: opponent games reviewed, mastery-estimate error (match-runner via `teamStaffInputs`) |
+| scout.judging* | σ of every CA/PA estimate the club sees (`scouting.ts`); a better scout narrows the bands (tested) |
+| physio.physiotherapy | weekly fatigue recovery `× (0.75 + 0.5·p)`, rest weeks too; 1 with no physio |
+
+- **Demand:** `staffWage · (1 + 0.3 · (quality − club reputation))`, so a good coach asks a small club for more.
+- **Hiring:** at ≥ the demand, for 2 seasons, within the wage budget. It replaces the holder of the post, who gets severance and joins the pool.
+- **Dismissal:** pays severance on the rest of the contract.
+
+Desktop: **Board** screen (confidence, objectives, review, requests, history, sack banner), **Staff** screen (role tabs, market table, hire/dismiss in the detail panel), a **morale** column in Training, and **bonuses & clauses** plus the agent's hardness and fee in the offer form.
