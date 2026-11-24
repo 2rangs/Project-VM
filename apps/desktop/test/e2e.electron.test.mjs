@@ -21,6 +21,8 @@ const OUT = path.join(appDir, 'docs');
 fs.mkdirSync(OUT, { recursive: true });
 const requireApp = createRequire(path.join(appDir, 'package.json'));
 const electronPath = requireApp('electron');
+/** Each round's replay opens with the 30 s buy phase (ROUND_RULES.buyPhaseMs). */
+const BUY_MS = 30000;
 
 async function main() {
   const app = await electron.launch({
@@ -87,7 +89,8 @@ async function main() {
   // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
   // The live view scrubs one round at a time: jump to round 5 and seek 12 s in (first contact).
   await page.getByTestId('round-chip-5').click();
-  const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
+  // the scrubber starts at the round's buy phase (BUY_MS before the barrier drops)
+  const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min)) + BUY_MS;
   await page.locator('.rv-scrub').fill(String(r5Start + 12000));
   await page.getByTestId('fog-belief').check();
   await page.waitForTimeout(1200);
@@ -103,7 +106,7 @@ async function main() {
   // walked trace, replans, failures and WHY that route (order + route preference).
   await page.selectOption('[data-testid="fog-pov"]', '0');
   await page.getByTestId('round-chip-3').click();
-  const r3Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
+  const r3Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min)) + BUY_MS;
   await page.locator('.rv-scrub').fill(String(r3Start + 9000));
   await page.getByTestId('debug-graph').check();
   await page.waitForSelector('[data-testid="nav-debug-panel"]', { timeout: 5000 });

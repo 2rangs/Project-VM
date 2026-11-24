@@ -97,6 +97,7 @@ export function TopHud({
             {phase === 'pistol' && <em>{t('mdx.phase.pistol')}</em>}
             {phase === 'overtime' && <em>{t('mdx.phase.ot')}</em>}
             {matchPoint && phase !== 'overtime' && <em className="hot">{t('mdx.phase.matchPoint')}</em>}
+            {sit?.buyPhase && !nextRound && <em className="buy">{t('mdx.phase.buy')}</em>}
           </span>
           <strong className="mdx-clock-time">{spikeOn && <Icon name="spike" size={18} />}{sit && !nextRound ? formatClock(sit.clockMs) : formatClock(100000)}</strong>
         </div>
@@ -439,8 +440,8 @@ export function BottomBar({
   viewTeam: TeamSlot; session: { state: SessionState; busy: boolean; ordersOpen: boolean } | null;
   autoPlay: boolean; onAutoPlay: (v: boolean) => void; onNext: () => void; onTimeout: () => void; canAdvance: boolean;
 }) {
-  const span = round ? Math.max(1, round.endMs - round.startMs) : 1;
-  const pct = (ms: number) => `${Math.max(0, Math.min(100, ((ms - (round?.startMs ?? 0)) / span) * 100))}%`;
+  const span = round ? Math.max(1, round.endMs - round.buyStartMs) : 1;
+  const pct = (ms: number) => `${Math.max(0, Math.min(100, ((ms - (round?.buyStartMs ?? 0)) / span) * 100))}%`;
   const st = session?.state;
   return (
     <footer className="mdx-bottom">
@@ -488,7 +489,7 @@ export function BottomBar({
             {round && roundMarks(round).filter((m) => m.tMs <= watchedTo && m.kind !== 'end').map((m, i) => (
               <i key={i} className={`mdx-tick ${m.kind === 'kill' ? (m.team === viewTeam ? 'ally' : 'enemy') : m.kind === 'plant' ? 'spike' : 'defuse'}`} style={{ left: pct(m.tMs) }} />
             ))}
-            <input className="rv-scrub" type="range" min={round?.startMs ?? 0} max={round?.endMs ?? 0} step={50} value={round ? tMs : 0}
+            <input className="rv-scrub" type="range" min={round?.buyStartMs ?? 0} max={round?.endMs ?? 0} step={50} value={round ? tMs : 0}
               onChange={(e) => onSeek(Number(e.target.value))} disabled={!round} aria-label={t('mdx.scrub')} />
           </div>
           <span className="mdx-time">{formatClock(round ? round.endMs - round.startMs : 0).padStart(4, '0')}</span>

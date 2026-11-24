@@ -524,3 +524,44 @@ test('sim gaze: the recorded facing wins over the engine-rule estimate, blind an
   const g = computeFrame(replay, tl, nav, 'A', at(r3, 6500))!;
   assert.equal(g.units[0].gaze, null);
 });
+
+test('buy phase: each round gets its own buy span before the barrier drops; positions move during it', () => {
+  const P = (x: number, y: number) => ({ x, y, z: 0 });
+  const round = (n: number, attacker: 'A' | 'B') => ({
+    roundNumber: n, phase: 'regulation', attacker, winner: attacker, winnerSide: 'attack', reason: 'elimination', planted: false,
+    score: { A: n, B: 0 }, kills: { A: 0, B: 0 },
+    economy: { A: { credits: 0, ultPoints: 0 }, B: { credits: 0, ultPoints: 0 } },
+    buys: { A: { tier: 'full', weapon: 'Vandal' }, B: { tier: 'full', weapon: 'Vandal' } },
+    replayEvents: [
+      { seq: 0, tick: -300, timeMs: -30000, kind: 'buyPhaseStart', durationMs: 30000 },
+      { seq: 1, tick: -300, timeMs: -30000, kind: 'move', playerId: 'atk1', from: P(0, 0), to: P(0, 0) },
+      { seq: 2, tick: -200, timeMs: -20000, kind: 'move', playerId: 'atk1', from: P(0, 0), to: P(300, 0) },
+      { seq: 3, tick: 0, timeMs: 0, kind: 'roundStart', roundNumber: 1 },
+      { seq: 4, tick: 50, timeMs: 5000, kind: 'move', playerId: 'atk1', from: P(300, 0), to: P(600, 0) },
+      { seq: 5, tick: 100, timeMs: 10000, kind: 'roundEnd', winner: 'attack', reason: 'elimination' },
+    ],
+  });
+  const m = mergeMatch({ ...raw, rounds: [round(1, 'A'), round(2, 'A')] as unknown as RawMatch['rounds'] });
+  const rp = fromSimEventLog(m.events, { mapId: 'ascent' });
+  const t = buildTimeline(rp, m.summary, nav);
+  assert.equal(t.rounds.length, 2);
+  const [a, b] = t.rounds;
+  assert.equal(a.startMs - a.buyStartMs, 30000);
+  assert.equal(b.startMs - b.buyStartMs, 30000);
+  assert.ok(b.buyStartMs > a.endMs, 'the next round\'s buy phase starts after this round ends');
+  assert.equal(t.startMs, a.buyStartMs);
+  // the round's player starts at the buy-phase start, moves during the buy phase, and keeps its track
+  const p = a.players.find((x) => x.id === 'atk1')!;
+  assert.equal(p.spawn.x, 0);
+  assert.equal(logicalAt(p, a.buyStartMs + 5000).pos.x < 300, true);
+  assert.equal(logicalAt(p, a.startMs).pos.x, 300);
+  // round 2's buy-phase keyframes belong to round 2, not to the tail of round 1
+  assert.equal(a.players.find((x) => x.id === 'atk1')!.hops.every((h) => h.arriveMs <= a.endMs), true);
+  // the HUD clock counts the buy time down, then the round clock
+  const sBuy = situationAt(a, a.buyStartMs + 10000);
+  assert.equal(sBuy.buyPhase, true);
+  assert.equal(formatClock(sBuy.clockMs), '0:20');
+  const sLive = situationAt(a, a.startMs + 1000);
+  assert.equal(sLive.buyPhase, false);
+  assert.equal(formatClock(sLive.clockMs), '1:39');
+});

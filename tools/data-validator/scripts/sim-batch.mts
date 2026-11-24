@@ -25,6 +25,9 @@
 //   --tuning JSON      MatchConfig.tuning for every match (pre-match engine options, e.g. '{"damageCarryover":0.5}')
 //   --sound            sound detail on (SimConfig.soundDetail: landings off drops, gunfire masking)
 //   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
+//   --no-buy-phase     players start where the match sets them (no buy-phase movement)
+//   --no-style         every player moves the executor's one way (no per-player movement style)
+//   --style-off LIST   switch parts of the movement style off: lanes,spacing,routes,checks,lurk
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
 //   --teams-only       print the paired teams' first-five combat skills as JSON and exit (the
 //                      roster check in tests/test_sim_batch_runner.py uses it)
@@ -157,7 +160,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };
@@ -192,7 +195,7 @@ async function main(): Promise<void> {
   const bundle = {
     meta: {
       synthetic: true,
-      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""}${args["gaze"] === true ? ", gaze model" : ""}${args["sound"] === true ? ", sound detail" : ""})`,
+      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""}${args["gaze"] === true ? ", gaze model" : ""}${args["sound"] === true ? ", sound detail" : ""}${args["no-buy-phase"] === true ? ", no buy phase" : ""}${args["no-style"] === true ? ", no movement style" : ""}${args["style-off"] ? `, style off: ${args["style-off"]}` : ""})`,
       rounds: rounds.length, matches, map, seedStart,
       generatedAt: new Date().toISOString(),
     },

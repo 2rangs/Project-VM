@@ -128,8 +128,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     const stamp = `${replay.meta.generatedAt}:${tl.rounds.length}`;
     const first = seenReplay.current === null && seenRounds.current === 0;
     if (first && resume?.stamp === stamp) seek(resume.tMs, { play: false });
-    else if (session) seek(tl.rounds[tl.rounds.length - 1].startMs, { play: true });
-    else seek(tl.rounds[0].startMs, { play: true });
+    else if (session) seek(tl.rounds[tl.rounds.length - 1].buyStartMs, { play: true });
+    else seek(tl.rounds[0].buyStartMs, { play: true });
     seenRounds.current = tl.rounds.length;
     seenReplay.current = replay;
   }, [replay, tl, session, seek]);
@@ -146,7 +146,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     if (!autoPlay || !over || playback.playing) return;
     const id = setTimeout(() => {
       const next = tl.rounds[idx + 1];
-      if (next) seek(next.startMs, { play: true });
+      if (next) seek(next.buyStartMs, { play: true });
       else if (session && !finished && !session.busy && !session.ordersOpen) session.onNext();
     }, 1800);
     return () => clearTimeout(id);
@@ -174,8 +174,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
 
   // How far each round has been watched: the timeline only marks events up to there.
   const watched = useRef(new Map<number, number>());
-  if (round) watched.current.set(round.roundNum, Math.max(watched.current.get(round.roundNum) ?? round.startMs, playback.tMs));
-  const watchedTo = round ? watched.current.get(round.roundNum) ?? round.startMs : 0;
+  if (round) watched.current.set(round.roundNum, Math.max(watched.current.get(round.roundNum) ?? round.buyStartMs, playback.tMs));
+  const watchedTo = round ? watched.current.get(round.roundNum) ?? round.buyStartMs : 0;
   const jumpEvent = useCallback((dir: 1 | -1) => {
     if (!round) return;
     const to = eventJump(round, playback.now(), dir);
@@ -187,7 +187,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     if (!round) return;
     if (!playback.playing && roundOver(round, playback.now())) {
       const next = tl.rounds[tl.rounds.indexOf(round) + 1];
-      seek(next ? next.startMs : round.startMs, { play: true });
+      seek(next ? next.buyStartMs : round.buyStartMs, { play: true });
     } else playback.toggle();
   }, [round, playback, tl, seek]);
   const callTimeout = useCallback(() => {
@@ -335,7 +335,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const upcoming = idx >= 0 ? tl.rounds[idx + 1] ?? null : null;
   const nextLabel = upcoming ? t('mdx.watchNext', { n: upcoming.roundNum })
     : st && !st.finished && atLiveEdge ? t('mdx.next', { n: st.roundNumber }) : null;
-  const continueNext = () => { if (upcoming) seek(upcoming.startMs, { play: true }); else session?.onNext(); };
+  const continueNext = () => { if (upcoming) seek(upcoming.buyStartMs, { play: true }); else session?.onNext(); };
   const roundTimeouts = round ? [...new Set((session?.timeoutLog ?? []).filter((e) => e.round === round.roundNum).map((e) => e.team))] : [];
   // The order our coach set for the round on screen (orders are logged against the round they precede).
   const orderRound = nextRound?.roundNumber ?? round?.roundNum ?? 0;
@@ -506,7 +506,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       <BottomBar
         t={t} tl={tl} round={round} tMs={playback.tMs} playing={playback.playing} onToggle={togglePlay}
         tempo={prefs.tempo} onTempo={(v) => update({ tempo: v })} onSeek={(ms) => seek(ms, { play: false })}
-        onRound={(r) => seek(r.startMs, { play: true })} viewTeam={viewTeam}
+        onRound={(r) => seek(r.buyStartMs, { play: true })} viewTeam={viewTeam}
         session={session ? { state: session.state, busy: session.busy, ordersOpen: session.ordersOpen } : null}
         autoPlay={autoPlay} onAutoPlay={onAutoPlay} onNext={() => session?.onNext()} onTimeout={callTimeout} canAdvance={atLiveEdge || preRound}
         watchedTo={watchedTo} timeouts={roundTimeouts} onPrevEvent={() => jumpEvent(-1)} onNextEvent={() => jumpEvent(1)} onSkipEnd={skipToEnd}

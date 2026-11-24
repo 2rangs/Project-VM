@@ -77,7 +77,7 @@ function intelFor(replay: Replay, round: RoundTimeline, team: TeamSlot): IntelTr
 export function computeFrame(replay: Replay, tl: MatchTimeline, nav: NavModel, team: TeamSlot, tMs: number): Frame | null {
   if (tl.rounds.length === 0) return null;
   const round = tl.rounds[roundIndexAt(tl, tMs)];
-  const t = Math.min(Math.max(tMs, round.startMs), round.endMs);
+  const t = Math.min(Math.max(tMs, round.buyStartMs), round.endMs);
   const intel: TeamIntel = teamIntelAt(intelFor(replay, round, team), round, team, t);
   const tally = killsUpTo(round, t);
 

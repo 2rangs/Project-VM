@@ -452,6 +452,15 @@ export interface RoundResult {
   readonly engagementTrace?: readonly EngagementRecord[];
   /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
   readonly stats?: RoundStats;
+  /**
+   * The buy phase that preceded the round (config.buyPhaseMs > 0): where each player set up, and —
+   * with recordTracks — a frame per tick at negative elapsedMs (−durationMs … −tickMs).
+   */
+  readonly buyPhase?: {
+    readonly durationMs: number;
+    readonly tracks?: readonly TrackFrame[];
+    readonly setups: ReadonlyArray<{ readonly playerId: PlayerId; readonly side: Side; readonly planZone: string; readonly zoneId: string }>;
+  };
 }
 
 export interface SimConfig {
@@ -539,6 +548,19 @@ export interface SimConfig {
   readonly damageCarryover: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
   readonly combatCalibration?: CombatCalibration;
+  /**
+   * Buy phase (buy-phase.ts; docs/MOVEMENT_STYLE.md §2): this long (ms) before the round goes live,
+   * both teams move behind their barriers into the round plan's setup. 0 / absent = players start
+   * where the round's state puts them (the pre-buy-phase engine). The match runner sets it from
+   * ROUND_RULES.buyPhaseMs.
+   */
+  readonly buyPhaseMs?: number;
+  /**
+   * Per-player movement style (movement-style.ts): own lane and spacing, a choice among near-optimal
+   * routes, stop-and-check moments, a quiet lurk. Off = every player moves the executor's one way.
+   * The match runner turns it on.
+   */
+  readonly movementStyle?: boolean | import("./movement-style.js").MovementStyleParts;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {

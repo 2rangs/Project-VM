@@ -157,6 +157,14 @@ export interface MatchConfig {
   /** Sound detail: landings off drops, gunfire masking (SimConfig.soundDetail; ENGINE_TRUTH §9). Default off. */
   readonly soundDetail?: boolean;
   /**
+   * Simulate the buy phase (ROUND_RULES.buyPhaseMs) before each round: both teams move behind their
+   * barriers into the round plan's setup (round-simulator buy-phase.ts). Default true; false starts
+   * every round with the players where the match sets them down.
+   */
+  readonly buyPhase?: boolean;
+  /** Per-player movement style (round-simulator movement-style.ts). Default true; an object switches parts off. */
+  readonly movementStyle?: boolean | { readonly lanes?: boolean; readonly spacing?: boolean; readonly routes?: boolean; readonly checks?: boolean; readonly lurk?: boolean };
+  /**
    * Floor items in the round (round-simulator floor-items.ts): dropped guns picked up mid-round, and
    * ultimate orbs at the map's `<map>.objects.json` `ultOrbs` points (none yet on any map → no orbs).
    * Default true; false → guns are picked up only after the round, as before.
@@ -650,7 +658,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? true, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

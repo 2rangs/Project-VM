@@ -25,7 +25,12 @@ export function toSimGameEvents(result: RoundResult, opts: { includeMoves?: bool
   const base = (tick: number, timeMs: number) => ({ id: `e${seq}`, seq: seq++, tick, timeMs });
 
   if (opts.includeMoves && result.tracks) {
-    out.push(...moveEvents(result.tracks, () => seq++));
+    // the buy phase first (negative times): `buyPhaseStart` at −duration, then its moves
+    const buy = result.buyPhase?.tracks ?? [];
+    if (result.buyPhase && buy.length > 0) {
+      out.push({ ...base(buy[0]!.tick, -result.buyPhase.durationMs), kind: "buyPhaseStart", durationMs: result.buyPhase.durationMs });
+    }
+    out.push(...moveEvents([...buy, ...result.tracks], () => seq++));
     out.push(...sightEvents(result.tracks, () => seq++));
   }
 
