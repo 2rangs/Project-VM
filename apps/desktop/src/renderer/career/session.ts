@@ -1,30 +1,36 @@
 // The open career in the renderer: one CareerState (@pv/career), the save slot it belongs to, and
-// the Continue loop. AI fixtures are played by the full engine in another process
-// (bridge.careerSimulate → scripts/career-sim.mts) when the manager chose it in Settings; by
-// default the calibrated quick estimate plays them; a failed engine batch falls back to the quick estimate for that day.
+// the Continue loop. AI fixtures are played according to the WORLD SIM DEPTH setting (FM style):
+// `quick` (default) — the calibrated quick estimate for every AI series; `league` — the full engine
+// (another process: bridge.careerSimulate → scripts/career-sim.mts) for the manager's own league,
+// quick for the other regions and the international events; `full` — the engine for everything.
+// A failed engine batch falls back to the quick estimate for that day.
 // The career autosaves into its slot whenever Continue stops and after the manager's own match.
 import { useSyncExternalStore } from 'react';
 import { bridge, runtime } from '../platform.ts';
 import type { CareerSimProgress, CareerSimRequest, SaveSlot } from '../../shared/career.ts';
 import {
   answerInbox, buildDesktopWorld, drainClubOutbox, matchRoster, setLineup, syncClubInbox, type World, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
-  recordResult, serializeCareer, type BatchSimulator, type CareerState, type ContinueResult, type Outcome,
-  type SeriesOutcome, type SeriesRequest,
+  recordResult, serializeCareer, setMapRecords, usesEngine, SIM_DEPTHS, type BatchSimulator, type CareerState, type ContinueResult, type Outcome,
+  type SeriesOutcome, type SeriesRequest, type SimDepth,
 } from './world.ts';
 import { FIXTURES } from './fixtures.ts';
+import teamMaps from '../../data/team_maps.json';
 
-export type SimMode = 'engine' | 'quick';
-const SIM_KEY = 'pv-career-sim';
+// The quick estimate's map pools: real map records since 2025 ([games, wins] per team and map).
+setMapRecords((teamMaps as unknown as { teams: Record<string, Record<string, [number, number]>> }).teams);
+
+export type { SimDepth };
+const DEPTH_KEY = 'pv-career-depth';
 
 /**
- * How other teams' series are played: the calibrated quick estimate by default (a whole season of
- * AI series in seconds), the full engine when the manager chooses it in Settings (~20 min/season).
+ * The world sim depth: how many of the other teams' series the full engine plays (the manager's
+ * own match is always played for real). `quick` is the default — a whole season in about a second.
  */
-export function simMode(): SimMode {
-  try { return localStorage.getItem(SIM_KEY) === 'engine' ? 'engine' : 'quick'; } catch { return 'quick'; }
+export function simDepth(): SimDepth {
+  try { const v = localStorage.getItem(DEPTH_KEY); return (SIM_DEPTHS as readonly string[]).includes(v ?? '') ? (v as SimDepth) : 'quick'; } catch { return 'quick'; }
 }
-export function setSimMode(m: SimMode): void {
-  try { localStorage.setItem(SIM_KEY, m); } catch { /* no storage */ }
+export function setSimDepth(d: SimDepth): void {
+  try { localStorage.setItem(DEPTH_KEY, d); } catch { /* no storage */ }
   notify();
 }
 
@@ -46,14 +52,14 @@ export interface CareerSnapshot {
   /** Set when an engine batch failed and the quick estimate stood in. */
   notice: string | null;
   error: string | null;
-  simMode: SimMode;
+  simDepth: SimDepth;
 }
 
-let snap: CareerSnapshot = { career: null, slot: null, version: 0, busy: null, lastStop: null, notice: null, error: null, simMode: simMode() };
+let snap: CareerSnapshot = { career: null, slot: null, version: 0, busy: null, lastStop: null, notice: null, error: null, simDepth: simDepth() };
 const listeners = new Set<() => void>();
 
 function notify(patch: Partial<CareerSnapshot> = {}): void {
-  snap = { ...snap, ...patch, version: snap.version + 1, simMode: simMode() };
+  snap = { ...snap, ...patch, version: snap.version + 1, simDepth: simDepth() };
   for (const l of listeners) l();
 }
 
@@ -128,14 +134,19 @@ function toSimRequest(career: CareerState, r: SeriesRequest): CareerSimRequest {
 
 const quickBatch: BatchSimulator = (reqs, career) => reqs.map((r) => quickSeries(r, career));
 
-const engineBatch: BatchSimulator = async (reqs, career) => {
+/** Engine for the series the depth says, the quick estimate for the rest (one batch, results in order). */
+const depthBatch = (depth: SimDepth): BatchSimulator => async (reqs, career) => {
+  const out: Outcome[] = reqs.map((r) => (usesEngine(depth, r.scope) ? (null as unknown as Outcome) : quickSeries(r, career)));
+  const idx = reqs.map((_, i) => i).filter((i) => usesEngine(depth, reqs[i]!.scope));
+  if (idx.length === 0) return out;
   try {
-    const outs = await bridge.careerSimulate(reqs.map((r) => toSimRequest(career, r)), (p) => notify({ busy: { kind: 'continue', date: career.date, sim: p } }));
-    return outs.map((o): Outcome => ({ winner: o.winner, mapsWon: o.mapsWon, maps: o.maps, source: 'engine' }));
+    const outs = await bridge.careerSimulate(idx.map((i) => toSimRequest(career, reqs[i]!)), (p) => notify({ busy: { kind: 'continue', date: career.date, sim: p } }));
+    idx.forEach((i, k) => { const o = outs[k]!; out[i] = { winner: o.winner, mapsWon: o.mapsWon, maps: o.maps, source: 'engine' }; });
   } catch (e) {
     notify({ notice: (e as Error).message });
-    return quickBatch(reqs, career);
+    for (const i of idx) out[i] = quickSeries(reqs[i]!, career);
   }
+  return out;
 };
 
 /** FM's Continue. Resolves with where it stopped. */
@@ -143,7 +154,7 @@ export async function continueGame(): Promise<ContinueResult | null> {
   const career = snap.career;
   if (!career || snap.busy) return null;
   notify({ busy: { kind: 'continue', date: career.date }, error: null, notice: null });
-  const sim = runtime === 'electron' && simMode() === 'engine' ? engineBatch : quickBatch;
+  const sim = runtime === 'electron' && simDepth() !== 'quick' ? depthBatch(simDepth()) : quickBatch;
   try {
     const res = await continueCareer(career, sim, {
       onDayEnd: async (s) => { notify({ busy: { kind: 'continue', date: s.date } }); await new Promise((r) => setTimeout(r, 0)); },

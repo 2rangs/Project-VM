@@ -55,29 +55,57 @@ Home ─Continue─▶ day by day … stops at:  match day │ a message that ne
 - A career opens on **5 January** of the dataset season (2026). The state holds one date; Continue
   first *leaves* today (the manager's match must be played and answers given; the day's AI
   fixtures are simulated; hooks run), then advances one day at a time and stops at the first day
-  that needs the manager. The season's last day (1 September) is a stop of its own; leaving it
-  runs the season transition.
+  that needs the manager. The season's last day (15 September, after Champions in every year) is a
+  stop of its own; leaving it runs the season transition.
 - **Season transition** (`endSeason`): the review is recorded (stage placings, the board's
   objective met or not), `onSeasonEnd` hooks run, then `advanceSeason(world, { mapsPlayed })`
-  with the maps every player of a league team really played this season (0 for those who never
-  played; players outside the league keep the status estimate), so development uses real minutes.
-  Then the next season's schedule is built and `onSeasonStart` hooks run. The days from
-  2 September to the next February belong to the new season (offseason; nothing is scheduled).
+  with the maps every player of a league team of ANY region really played this season (0 for those
+  who never played), so development uses real minutes. Then the next season's four leagues and
+  circuit are built and `onSeasonStart` hooks run. The days from 16 September to the next January
+  belong to the new season (offseason; nothing is scheduled).
 
-## 3. Competition
+## 3. Competition: four leagues and the international circuit
 
-Loosely on the real circuit's league stages (`schedule.ts`, `SCHEDULE_MODEL`):
+Built like the real circuit's shape (`schedule.ts`, `circuit.ts`, `progress.ts`; constants in
+`SCHEDULE_MODEL` / `CIRCUIT_MODEL`). **All four regions play in parallel** with the same dates; teams
+of different regions only meet at the international events. A season:
 
-| | format | dates |
-|---|---|---|
-| League | the region's 12 strongest teams that can field five (the manager's team always in) | |
-| Stage 1 groups | two groups of 6 (snake seeding by strength), single round robin, **Bo3** | weekly from the first Friday of February, Fri–Sun |
-| Stage 1 playoffs | top 4 per group; QF cross-group 1v4 / 2v3 **Bo3**, SF **Bo3**, final **Bo5** | the next two weekends |
-| Stage 2 | drawn the day after the Stage 1 final from the Stage 1 placings (snake), same format | from the first Friday of May, at least 3 weeks after the final |
+| competition | field | format | 2026 dates |
+|---|---|---|---|
+| **Kickoff** | each region's 12 strongest teams that can field five (11 in China; the manager's team always in) | two groups of 6 (snake by strength), single round robin Bo3; top 4 per group to a single-elimination playoff (QF Bo3, SF Bo3, final **Bo5**) | 9 Jan – 22 Feb |
+| **Stage 1** | same league, drawn from the Kickoff placings (snake) | same format | 6 Mar – 19 Apr |
+| **Masters 1** | 12: the top 3 of each region by Champions Points after Kickoff + Stage 1 | 4 groups of 3 (round robin Bo3, Fri–Sun), top 2 → 8-team **double elimination**, Bo3, **Bo5 grand final** (no reset): 14 series over six days | 1–13 May |
+| **Stage 2** | drawn from the Stage 1 placings | same as the regional stages | 29 May – 12 Jul |
+| **Masters 2** | 12: the top 3 of each region by Champions Points after Stage 2 (everything so far counts) | same as Masters 1 | 24 Jul – 5 Aug |
+| **Champions** | 16: the top 4 of each region by Champions Points after Masters 2 | 4 groups of 4, top 2 → the same double-elimination bracket | 14–26 Aug |
 
-Standings order: series wins → map difference → round difference → head-to-head → team id.
-Fixture seeds come from (career seed, fixture id), so a result never depends on the order
-fixtures are played in. 30 group series + 7 playoff series per stage; 74 per season.
+Competitions start on the first Friday on/after an anchor date and at least a week after the
+previous one ends, so the dates shift by up to six days in other years; the season ends on
+15 September, tested to be after Champions for 2026–2040.
+
+**Champions Points** (CP, per season): a placing earns points in every competition
+(`stagePoints` 8/6/5/4/2/2/2/2 for the first eight of a regional stage; `mastersPoints`
+12/10/8/7/5/5/4/4/1×4; `championsPoints` 16/13/10/8/6/6/5/5/2×4/1×4). Teams of a region are ranked by
+CP (tie: team strength, then id); the quota above qualifies them, and a region with too few
+eligible teams is topped up from the best remaining CP so every event is full. The field is seeded by CP
+(snake into the four groups); the draw is not region-protected, so teams of one region can meet
+inside a group. The double-elimination bracket: UB R1 A1–B2, C1–D2, B1–A2, D1–C2; LB R1 losers of
+the UB R1 pairs; UB R2; LB R2 winners of LB R1 against the UB R2 losers (crossed); UB final; LB R3;
+LB final (LB R3 winner against the UB final loser); grand final. Placings: grand-final winner and
+loser, LB final loser, LB R3 loser, LB R2 losers, LB R1 losers, then group exits by record.
+
+Regional standings order: series wins → map difference → round difference → head-to-head → team id.
+Fixture seeds come from (career seed, fixture id), so a result never depends on the order fixtures
+are played in. Per season: 3 stages × (30 group + 7 playoff) × 4 regions = 444, plus Masters 26 ×
+2 and Champions 38 = **534 series**, of which the manager plays 11–14 in their league plus any
+international matches.
+
+**News** (inbox, ko/en): after each competition the points race of the manager's region (rank,
+points, the cut for the next event); the draw of each international event (field, top seed) and
+whether the manager is in (group, opponents, first match) or missed it (the cut, who went); group
+stage through/out; the next bracket opponent; each event's champions; the manager's own result
+and points; **upsets** — a knockout or international playoff won by a team whose strength is at
+least 0.08 (≈ 1.6 sd) below the loser's (`UPSET_GAP`), a handful per season.
 
 ## 4. Simulating other teams' series
 
