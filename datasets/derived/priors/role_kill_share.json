@@ -1,0 +1,177 @@
+{
+  "priorId": "role_kill_share",
+  "description": "Kills / (kills + deaths) by agent role (controller, duelist, initiator, sentinel). K/D = share / (1 - share).",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "performanceAvailable": true,
+      "era": "all",
+      "roleSource": "game-data agents.json"
+    }
+  },
+  "method": {
+    "statistic": "kill share by agent role (player_map kills_all, deaths_all)",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": [
+      "n = kills + deaths of the role; successes = kills.",
+      "0 player-maps had an agent missing from the role catalog and were left out."
+    ]
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-24T06:31:09+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "scope": "all_maps",
+        "role": "controller"
+      },
+      "n": 90810,
+      "successes": 44632,
+      "rate": 0.49148772161656207,
+      "wilsonLow": 0.48823661635207344,
+      "wilsonHigh": 0.4947395470260498,
+      "bootstrapLow": 0.48856937455068294,
+      "bootstrapHigh": 0.49444079667323265,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "role": "duelist"
+      },
+      "n": 90289,
+      "successes": 46515,
+      "rate": 0.5151790362059608,
+      "wilsonLow": 0.5119185883922693,
+      "wilsonHigh": 0.5184381924523126,
+      "bootstrapLow": 0.5123154851192417,
+      "bootstrapHigh": 0.5180696022568883,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "role": "initiator"
+      },
+      "n": 91862,
+      "successes": 44606,
+      "rate": 0.4855761903725153,
+      "wilsonLow": 0.4823448758235957,
+      "wilsonHigh": 0.4888087112124751,
+      "bootstrapLow": 0.4827378244262694,
+      "bootstrapHigh": 0.4882659009456367,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "role": "sentinel"
+      },
+      "n": 63823,
+      "successes": 32532,
+      "rate": 0.509722200460649,
+      "wilsonLow": 0.5058433786577248,
+      "wilsonHigh": 0.513599851990006,
+      "bootstrapLow": 0.5060388782664117,
+      "bootstrapHigh": 0.5134573657725867,
+      "matches": 444,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "role": "controller"
+      },
+      "n": 8928,
+      "successes": 4392,
+      "rate": 0.49193548387096775,
+      "wilsonLow": 0.48157104466996836,
+      "wilsonHigh": 0.5023068599408672,
+      "bootstrapLow": 0.48228505481823425,
+      "bootstrapHigh": 0.5008946544397227,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "role": "duelist"
+      },
+      "n": 10055,
+      "successes": 5170,
+      "rate": 0.5141720537046246,
+      "wilsonLow": 0.5043994509497953,
+      "wilsonHigh": 0.5239338318807121,
+      "bootstrapLow": 0.5061208500636568,
+      "bootstrapHigh": 0.5220541902961563,
+      "matches": 143,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "role": "initiator"
+      },
+      "n": 14358,
+      "successes": 7063,
+      "rate": 0.491920880345452,
+      "wilsonLow": 0.48374675023919156,
+      "wilsonHigh": 0.5000993324052097,
+      "bootstrapLow": 0.48549323017408125,
+      "bootstrapHigh": 0.4986381880733945,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "role": "sentinel"
+      },
+      "n": 9874,
+      "successes": 4978,
+      "rate": 0.5041523192221997,
+      "wilsonLow": 0.4942908137379745,
+      "wilsonHigh": 0.5140105950608856,
+      "bootstrapLow": 0.49498495486459376,
+      "bootstrapHigh": 0.5134692205264775,
+      "matches": 142,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-24T06:31:09+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

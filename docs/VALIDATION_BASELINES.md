@@ -142,6 +142,58 @@ PV-1). **Use `patch>=9` specifically for side/half-split checks** (attack timing
 shift is real — accepting that many `patch>=9` cells are small-sample and must be read with their
 wider intervals. Do not tune a simulation to a `patch>=9` cell flagged `smallSample`.
 
+## 8. Report-only play metrics  (`kast.json`, `clutch_wins_per_round.json`, `plant_post_plant.json`, `role_kill_share.json`)
+
+Added 2026-11-24 (HANDOFF P0-2). The validation report now also describes how rounds are played. Every
+metric below is **report-only**: it is never judged and never changes the exit code. A VCT figure is
+attached as a reference where VCT Reference (build 2026-11-12, sha `a1a189d0…4890`, international
+matches, performance block available) can back it.
+
+| Report metric | VCT baseline (all maps) | Ascent | n (Ascent) | Why (not) |
+|---|---|---|---|---|
+| Plant rate (`post_plant` · `plant_rate`) | **0.687** [0.681, 0.692] | **0.601** [0.583, 0.618] | 3,106 rounds | `player_map.plants` summed per map / rounds |
+| Post-plant attack win (`post_plant_attack_win`) | **0.709** [0.702, 0.716] | **0.738** [0.718, 0.757] | 1,866 plants | 1 − defuses / plants (a planted round is lost only by a defuse) |
+| Plants that detonate (`post_plant_detonation`) | 0.155 | 0.140 | 1,866 plants | detonations / plants |
+| Clutch wins per round, any X | **0.156** [0.152, 0.161] | **0.151** [0.138, 0.163] | 3,130 rounds | `notables` clutch_1vX rows / rounds of maps with the detail block |
+| — 1v1 / 1v2 / 1v3 / 1v4 / 1v5 | 0.094 / 0.049 / 0.011 / 0.002 / 0.0004 | 0.086 / 0.051 / 0.011 / 0.002 / 0.0003 | 3,130 rounds | same |
+| KAST, all / attack / defense | **0.711** / 0.703 / 0.718 | 0.711 / 0.687 / 0.734 | 31,060 player-rounds | round-weighted `kast_all` / `kast_atk` / `kast_def` |
+| Kill share by role (K/D) | duelist 0.515 (1.06), sentinel 0.510 (1.04), controller 0.492 (0.97), initiator 0.486 (0.95) | 0.514 / 0.504 / 0.492 / 0.492 | 9–14k kills+deaths per role | `kills_all`, `deaths_all` by the role of the agent played |
+| Force buy into a full buy | semi vs full 0.34 (existing `economy_matchup`) | — | — | tier definitions differ (VCT "semi" = half + force) |
+| First-kill time, round duration, plant→end time, trades within 3 s | — | — | — | **no baseline**: the source has no kill or plant timestamps (map duration includes buy phases and pauses) |
+| Flawless rounds, clutch win *rate* (wins / attempts), post-plant by man-advantage | — | — | — | **no baseline**: no per-round kill sequence; the source lists clutches won, not attempted |
+| Site-arrival spread, route diversity, body overlap | — | — | — | **no baseline**: no positions |
+
+Definitions used on the simulator side (`tools/data-validator/src/pv_data_validator/sim_harness.py`):
+- **Clutch**: an attempt starts when a team is reduced to one living player with X ≥ 1 opponents
+  alive; it is won if that team wins the round *with that player alive*. A last player who dies and
+  whose spike then detonates is not credited (assumed to match the source's convention — not verified).
+- **KAST**: a player-round counts if the player got a kill, an assist, survived, or died and was
+  avenged by a teammate within 3 s. The simulator records **no assists**, so its figure is K+S+T and
+  is expected to sit below the real one. The source does not document its own trade window.
+- **Kill share by role**: the simulator fields one fixed comp for both teams with agents bound to
+  roster slots, so "role" there is a slot of the roster, not a play style.
+
+### Which of these could become judged (proposal — nothing is switched on)
+A metric is a candidate when (a) the baseline is exact source data with a large sample and (b) the
+simulator measures the same thing the same way.
+
+| Candidate | Baseline (Ascent) | Suggested tolerance | Why it qualifies |
+|---|---|---|---|
+| **Plant rate** | 0.601 (n 3,106; CI ±0.017) | ±0.04 | counted identically on both sides (a plant is a plant); large sample; it separates "the attack gets the spike down" from "the attack wins", which the outcome mix alone does not |
+| **Post-plant attack win rate** | 0.738 (n 1,866; CI ±0.020) | ±0.04 | identical definition; it is the retake balance in one number, today only visible indirectly through defuse + detonation shares |
+| **Clutch wins per round (any X)** | 0.151 (n 3,130; CI ±0.013) | ±0.03 | exact counts in the source; checks that late-round man-count situations resolve realistically. Depends on the survive-to-be-credited convention above — confirm that first |
+
+Not proposed:
+- **KAST** — the simulator has no assists, so the comparison is structurally biased; revisit once damage/assists are recorded.
+- **Kill share by role** — solid data, but the simulator's roles are roster slots of one fixed comp. Becomes meaningful with real per-team comps.
+- **Clutch wins by single X** — 1v1 and 1v2 have the sample, but 1v3+ are too rare for an absolute tolerance; judge `any` and keep the split report-only.
+- **Force buy** — the tier definitions differ between the two sides of the comparison.
+- Everything timed or positional — there is no baseline to judge against.
+
+Before switching any of them on: run the measurement suite once on the default condition and on the
+unseen seeds (`measure-suite.mts`) to see where the simulator stands, and decide the tolerance from
+the seed-to-seed spread, not from the table above alone.
+
 ## Caveats
 - **Coverage/era mix.** These pool 2021–2026 international events across many patches; agent pools and
   map/economy rules shifted. The JSON keeps `season`/`patch` filters so an era-matched baseline can be

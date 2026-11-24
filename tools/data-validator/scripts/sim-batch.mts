@@ -23,6 +23,7 @@
 //   --compare FILE     a prior report JSON (e.g. docs/research/SIM_BASELINE_2026-11-18.json) to diff
 //                      against — the report gains Δ-vs-baseline + improved/worsened columns
 //   --no-validate      only write the SimRun bundle + print the summary; skip sim:validate
+//   --python BIN       Python interpreter for sim:validate (default: $PYTHON or python3)
 //   --tuning JSON      MatchConfig.tuning for every match (pre-match engine options, e.g. '{"damageCarryover":0.5}')
 //   --sound            sound detail on (SimConfig.soundDetail: landings off drops, gunfire masking)
 //   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
@@ -46,7 +47,15 @@
 // Report-only engine metrics (engine-metrics.mts: first kill, flawless, force buys, round duration,
 // site arrival spread, path diversity, body overlap, crowd counters, outcome by strength gap) are
 // written next to the report as <report>.engine.json and appended to <report>.md. They are never
-// judged and never change the exit code.
+// judged and never change the exit code. The same summary rides in the bundle (`engine`) so the
+// harness can list the positional ones (arrival spread, route diversity, body overlap) as rows of
+// the report next to the play metrics it computes from the events (first-kill time, flawless
+// rounds, round duration, plant-to-end, 3 s trades, clutches, post-plant by man-advantage, KAST,
+// kills by role — docs/VALIDATION_BASELINES.md §"Report-only play metrics").
+//
+// Exit codes: 0 all judged metrics pass · 1 a judged metric fails · 2 usage error · 3 the Python
+// environment for sim:validate is broken — checked BEFORE the batch is simulated, so a missing or
+// broken interpreter costs a second, not the whole run (use --no-validate to skip validation).
 //
 // Players are side-named (atk1..atk5 / def1..def5) by the round simulator, so the per-round roster
 // is constant; buyTiers come from the match-runner's per-team BuyDecision for the round's attacker.
@@ -57,6 +66,10 @@ import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { rosterSkills, runMatch, simulatableTeamRefs, type MatchConfig, type TeamRef, type TeamSlot } from "../../../packages/match-runner/src/index.ts";
+import { ASCENT_COMP } from "../../../packages/match-runner/src/abilities.ts";
+import { getAgent } from "../../../packages/game-data/src/index.ts";
+// @ts-expect-error — plain .mjs helper shared with sim-validate.mjs (no type declarations)
+import { checkPythonEnv, formatEnvError, resolvePython, ENV_ERROR_EXIT } from "./python-env.mjs";
 import { toSimGameEvents } from "../../../packages/round-simulator/src/index.ts";
 import { EngineMetrics, renderEngineMetrics } from "./engine-metrics.mts";
 
@@ -86,6 +99,20 @@ function resolvePath(p: string): string {
 function rosterFor(): Record<string, "attack" | "defense"> {
   const r: Record<string, "attack" | "defense"> = {};
   for (let i = 1; i <= 5; i++) { r[`atk${i}`] = "attack"; r[`def${i}`] = "defense"; }
+  return r;
+}
+
+/**
+ * Role of every sim player this round. The match-runner fields one fixed comp for both teams
+ * (ASCENT_COMP, by roster slot), so atkN / defN plays the N-th agent of it; the role is the
+ * agent's (game-data agents catalog). Feeds the per-role K/D metric.
+ */
+function rolesFor(): Record<string, string> {
+  const r: Record<string, string> = {};
+  ASCENT_COMP.forEach((agent, i) => {
+    const role = getAgent(agent)?.role?.toLowerCase();
+    if (role) { r[`atk${i + 1}`] = role; r[`def${i + 1}`] = role; }
+  });
   return r;
 }
 
@@ -146,6 +173,12 @@ async function main(): Promise<void> {
     console.error(`sim:batch: --out and --report would both write ${outPath}; choose distinct paths`); process.exit(2);
   }
 
+  // Fail early: a batch takes minutes, the validator's environment check a fraction of a second.
+  if (doValidate && args["teams-only"] !== true) {
+    const pyEnv = checkPythonEnv(resolvePython(typeof args["python"] === "string" ? args["python"] : undefined), TOOL_DIR);
+    if (!pyEnv.ok) { console.error(formatEnvError(pyEnv, "sim:batch")); console.error("  (--no-validate writes the bundle and the engine metrics without the Python report.)"); process.exit(ENV_ERROR_EXIT); }
+  }
+
   const teams = batchTeams(mirror);
   if (!mirror) assertRealRosters(teams);
   if (args["teams-only"] === true) {
@@ -156,6 +189,7 @@ async function main(): Promise<void> {
   const pairFor = (i: number): [TeamRef, TeamRef] =>
     [teams[(2 * i) % teams.length]!, teams[(2 * i + 1) % teams.length]!];
 
+  const roles = rolesFor();
   const rounds: unknown[] = [];
   const reasonCounts: Record<string, number> = {};
   let attackRoundWins = 0, totalRounds = 0, pistolRounds = 0, pistolAttackWins = 0, otMatches = 0;
@@ -177,6 +211,7 @@ async function main(): Promise<void> {
         roundNumber: r.roundNumber,
         map,
         roster: rosterFor(),
+        roles,
         match: i,
         // VCT buy tiers from the team loadout value (eco < 5000, semi 5000–20000, full >= 20000;
         // pistol rounds stay "pistol"), the definition the real economy-matchup table uses.
@@ -203,6 +238,7 @@ async function main(): Promise<void> {
     }
   }
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+  const engine = metrics.report();
 
   const bundle = {
     meta: {
@@ -211,6 +247,8 @@ async function main(): Promise<void> {
       rounds: rounds.length, matches, map, seedStart,
       generatedAt: new Date().toISOString(),
     },
+    // Engine-measured summary (positional metrics need the simulator's own stats, not the events).
+    engine,
     rounds,
   };
   mkdirSync(dirname(outPath), { recursive: true });
@@ -227,7 +265,6 @@ async function main(): Promise<void> {
   }
   console.error(`  wrote SimRun bundle   : ${outPath.replace(REPO_ROOT + "/", "")}`);
 
-  const engine = metrics.report();
   const engineMd = renderEngineMetrics(engine);
   mkdirSync(dirname(reportPrefix), { recursive: true });
   writeFileSync(`${reportPrefix}.engine.json`, JSON.stringify(engine, null, 2));
@@ -238,6 +275,7 @@ async function main(): Promise<void> {
   console.error(`\nsim:batch: running sim:validate (era=${era}${comparePath ? `, compare=${comparePath.replace(REPO_ROOT + "/", "")}` : ""}) ...`);
   const res = spawnSync("node", [join(TOOL_DIR, "scripts", "sim-validate.mjs"),
     "--logs", outPath, "--era", era, "--out", reportPrefix, "--stdout",
+    ...(typeof args["python"] === "string" ? ["--python", args["python"]] : []),
     ...(comparePath ? ["--compare", comparePath] : [])], { cwd: REPO_ROOT, stdio: "inherit" });
   appendEngine();
   process.exit(res.status ?? 1);

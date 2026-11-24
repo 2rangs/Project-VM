@@ -371,8 +371,237 @@ def opening_duel(con, sha, build, filters, iters=2000, era="all"):
                                          "sum to 1 by construction."]})
 
 
+# --- play-pattern baselines (player_map / notables aggregates) -------------------------------
+# These back the report-only validation metrics (tools/data-validator): KAST, clutch wins, plants
+# and post-plant results, kills by agent role. VCT Reference has no kill timestamps or positions,
+# so nothing timed (first-kill time, round duration, trades) or positional can be derived here.
+PLAY_PRIOR_IDS = ("kast", "clutch_wins_per_round", "plant_post_plant", "role_kill_share")
+CLUTCH_SIZES = ("1v1", "1v2", "1v3", "1v4", "1v5")
+_SCOPES = (("all_maps", lambda r: True), ("ascent", lambda r: r["map_name"] == "Ascent"))
+
+
+def _has_columns(con, table: str, columns: tuple[str, ...]) -> bool:
+    have = {r[0] for r in con.execute(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = ?", [table]).fetchall()}
+    return all(c in have for c in columns)
+
+
+def _match_counts(rows, pred, successes, n) -> dict[str, tuple[int, int]]:
+    """Per-match (successes, n) from rows, for the match-clustered bootstrap."""
+    acc: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for r in rows:
+        if not pred(r):
+            continue
+        g = acc[r["match_id"]]
+        g[0] += int(successes(r) or 0)
+        g[1] += int(n(r) or 0)
+    return {k: (v[0], v[1]) for k, v in acc.items() if v[1] > 0}
+
+
+def _team_side_rounds(con) -> dict[tuple[str, int], dict[str, int]]:
+    """(game_id, team_idx) -> rounds played on attack / defense. `rounds.side` is team 0's side."""
+    out: dict[tuple[str, int], dict[str, int]] = {}
+    for g, side, c in con.execute(
+            "SELECT game_id, side, COUNT(*) FROM rounds WHERE winner_team IS NOT NULL GROUP BY 1, 2").fetchall():
+        for team in (0, 1):
+            own = side if team == 0 else ("defense" if side == "attack" else "attack")
+            out.setdefault((g, team), {"attack": 0, "defense": 0})[own] = \
+                out.setdefault((g, team), {"attack": 0, "defense": 0})[own] + c
+    return out
+
+
+def kast(con, sha, build, filters, iters=2000, era="all"):
+    """KAST — share of a player's rounds with a Kill, Assist, Survival or Traded death.
+
+    player_map carries KAST as a per-map percentage (overall and per side). Each player-map is
+    weighted by the rounds it covers (the map's rounds; per side, the rounds that team attacked /
+    defended), so `n` is player-rounds and `successes` the implied KAST rounds (rounded per map).
+    """
+    rows = _rows(con, """
+        SELECT pm.match_id, pm.game_id, pm.team_idx, mp.map_name, m.patch,
+               pm.kast_all, pm.kast_atk, pm.kast_def
+        FROM player_map pm
+        JOIN maps mp ON pm.game_id = mp.game_id
+        JOIN matches m ON pm.match_id = m.match_id
+        WHERE m.is_international AND mp.performance_available AND pm.kast_all IS NOT NULL
+    """)
+    rows = era_filter(rows, era)
+    side_rounds = _team_side_rounds(con)
+    for r in rows:
+        sr = side_rounds.get((r["game_id"], r["team_idx"]), {"attack": 0, "defense": 0})
+        r["rounds_attack"], r["rounds_defense"] = sr["attack"], sr["defense"]
+        r["rounds_all"] = sr["attack"] + sr["defense"]
+    est = []
+    for scope_name, pred in _SCOPES:
+        for side, col, rcol in (("all", "kast_all", "rounds_all"), ("attack", "kast_atk", "rounds_attack"),
+                                ("defense", "kast_def", "rounds_defense")):
+            counts = _match_counts(
+                rows, lambda r, col=col, rcol=rcol, pred=pred: pred(r) and r[col] is not None and r[rcol] > 0,
+                lambda r, col=col, rcol=rcol: round(r[col] / 100.0 * r[rcol]), lambda r, rcol=rcol: r[rcol])
+            est.append(_estimate_counts({"scope": scope_name, "side": side}, counts, iters, 20320000 + len(est)))
+    return _wrap("kast",
+                 "KAST: share of player-rounds with a kill, an assist, a survival or a traded death "
+                 "(player_map kast_all / kast_atk / kast_def, weighted by rounds).",
+                 est, sha=sha, build=build, filters=filters,
+                 method_extra={"statistic": "round-weighted mean of per-map KAST percentages",
+                               "notes": ["n = player-rounds; successes = sum over player-maps of round(KAST% x rounds).",
+                                         "The source publishes KAST as a whole percent per map, so each player-map "
+                                         "carries up to +-0.5 percentage points of rounding.",
+                                         "The trade window behind the source's 'T' is not documented."]})
+
+
+def clutch_wins_per_round(con, sha, build, filters, iters=2000, era="all"):
+    """How often a round is won by a 1vX clutch, by X.
+
+    The source lists every clutch WON (notables: clutch_1v1..1v5, with its round); it does not
+    list clutch attempts, so a clutch win RATE (wins / attempts) cannot be derived — only the
+    frequency of clutch wins per round. Denominator: rounds of the maps that carry the detail
+    block (maps with at least one notable row of any kind).
+    """
+    games = _rows(con, """
+        SELECT r.match_id, r.game_id, mp.map_name, m.patch, COUNT(*) AS rounds
+        FROM rounds r
+        JOIN maps mp ON r.game_id = mp.game_id
+        JOIN matches m ON r.match_id = m.match_id
+        WHERE m.is_international AND r.winner_team IS NOT NULL
+          AND r.game_id IN (SELECT DISTINCT game_id FROM notables)
+        GROUP BY 1, 2, 3, 4
+    """)
+    games = era_filter(games, era)
+    won = {(g, st): c for g, st, c in con.execute(
+        "SELECT game_id, stat_type, COUNT(*) FROM notables WHERE stat_type LIKE 'clutch_%' GROUP BY 1, 2").fetchall()}
+    est = []
+    for scope_name, pred in _SCOPES:
+        for size in CLUTCH_SIZES:
+            counts = _match_counts(games, pred, lambda r, size=size: won.get((r["game_id"], f"clutch_{size}"), 0),
+                                   lambda r: r["rounds"])
+            est.append(_estimate_counts({"scope": scope_name, "x": size}, counts, iters, 20330000 + len(est)))
+        counts = _match_counts(games, pred,
+                               lambda r: sum(won.get((r["game_id"], f"clutch_{s}"), 0) for s in CLUTCH_SIZES),
+                               lambda r: r["rounds"])
+        est.append(_estimate_counts({"scope": scope_name, "x": "any"}, counts, iters, 20330000 + len(est)))
+    return _wrap("clutch_wins_per_round",
+                 "Share of rounds won by a 1vX clutch (the last player alive on a team winning the round "
+                 "against X opponents alive), by X. Clutch wins only: the source has no clutch attempts.",
+                 est, sha=sha, build=build, filters=filters,
+                 method_extra={"statistic": "clutch wins per round (notables clutch_1vX / rounds)",
+                               "notes": ["n = rounds on maps that carry the detail block; successes = clutches won.",
+                                         "X is the number of opponents alive when the player became the last alive."]})
+
+
+def plant_post_plant(con, sha, build, filters, iters=2000, era="all"):
+    """Plant rate, and how planted rounds end.
+
+    Plants per map come from player_map.plants (summed over both teams); the rounds table says
+    how each round ended. After a plant the defense can only win by defusing, so
+        post-plant attack win rate = 1 - defuses / plants.
+    """
+    games = _rows(con, """
+        SELECT r.match_id, r.game_id, mp.map_name, m.patch, COUNT(*) AS rounds,
+               COUNT(*) FILTER (WHERE r.outcome = 'defuse') AS defuses,
+               COUNT(*) FILTER (WHERE r.outcome = 'bomb_detonated') AS detonations
+        FROM rounds r
+        JOIN maps mp ON r.game_id = mp.game_id
+        JOIN matches m ON r.match_id = m.match_id
+        WHERE m.is_international AND mp.performance_available AND r.winner_team IS NOT NULL
+        GROUP BY 1, 2, 3, 4
+    """)
+    games = era_filter(games, era)
+    plants = dict(con.execute("SELECT game_id, SUM(plants) FROM player_map GROUP BY 1").fetchall())
+    for g in games:
+        # A map's plants can never be fewer than its spike-decided rounds; keep the data honest.
+        g["plants"] = max(int(plants.get(g["game_id"]) or 0), g["defuses"] + g["detonations"])
+        g["plants"] = min(g["plants"], g["rounds"])
+    est = []
+    for scope_name, pred in _SCOPES:
+        est.append(_estimate_counts({"scope": scope_name, "measure": "plant_rate"},
+                                    _match_counts(games, pred, lambda r: r["plants"], lambda r: r["rounds"]),
+                                    iters, 20340000 + len(est)))
+        est.append(_estimate_counts({"scope": scope_name, "measure": "post_plant_attack_win"},
+                                    _match_counts(games, pred, lambda r: r["plants"] - r["defuses"], lambda r: r["plants"]),
+                                    iters, 20340000 + len(est)))
+        est.append(_estimate_counts({"scope": scope_name, "measure": "post_plant_detonation"},
+                                    _match_counts(games, pred, lambda r: r["detonations"], lambda r: r["plants"]),
+                                    iters, 20340000 + len(est)))
+    return _wrap("plant_post_plant",
+                 "Plant rate (plants / rounds) and post-plant results: attack win rate after a plant "
+                 "(1 - defuses / plants) and the share of plants that detonate.",
+                 est, sha=sha, build=build, filters=filters,
+                 method_extra={"statistic": "plants per round; post-plant outcome shares",
+                               "notes": ["plant_rate: n = rounds, successes = plants (player_map.plants summed per map).",
+                                         "post_plant_*: n = plants. A planted round is lost by the attack only through a defuse."]})
+
+
+def _agent_key(agent: str | None) -> str:
+    return "".join(ch for ch in (agent or "").lower() if ch.isalnum())
+
+
+def load_agent_roles(path: str) -> dict[str, str]:
+    """agent slug -> role (lower-case) from the game-data agents catalog (packages/game-data/data/agents.json)."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    return {_agent_key(a.get("slug")): str(a["role"]).lower() for a in data if a.get("role")}
+
+
+def role_kill_share(con, roles: dict[str, str], sha, build, filters, iters=2000, era="all"):
+    """Kills / (kills + deaths) by the role of the agent played — K/D as a proportion.
+
+    K/D = share / (1 - share). Roles come from the game-data agents catalog; player-maps whose
+    agent is not in the catalog are left out (their count is recorded in the method notes).
+    """
+    rows = _rows(con, """
+        SELECT pm.match_id, pm.game_id, mp.map_name, m.patch, pm.agents[1] AS agent,
+               pm.kills_all AS kills, pm.deaths_all AS deaths
+        FROM player_map pm
+        JOIN maps mp ON pm.game_id = mp.game_id
+        JOIN matches m ON pm.match_id = m.match_id
+        WHERE m.is_international AND mp.performance_available
+    """)
+    rows = era_filter(rows, era)
+    unknown = 0
+    for r in rows:
+        r["role"] = roles.get(_agent_key(r["agent"]))
+        if r["role"] is None:
+            unknown += 1
+    est = []
+    for scope_name, pred in _SCOPES:
+        for role in sorted(set(roles.values())):
+            counts = _match_counts(rows, lambda r, role=role, pred=pred: pred(r) and r["role"] == role,
+                                   lambda r: r["kills"], lambda r: (r["kills"] or 0) + (r["deaths"] or 0))
+            est.append(_estimate_counts({"scope": scope_name, "role": role}, counts, iters, 20350000 + len(est)))
+    return _wrap("role_kill_share",
+                 "Kills / (kills + deaths) by agent role (controller, duelist, initiator, sentinel). "
+                 "K/D = share / (1 - share).",
+                 est, sha=sha, build=build, filters=filters,
+                 method_extra={"statistic": "kill share by agent role (player_map kills_all, deaths_all)",
+                               "notes": ["n = kills + deaths of the role; successes = kills.",
+                                         f"{unknown} player-maps had an agent missing from the role catalog and were left out."]})
+
+
+def build_play_priors(con, sha, build, iters=2000, era="all", agent_roles_path: str | None = None) -> dict[str, dict]:
+    """The play-pattern baselines the database (and, for roles, the agents catalog) can support.
+
+    A prior is omitted — not guessed — when the database lacks the columns it needs (older or
+    trimmed builds) or, for role_kill_share, when no agents catalog is given.
+    """
+    f = {"international": True, "performanceAvailable": True, "era": era}
+    out: dict[str, dict] = {}
+    if _has_columns(con, "player_map", ("kast_all", "kast_atk", "kast_def", "team_idx")):
+        out["kast"] = kast(con, sha, build, {**f, "kastKnown": True}, iters, era)
+    if _has_columns(con, "notables", ("stat_type", "game_id")):
+        out["clutch_wins_per_round"] = clutch_wins_per_round(
+            con, sha, build, {"international": True, "detailBlockAvailable": True, "era": era}, iters, era)
+    if _has_columns(con, "player_map", ("plants",)):
+        out["plant_post_plant"] = plant_post_plant(con, sha, build, {**f, "winnerKnown": True}, iters, era)
+    if agent_roles_path and _has_columns(con, "player_map", ("agents", "kills_all", "deaths_all")):
+        out["role_kill_share"] = role_kill_share(
+            con, load_agent_roles(agent_roles_path), sha, build, {**f, "roleSource": "game-data agents.json"}, iters, era)
+    return out
+
+
 # --- orchestration ---------------------------------------------------------------------------
-def build_all(duckdb_path: str, iters: int = 2000, era: str = "all") -> dict[str, dict]:
+def build_all(duckdb_path: str, iters: int = 2000, era: str = "all",
+              agent_roles_path: str | None = None) -> dict[str, dict]:
     import duckdb
     if os.path.exists(duckdb_path) is False:
         raise FileNotFoundError(duckdb_path)
@@ -407,6 +636,7 @@ def build_all(duckdb_path: str, iters: int = 2000, era: str = "all") -> dict[str
                 con, sha, build, {"international": True, "performanceAvailable": True, "era": era,
                                   "note": "aggregate fk/fd; no per-round kill sequence in source"}, iters, era),
         }
+        out.update(build_play_priors(con, sha, build, iters, era, agent_roles_path))
         # tag the era into each priorId so files from different eras never collide.
         for p in out.values():
             p["source"]["filters"]["era"] = era
@@ -415,10 +645,16 @@ def build_all(duckdb_path: str, iters: int = 2000, era: str = "all") -> dict[str
         con.close()
 
 
-def write_all(duckdb_path: str, out_dir: str, iters: int = 2000, era: str = "all") -> dict[str, str]:
+def write_all(duckdb_path: str, out_dir: str, iters: int = 2000, era: str = "all",
+              agent_roles_path: str | None = None, only: list[str] | None = None) -> dict[str, str]:
+    """Write the priors as <out_dir>/<priorId>.json. `only` restricts the files written (the others
+    are still computed, but left untouched on disk — e.g. to add new priors without re-stamping
+    the existing ones)."""
     os.makedirs(out_dir, exist_ok=True)
     written = {}
-    for prior_id, payload in build_all(duckdb_path, iters, era).items():
+    for prior_id, payload in build_all(duckdb_path, iters, era, agent_roles_path).items():
+        if only and prior_id not in only:
+            continue
         path = os.path.join(out_dir, f"{prior_id}.json")
         with open(path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)

@@ -1,0 +1,148 @@
+{
+  "priorId": "kast",
+  "description": "KAST: share of player-rounds with a kill, an assist, a survival or a traded death (player_map kast_all / kast_atk / kast_def, weighted by rounds).",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "performanceAvailable": true,
+      "era": "all",
+      "kastKnown": true
+    }
+  },
+  "method": {
+    "statistic": "round-weighted mean of per-map KAST percentages",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": [
+      "n = player-rounds; successes = sum over player-maps of round(KAST% x rounds).",
+      "The source publishes KAST as a whole percent per map, so each player-map carries up to +-0.5 percentage points of rounding.",
+      "The trade window behind the source's 'T' is not documented."
+    ]
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-24T06:31:06+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "all"
+      },
+      "n": 242910,
+      "successes": 172675,
+      "rate": 0.7108599892964472,
+      "wilsonLow": 0.709053766380746,
+      "wilsonHigh": 0.712659543098845,
+      "bootstrapLow": 0.7089972786267532,
+      "bootstrapHigh": 0.7127214037411025,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "attack"
+      },
+      "n": 121278,
+      "successes": 85307,
+      "rate": 0.7034004518544171,
+      "wilsonLow": 0.7008233879318587,
+      "wilsonHigh": 0.7059646308397004,
+      "bootstrapLow": 0.6989381740594423,
+      "bootstrapHigh": 0.7080553578227688,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "side": "defense"
+      },
+      "n": 121338,
+      "successes": 87159,
+      "rate": 0.7183157790634426,
+      "wilsonLow": 0.7157779186535851,
+      "wilsonHigh": 0.7208398165237699,
+      "bootstrapLow": 0.7136704073046579,
+      "bootstrapHigh": 0.7227289071949267,
+      "matches": 450,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "all"
+      },
+      "n": 31060,
+      "successes": 22078,
+      "rate": 0.7108177720540889,
+      "wilsonLow": 0.7057498361333764,
+      "wilsonHigh": 0.7158335671092816,
+      "bootstrapLow": 0.7060398302317988,
+      "bootstrapHigh": 0.7155451713395639,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "attack"
+      },
+      "n": 15516,
+      "successes": 10655,
+      "rate": 0.6867104923949472,
+      "wilsonLow": 0.6793667977420863,
+      "wilsonHigh": 0.6939617581824966,
+      "bootstrapLow": 0.6743239695458125,
+      "bootstrapHigh": 0.698286013345545,
+      "matches": 145,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "side": "defense"
+      },
+      "n": 15515,
+      "successes": 11393,
+      "rate": 0.7343216242346117,
+      "wilsonLow": 0.7273141010207166,
+      "wilsonHigh": 0.7412131417695155,
+      "bootstrapLow": 0.7220717234262126,
+      "bootstrapHigh": 0.7472131147540984,
+      "matches": 145,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-24T06:31:06+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

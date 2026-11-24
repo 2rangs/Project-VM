@@ -1,0 +1,236 @@
+{
+  "priorId": "clutch_wins_per_round",
+  "description": "Share of rounds won by a 1vX clutch (the last player alive on a team winning the round against X opponents alive), by X. Clutch wins only: the source has no clutch attempts.",
+  "source": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "build 2026-11-12 (rebuilt daily)",
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "filters": {
+      "international": true,
+      "detailBlockAvailable": true,
+      "era": "patch>=9"
+    }
+  },
+  "method": {
+    "statistic": "clutch wins per round (notables clutch_1vX / rounds)",
+    "wilsonZ": 1.959963984540054,
+    "bootstrap": {
+      "unit": "match",
+      "iterations": 2000,
+      "seed": 20260101
+    },
+    "buyThresholds": {
+      "ecoMaxCredits": 5000,
+      "fullMinCredits": 20000,
+      "pistolRounds": [
+        1,
+        13
+      ]
+    },
+    "notes": [
+      "n = rounds on maps that carry the detail block; successes = clutches won.",
+      "X is the number of opponents alive when the player became the last alive."
+    ]
+  },
+  "groupingUnit": "match_id",
+  "generatedAt": "2026-11-24T06:31:12+00:00",
+  "estimates": [
+    {
+      "dims": {
+        "scope": "all_maps",
+        "x": "1v1"
+      },
+      "n": 10311,
+      "successes": 983,
+      "rate": 0.09533507904180002,
+      "wilsonLow": 0.0898163395900659,
+      "wilsonHigh": 0.10115522954987395,
+      "bootstrapLow": 0.08981804103755324,
+      "bootstrapHigh": 0.10080527796643059,
+      "matches": 190,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "x": "1v2"
+      },
+      "n": 10311,
+      "successes": 472,
+      "rate": 0.045776355348656775,
+      "wilsonLow": 0.04190865331163824,
+      "wilsonHigh": 0.04998238181524211,
+      "bootstrapLow": 0.041727175912479424,
+      "bootstrapHigh": 0.04974123059229442,
+      "matches": 190,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "x": "1v3"
+      },
+      "n": 10311,
+      "successes": 111,
+      "rate": 0.010765202211230724,
+      "wilsonLow": 0.00894759831008891,
+      "wilsonHigh": 0.012947208287017505,
+      "bootstrapLow": 0.00904848080769597,
+      "bootstrapHigh": 0.012526704214410565,
+      "matches": 190,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "x": "1v4"
+      },
+      "n": 10311,
+      "successes": 22,
+      "rate": 0.002133643681505189,
+      "wilsonLow": 0.0014095010521197738,
+      "wilsonHigh": 0.003228617624903876,
+      "bootstrapLow": 0.0013358778625954199,
+      "bootstrapHigh": 0.0030131826741996233,
+      "matches": 190,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "x": "1v5"
+      },
+      "n": 10311,
+      "successes": 3,
+      "rate": 0.0002909514111143439,
+      "wilsonLow": 9.895455801958643e-05,
+      "wilsonHigh": 0.0008551520911212244,
+      "bootstrapLow": 0.0,
+      "bootstrapHigh": 0.0006756104623105878,
+      "matches": 190,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "all_maps",
+        "x": "any"
+      },
+      "n": 10311,
+      "successes": 1591,
+      "rate": 0.15430123169430704,
+      "wilsonLow": 0.14745755913853464,
+      "wilsonHigh": 0.161402394893656,
+      "bootstrapLow": 0.14724789071916433,
+      "bootstrapHigh": 0.1610706062931696,
+      "matches": 190,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "x": "1v1"
+      },
+      "n": 875,
+      "successes": 71,
+      "rate": 0.08114285714285714,
+      "wilsonLow": 0.06482840863002258,
+      "wilsonHigh": 0.10111899559962866,
+      "bootstrapLow": 0.06302021403091558,
+      "bootstrapHigh": 0.10154525386313466,
+      "matches": 42,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "x": "1v2"
+      },
+      "n": 875,
+      "successes": 39,
+      "rate": 0.044571428571428574,
+      "wilsonLow": 0.0327743375327048,
+      "wilsonHigh": 0.06034992054510155,
+      "bootstrapLow": 0.030120481927710843,
+      "bootstrapHigh": 0.059800664451827246,
+      "matches": 42,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "x": "1v3"
+      },
+      "n": 875,
+      "successes": 7,
+      "rate": 0.008,
+      "wilsonLow": 0.0038805054468573387,
+      "wilsonHigh": 0.01642060647910408,
+      "bootstrapLow": 0.0033482142857142855,
+      "bootstrapHigh": 0.013793103448275862,
+      "matches": 42,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "x": "1v4"
+      },
+      "n": 875,
+      "successes": 1,
+      "rate": 0.001142857142857143,
+      "wilsonLow": 0.00020177084348345104,
+      "wilsonHigh": 0.006445001179007048,
+      "bootstrapLow": 0.0,
+      "bootstrapHigh": 0.003472222222222222,
+      "matches": 42,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "x": "1v5"
+      },
+      "n": 875,
+      "successes": 0,
+      "rate": 0.0,
+      "wilsonLow": 0.0,
+      "wilsonHigh": 0.004371048705245345,
+      "bootstrapLow": 0.0,
+      "bootstrapHigh": 0.0,
+      "matches": 42,
+      "smallSample": false
+    },
+    {
+      "dims": {
+        "scope": "ascent",
+        "x": "any"
+      },
+      "n": 875,
+      "successes": 118,
+      "rate": 0.13485714285714287,
+      "wilsonLow": 0.11381428039532011,
+      "wilsonHigh": 0.15909211974485338,
+      "bootstrapLow": 0.11061946902654868,
+      "bootstrapHigh": 0.1589627959413754,
+      "matches": 42,
+      "smallSample": false
+    }
+  ],
+  "provenance": {
+    "sourceId": "vct-reference",
+    "sourceUrl": "https://vct-reference.com/dataset/vct.duckdb",
+    "sourceVersion": "a1a189d0ec7d",
+    "gamePatch": null,
+    "retrievedAt": "2026-11-24T06:31:12+00:00",
+    "evidenceType": "derived",
+    "confidence": null,
+    "verified": true,
+    "verificationLevel": 2,
+    "synthetic": false,
+    "sha256": "a1a189d0ec7d9a71d7586645a3ce5d39bfea719c2f782bb287a23a300cea4890",
+    "notes": [
+      "Aggregate statistic derived from VCT Reference rounds/economy."
+    ]
+  }
+}

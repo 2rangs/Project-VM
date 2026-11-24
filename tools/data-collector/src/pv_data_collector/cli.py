@@ -37,6 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--out", required=True, help="Output dir (datasets/derived/priors)")
     p.add_argument("--iters", type=int, default=2000, help="Bootstrap iterations (default 2000)")
     p.add_argument("--era", default="all", choices=["all", "patch>=9"], help="Meta era filter (default all)")
+    p.add_argument("--agent-roles", default=None,
+                   help="game-data agents catalog (packages/game-data/data/agents.json); enables role_kill_share")
+    p.add_argument("--only", action="append", default=None, metavar="PRIOR_ID",
+                   help="Write only this prior (repeatable); the others are left untouched on disk")
 
     p = sub.add_parser("gen-ratings", help="Estimate player attributes (with uncertainty) from VCT Reference.")
     p.add_argument("--db", required=True, help="Path to vct.duckdb")
@@ -61,7 +65,8 @@ def main(argv: list[str] | None = None) -> int:
         for name, path in synthetic_ascent.write_map(args.out, args.seed).items():
             print(f"wrote {path}")
     elif args.cmd == "gen-priors":
-        for name, path in priors.write_all(args.db, args.out, args.iters, args.era).items():
+        for name, path in priors.write_all(args.db, args.out, args.iters, args.era,
+                                           agent_roles_path=args.agent_roles, only=args.only).items():
             print(f"wrote {path}")
     elif args.cmd == "gen-ratings":
         for name, path in ratings.write_ratings(args.db, args.out).items():
