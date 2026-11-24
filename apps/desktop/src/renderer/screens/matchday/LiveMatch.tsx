@@ -34,7 +34,7 @@ import { MatchStage, type StageView } from './MatchStage.ts';
 import { CamStage3D, type CamView } from './CamStage3D.ts';
 import { buildBlockout } from '../../matchday/world3d.ts';
 import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
-import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, MatchupStrip, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
 import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
@@ -84,6 +84,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const [prefs, setPrefs] = useState<MatchPrefs>(loadPrefs);
   const [pov, setPov] = useState<TeamSlot>(OUR_TEAM);
   const [focus, setFocus] = useState<string | null>(null);
+  const [selSlot, setSelSlot] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [mapOk, setMapOk] = useState<boolean | null>(null);
   const [showGraph, setShowGraph] = useState(false); // developer: navigation debug overlay (never on by default, not persisted)
@@ -206,7 +207,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       else if (e.code === 'ArrowLeft') jumpEvent(-1);
       else if (e.code === 'ArrowRight') jumpEvent(1);
       else if (e.code === 'KeyM') update({ mode: mode === 'tactical' ? 'cams' : 'tactical' });
-      else if (e.code === 'Escape' && focus) setFocus(null);
+      else if (e.code === 'Escape') { if (focus) setFocus(null); else setSelSlot(null); }
+      else if (/^Digit[1-5]$/.test(e.code) && !e.ctrlKey && !e.metaKey && !e.altKey) { const n = Number(e.code.slice(5)); setSelSlot((c) => (c === n ? null : n)); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -229,8 +231,9 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         ]
   ), [mode, focus]);
 
-  const liveRef = useRef({ replay, tl, viewTeam, specs, belief: prefs.belief, showGraph, nameOf, version: 0 });
-  liveRef.current = { replay, tl, viewTeam, specs, belief: prefs.belief, showGraph, nameOf, version: liveRef.current.version + 1 };
+  const highlightId = selSlot != null ? frame?.units.find((u) => u.slot === selSlot)?.id ?? null : null;
+  const liveRef = useRef({ replay, tl, viewTeam, specs, belief: prefs.belief, highlightId, showGraph, nameOf, version: 0 });
+  liveRef.current = { replay, tl, viewTeam, specs, belief: prefs.belief, highlightId, showGraph, nameOf, version: liveRef.current.version + 1 };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -312,7 +315,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         const dbg = L.showGraph && frameNow
           ? navDebugAt(frameNow.round, L.viewTeam, frameNow.tMs, (p) => displayPos(p, frameNow.tMs))
           : null;
-        stage.render(frameNow, views, { showBelief: L.belief, showGraph: L.showGraph, navDebug: dbg, nameOf: L.nameOf });
+        stage.render(frameNow, views, { showBelief: L.belief, highlightId: L.highlightId, showGraph: L.showGraph, navDebug: dbg, nameOf: L.nameOf });
       }
       lastSig = sig; lastDone = done3d;
     });
@@ -413,7 +416,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
 
         {mode === 'tactical' ? (
           <div className="mdx-tac">
-            <AllyPanel t={t} frame={frame} teamName={teams[viewTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(viewTeam)}>
+            <AllyPanel t={t} frame={frame} teamName={teams[viewTeam].name} nameOf={nameOf} zoneName={zoneName} bank={bankOf(viewTeam)}
+              focusId={highlightId} onPick={(u) => setSelSlot((c) => (c === u.slot ? null : u.slot))}>
               <OrderChip t={t} order={activeOrder} />
               {viewTeam === OUR_TEAM && <BuyReasonPanel t={t} frame={frame} nameOf={nameOf} />}
               <IntelPanel t={t} frame={frame} nameOf={nameOf} zoneName={zoneName} />
@@ -421,6 +425,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
             <div className="mdx-mapcol">
               <div className="mdx-map" ref={setViewEl('map')} data-testid="tactical-map">
                 {overlays}
+                <MatchupStrip t={t} frame={frame} />
+                <div className="mdx-keys" aria-hidden>{t('mdx.keys')}</div>
                 {mapOk === null && <div className="mdx-loadchip corner"><LoadingInline label={t('load.assets.map')} testId="loading-map" /></div>}
                 {mapOk === false && <span className="mdx-maphint">{t('mdx.mapOffline')}</span>}
                 <label className="mdx-ctl check mdx-debugctl" title={t('mdx.graph.hint')}>
