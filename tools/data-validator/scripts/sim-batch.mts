@@ -129,7 +129,7 @@ async function main(): Promise<void> {
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
   const mirror = args["mirror"] === true;
   // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default sim fit).
-  // --economy '{"ecoSidearms":"always"}': any other economy options (JSON), merged under the belief flags.
+  // --economy '{"ecoSidearms":true}': any other economy options (JSON), merged under the belief flags.
   const economyJson = args["economy"] !== undefined ? JSON.parse(String(args["economy"])) as Record<string, unknown> : {};
   const economy = args["belief-beta"] !== undefined || args["economy"] !== undefined
     ? { ...economyJson, ...(args["belief-beta"] !== undefined ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : {}) } : undefined;
@@ -159,7 +159,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["weapon-modes"] === true ? { weaponModes: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };

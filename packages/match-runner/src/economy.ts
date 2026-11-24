@@ -197,7 +197,9 @@ export interface EconomyOptions {
    * `eco` and `light` plans are then not offered). Whether to eco at all stays the
    * expected-value choice; how much an eco spends is this rule — under the sim's belief and two-round
    * lookahead, spending the surplus and saving it are within 0.01 of map-win probability, and VCT
-   * teams spend it. false → the old zero-spend eco. Default true.
+   * teams spend it. Also switches the buy ladder to the eco catalogue (Stinger, Ghost) and lets a
+   * full buy short of the kit buy part of it. false → the v1.2 buys. Default false until it passes
+   * the real-roster gate (docs/handoff/economy.md).
    */
   readonly ecoSidearms: boolean;
 }
@@ -212,7 +214,7 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
   winBelief: SIM_ROUND_WIN_BELIEF,
   saveByCredits: true,
   armorMatchedValue: true,
-  ecoSidearms: true,
+  ecoSidearms: false,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -311,25 +313,48 @@ export function spend(credits: number, cost: number): number {
 
 interface Package { readonly weapon: string; readonly armor: number; readonly util: boolean }
 
-/** A player's buy options, best first. */
-const LADDER: readonly Package[] = [
+/** A player's buy options, best first, and where each plan starts on them. */
+interface Ladder {
+  readonly pkgs: readonly Package[];
+  readonly smg: number;
+  readonly half: number;
+  readonly light: number;
+  /** The eco-catalogue ladder (Stinger, Ghost): a full buy short of the kit also buys part of it. */
+  readonly partialKit: boolean;
+}
+function ladderOf(pkgs: readonly Package[], partialKit: boolean): Ladder {
+  return {
+    pkgs,
+    smg: pkgs.findIndex((p) => p.weapon === SMG && p.armor === HEAVY_PTS && p.util),
+    half: pkgs.findIndex((p) => p.weapon === SMG && p.armor === LIGHT_PTS),
+    light: pkgs.findIndex((p) => p.weapon === DEFAULT_WEAPON && p.armor === LIGHT_PTS),
+    partialKit,
+  };
+}
+const TOP: readonly Package[] = [
   { weapon: RIFLE, armor: HEAVY_PTS, util: true },
   { weapon: RIFLE, armor: HEAVY_PTS, util: false },
   { weapon: RIFLE, armor: LIGHT_PTS, util: false },
   { weapon: SMG, armor: HEAVY_PTS, util: true },
   { weapon: SMG, armor: HEAVY_PTS, util: false },
   { weapon: SMG, armor: LIGHT_PTS, util: false },
+];
+const BOTTOM: readonly Package[] = [
+  { weapon: DEFAULT_WEAPON, armor: LIGHT_PTS, util: false },
+  { weapon: DEFAULT_WEAPON, armor: 0, util: false },
+];
+/** Default (v1.2) ladder: Spectre, Sheriff, Classic. */
+const LADDER = ladderOf([...TOP, { weapon: SIDEARM, armor: LIGHT_PTS, util: false }, { weapon: SIDEARM, armor: 0, util: false }, ...BOTTOM], false);
+/** Eco-catalogue ladder (EconomyOptions.ecoSidearms): adds the Stinger and the Ghost. */
+const ECO_LADDER = ladderOf([
+  ...TOP,
   { weapon: SMG_LIGHT, armor: LIGHT_PTS, util: false },
   { weapon: SIDEARM, armor: LIGHT_PTS, util: false },
   { weapon: LIGHT_SIDEARM, armor: LIGHT_PTS, util: false },
   { weapon: SIDEARM, armor: 0, util: false },
   { weapon: LIGHT_SIDEARM, armor: 0, util: false },
-  { weapon: DEFAULT_WEAPON, armor: LIGHT_PTS, util: false },
-  { weapon: DEFAULT_WEAPON, armor: 0, util: false },
-];
-const SMG_START = LADDER.findIndex((p) => p.weapon === SMG && p.armor === HEAVY_PTS && p.util);
-const HALF_START = LADDER.findIndex((p) => p.weapon === SMG && p.armor === LIGHT_PTS);
-const LIGHT_START = LADDER.findIndex((p) => p.weapon === DEFAULT_WEAPON && p.armor === LIGHT_PTS);
+  ...BOTTOM,
+], true);
 
 interface Slot {
   readonly index: number;
@@ -362,7 +387,8 @@ interface Assignment {
  * Allocate a plan. `startIdx` is the best package the plan aims for; `drops` lets rich players buy
  * the target weapon for poor ones. Players are served in star order.
  */
-function allocate(slots: readonly Slot[], startIdx: number, drops: boolean): Assignment[] {
+function allocate(slots: readonly Slot[], ladder: Ladder, startIdx: number, drops: boolean): Assignment[] {
+  const LADDER = ladder.pkgs;
   const order = [...slots].sort((a, b) => b.priority - a.priority || a.index - b.index);
   const out: Assignment[] = slots.map(() => ({ pkg: null, spentOwn: 0, boughtFor: 0, utility: 0 }));
   const spare = (i: number) => slots[i]!.credits - out[i]!.spentOwn - out[i]!.boughtFor;
@@ -421,7 +447,7 @@ function allocate(slots: readonly Slot[], startIdx: number, drops: boolean): Ass
   }
   // 3. A full buy short of the whole kit buys what of it the credits left allow (a rifle and a heavy
   //    shield, then utility — the kit is not all-or-nothing).
-  if (startIdx === 0) {
+  if (startIdx === 0 && ladder.partialKit) {
     for (const s of slots) {
       const a = out[s.index]!;
       if (!a.pkg || a.pkg.util || a.pkg.armor < HEAVY_PTS || !RIFLES.has(effectiveWeapon(s, a.pkg))) continue;
@@ -469,7 +495,7 @@ function allocatePistol(slots: readonly Slot[]): Assignment[] {
 function allocateSidearms(slots: readonly Slot[], reserve: readonly number[], defense: boolean): Assignment[] {
   const order = [...slots].sort((a, b) => b.priority - a.priority || a.index - b.index);
   const out: Assignment[] = slots.map(() => ({ pkg: null, spentOwn: 0, boughtFor: 0, utility: 0 }));
-  const ladder = LADDER.slice(LADDER.findIndex((p) => p.weapon === SIDEARM && p.armor === LIGHT_PTS));
+  const ladder = ECO_LADDER.pkgs.slice(ECO_LADDER.pkgs.findIndex((p) => p.weapon === SIDEARM && p.armor === LIGHT_PTS));
   // An eco stays an eco: the team's loadout stays under the VCT eco line.
   const keptValue = sum(slots.map((s) => priceOf(s.carried) + armorValue(s.carriedArmor)));
   let budget = ECO_LOADOUT - 1 - keptValue;
@@ -530,13 +556,14 @@ function slotsOf(eco: TeamEconomy, ctx: readonly PlayerContext[]): Slot[] {
   }));
 }
 
-function planBuys(plan: BuyPlan, slots: readonly Slot[], eco?: { reserve: readonly number[]; defense: boolean }): PlayerBuy[] {
+function planBuys(plan: BuyPlan, slots: readonly Slot[], eco?: { reserve: readonly number[]; defense: boolean; catalogue: boolean }): PlayerBuy[] {
+  const L = eco?.catalogue ? ECO_LADDER : LADDER;
   switch (plan) {
     case "pistol": return toPlayerBuys(slots, allocatePistol(slots));
-    case "max": return toPlayerBuys(slots, allocate(slots, 0, true));
-    case "smg": return toPlayerBuys(slots, allocate(slots, SMG_START, false));
-    case "half": return toPlayerBuys(slots, allocate(slots, HALF_START, false));
-    case "light": return toPlayerBuys(slots, allocate(slots, LIGHT_START, false));
+    case "max": return toPlayerBuys(slots, allocate(slots, L, 0, true));
+    case "smg": return toPlayerBuys(slots, allocate(slots, L, L.smg, false));
+    case "half": return toPlayerBuys(slots, allocate(slots, L, L.half, false));
+    case "light": return toPlayerBuys(slots, allocate(slots, L, L.light, false));
     case "sidearms": return toPlayerBuys(slots, allocateSidearms(slots, eco?.reserve ?? slots.map(() => 0), eco?.defense ?? false));
     case "keep": return toPlayerBuys(slots, allocateKeep(slots));
     case "eco": return toPlayerBuys(slots, slots.map(() => ({ pkg: null, spentOwn: 0, boughtFor: 0, utility: 0 })));
@@ -613,7 +640,7 @@ function candidates(c: { eco: TeamEconomy; ctx: readonly PlayerContext[]; pistol
     : c.call === "force" || c.call === "full" ? ["max"]
     : c.sidearms ? ["max", "smg", "half", "keep", "sidearms"] // the eco's spend (shields up to sidearms) is the reserve rule
     : ["max", "smg", "half", "keep", "light", "eco"];
-  const ecoCtx = { reserve: nextBuyReserve(c.eco), defense: c.side === "defense" };
+  const ecoCtx = { reserve: nextBuyReserve(c.eco), defense: c.side === "defense", catalogue: c.sidearms };
   const ready = c.ultValue > 0 ? readyUlts(c.eco, c.ctx) : 0;
   const out: Candidate[] = [];
   for (const plan of plans) {

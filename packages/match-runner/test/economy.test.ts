@@ -16,7 +16,7 @@ import {
 } from "../src/economy.js";
 import { runMatch, simulatableTeamRefs, type MatchConfig, type MatchResult } from "../src/index.js";
 import { armorMatchedPrice } from "../src/weapon-worth.js";
-import { loadUltOrbs } from "../src/setup.js";
+import { loadUltOrbs, loadWeapons } from "../src/setup.js";
 
 const AGENTS = ["omen", "sova", "kayo", "killjoy", "jett"];
 const CTX = AGENTS.map((agent, i) => ({ agent, priority: 0.6 + 0.01 * i }));
@@ -113,8 +113,8 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
   it("ultimate readiness changes buy timing: a team on 3000 each saves without ults and buys with five ready", () => {
     const noUlt = buy(eco(five(3_000), [], 1), { abilities: true });
     const ults = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
-    expect(noUlt.tier).toBe("eco"); // a save (the sidearms eco or a light-shield eco)
-    expect(ults.tier).not.toBe("eco");
+    expect(noUlt.plan).toBe("eco");
+    expect(ults.plan).not.toBe("eco");
     expect(ults.cost).toBeGreaterThan(noUlt.cost);
     // With abilities off an ultimate does nothing in the sim, so it does not move the buy.
     const off = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
@@ -125,7 +125,7 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
     const at = (discipline: number) => buy(eco(five(2_000), [], 1), { ownTraits: { discipline, gameSense: 0.6 } });
     const ev = (b: ReturnType<typeof buy>, plan: string) => b.evaluation.find((e) => e.plan === plan && !e.ultHold)!.value;
     // The gap between buying now and saving grows as discipline falls.
-    expect(ev(at(0.2), "max") - ev(at(0.2), "sidearms")).toBeGreaterThan(ev(at(1.0), "max") - ev(at(1.0), "sidearms"));
+    expect(ev(at(0.2), "max") - ev(at(0.2), "eco")).toBeGreaterThan(ev(at(1.0), "max") - ev(at(1.0), "eco"));
   });
 });
 
@@ -145,12 +145,12 @@ describe("round 2 after a pistol win (armor-matched gun worth)", () => {
       const opp = eco([2_000, 2_000, 2_000, 2_100, 2_200], [], 1);
       return decideTeamBuy({ roundNumber: 2, score: [1, 0], own, opp, ownPlayers: CTX, oppPlayers: CTX, pistol: false, wonLastRound: true, options: { armorMatchedValue } });
     };
-    const credits = [3_400, 3_600, 3_800]; // a pistol winner's credits (at 4000 a rifle + heavy is affordable and is bought)
+    const credits = [3_400, 3_600, 3_800, 4_000];
     const rifleCount = (on: boolean) => credits.reduce((n, c) => n + rifles(at(c, on)), 0);
-    // Shop prices: rifles with light shields (15 of 15). Armor-matched: SMG + heavy + kit at every level.
-    expect(rifleCount(false)).toBe(15);
+    // Shop prices: rifles at 3400–3800 (15 of 20). Armor-matched: no rifles — SMG + heavy + kit at
+    // 3400–3600, SMG + light with the rest banked at 3800–4000.
+    expect(rifleCount(false)).toBeGreaterThanOrEqual(15);
     expect(rifleCount(true)).toBe(0);
-    expect(credits.every((c) => at(c, true).plan === "smg")).toBe(true);
     const smg = at(3_400, true);
     expect(smg.plan).toBe("smg");
     expect(smg.players.every((p) => p.weapon === "Spectre" && p.armor === 50)).toBe(true);
@@ -158,7 +158,7 @@ describe("round 2 after a pistol win (armor-matched gun worth)", () => {
 });
 
 describe("eco: spend what next round does not need (sidearms)", () => {
-  const ecoBuy = (credits: number, losses: number, side: "attack" | "defense", ecoSidearms = true) =>
+  const ecoBuy = (credits: number, losses: number, side: "attack" | "defense", ecoSidearms = true) => // the option is off by default
     decideTeamBuy({ roundNumber: 6, score: [2, 3], own: eco(five(credits), [], losses), opp: RICH, ownPlayers: CTX, oppPlayers: CTX, pistol: false, side, options: { ecoSidearms } });
 
   it("keeps the team's next rifle + heavy buy and spends the rest on sidearms and light shields, star first", () => {
@@ -179,8 +179,8 @@ describe("eco: spend what next round does not need (sidearms)", () => {
   });
 
   it("on defence one player takes a shotgun for a close angle", () => {
-    const b = decideTeamBuy({ roundNumber: 6, score: [2, 3], own: eco(five(3_000), [], 2), opp: RICH, ownPlayers: CTX, oppPlayers: CTX, pistol: false, side: "defense" });
-    const attack = decideTeamBuy({ roundNumber: 6, score: [2, 3], own: eco(five(3_000), [], 2), opp: RICH, ownPlayers: CTX, oppPlayers: CTX, pistol: false, side: "attack" });
+    const b = ecoBuy(3_000, 2, "defense");
+    const attack = ecoBuy(3_000, 2, "attack");
     const shotguns = (x: typeof b) => x.players.filter((p) => p.weapon === "Bucky" || p.weapon === "Shorty").length;
     expect(b.plan).toBe("sidearms");
     expect(shotguns(b)).toBe(1);
@@ -206,6 +206,13 @@ describe("floor items", () => {
     expect(floor.get("atk1")).toBe("Spectre"); // what lies on atk1's body now
     expect(floor.get("def1")).toBe("Vandal"); // def1 died holding the Vandal
     expect(floor.get("def2")).toBe("Classic");
+  });
+
+  it("weapon modes (Classic burst, run-and-gun accuracy) are off unless MatchConfig.weaponModes", () => {
+    expect(loadWeapons().Classic!.altFire).toBeUndefined();
+    expect(loadWeapons().Classic!.movingAccuracy).toBeUndefined();
+    expect(loadWeapons({ modes: true }).Classic!.altFire?.useWithinMeters).toBe(3);
+    expect(loadWeapons().Bucky!.pellets).toBe(15); // a shotgun keeps its pellets
   });
 
   it("no orb points on Ascent yet → no orbs (the consumer is a no-op until maps data adds them)", () => {

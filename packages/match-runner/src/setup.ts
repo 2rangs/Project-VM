@@ -72,9 +72,16 @@ function weaponCatalog(): Record<string, WeaponSpec> {
 }
 
 /** Load the manual-approx weapons catalog (match-runner owns its copy under ./data). */
-export function loadWeapons(): Record<string, WeaponSpec> {
+export function loadWeapons(opts: { modes?: boolean } = {}): Record<string, WeaponSpec> {
   const raw = JSON.parse(readFileSync(resolve(here, "..", "data", "weapons.manual-approx.json"), "utf8"));
-  return buildCatalog(raw.weapons as WeaponSpec[]);
+  const weapons = (raw.weapons as WeaponSpec[]).map((w) => {
+    if (opts.modes) return w;
+    // Without weapon modes (MatchConfig.weaponModes, default off): no alt-fire, no run-and-gun
+    // accuracy — the six v1.2 guns duel exactly as before. Pellets stay (a shotgun needs them).
+    const { altFire: _alt, movingAccuracy: _mov, ...rest } = w;
+    return rest;
+  });
+  return buildCatalog(weapons);
 }
 
 export const NO_ABILITIES: AbilityCatalog = {};
