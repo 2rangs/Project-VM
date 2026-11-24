@@ -5,7 +5,9 @@ import {
   facingAngleTo,
   lineOfSight,
   landingSound,
+  traversalSound,
   EYE_HEIGHT_UNITS,
+  segmentHitsSphere,
   type SightOccluder,
   type SightPoint,
   type PlayerState as PPlayerState,
@@ -31,6 +33,7 @@ import {
   activeGroundPatches,
   deployedEffects,
   visionOccluders,
+  DEFAULT_OCCLUDER_RADIUS_UNITS,
 } from "@pv/ability-engine";
 import type {
   CommandTraceEvent,
@@ -47,18 +50,22 @@ import type {
   TrackFrame,
   NavTraceEvent,
 } from "./types.js";
-import { AVERAGE_TRAITS, BODY_OVERLAP_UNITS, DEFAULT_CONFIG, type AbilityCue, type RoundStats, type ShotCue } from "./types.js";
+import { AVERAGE_TRAITS, BODY_OVERLAP_UNITS, LEGACY_STOP_MS, DEFAULT_CONFIG, type AbilityCue, type PlantRecord, type RoundStats, type ShotCue } from "./types.js";
 import {
-  abilityCastCueConfidence, angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness,
+  BODY_HALF_WIDTH, abilityCastCueConfidence, angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness,
   patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
   DEFAULT_PATCH_RADIUS_UNITS, DEPLOYED_EFFECT_CUE_CONFIDENCE, TRACER_CUE_CONFIDENCE,
 } from "./situational.js";
-import type { ActionCommand, BeliefState, DecisionPolicy, TeammateTransit } from "./policy-contract.js";
+import type { ActionCommand, BeliefState, DecisionPolicy, PolicyDecision, PolicyView, TeammateTransit } from "./policy-contract.js";
 import { buildPolicyView, roundPerceptionParams, SeededRandomSource, SpatialQueryAdapter, toPerceptionSnapshot } from "./view.js";
 import { deriveSeed } from "./rng.js";
 import { MovementExecutor, type MoverHooks, type NavEvent, type SpotIntent } from "./mover.js";
+import { RoundMovementStyles } from "./movement-style.js";
+import { runBuyPhase, type BuyPhaseResult } from "./buy-phase.js";
 import { offsetDeg, rotateToward, turnRateRadPerMs, type GazeSource } from "./gaze.js";
+import { CHECKED_SPOT_DEG, choosePeek, jiggleExposureMs, lateralSpeed, type PeekKind } from "./peek.js";
 import { FloorItems } from "./floor-items.js";
+import { choosePlantSpot, plantSpotAt, plantSpotsOf, type PlantDecision } from "./plant-spot.js";
 
 export interface RoundSimulatorDeps {
   readonly spatial: SpatialEngine;
@@ -78,8 +85,46 @@ const CROSSFIRE_MIN_ANGLE_RAD = Math.PI / 6;
 /** A teammate swinging on the SAME line is trade pressure, not a second angle: it counts as a fraction of a gun. */
 const CROSSFIRE_SAME_LINE_WEIGHT = 0.2;
 
+/** A peek decided for one contact (gaze model): who peeks, how, and its speeds (uu/s). */
+interface PeekPlan {
+  readonly peeker: SimPlayer;
+  readonly kind: PeekKind;
+  /** The jiggler's return swing at the enemy it disengaged from. */
+  readonly rePeek: boolean;
+  /** Speed of the strafe that opens the angle (corner geometry). */
+  readonly strafeUnitsPerSec: number;
+  /** Speed across the holder's line of sight (the holder's tracking). */
+  readonly lateralUnitsPerSec: number;
+}
+
+/**
+ * Time to re-acquire an enemy after a disengage (ms): perception at its reaction plus the Fitts
+ * intercept — the crosshair is already on the spot. The pair cannot fight again before it.
+ */
+function reacquireMs(p: SimPlayer): number {
+  const k = Math.max(0, Math.min(1, p.skills.reaction));
+  return COMBAT_PARAMS.aim.perceptionSlowMs + (COMBAT_PARAMS.aim.perceptionFastMs - COMBAT_PARAMS.aim.perceptionSlowMs) * k + COMBAT_PARAMS.aim.fittsA;
+}
+
+/** Combat parameters of the legacy (gaze-off) model: its calibrated stop time (types.ts LEGACY_STOP_MS). */
+const LEGACY_COMBAT_PARAMS = { ...COMBAT_PARAMS, accuracy: { ...COMBAT_PARAMS.accuracy, stopMs: LEGACY_STOP_MS } };
+
 /** How far from the corner a peeking player is when first contact happens (world units; ≈3 m). */
 const PEEK_CORNER_DISTANCE = 300;
+
+/** A post-plant guard's post (guardPostFor). */
+interface GuardPost {
+  readonly entry: string;
+  readonly zoneId: string;
+  readonly position: { x: number; y: number; z: number };
+  /** The first point of the retake route through `entry` the post sees. */
+  readonly show: { x: number; y: number; z: number };
+  /** The zone the team's plan named for it (null: chosen between the site and the attack's entries). */
+  readonly within: string | null;
+}
+
+/** A guard this close (uu) to its post stands on it (the mover's "at" tolerance). */
+const GUARD_POST_TOLERANCE_UNITS = 100;
 
 /**
  * How near the planted spike a defender must be to defuse it (uu, ≈1.5 m from body centre to the
@@ -106,6 +151,16 @@ const STACK_WINDOW_MS = 1500;
 const STACK_MAX_WAIT_MS = 2000;
 /** Half field of view (radians): a holder is "watching" an edge when it lies inside this cone. */
 const HALF_FOV_RAD = (PERCEPTION_PARAMS.vision.halfFovDeg * Math.PI) / 180;
+/**
+ * A flash pops in the air, not on the floor. Without a sight query for a point in the air, the
+ * pop is taken as seen by anyone who sees some of the floor within this distance of where it
+ * landed (≈ how far a pop's light spreads over the floor it is above). manual-approx.
+ */
+const FLASH_POP_SPREAD_UNITS = 300;
+/** A screening smoke keeps this far (beyond its radius) off the walkway the team will use (a body's width; manual-approx). */
+const SMOKE_WALKWAY_MARGIN_UNITS = 100;
+/** At most this many watch / lane points are scored when choosing where a screening smoke lands (cost bound). */
+const SMOKE_SCORE_POINTS = 40;
 
 /** What a mover needs to know about the ground ahead (built once per tick). */
 interface MoveWorld {
@@ -264,6 +319,7 @@ export class RoundSimulator {
     const collect = this.cfg.collectStats === true;
     let overlapTicks = 0, minPairDistance = Number.POSITIVE_INFINITY;
     const siteArrivals: Array<{ playerId: string; zoneId: string; atMs: number }> = [];
+    const zonePresence: Array<{ atMs: number; attack: string[]; defense: string[] }> = [];
     const attackerRoutes: Record<string, string[]> = {};
     if (collect) for (const p of state.players) if (p.side === "attack") attackerRoutes[p.id] = [p.zoneId];
     this.steppingOut.clear();
@@ -272,14 +328,51 @@ export class RoundSimulator {
     this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
     this.mover.reset(state.players);
     this.spikeRunner = null;
+    this.plantPlans.clear();
+    this.guardPosts.clear();
+    this.guardPostZone.clear();
+    this.plantRecord = null;
     this.publishZones(state);
     const navEvents: NavTraceEvent[] = [];
-    const engaged = new Set<string>(); // pair keys already resolved
+    // pair key → elapsedMs from which the pair may fight again. Without the gaze model a pair fights
+    // once per round (Infinity); with it a duel can end in a disengage, and the pair may meet again
+    // once both have re-acquired (the re-peek).
+    const engaged = new Map<string, number>();
+    this.coverUntil.clear();
+    this.peekCount = { walkIn: 0, swing: 0, slice: 0, jiggle: 0, rePeek: 0, disengage: 0 };
+    this.rePeekOf.clear();
+    this.prevPos.clear();
     // one persistent RNG stream per side (deterministic, independent)
     const rngOf = {
       attack: new SeededRandomSource(deriveSeed(this.cfg.seed, "policy:attack")),
       defense: new SeededRandomSource(deriveSeed(this.cfg.seed, "policy:defense")),
     } as const;
+    // Movement style (movement-style.ts) and the buy phase (buy-phase.ts). The round's plan is made
+    // when the buy phase starts — the very decision tick 0 would make, from the same state — and the
+    // buy phase carries it out behind the barriers; tick 0 then reuses it.
+    this.styles = this.cfg.movementStyle ? new RoundMovementStyles(this.spatial, deriveSeed(this.cfg.seed, "movement"), typeof this.cfg.movementStyle === "object" ? this.cfg.movementStyle : {}) : null;
+    const opening: Partial<Record<Side, { view: PolicyView; decision: PolicyDecision }>> = {};
+    let buyPhase: BuyPhaseResult | null = null;
+    if ((this.cfg.buyPhaseMs ?? 0) > 0 && this.spatial.nav) {
+      for (const side of ["attack", "defense"] as const) {
+        const view = buildPolicyView(side, state, perception, spatialQuery, null, 0, {
+          activeAbilities: toPerceptionAbilityStates(abilityEngine), abilityEngine, cues, elapsedMs: state.elapsedMs,
+          abilityCues, abilityCatalog: this.abilitiesCatalog, transitOf: (p) => this.transitOf(p), stationaryIds: this.edgeWaiting,
+        });
+        opening[side] = { view, decision: this.policies[side].decide(view, rngOf[side]) };
+      }
+      this.styles?.assign(state.players, [opening.attack!.decision, opening.defense!.decision]);
+      buyPhase = runBuyPhase({
+        spatial: this.spatial, players: state.players,
+        opening: { attack: opening.attack!.decision, defense: opening.defense!.decision },
+        styles: new Map(state.players.map((p) => [p.id, this.styles?.styleOf(p.id)]).filter((e): e is [string, NonNullable<ReturnType<RoundMovementStyles["styleOf"]>>] => !!e[1])),
+        durationMs: this.cfg.buyPhaseMs!, tickMs: this.cfg.tickMs, seed: deriveSeed(this.cfg.seed, "buyPhase"),
+        speeds: { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC }, record: this.cfg.recordTracks,
+      });
+      this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
+      this.mover.reset(state.players);
+      this.publishZones(state);
+    }
 
     const push = (e: SimEvent) => events.push(e);
     push({ kind: "roundStart", tick: 0, elapsedMs: 0 });
@@ -296,10 +389,11 @@ export class RoundSimulator {
       // 1. decisions (every N ticks): one TEAM decision per side (PV-3 contract).
       if (state.tick % this.cfg.decisionIntervalTicks === 0) {
         const activeAbilities = toPerceptionAbilityStates(abilityEngine);
+        const decided: PolicyDecision[] = [];
         for (const side of ["attack", "defense"] as const) {
           const dt = prevBelief[side] ? decisionDtMs : 0;
           const sound = this.cfg.soundDetail ? this.soundWindow(state.elapsedMs, decisionDtMs) : null;
-          const view = buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, {
+          const view = state.tick === 0 && opening[side] ? opening[side]!.view : buildPolicyView(side, state, perception, spatialQuery, prevBelief[side], dt, {
             ...(sound ? { extraSounds: sound.extraSounds, maskers: sound.maskers } : {}),
             activeAbilities, abilityEngine, cues, elapsedMs: state.elapsedMs,
             abilityCues, abilityCatalog: this.abilitiesCatalog, transitOf: (p) => this.transitOf(p), stationaryIds: this.edgeWaiting,
@@ -309,7 +403,9 @@ export class RoundSimulator {
           if (this.cfg.recordPerception && state.tick % perceptionInterval === 0) {
             perceptionSnaps[side].push(toPerceptionSnapshot(view, spatialQuery, state.elapsedMs));
           }
-          const decision = this.policies[side].decide(view, rngOf[side]);
+          const decision = state.tick === 0 && opening[side] ? opening[side]!.decision : this.policies[side].decide(view, rngOf[side]);
+          decided.push(decision);
+          if (this.styles) for (const r of decision.roles) this.styles.roles.set(String(r.playerId), r.role);
           for (const c of decision.commands) {
             commands.set(c.playerId, c);
             trace(
@@ -321,6 +417,10 @@ export class RoundSimulator {
               `issued:${c.playerId}:${c.kind}:${c.targetZone ?? c.abilityId ?? ""}:${c.executeAtMs ?? 0}`,
             );
           }
+        }
+        if (this.styles && state.tick === 0) {
+          if (!this.styles.assigned) this.styles.assign(state.players, decided);
+          this.styles.install(this.mover, state.players, (side, z) => this.threatOf(side, z));
         }
       }
 
@@ -361,21 +461,31 @@ export class RoundSimulator {
             ...this.spotIntent(p, cmd, state),
             hazards,
           }, hooks);
+          if (this.styles) {
+            const joining = [...commands.values()].some((c) => c.playerId !== p.id && c.kind === "move" && c.targetZone === cmd.targetZone && state.players.some((q) => q.id === c.playerId && q.side === p.side && q.alive));
+            p.moveMode = this.styles.pace(p, p.moveMode, this.mover.remainingLength(p), this.calm(state, events), { carrier: state.spike.carrierId === p.id, joining });
+          }
         } else if (cmd?.kind === "plant" && !this.isMoving(p) && state.spike.carrierId === p.id && this.spatial.isPlantableZone(p.zoneId) && !this.onPlantArea(p)) {
           // Told to plant inside the site but not on its plant area: step onto it first.
-          this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: { kind: "plant" }, hazards }, hooks);
+          this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: this.plantIntent(p, p.zoneId, state), hazards }, hooks);
         } else if (cmd?.kind === "defuse" && !this.isMoving(p) && (state.spike.phase === "planted" || state.spike.phase === "defusing") && state.spike.position && state.spike.zoneId && !this.inDefuseReach(p, state.spike.position)) {
           // Told to defuse but not over the spike: walk to it.
           this.mover.setGoal(p, { zoneId: state.spike.zoneId, mode: "run", spot: { kind: "at", position: state.spike.position }, hazards }, hooks);
         } else if (cmd && cmd.kind === "hold" && !this.isMoving(p)) {
           // A holder told what to watch stands where it can see it: if its spot does not, it shifts
-          // to one of its zone that does (a few steps; the zone does not change).
-          const watch = this.watchIntent(p, cmd.aimZone, p.zoneId, state);
-          if (watch && !this.mover.seesFromSpot(p, watch) && this.mover.hasSpotThatSees(p.id, p.zoneId, watch)) {
+          // to one of its zone that does (a few steps; the zone does not change). A post-plant
+          // guard takes its post for the plant spot instead (guardPostFor).
+          const post = this.guardPostFor(p, cmd, state);
+          const watch = post ? null : this.watchIntent(p, cmd.aimZone, p.zoneId, state);
+          if (post && Math.hypot(p.position.x - post.position.x, p.position.y - post.position.y) > GUARD_POST_TOLERANCE_UNITS) {
+            this.mover.setGoal(p, { zoneId: post.zoneId, mode: "run", spot: { kind: "at", position: post.position }, hazards }, hooks);
+          } else if (watch && !this.mover.seesFromSpot(p, watch) && this.mover.hasSpotThatSees(p.id, p.zoneId, watch)) {
             this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: watch, hazards }, hooks);
           }
         }
-        this.mover.step(p, dt, alive, hooks);
+        this.prevPos.set(p.id, { x: p.position.x, y: p.position.y });
+        // a jiggler is back behind its cover until it has re-acquired (then it re-peeks)
+        if (!((this.coverUntil.get(p.id) ?? 0) > state.elapsedMs)) this.mover.step(p, dt, alive, hooks);
         // A stationary player aims at its hold zone (aimZone → targetZone → default enemy choke),
         // so perception FOV + combat pre-aim reflect a held angle instead of a stale facing.
         if (!this.isMoving(p)) this.faceStationary(p, cmd, originOf);
@@ -386,6 +496,13 @@ export class RoundSimulator {
       // faster than its turn rate allows.
       if (this.cfg.gaze) this.updateGaze(state, commands, prevBelief, facingBefore, gazeSource, dt);
       if (collect) {
+        if (state.tick % this.cfg.decisionIntervalTicks === 0) {
+          zonePresence.push({
+            atMs: state.elapsedMs,
+            attack: state.players.filter((p) => p.alive && p.side === "attack").map((p) => p.zoneId),
+            defense: state.players.filter((p) => p.alive && p.side === "defense").map((p) => p.zoneId),
+          });
+        }
         let overlap = false;
         for (let i = 0; i < alive.length; i++) {
           const a = alive[i]!;
@@ -441,8 +558,18 @@ export class RoundSimulator {
         if (!isMovement && cmd.targetZone) {
           const tz = this.spatial.getZone(cmd.targetZone);
           if (tz) {
-            // Where it lands: the floor of the target zone nearest the thrower (landingPoint).
-            const landing = this.landingPoint(p, tz.id, cmd.aimZone);
+            // Where it lands: a post-plant attacker's fire / slow field into the spike's zone goes onto
+            // the spike itself (a lineup on the defuse; no throw arc is modelled). A smoke ordered to
+            // hide a zone from the target zone (screenZone) goes where it cuts the most of the target
+            // zone's view of it while keeping off the walkway between them (screenPoint); anything else
+            // lands on the floor of the target zone nearest the thrower, or its side facing aimZone.
+            const sk = state.spike;
+            const onSpike = !!this.cfg.plantTactics && p.side === "attack" && (sk.phase === "planted" || sk.phase === "defusing") && sk.zoneId === tz.id && sk.position
+              && (spec.effectTypes.includes("molly") || spec.effectTypes.includes("slow"));
+            const screen = !onSpike && spec.blocksVision && cmd.screenZone && cmd.screenZone !== tz.id
+              ? this.screenPoint(p, tz.id, cmd.screenZone, spec.radiusUnits ?? DEFAULT_OCCLUDER_RADIUS_UNITS, spec.rangeUnits)
+              : null;
+            const landing = onSpike ? { ...sk.position! } : screen ?? this.landingPoint(p, tz.id, cmd.aimZone);
             const inReach = spec.rangeUnits != null ? dist3(p.position, landing) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
             if (!inReach) {
               trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
@@ -649,6 +776,7 @@ export class RoundSimulator {
       },
       roster: Object.fromEntries(state.players.map((p) => [p.id, p.side])),
       tracks: this.cfg.recordTracks ? tracks : undefined,
+      ...(buyPhase ? { buyPhase: { durationMs: buyPhase.durationMs, ...(this.cfg.recordTracks ? { tracks: buyPhase.frames } : {}), setups: buyPhase.setups } } : {}),
       navTrace: this.cfg.traceCommands || this.cfg.recordTracks ? navEvents : undefined,
       perception: this.cfg.recordPerception
         ? ([
@@ -658,12 +786,18 @@ export class RoundSimulator {
         : undefined,
       commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
       engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
+      ...(this.plantRecord ? { plant: this.plantRecord } : {}),
       cueTrace: this.cfg.traceCommands ? cues : undefined,
       abilityCueTrace: this.cfg.traceCommands ? abilityCues : undefined,
+      // information-layer trace: present only when a side runs the layer (it is off by default)
+      ...((this.cfg.traceCommands || this.cfg.recordPerception) && (this.policies.attack.informationTrace?.() || this.policies.defense.informationTrace?.())
+        ? { information: { attack: this.policies.attack.informationTrace?.() ?? null, defense: this.policies.defense.informationTrace?.() ?? null } }
+        : {}),
       ...(collect
         ? {
             stats: {
-              ticks: state.tick, overlapTicks, minPairDistance, siteArrivals, attackerRoutes,
+              ticks: state.tick, overlapTicks, minPairDistance, siteArrivals, zonePresence, attackerRoutes,
+              peeks: { ...this.peekCount },
               crowd: {
                 ...this.mover.crowd,
                 stackWaits: stackStats.waits, stackWaitTicks: stackStats.ticks, stackTimeouts: stackStats.timeouts,
@@ -683,7 +817,7 @@ export class RoundSimulator {
   // ---- sound detail (cfg.soundDetail) ----
   private readonly perceptionParams = roundPerceptionParams();
   /** Landings off drops this round (each a distance-rule sound with its own reach). */
-  private landings: Array<{ playerId: string; teamId: string; position: { x: number; y: number; z: number }; heightUnits: number; elapsedMs: number; radiusUnits: number; levelDb: number }> = [];
+  private landings: Array<{ kind?: "landing" | "traversal"; playerId: string; teamId: string; position: { x: number; y: number; z: number }; heightUnits: number; elapsedMs: number; radiusUnits: number; levelDb: number }> = [];
   /** Where and when shots were fired this round (the maskers). */
   private shotLog: Array<{ position: { x: number; y: number; z: number }; elapsedMs: number }> = [];
 
@@ -692,11 +826,21 @@ export class RoundSimulator {
     const m = this.perceptionParams.hearing.masking;
     return {
       extraSounds: this.landings.filter((l) => l.elapsedMs > nowMs - sinceMs && l.elapsedMs <= nowMs)
-        .map((l) => ({ kind: "landing" as const, position: l.position, teamId: l.teamId, radiusUnits: l.radiusUnits, levelDb: l.levelDb })),
+        .map((l) => ({ kind: l.kind ?? ("landing" as const), position: l.position, teamId: l.teamId, radiusUnits: l.radiusUnits, levelDb: l.levelDb })),
       maskers: this.shotLog.filter((s) => s.elapsedMs > nowMs - m.windowMs && s.elapsedMs <= nowMs)
         .map((s) => ({ position: s.position, levelDb: m.gunfireDb })),
     };
   }
+
+  // ---- peeks (gaze model) ----
+  /** Where each player stood before this tick's step (its measured velocity: lateral speed of a walk-in). */
+  private readonly prevPos = new Map<string, { x: number; y: number }>();
+  /** Peeks this round by technique (report-only; RoundStats.peeks). */
+  private peekCount: Record<PeekKind | "rePeek" | "disengage", number> = { walkIn: 0, swing: 0, slice: 0, jiggle: 0, rePeek: 0, disengage: 0 };
+  /** A jiggler is back behind its cover until this elapsedMs. */
+  private readonly coverUntil = new Map<string, number>();
+  /** A jiggler's re-peek target: the enemy it disengaged from (its next duel with it is a pre-aimed swing). */
+  private readonly rePeekOf = new Map<string, string>();
 
   /** Enemies each player saw on the last perception tick (not blinded). */
   private readonly lastSight = new Map<string, string[]>();
@@ -787,6 +931,68 @@ export class RoundSimulator {
     }
     const z = this.spatial.getZone(zoneId)!;
     return p.zoneId === zoneId ? { ...p.position } : { ...z.position };
+  }
+
+  /**
+   * Where a smoke lands that is thrown to screen `laneZone` off from `watchZone` (a cover smoke:
+   * the team will walk through `laneZone`, defenders watch it from `watchZone`). Map geometry only —
+   * every position a body could stand on, never where an enemy actually is:
+   *   watch points  roadmap nodes of watchZone that see laneZone, weighted by how much of it they see
+   *   lane points   nodes of laneZone seen from watchZone
+   *   walkway       the roadmap route from laneZone's standing point to watchZone's
+   * Each candidate floor point of the two zones that lies more than (radius + a body) off the
+   * walkway scores Σ weight(w) over the visible pairs (w, l) whose eye-to-eye line passes through a
+   * sphere of the smoke's radius around it; the best one within the thrower's range is chosen. So the
+   * smoke goes on the holders' side of the angle — the walkway is left clear, and the team does not
+   * have to walk out of its own smoke into the angle. null → no sight table, or no point cuts
+   * anything (the caller falls back on landingPoint).
+   */
+  private screenPoint(p: SimPlayer, watchZone: string, laneZone: string, radius: number, rangeUnits: number | null): { x: number; y: number; z: number } | null {
+    const nav = this.spatial.nav;
+    if (!nav || !nav.hasVisibility) return null;
+    const key = `${watchZone}|${laneZone}|${Math.round(radius)}`;
+    let ranked = this.screenCache.get(key);
+    if (!ranked) {
+      const top = (nodes: readonly number[], w: (n: number) => number) =>
+        nodes.map((n) => [n, w(n)] as const).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, SMOKE_SCORE_POINTS);
+      const watch = top(nav.zoneNodes(watchZone), (n) => nav.sightInto(n, laneZone));
+      const lane = top(nav.zoneNodes(laneZone), (n) => nav.sightInto(n, watchZone));
+      const eye = (n: number) => { const q = nav.nodePosition(n); return { x: q.x, y: q.y, z: q.z + EYE_HEIGHT_UNITS }; };
+      const pairs: Array<{ a: ReturnType<typeof eye>; b: ReturnType<typeof eye>; w: number }> = [];
+      for (const [w, wt] of watch) for (const [l] of lane) if (nav.nodesVisible(w, l)) pairs.push({ a: eye(w), b: eye(l), w: wt });
+      const route = nav.findPath({ actorId: "screen", start: this.spatial.standPosition(laneZone), destination: this.spatial.standPosition(watchZone), movementMode: "run", routePreference: "FASTEST" });
+      const walk = route.status === "SUCCESS" ? route.waypoints.map((wp) => wp.position) : [];
+      const clear = radius + SMOKE_WALKWAY_MARGIN_UNITS;
+      const offWalk = (q: { x: number; y: number; z: number }) => walk.every((r) => Math.hypot(r.x - q.x, r.y - q.y) > clear);
+      const scored: Array<{ at: { x: number; y: number; z: number }; score: number }> = [];
+      for (const c of [...nav.zoneNodes(watchZone), ...nav.zoneNodes(laneZone)]) {
+        const at = nav.nodePosition(c);
+        if (!offWalk(at)) continue;
+        let score = 0;
+        for (const pr of pairs) if (segmentHitsSphere(pr.a, pr.b, at, radius)) score += pr.w;
+        if (score > 0) scored.push({ at: { x: at.x, y: at.y, z: at.z }, score });
+      }
+      ranked = scored.sort((a, b) => b.score - a.score);
+      this.screenCache.set(key, ranked);
+    }
+    const reach = rangeUnits ?? Number.POSITIVE_INFINITY;
+    return ranked.find((r) => dist3(p.position, r.at) <= reach)?.at ?? null;
+  }
+  private readonly screenCache = new Map<string, Array<{ at: { x: number; y: number; z: number }; score: number }>>();
+
+  /**
+   * Does `e` see a flash that pops above `center`? The pop is in the air, so it is seen by anyone
+   * who sees the landing point or some floor within FLASH_POP_SPREAD_UNITS of it (manual-approx,
+   * standing in for an airborne sight query the map does not offer yet).
+   */
+  private seesPop(center: { x: number; y: number; z: number }, centerZone: string, e: SimPlayer): boolean {
+    if (this.lineOf({ position: center, zoneId: centerZone }, e)) return true;
+    const nav = this.spatial.nav;
+    if (!nav) return false;
+    for (const n of nav.withinDisc(center, FLASH_POP_SPREAD_UNITS).nodes) {
+      if (this.lineOf({ position: nav.nodePosition(n), zoneId: nav.nodeZone(n) }, e)) return true;
+    }
+    return false;
   }
 
   private refreshSightBlockers(abilityEngine: AbilityEngine): void {
@@ -1075,24 +1281,21 @@ export class RoundSimulator {
   /**
    * Enemies of `caster` blinded/suppressed by an effect centred at `center` (the caster, or a
    * thrown target point): alive, within `radiusUnits`, in the centre zone or with LoS to it.
-   * `needsSight` (a flash): only someone LOOKING toward where the flash comes from is blinded —
-   * for an enemy inside the target zone that is the side it was thrown from (the caster's zone),
-   * for one watching the target zone from elsewhere it is the target itself. A flash that pops in
-   * the caster's own zone is in the face of everyone there.
+   * `needsSight` (a flash): the pop is in the air and blinds whoever SEES it (seesPop) and has it
+   * on screen — within the field of view of where it pops. A flash that pops in the caster's own
+   * zone is in the face of everyone there.
    */
   private flashTargets(state: SimState, caster: SimPlayer, radiusUnits: number, center?: { x: number; y: number; z: number }, needsSight = false): string[] {
     const centerPos = center ?? caster.position;
     const centerZone = this.spatial.nearestZone(centerPos).id;
-    const casterZonePos = this.spatial.getZone(caster.zoneId)?.position ?? caster.position;
     const out: string[] = [];
     for (const e of state.players) {
       if (!e.alive || e.teamId === caster.teamId) continue;
       if (dist3(centerPos, e.position) > radiusUnits) continue;
-      if (!this.lineOf({ position: centerPos, zoneId: centerZone }, e)) continue;
-      if (needsSight && e.zoneId !== caster.zoneId) {
-        const popFrom = e.zoneId === centerZone ? casterZonePos : centerPos;
-        if (facingAngleTo(e.facing, e.position, popFrom) > HALF_FOV_RAD) continue;
-      }
+      if (needsSight) {
+        if (!this.seesPop(centerPos, centerZone, e)) continue;
+        if (e.zoneId !== caster.zoneId && facingAngleTo(e.facing, e.position, centerPos) > HALF_FOV_RAD) continue;
+      } else if (!this.lineOf({ position: centerPos, zoneId: centerZone }, e)) continue;
       out.push(e.id);
     }
     return out;
@@ -1129,7 +1332,12 @@ export class RoundSimulator {
             return false;
           }
         }
-        return this.stackedUp(p, toZone, world);
+        if (!this.stackedUp(p, toZone, world)) return false;
+        // stop and check the zone before stepping in (movement-style.ts): a pause owed like a slow field's
+        const cleared = this.styles ? world.state.players.some((q) => q.alive && q.side === p.side && q.id !== p.id && q.zoneId === toZone) : true;
+        const check = this.styles ? this.styles.checkPauseMs(p, toZone, this.threatOf(p.side, toZone), this.calm(world.state, world.events), world.state.elapsedMs, cleared) : 0;
+        if (check > 0) { p.edgeProgressMs = -check; return false; }
+        return true;
       },
       onZoneChange: (p, fromZone, toZone) => {
         world.lastHop.set(p.id, { fromZone, tick: world.state.tick });
@@ -1142,6 +1350,13 @@ export class RoundSimulator {
         if (!snd) return;
         this.landings.push({ playerId: p.id, teamId: p.teamId, position: at, heightUnits: h, elapsedMs: world.state.elapsedMs, ...snd });
         world.events.push({ kind: "landing", tick: world.state.tick, elapsedMs: world.state.elapsedMs, actor: p.id, zoneId: p.zoneId, detail: `${Math.round(h)}uu r${Math.round(snd.radiusUnits)}` });
+      },
+      onTraverse: (p, via, end, at) => {
+        if (!this.cfg.soundDetail) return;
+        // MS-09: a teleporter / rope / zipline is heard at the end the body is at (entry, then exit)
+        const snd = traversalSound(via, this.perceptionParams);
+        this.landings.push({ kind: "traversal", playerId: p.id, teamId: p.teamId, position: at, heightUnits: 0, elapsedMs: world.state.elapsedMs, ...snd });
+        world.events.push({ kind: "traversal", tick: world.state.tick, elapsedMs: world.state.elapsedMs, actor: p.id, zoneId: p.zoneId, detail: `${via} ${end}` });
       },
       onNavEvent: (e: NavEvent) => {
         navEvents.push({ tick: world.state.tick, elapsedMs: world.state.elapsedMs, ...e, ...(intent ? { intent } : {}) });
@@ -1173,7 +1388,7 @@ export class RoundSimulator {
    */
   private spotIntent(p: SimPlayer, cmd: ActionCommand, state: SimState): { spot?: SpotIntent } {
     const s = state.spike, targetZone = cmd.targetZone!;
-    if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: { kind: "plant" } };
+    if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: this.plantIntent(p, targetZone, state) };
     if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.zoneId === targetZone && s.position) {
       // One defender goes to the spike; the others cover it: each takes, of the spots that see the
       // spike, the one the rest of the map sees least — nearest its own way in.
@@ -1181,7 +1396,7 @@ export class RoundSimulator {
     }
     if (this.cfg.coverSpots && cmd.aimZone && cmd.aimZone !== targetZone) return { spot: { kind: "hold", watchZone: cmd.aimZone } };
     const watch = this.watchIntent(p, cmd.aimZone, targetZone, state);
-    return watch ? { spot: watch } : {};
+    return watch ? { spot: cmd.holdClose && "zone" in watch ? { ...watch, close: true } : watch } : {};
   }
 
   /**
@@ -1198,6 +1413,127 @@ export class RoundSimulator {
     if (p.side === "attack") return planted && s.zoneId === aimZone && s.position ? { kind: "see", point: s.position } : null;
     return !planted && aimZone !== standZone ? { kind: "see", zone: aimZone } : null;
   }
+
+  /**
+   * Where the carrier plants on a site (plant-spot.ts): decided once per round and site, the first
+   * time the carrier is sent there, from its game sense, the clock, where its teammates stand and
+   * what the attack believes about the retake — or the manager's preference (cfg.plantPreference).
+   * Without plant candidates (no sight table): the mover's own plant-area spot.
+   */
+  private plantIntent(p: SimPlayer, zoneId: string, state: SimState): SpotIntent {
+    if (!this.cfg.plantTactics) return { kind: "plant" };
+    // decided when the carrier is first sent to the site, and once more when it walks onto it
+    // (teammates and the clock have moved on since)
+    const key = p.zoneId === zoneId ? `${zoneId}|on` : zoneId;
+    let plan = this.plantPlans.get(key);
+    if (plan === undefined) {
+      const site = plantSpotsOf(this.spatial).get(zoneId);
+      const nav = this.spatial.nav;
+      plan = site && nav ? choosePlantSpot(this.spatial, site, {
+        from: p.position,
+        gameSense: (p.traits ?? AVERAGE_TRAITS).gameSense,
+        slackMs: state.timeRemainingMs - this.cfg.plantDurationMs,
+        teammateNodes: state.players.filter((q) => q.alive && q.side === p.side && q.id !== p.id).map((q) => nav.locate(q.position)),
+        threat: new Map((this.beliefNow.attack?.threatZones ?? []).map((t) => [t.zoneId, t.threatLevel])),
+        enemiesAlive: state.players.filter((q) => q.alive && q.side !== p.side).length,
+      }, this.cfg.plantPreference?.[site.site]) : null;
+      this.plantPlans.set(key, plan);
+    }
+    return plan ? { kind: "plant", node: plan.candidate.node } : { kind: "plant" };
+  }
+  /**
+   * A post-plant guard's post, chosen once per round from where the spike lies (plant-spot.ts):
+   *  entry  the way in R it covers, among every zone joined to the spike's zone. Guards split them
+   *         in proportion to how likely the retake comes through each — w_R = t_min / t_R +
+   *         believed threat in R (t_R: run time defender spawn → R → spike zone) — each new guard
+   *         taking the entry with the least guards per unit weight (count_R / w_R; ties to the
+   *         heavier).
+   *  spot   among roadmap nodes of the spike's zone and of the attack's own entries to the site
+   *         (on the spike or off it; only the zone the order names when the team's post-plant plan
+   *         sets one — PostPlantPlan.hold) that see the spike and see some point of the retake's route
+   *         R → spike (the roadmap path), the least
+   *           cost(n) = g · ( Σ_{R'≠R} sight(n, R') / max + k(n) / len ) / 2 + reach(n) / t_R
+   *         k(n)/len how far along the route the retaker first shows to n (earlier is better: the
+   *         guard sees it before it is on the spike), the sum how many other ways in see the guard,
+   *         g the guard's game sense, reach the straight-line run time to n (it has until the
+   *         retake arrives).
+   *  show   the first route point n sees — where the retake through R has to show itself, and
+   *         where the guard puts its crosshair (faceStationary).
+   * Null (the guard keeps the pre-existing rule: a spot that sees the spike) without a roadmap or
+   * sight table, for an order that is not a guard's, or when no node qualifies.
+   */
+  private guardPostFor(p: SimPlayer, cmd: ActionCommand, state: SimState): GuardPost | null {
+    const sp = state.spike;
+    if (!this.cfg.plantTactics || p.side !== "attack" || !(sp.phase === "planted" || sp.phase === "defusing") || !sp.zoneId || !sp.position || cmd.aimZone !== sp.zoneId) return null;
+    // the team's post-plant plan may name the zone to hold from (on the spike / off it); a new
+    // zone is a new post
+    const within = cmd.targetZone ?? null;
+    const known = this.guardPosts.get(p.id);
+    if (known !== undefined && (known === null ? this.guardPostZone.get(p.id) === within : known.within === within)) return known;
+    this.guardPostZone.set(p.id, within);
+    if (known) this.guardPosts.delete(p.id);
+    const nav = this.spatial.nav;
+    const site = plantSpotsOf(this.spatial).get(sp.zoneId);
+    const spikeNode = nav && nav.hasVisibility ? nav.locate(sp.position) : null;
+    if (!nav || !site || spikeNode === null) { this.guardPosts.set(p.id, null); return null; }
+    const spike = sp.position;
+    const entries = this.spatial.zones.map((z) => z.id).filter((z) => z !== sp.zoneId && z !== "attacker-spawn" && this.adjacent(z, sp.zoneId!));
+    const tR = entries.map((r) => {
+      const a = r === "defender-spawn" ? 0 : this.spatial.shortestTravelTimeMs("defender-spawn", r, "run");
+      const b = this.spatial.shortestTravelTimeMs(r, sp.zoneId!, "run");
+      return a == null || b == null ? Infinity : a + b + 1;
+    });
+    const tmin = Math.min(...tR);
+    const threat = new Map((this.beliefNow.attack?.threatZones ?? []).map((t) => [t.zoneId, t.threatLevel]));
+    const w = entries.map((r, i) => (Number.isFinite(tR[i]!) ? tmin / tR[i]! : 0) + (threat.get(r) ?? 0));
+    const count = entries.map((r) => [...this.guardPosts.values()].filter((g) => g?.entry === r).length);
+    const order = entries.map((_, i) => i).filter((i) => w[i]! > 0)
+      .sort((a, b) => count[a]! / w[a]! - count[b]! / w[b]! || w[b]! - w[a]!);
+    const g = (p.traits ?? AVERAGE_TRAITS).gameSense;
+    const pool = (within ? [within] : [...new Set([sp.zoneId, ...site.attackEntries])]).flatMap((z) => [...nav.zoneNodes(z)]).filter((n) => nav.nodesVisible(n, spikeNode));
+    for (const i of order) {
+      const r = entries[i]!;
+      const anchor = nav.anchorNode(r);
+      if (anchor === undefined) continue;
+      const route = nav.findPath({ actorId: `route:${r}`, start: nav.nodePosition(anchor), destination: spike, movementMode: "run", routePreference: "FASTEST" });
+      if (route.status !== "SUCCESS") continue;
+      const steps = route.waypoints.filter((wp) => wp.node >= 0).map((wp) => wp.node);
+      if (steps.length === 0) continue;
+      const others = (n: number): number => entries.reduce((a, q) => (q === r ? a : a + nav.sightInto(n, q)), 0);
+      let maxO = 1;
+      const cands: Array<{ n: number; k: number; o: number }> = [];
+      for (const n of pool) {
+        const k = steps.findIndex((m) => nav.nodesVisible(n, m));
+        if (k < 0) continue;
+        const o = others(n);
+        maxO = Math.max(maxO, o);
+        cands.push({ n, k, o });
+      }
+      if (cands.length === 0) continue;
+      const budget = Math.max(1000, tR[i]!);
+      let best = cands[0]!, bestC = Infinity;
+      for (const c of cands) {
+        const q = nav.nodePosition(c.n);
+        const cost = g * (c.o / maxO + c.k / steps.length) / 2 + Math.hypot(q.x - p.position.x, q.y - p.position.y) / 0.675 / budget;
+        if (cost < bestC || (cost === bestC && c.n < best.n)) { bestC = cost; best = c; }
+      }
+      const position = nav.nodePosition(best.n);
+      const post: GuardPost = { entry: r, zoneId: nav.zoneAt(position) ?? sp.zoneId, position, show: nav.nodePosition(steps[best.k]!), within };
+      this.guardPosts.set(p.id, post);
+      return post;
+    }
+    this.guardPosts.set(p.id, null);
+    return null;
+  }
+  /** Post-plant guard posts this round (null: none found for that guard). */
+  private readonly guardPosts = new Map<string, GuardPost | null>();
+  /** The zone each guard's post was chosen within (null: on the spike or off it, by cost). */
+  private readonly guardPostZone = new Map<string, string | null>();
+
+  /** Plant decision per site zone this round (null: no candidates there). */
+  private readonly plantPlans = new Map<string, PlantDecision | null>();
+  /** Where the spike went down this round (RoundResult.plant). */
+  private plantRecord: PlantRecord | null = null;
 
   /**
    * The defender who goes to the planted spike: the living defender nearest to it when the question
@@ -1244,6 +1580,13 @@ export class RoundSimulator {
     // spike left every retaker arriving from outside the cone: the retaker saw first in 85% of
     // post-plant duels (2026-11-23 measurement, ENGINE_TRUTH.md §4).
     const spike = this.spikeWatched;
+    const post = spike && p.side === "attack" && cmd?.aimZone === spike.zoneId ? this.guardPosts.get(p.id) : null;
+    if (this.cfg.gaze && post && Math.hypot(p.position.x - post.position.x, p.position.y - post.position.y) <= GUARD_POST_TOLERANCE_UNITS) {
+      // gaze model, on its post: crosshair where the retake it covers first shows (the legacy
+      // model keeps its calibrated rule below: its pre-aim flag is not an angle)
+      const ex = post.show.x - p.position.x, ey = post.show.y - p.position.y;
+      if (ex !== 0 || ey !== 0) { p.facing = { x: ex, y: ey }; return; }
+    }
     if (spike && p.side === "attack" && cmd?.aimZone === spike.zoneId && this.cfg.gaze) {
       const entry = this.guardEntryFor(p, spike.zoneId);
       const at = entry ? this.peekPoint(p, entry, "defender-spawn") : spike.position;
@@ -1322,6 +1665,21 @@ export class RoundSimulator {
   private readonly guardTaken = new Map<string, string>();
   /** Each side's latest belief (for gaze and the guards' entries). */
   private beliefNow: Record<Side, BeliefState | null> = { attack: null, defense: null };
+  /** The round's movement styles (config.movementStyle), or null. */
+  private styles: RoundMovementStyles | null = null;
+
+  /** The threat level a side's belief puts on a zone (0 when it has none). */
+  private threatOf(side: Side, zoneId: string): number {
+    for (const t of this.beliefNow[side]?.threatZones ?? []) if (t.zoneId === zoneId) return t.threatLevel;
+    return 0;
+  }
+
+  /** Before the first kill, with the spike not yet down: players still move at their own pace. */
+  private calm(state: SimState, events: readonly SimEvent[]): boolean {
+    if (state.spike.phase === "planted" || state.spike.phase === "defusing") return false;
+    for (const e of events) if (e.kind === "kill") return false;
+    return true;
+  }
 
   /** The zone the defenders enter `zoneId` through on a retake: the predecessor on defender-spawn → zone. */
   private retakeEntryOf(zoneId: string, originOf: Record<Side, string>): string | undefined {
@@ -1379,7 +1737,7 @@ export class RoundSimulator {
     state: SimState,
     sight: ReturnType<PerceptionEngine["perceive"]>,
     abilityEngine: AbilityEngine,
-    engaged: Set<string>,
+    engaged: Map<string, number>,
     events: SimEvent[],
     engTrace: EngagementRecord[] | null,
     castBusyUntil: ReadonlyMap<string, number>,
@@ -1446,7 +1804,7 @@ export class RoundSimulator {
         if (a.teamId === b.teamId || !a.alive || !b.alive) continue;
         if (busy.has(a.id) || busy.has(b.id)) continue;
         const key = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
-        if (engaged.has(key)) continue;
+        if ((engaged.get(key) ?? -1) > state.elapsedMs) continue;
         let aSeesB = sees(a.id, b.id);
         let bSeesA = sees(b.id, a.id);
         if (!aSeesB && !bSeesA) continue;
@@ -1472,7 +1830,7 @@ export class RoundSimulator {
         // Crossfire (양각): a second enemy, from another zone, also has eyes on this player.
         const aCross = crossfired(a, b);
         const bCross = crossfired(b, a);
-        engaged.add(key);
+        engaged.set(key, Infinity);
         busy.add(a.id);
         busy.add(b.id);
         const seed = deriveSeed(this.cfg.seed, `${state.tick}:${key}`);
@@ -1482,9 +1840,24 @@ export class RoundSimulator {
         // corner sees the other's shoulder first. Nothing is added when both move or both hold.
         let aAngleMs = 0;
         let bAngleMs = 0;
-        const aMoving = this.isMoving(a);
-        const bMoving = this.isMoving(b);
-        if (aMoving !== bMoving) {
+        let aMoving = this.isMoving(a);
+        let bMoving = this.isMoving(b);
+        // Gaze model: how the mover takes the angle (peek.ts) and the corner from measured positions.
+        const peek = this.cfg.gaze ? this.peekOf(a, b, aMoving, bMoving, state, infoWeight) : null;
+        if (peek) {
+          if (peek.peeker === a) aMoving = true; else bMoving = true;
+          const holder = peek.peeker === a ? b : a;
+          // The corner: where the sightline opened. A mover crossed it during its last step (half of
+          // it on average); a re-peeker strafes out from its cover by two body half-widths; a slicer
+          // keeps as far off the edge as the holder is (the limit where neither sees the other first).
+          const step = Math.hypot(peek.peeker.position.x - (this.prevPos.get(peek.peeker.id)?.x ?? peek.peeker.position.x), peek.peeker.position.y - (this.prevPos.get(peek.peeker.id)?.y ?? peek.peeker.position.y));
+          const total = dist3(a.position, b.position);
+          const pd = peek.kind === "slice" ? total / 2 : peek.rePeek || peek.kind === "jiggle" ? 2 * BODY_HALF_WIDTH : Math.max(1, step / 2);
+          const d = angleAdvantageDelays(pd, Math.max(1, total - pd), peek.strafeUnitsPerSec);
+          aAngleMs = peek.peeker === a ? d.peekerMs : d.holderMs;
+          bAngleMs = peek.peeker === b ? d.peekerMs : d.holderMs;
+          void holder;
+        } else if (aMoving !== bMoving) {
           const peeker = aMoving ? a : b;
           const holderDist = Math.max(1, dist3(a.position, b.position) - PEEK_CORNER_DISTANCE);
           const speed = (peeker.moveMode === "run" ? RUN_UNITS_PER_SEC : WALK_UNITS_PER_SEC) * (this.weapons[peeker.weaponId]?.runSpeedMultiplier ?? 1);
@@ -1500,11 +1873,37 @@ export class RoundSimulator {
           aAngleMs = aWatched ? smokeExitDelayMs(speed) : 0;
           bAngleMs = bWatched ? smokeExitDelayMs(speed) : 0;
         }
-        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, this.isMoving(b), castBusyUntil, aCross, lastAliveVsMany(a), aInfoW, aAngleMs, b);
-        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, this.isMoving(a), castBusyUntil, bCross, lastAliveVsMany(b), bInfoW, bAngleMs, a);
+        const aPeek = peek && peek.peeker === a ? peek : undefined;
+        const bPeek = peek && peek.peeker === b ? peek : undefined;
+        const ca = this.toCombatant(a, abilityEngine, state, aSeesB, bAware, bMoving, castBusyUntil, aCross, lastAliveVsMany(a), aInfoW, aAngleMs, b, aPeek);
+        const cb = this.toCombatant(b, abilityEngine, state, bSeesA, aAware, aMoving, castBusyUntil, bCross, lastAliveVsMany(b), bInfoW, bAngleMs, a, bPeek);
         const dm = dist3(a.position, b.position) / 100;
         events.push({ kind: "engage", tick: state.tick, elapsedMs: state.elapsedMs, actor: a.id, target: b.id, zoneId: a.zoneId });
-        const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration });
+        const r = resolveDuel({ a: ca, b: cb, distanceMeters: dm }, seed, { calibration: this.cfg.combatCalibration, ...(this.cfg.gaze ? {} : { params: LEGACY_COMBAT_PARAMS }) });
+        if (this.cfg.gaze) {
+          // A pair whose duel ended with both alive may meet again once both have re-acquired.
+          const reacquire = Math.max(reacquireMs(a), reacquireMs(b));
+          if (!r.winner) engaged.set(key, state.elapsedMs + reacquire);
+          if (peek?.rePeek) {
+            this.rePeekOf.delete(peek.peeker.id);
+            events.push({ kind: "rePeek", tick: state.tick, elapsedMs: state.elapsedMs, actor: peek.peeker.id, target: (peek.peeker === a ? b : a).id, zoneId: peek.peeker.zoneId });
+          }
+          if (r.disengagedAtMs !== undefined && peek) {
+            // Back behind cover. Both now know the other's spot (the jiggle's purpose); the jiggler
+            // re-peeks it once it has re-acquired, the holder's crosshair stays on it.
+            const holder = peek.peeker === a ? b : a;
+            events.push({ kind: "disengage", tick: state.tick, elapsedMs: state.elapsedMs, actor: peek.peeker.id, target: holder.id, zoneId: peek.peeker.zoneId });
+            for (const [viewer, seen] of [[peek.peeker, holder], [holder, peek.peeker]] as const) {
+              let m = intel.get(viewer.side);
+              if (!m) intel.set(viewer.side, (m = new Map()));
+              m.set(seen.id, { atMs: state.elapsedMs, zoneId: seen.zoneId, confidence: 1 });
+            }
+            this.coverUntil.set(peek.peeker.id, state.elapsedMs + reacquire);
+            this.rePeekOf.set(peek.peeker.id, holder.id);
+            this.peekCount.disengage++;
+          }
+          if (peek) this.peekCount[peek.rePeek ? "rePeek" : peek.kind]++;
+        }
         // Shots are world events with observable consequences for the OTHER team (sound, tracers).
         for (const [shooter, target] of [[a, b], [b, a]] as const) {
           if ((r.outcomes[shooter.id]?.shotsFired ?? 0) > 0) {
@@ -1565,6 +1964,9 @@ export class RoundSimulator {
               ? { smokeExit: { attacker: (atkP === a ? aFrom : bFrom) !== null, defender: (defP === a ? aFrom : bFrom) !== null, watched: aWatched || bWatched } }
               : {}),
             winnerSide,
+            ...(peek ? { peek: { side: peek.peeker.side, kind: peek.kind, rePeek: peek.rePeek } } : {}),
+            ...(r.disengagedAtMs !== undefined ? { disengaged: true } : {}),
+            spikePhase: state.spike.phase,
           });
         }
       }
@@ -1626,10 +2028,47 @@ export class RoundSimulator {
     }
   }
 
-  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0, angleMs = 0, opponent?: SimPlayer): Combatant {
+  /**
+   * The peek in a contact between a moving and a stationary player, or a jiggler's re-peek (gaze
+   * model). The peeker decides from its own knowledge (peek.ts choosePeek): a fresh call or a
+   * re-peek → swing; its gaze was on a believed threat at this enemy → jiggle / slice / swing;
+   * otherwise it walked in. Lateral speed: a swing / jiggle strafes at run speed, a slice walks, a
+   * walk-in moves as it was moving (measured from its last step).
+   */
+  private peekOf(a: SimPlayer, b: SimPlayer, aMoving: boolean, bMoving: boolean, state: SimState, infoWeight: (v: SimPlayer, e: SimPlayer) => number): PeekPlan | null {
+    const aRe = this.rePeekOf.get(a.id) === b.id, bRe = this.rePeekOf.get(b.id) === a.id;
+    const peeker = aRe ? a : bRe ? b : aMoving !== bMoving ? (aMoving ? a : b) : null;
+    if (!peeker) return null;
+    const holder = peeker === a ? b : a;
+    const mult = this.weapons[peeker.weaponId]?.runSpeedMultiplier ?? 1;
+    const run = RUN_UNITS_PER_SEC * mult, walk = WALK_UNITS_PER_SEC * mult;
+    if (aRe || bRe) return { peeker, kind: "swing", rePeek: true, strafeUnitsPerSec: run, lateralUnitsPerSec: run };
+    const look = this.gazeAt.get(peeker.id);
+    const expected = this.gazeOf.get(peeker.id) === "threat" && !!look
+      && offsetDeg({ x: look.x - peeker.position.x, y: look.y - peeker.position.y }, peeker.position, holder.position) <= CHECKED_SPOT_DEG;
+    const remainingRoute = this.mover.remainingLength(peeker) / (peeker.moveMode === "walk" ? walk : run) * 1000;
+    const clock = state.spike.detonateAtElapsedMs !== null
+      ? state.spike.detonateAtElapsedMs - state.elapsedMs - (peeker.side === "defense" ? this.cfg.defuseDurationMs : 0)
+      : this.cfg.roundTimeMs - state.elapsedMs;
+    const reacq = reacquireMs(peeker);
+    const kind = choosePeek({
+      knows: infoWeight(peeker, holder) >= 0.5,
+      expected,
+      walking: peeker.moveMode === "walk",
+      slackMs: clock - remainingRoute,
+      jiggleCostMs: jiggleExposureMs(run) + reacq,
+      gameSense: (peeker.traits ?? AVERAGE_TRAITS).gameSense,
+      u: (deriveSeed(this.cfg.seed, `peek:${state.tick}:${peeker.id}:${holder.id}`) % 1_000_000) / 1_000_000,
+    });
+    const prev = this.prevPos.get(peeker.id) ?? peeker.position;
+    const lateral = kind === "walkIn" ? lateralSpeed(prev, peeker.position, holder.position, this.cfg.tickMs) : kind === "slice" ? walk : run;
+    return { peeker, kind, rePeek: false, strafeUnitsPerSec: kind === "slice" ? walk : kind === "walkIn" ? Math.max(1, lateral) : run, lateralUnitsPerSec: lateral };
+  }
+
+  private toCombatant(p: SimPlayer, abilityEngine: AbilityEngine, state: SimState, seesEnemy: boolean, enemySeesSelf: boolean, opponentMoving: boolean, castBusyUntil: ReadonlyMap<string, number>, extraGuns = 0, clutchSpot = false, infoWeight = 0, angleMs = 0, opponent?: SimPlayer, peek?: PeekPlan): Combatant {
     const weapon = this.weapons[p.weaponId];
     if (!weapon) throw new Error(`unknown weapon: ${p.weaponId}`);
-    const stationary = !this.isMoving(p);
+    const stationary = !this.isMoving(p) && !peek;
     // Mid-cast: weapon not out (within the ability windup) → no pre-aim and a reaction penalty.
     const casting = (castBusyUntil.get(p.id) ?? 0) > state.elapsedMs;
     // Caught in a crossfire you cannot hold both angles: no pre-aim, and a late reaction.
@@ -1657,16 +2096,27 @@ export class RoundSimulator {
       posture: {
         ...OPEN_POSTURE,
         preAim,
-        moving: this.isMoving(p),
-        pace: p.moveMode === "walk" ? "walk" : "run",
+        moving: !stationary,
+        pace: peek ? (peek.kind === "slice" ? "walk" : "run") : p.moveMode === "walk" ? "walk" : "run",
         seesEnemyAtMs,
         flashBlindMs: blindMs,
         behindCover: 0,
         // Gaze: how far its crosshair is off the enemy when the fight starts (Fitts aim time in the
         // combat model; crosshair placement adds the height error). Replaces the pre-aim flag for timing.
-        ...(opponent && this.cfg.gaze ? { aimOffsetDeg: offsetDeg(p.facing, p.position, opponent.position) } : {}),
+        ...(opponent && this.cfg.gaze ? { aimOffsetDeg: peek?.kind === "slice" ? 0 : offsetDeg(p.facing, p.position, opponent.position) } : {}),
+        ...(peek ? { lateralSpeedMps: peek.lateralUnitsPerSec / 100 } : {}),
+        ...(peek?.kind === "jiggle" ? { exposedUntilMs: seesEnemyAtMs + jiggleExposureMs(peek.strafeUnitsPerSec) } : {}),
       },
     };
+  }
+
+  /**
+   * Progress kept when a defuse is let go (game rule, game-rules spike.ts defuseHalfwayMs): past
+   * the half-defuse checkpoint the defuse resumes from it; before it, from 0. Off (0) = always 0.
+   */
+  private defuseCheckpoint(progressMs: number): number {
+    const half = this.cfg.defuseHalfwayMs ?? 0;
+    return half > 0 && progressMs >= half ? half : 0;
   }
 
   private stepSpike(state: SimState, commands: Map<string, ActionCommand>, dtMs: number, events: SimEvent[], trace: Tracer): void {
@@ -1704,7 +2154,15 @@ export class RoundSimulator {
           s.zoneId = carrier.zoneId;
           s.position = { ...carrier.position };
           s.detonateAtElapsedMs = state.elapsedMs + this.cfg.spikeTimerMs;
-          events.push({ kind: "planted", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId });
+          const site = plantSpotsOf(this.spatial).get(carrier.zoneId);
+          const spot = plantSpotAt(site, s.position);
+          const plan = this.plantPlans.get(`${carrier.zoneId}|on`) ?? this.plantPlans.get(carrier.zoneId);
+          this.plantRecord = {
+            zoneId: carrier.zoneId, site: site?.site ?? null, position: { ...s.position }, atMs: state.elapsedMs,
+            spotId: spot?.id ?? null, spotKind: spot?.kind ?? "other",
+            intendedSpotId: plan?.candidate.id ?? null, by: plan?.by ?? null,
+          };
+          events.push({ kind: "planted", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId, detail: `spot=${spot?.id ?? "other"}` });
         }
       } else if (s.phase === "planting") {
         s.phase = "carried"; s.plantProgressMs = 0; // interrupted
@@ -1723,9 +2181,10 @@ export class RoundSimulator {
       const spikeAt = s.position;
       const defuser = spikeAt && state.players.find((p) => p.alive && p.side === "defense" && this.inDefuseReach(p, spikeAt) && !this.steppingOut.has(p.id) && !this.mover.isMoving(p) && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
       if (defuser) {
-        if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = 0; s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
+        // a fresh defuse starts from the half-defuse checkpoint if one was reached (else 0)
+        if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = this.defuseCheckpoint(s.defuseProgressMs); s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
         if (s.defuserId && !state.players.find((p) => p.id === s.defuserId)?.alive) {
-          s.phase = "planted"; s.defuseProgressMs = 0; s.defuserId = null;
+          s.phase = "planted"; s.defuseProgressMs = this.defuseCheckpoint(s.defuseProgressMs); s.defuserId = null;
           events.push({ kind: "defuseInterrupted", tick: state.tick, elapsedMs: state.elapsedMs });
           return;
         }
@@ -1737,7 +2196,7 @@ export class RoundSimulator {
       } else if (s.phase === "defusing") {
         // defuser left or died
         const prev = s.defuserId;
-        s.phase = "planted"; s.defuseProgressMs = 0; s.defuserId = null;
+        s.phase = "planted"; s.defuseProgressMs = this.defuseCheckpoint(s.defuseProgressMs); s.defuserId = null;
         if (prev) events.push({ kind: "defuseInterrupted", tick: state.tick, elapsedMs: state.elapsedMs, actor: prev });
       }
     }

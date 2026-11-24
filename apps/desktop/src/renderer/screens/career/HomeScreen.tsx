@@ -4,7 +4,7 @@
 import { useLang } from '../../i18n/index.tsx';
 import { Flag } from '../../ui.tsx';
 import { continueGame, useCareer } from '../../career/session.ts';
-import { dayAgenda, groupStandings, GROUPS, nextUserFixture, scoutedAbility, startingFive, type CareerState } from '../../career/world.ts';
+import { CIRCUIT_MODEL, dayAgenda, eventOf, groupStandings, GROUPS, INTL_EVENTS, nextUserFixture, regionRanking, scoutedAbility, startingFive, type CareerState } from '../../career/world.ts';
 import { fixtureLabel, inboxText, opponentOf, teamName, userScore } from '../../career/view.ts';
 import { LoadingScreen } from '../../loading/Loading.tsx';
 
@@ -65,6 +65,27 @@ function SquadStatus({ c }: { c: CareerState }) {
         })}
       </tbody>
     </table>
+  );
+}
+
+function CircuitCard({ c }: { c: CareerState }) {
+  const { t } = useLang();
+  const ranking = regionRanking(c.world, c.circuit, c.region, c.season.teams);
+  const next = INTL_EVENTS.map((id) => eventOf(c.circuit, id)).find((e) => !e.champion);
+  return (
+    <>
+      <div data-testid="home-cp">{t('home.circuit.points', { points: c.circuit.points[c.userTeamId] ?? 0, rank: ranking.indexOf(c.userTeamId) + 1, n: ranking.length })}</div>
+      {next ? (
+        <div className="small mt">
+          <b>{t('home.circuit.next', { event: t(`career.enum.${next.id}`) })}</b>
+          <div className="muted">
+            {next.start
+              ? t(next.teams.includes(c.userTeamId) ? 'home.circuit.in' : 'home.circuit.out', { start: next.start })
+              : t('home.circuit.undrawn', { quota: CIRCUIT_MODEL.quota[next.id] })}
+          </div>
+        </div>
+      ) : <div className="small muted mt">{t('home.circuit.over')}</div>}
+    </>
   );
 }
 
@@ -137,6 +158,12 @@ export function HomeScreen({ go, openMatch }: { go: (route: string) => void; ope
             </tbody>
           </table>
           <button className="ord-cancel mt" onClick={() => go('standings')}>{t('nav.standings')} →</button>
+        </section>
+
+        <section className="md-card" data-testid="home-circuit">
+          <h3>{t('home.circuit')}</h3>
+          <CircuitCard c={c} />
+          <button className="ord-cancel mt" onClick={() => go('standings')}>{t('stand.cp')} →</button>
         </section>
 
         <section className="md-card">

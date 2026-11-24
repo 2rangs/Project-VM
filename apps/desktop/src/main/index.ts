@@ -18,6 +18,7 @@ import {
 // [series]
 import { SeriesHost } from './series-host.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
+import type { OpponentReportView, PrematchRequest } from '../shared/manager.ts'; // [manager]
 // [career]
 import { registerCareerIpc } from './career-host.ts';
 import { EngineWorker } from './engine-worker.ts';
@@ -73,6 +74,9 @@ class SessionHost {
     const cfg = {
       teamA: req.teamA, teamB: req.teamB, map: req.mapId, seed: req.seed, aiTeams: req.aiTeams ?? ['B'],
       options: req.options ?? {},
+      // [manager] our pre-match plan and the opponent film the report was read from
+      ...(req.plan ? { plan: req.plan } : {}),
+      ...(req.scouting ? { scouting: req.scouting } : {}),
     };
     this.started = true;
     const r = await this.worker.request<{ state: SessionState }>('session.start', cfg, { timeoutMs: 60000 });
@@ -96,7 +100,7 @@ class SessionHost {
   shutdown(): void { this.started = false; this.worker.kill('session disposed'); }
 }
 const sessionHost = new SessionHost();
-app.on('will-quit', () => { disposeCareer(); seriesHost.shutdown(); sessionHost.shutdown(); matchWorker.kill('app quit'); });
+app.on('will-quit', () => { disposeCareer(); seriesHost.shutdown(); sessionHost.shutdown(); matchWorker.kill('app quit'); prematchWorker.kill('app quit'); });
 
 async function runMatchRunner(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
   const cfg = {
@@ -181,6 +185,12 @@ ipcMain.handle(IPC.seriesStart, async (_e, req: SeriesStartRequest): Promise<Ser
 ipcMain.handle(IPC.seriesCmd, async (_e, cmd: SeriesCommand): Promise<SeriesReply> => seriesHost.send({ ...cmd }) as Promise<SeriesReply>);
 ipcMain.handle(IPC.seriesStop, async (): Promise<void> => { seriesHost.dispose(); });
 
+// [manager] Pre-match opponent report (simulates the opponent's film): its own engine worker, so a
+// report being prepared never holds up a match.
+const prematchWorker = new EngineWorker('prematch');
+ipcMain.handle(IPC.prematchReport, async (_e, req: PrematchRequest): Promise<OpponentReportView> =>
+  (await prematchWorker.request<{ report: OpponentReportView }>('prematch.report', req, { timeoutMs: 180000 })).report);
+
 /** [series] One map of the live series in one go: the host returns the same RawMatch as run-match.mts. */
 async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {
   sender.send(IPC.simProgress, { runId, phase: 'start', pct: 0, message: 'series map (match-runner)' } satisfies SimProgress);
@@ -249,6 +259,29 @@ ipcMain.handle(IPC.bannerFile, async (_e, pack: string, file: string): Promise<U
   if (!/^[\w .-]{1,48}$/.test(p) || !(BANNER_FILE.test(f) || BANNER_LAYER.test(f) || BANNER_SOUND.test(f))) return null;
   for (const dir of bannerDirs()) {
     try { return new Uint8Array(await readFile(path.join(dir, p, f))); } catch { /* try the next location */ }
+  }
+  return null;
+});
+
+// Kingdom Archives media the user fetched with scripts/fetch-playercards.mjs:
+// apps/desktop/assets/playercards/ (committed). Read-only; the app never downloads it itself.
+const MEDIA_KINDS = new Set(['playercards']);
+const MEDIA_FILE = /^(?:[\w-]{1,40}\/)?[\w-]{1,60}\.png$/i;
+function mediaDirs(kind: string): string[] {
+  const env = process.env.PV_MEDIA_ASSETS_DIR;
+  return env ? [path.join(env, kind)] : [path.join(app.getAppPath(), 'assets', kind), path.join(dirname, '..', '..', 'assets', kind)];
+}
+ipcMain.handle(IPC.mediaManifest, async (_e, kind: string): Promise<unknown | null> => {
+  if (!MEDIA_KINDS.has(String(kind))) return null;
+  for (const dir of mediaDirs(String(kind))) {
+    try { return JSON.parse(await readFile(path.join(dir, 'manifest.json'), 'utf8')); } catch { /* try the next location */ }
+  }
+  return null;
+});
+ipcMain.handle(IPC.mediaFile, async (_e, kind: string, file: string): Promise<Uint8Array | null> => {
+  if (!MEDIA_KINDS.has(String(kind)) || !MEDIA_FILE.test(String(file))) return null;
+  for (const dir of mediaDirs(String(kind))) {
+    try { return new Uint8Array(await readFile(path.join(dir, String(file)))); } catch { /* try the next location */ }
   }
   return null;
 });

@@ -28,3 +28,7 @@ export { OpponentModel, Tendency, tendencyLean, FAKE_BASE_RATE } from "./opponen
 export type { OpponentRead, RoundObservation, TendencyEstimate, SiteKey, OpponentPrior } from "./opponent-model.js";
 export { annotateRoutes, beliefZoneCosts, routeIntentOf } from "./route-intent.js";
 export type { RouteIntent, RoutePreference } from "./route-intent.js";
+export {
+  DEFAULT_MID_CONTROL_TUNING, MID_CALL_BASE, MidControlTracker, decideMidCall, defenderStartsFor, midCallWeight, midControlState, midHolder, midPlanFor, ownControl, stepMidControl,
+} from "./mid-control.js";
+export type { MidCall, MidCallContext, MidControlRecord, MidControlTuning, MidEvidence } from "./mid-control.js";

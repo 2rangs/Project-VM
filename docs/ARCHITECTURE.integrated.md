@@ -213,4 +213,4 @@ flowchart TB
 | 데이터 스키마 | `docs/DATA_SCHEMA.md` |
 | 라이선스·커밋 가능 범위 | `docs/LICENSE_AUDIT.md`, `docs/THIRD_PARTY_NOTICES.md` |
 | 데스크톱 앱 | `apps/desktop/README.md` |
-| 작업 이력·다음 작업 | `docs/DEVELOPMENT_LOG.md`, `docs/WORK_HISTORY.md`, `docs/NEXT_TASKS.md` |
+| 작업 이력·다음 작업 | `docs/archive/DEVELOPMENT_LOG.md`, `docs/WORK_HISTORY.md`, `docs/archive/NEXT_TASKS.md` |

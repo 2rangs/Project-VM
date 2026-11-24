@@ -10,10 +10,12 @@ import type {
 import { DEFAULT_PARAMS, type CombatCalibration, type CombatParams } from "./params.js";
 import { mulberry32, deriveSeed, type Rng } from "./rng.js";
 import { applyDamage, damageForRange } from "./damage.js";
-import { headshotChance, hitChance, readyDelayMs } from "./skills.js";
+import { headshotChance, hitChance, pelletLandChance, readyDelayMs } from "./skills.js";
 
 interface FighterState {
   readonly c: Combatant;
+  /** The fire mode of this duel: pellets per pull, their spread, pulls per second, rounds per pull. */
+  readonly mode: { readonly pellets: number; readonly spreadDeg: number; readonly fireRate: number; readonly ammoPerShot: number };
   health: number;
   armor: number;
   ammo: number;
@@ -29,13 +31,22 @@ export interface ResolveOptions {
   readonly calibration?: CombatCalibration;
 }
 
-function initState(c: Combatant, seed: number, p: CombatParams, cal: CombatCalibration, distanceMeters: number): FighterState {
+function initState(c: Combatant, opponent: Combatant, seed: number, p: CombatParams, cal: CombatCalibration, distanceMeters: number): FighterState {
+  const w = c.weapon;
+  const alt = w.altFire && distanceMeters <= w.altFire.useWithinMeters ? w.altFire : null;
+  const mode = alt
+    ? { pellets: alt.pellets, spreadDeg: alt.spreadDeg, fireRate: alt.fireRate, ammoPerShot: alt.ammoPerShot }
+    : { pellets: w.pellets ?? 1, spreadDeg: w.spreadDeg ?? 0, fireRate: w.fireRate, ammoPerShot: 1 };
   return {
     c,
+    mode,
     health: c.health,
     armor: c.armor,
     ammo: c.ammo ?? c.weapon.magazineSize,
-    nextFireAt: readyDelayMs(c, p, cal, distanceMeters),
+    // The line of sight between them turns at (own lateral + opponent lateral) / distance for BOTH
+    // fighters: a strafing peeker's crosshair drifts off a still holder as much as the holder's
+    // crosshair drifts off it.
+    nextFireAt: readyDelayMs(c, p, cal, distanceMeters, (c.posture.lateralSpeedMps ?? 0) + (opponent.posture.lateralSpeedMps ?? 0)),
     shotsFired: 0,
     shotsHit: 0,
     rng: mulberry32(deriveSeed(seed, c.id)),
@@ -59,8 +70,8 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
   const p = opts.params ?? DEFAULT_PARAMS;
   const cal = opts.calibration ?? {};
   const states: Record<PlayerId, FighterState> = {
-    [duel.a.id]: initState(duel.a, seed, p, cal, duel.distanceMeters),
-    [duel.b.id]: initState(duel.b, seed, p, cal, duel.distanceMeters),
+    [duel.a.id]: initState(duel.a, duel.b, seed, p, cal, duel.distanceMeters),
+    [duel.b.id]: initState(duel.b, duel.a, seed, p, cal, duel.distanceMeters),
   };
   const order: [FighterState, FighterState] = [states[duel.a.id], states[duel.b.id]];
   const opponentOf = (s: FighterState): FighterState => (s === order[0] ? order[1] : order[0]);
@@ -69,6 +80,9 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
   let winner: PlayerId | null = null;
   let loser: PlayerId | null = null;
   let ttk: number | null = null;
+  let disengagedAtMs: number | undefined;
+  // A jiggle / shoulder peek: the line of sight ends when the first fighter is back behind cover.
+  const exposedUntil = Math.min(duel.a.posture.exposedUntilMs ?? Infinity, duel.b.posture.exposedUntilMs ?? Infinity);
 
   const bothAlive = () => order[0].health > 0 && order[1].health > 0;
 
@@ -76,9 +90,10 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
     // pick the next shooter: earliest nextFireAt; ties → combatant a (order[0]) first.
     const shooter = order[0].nextFireAt <= order[1].nextFireAt ? order[0] : order[1];
     const t = shooter.nextFireAt;
+    if (t > exposedUntil) { disengagedAtMs = exposedUntil; break; }
     if (t > p.timeBudgetMs) break;
 
-    if (shooter.ammo <= 0) {
+    if (shooter.ammo < shooter.mode.ammoPerShot) {
       events.push({ kind: "reloadStart", timeMs: t, actor: shooter.c.id });
       shooter.nextFireAt = t + shooter.c.weapon.reloadTimeMs;
       shooter.ammo = shooter.c.weapon.magazineSize;
@@ -88,14 +103,32 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
 
     const target = opponentOf(shooter);
     shooter.shotsFired += 1;
-    shooter.ammo -= 1;
+    shooter.ammo -= shooter.mode.ammoPerShot;
     events.push({ kind: "shot", timeMs: t, actor: shooter.c.id, target: target.c.id });
 
     const isFirst = shooter.shotsFired === 1;
     const pHit = hitChance(shooter.c, target.c, duel.distanceMeters, isFirst, p, cal, t);
-    if (shooter.rng() < pHit) {
-      const loc = rollLocation(shooter.rng, headshotChance(shooter.c, p, cal, t));
-      const dmg = damageForRange(shooter.c.weapon, duel.distanceMeters, loc);
+    let landed = shooter.rng() < pHit;
+    let loc: HitLocation = "body";
+    let dmg = 0;
+    if (landed && shooter.mode.pellets > 1) {
+      // A pull of pellets: each lands with the cone's share at this range and rolls its own location.
+      const q = pelletLandChance(shooter.mode.spreadDeg, duel.distanceMeters);
+      const hs = headshotChance(shooter.c, p, cal, t);
+      let n = 0;
+      for (let k = 0; k < shooter.mode.pellets; k++) {
+        if (shooter.rng() >= q) continue;
+        const l = rollLocation(shooter.rng, hs);
+        if (n === 0) loc = l;
+        dmg += damageForRange(shooter.c.weapon, duel.distanceMeters, l);
+        n++;
+      }
+      landed = n > 0;
+    } else if (landed) {
+      loc = rollLocation(shooter.rng, headshotChance(shooter.c, p, cal, t));
+      dmg = damageForRange(shooter.c.weapon, duel.distanceMeters, loc);
+    }
+    if (landed) {
       const after = applyDamage({ health: target.health, armor: target.armor }, dmg);
       target.health = after.health;
       target.armor = after.armor;
@@ -120,7 +153,7 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
       }
     }
 
-    shooter.nextFireAt = t + 1000 / shooter.c.weapon.fireRate;
+    shooter.nextFireAt = t + 1000 / shooter.mode.fireRate;
   }
 
   const outcomes: Record<PlayerId, CombatantOutcome> = {};
@@ -135,5 +168,5 @@ export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {})
       shotsHit: s.shotsHit,
     };
   }
-  return { winner, loser, timeToKillMs: ttk, events, outcomes };
+  return { winner, loser, timeToKillMs: ttk, events, outcomes, ...(disengagedAtMs !== undefined ? { disengagedAtMs } : {}) };
 }

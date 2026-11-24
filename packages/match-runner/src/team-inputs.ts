@@ -18,8 +18,9 @@
  *
  * All fields are optional; an omitted / neutral field leaves the match byte-identical.
  */
-import type { TacticalTraits } from "@pv/round-simulator";
-import type { OpponentPrior, SiteKey } from "@pv/team-engine";
+import type { PlantPreferences, TacticalTraits } from "@pv/round-simulator";
+import type { MidPlans, PostPlantPlans, RetakePlans } from "@pv/shared-types";
+import type { OpponentPrior, PolicyTuning, SiteKey } from "@pv/team-engine";
 
 export interface TeamMatchInputs {
   /** Multiplies the team's throw hazard λ₀ (1 = unchanged). */
@@ -34,6 +35,44 @@ export interface TeamMatchInputs {
   readonly opponentPrior?: OpponentPrior;
   /** A conviction that in-match evidence has to outweigh (the team's own game plan). Does not fade. */
   readonly standingPrior?: OpponentPrior;
+  /**
+   * Where the team plants, per site letter, when it attacks (round-simulator PlantChoice): "auto"
+   * (the carrier decides by game sense and situation), a spot kind ("default" | "safe" | "open" |
+   * "cover" | "near"), or `{ spotId }` from `plantSpotsOf(spatial)` (a map's candidate list).
+   */
+  readonly plantPreference?: PlantPreferences;
+  /**
+   * What the team does after its plant, per site letter and plant spot ("*", a spot kind or a spot
+   * id; the most specific wins field by field): hold on / off the spike, a flank watcher, ground
+   * utility kept for the spike, fall back when outnumbered (shared-types PostPlantPlan). Fields
+   * left out are the IGL's call. Recorded per round in decisions.plans[team].postPlant.
+   */
+  readonly postPlantPlans?: PostPlantPlans;
+  /**
+   * How the team retakes, per site letter and plant spot: the entry, stack or split, when to give
+   * the round up (shared-types RetakePlan). Recorded per round in decisions.plans[team].retake.
+   */
+  readonly retakePlans?: RetakePlans;
+  /**
+   * Mid control per map and side (shared-types mid-plans.ts): contest mid, give it up, or leave it
+   * to the IGL ("auto"), how many go and who. Keys are map ids, "*" for every map; the map's own
+   * entry wins field by field. Omitted → the IGL decides everything.
+   */
+  readonly midPlans?: MidPlans;
+}
+
+/**
+ * [manager] Per-ROUND values a manager layer sets between rounds (MatchEngine.setRoundInputs):
+ * the team's current state of mind (tilt / confidence, manager.ts) and its risk shout. They
+ * compose with the match-long TeamMatchInputs — scales multiply, deltas add — and feed the same
+ * formulas. All neutral → the round is played exactly as without them.
+ */
+export interface RoundTeamInputs {
+  readonly throwRateScale?: number;
+  readonly formSigmaScale?: number;
+  readonly traitDelta?: Partial<TacticalTraits>;
+  /** Overrides of the team's decision thresholds (retake / save / hero chance) for this round. */
+  readonly tuning?: Partial<PolicyTuning>;
 }
 
 /**

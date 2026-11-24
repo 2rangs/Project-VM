@@ -6,6 +6,14 @@ Commits:
 - `7665df5`: engine bundled into a worker, packaged macOS build, localised plan-change reasons.
 - The main merge, then this note.
 
+**Merge port (`claude/remaining-work-final-push-fa1459` @ c29b4df merged in).** series-veto's in-match manager layer now runs in the engine host:
+- The managed match session (`createManagedSession`) in `src/engine/match-session.ts`, with `setShouts` / `setStrategy` / `teamTalk`, `cfg.plan` and `cfg.scouting`, and the manager view in state and result.
+- `managed: true` series maps with the same commands in `src/engine/series-session.ts`.
+- The projection onto our seat, in `src/engine/manager-view.ts` (was `scripts/manager-view.mts`).
+- The pre-match opponent report as host op `prematch.report` (`src/engine/prematch.ts`, its own `prematch` worker).
+
+The renderer IPC contract (`prematchReport`, session commands) is unchanged. `scripts/match-session.mts`, `series-session.mts` and `prematch.mts` are thin tsx wrappers. The manager flags (`moodEffects`, `aiManager`, `timeoutsPerHalf`) stay default-off, as series-veto shipped them. `setup.ts` keeps the data cache together with weapon modes and the `plantTactics` / `midControl` / `information` policy flags.
+
 Detail lives in `apps/desktop/README.md`: "How a match reaches the screen", "Packaged build (macOS)" and "Round decisions".
 
 ## Done and default-on
@@ -53,8 +61,9 @@ None. Neither commit changes engine behaviour.
 
 - **Determinism** (`apps/desktop/test/engine-bundle.test.ts`, part of `npm run test:engine`, needs `npm run build`): the bundle and the tsx source path give byte-identical output for:
   - 3 one-shot configs, including opponent memory off plus a throw floor, and Haven
-  - a 7-command interactive session
-  - a Bo1 series through the veto
+  - a managed interactive session: plan, timeout, orders, shouts, strategy, half-time team talk
+  - the pre-match report
+  - a Bo1 series through the veto, with the managed map played round by round with shouts / strategy / talk, then closed
   - a career series
 - **Staged data alone**: the bundle also runs from a staged data copy outside the repo and matches the repo run. Every series-pool map plays from it.
 - **Cache safety**: matches on all 7 pool maps plus a Bo3 ran with the cached data deep-frozen, with no mutation. `packages/match-runner` vitest passes 104/104.
@@ -63,7 +72,8 @@ None. Neither commit changes engine behaviour.
   - bundle warm, same worker: 1.8–2.0 s
   - tsx: 3.0 s per process, including tsx start-up
 - **Package size**: app.asar 7.4 MB, engine data 70 files / 5.6 MB, whole app 256 MB.
-- **Desktop checks on the merged tree**: typecheck and build pass, `test:unit` 66/66, `test:matchday` 54/54. `test:engine` was 9/9 before the docs-only main merge.
+- **After the merge port** (on c29b4df + this branch): desktop typecheck and build pass, `test:unit` 75/75, `test:matchday` 55/55, `test:engine` 10/10. `packages/match-runner` vitest 135/135 and tsc clean.
+- **Package with the merged tree**: app.asar 27.7 MB (141 player cards included, flagged for release review), whole app 277 MB, content check OK.
 
 ## Unfinished (exact next step)
 
@@ -89,6 +99,7 @@ git checkout -- apps/desktop/docs   # keep only desktop-packaged.png if wanted
 
 - **utilityProcess specifics** are untested: `env` and `serviceName` on fork, and message delivery. If they misbehave, Match Day falls back to the round-simulator worker, which gives no decisions and no Review decision panel. The packaged smoke test catches this.
 - **A request that times out kills its worker.** The engine is synchronous. Timeouts are 180 s for a match, 60 s for session commands, and 300 s per career series. A long series play-out on a slow machine could hit one.
+- **Stale pnpm copy:** round-simulator depends on decision-engine as a `file:` copy, which goes stale after decision-engine changes until `pnpm install` is re-run. match-runner's `tsc` then reports missing `InfoProfile` / `InformationLayer` exports. The app bundle aliases every `@pv/*` to source, so it is unaffected. This predates this branch.
 - **Engine code that mutates loaded map or weapon data** will now leak into the next match in the same process. Clone before mutating.
 - **A new engine data file** must be read via an `import.meta.url`-relative path and added to `ENGINE_DATA_ALLOW` in `stage-engine-data.mjs`. `test:engine` fails if it is missing from the staged copy.
 - **Rewording a reason in team-engine** makes it fall back to English in Review (no crash). The cases are listed in `test/decisions.test.ts`.

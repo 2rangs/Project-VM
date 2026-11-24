@@ -63,8 +63,76 @@ export interface MapTactics {
   readonly smokes: Readonly<Record<string, readonly string[]>>;
   /** Where the five defenders start, by roster index. */
   readonly defenderStarts: readonly string[];
+  /**
+   * Ground the attack holds first: zones the attackers reach from their spawn before the defenders
+   * reach them from theirs (spawns and sites excluded).
+   */
+  readonly attackerGround: readonly string[];
+  /**
+   * Which site a zone leads the attack to, for zones whose name does not say (mid, bridges, ...):
+   * the zone lies on the attackers' way to that site (a detour of at most APPROACH_DETOUR_MS from
+   * their fastest route) and is at least APPROACH_MARGIN_MS further out of the way to every other
+   * site. A defender who hears or sees the attack there reads it as coming for that site.
+   */
+  readonly approachSide: Readonly<Record<string, string>>;
+  /** The map's middle: its zones, chokes and what holding it opens (null = the map has no mid). */
+  readonly midArea: MidArea | null;
   /** Which values came from the map's hand-authored file rather than the rules. */
   readonly authored: readonly string[];
+}
+
+/** A mid zone with a way out of mid, and what that way leads to. */
+export interface MidChoke {
+  /** The mid zone. */
+  readonly zone: string;
+  /** The zone outside mid it opens onto. */
+  readonly onto: string;
+  /** The site that way leads to (the site itself, a zone named for it, or a zone the attack takes to it), or null. */
+  readonly leadsTo: string | null;
+  /** Which side reaches the mid zone first. */
+  readonly first: "attack" | "defense";
+}
+
+/** A way from mid onto a site that does not use the site's main entry: the second lane of a split. */
+export interface MidSiteLink {
+  /** The mid zone it leaves from. */
+  readonly from: string;
+  /** Zones from `from` to the site, both included. */
+  readonly path: readonly string[];
+  /** The zone it enters the site from. */
+  readonly entry: string;
+  readonly travelMs: number;
+}
+
+/**
+ * The middle of a map, derived from its zones (rules at deriveMidArea). Mid is the ground between
+ * the sites that belongs to neither: who stands on it can reach either site, sees the other side
+ * change position, and sits on the defenders' short way between sites.
+ */
+export interface MidArea {
+  /** Every mid zone. */
+  readonly zones: readonly string[];
+  /** The mid zone each side reaches first from its spawn, and after how long. */
+  readonly attackEntry: string;
+  readonly attackMs: number;
+  readonly defenseEntry: string;
+  readonly defenseMs: number;
+  /** Where the two sides meet: the mid zone with the smallest gap between their arrivals. */
+  readonly contest: string;
+  readonly chokes: readonly MidChoke[];
+  /** Per site letter: the way from mid onto the site past its main entry, or null when mid opens none. */
+  readonly siteLinks: Readonly<Record<string, MidSiteLink | null>>;
+  /** The attack changing sites (main entry to main entry), through mid and without it; null = no such way. */
+  readonly attackSwitch: ReadonlyArray<{ readonly from: string; readonly to: string; readonly throughMs: number | null; readonly aroundMs: number | null }>;
+  /** The defence rotating between sites, through mid and without it (its own spawn is open to it). */
+  readonly defenseRotate: ReadonlyArray<{ readonly from: string; readonly to: string; readonly throughMs: number | null; readonly aroundMs: number | null }>;
+  /**
+   * What mid is worth to the attack on this map, 0..1: the share of the site switch it saves,
+   * (around − through) / around, the largest over the site pairs (1 when there is no way round).
+   */
+  readonly attackValue: number;
+  /** The same for the defence's rotation. */
+  readonly defenseValue: number;
 }
 
 /** The hand-authored part of a map's tactics (`<map>.tactics.json`); every key is optional. */
@@ -83,6 +151,10 @@ const ATTACKER_SPAWN = "attacker-spawn";
 const DEFENDER_SPAWN = "defender-spawn";
 const DEFENDERS = 5;
 const SMOKE_ANGLES = 2;
+/** A zone is on the attackers' way to a site when passing through it costs them at most this much. */
+const APPROACH_DETOUR_MS = 2000;
+/** ...and it speaks for that site alone when every other site is at least this much further out of the way. */
+const APPROACH_MARGIN_MS = 4000;
 /** A mid position the defenders reach this much after the attackers can still be contested; later than that it cannot. */
 const MID_LATE_MS = 4000;
 
@@ -183,5 +255,114 @@ export function deriveMapTactics(engine: SpatialEngine, overrides: MapTacticsOve
     defenderStarts = defenderStarts.slice(0, DEFENDERS);
   }
 
-  return { mapId: engine.mapId, attackerSpawn: ATTACKER_SPAWN, defenderSpawn: DEFENDER_SPAWN, sites, mid, aim, smokes, defenderStarts, authored };
+  // ground the attack holds first
+  const siteZones = new Set(sites.map((s) => s.zone));
+  const attackerGround = engine.zones.map((z) => z.id as string)
+    .filter((z) => z !== ATTACKER_SPAWN && z !== DEFENDER_SPAWN && !siteZones.has(z))
+    .filter((z) => { const a = tA(z), d = tD(z); return a !== null && d !== null && a < d; })
+    .sort();
+
+  // which site a zone without a site letter leads the attack to
+  const approachSide: Record<string, string> = {};
+  for (const z of engine.zones.map((q) => q.id as string)) {
+    if (z === ATTACKER_SPAWN || z === DEFENDER_SPAWN || siteZones.has(z)) continue;
+    const named = /^([a-z])-/.exec(z)?.[1]?.toUpperCase();
+    if (named && sites.some((s) => s.site === named)) continue; // the name says it
+    const a = tA(z);
+    if (a === null) continue;
+    const detours = sites
+      .map((s) => ({ site: s.site, d: s.attackTravelMs === null ? null : (engine.shortestTravelTimeMs(z, s.zone) ?? Infinity) + a - s.attackTravelMs }))
+      .filter((p): p is { site: string; d: number } => p.d !== null)
+      .sort((p, q) => p.d - q.d);
+    const best = detours[0];
+    if (best && best.d <= APPROACH_DETOUR_MS && (detours.length < 2 || detours[1]!.d - best.d >= APPROACH_MARGIN_MS)) approachSide[z] = best.site;
+  }
+
+  const midArea = deriveMidArea(engine, sites, approachSide);
+
+  return { mapId: engine.mapId, attackerSpawn: ATTACKER_SPAWN, defenderSpawn: DEFENDER_SPAWN, sites, mid, aim, smokes, defenderStarts, attackerGround, approachSide, midArea, authored };
+}
+
+/**
+ * The map's mid area.
+ *   zones        every zone of type "mid" or whose id starts "mid-" that both sides can reach
+ *   entries      the mid zone each side reaches first from its spawn
+ *   contest      the mid zone with the smallest gap between the two arrivals
+ *   chokes       each (mid zone, neighbour outside mid) pair, spawns excluded
+ *   site links   per site: the fastest way from a mid zone onto the site with the site's main
+ *                entry, the other sites and both spawns shut — the second lane of a split
+ *   switch       main entry to main entry for the attack (its own spawn open), with and without
+ *                the mid zones and the sites; site to site for the defence likewise
+ * A map without such zones has no mid (null): Bind, Fracture and Lotus today.
+ */
+function deriveMidArea(engine: SpatialEngine, sites: readonly SiteTactics[], approachSide: Readonly<Record<string, string>>): MidArea | null {
+  const tA = (z: string): number | null => engine.shortestTravelTimeMs(ATTACKER_SPAWN, z);
+  const tD = (z: string): number | null => engine.shortestTravelTimeMs(DEFENDER_SPAWN, z);
+  const typed = new Set(engine.zonesByType("mid").map((z) => z.id as string));
+  const zones = engine.zones.map((z) => z.id as string)
+    .filter((z) => typed.has(z) || z.startsWith("mid-"))
+    .filter((z) => tA(z) !== null && tD(z) !== null)
+    .sort();
+  if (zones.length === 0 || sites.length < 2) return null;
+  const mids = new Set(zones);
+  const siteZones = sites.map((s) => s.zone);
+  const letterOfZone = (z: string): string | null => {
+    const site = sites.find((s) => s.zone === z);
+    if (site) return site.site;
+    const named = /^([a-z])-/.exec(z)?.[1]?.toUpperCase();
+    if (named && sites.some((s) => s.site === named)) return named;
+    return approachSide[z] ?? null;
+  };
+  const byTime = (t: (z: string) => number | null) => [...zones].sort((p, q) => t(p)! - t(q)! || (p < q ? -1 : 1))[0]!;
+  const attackEntry = byTime(tA);
+  const defenseEntry = byTime(tD);
+  const contest = [...zones].sort((p, q) => Math.abs(tA(p)! - tD(p)!) - Math.abs(tA(q)! - tD(q)!) || (p < q ? -1 : 1))[0]!;
+
+  const chokes: MidChoke[] = [];
+  for (const z of zones) {
+    for (const n of engine.zones.map((q) => q.id as string)) {
+      if (n === z || mids.has(n) || n === ATTACKER_SPAWN || n === DEFENDER_SPAWN) continue;
+      if (engine.edgeTraversal(z, n) === null && engine.edgeTraversal(n, z) === null) continue;
+      chokes.push({ zone: z, onto: n, leadsTo: letterOfZone(n), first: tA(z)! < tD(z)! ? "attack" : "defense" });
+    }
+  }
+  chokes.sort((p, q) => (p.zone < q.zone ? -1 : p.zone > q.zone ? 1 : p.onto < q.onto ? -1 : 1));
+
+  const siteLinks: Record<string, MidSiteLink | null> = {};
+  for (const s of sites) {
+    const shut = [...siteZones.filter((z) => z !== s.zone), ...(s.mainEntry && !mids.has(s.mainEntry) ? [s.mainEntry] : []), ATTACKER_SPAWN, DEFENDER_SPAWN];
+    let best: MidSiteLink | null = null;
+    for (const m of zones) {
+      const r = engine.findPath(m, s.zone, "run", { blockedZones: shut });
+      if (!r || r.path.length < 2) continue;
+      // the link starts where the path leaves mid for the last time
+      let k = 0;
+      for (let i = 0; i < r.path.length; i++) if (mids.has(r.path[i]!)) k = i;
+      const path = r.path.slice(k);
+      const ms = path.slice(0, -1).reduce((sum, z, i) => sum + (engine.shortestTravelTimeMs(z, path[i + 1]!) ?? 0), 0);
+      if (!best || ms < best.travelMs || (ms === best.travelMs && path[0]! < best.from)) best = { from: path[0]!, path, entry: path[path.length - 2]!, travelMs: ms };
+    }
+    siteLinks[s.site] = best;
+  }
+
+  const pairs = sites.flatMap((a, i) => sites.slice(i + 1).map((b) => [a, b] as const));
+  const timeOf = (from: string, to: string, own: string, blocked: readonly string[]): number | null =>
+    engine.findPath(from, to, "run", { passableZones: [own], blockedZones: blocked.filter((z) => z !== from && z !== to) })?.timeMs ?? null;
+  const attackSwitch = pairs.filter(([a, b]) => a.mainEntry && b.mainEntry).map(([a, b]) => ({
+    from: a.site, to: b.site,
+    throughMs: timeOf(a.mainEntry!, b.mainEntry!, ATTACKER_SPAWN, [DEFENDER_SPAWN]),
+    aroundMs: timeOf(a.mainEntry!, b.mainEntry!, ATTACKER_SPAWN, [...zones, ...siteZones, DEFENDER_SPAWN]),
+  }));
+  const defenseRotate = pairs.map(([a, b]) => ({
+    from: a.site, to: b.site,
+    throughMs: timeOf(a.zone, b.zone, DEFENDER_SPAWN, [ATTACKER_SPAWN]),
+    aroundMs: timeOf(a.zone, b.zone, DEFENDER_SPAWN, [...zones, ATTACKER_SPAWN]),
+  }));
+  const value = (rows: ReadonlyArray<{ throughMs: number | null; aroundMs: number | null }>): number =>
+    rows.reduce((best, r) => Math.max(best, r.throughMs === null ? 0 : r.aroundMs === null ? 1 : Math.max(0, (r.aroundMs - r.throughMs) / r.aroundMs)), 0);
+
+  return {
+    zones, attackEntry, attackMs: tA(attackEntry)!, defenseEntry, defenseMs: tD(defenseEntry)!, contest, chokes, siteLinks,
+    attackSwitch, defenseRotate, attackValue: value(attackSwitch), defenseValue: value(defenseRotate),
+  };
 }

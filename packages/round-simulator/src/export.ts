@@ -25,7 +25,12 @@ export function toSimGameEvents(result: RoundResult, opts: { includeMoves?: bool
   const base = (tick: number, timeMs: number) => ({ id: `e${seq}`, seq: seq++, tick, timeMs });
 
   if (opts.includeMoves && result.tracks) {
-    out.push(...moveEvents(result.tracks, () => seq++));
+    // the buy phase first (negative times): `buyPhaseStart` at −duration, then its moves
+    const buy = result.buyPhase?.tracks ?? [];
+    if (result.buyPhase && buy.length > 0) {
+      out.push({ ...base(buy[0]!.tick, -result.buyPhase.durationMs), kind: "buyPhaseStart", durationMs: result.buyPhase.durationMs });
+    }
+    out.push(...moveEvents([...buy, ...result.tracks], () => seq++));
     out.push(...sightEvents(result.tracks, () => seq++));
   }
 
@@ -41,7 +46,9 @@ export function toSimGameEvents(result: RoundResult, opts: { includeMoves?: bool
         out.push({ ...base(e.tick, e.elapsedMs), kind: "abilityUse", playerId: e.actor, abilityId: e.detail ?? null, at: null });
         break;
       case "planted":
-        out.push({ ...base(e.tick, e.elapsedMs), kind: "spikePlanted", playerId: e.actor ?? null, at: null });
+        // where the spike went down and which candidate spot it is (plant-spot.ts; RoundResult.plant)
+        out.push({ ...base(e.tick, e.elapsedMs), kind: "spikePlanted", playerId: e.actor ?? null, at: result.plant?.position ?? null,
+          ...(result.plant ? { siteZone: result.plant.zoneId, spotId: result.plant.spotId, spotKind: result.plant.spotKind } : {}) });
         break;
       case "defused":
         out.push({ ...base(e.tick, e.elapsedMs), kind: "spikeDefused", playerId: e.actor ?? null, at: null });

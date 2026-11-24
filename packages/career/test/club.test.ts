@@ -10,7 +10,7 @@ import {
   answerInbox, batchOf, continueCareer, newCareer, quickSeries, recordResult, seriesRequest, type CareerState,
   estimateAbility, focusFactors, initClub, makeOffer, marketWage, playerAnswer, playerUtility,
   practiceAdjustedRecords, releasePlayer, reputations, seasonFocus, serializeWorld, setIndividualFocus, setTrainingPlan, teamScout, teamStrength,
-  trainingWeek, wageBill, weeklyVector, windowStatus, type World, type WorldPlayer, type RatedAttr, type OfferTerms,
+  trainingWeek, wageBill, weeklyVector, windowStatus, requiredMargin, agentFee, type World, type WorldPlayer, type RatedAttr, type OfferTerms,
 } from "../src/index.ts";
 
 const SEED = 4242;
@@ -131,7 +131,8 @@ describe("transfer decisions follow the utilities (counterfactual)", () => {
   it("player: accepts when U ≥ 0, counters with the wage that makes U = margin, refuses beyond maxCounterRaise", () => {
     const ref = playerUtility(club, target, "transfer", user, { fee: 0, wage: 100_000, years: 2 });
     // The wage at which U = 0 for this move.
-    const w0 = 100_000 * Math.exp(-ref.total / M.wWage);
+    // The wage at which U reaches this player's (agent's) margin.
+    const w0 = 100_000 * Math.exp((requiredMargin(club, target.playerId) - ref.total) / M.wWage);
     const offer = (wage: number) => ({ kind: "transfer" as const, playerId: target.playerId, toTeamId: user, terms: { fee: 0, wage: Math.round(wage), years: 2 } });
     expect(playerAnswer(club, offer(w0 * 1.05)).decision).toBe("accept");
     const c = playerAnswer(club, offer(w0 * 0.8));
@@ -157,7 +158,8 @@ describe("transfer decisions follow the utilities (counterfactual)", () => {
     expect(w.teams[from]!.roster).not.toContain(target.playerId);
     expect(w.club!.contracts[target.playerId]!.teamId).toBe(user);
     expect(w.club!.contracts[target.playerId]!.salary).toBe(1_500_000);
-    expect(w.club!.finances[user]!.balance).toBe(club.club!.finances[user]!.balance - asking);
+    // The fee, plus the agent's fee on the contract (DEPTH_MODEL agentFee).
+    expect(w.club!.finances[user]!.balance).toBe(club.club!.finances[user]!.balance - asking - agentFee(w, target.playerId, { fee: asking, wage: 1_500_000, years: 2 }));
     expect(w.club!.finances[from]!.balance).toBe(club.club!.finances[from]!.balance + asking);
   });
 

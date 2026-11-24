@@ -1,5 +1,6 @@
 // Schedule: a month calendar (match days marked, today highlighted) and the fixture list with
-// results — the manager's own fixtures or the whole league.
+// results — the manager's own fixtures, or the whole circuit they can see: their league's stages
+// and the international events (other regions' leagues are on the Standings screen).
 import { useMemo, useState } from 'react';
 import { useLang } from '../../i18n/index.tsx';
 import { useCareer } from '../../career/session.ts';
@@ -11,15 +12,17 @@ export function ScheduleScreen() {
   const cs = useCareer();
   const c = cs.career!;
   const [scope, setScope] = useState<'mine' | 'all'>('mine');
-  const months = useMemo(() => [...fixturesByMonth(c.season.fixtures).keys()], [c.season.fixtures]);
+  // The manager's league plus the international events (drawn as the season goes).
+  const visible = useMemo(() => [...c.season.fixtures, ...c.circuit.events.flatMap((e) => e.fixtures)], [c.season.fixtures, c.circuit.events, cs.version]); // eslint-disable-line react-hooks/exhaustive-deps
+  const months = useMemo(() => [...fixturesByMonth(visible).keys()].sort(), [visible]);
   const [month, setMonth] = useState(() => months.find((m) => m >= c.date.slice(0, 7)) ?? months[0] ?? c.date.slice(0, 7));
-  const fixtures = c.season.fixtures.filter((f) => f.date.startsWith(month) && (scope === 'all' || isUserFixture(c, f)));
+  const fixtures = visible.filter((f) => f.date.startsWith(month) && (scope === 'all' || isUserFixture(c, f)));
   const [y, m] = month.split('-').map(Number) as [number, number];
   const first = isoDate(y, m, 1);
   const lead = (weekday(first) + 6) % 7; // weeks start on Monday
   const days: Array<string | null> = Array.from({ length: lead }, () => null);
   for (let d = first; d.startsWith(month); d = addDays(d, 1)) days.push(d);
-  const onDay = (d: string) => c.season.fixtures.filter((f) => f.date === d);
+  const onDay = (d: string) => visible.filter((f) => f.date === d);
   const monthName = (() => { try { return new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${month}-01T00:00:00Z`)); } catch { return month; } })();
   const wd = (i: number) => { try { return new Intl.DateTimeFormat(lang, { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2024, 0, 1 + i))); } catch { return String(i); } };
   const idx = months.indexOf(month);
@@ -55,7 +58,7 @@ export function ScheduleScreen() {
         <button className="ord-cancel" disabled={idx <= 0} onClick={() => setMonth(months[idx - 1]!)}>◀</button>
         <b>{monthName}</b>
         <button className="ord-cancel" disabled={idx < 0 || idx >= months.length - 1} onClick={() => setMonth(months[idx + 1]!)}>▶</button>
-        {c.season.stages.some((s) => !s.start) && <span className="small muted">{t('sched.stage2Pending')}</span>}
+        {(c.season.stages.some((s) => !s.start) || c.circuit.events.some((e) => !e.start)) && <span className="small muted">{t('sched.pending')}</span>}
       </div>
       <div className="cal" data-testid="calendar">
         {Array.from({ length: 7 }, (_, i) => <div key={`h${i}`} className="cal-h">{wd(i)}</div>)}

@@ -36,7 +36,7 @@ async function main() {
   page.on('pageerror', (e) => console.log(`[pageerror] ${e.message}`));
   // The app opens on the start menu; the club screens belong to a career.
   await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
-  await page.evaluate(() => { localStorage.setItem('pv-lang', 'ko'); localStorage.setItem('pv-career-sim', 'quick'); });
+  await page.evaluate(() => { localStorage.setItem('pv-lang', 'ko'); localStorage.setItem('pv-career-depth', 'quick'); });
   await page.reload();
   await startCareer(page);
   const signed = await clubStep(page, OUT);

@@ -1,7 +1,8 @@
 // tsx reference path for the interactive match session (src/engine/match-session.ts) over
 // line-delimited JSON on stdin/stdout. The app runs the same code in the bundled engine host.
 //   cmd ∈ state | callTimeout(team) | setOrders(team,order) | playNextRound | result | stop
-// Config (teams/seed/aiTeams/options) is argv[2] JSON.
+//         | setShouts(team,shouts) | setStrategy(team,strategy) | teamTalk(team,talk)   [manager]
+// Config (teams/seed/aiTeams/options/plan/scouting) is argv[2] JSON.
 import { createMatchSessionHost, type MatchSessionCfg } from '../src/engine/match-session.ts';
 import { serveLines } from '../src/engine/stdio.ts';
 

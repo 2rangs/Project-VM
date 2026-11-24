@@ -27,7 +27,7 @@ const EFFECT: Record<string, string> = { [FIRE]: "molly", [SLOW]: "slow", [SMOKE
 const effectOf = (id: string): string | undefined => EFFECT[id];
 const FACTS: Record<string, UtilityAbilityFact> = {
   [FIRE]: { effectType: "molly", durationMs: 5000 }, [SLOW]: { effectType: "slow", durationMs: 7000 },
-  [SMOKE]: { effectType: "smoke", durationMs: 15000 }, [SHORT_SMOKE]: { effectType: "smoke", durationMs: 2500 },
+  [SMOKE]: { effectType: "smoke", durationMs: 15000, rangeUnits: 8000 }, [SHORT_SMOKE]: { effectType: "smoke", durationMs: 2500 },
   [FLASH]: { effectType: "flash", durationMs: 2000, flashDurationMs: 2000 }, [RECON]: { effectType: "recon", durationMs: null },
 };
 
@@ -169,32 +169,55 @@ describe("stall — utility on the door the enemy is coming through (counterfact
     expect(casts(plan(smokeSeen))).toEqual([`${FIRE}→a-main`]);
   });
 
+  it("counterfactual — the team is routed through that zone: it is not denied (no fire on your own way in)", () => {
+    const routedThrough: Mate = { zone: "defender-spawn", transit: { path: ["a-site", "a-main"], nextZone: "a-site", nextArrivalMs: 3000 } };
+    expect(casts(plan(view("defense", [holder], { heard: [STEPS_AT_A_MAIN] })))).toEqual([`${FIRE}→a-main`]);
+    expect(casts(plan(view("defense", [holder, routedThrough], { heard: [STEPS_AT_A_MAIN] })))).toEqual([]);
+  });
+
+  it("the attack never denies a site it has to take before the plant", () => {
+    const v = view("attack", [{ zone: "a-main", abilities: [FIRE] }], { heard: [{ zone: "a-site", confidence: 0.64 }] });
+    expect(casts(plan(v))).toEqual([]);
+  });
+
   it("a saving team spends nothing", () => {
     const v = view("defense", [holder], { heard: [STEPS_AT_A_MAIN] });
     expect(casts(planUtility(v, "save", holds(v), spatial, effectOf))).toEqual([]);
   });
 });
 
-describe("cover — a smoke on the zone a teammate is about to step into in open sight", () => {
+describe("cover — a smoke that hides the lane a teammate is about to step into from the zone watching it", () => {
   const entry = (eta: number): Mate => ({ zone: "a-lobby", transit: { path: ["a-main", "a-site"], nextZone: "a-main", nextArrivalMs: eta } });
 
   it("counterfactual — timing: not while the entry is still far, yes once it is about to step out", () => {
     const smoker: Mate = { zone: "a-lobby", abilities: [SMOKE] };
     expect(casts(plan(view("attack", [entry(4000), smoker])))).toEqual([]);
     const out = plan(view("attack", [entry(1200), smoker]));
-    expect(casts(out)).toEqual([`${SMOKE}→a-main`]);
+    expect(casts(out)).toEqual([`${SMOKE}→a-site`]);
     expect(out.find((c) => c.kind === "useAbility")!.sourceActionId).toBe("utility:cover:smoke");
   });
 
+  it("the smoke goes INTO the watchers' zone and names the lane to hide (screenZone) — not onto the lane itself", () => {
+    const cast = plan(view("attack", [entry(1200), { zone: "a-lobby", abilities: [SMOKE] }])).find((c) => c.kind === "useAbility")!;
+    expect(cast).toMatchObject({ targetZone: "a-site", screenZone: "a-main" });
+    expect(cast.aimZone).toBeUndefined();
+  });
+
+  it("counterfactual — range: a smoke with no catalogued range does not reach two zones away; the catalogued one does", () => {
+    const noRange = { ...view("attack", [entry(1200), { zone: "a-lobby", abilities: [SMOKE] }]), abilityFacts: { ...FACTS, [SMOKE]: { effectType: "smoke", durationMs: 15000 } } };
+    expect(casts(plan(noRange))).toEqual([]);
+    expect(casts(plan(view("attack", [entry(1200), { zone: "a-lobby", abilities: [SMOKE] }])))).toEqual([`${SMOKE}→a-site`]);
+  });
+
   it("counterfactual — already cut: with our smoke standing there, no second one", () => {
-    const v = view("attack", [entry(1200), { zone: "a-lobby", abilities: [SMOKE] }], { effects: [{ zoneId: "a-main", effectType: "smoke", own: true, remainingMs: 12000 }] });
+    const v = view("attack", [entry(1200), { zone: "a-lobby", abilities: [SMOKE] }], { effects: [{ zoneId: "a-site", effectType: "smoke", own: true, remainingMs: 12000 }] });
     expect(casts(plan(v))).toEqual([]);
   });
 
   it("counterfactual — duration: a smoke that would be gone before the far side is reached is not thrown", () => {
     // 1.2 s to the zone + 2.5 s across it = 3.7 s; the short smoke lasts 2.5 s.
-    expect(casts(plan(view("attack", [entry(1200), { zone: "a-lobby", abilities: [SHORT_SMOKE] }])))).toEqual([]);
-    expect(casts(plan(view("attack", [entry(1200), { zone: "a-lobby", abilities: [SHORT_SMOKE, SMOKE] }])))).toEqual([`${SMOKE}→a-main`]);
+    expect(casts(plan(view("attack", [entry(1200), { zone: "a-main", abilities: [SHORT_SMOKE] }])))).toEqual([]);
+    expect(casts(plan(view("attack", [entry(1200), { zone: "a-lobby", abilities: [SHORT_SMOKE, SMOKE] }])))).toEqual([`${SMOKE}→a-site`]);
   });
 
   it("counterfactual — the far zone is ours: nothing to hide from", () => {

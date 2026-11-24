@@ -94,6 +94,14 @@ export interface ActionCommand {
    */
   readonly aimZone?: ZoneId;
   /**
+   * useAbility with a vision blocker (smoke): the zone to HIDE from `targetZone`'s view. The smoke
+   * is thrown into `targetZone` and lands where it cuts the most of that zone's view of
+   * `screenZone` while keeping off the walkway between the two (a cover smoke on the holders' side
+   * of an entry, which the team then walks in beside rather than out of). Optional; without it the
+   * landing follows `aimZone` / the thrower as before.
+   */
+  readonly screenZone?: ZoneId;
+  /**
    * How the route to `targetZone` should be chosen (the policy picks the goal and the purpose;
    * the navigation layer finds the path). Default FASTEST.
    */
@@ -103,6 +111,11 @@ export interface ActionCommand {
    * suspected enemies, utility. Never true enemy positions. Used by every preference but FASTEST.
    */
   readonly zoneCosts?: Readonly<Record<string, number>>;
+  /**
+   * A defender holding with a close-range gun (a shotgun) holds the angle up close: of the spots that
+   * see the watched zone, the one nearest to it, so a fight starts within the gun's range. Default false.
+   */
+  readonly holdClose?: boolean;
 }
 
 export type TeamStrategy =
@@ -194,6 +207,8 @@ export interface PolicyTeammate {
    * the entry comes out of the smoke).
    */
   readonly transit?: TeammateTransit;
+  /** How long this teammate stays blinded by a flash (ms; absent / 0 = not blind). Own team only. */
+  readonly blindRemainingMs?: number;
 }
 
 export interface TeammateTransit {
@@ -274,6 +289,11 @@ export interface PolicyView {
 
 export interface DecisionPolicy {
   decide(view: PolicyView, rng: RandomSource): PolicyDecision;
+  /**
+   * Optional: the round's information trace (who knew what, who called what, when) for replay and
+   * debugging. Read once at round end; opaque to the simulator.
+   */
+  informationTrace?(): unknown;
 }
 
 export interface PlayerProfile {

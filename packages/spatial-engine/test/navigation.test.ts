@@ -241,7 +241,8 @@ describe("navigation: Ascent", () => {
 const ROADMAP_GAPS: Partial<Record<MapId, string[]>> = {};
 
 describe("tactical travel time = navigation path cost", () => {
-  const spawns = new Set(ascent.zones.filter((z) => z.transit === false).map((z) => z.id));
+  // the attackers' spawn is no way through; the defenders' spawn floor is planned with (it joins the sites on most maps)
+  const spawns = new Set(ascent.zones.filter((z) => z.transit === false && z.id !== "defender-spawn").map((z) => z.id));
 
   it("every Ascent zone pair: the query the policies make is the roadmap path's time, not a sum of graph edges", () => {
     let worst = 0, differ = 0, pairs = 0;

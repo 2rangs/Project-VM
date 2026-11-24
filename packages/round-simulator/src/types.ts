@@ -1,3 +1,4 @@
+import type { PlantPreferences, PlantSpotKind } from "./plant-spot.js";
 // PROJECT V — round-simulator local types.
 //
 // Ties spatial + perception + combat + ability engines into one deterministic round
@@ -128,6 +129,9 @@ export type SimEventKind =
   | "defused"
   | "detonated"
   | "landing"
+  | "traversal"
+  | "disengage"
+  | "rePeek"
   | "roundEnd";
 
 export interface SimEvent {
@@ -322,6 +326,10 @@ export interface EngagementRecord {
   readonly aimOffsetDeg?: { readonly attacker: number; readonly defender: number };
   /** When each side could first fire (ms after contact; combat-engine readyDelayMs). */
   readonly readyMs?: { readonly attacker: number; readonly defender: number };
+  /** Gaze model: the peek in this contact (who peeked, how), whether it ended as a disengage, and the spike phase. */
+  readonly peek?: { readonly side: "attack" | "defense"; readonly kind: string; readonly rePeek: boolean };
+  readonly disengaged?: boolean;
+  readonly spikePhase?: string;
   /** What each side was looking at (gaze source) at first contact. */
   readonly gaze?: { readonly attacker: string; readonly defender: string };
   /**
@@ -393,8 +401,12 @@ export interface RoundStats {
   readonly minPairDistance: number;
   /** Each attacker's first entry into a plantable (site) zone, in order of arrival. */
   readonly siteArrivals: ReadonlyArray<{ readonly playerId: PlayerId; readonly zoneId: string; readonly atMs: number }>;
+  /** Where the living players of each side stood (zone ids), once per decision step. */
+  readonly zonePresence: ReadonlyArray<{ readonly atMs: number; readonly attack: readonly string[]; readonly defense: readonly string[] }>;
   /** Each attacker's zones in the order walked (repeats collapsed) up to its first site entry, its death or the round end. */
   readonly attackerRoutes: Readonly<Record<PlayerId, readonly string[]>>;
+  /** Peeks by technique (gaze model; all 0 without it), re-peeks and disengages (jiggles that drew no kill). */
+  readonly peeks: { readonly walkIn: number; readonly swing: number; readonly slice: number; readonly jiggle: number; readonly rePeek: number; readonly disengage: number };
   /** Crowd handling: mover-ticks queued / giving way, give-ups (squeezed past), stack-up waits at boundaries. */
   readonly crowd: {
     readonly queueTicks: number;
@@ -407,6 +419,13 @@ export interface RoundStats {
     readonly stackTimeouts: number;
   };
 }
+
+/**
+ * Stop time (ms) of the legacy (gaze-off) duel model: an aggregate calibrated on 160 Ascent matches
+ * (STAT_OUTCOME_MATRIX §2.7) that also absorbs what that model does not have (aim time, tracking a
+ * swing). The gaze model uses combat-engine's physical stopMs instead.
+ */
+export const LEGACY_STOP_MS = { run: 700, walk: 350 } as const;
 
 /** Two bodies whose centres are closer than this (uu, ≈ 0.85 body widths) overlap (report-only metric). */
 export const BODY_OVERLAP_UNITS = 30;
@@ -436,6 +455,38 @@ export interface RoundResult {
   readonly engagementTrace?: readonly EngagementRecord[];
   /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
   readonly stats?: RoundStats;
+  /**
+   * Each side policy's information trace (per-player knowledge, comms events, minimap spots, trust),
+   * present when config.traceCommands or config.recordPerception is on and the policy provides one.
+   */
+  readonly information?: Readonly<Record<Side, unknown>>;
+  /**
+   * The buy phase that preceded the round (config.buyPhaseMs > 0): where each player set up, and —
+   * with recordTracks — a frame per tick at negative elapsedMs (−durationMs … −tickMs).
+   */
+  readonly buyPhase?: {
+    readonly durationMs: number;
+    readonly tracks?: readonly TrackFrame[];
+    readonly setups: ReadonlyArray<{ readonly playerId: PlayerId; readonly side: Side; readonly planZone: string; readonly zoneId: string }>;
+  };
+  /** Where the spike went down (rounds with a plant only). */
+  readonly plant?: PlantRecord;
+}
+
+/** Where and how the spike was planted (plant-spot.ts). */
+export interface PlantRecord {
+  readonly zoneId: string;
+  /** Site letter, null when the zone is not a derived site. */
+  readonly site: string | null;
+  readonly position: Vector3;
+  /** When the plant completed (ms into the round). */
+  readonly atMs: number;
+  /** The candidate spot the spike lies on (within 150 uu), null for an off-list spot. */
+  readonly spotId: string | null;
+  readonly spotKind: PlantSpotKind | "other";
+  /** The spot the carrier set out for, and who chose it. */
+  readonly intendedSpotId: string | null;
+  readonly by: "auto" | "manager" | null;
 }
 
 export interface SimConfig {
@@ -444,6 +495,11 @@ export interface SimConfig {
   readonly decisionIntervalTicks: number;
   readonly plantDurationMs: number;
   readonly defuseDurationMs: number;
+  /**
+   * Half-defuse checkpoint (ms; game-rules spike.ts defuseHalfwayMs = 3500): a defuse let go after it
+   * resumes from it. 0 / absent = progress always resets (the pre-A3 engine).
+   */
+  readonly defuseHalfwayMs?: number;
   readonly spikeTimerMs: number;
   /**
    * A mover told what to watch on arrival (the order's `aimZone`) takes a covered spot that sees
@@ -480,6 +536,18 @@ export interface SimConfig {
    * `orbs` (from the map's objects data) are taken once per round. OFF (undefined) by default.
    */
   readonly floorItems?: { readonly orbs?: readonly { readonly id: string; readonly position: Vector3 }[] };
+  /**
+   * The attacking team's plant preference per site letter (plant-spot.ts PlantChoice: auto, a spot
+   * kind, or a spot id). Absent / "auto": the carrier chooses by game sense and situation.
+   */
+  readonly plantPreference?: PlantPreferences;
+  /**
+   * Plant tactics (plant-spot.ts, ENGINE_TRUTH §12): the carrier plants on a chosen candidate spot,
+   * post-plant guards take posts by the spike's position, and post-plant fire / slow fields thrown
+   * into the spike's zone land on the spike. OFF (undefined) by default; the plant spot is recorded
+   * either way.
+   */
+  readonly plantTactics?: boolean;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */
@@ -518,6 +586,19 @@ export interface SimConfig {
   readonly damageCarryover: number;
   /** Optional combat-engine calibration applied to every duel (PV-2 stats seam). */
   readonly combatCalibration?: CombatCalibration;
+  /**
+   * Buy phase (buy-phase.ts; docs/MOVEMENT_STYLE.md §2): this long (ms) before the round goes live,
+   * both teams move behind their barriers into the round plan's setup. 0 / absent = players start
+   * where the round's state puts them (the pre-buy-phase engine). The match runner sets it from
+   * ROUND_RULES.buyPhaseMs.
+   */
+  readonly buyPhaseMs?: number;
+  /**
+   * Per-player movement style (movement-style.ts): own lane and spacing, a choice among near-optimal
+   * routes, stop-and-check moments, a quiet lurk. Off = every player moves the executor's one way.
+   * The match runner turns it on.
+   */
+  readonly movementStyle?: boolean | import("./movement-style.js").MovementStyleParts;
 }
 
 export const DEFAULT_CONFIG: SimConfig = {

@@ -12,8 +12,8 @@
   },
   "objectsNotLocated": [
     {
-      "name": "Ultimate orbs",
-      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+      "name": "Ultimate orbs — exact positions",
+      "reason": "zone-level only (A Long / C Long, from game knowledge, unverified); no orb object exists in the static scene, so the point given is the zone anchor."
     }
   ],
   "mechanics": [
@@ -23,6 +23,30 @@
       "represented": false,
       "engineNeeds": "every A/B-only assumption in the engine (see docs/research/MAPS_DATA.md §6)",
       "provenance": "manual-approx (general game knowledge; not verified against geometry or a patch in this session)"
+    }
+  ],
+  "ultOrbs": [
+    {
+      "id": "orb-a-long",
+      "zone": "a-long",
+      "position": {
+        "x": 6218,
+        "y": -6890,
+        "z": 100
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
+    },
+    {
+      "id": "orb-c-long",
+      "zone": "c-long",
+      "position": {
+        "x": -3182,
+        "y": -5940,
+        "z": 100
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
     }
   ]
 }

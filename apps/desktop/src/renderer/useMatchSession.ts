@@ -11,6 +11,8 @@ import { mergeMatch, type RawMatch } from '../shared/match-merge.ts';
 import type {
   MatchOptions, MatchSummary, SessionState, SessionStartRequest, TeamOrder, TeamSlot, TimeoutLogEntry,
 } from '../shared/ipc.ts';
+// [manager]
+import type { AttackStrategy, DefenseStrategy, ManagerResultView, Shouts, TalkReaction, TeamTalk } from '../shared/manager.ts';
 
 type RawRound = RawMatch['rounds'][number];
 
@@ -30,6 +32,13 @@ export interface MatchSessionHook {
   callTimeout: (team: TeamSlot) => Promise<void>;
   setOrders: (team: TeamSlot, order: TeamOrder) => Promise<void>;
   stop: () => Promise<void>;
+  // [manager] the manager layer (present when the session is a managed one)
+  managerResult: ManagerResultView | null;
+  /** The last half-time talk's reactions (ours). */
+  talkReactions: TalkReaction[] | null;
+  setShouts: (team: TeamSlot, shouts: Partial<Shouts>) => Promise<void>;
+  setStrategy: (team: TeamSlot, strategy: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null) => Promise<void>;
+  teamTalk: (team: TeamSlot, talk: TeamTalk) => Promise<void>;
 }
 
 export function useMatchSession(): MatchSessionHook {
@@ -40,6 +49,8 @@ export function useMatchSession(): MatchSessionHook {
   const [timeoutLog, setTimeoutLog] = useState<TimeoutLogEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [managerResult, setManagerResult] = useState<ManagerResultView | null>(null); // [manager]
+  const [talkReactions, setTalkReactions] = useState<TalkReaction[] | null>(null); // [manager]
   const teamsRef = useRef<RawMatch['teams'] | null>(null);
   const roundsRef = useRef<RawRound[]>([]);
   const setupRef = useRef<{ seed: number; options?: MatchOptions }>({ seed: 0 });
@@ -71,7 +82,7 @@ export function useMatchSession(): MatchSessionHook {
       teamsRef.current = { A: req.teamA, B: req.teamB };
       roundsRef.current = [];
       setupRef.current = { seed: req.seed, options: req.options };
-      setReplay(null); setMatch(null); setFeed([]); setTimeoutLog([]);
+      setReplay(null); setMatch(null); setFeed([]); setTimeoutLog([]); setManagerResult(null); setTalkReactions(null);
       const s = await bridge.sessionStart(req);
       setState(s);
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
@@ -96,7 +107,7 @@ export function useMatchSession(): MatchSessionHook {
       setState(s);
       rebuild(s.finished, s.finished ? (s.score.A > s.score.B ? 'A' : 'B') : null);
       // result() is valid mid-match, so the timeout/order log stays current each round.
-      try { setTimeoutLog((await bridge.sessionResult()).timeoutLog); } catch { /* keep */ }
+      try { const res = await bridge.sessionResult(); setTimeoutLog(res.timeoutLog); setManagerResult(res.manager ?? null); } catch { /* keep */ }
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }, [state, rebuild]);
 
@@ -116,8 +127,22 @@ export function useMatchSession(): MatchSessionHook {
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }, []);
 
+  // [manager] standing instructions, strategy for the next rounds, the half-time talk
+  const managerAct = useCallback(async (fn: () => Promise<SessionState>) => {
+    setBusy(true); setError(null);
+    try { setState(await fn()); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
+  }, []);
+  const setShouts = useCallback((team: TeamSlot, shouts: Partial<Shouts>) => managerAct(() => bridge.sessionSetShouts(team, shouts)), [managerAct]);
+  const setStrategy = useCallback((team: TeamSlot, strategy: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null) => managerAct(() => bridge.sessionSetStrategy(team, strategy)), [managerAct]);
+  const teamTalk = useCallback((team: TeamSlot, talk: TeamTalk) => managerAct(async () => {
+    const r = await bridge.sessionTeamTalk(team, talk);
+    setTalkReactions(r.reactions);
+    return r.state;
+  }), [managerAct]);
+
   const stop = useCallback(async () => {
     try { await bridge.sessionStop(); } catch { /* */ }
+    setManagerResult(null); setTalkReactions(null);
     setState(null); setReplay(null); setMatch(null); setFeed([]); setTimeoutLog([]);
     teamsRef.current = null; roundsRef.current = [];
   }, []);
@@ -125,5 +150,6 @@ export function useMatchSession(): MatchSessionHook {
   return {
     active: state != null, state, replay, match, feed, timeoutLog, busy, error,
     start, playNext, callTimeout, setOrders, stop,
+    managerResult, talkReactions, setShouts, setStrategy, teamTalk,
   };
 }

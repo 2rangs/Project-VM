@@ -322,6 +322,12 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
 Matchup strip (players alive, us vs them), keys **1–5** / roster click to highlight one player with a pulsing ring
 (**Esc** clears), site labels emphasised, key hints in the map corner.
 
+#### Kingdom Archives player cards
+`assets/playercards/` holds a pool of player cards (wide + large art) from [Kingdom Archives](https://kingdomarchives.com)'s public
+distribution, committed at the user's decision (subject to release review); refresh with `node scripts/fetch-playercards.mjs`.
+The match load screen gives every player one (stable per player) plus an account level, like the in-game screen. Without
+the folder it falls back to the plain gradient (e2e runs point `PV_MEDIA_ASSETS_DIR` at an empty folder to cover that).
+
 #### Economy, plans, gaze, sound and duels (UI-1 … UI-6)
 Each item reads what the engine records and says so when it falls back (`시야: 근사치`, "no duel records"):
 
@@ -395,6 +401,33 @@ case to `parseReason`, the keys to `ko.ts` / `en.ts`, and a line to `test/decisi
 Revision `from` / `to` are parsed the same way (`parseCall`: strategy ids incl. the three-site
 `cExecute` / `stackC`, the `" (slow)"` suffix, `"commit A|B"`, `"stack A ×3"`, `"support B ×1"`,
 `"hold"`). If the engine later emits a reason key + params, both parsers can be dropped.
+
+## In-match management, half-time, match prep
+
+Full model and formulas: `docs/MATCH_MANAGEMENT.md` at the repo root (Korean).
+
+- **Match Day → 상대 분석 · 경기 계획 / Opponent report · match plan** (interactive mode): build the opponent report
+  (their simulated recent film read through the scouting model: preferred sites, pistol and eco habits, key players,
+  map mastery; thin samples are tagged), take its suggested plan or set your own (attack / defensive lean, tempo,
+  risk, defensive set-up, pistol calls, the call after a lost pistol, start our read of them from the report).
+  Plant spot, post-plant, retake and mid control are shown disabled — they wait for the engine-truth / maps-data work.
+- **Live view → 감독 지시 / Manager** (top right): alerts, the timeout left this half (opens the orders panel), standing
+  instructions (tempo / risk / defense), a strategy for the next N rounds, and each player's state of mind
+  (★ key player, tilted / shaky / steady / confident, personality tags). A 0–4 run, a broken economy, a player
+  tipping into tilt or half-time **stops auto-play and opens the panel**.
+- **Half-time team talk**: four talks; each player reacts by personality (lifted / unmoved / rattled). Skippable.
+- **Review → 감독 결정 요약 / Manager decisions**: both managers' decisions (the opponent's is the AI) with the rounds won
+  in the three rounds before and after, tilt three rounds later, talk reactions, and a tilt chart per team.
+- Series maps are played with the same layer (through the series host). One-shot matches stay plain `runMatch`.
+- **Default off — Match options → 감독 실험 기능 / Manager experimental**: turns on the engine flags `moodEffects`
+  (state of mind affects play), `aiManager` (AI uses shouts, talks, attribute-driven timeouts) and `timeoutsPerHalf: 1`.
+  Off, moods are shown but do not affect play, and the AI behaves as before. Not validated against the balance gate.
+
+Data path: `scripts/match-session.mts` (now `createManagedSession`; commands `setShouts`, `setStrategy`, `teamTalk`)
+and `scripts/series-session.mts` (same commands, seat ⇄ slot) → `scripts/manager-view.mts` (state from our seat) →
+`src/shared/manager.ts` → `useMatchSession` → `screens/matchday/{ManagerPanel,PostMatchSummary}.tsx`;
+`scripts/prematch.mts` → IPC `pv:prematch:report` → `PrematchPanel.tsx`. View logic: `src/renderer/matchday/manager.ts`
+(unit-tested in `test/manager-view.test.ts`).
 
 ## Series · map veto
 
@@ -479,12 +512,15 @@ renderer (React) ──IPC──▶ main process ──utilityProcess──▶ o
   `import.meta.url`; the build rewrites those to paths inside an *engine data root* shaped like the
   repository — the repository itself in development, `Resources/engine` in the packaged app.
 - **What runs in the worker** (`src/engine/*.ts`, shared with the tsx reference scripts):
-  `run-match.ts` (a whole map; one progress event per round), `match-session.ts` (round by round:
-  `state`, `callTimeout`, `setOrders`, `playNextRound`, `result`), `series-session.ts` (the same
-  plus the veto), `career-sim.ts` (one AI series). `mergeMatch` then puts every round on one
+  `run-match.ts` (a whole map; one progress event per round), `match-session.ts` (round by round,
+  a managed session: `state`, `callTimeout`, `setOrders`, `setShouts`, `setStrategy`, `teamTalk`,
+  `playNextRound`, `result`; plus `cfg.plan` / `cfg.scouting`), `series-session.ts` (the same plus
+  the veto, every map managed), `career-sim.ts` (one AI series), `prematch.ts` (the pre-match
+  opponent report, in its own `prematch` worker), `manager-view.ts` (the manager layer projected
+  onto our seat). `mergeMatch` then puts every round on one
   timeline and keeps per-round extras (`decisions`, `nav`) in the summary.
 - **tsx reference path** (`scripts/run-match.mts`, `match-session.mts`, `series-session.mts`,
-  `career-sim.mts`): thin stdin/stdout wrappers around the same modules, run from workspace source.
+  `career-sim.mts`, `prematch.mts`): thin stdin/stdout wrappers around the same modules, run from workspace source.
   The app no longer spawns them; they are the reference `test/engine-bundle.test.ts` compares the
   bundle against, byte for byte, and remain usable from the command line.
 - **In-app round simulator** (`src/shared/real-sim.ts`, run in `src/main/sim-worker.ts` off the UI

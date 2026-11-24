@@ -6,12 +6,14 @@ export type EngineOp =
   | 'ping'
   /** One whole map; emits `progress` events ({round, score}) after every round. */
   | 'match.run'
-  /** Interactive match session: start (config) → {state}; cmd (SessionCommand) → reply; stop. */
+  /** Interactive (managed) match session: start (config incl. plan / scouting) → {state}; cmd (SessionCommand) → reply; stop. */
   | 'session.start' | 'session.cmd' | 'session.stop'
   /** Series (veto → maps): start (SeriesStartRequest) → {view}; cmd → reply; stop. */
   | 'series.start' | 'series.cmd' | 'series.stop'
   /** One background career series (CareerSimRequest) → {outcome}. */
-  | 'career.series';
+  | 'career.series'
+  /** [manager] Pre-match opponent report (PrematchRequest) → {report, filmGames}. */
+  | 'prematch.report';
 
 export interface EngineRequest { id: number; op: EngineOp; payload?: unknown }
 

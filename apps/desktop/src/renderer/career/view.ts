@@ -19,7 +19,8 @@ export function opponentOf(c: CareerState, f: Fixture): string | null {
 /** "Stage 1 · Group Alpha · Round 2" / "Stage 1 · Playoffs · Final". */
 export function fixtureLabel(t: T, f: Fixture): string {
   const stage = t(`career.enum.${f.stage}`);
-  if (f.phase === 'group') return `${stage} · ${t('career.group', { g: t(`career.enum.${f.group}`) })} · ${t('career.round', { n: f.round })}`;
+  const g = f.group && /^[a-d]$/.test(f.group) ? f.group.toUpperCase() : t(`career.enum.${f.group}`);
+  if (f.phase === 'group') return `${stage} · ${t('career.group', { g })} · ${t('career.round', { n: f.round })}`;
   return `${stage} · ${t('career.playoffs')} · ${t(`career.enum.${f.round}`)}`;
 }
 

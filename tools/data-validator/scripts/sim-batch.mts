@@ -13,6 +13,7 @@
 //   --matches N        number of matches to simulate (default 20); seeds are seedStart..seedStart+N-1
 //   --seed-start S     first seed (default 1) — deterministic per seed (DECISION-010)
 //   --map NAME         map (default Ascent)
+//   --mid-control      turn mid control on (MatchConfig.midControl; default off): the "on" arm of its measurement
 //   --geometry own     simulate on the named map's own geometry (zone graph, roadmap, sight table);
 //                      default: every map is simulated on Ascent's geometry (MatchConfig.geometry)
 //   --max-rounds R     safety cap on rounds per match passed to runMatch (default: engine default 60)
@@ -25,7 +26,12 @@
 //   --tuning JSON      MatchConfig.tuning for every match (pre-match engine options, e.g. '{"damageCarryover":0.5}')
 //   --sound            sound detail on (SimConfig.soundDetail: landings off drops, gunfire masking)
 //   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
+//   --no-buy-phase     players start where the match sets them (no buy-phase movement)
+//   --style            per-player movement style on, every part (default: buy-phase script only)
+//   --no-style         every player moves the executor's one way (no per-player movement style)
+//   --style-off LIST   switch parts of the movement style off: lanes,spacing,routes,checks,lurk
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
+//   --information      information layer on (MatchConfig.informationLayer; default off)
 //   --teams-only       print the paired teams' first-five combat skills as JSON and exit (the
 //                      roster check in tests/test_sim_batch_runner.py uses it)
 //   --mirror           both teams league-average players (every attribute and trait at the
@@ -129,8 +135,10 @@ async function main(): Promise<void> {
   const enableAbilities = args["abilities"] === true; // --abilities: run with agent abilities on (PV-3)
   const mirror = args["mirror"] === true;
   // --belief-beta B --belief-tau T: the teams' round-win belief curve (economy option; default sim fit).
-  const economy = args["belief-beta"] !== undefined
-    ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : undefined;
+  // --economy '{"ecoSidearms":true}': any other economy options (JSON), merged under the belief flags.
+  const economyJson = args["economy"] !== undefined ? JSON.parse(String(args["economy"])) as Record<string, unknown> : {};
+  const economy = args["belief-beta"] !== undefined || args["economy"] !== undefined
+    ? { ...economyJson, ...(args["belief-beta"] !== undefined ? { winBelief: { beta: Number(args["belief-beta"]), tauCredits: Number(args["belief-tau"] ?? 10000) } } : {}) } : undefined;
   const tuning = typeof args["tuning"] === "string" ? JSON.parse(args["tuning"]) : undefined;
 
   if (!Number.isFinite(matches) || matches < 1) { console.error("sim:batch: --matches must be >= 1"); process.exit(2); }
@@ -157,7 +165,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["weapon-modes"] === true ? { weaponModes: true } : {}), ...(args["information"] === true ? { informationLayer: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };
@@ -180,6 +188,13 @@ async function main(): Promise<void> {
           defense: { value: r.buys[def].loadoutValue, bank: r.buys[def].players.reduce((s, b) => s + b.creditsAfter, 0), drops: r.buys[def].drops, pickups: r.pickups.filter((p) => p.team === def).length, roundPickups: r.events.filter((e) => (e.kind as string) === "weaponPickup" && String(e.actor).startsWith("def")).length },
         },
         events: toSimGameEvents({ events: r.events, winner: r.winnerSide, reason: r.reason } as never),
+        // Mid control (report-only): each side's decision and own estimate, the attack's call, and the true record.
+        ...(r.mid || r.decisions.plans[atk]?.mid || r.decisions.plans[def]?.mid ? { mid: {
+          call: r.decisions.plans[atk]?.opening ?? null,
+          attack: r.decisions.plans[atk]?.mid ?? null,
+          defense: r.decisions.plans[def]?.mid ?? null,
+          truth: r.mid ? { final: r.mid.final, heldMs: r.mid.heldMs, firstHeld: r.mid.firstHeld } : null,
+        } } : {}),
       });
       totalRounds++;
       reasonCounts[r.reason] = (reasonCounts[r.reason] ?? 0) + 1;
@@ -192,7 +207,7 @@ async function main(): Promise<void> {
   const bundle = {
     meta: {
       synthetic: true,
-      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""}${args["gaze"] === true ? ", gaze model" : ""}${args["sound"] === true ? ", sound detail" : ""})`,
+      label: `sim-batch ${matches} matches (seeds ${seedStart}..${seedStart + matches - 1}, ${map}, ${rosters}${enableAbilities ? ", abilities on" : ""}${tuning ? `, tuning ${JSON.stringify(tuning)}` : ""}${args["gaze"] === true ? ", gaze model" : ""}${args["sound"] === true ? ", sound detail" : ""}${args["no-buy-phase"] === true ? ", no buy phase" : ""}${args["style"] === true ? ", movement style" : ""}${args["no-style"] === true ? ", no movement style" : ""}${args["style-off"] ? `, style off: ${args["style-off"]}` : ""})`,
       rounds: rounds.length, matches, map, seedStart,
       generatedAt: new Date().toISOString(),
     },

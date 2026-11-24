@@ -17,14 +17,14 @@ determinism check (same seed → identical EventLog hash).
 git worktree add --detach /tmp/pv-rehearsal origin/claude/pv-core
 cd /tmp/pv-rehearsal
 for b in pv-spatial pv-data pv-replay; do git merge --no-edit origin/claude/$b; done
-# wiring (see docs/INTEGRATION_PLAN.md §2): scope rename + drop npm locks
+# wiring (see docs/archive/INTEGRATION_PLAN.md §2): scope rename + drop npm locks
 grep -rl '@project-v/' packages --include=*.ts --include=*.json | xargs -r sed -i 's#@project-v/#@pv/#g'
 grep -rl '"@project-v"' packages --include=*.ts | xargs -r sed -i 's#"@project-v"#"@pv"#g'
 find packages -name package-lock.json -delete
 # the harness needs these as workspace deps of integration-adapters (dev):
 #   @pv/round-simulator @pv/replay-engine @pv/team-engine @pv/decision-engine @pv/world-state @pv/simulation-core
 pnpm install
-cp tools/integration-rehearsal/round2-harness.ts packages/integration-adapters/test/e2e2.rehearsal.test.ts
+cp docs/archive/integration-rehearsal/round2-harness.ts packages/integration-adapters/test/e2e2.rehearsal.test.ts
 pnpm exec vitest run packages/integration-adapters/test/e2e2.rehearsal.test.ts
 ```
 

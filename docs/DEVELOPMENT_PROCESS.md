@@ -1,7 +1,7 @@
 # PROJECT V — 개발 과정 (2026-11-18 ~ 2026-11-23)
 
 이 문서는 **어떻게 만들었는지**를 기록한다. 무엇이 있고 무엇이 없는지는 `docs/HANDOFF.md`,
-머지별 상세 수치는 `docs/WORK_HISTORY.md`, 브랜치별 초기 차수는 `docs/DEVELOPMENT_LOG.md`가 정본이다.
+머지별 상세 수치는 `docs/WORK_HISTORY.md`, 브랜치별 초기 차수는 `docs/archive/DEVELOPMENT_LOG.md`가 정본이다.
 
 ---
 

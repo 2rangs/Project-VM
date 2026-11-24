@@ -17,10 +17,13 @@ describe("recorded movement of a real match stays on the floor", () => {
     let samples = 0, worst = 0, longest = 0, spawnMoves = 0;
     for (const round of r.rounds) {
       const last = new Map<string, P3>();
+      const firstMs = Math.min(...(round.replay.events as unknown as Move[]).filter((e) => e.kind === "move").map((e) => e.timeMs));
+      expect(firstMs).toBe(-30_000); // the buy phase is recorded (MatchConfig.buyPhase, default on)
       for (const e of round.replay.events as unknown as Move[]) {
         if (e.kind !== "move") continue;
         samples++;
-        if (e.timeMs === 0 && e.from.x === e.to.x && e.from.y === e.to.y) spawnMoves++;
+        // where everybody starts: the first frame — the buy phase's (−30 s), the round's own without one
+        if (e.timeMs === firstMs && e.from.x === e.to.x && e.from.y === e.to.y) spawnMoves++;
         worst = Math.max(worst, nav.distanceToWalkable(e.to));
         worst = Math.max(worst, nav.distanceToWalkable({ x: (e.from.x + e.to.x) / 2, y: (e.from.y + e.to.y) / 2, z: (e.from.z + e.to.z) / 2 }));
         longest = Math.max(longest, Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y, e.to.z - e.from.z));

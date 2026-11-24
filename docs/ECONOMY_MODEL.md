@@ -1,5 +1,12 @@
 # PROJECT V — ECONOMY & ULTIMATE MODEL
 
+## Eco rounds and the weapon catalogue (2026-11-24) — behind flags, not gated
+
+`EconomyOptions.ecoSidearms` (eco spends its surplus over a per-player next-full-buy reserve on
+sidearms, light shields and one defender's shotgun; eco ladder; partial kit) and `MatchConfig.weaponModes`
+(Classic burst, run-and-gun accuracy) default **off**; with both off the game equals main. Catalogue now has
+16 guns (manual-approx). Measurements, flags and the next step: `docs/handoff/economy.md`.
+
 ## Match economy v1.2 — round-2 buys, mid-round pickups, ult-orb consumer (2026-11-24)
 
 **Round 2 after a pistol win.** VCT international (vct.duckdb, 2248 pistol wins): the winners field

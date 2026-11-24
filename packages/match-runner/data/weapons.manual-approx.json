@@ -1,5 +1,5 @@
 {
-  "_comment": "PROJECT V combat-engine test weapons. These are MANUAL-APPROX, hand-authored approximations of publicly-documented VALORANT weapon rules (damage/fire-rate/magazine), NOT a copy of valorant-api's dataset. Per PV-1 docs/LICENSE_AUDIT.md, valorant-api-derived catalog VALUES are not committed (license unclear); schema + synthetic/approx fixtures are. For exact, versioned values regenerate locally with scripts/fetch-real-weapons.mjs (output is gitignored) or PV-1's tools/catalog-builder (release-13.10). Times in ms, ranges in meters.",
+  "_comment": "PROJECT V combat-engine test weapons. These are MANUAL-APPROX, hand-authored approximations of publicly-documented VALORANT weapon rules (damage/fire-rate/magazine), NOT a copy of valorant-api's dataset. Per PV-1 docs/LICENSE_AUDIT.md, valorant-api-derived catalog VALUES are not committed (license unclear); schema + synthetic/approx fixtures are. For exact, versioned values regenerate locally with scripts/fetch-real-weapons.mjs (output is gitignored) or PV-1's tools/catalog-builder (release-13.10). Times in ms, ranges in meters. 2026-11-24: sidearms, shotguns, Stinger, Bulldog/Guardian and Marshal/Outlaw added (eco/force catalogue); pellets/spreadDeg/movingAccuracy/altFire are combat-engine's optional fields. spreadDeg is an effective cone: every pellet lands out to ~3 m (Shorty, Classic burst), ~4 m (Judge), ~5 m (Bucky) \u2014 the public one-shot ranges.",
   "provenance": {
     "sourceNote": "public VALORANT weapon rules (approximate)",
     "evidenceType": "derived",
@@ -165,6 +165,290 @@
           "head": 66,
           "body": 22,
           "leg": 18
+        }
+      ],
+      "tracerVisible": true,
+      "movingAccuracy": 0.8,
+      "altFire": {
+        "useWithinMeters": 3,
+        "pellets": 3,
+        "spreadDeg": 9,
+        "fireRate": 2.22,
+        "ammoPerShot": 3
+      }
+    },
+    {
+      "id": "shorty",
+      "name": "Shorty",
+      "category": "Shotguns",
+      "cost": 150,
+      "fireRate": 3.33,
+      "magazineSize": 2,
+      "reloadTimeMs": 1750,
+      "equipTimeMs": 750,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 7,
+          "head": 22,
+          "body": 11,
+          "leg": 9
+        },
+        {
+          "maxRangeMeters": 15,
+          "head": 12,
+          "body": 6,
+          "leg": 5
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 6,
+          "body": 3,
+          "leg": 2
+        }
+      ],
+      "tracerVisible": true,
+      "pellets": 15,
+      "spreadDeg": 11,
+      "movingAccuracy": 0.85
+    },
+    {
+      "id": "frenzy",
+      "name": "Frenzy",
+      "category": "Sidearms",
+      "cost": 450,
+      "fireRate": 10,
+      "magazineSize": 13,
+      "reloadTimeMs": 1500,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 20,
+          "head": 78,
+          "body": 26,
+          "leg": 22
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 63,
+          "body": 21,
+          "leg": 17
+        }
+      ],
+      "tracerVisible": true,
+      "movingAccuracy": 0.75
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost",
+      "category": "Sidearms",
+      "cost": 500,
+      "fireRate": 6.75,
+      "magazineSize": 15,
+      "reloadTimeMs": 1500,
+      "equipTimeMs": 750,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 30,
+          "head": 105,
+          "body": 30,
+          "leg": 25
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 87,
+          "body": 25,
+          "leg": 21
+        }
+      ],
+      "tracerVisible": true,
+      "fireLoudness": 0.6
+    },
+    {
+      "id": "stinger",
+      "name": "Stinger",
+      "category": "SMGs",
+      "cost": 1100,
+      "fireRate": 16,
+      "magazineSize": 20,
+      "reloadTimeMs": 2250,
+      "equipTimeMs": 750,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 15,
+          "head": 67,
+          "body": 27,
+          "leg": 23
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 62,
+          "body": 25,
+          "leg": 21
+        }
+      ],
+      "tracerVisible": true,
+      "movingAccuracy": 0.7
+    },
+    {
+      "id": "bucky",
+      "name": "Bucky",
+      "category": "Shotguns",
+      "cost": 850,
+      "fireRate": 1.1,
+      "magazineSize": 5,
+      "reloadTimeMs": 2500,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 8,
+          "head": 44,
+          "body": 22,
+          "leg": 19
+        },
+        {
+          "maxRangeMeters": 12,
+          "head": 34,
+          "body": 17,
+          "leg": 14
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 18,
+          "body": 9,
+          "leg": 8
+        }
+      ],
+      "tracerVisible": true,
+      "pellets": 15,
+      "spreadDeg": 7,
+      "movingAccuracy": 0.85
+    },
+    {
+      "id": "judge",
+      "name": "Judge",
+      "category": "Shotguns",
+      "cost": 1850,
+      "fireRate": 3.5,
+      "magazineSize": 7,
+      "reloadTimeMs": 2200,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 1.0,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 10,
+          "head": 34,
+          "body": 17,
+          "leg": 14
+        },
+        {
+          "maxRangeMeters": 15,
+          "head": 26,
+          "body": 13,
+          "leg": 11
+        },
+        {
+          "maxRangeMeters": 50,
+          "head": 20,
+          "body": 10,
+          "leg": 9
+        }
+      ],
+      "tracerVisible": true,
+      "pellets": 12,
+      "spreadDeg": 8.5,
+      "movingAccuracy": 0.85
+    },
+    {
+      "id": "bulldog",
+      "name": "Bulldog",
+      "category": "Rifles",
+      "cost": 2050,
+      "fireRate": 9.15,
+      "magazineSize": 24,
+      "reloadTimeMs": 2500,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 0.95,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 50,
+          "head": 115,
+          "body": 35,
+          "leg": 29
+        }
+      ],
+      "tracerVisible": true
+    },
+    {
+      "id": "guardian",
+      "name": "Guardian",
+      "category": "Rifles",
+      "cost": 2250,
+      "fireRate": 5.25,
+      "magazineSize": 12,
+      "reloadTimeMs": 2500,
+      "equipTimeMs": 1000,
+      "runSpeedMultiplier": 0.95,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 50,
+          "head": 195,
+          "body": 65,
+          "leg": 49
+        }
+      ],
+      "tracerVisible": true
+    },
+    {
+      "id": "marshal",
+      "name": "Marshal",
+      "category": "Snipers",
+      "cost": 950,
+      "fireRate": 1.5,
+      "magazineSize": 5,
+      "reloadTimeMs": 2500,
+      "equipTimeMs": 1250,
+      "runSpeedMultiplier": 0.9,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 50,
+          "head": 202,
+          "body": 101,
+          "leg": 85
+        }
+      ],
+      "tracerVisible": true
+    },
+    {
+      "id": "outlaw",
+      "name": "Outlaw",
+      "category": "Snipers",
+      "cost": 2400,
+      "fireRate": 2.75,
+      "magazineSize": 2,
+      "reloadTimeMs": 2800,
+      "equipTimeMs": 1100,
+      "runSpeedMultiplier": 0.9,
+      "provenance": "manual-approx",
+      "damageBands": [
+        {
+          "maxRangeMeters": 50,
+          "head": 238,
+          "body": 140,
+          "leg": 119
         }
       ],
       "tracerVisible": true

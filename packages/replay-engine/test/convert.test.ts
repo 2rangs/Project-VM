@@ -76,3 +76,18 @@ test('fromSimEventLog: optional perception track passes through to Replay', () =
   const loaded = loadReplay(r);
   assert.equal(loaded.perception![0].snapshots[0].beliefZones[0].zone, 'mid');
 });
+
+test('fromSimEventLog: buyPhaseStart gives the next round its buy span; buy-phase moves keep their time', () => {
+  const P = (x: number) => ({ x, y: 0, z: 0 });
+  const r = fromSimEventLog([
+    { seq: 0, tick: 0, timeMs: 1000, kind: 'buyPhaseStart', durationMs: 30000 },
+    { seq: 1, tick: 0, timeMs: 1100, kind: 'move', playerId: 'atk1', from: P(0), to: P(10) },
+    { seq: 2, tick: 0, timeMs: 31000, kind: 'roundStart', roundNumber: 1 },
+    { seq: 3, tick: 0, timeMs: 40000, kind: 'roundEnd', winner: 'attack', reason: 'elimination' },
+    { seq: 4, tick: 0, timeMs: 50000, kind: 'roundStart', roundNumber: 2 },
+  ], { mapId: 'ascent' });
+  assert.equal(r.rounds[0].buyStartMs, 1000);
+  assert.equal(r.rounds[0].startMs, 31000);
+  assert.equal(r.rounds[1].buyStartMs, undefined);
+  assert.deepEqual(r.tracks[0].keyframes.map((k) => k.tMs), [1099, 1100]);
+});

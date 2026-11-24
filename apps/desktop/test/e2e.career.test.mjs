@@ -61,7 +61,7 @@ async function main() {
   if (process.env.PV_E2E_VERBOSE) app.process().stderr?.on('data', (d) => process.stdout.write(`[main] ${d}`));
   await app.evaluate(({ BrowserWindow }) => { BrowserWindow.getAllWindows()[0].setContentSize(1280, 800); });
   const shot = (name) => page.screenshot({ path: path.join(OUT, `desktop-career-${name}.png`) });
-  const simMode = (m) => page.evaluate((v) => localStorage.setItem('pv-career-sim', v), m);
+  const simMode = (m) => page.evaluate((v) => localStorage.setItem('pv-career-depth', v), m); // quick | league | full
 
   // ── start menu: nothing runs yet ──
   await page.waitForSelector('[data-testid="start-menu"]', { timeout: 20000 });
@@ -167,7 +167,7 @@ async function main() {
   for (const id of lineupIds) assert.ok(afterMatch.stats[id]?.maps === a + b, 'the whole chosen five played every map');
 
   // ── the next Continue plays the rest of the day's fixtures through the engine in the background ──
-  await simMode('engine');
+  await simMode('league'); // the engine plays the other series of our league
   await page.getByTestId('nav-home').click();
   await page.getByTestId('home-continue').click();
   await page.waitForSelector('[data-testid="career-progress"]', { timeout: 60000 });
@@ -195,9 +195,23 @@ async function main() {
   }
   assert.ok(seasonEnd, 'the season reached its last day');
   const endSave = await saveWhen((c) => c.season.fixtures.every((f) => !!f.result));
-  assert.ok(endSave.season.fixtures.every((f) => !!f.result), 'every fixture of the season was played');
+  const worldFixtures = [...endSave.season.fixtures, ...endSave.others.flatMap((l) => l.fixtures), ...endSave.circuit.events.flatMap((e) => e.fixtures)];
+  assert.ok(worldFixtures.every((f) => !!f.result), 'every fixture of the world was played: four leagues, Masters 1/2 and Champions');
+  assert.equal(endSave.others.length, 3, 'the other three regions ran in parallel');
+  assert.ok(endSave.circuit.events.every((e) => e.champion && e.teams.length >= 12), 'the three international events were played');
+  assert.equal(endSave.inbox.filter((m) => m.key === 'circuit.draw').length, 3, 'a draw message for each international event');
   assert.ok(endSave.world.club.contracts[signedId], 'the signing is still under contract on the last day');
   await shot('season-end');
+  // The circuit on screen: an international event's double-elimination bracket and the points race.
+  await page.getByTestId('nav-standings').click();
+  await page.getByTestId('stand-champions').click();
+  await page.waitForSelector('[data-testid="de-upper"]', { timeout: 10000 });
+  assert.equal(await page.locator('[data-testid="de-lower"] [data-testid^="bracket-"]').count(), 6, 'lower bracket: 2 + 2 + 1 + 1 series');
+  assert.equal(await page.locator('[data-testid^="intl-group-"]').count(), 4, 'four groups');
+  await shot('champions');
+  await page.getByTestId('stand-points').click();
+  assert.equal(await page.locator('[data-testid^="points-"]:not([data-testid="points-race"])').count(), 4, 'a points table per region');
+  await page.getByTestId('nav-home').click();
 
   // ── the season ends: contracts expire, the squad is left alone otherwise, the next season opens ──
   const rosterBefore = new Set([...endSave.world.teams[teamId].roster, ...endSave.world.teams[teamId].academy]);

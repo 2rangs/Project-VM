@@ -5,7 +5,7 @@
  *   packages/spatial-engine/src/{engine.ts,coordinate.ts,types.ts}
  * At merge, replace `SpatialEngineLike` with `import { SpatialEngine } from "@pv/spatial-engine"`.
  *
- * ⚠️ COORDINATE RESULT (phase-5 rehearsal, docs/INTEGRATION_REHEARSAL.md): the default
+ * ⚠️ COORDINATE RESULT (phase-5 rehearsal, docs/archive/INTEGRATION_REHEARSAL.md): the default
  * `minimapScale`=1000 assumption is **WRONG**. PV-2 minimapUnits are the **VLR 2D-replay
  * minimap PIXEL frame** (observed x≈170..825 in scenarios, PV-4 vlr range x≈92..973,
  * y≈117..844), NOT normalized×1000. Feeding minimapUnits/1000 into PV-4's valorant-api

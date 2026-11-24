@@ -40,6 +40,31 @@ export interface WeaponSpec {
   /** damage bands sorted ascending by maxRangeMeters; last band caps the range. */
   readonly damageBands: readonly DamageBand[];
   readonly provenance: string;
+  /**
+   * Projectiles per trigger pull (shotguns). Default 1. With more than one, the band damage is per
+   * pellet and the share that lands follows `spreadDeg` (combat-engine `pelletLandChance`).
+   */
+  readonly pellets?: number;
+  /** Half-angle (deg) of the pellet cone. Only with pellets > 1. */
+  readonly spreadDeg?: number;
+  /**
+   * Hit-chance multiplier kept while the shooter is moving (run-and-gun weapons: shotguns, SMGs,
+   * Frenzy, Classic). Absent → CombatParams.accuracy.movingPenalty, offset by movement skill. The
+   * better of the two applies.
+   */
+  readonly movingAccuracy?: number;
+  /** A second fire mode used when the duel starts within `useWithinMeters` (Classic right-click burst). */
+  readonly altFire?: AltFire;
+}
+
+export interface AltFire {
+  readonly useWithinMeters: number;
+  /** Bullets per trigger pull, their cone half-angle and trigger pulls per second. */
+  readonly pellets: number;
+  readonly spreadDeg: number;
+  readonly fireRate: number;
+  /** Magazine rounds a pull uses. */
+  readonly ammoPerShot: number;
 }
 
 /** Mechanical ability ratings in [0,1] (README §23.1). Higher is better. */
@@ -89,6 +114,19 @@ export interface EngagePosture {
    * a pre-aimed holder is simply one whose offset is ≈ 0. Absent → the legacy flag model.
    */
   readonly aimOffsetDeg?: number;
+  /**
+   * This combatant's speed (m/s) ACROSS the opponent's line of sight at contact. The line of sight
+   * then turns at (sum of both fighters' lateral speeds) / distance, and BOTH crosshairs have to
+   * follow it: during each one's perception time the other moves that many radians off where it
+   * was seen (gaze model only). A wide swing strafes at run speed, a slice walks, a holder is 0.
+   */
+  readonly lateralSpeedMps?: number;
+  /**
+   * When (ms after t0) this combatant breaks line of sight again on its own — a jiggle or shoulder
+   * peek strafes back behind cover. Neither side can fire after the earlier of the two; if nobody
+   * has died by then the duel ends as a disengage (DuelResult.disengagedAtMs). Absent = stays in.
+   */
+  readonly exposedUntilMs?: number;
 }
 
 export const OPEN_POSTURE: EngagePosture = {
@@ -147,6 +185,8 @@ export interface DuelResult {
   readonly winner: PlayerId | null;
   readonly loser: PlayerId | null;
   readonly timeToKillMs: number | null;
+  /** Set when the duel ended because a fighter left the line of sight (exposedUntilMs), no kill. */
+  readonly disengagedAtMs?: number;
   readonly events: readonly CombatEvent[];
   readonly outcomes: Readonly<Record<PlayerId, CombatantOutcome>>;
 }

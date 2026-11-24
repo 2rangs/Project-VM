@@ -12,6 +12,7 @@ import { runMatchCompact, type RunMatchCfg } from './run-match.ts';
 import { createMatchSessionHost, type CommandHost, type MatchSessionCfg } from './match-session.ts';
 import { createSeriesHost, type SeriesCfg } from './series-session.ts';
 import { playCareerSeries } from './career-sim.ts';
+import { prematchReport, type PrematchReq } from './prematch.ts';
 import type { CareerSimRequest } from '../shared/career.ts';
 import type { EngineMessage, EngineRequest } from './protocol.ts';
 
@@ -47,6 +48,7 @@ function run(req: EngineRequest): unknown {
       return series.handle(payload);
     case 'series.stop': series = null; return {};
     case 'career.series': return { outcome: playCareerSeries(payload as unknown as CareerSimRequest) };
+    case 'prematch.report': return prematchReport(payload as unknown as PrematchReq);
     default: throw new Error(`unknown op ${String(req.op)}`);
   }
 }

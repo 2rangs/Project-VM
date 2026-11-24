@@ -11,7 +11,7 @@
     "test:matchday": "node --experimental-strip-types --test test/matchday/*.test.ts",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
-    "test:unit": "node --experimental-strip-types --import ./test/support/json-imports.mjs --test test/ipc-contract.test.ts test/trace-parser.test.ts test/i18n.test.ts test/match-merge.test.ts test/decisions.test.ts test/series-view.test.ts test/navdebug.test.ts test/career-world.test.ts test/career-mode.test.ts test/club-ops.test.ts test/review.test.ts",
+    "test:unit": "node --experimental-strip-types --import ./test/support/json-imports.mjs --test test/ipc-contract.test.ts test/trace-parser.test.ts test/i18n.test.ts test/match-merge.test.ts test/decisions.test.ts test/series-view.test.ts test/navdebug.test.ts test/career-world.test.ts test/career-mode.test.ts test/club-ops.test.ts test/review.test.ts test/manager-view.test.ts",
     "test:engine": "node --experimental-strip-types --test test/engine-contract.test.ts test/engine-bundle.test.ts",
     "test:e2e": "node test/e2e.electron.test.mjs",
     "test:e2e:series": "node test/e2e.series.test.mjs",

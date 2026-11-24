@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 // the vitest runner. Sibling-branch packages (spatial/combat/perception/ability/round-
 // simulator/economy/replay) bring their own test runners (vitest or node:test) and are run
 // via `pnpm -r test` — a single root vitest cannot run node:test files (see
-// docs/INTEGRATION_PLAN.md F5). Hence the explicit per-package include below.
+// docs/archive/INTEGRATION_PLAN.md F5). Hence the explicit per-package include below.
 const PV_CORE = [
   "simulation-core",
   "game-rules",

@@ -2,7 +2,8 @@
 // (out/main/engine-host.js, built from src/engine/host.ts) in a long-lived worker process; the
 // reference is the same code run from workspace source through tsx (scripts/*.mts), one process
 // per run. For the same request the two must produce the same bytes — a whole map, an interactive
-// session, a series and a career series — and the bundle must also run from the staged data copy
+// managed session (shouts / strategy / team talk), the pre-match report, a series and a career
+// series — and the bundle must also run from the staged data copy
 // the packaged app ships (scripts/stage-engine-data.mjs), with nothing else from the repository.
 //
 // Needs `npm run build` (the bundle) and the repo-root install (tsx). Run: npm run test:engine
@@ -126,12 +127,21 @@ test('one-shot match: the bundled host and the tsx source path produce identical
   assert.equal(sha(await host.json('match.run', MATCHES[0])), bundleHashes[0], 'a repeated match in the same host differs');
 });
 
-test('interactive session: same replies from the bundled host and the tsx script', { skip: missing ?? false, timeout: 300000 }, async () => {
-  const cfg = { teamA: A, teamB: B, map: 'ascent', seed: 7, aiTeams: ['B'], options: {} };
+test('interactive (managed) session: same replies from the bundled host and the tsx script', { skip: missing ?? false, timeout: 300000 }, async () => {
+  // with the manager layer: a pre-match plan, shouts, a standing strategy and a team talk
+  const cfg = {
+    teamA: A, teamB: B, map: 'ascent', seed: 7, aiTeams: ['B'], options: {},
+    plan: { attackLean: { site: 'A', strength: 3 }, tempo: 'fast', risk: 'normal', defense: 'normal' },
+  };
   const cmds: Array<Record<string, unknown>> = [
     { cmd: 'state' }, { cmd: 'playNextRound' }, { cmd: 'callTimeout', team: 'A' },
     { cmd: 'setOrders', team: 'A', order: { strategy: 'aExecute', economy: 'force' } },
-    { cmd: 'playNextRound' }, { cmd: 'playNextRound' }, { cmd: 'result' },
+    { cmd: 'setShouts', team: 'A', shouts: { tempo: 'slow', risk: 'less' } },
+    { cmd: 'setStrategy', team: 'A', strategy: { attack: 'bExecute', rounds: 2 } },
+    // a team talk is half-time only: play to the end of the first half (12 rounds)
+    ...Array.from({ length: 11 }, () => ({ cmd: 'playNextRound' })),
+    { cmd: 'teamTalk', team: 'A', talk: 'encourage' },
+    { cmd: 'playNextRound' }, { cmd: 'result' },
   ];
   const host = new Host(bundle); hosts.push(host);
   const fromBundle = [await host.json('session.start', cfg)];
@@ -139,12 +149,28 @@ test('interactive session: same replies from the bundled host and the tsx script
   const fromSource = await tsxLines('match-session.mts', [JSON.stringify(cfg)], cmds);
   assert.equal(fromBundle.length, fromSource.length);
   fromBundle.forEach((reply, i) => assert.equal(sha(reply), sha(fromSource[i]!), `reply ${i} (${String(cmds[i]!.cmd)}) differs`));
+  // the manager layer is in the replies (state of mind, shouts) and the talk's reactions
+  assert.ok((JSON.parse(fromBundle[0]!) as { state: { manager?: unknown } }).state.manager, 'state carries the manager layer');
+  const at = (cmd: string) => cmds.findIndex((c) => c.cmd === cmd);
+  assert.ok((JSON.parse(fromBundle[at('teamTalk')]!) as { talk?: unknown }).talk, 'teamTalk returns the reactions');
+  assert.ok((JSON.parse(fromBundle[at('result')]!) as { result: { manager?: unknown } }).result.manager, 'result carries the manager decisions');
   // an error is an error on both paths
   await assert.rejects(host.json('session.cmd', { cmd: 'nope' }), /unknown cmd nope/);
   host.stop();
 });
 
-test('series (veto → one map) and a career series: same results on both paths', { skip: missing ?? false, timeout: 600000 }, async () => {
+test('pre-match opponent report: same report from the bundled host and the tsx script', { skip: missing ?? false, timeout: 300000 }, async () => {
+  const req = { us: A, them: B, map: 'ascent', seed: 4, analyst: 0.6, film: 1 };
+  const host = new Host(bundle); hosts.push(host);
+  const fromBundle = JSON.parse(await host.json('prematch.report', req)) as { report: unknown; filmGames: number };
+  const res = spawnSync(tsx, [path.join(appDir, 'scripts', 'prematch.mts'), JSON.stringify(req)], { cwd: repoRoot, encoding: 'utf8', maxBuffer: 1 << 28, timeout: 180000 });
+  assert.equal(res.status, 0, `prematch.mts failed: ${res.stderr?.slice(-400)}`);
+  assert.equal(JSON.stringify(fromBundle.report), res.stdout, 'report differs');
+  assert.equal(fromBundle.filmGames, 1);
+  host.stop();
+});
+
+test('series (veto → one managed map, round by round) and a career series: same results on both paths', { skip: missing ?? false, timeout: 600000 }, async () => {
   const env = { ...process.env, PV_SERIES_FILM: '1' };
   const cfg = { teamA: A, teamB: B, format: 'bo1', seed: 11 };
   const host = new Host(bundle, { env }); hosts.push(host);
@@ -158,8 +184,19 @@ test('series (veto → one map) and a career series: same results on both paths'
     cmds.push(cmd);
     fromBundle.push(await host.json('series.cmd', cmd));
   }
-  cmds.push({ cmd: 'playGame' });
-  fromBundle.push(await host.json('series.cmd', { cmd: 'playGame' }));
+  // the map round by round with the manager commands, then played out (closeGame)
+  for (const cmd of [
+    { cmd: 'startGame' }, { cmd: 'setShouts', team: 'A', shouts: { tempo: 'fast' } },
+    { cmd: 'setStrategy', team: 'A', strategy: { defense: 'stackA', rounds: 1 } },
+    ...Array.from({ length: 12 }, () => ({ cmd: 'playNextRound' })), // to half-time
+    { cmd: 'teamTalk', team: 'A', talk: 'calm' },
+    { cmd: 'result' }, { cmd: 'closeGame' },
+  ] as Array<Record<string, unknown>>) {
+    cmds.push(cmd);
+    fromBundle.push(await host.json('series.cmd', cmd));
+  }
+  const talkReply = JSON.parse(fromBundle[cmds.findIndex((c) => c.cmd === 'teamTalk')]!) as { talk?: unknown; state: { manager?: unknown } };
+  assert.ok(talkReply.talk && talkReply.state.manager, 'series map: the talk is answered and the state carries the manager layer');
   assert.ok(cmds.length >= 3, 'the veto had at least one step');
   const fromSource = await tsxLines('series-session.mts', [JSON.stringify(cfg)], cmds, env);
   fromBundle.forEach((reply, i) => assert.equal(sha(reply), sha(fromSource[i]!), `series reply ${i} (${String(cmds[i]!.cmd)}) differs`));

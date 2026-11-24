@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n/index.tsx';
 import { rosterHandles, agentOfSlot } from '../matchday/roster.ts';
+import { hashStr, mediaManifest, mediaUrl } from '../matchday/media.ts';
 import { Icon, ROLE_ICON } from '../screens/matchday/Icons.tsx';
 import { LoadingBanner, useLoadingBanner, type BannerStage } from './StreakBanner.tsx';
 import './loading.css';
@@ -34,11 +35,26 @@ function useGameArt(): GameArt | null {
   return art;
 }
 
+/** Player cards the user fetched from Kingdom Archives (scripts/fetch-playercards.mjs): one per player, stable. */
+function useCardPool(): Array<{ id: string }> {
+  const [pool, setPool] = useState<Array<{ id: string }>>([]);
+  useEffect(() => { let alive = true; void mediaManifest<Array<{ id: string }>>('playercards').then((m) => { if (alive && Array.isArray(m)) setPool(m); }); return () => { alive = false; }; }, []);
+  return pool;
+}
+function CardArt({ id, children }: { id: string | null; children: React.ReactNode }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => { let alive = true; setUrl(null); if (id) void mediaUrl('playercards', `${id}_wide.png`).then((u) => { if (alive) setUrl(u); }); return () => { alive = false; }; }, [id]);
+  return <span className={`pvm-card ${url ? 'has-art' : ''}`} style={url ? { backgroundImage: `linear-gradient(90deg, rgba(8,14,20,.55), rgba(8,14,20,.05) 60%), url(${url})` } : undefined}>{children}</span>;
+}
+/** Account level shown on the card; derived from the player so it is stable between loads. */
+export function playerLevel(handle: string): number { return 18 + (hashStr(`lv:${handle}`) % 322); }
+
 export interface MatchLoadTeam { id: string; name: string; side: 'attack' | 'defense' }
 
 function Lineup({ team, tone, art }: { team: MatchLoadTeam; tone: 'ally' | 'enemy'; art: GameArt | null }) {
   const t = useT();
   const handles = rosterHandles(team.id);
+  const pool = useCardPool();
   return (
     <section className={`pvm-team ${tone}`} data-testid={`matchload-${tone}`}>
       <header><span>{t(team.side === 'attack' ? 'load.match.attacking' : 'load.match.defending')}</span><b>{team.name}</b></header>
@@ -50,7 +66,10 @@ function Lineup({ team, tone, art }: { team: MatchLoadTeam; tone: 'ally' | 'enem
               <span className="pvm-tile">{agent && (art?.agents[agent.name.toLowerCase()]
                 ? <img src={art.agents[agent.name.toLowerCase()]} alt={agent.name} />
                 : <Icon name={ROLE_ICON[agent.role]} size={26} />)}</span>
-              <span className="pvm-card"><i>{String(i + 1).padStart(2, '0')}</i><em>{agent?.name ?? ''}</em></span>
+              <CardArt id={pool.length ? pool[hashStr(`${team.id}:${handle}`) % pool.length].id : null}>
+                <i>{String(i + 1).padStart(2, '0')}</i><em>{agent?.name ?? ''}</em>
+                <span className="pvm-lv" title={t('load.match.level')}><small>LV</small>{playerLevel(handle)}</span>
+              </CardArt>
               <b className="pvm-name">{handle}</b>
               <span className="pvm-agent">{agent ? `${t(`mdx.role.${agent.role}`)} · ${agent.name}` : ''}</span>
             </li>

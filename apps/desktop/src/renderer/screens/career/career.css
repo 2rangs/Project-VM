@@ -108,3 +108,10 @@
   .bracket { grid-template-columns: 1fr; }
 }
 .career-instant { display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:8px 16px 0; }
+
+/* ── international events: double-elimination brackets ── */
+.bracket.de { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bracket.de.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bracket.de.one { grid-template-columns: minmax(0, 360px); }
+.ser-chip.me { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 900px) { .bracket.de, .bracket.de.four { grid-template-columns: 1fr; } }

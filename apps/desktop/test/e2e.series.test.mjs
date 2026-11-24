@@ -32,6 +32,7 @@ async function main() {
       // optional local assets (real map mesh, banners) are never present in CI: keep runs independent of them
       PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
+      PV_MEDIA_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
@@ -144,6 +145,13 @@ async function main() {
     await page.getByTestId('mode-interactive').click();
     await page.getByTestId('start-interactive').click();
     await page.waitForSelector('[data-testid="session-bar"]', { timeout: LONG });
+    // [manager] a series map is played with the manager layer too (through the series host)
+    await page.getByTestId('mgr-toggle').click();
+    await page.waitForSelector('[data-testid="mgr-panel"]', { timeout: 20000 });
+    assert.equal(await page.locator('[data-testid^="mgr-player-"]').count(), 5, 'series map: the drawer lists our five');
+    await page.getByTestId('mgr-tempo-slow').click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="mgr-tempo-slow"]')?.getAttribute('aria-checked') === 'true', null, { timeout: LONG });
+    await page.getByTestId('mgr-toggle').click();
     await page.getByTestId('next-round').click();
     // The live view plays each round in full; a round chip appears once the engine has played it.
     await page.waitForFunction(() => document.querySelectorAll('[data-testid="roundstrip"] [data-testid^="round-chip-"]').length >= 1, null, { timeout: LONG });

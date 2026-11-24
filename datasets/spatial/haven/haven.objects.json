@@ -20,7 +20,7 @@
   "traversals": 0,
   "doors": 0,
   "breakables": 0,
-  "ultOrbs": 0,
+  "ultOrbs": 2,
   "notLocated": 1
  },
  "drops": [
@@ -37,11 +37,34 @@
  "traversals": [],
  "doors": [],
  "breakables": [],
- "ultOrbs": [],
+ "ultOrbs": [
+  {
+   "id": "orb-a-long",
+   "zone": "a-long",
+   "position": {
+    "x": 6218,
+    "y": -6890,
+    "z": 100
+   },
+   "verified": false,
+   "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
+  },
+  {
+   "id": "orb-c-long",
+   "zone": "c-long",
+   "position": {
+    "x": -3182,
+    "y": -5940,
+    "z": 100
+   },
+   "verified": false,
+   "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
+  }
+ ],
  "notLocated": [
   {
-   "name": "Ultimate orbs",
-   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+   "name": "Ultimate orbs — exact positions",
+   "reason": "zone-level only (A Long / C Long, from game knowledge, unverified); no orb object exists in the static scene, so the point given is the zone anchor."
   }
  ],
  "generatedBy": "tools/map-mesh/pipeline/objects_map.py"

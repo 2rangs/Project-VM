@@ -22,10 +22,22 @@ export function aimTimeMs(offsetDeg: number, widthDeg: number, aim: number, p: C
 }
 
 /** When (ms after t0) a combatant can first pull the trigger. */
-export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}, distanceMeters = 15): number {
+/**
+ * How far (deg) a target moving across the line of sight gets from where it was first seen while the
+ * shooter is still perceiving it: ω · t = (lateral / distance) · perception. It is added to the gaze
+ * offset the Fitts term has to cover — the physical part of the peeker's advantage (a holder whose
+ * crosshair sits on the peek point still has to catch a swing that runs past it).
+ */
+export function trackingOffsetDeg(targetLateralMps: number, distanceMeters: number, perceptionMs: number): number {
+  if (targetLateralMps <= 0 || perceptionMs <= 0) return 0;
+  return (Math.atan2(targetLateralMps * (perceptionMs / 1000), Math.max(0.5, distanceMeters)) * 180) / Math.PI;
+}
+
+export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}, distanceMeters = 15, targetLateralMps = 0): number {
   if (c.posture.aimOffsetDeg !== undefined) {
     const perception = lerp(p.aim.perceptionSlowMs, p.aim.perceptionFastMs, c.skills.reaction);
-    const d = effectiveAimOffsetDeg(c.posture.aimOffsetDeg, c.skills.crosshairPlacement, p);
+    const track = trackingOffsetDeg(targetLateralMps, distanceMeters, perception);
+    const d = effectiveAimOffsetDeg(c.posture.aimOffsetDeg + track, c.skills.crosshairPlacement, p);
     const aimMs = aimTimeMs(d, bodyAngularWidthDeg(distanceMeters, p), c.skills.aim, p);
     const flash = c.posture.flashBlindMs > 0 ? c.posture.flashBlindMs + p.reaction.flashReactionPenaltyMs : 0;
     return c.posture.seesEnemyAtMs + (perception + aimMs) * (cal.reactionScale ?? 1) + flash;
@@ -53,6 +65,16 @@ export function stoppedAtMs(c: Combatant, p: CombatParams, cal: CombatCalibratio
 export function movingAt(c: Combatant, p: CombatParams, cal: CombatCalibration, atMs?: number): boolean {
   if (!c.posture.moving) return false;
   return atMs === undefined || atMs < stoppedAtMs(c, p, cal);
+}
+
+/**
+ * Share of a pull's pellets that land on a body at a range: the body's visible area (0.7 m × 1.6 m)
+ * over the area of the pellet cone there, capped at 1. Point blank every pellet lands; past the
+ * range where the cone outgrows the body the share falls with the square of the range.
+ */
+export function pelletLandChance(spreadDeg: number, distanceMeters: number): number {
+  const r = Math.max(0.05, distanceMeters) * Math.tan((Math.max(0.01, spreadDeg) * Math.PI) / 180);
+  return clamp((0.7 * 1.6) / (Math.PI * r * r), 0, 1);
 }
 
 /** The comfortable range of a weapon = the edge of its first (full-damage) band. */
@@ -90,7 +112,7 @@ export function hitChance(
   // moving shooter: big penalty, partially offset by movement skill — until it has stopped.
   if (movingAt(shooter, p, cal, atMs)) {
     const movingMult = p.accuracy.movingPenalty + (1 - p.accuracy.movingPenalty) * shooter.skills.movement * 0.5;
-    chance *= movingMult;
+    chance *= Math.max(movingMult, shooter.weapon.movingAccuracy ?? 0);
   }
   // flash-blinded shooter.
   if (shooter.posture.flashBlindMs > 0) chance *= p.accuracy.flashedAccuracy;

@@ -320,9 +320,139 @@ blind?: true;               // 플래시에 눈먼 상태(그때 sees = [])
 - **측정**: 60경기 결과가 기준과 **완전히 같다**. 4경기 73라운드에서 착지음은 1번(323uu) — 현재 경로가 2.5m 이상 drop을
   거의 안 쓰고, 총성 창이 판단 시점과 겹치는 일도 드물다. 의미가 생기려면 "조용한 우회 vs 시끄러운 낙하"와
   "엄호 사격에 맞춰 떨어지기"가 **결정**이 되어야 한다(아직 없음).
-- **로프·텔레포터·지퍼라인 소리와 페이크**(MS-09): 맵 데이터의 link가 Bind 2개·Fracture 1개뿐이고 종류·위치 메타데이터가
+- **로프·텔레포터·지퍼라인 소리와 페이크**(MS-09): → §11.5에서 만듦(objects.json traversals). 당시 기록: 맵 데이터의 link가 Bind 2개·Fracture 1개뿐이고 종류·위치 메타데이터가
   아직 없어 만들지 않았다. 필요한 인터페이스(maps 세션): `nav.links[i] = { from, to, kind: "rope"|"zipline"|"teleporter", soundRadiusUnits?, position }`
   — 이동자가 link를 쓸 때 `onLink(kind, at)` 훅으로 소리를 내고, 페이크는 "사용 시작 후 취소"를 정책 결정으로 추가한다.
+
+## 11. 피크 기법·추적·물리 정지 시간·링크 소리 (2026-11-24, `41c3c91`, `dd6a13d`, main `93fce88` 병합 `b5c6ce7`)
+
+모두 시선 모델(`--gaze`) 경로에만 있다. **기본(gaze OFF)은 그대로**이고, 기본 게이트는 아래와 같다.
+
+### 11.1 피크를 기하로 (A1 PK-03/04/07, A7 PK-09)
+`round-simulator/src/peek.ts`. 기법은 듀얼 모델이 이미 쓰는 입력만 바꾼다(보너스 없음).
+- **walkIn**: 적을 예상 못함 — 원래 이동 그대로(측면 속도 = 직전 이동의 시선 수직 성분), 조준은 원래 시선.
+- **swing**: 위치를 앎(정보 가중 ≥ ½, 재피크) — 달리기 속도로 가로지르며 조준은 그 지점.
+- **slice**: 예상했지만 위치 모름 + 걷는 중 — 걷기 속도, 조준은 열리는 틈(오프셋 0), 모서리 항 0(보유자만큼 모서리에서 떨어짐).
+- **jiggle**: 예상했지만 위치 모름 + 시간 여유 — 확률 `gameSense`로 선택. 노출 `t_exp = 2·(2·몸 반폭)/v` (달리기 ≈ 207ms).
+  보유자가 그 안에 준비되지 않으면 **disengage**(킬 없이 종료), 양쪽 정보 1, 지글러는 재획득 시간
+  (`지각(반응) + Fitts a`) 동안 엄폐 뒤 → 같은 상대에 **rePeek**(정보 있는 스윙). 쌍은 재획득 시간 뒤 다시 싸울 수 있다
+  (기존 "쌍당 라운드 1회" 대신 쿨다운; gaze OFF는 그대로 1회).
+- 모서리: 고정 `PEEK_CORNER_DISTANCE=300` 대신 측정 위치 — 이동자는 직전 걸음의 절반, 재피크·지글은 몸 반폭×2, 슬라이스는 보유자 거리.
+- **추적**(combat-engine `trackingOffsetDeg`): 시선이 `(양쪽 측면 속도 합)/거리`로 돌아가고 **두 조준 모두** 지각 시간 동안
+  그만큼 밀린다 — Fitts 오프셋에 더해짐. (처음엔 보유자에게만 적용 → 피커가 공짜로 이김; 대칭으로 고침.)
+- **정지 시간**: `stopMs` 700/350(집계 보정값) → **260/220ms**(지각 ~180 + 카운터스트레이프 ~80/40). 기존 값은
+  gaze OFF 모델 전용 `LEGACY_STOP_MS`로 유지(그 모델은 조준 시간·추적을 이 값에 흡수했으므로).
+- 기록: `RoundStats.peeks`(기법별 수), 이벤트 `disengage`/`rePeek`, 듀얼 기록 `peek`/`disengaged`/`spikePhase`.
+
+반사실(듀얼 수준, 2000 시드, 15m 밴달 대 사전 조준 보유자):
+
+| 비교 | 공격 승률 |
+|---|---|
+| 드라이 스윙 vs 지글→스윙, 보유자 반응 0.2 | 0.288 vs **0.599** |
+| 같은, 보유자 반응 1.0 | 0.185 vs **0.416** (차이 줄어듦) |
+| 달려 들어가기(조준 20° 밖) vs 슬라이스(걷기, 틈에 조준) | 0.288 vs **0.603** (5m에 0.74s vs 1.47s) |
+
+### 11.2 gaze ON 재보정 — 아직 기본으로 못 함
+60경기(실제 로스터, Ascent), 피커 상수별:
+
+| 변형 | 공격 | 첫 킬 공격 | 해체 | 설치 |
+|---|---|---|---|---|
+| gaze OFF(기준) | 0.489 | 0.461 | 0.181 | 0.608 |
+| gaze, 보유자만 추적, 180 / 86 / 40 | 0.368 / 0.324 / 0.317 | 0.532 / 0.400 / 0.358 | 0.352 / 0.287 / 0.221 | |
+| gaze, 대칭 추적, 180 / 120 / 86 | 0.314 / 0.301 / 0.281 | 0.468 / 0.406 / 0.374 | 0.342 / 0.281 / 0.277 | 0.561 / 0.520 / 0.503 |
+
+원인(`tools/data-validator/scripts/duel-breakdown.mts`, gaze 120, 20경기):
+- **설치 후 가드의 조준이 리테이크 쪽을 안 본다**: 수비 스윙에서 가드(공격) 오프셋 평균 **38°**, 리테이커 12° →
+  설치 후 듀얼 공격 0.446(OFF 0.576). 가드가 막는 진입(`guardEntryFor`)과 실제 리테이크 도착이 어긋난다.
+- **설치 전 보유자는 너무 잘 조준돼 있다**: 수비 오프셋 2–6°, 공격 12–20° → 설치 전 듀얼 공격 0.385(OFF 0.430).
+- 두 오차가 반대 방향이라 피커 상수 하나로 둘 다 못 맞춘다(올리면 설치 전이 맞고 설치 후가 더 나빠짐).
+  다음: 가드 위치를 진입이 아니라 "리테이크가 노출되는 지점들"로(MAP-1 holdSpots, 오프앵글), 설치 전 보유자의
+  정보 신선도(belief 위협이 오래됐을 때 조준 분산). 그 뒤 재보정. **gaze는 OFF 유지.**
+
+### 11.3 에코(EC-04) — 엔진 전술로는 못 고침
+- 시도: 에코 공격은 한 사이트로 다 같이 실행, 에코 수비는 한 사이트 스택. 160경기: 에코 대 세미 **0.000**(기준 0.021) — 더 나빠져 되돌림.
+- 원인(데이터): 실제 VCT 에코 단계(팀 장비 < 5000) 중 1000 미만은 **4%**(대부분 1–5k: 셰리프·고스트·라이트 실드),
+  sim은 **86%**가 1000 미만(클래식 5, 방어구 0). 실제로는 순수 클래식 에코도 세미 상대로 5.4%(n=541) 이긴다.
+  sim 듀얼 모델에서 클래식은 스펙터에 3–15m 어디서나 0.13(`range-table.mts`) — 무기 카탈로그가 6종뿐이고
+  클래식 우클릭·고스트·저지·버키·마셜이 없다. → **경제(구매) 세션과 무기 카탈로그 쪽** 일이다: 에코 구매가 실제처럼
+  일부를 쓰고, 근거리 에코 무기가 카탈로그에 있어야 한다.
+
+### 11.4 권총(시드 161–320)
+- 권총 라운드는 양쪽 장비가 같다(4000/4000). 세 범위 합 960라운드 공격 **0.447**(1–160 0.463, 161–320 0.394, 321–480 0.484):
+  161–320만의 문제가 아니라 전반적으로 낮고 그 범위가 운이 나쁨. 풀바이 대비 첫 킬(0.42 vs 0.44)·설치 후 승률(0.64 vs 0.68)
+  둘 다 조금씩 낮다. 단일 원인을 못 찾음 — 상수로 맞추지 않았다.
+
+### 11.5 링크 소리(MS-09)·해체 체크포인트(A3)
+- `<map>.objects.json`의 traversals(맵 세션)가 생겼다. 이동자가 link에 들어갈 때·나올 때 `onTraverse` → 소리 `traversal`
+  (텔레포터 반경 7500uu, 로프·지퍼라인 5000uu, manual-approx — 데이터의 `soundRadiusUu`가 null, `soundVerified` false).
+  Bind 텔레포터 테스트: 입구·출구 두 소리, 데이터의 soundSource와 3m 이내, link 시간만큼 간격. 수비는 그 쪽 사이트 증거로 센다;
+  hit-belief에서 페이크율 높은 팀의 신호는 show로 더 읽힌다(0.2→0.6: P(show B) 0.093→0.233).
+  "페이크"는 기존 페이크 전략의 쇼 인원이 link를 쓰면 자연히 생긴다 — 별도 "사용 후 취소"는 게임에 없어 만들지 않음.
+- 해체 체크포인트(`SimConfig.defuseHalfwayMs`, game-rules 3500): 3.5s 이후 손 떼면 그 지점부터 재개. 60경기 결과 기준과 동일
+  (설치 후 3.5s 이후 중단이 사실상 없음) — 옵션으로만 둠.
+
+### 11.6 게이트(기본, 실제 로스터, main 93fce88 병합 후)
+
+| 시드 | 판정 8 | 공격 | 경제 셀 |
+|---|---|---|---|
+| 1–160 | **8/8** | 0.512 | **13/15** (세미↔에코 둘) |
+| 161–320 | 7/8 (권총 0.394) | 0.503 | 13/15 |
+| 321–480 | **8/8** | 0.517 | 13/15 |
+
+## 12. 설치 위치 — 스노볼·포스트플랜트 전략·감독 옵션 (2026-11-24)
+
+> **기본 OFF — `MatchConfig.plantTactics` / `SimConfig.plantTactics` / `TeamPolicyOptions.plantTactics`.** 실제 로스터 게이트(아래 12.5)를 아직 못 넘었다. OFF일 때 기본 게임은 `aca57b7`과 바이트 단위로 같다(4경기 gaze OFF·2경기 gaze ON 대조). 꺼져 있어도 설치 위치 기록(`RoundRecord.plant`, 리플레이 `spikePlanted.at`)은 남고, 팀 입력의 plantPreference / postPlantPlans / retakePlans는 무시된다.
+
+### 12.1 무엇이 바뀌었나
+
+- **검증**: `spatial-engine/src/spots.ts`의 `plantSpots`(default/safe/open)는 sim이 쓰지 않았다. 캐리어는 mover의 "plant" 스팟(경로 입구에 가깝고 덜 노출된 노드)에 설치했다. 이제 쓴다.
+- **후보** (`round-simulator/src/plant-spot.ts`, `plantSpotsOf(spatial)`): 사이트마다 default/safe/open + **cover-R**(리테이크 입구 R마다, R에서 가장 덜 보이는 설치 구역 노드) + **near-E**(공격 입구 E마다 가장 가까운 노드). 후보별로 잰다: 리테이크 입구별 시야(`retakeSight`), 공격 입구에서의 시야(`guardSight` = 사이트 밖에서 지킬 수 있는 정도), 수비 스폰→R→스팟 도달 시간(`retakeReachMs`). 11개 맵 전부 파생, 저작 데이터 없음.
+- **선택** (자동, 캐리어 gameSense g): `U(c) = g·(hidden + support + delay)/3 − reach/slack`. hidden = 리테이크 가중 시야의 역(가중치 = t_min/t_R + 믿는 위협), support = 그 스팟을 보는 살아있는 동료 비율(아무도 못 보면 guardSight 비율), delay = 리테이크 도달 시간 비율, reach/slack = 캐리어 이동 시간 / 남은 시간. 시간이 없으면 서 있는 곳에, 시간과 판단력이 있으면 포스트플랜트를 위해 고른다. 사이트로 처음 보낼 때 정하고, 사이트에 들어설 때 한 번 다시 정한다.
+- **가드 포스트** (`simulator.ts guardPostFor`): 설치 후 홀드 명령을 받은 공격수 각자가 스파이크 구역에 붙은 입구 R 하나를 맡는다(가중치 비례 배분: count_R/w_R 최소). 스파이크 구역 + 공격 입구(=스파이크 위/떨어져서)의 노드 중 **스파이크를 보고 R→스파이크 경로의 어느 점을 보는** 노드에서 `g·(다른 입구 노출 + 처음 보이는 경로 지점의 늦음)/2 + 도달시간/t_R` 최소. 조준점(gaze)은 리테이크가 처음 보이는 경로 지점.
+- **리테이크** (`team-engine retakeApproach`): 구역 단위 시야 대신, 각 구역이 **스파이크 위치**를 보는 비율(`pointSight`, match-runner가 roadmap으로 주입)로 노출 시간을 가중. 설치 위치가 어느 입구가 감시되는지를 정하고, 스택/스플릿은 수비수별 최소 비용 접근에서 나온다.
+- **기록**: `RoundResult.plant` / `RoundRecord.plant` = {zoneId, site, position, atMs, spotId, spotKind, intendedSpotId, by}; 리플레이 `spikePlanted.at`(위치)·`spotId`·`spotKind`; `planted` 이벤트 detail `spot=<id>`.
+
+### 12.2 감독 옵션 (API — 데스크톱 전술 화면용, 공유 타입 `shared-types/src/plant-plans.ts`)
+
+`MatchConfig.teamInputs[slot]`:
+- `plantPreference: { [site]: "auto" | kind | { spotId } }` — 캐리어가 시간 안에 닿을 수 없으면 자동으로.
+- `postPlantPlans: { [site]: { ["*" | kind | spotId]: PostPlantPlan } }` — `hold` (onSpike/offSpike/auto), `flankWatch`, `utility` (savePostPlant/spend/auto=마지막 지면 유틸 보관), `outnumbered` (hold/retreat/auto).
+- `retakePlans: { [site]: { ["*" | kind | spotId]: RetakePlan } }` — `entry` (구역 id), `approach` (stack/split/auto), `save` ("never" | {maxManDeficit, minSpareMs} | auto=란체스터).
+- 키는 구체적인 것이 필드 단위로 이김(spot id > kind > "*"); 빠진 필드·"auto"는 IGL 결정. 결정은 `decisions.plans[team].postPlant` / `.retake`에 기록(`byManager`에 감독이 정한 필드).
+- 후보 목록: `plantSpotsOf(loadMap(id))` (match-runner에서 re-export), 스팟 해석: `planForSpot`, `plantSpotRefOf`.
+
+IGL 자동 규칙(상황 × 속성): hold=가드별 기하·gameSense, flankWatch = 살아있는 수 − 1 ≥ 리테이크 입구 수, outnumbered = 알려진 수비가 더 많고 란체스터 승률 < retakeMinWinChance면 공격 입구로 후퇴, utility = 팀의 마지막 지면 유틸 보관(설치 후 해체가 시작되거나 스파이크 구역에 수비 증거가 있으면 스파이크 위로 — sim이 스파이크 구역에 던진 공격 측 화염/슬로우를 스파이크 위에 떨어뜨림; 궤적 라인업 미모델).
+
+### 12.3 VCT 대조 (vct.duckdb, 6,090 맵 / 129,128 라운드)
+
+| | VCT | sim gaze OFF, 가드 포스트 (60경기) | 가드 포스트 없이 |
+|---|---|---|---|
+| 설치율 (설치/라운드) | 0.685 | 0.562 | 0.556 |
+| 해체 / 설치 | 0.295 | **0.303** | 0.326 |
+| 폭발 / 설치 | 0.155 | **0.146** | 0.128 |
+| 포스트플랜트 공격 승 | ≤ 0.705 (1 − 해체율) | 0.697 | 0.674 |
+
+설치 위치별(gaze OFF, 시드 1–60): safe 0.751 / near 0.681 / default 0.512 — 같은 사이트 안에서 스팟이 라운드를 가른다. VCT에 설치 좌표는 없어 스팟별 대조는 못 한다. 설치율이 실제보다 낮은 것(0.56 vs 0.69)은 설치 전 단계의 문제로 남긴다.
+
+### 12.4 gaze ON — 가드 포스트로 좁혀짐, 아직 기본 불가
+
+| 60경기, 시드 1–60 | 공격 | 포스트플랜트 공격 | 해체/설치 |
+|---|---|---|---|
+| gaze, 가드 포스트 없음 | 0.386 | 0.460 | 0.540 |
+| gaze, 가드 포스트 | **0.412** | 0.496 | 0.504 |
+| (11장 이전 gaze) | 0.28–0.37 | — | — |
+
+가드가 리테이크가 처음 보이는 지점을 보게 되어 B 사이트 포스트플랜트 듀얼의 가드 조준 오차가 53–67° → 34–39°로 줄었다(`postplant-duels.mts`). 남은 차이는 설치 전(공격 0.39 듀얼)과 포스트플랜트 듀얼에서 리테이커의 스윙 우위. 0.47–0.55 전까지 gaze는 OFF.
+
+### 12.5 게이트 (plantTactics ON 상태로 잰 것, 실제 로스터 160경기)
+
+| 시드 | 공격 | 실패 항목 |
+|---|---|---|
+| 1–160 | 0.494 | 권총 0.431, 세미↔에코 0.988 |
+| 161–320 | 0.481 | 권총 0.394 |
+| 321–480 | 0.492 | 풀↔풀 0.440, 세미↔에코 0.979 |
+
+분리(시드 1–160, 160경기): 현재 0.494 / 옛 설치 스팟 0.484(설치율 0.627 vs 0.574) / 옛 리테이크 0.523(해체/설치 0.290). 스팟 선택은 이동 거리로 설치율을 깎고, 스파이크 지점 시야 리테이크는 수비를 ~0.03 강하게 한다. 그 뒤 넣은 것(미측정): 이동 비용을 라운드 시계가 아니라 리테이크 도달 시간(설치 창)으로 재기, 인원 가중 λ = A/(A+D) (PLANT_POSTPLANT.md P3), 플랭크 감시자 = argmax decisionMaking·(1−aggression) (P6).
 
 ## 10. 재현
 
@@ -338,4 +468,9 @@ npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160 --seed-start 32
 npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160 --abilities       --out <d.json> --report <d>
 npx tsx tools/data-validator/scripts/sim-batch.mts --matches 160 --tuning '{"damageCarryover":0}' --out <e.json> --report <e>
 npx tsx tools/data-validator/scripts/diagnose-attributes.mts --matches 60
+npx tsx tools/data-validator/scripts/duel-breakdown.mts --matches 20 --gaze --tuning '{"peekerAdvantageMs":120}'
+npx tsx tools/data-validator/scripts/range-table.mts
+npx tsx tools/data-validator/scripts/plant-spots.mts            # 맵별 설치 후보
+npx tsx tools/data-validator/scripts/sweep.mts --matches 60 --spots [--plant safe] [--gaze]
+npx tsx tools/data-validator/scripts/postplant-duels.mts --matches 8 --gaze
 ```

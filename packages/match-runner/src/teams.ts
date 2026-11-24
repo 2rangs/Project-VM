@@ -12,6 +12,7 @@ import { getTeam, getPlayer, listSimulatableTeams, type Player } from "@pv/game-
 import { AVERAGE_SKILLS, type CombatSkills } from "@pv/combat-engine";
 import { AVERAGE_TRAITS, type TacticalTraits } from "@pv/round-simulator";
 import { NEUTRAL_PROFILE, type PlayerProfile } from "@pv/shared-types";
+import { AVERAGE_INFO_PROFILE, type InfoProfile } from "@pv/decision-engine";
 import type { TeamRef } from "./match.js";
 
 /**
@@ -152,6 +153,26 @@ export function rosterProfiles(id: string, count: number, override?: readonly Ro
     discipline: rated(p, "consistency", NEUTRAL_PROFILE.discipline),
     decisionMaking: (rated(p, "impact", NEUTRAL_PROFILE.decisionMaking) + rated(p, "clutch", NEUTRAL_PROFILE.decisionMaking)) / 2,
     teamwork: rated(p, "trading", NEUTRAL_PROFILE.teamwork),
+  }));
+}
+
+/**
+ * Per-player information attributes (decision-engine information.ts; docs/INFORMATION_LAYER.md):
+ *   communication ← communication, else trading   (a trade is a teammate acting on your call)
+ *   awareness     ← mapAwareness,  else impact    (the gameSense proxy: reading the fight)
+ *   composure     ← clutch
+ *   callQuality   ← mean(impact, clutch)          (the decisionMaking proxy)
+ * `key` is the real player id (the match trust ledger follows the player across sides).
+ * Unrated players get the league average.
+ */
+export function rosterInfoProfiles(id: string, count: number, override?: readonly RosterPlayer[]): Array<Omit<InfoProfile, "key"> & { key: string | null }> {
+  const avg = AVERAGE_INFO_PROFILE;
+  return rosterPlayers(id, count, override).map((p) => ({
+    key: p?.playerId ?? null,
+    communication: rated(p, "communication", rated(p, "trading", avg.communication)),
+    awareness: rated(p, "mapAwareness", rated(p, "impact", avg.awareness)),
+    composure: rated(p, "clutch", avg.composure),
+    callQuality: (rated(p, "impact", avg.callQuality) + rated(p, "clutch", avg.callQuality)) / 2,
   }));
 }
 

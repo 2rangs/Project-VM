@@ -21,6 +21,8 @@ const OUT = path.join(appDir, 'docs');
 fs.mkdirSync(OUT, { recursive: true });
 const requireApp = createRequire(path.join(appDir, 'package.json'));
 const electronPath = requireApp('electron');
+/** Each round's replay opens with the 30 s buy phase (ROUND_RULES.buyPhaseMs). */
+const BUY_MS = 30000;
 
 async function main() {
   const app = await electron.launch({
@@ -37,6 +39,7 @@ async function main() {
       // optional local assets (real map mesh, banners) are never present in CI: keep runs independent of them
       PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
+      PV_MEDIA_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),
@@ -87,7 +90,8 @@ async function main() {
   // ~223.9s in (round 5). Deterministic, so this consistently shows contacts.
   // The live view scrubs one round at a time: jump to round 5 and seek 12 s in (first contact).
   await page.getByTestId('round-chip-5').click();
-  const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
+  // the scrubber starts at the round's buy phase (BUY_MS before the barrier drops)
+  const r5Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min)) + BUY_MS;
   await page.locator('.rv-scrub').fill(String(r5Start + 12000));
   await page.getByTestId('fog-belief').check();
   await page.waitForTimeout(1200);
@@ -103,7 +107,7 @@ async function main() {
   // walked trace, replans, failures and WHY that route (order + route preference).
   await page.selectOption('[data-testid="fog-pov"]', '0');
   await page.getByTestId('round-chip-3').click();
-  const r3Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min));
+  const r3Start = await page.locator('.rv-scrub').evaluate((el) => Number(el.min)) + BUY_MS;
   await page.locator('.rv-scrub').fill(String(r3Start + 9000));
   await page.getByTestId('debug-graph').check();
   await page.waitForSelector('[data-testid="nav-debug-panel"]', { timeout: 5000 });
@@ -184,8 +188,30 @@ async function main() {
   // verify the order reaches the match (timeout log) in the post-match Review.
   await page.getByTestId('tab-match').click();
   await page.getByTestId('mode-interactive').click();
+  // [manager] Pre-match: build the opponent report, take its suggested plan; engine-pending options stay disabled.
+  await page.getByTestId('prematch-toggle').click();
+  await page.getByTestId('pre-build').click();
+  await page.waitForSelector('[data-testid="pre-report"]', { timeout: 120000 });
+  assert.ok(await page.locator('[data-testid="pre-headline"]').count() >= 4, 'the report reads sites, pistol and eco habits');
+  await page.getByTestId('pre-use-suggested').click();
+  assert.ok(await page.getByTestId('pre-plant-A').isDisabled(), 'plant-spot choice waits for engine support');
+  await page.selectOption('[data-testid="pre-tempo"]', 'fast');
+  await page.screenshot({ path: path.join(OUT, 'desktop-prematch.png') });
+  await page.getByTestId('prematch-toggle').click();
   await page.getByTestId('start-interactive').click();
   await page.waitForSelector('[data-testid="session-bar"]', { timeout: 60000 });
+  // [manager] In-match controls: the drawer shows our five, a standing shout and a strategy for the next rounds.
+  await page.getByTestId('mgr-toggle').click();
+  await page.waitForSelector('[data-testid="mgr-panel"]', { timeout: 10000 });
+  assert.equal(await page.locator('[data-testid^="mgr-player-"]').count(), 5, 'the drawer lists our five with their state of mind');
+  assert.equal(await page.getByTestId('mgr-tempo-fast').getAttribute('aria-checked'), 'true', 'the plan\'s tempo is the standing shout');
+  await page.getByTestId('mgr-risk-more').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="mgr-risk-more"]')?.getAttribute('aria-checked') === 'true', null, { timeout: 30000 });
+  await page.selectOption('[data-testid="mgr-strat-defense"]', 'stackB');
+  await page.getByTestId('mgr-strat-apply').click();
+  await page.waitForSelector('[data-testid="mgr-strat-active"]', { timeout: 30000 });
+  await page.screenshot({ path: path.join(OUT, 'desktop-manager.png') });
+  await page.getByTestId('mgr-toggle').click();
   await page.getByTestId('next-round').click();            // play round 1
   await page.waitForTimeout(1500);
   await page.getByTestId('call-timeout').click();          // tactical timeout
@@ -205,6 +231,10 @@ async function main() {
   assert.ok(/R2/.test(tolog), 'timeout log records the pre-round-2 order');
   // rounds streamed through the session carry their decisions too
   assert.equal(await page.locator('[data-testid^="dec-pick-"]').count(), 2, 'both played rounds have decision notes');
+  // [manager] the post-match summary lists our decisions with what followed them
+  await page.waitForSelector('[data-testid="post-match-summary"]', { timeout: 10000 });
+  assert.ok(await page.locator('[data-testid="post-decisions-A"] [data-testid="post-decision-row"]').count() >= 3, 'shouts, strategy and timeout are in the decision summary');
+  await page.getByTestId('post-match-summary').screenshot({ path: path.join(OUT, 'desktop-post-match.png') });
   await page.screenshot({ path: path.join(OUT, 'desktop-review-interactive.png') });
   await page.getByTestId('session-stop').click().catch(() => {});
 

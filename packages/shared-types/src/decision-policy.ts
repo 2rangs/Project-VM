@@ -50,6 +50,14 @@ export interface ActionCommand {
    */
   readonly aimZone?: ZoneId;
   /**
+   * useAbility with a vision blocker (smoke): the zone to HIDE from `targetZone`'s view. The smoke
+   * is thrown into `targetZone` and lands where it cuts the most of that zone's view of
+   * `screenZone` while keeping off the walkway between the two (a cover smoke on the holders' side
+   * of an entry, which the team then walks in beside rather than out of). Optional; without it the
+   * landing follows `aimZone` / the thrower as before.
+   */
+  readonly screenZone?: ZoneId;
+  /**
    * How the route to `targetZone` should be chosen. The policy picks the goal and the purpose;
    * the navigation layer finds the path. Default FASTEST.
    */
@@ -59,6 +67,11 @@ export interface ActionCommand {
    * suspected enemies, utility, teammates' lanes. Never true enemy positions. Ignored by FASTEST.
    */
   readonly zoneCosts?: Readonly<Record<string, number>>;
+  /**
+   * A defender holding with a close-range gun (a shotgun) holds the angle up close: of the spots that
+   * see the watched zone, the one nearest to it, so a fight starts within the gun's range. Default false.
+   */
+  readonly holdClose?: boolean;
 }
 
 /**

@@ -19,7 +19,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 interface DamageBand { readonly maxRangeMeters: number; readonly head: number; readonly body: number }
-interface WeaponRow { readonly id: string; readonly cost: number; readonly fireRate: number; readonly damageBands: readonly DamageBand[] }
+interface WeaponRow { readonly id: string; readonly cost: number; readonly fireRate: number; readonly damageBands: readonly DamageBand[]; readonly pellets?: number }
 
 const HEALTH = 100;
 const HEAVY_PTS = 50;
@@ -48,7 +48,7 @@ function band(w: WeaponRow, range: number): DamageBand {
 /** Expected seconds to kill a target with `armor` shield points (0 for a one-shot weapon). */
 export function timeToKill(weaponId: string, armor: number): number | undefined {
   const w = weapons().get(weaponId.toLowerCase());
-  if (!w || w.fireRate <= 0) return undefined;
+  if (!w || w.fireRate <= 0 || (w.pellets ?? 1) > 1) return undefined; // shotguns: priced as bought
   let t = 0;
   for (const [range, weight] of RANGES) {
     const b = band(w, range);

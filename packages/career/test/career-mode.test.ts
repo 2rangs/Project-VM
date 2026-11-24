@@ -7,7 +7,7 @@ import {
   answerInbox, batchOf, continueCareer, dayAgenda, deserializeCareer, groupStandings, newCareer, quickSeries,
   recordResult, registerCareerHook, serializeCareer, seriesRequest, weekday, setLineup, lineupFor, readiness, matchAttributes,
   lineupStrength, fatigueOf, sharpnessOf, MATCH_READINESS,
-  type CareerState, type ContinueResult, type World,
+  allFixtures, type CareerState, type ContinueResult, type World,
 } from "../src/index.ts";
 
 let base: World;
@@ -49,14 +49,15 @@ describe("season schedule", () => {
     const st1 = s.stages[0]!;
     expect(st1.groups.alpha).toHaveLength(6);
     expect(st1.groups.omega).toHaveLength(6);
-    const group = s.fixtures.filter((f) => f.stage === "stage1" && f.phase === "group");
+    const group = s.fixtures.filter((f) => f.stage === "kickoff" && f.phase === "group");
     expect(group).toHaveLength(30);
     for (const id of s.teams) expect(group.filter((f) => f.home === id || f.away === id)).toHaveLength(5);
     for (const f of group) expect([5, 6, 0]).toContain(weekday(f.date)); // Friday–Sunday
-    const po = s.fixtures.filter((f) => f.stage === "stage1" && f.phase === "playoff");
+    const po = s.fixtures.filter((f) => f.stage === "kickoff" && f.phase === "playoff");
     expect(po.map((f) => f.round)).toEqual(["qf", "qf", "qf", "qf", "sf", "sf", "final"]);
     expect(po.find((f) => f.round === "final")!.format).toBe("bo5");
-    expect(s.stages[1]!.start).toBeNull(); // stage 2 is drawn after stage 1
+    expect(s.stages[1]!.start).toBeNull(); // stage 1 is drawn after the Kickoff
+    expect(s.stages.map((x) => x.id)).toEqual(["kickoff", "stage1", "stage2"]);
   });
 
   it("is the same schedule for the same seed and a different one for another seed", () => {
@@ -82,7 +83,7 @@ describe("continue loop", () => {
     expect(again.stop).toBe("matchDay");
     expect(again.daysAdvanced).toBe(0);
     playUserMatch(c, md);
-    const rows = groupStandings(c.season, "stage1", c.season.stages[0]!.groups.alpha.includes(c.userTeamId) ? "alpha" : "omega");
+    const rows = groupStandings(c.season, "kickoff", c.season.stages[0]!.groups.alpha.includes(c.userTeamId) ? "alpha" : "omega");
     expect(rows.find((r) => r.teamId === c.userTeamId)!.played).toBe(1);
     expect(c.inbox.some((m) => m.key === "result.win" || m.key === "result.loss")).toBe(true);
   });
@@ -92,7 +93,7 @@ describe("continue loop", () => {
     const startSeason = c.season.season;
     const end = await playUntil(c, (r) => r.stop === "seasonEnd");
     expect(end.date).toBe(c.season.end);
-    expect(c.season.fixtures.every((f) => !!f.result)).toBe(true);
+    expect(allFixtures(c).every((f) => !!f.result)).toBe(true);
     expect(c.season.stages.every((s) => !!s.champion)).toBe(true);
     expect(c.inbox.some((m) => m.key === "season.review")).toBe(true);
     // Development uses the maps actually played: a starter's career maps grow by exactly that.
@@ -160,7 +161,7 @@ describe("hooks", () => {
       expect((c.ext["test-ops"] as { n: number }).n).toBe(seen.days);
       expect(seen.months[0]).toBe("2026-02-01");
       expect(c.inbox.filter((m) => m.source === "test-ops")).toHaveLength(seen.months.length);
-      expect(seen.results).toBe(74);
+      expect(seen.results).toBeGreaterThan(400); // every series of the world: four leagues and three international events
       expect(seen.seasonEnd).toBe(1);
       expect(seen.seasonStart).toBe(1);
     } finally { off(); }

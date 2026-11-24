@@ -55,58 +55,103 @@ Home ─Continue─▶ day by day … stops at:  match day │ a message that ne
 - A career opens on **5 January** of the dataset season (2026). The state holds one date; Continue
   first *leaves* today (the manager's match must be played and answers given; the day's AI
   fixtures are simulated; hooks run), then advances one day at a time and stops at the first day
-  that needs the manager. The season's last day (1 September) is a stop of its own; leaving it
-  runs the season transition.
+  that needs the manager. The season's last day (15 September, after Champions in every year) is a
+  stop of its own; leaving it runs the season transition.
 - **Season transition** (`endSeason`): the review is recorded (stage placings, the board's
   objective met or not), `onSeasonEnd` hooks run, then `advanceSeason(world, { mapsPlayed })`
-  with the maps every player of a league team really played this season (0 for those who never
-  played; players outside the league keep the status estimate), so development uses real minutes.
-  Then the next season's schedule is built and `onSeasonStart` hooks run. The days from
-  2 September to the next February belong to the new season (offseason; nothing is scheduled).
+  with the maps every player of a league team of ANY region really played this season (0 for those
+  who never played), so development uses real minutes. Then the next season's four leagues and
+  circuit are built and `onSeasonStart` hooks run. The days from 16 September to the next January
+  belong to the new season (offseason; nothing is scheduled).
 
-## 3. Competition
+## 3. Competition: four leagues and the international circuit
 
-Loosely on the real circuit's league stages (`schedule.ts`, `SCHEDULE_MODEL`):
+Built like the real circuit's shape (`schedule.ts`, `circuit.ts`, `progress.ts`; constants in
+`SCHEDULE_MODEL` / `CIRCUIT_MODEL`). **All four regions play in parallel** with the same dates; teams
+of different regions only meet at the international events. A season:
 
-| | format | dates |
-|---|---|---|
-| League | the region's 12 strongest teams that can field five (the manager's team always in) | |
-| Stage 1 groups | two groups of 6 (snake seeding by strength), single round robin, **Bo3** | weekly from the first Friday of February, Fri–Sun |
-| Stage 1 playoffs | top 4 per group; QF cross-group 1v4 / 2v3 **Bo3**, SF **Bo3**, final **Bo5** | the next two weekends |
-| Stage 2 | drawn the day after the Stage 1 final from the Stage 1 placings (snake), same format | from the first Friday of May, at least 3 weeks after the final |
+| competition | field | format | 2026 dates |
+|---|---|---|---|
+| **Kickoff** | each region's 12 strongest teams that can field five (11 in China; the manager's team always in) | two groups of 6 (snake by strength), single round robin Bo3; top 4 per group to a single-elimination playoff (QF Bo3, SF Bo3, final **Bo5**) | 9 Jan – 22 Feb |
+| **Stage 1** | same league, drawn from the Kickoff placings (snake) | same format | 6 Mar – 19 Apr |
+| **Masters 1** | 12: the top 3 of each region by Champions Points after Kickoff + Stage 1 | 4 groups of 3 (round robin Bo3, Fri–Sun), top 2 → 8-team **double elimination**, Bo3, **Bo5 grand final** (no reset): 14 series over six days | 1–13 May |
+| **Stage 2** | drawn from the Stage 1 placings | same as the regional stages | 29 May – 12 Jul |
+| **Masters 2** | 12: the top 3 of each region by Champions Points after Stage 2 (everything so far counts) | same as Masters 1 | 24 Jul – 5 Aug |
+| **Champions** | 16: the top 4 of each region by Champions Points after Masters 2 | 4 groups of 4, top 2 → the same double-elimination bracket | 14–26 Aug |
 
-Standings order: series wins → map difference → round difference → head-to-head → team id.
-Fixture seeds come from (career seed, fixture id), so a result never depends on the order
-fixtures are played in. 30 group series + 7 playoff series per stage; 74 per season.
+Competitions start on the first Friday on/after an anchor date and at least a week after the
+previous one ends, so the dates shift by up to six days in other years; the season ends on
+15 September, tested to be after Champions for 2026–2040.
 
-## 4. Simulating other teams' series
+**Champions Points** (CP, per season): a placing earns points in every competition
+(`stagePoints` 8/6/5/4/2/2/2/2 for the first eight of a regional stage; `mastersPoints`
+12/10/8/7/5/5/4/4/1×4; `championsPoints` 16/13/10/8/6/6/5/5/2×4/1×4). Teams of a region are ranked by
+CP (tie: team strength, then id); the quota above qualifies them, and a region with too few
+eligible teams is topped up from the best remaining CP so every event is full. The field is seeded by CP
+(snake into the four groups); the draw is not region-protected, so teams of one region can meet
+inside a group. The double-elimination bracket: UB R1 A1–B2, C1–D2, B1–A2, D1–C2; LB R1 losers of
+the UB R1 pairs; UB R2; LB R2 winners of LB R1 against the UB R2 losers (crossed); UB final; LB R3;
+LB final (LB R3 winner against the UB final loser); grand final. Placings: grand-final winner and
+loser, LB final loser, LB R3 loser, LB R2 losers, LB R1 losers, then group exits by record.
 
-AI-vs-AI series are simulated when the day they are on is left. Two modes (Settings; default **quick**):
+Regional standings order: series wins → map difference → round difference → head-to-head → team id.
+Fixture seeds come from (career seed, fixture id), so a result never depends on the order fixtures
+are played in. Per season: 3 stages × (30 group + 7 playoff) × 4 regions = 444, plus Masters 26 ×
+2 and Champions 38 = **534 series**, of which the manager plays 11–14 in their league plus any
+international matches.
 
-- **Quick estimate (default, the browser build, the instant result, tests and the fallback when an
-  engine batch fails — Home then says so):** `quickSeries` plays rounds from the two fives' ability
-  *today* (readiness applied, §4a):
-  `P(round) = sigmoid(5.4 · (s_home − s_away + comfort_home,map − comfort_away,map))`, `s` = mean
-  current ability of the five, `comfort` a stable per-team, per-map lean (σ 0.01). The slope is
-  **fitted to the engine** (`tools/career/calibrate-quick-sim.mts`: 48 engine maps between career
-  fives of the four regions, ability-difference sd 0.052, maximum likelihood on rounds → 5.39; the
-  first version's 2.5 was a guess and was too flat). Maps are first to 13 with a 2-round lead;
-  kills are spread by ability (`exp(8·(ca − team mean))` + noise).
-- **Full engine (Settings):** each series goes to a long-lived tsx subprocess
-  (`scripts/career-sim.mts`) and is played by `runSeries` — veto and every map — with both teams'
-  career fives (readiness applied), analysts and map practice, scouting off. One series at a time,
-  never on the UI thread; the renderer gets progress after each series (the match-day
-  `LoadingScreen` in a box on Home). Per-player kills/deaths come from the engine's kill events
-  (`scripts/kill-lines.mts`).
+**News** (inbox, ko/en): after each competition the points race of the manager's region (rank,
+points, the cut for the next event); the draw of each international event (field, top seed) and
+whether the manager is in (group, opponents, first match) or missed it (the cut, who went); group
+stage through/out; the next bracket opponent; each event's champions; the manager's own result
+and points; **upsets** — a knockout or international playoff won by a team whose strength is at
+least 0.08 (≈ 1.6 sd) below the loser's (`UPSET_GAP`), a handful per season.
 
-**Time per season** (`tools/career/season-timing.mts`, this Mac): 74 series per season (11–14 are
-the manager's), 63 of them AI. Quick: **0.3 s for the whole season** including the calendar, the club
-layer and the inbox. Full engine: 2.5 maps and **2.6 s per series** (6-series sample, process
-already warm) → **≈ 2.8 minutes of background simulation per season**. (An earlier figure of 10–25 s
-per series included process start-up and was wrong for a warm host.)
+## 4. Simulating other teams' series: world sim depth
+
+Per season there are **519 series** (four leagues, three international events, 22 of them the
+manager's). The manager's own match is always played for real; the AI series are played by the
+**world sim depth** (Settings; localStorage `pv-career-depth`; FM style):
+
+| depth | engine plays | quick estimate plays | measured season time (this Mac) |
+|---|---|---|---|
+| `league` (**default in Electron**) | the manager's own league (92 series) | other regions' leagues (318) and the international events (87) | ≈ 8 min of background simulation |
+| `quick` (default in the plain browser, which has no engine process) | nothing | all 497 | **0.6 s** |
+| `full` | everything | nothing | ≈ 36 min |
+
+The engine path: each series goes to a long-lived tsx subprocess (`scripts/career-sim.mts`) and is
+played by `runSeries` — veto and every map — with both teams' career fives (readiness applied),
+analysts and map practice, scouting off; one series at a time, never on the UI thread; progress after
+each series (the match-day `LoadingScreen` in a box on Home). Engine cost per series: 3.0 s
+(international) to 5.1 s (own league), ≈ 4 s on average with other jobs on the machine
+(`tools/career/season-timing.mts`).
+
+**The quick estimate** (`quick-sim.ts`): rounds from the two fives' ability *today* (readiness
+applied) and the teams' map pools:
+`P(round) = sigmoid(roundSlope · (s_home − s_away) + mapSlope · (share_home − share_away) + σ · z)`,
+with the real map win shares since 2025 (shrunk), ban/pick of maps, and one form draw `z ~ N(0,1)`
+per map. Constants and how well they are known (`tools/career/calibrate-quick-sim.mts`: 120 Bo3
+series played by the engine between random teams of the four regions with their career fives,
+286 maps; the engine results are committed in `tools/career/calibration-data.json`, so a re-fit
+takes seconds without `--refit`):
+
+- `roundSlope` = **7.9** (fit 7.76 ± 0.63; the ability-difference sd is 0.046, so 1 sd ≈ 0.36 logit);
+- `mapSlope` = 0.4 (fit 0.28 ± 0.21 — the map-pool effect is weak and barely significant);
+- the engine's round-win intercept is −0.017 (no attack-side bias to correct).
+
+**Not settled — the reason the default keeps the engine for your league.** With these constants and
+no per-map noise the series-level check was overconfident: the series the quick model gave under 30%
+were won 28% of the time (predicted 13%, n = 54), and the Brier score of the quick model was 0.197
+against 0.25 for always saying 50% — better than chance, not calibrated. Engine rounds are not
+independent (round form, tactics, mastery), so series are more upset-prone than the independent-
+rounds model says. The per-map noise term σ (`mapNoiseSd`, currently **0.3, an unfitted
+provisional**) is there to fix that; the scan over σ and the round slope against the cached engine
+series (`calibrate-quick-sim.mts` without `--refit`) was queued but not run before the wrap-up, so
+σ is not verified. Until it is, results of other regions and of the international events (the
+quick path at the default depth) are somewhat too predictable; the manager's league is engine-played.
 
 **Form** per player, updated per map played:
-`perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. The manager's own series now carries engine K/D too.
+`perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. Form is an output (it feeds the head coach's report); the engine reads fatigue and sharpness through readiness (§4a), not form.
 
 ## 4a. Lineup and match readiness
 
@@ -165,9 +210,10 @@ registerCareerHook({
 
 ## 7. Not done
 
-- **Competition:** no Kickoff, Masters or Champions; single- instead of double-elimination
-  playoffs; no promotion/relegation; only the manager's region has a league — other regions'
-  players develop on the status estimate of minutes.
+- **Competition:** regional playoffs are single elimination (only the international events are
+  double elimination); no promotion/relegation; the international draw is not region-protected;
+  no Kickoff-style regional qualification to a lower division; no prize money per event (the club
+  layer pays by regional placing).
 - **Matches:** every map is simulated on Ascent geometry (`SIMULATED_GEOMETRY`) as everywhere in the
   series layer; no substitutions during a series; fatigue is one number per player.
 - **World:** no injuries (the engine has none); AI squads change in `advanceSeason` and the AI
@@ -176,8 +222,8 @@ registerCareerHook({
   Home does not warn yet).
 - **UI:** Opponent Report and Tactics still read the dataset, not the career world. The Quick
   Match sandbox uses dataset rosters; only the career path passes world rosters.
-- **Performance:** the full-engine mode is ≈ 2.8 minutes of background time per season; there is
-  no parallelism (one heavy job at a time on this machine by design).
+- **Performance:** engine depths cost minutes (`league` ≈ 8, `full` ≈ 36 per season); there is no
+  parallelism (one heavy job at a time on this machine by design).
 
 ## 8. Tests
 

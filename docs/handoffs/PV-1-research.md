@@ -447,8 +447,8 @@ PV-4 navgraph(구역/경로), 내 ability-effects(유틸 어휘), ascent-comps.j
 
 ## 2. 완료한 작업 (실제 수행)
 - `docs/HANDOFF.md`(신규): 기준 커밋표 + §4 실제 검증 상태표(✅/🟡/⛔/🚫 + 근거) + 결정(DECISION + OPS-A~G).
-- `docs/NEXT_TASKS.md`(신규): P0~P4 우선순위 + 선행/블로커(사용자 조치 표기).
-- `docs/DEVELOPMENT_LOG.md`(신규): 6브랜치 차수별 커밋·핵심·음성 결과.
+- `docs/archive/NEXT_TASKS.md`(신규): P0~P4 우선순위 + 선행/블로커(사용자 조치 표기).
+- `docs/archive/DEVELOPMENT_LOG.md`(신규): 6브랜치 차수별 커밋·핵심·음성 결과.
 - `docs/ARCHITECTURE.integrated.md`(신규): 패키지 의존(Mermaid)·데이터흐름·프로세스 경계. PV-3 ARCHITECTURE.md 기반(원본 미수정, 파일명 분리).
 - 감사 후속: PRE_MERGE_AUDIT [E] screenshot-real.png = 오케스트레이터 육안확인 통과(익명 P1), 미니맵 Riot 이미지 출시전 재검토 참고 추가.
 

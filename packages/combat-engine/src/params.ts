@@ -84,8 +84,11 @@ export const DEFAULT_PARAMS: CombatParams = {
   accuracy: {
     pointBlank: 0.9,
     movingPenalty: 0.55,
-    // calibrated on 160 Ascent matches (docs/STAT_OUTCOME_MATRIX.md §2.7); walk = run × walk speed / run speed
-    stopMs: { run: 700, walk: 350 },
+    // physical (manual-approx): perceive (~180 ms at reaction 0.5) + counter-strafe to standing
+    // accuracy (~80 ms from a run at 6.75 m/s, ~40 ms from a walk). The legacy flag model used a
+    // calibrated 700 / 350 aggregate that also stood in for aim time and tracking (round-simulator
+    // LEGACY_STOP_MS); the gaze model has those explicitly.
+    stopMs: { run: 260, walk: 220 },
     flashedAccuracy: 0.15,
     preAimFirstShotBonus: 0.15,
     rangeFalloffPerMeter: 0.012,

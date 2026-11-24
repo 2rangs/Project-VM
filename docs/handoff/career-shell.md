@@ -97,3 +97,56 @@ now answers it); `test:e2e:club` (starts a career first) passes. Not re-run: the
 `test:e2e` and `test:e2e:series` (start-menu edits; `test:e2e` no longer has a club step), the
 full match-runner suite. Known gaps: below five players after expiries the lineup cannot be
 confirmed (no Home warning); the manager's squad is never auto-refilled.
+
+
+---
+
+## Update 3: the competitive world and season speed (HANDOFF P2-11/12)
+
+Branch `claude/festive-brattain-042f51`, origin/main merged (65180b9 era). Typecheck, build,
+`packages/career` vitest 62/62 and desktop `test:unit` 61/61 pass.
+
+**Done, default on** (nothing here touches the match sim):
+- Four regional leagues in parallel (Kickoff, Stage 1, Stage 2 in every region) and the
+  international circuit: Masters 1, Masters 2 and Champions (12/12/16 teams: groups, then 8-team
+  double elimination, Bo3, Bo5 grand final), Champions Points and qualification (3/3/4 per region),
+  draws, brackets, placings. Teams of different regions only meet at the internationals. 519
+  series a season. `packages/career/src/career/{circuit,progress,schedule}.ts`, tests in
+  `test/circuit.test.ts` (leagues, calendar 2026–2040, qualification by points, DE structure,
+  points, news, two seasons, depth table, quick-sim map pools).
+- News in the inbox (ko/en): points race, international draws, qualification or the miss, group
+  exits, next bracket opponent, event champions, own result and points, upsets (≥ 0.08 strength gap
+  in knockouts). Standings screen: any region's stages, event groups and both brackets, points
+  race; Home gets a circuit card; Schedule shows the league plus the internationals.
+- Season end moved to 15 September (a Champions final can fall on 1 Sep in some years); AI clubs
+  no longer build fatigue from matches (nothing recovers it).
+- Saves are version 2 (older saves do not load, with a clear message).
+
+**Behind a setting** — world sim depth (`pv-career-depth` in localStorage; Settings, start menu):
+`league` default (engine for the manager's own league, quick for other regions and
+internationals), `quick` (all AI series quick; default only in the plain browser), `full`
+(everything through the engine). Decision per the wrap-up rule: the quick estimate is calibrated
+but **not settled**, so the engine stays the default for the manager's league; the quick path
+only covers other regions and the international events.
+
+**Measured:** quick season 0.6 s (519 series); engine 3.0–5.1 s per series (`league` depth ≈ 7.8
+min, `full` ≈ 36 min a season). Quick-sim fit on 120 engine Bo3s / 286 maps: round slope 7.76 ±
+0.63, map-pool slope 0.28 ± 0.21; series Brier 0.197 vs 0.25 for a coin; **overconfident** on
+favourites (predicted 13% vs observed 28% in the lowest bin, n = 54). Per-map noise σ = 0.3 is an
+**unfitted provisional**.
+
+**Not run:** `test:e2e:career` and `test:e2e:club` after the circuit changes (the career e2e was
+extended to check four leagues, three events and the brackets on screen, and uses
+`pv-career-depth`); the σ / slope scan. Both were dropped at the wrap-up.
+
+**Next step, in order:** (1) `cd packages/career && npx tsx ../../tools/career/calibrate-quick-sim.mts`
+(no `--refit`: uses the committed engine series; seconds) — read `best`, set `mapNoiseSd` /
+`roundSlope` in `quick-sim.ts` to the minimum-log-loss row, check the calibration table is flat;
+(2) if it is, make `quick` the default depth for other regions and internationals officially
+(already so) and consider it for the own league; (3) run `test:e2e:career` and `test:e2e:club`
+through heavy-run.sh; (4) regional playoffs as double elimination; region-protected draws.
+
+**Risks:** other regions' and international results are somewhat too predictable until σ is fitted;
+`league` depth is ≈ 8 minutes of waiting per season on this machine; the first career e2e on the new
+circuit has not been run; saves are about 2.5 MB (519 series with per-map K/D) and the browser
+fallback stores them in localStorage (≈ 5 MB limit).

@@ -30,6 +30,8 @@ const WALL_MARGIN = 10;
 const OFF_ROUTE_PENALTY = 0.6;
 /** Zone-graph cost (ms) per unit of belief-supplied zone cost, per preference. */
 const ZONE_COST_MS: Record<RoutePreference, number> = { FASTEST: 0, TACTICAL: 2500, SAFEST: 7000, STEALTH: 7000 };
+/** A follower keeps its spacing only behind a teammate heading within this cosine of its own heading (~45°). */
+const SAME_WAY_COS = 0.7;
 /** A mover yields to a body this close ahead of it (uu). */
 const YIELD_DISTANCE = 2 * PLAYER_RADIUS_UNITS * 0.85;
 /** ...but not for longer than this many consecutive ticks (then it squeezes past). */
@@ -40,6 +42,8 @@ const MAX_YIELD_TICKS = 6;
  * reason that is not this mover's (3 s — longer than a stack-up's wait): it squeezes past.
  */
 const MAX_QUEUE_TICKS = 30;
+/** Shorter steps a follower tries when a full one would close the gap to the body it follows. */
+const FOLLOW_STEP_SHARES = [0.75, 0.5, 0.25] as const;
 
 /**
  * What the player will do where it stops — which decides the standing spot it takes in the goal zone.
@@ -59,9 +63,10 @@ const MAX_QUEUE_TICKS = 30;
 export type SpotIntent =
   | { readonly kind: "stand" }
   | { readonly kind: "hold"; readonly watchZone: string }
-  | { readonly kind: "plant" }
-  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number } }
-  | { readonly kind: "see"; readonly zone: string }
+  | { readonly kind: "plant"; readonly node?: number }
+  /** `exact`: the player must end on this very point (the buy phase's setup spot), not merely near it. */
+  | { readonly kind: "at"; readonly position: { readonly x: number; readonly y: number; readonly z: number }; readonly exact?: boolean }
+  | { readonly kind: "see"; readonly zone: string; readonly close?: boolean }
   | { readonly kind: "see"; readonly point: { readonly x: number; readonly y: number; readonly z: number } };
 
 /** A body this close (uu) to an "at" spot's point already stands at it. */
@@ -94,6 +99,8 @@ export interface MoverHooks {
   onNavEvent?(e: NavEvent): void;
   /** The mover came down a one-way drop of this height (uu) and landed at `at`. */
   onLanding?(p: SimPlayer, heightUnits: number, at: { x: number; y: number; z: number }): void;
+  /** Entering / leaving an authored link (teleporter, rope, zipline): its sound at that end (sound detail). */
+  onTraverse?(p: SimPlayer, via: string, end: "enter" | "exit", at: { x: number; y: number; z: number }): void;
 }
 
 export interface NavEvent {
@@ -145,6 +152,8 @@ interface Mover {
   dirX: number;
   dirY: number;
   advanced: boolean;
+  /** Follow-distance multiplier behind a teammate going the same way (movement-style.ts; 1 = body gap). */
+  spacing: number;
 }
 
 const LANES = [0, -0.7, 0.7, -0.35, 0.35];
@@ -153,7 +162,7 @@ const LANES = [0, -0.7, 0.7, -0.35, 0.35];
 function spotKey(goal: MoveGoal): string {
   const k = goal.spot;
   if (!k || k.kind === "stand") return `${goal.zoneId}|stand`;
-  if (k.kind === "plant") return `${goal.zoneId}|plant`;
+  if (k.kind === "plant") return `${goal.zoneId}|plant${k.node !== undefined ? `|${k.node}` : ""}`;
   if (k.kind === "hold") return `${goal.zoneId}|hold|${k.watchZone}`;
   if (k.kind === "see") return "zone" in k ? `${goal.zoneId}|see|${k.zone}` : `${goal.zoneId}|see|${Math.round(k.point.x)},${Math.round(k.point.y)},${Math.round(k.point.z)}`;
   return `${goal.zoneId}|at|${Math.round(k.position.x)},${Math.round(k.position.y)},${Math.round(k.position.z)}`;
@@ -172,6 +181,8 @@ export class MovementExecutor {
   /** zone → (node → player id) so two players never share a standing spot. */
   private readonly claims = new Map<number, string>();
   private readonly noTransit: ReadonlySet<string>;
+  private readonly noTransitDefense: ReadonlySet<string>;
+  private readonly noTransitAttack: ReadonlySet<string>;
   /** blocker id → the zone it seals (zone blockers only), for the strategic route. */
   private readonly zoneOfBlocker = new Map<string, string>();
   private readonly speeds: { run: number; walk: number }; // uu per ms
@@ -187,7 +198,24 @@ export class MovementExecutor {
     this.nav = spatial.nav;
     this.blockers = new NavBlockers(this.nav);
     this.noTransit = new Set(spatial.zones.filter((z) => z.transit === false).map((z) => z.id));
+    // a team's own spawn floor is ordinary floor to it (the defenders' way between the sites on most maps)
+    this.noTransitDefense = new Set([...this.noTransit].filter((z) => z !== "defender-spawn"));
+    this.noTransitAttack = new Set([...this.noTransit].filter((z) => z !== "attacker-spawn"));
     this.speeds = { run: speeds.runUnitsPerSec / 1000, walk: speeds.walkUnitsPerSec / 1000 };
+  }
+
+  /**
+   * Optional zone-route chooser (movement-style.ts): given the request, returns the route the player
+   * takes among the near-optimal ones, or null to keep the single best route.
+   */
+  routeChooser: ((p: SimPlayer, goal: MoveGoal, mode: MoveMode, opts: { hazardCosts: ReadonlyMap<string, number>; blockedZones: readonly string[]; passableZones?: readonly string[] }) => string[] | null) | null = null;
+
+  /** A player's own lane (lateral share of the corridor) and follow spacing for the round. */
+  setStyle(playerId: string, style: { lane?: number; spacing?: number }): void {
+    const m = this.movers.get(playerId);
+    if (!m) return;
+    if (style.lane !== undefined) m.lane = Math.max(-1, Math.min(1, style.lane));
+    if (style.spacing !== undefined) m.spacing = Math.max(1, style.spacing);
   }
 
   /** Seal a whole zone's floor / a disc of floor against bodies. */
@@ -214,7 +242,7 @@ export class MovementExecutor {
       perTeam.set(p.teamId, slot + 1);
       const m: Mover = {
         goal: null, spot: -1, spotKey: "", atNode: -1, waypoints: [], index: 0, zoneCursor: 0, blockersVersion: this.blockers.version,
-        linkElapsedMs: 0, failure: null, yieldTicks: 0, queueTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false,
+        linkElapsedMs: 0, failure: null, yieldTicks: 0, queueTicks: 0, pushTicks: 0, lane: LANES[slot % LANES.length]!, gatePassed: null, corridor: null, dirX: 0, dirY: 0, advanced: false, spacing: 1,
       };
       this.movers.set(p.id, m);
       const zone = this.spatial.getZone(p.zoneId);
@@ -242,6 +270,33 @@ export class MovementExecutor {
     }
   }
 
+  /** Is this roadmap node free for this player to stand on (no one else claims it)? */
+  spotFree(playerId: string, node: number): boolean {
+    const holder = this.claims.get(node);
+    return (holder === undefined || holder === playerId) && !this.heldForOther(playerId, node);
+  }
+  /** Reserve a standing spot for a player ahead of its move there (its previous claim is released). */
+  reserve(playerId: string, node: number): void { this.claim(playerId, node); }
+  /**
+   * Keep a standing spot free for a player that will go there later (the buy phase: each player's
+   * setup spot): nobody else is given it as a standing spot. Unlike a claim, the player keeps its
+   * current spot meanwhile.
+   */
+  holdFor(playerId: string, node: number): void { if (node >= 0) this.held.set(node, playerId); }
+  /** Is this node held for someone other than this player? */
+  heldForOther(playerId: string, node: number): boolean { const h = this.held.get(node); return h !== undefined && h !== playerId; }
+  private readonly held = new Map<number, string>();
+  /**
+   * Crowd rules that came with the movement style (docs/MOVEMENT_STYLE.md), off unless set — the
+   * default round keeps the gated crowd model:
+   *  - followCloseUp: a follower whose full step would close its gap takes a shorter one instead of
+   *    standing the tick (without it, stepped before its leader it moves every other tick);
+   *  - crossingByRank: two bodies crossing each other's way settle by id like head-on (without it
+   *    both queue MAX_QUEUE_TICKS).
+   */
+  followCloseUp = false;
+  crossingByRank = false;
+
   private claim(playerId: string, node: number): void {
     for (const [n, id] of this.claims) if (id === playerId) this.claims.delete(n);
     if (node >= 0) this.claims.set(node, playerId);
@@ -267,6 +322,7 @@ export class MovementExecutor {
     for (const n of this.nav.zoneNodes(zoneId)) {
       const holder = this.claims.get(n);
       if (holder !== undefined && holder !== playerId) continue;
+      if (this.heldForOther(playerId, n)) continue;
       if (this.blockers.nodeBlocked(n)) continue;
       if (Math.abs(this.nav.nodePosition(n).z - a.z) > 160) continue; // same floor as the zone's anchor
       pool.push(n);
@@ -290,7 +346,9 @@ export class MovementExecutor {
       const seeing = pool.filter((n) => this.nodeSees(n, intent));
       if (seeing.length === 0) return pick((n) => flat(n, a) + 350 * hash01(`${playerId}|${n}`)); // nothing sees it from here: stand
       pool = seeing;
-      const ref = opts.from ?? a;
+      // a close hold (ActionCommand.holdClose): nearest to the watched zone itself
+      const watchedAnchor = "zone" in intent && intent.close ? this.nav.anchorNode(intent.zone) : undefined;
+      const ref = watchedAnchor !== undefined ? this.nav.nodePosition(watchedAnchor) : opts.from ?? a;
       if ("zone" in intent) return pick((n) => flat(n, ref) + 350 * hash01(`${playerId}|${n}`));
       // a point (the spike): least seen by the rest of the map first, then nearest
       let maxD = 1, maxE = 1;
@@ -301,6 +359,11 @@ export class MovementExecutor {
     if (intent.kind === "plant") {
       const onArea = pool.filter((n) => this.spatial.plantZoneAt(this.nav.nodePosition(n))?.zoneId === zoneId);
       if (onArea.length > 0) pool = onArea;
+      // a chosen plant spot (plant-spot.ts): that node, or the free plant-area node nearest to it
+      if (intent.node !== undefined) {
+        const t = this.nav.nodePosition(intent.node);
+        return pick((n) => { const q = this.nav.nodePosition(n); return Math.hypot(q.x - t.x, q.y - t.y, q.z - t.z); });
+      }
     } else {
       // a held angle sees what it watches: only spots with line of sight into the watched zone
       watch = intent.watchZone;
@@ -398,7 +461,15 @@ export class MovementExecutor {
       if (c > 0) hazardCosts.set(z.id, c * w);
     }
     const blockedZones = this.blockers.ids().map((id) => this.zoneOfBlocker.get(id)).filter((z): z is string => !!z);
-    const r = this.spatial.findPath(p.zoneId, goal.zoneId, pref === "STEALTH" ? "walk" : goal.mode, { hazardCosts, blockedZones });
+    const mode = pref === "STEALTH" ? "walk" : goal.mode;
+    // a team walks through its own spawn (the zone graph lets nobody else through one)
+    const ownSpawn = p.side === "defense" ? "defender-spawn" : "attacker-spawn";
+    const opts = { hazardCosts, blockedZones, passableZones: [ownSpawn] };
+    if (this.routeChooser) {
+      const chosen = this.routeChooser(p, goal, mode, opts);
+      if (chosen) return chosen;
+    }
+    const r = this.spatial.findPath(p.zoneId, goal.zoneId, mode, opts);
     return r ? r.path : null;
   }
 
@@ -444,8 +515,9 @@ export class MovementExecutor {
     // from its point.
     const sp = goal.spot;
     const respot = sp?.kind === "see" ? !this.seesFromSpot(p, sp)
-      : sp?.kind === "plant" ? this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId)
-      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > AT_SPOT_TOLERANCE_UNITS
+      : sp?.kind === "plant" ? (this.spatial.plantZoneAt(p.position)?.zoneId !== goal.zoneId && this.zoneHasPlantArea(goal.zoneId))
+        || (sp.node !== undefined && Math.hypot(p.position.x - this.nav.nodePosition(sp.node).x, p.position.y - this.nav.nodePosition(sp.node).y) > AT_SPOT_TOLERANCE_UNITS)
+      : sp?.kind === "at" ? Math.hypot(p.position.x - sp.position.x, p.position.y - sp.position.y) > (sp.exact ? 1 : AT_SPOT_TOLERANCE_UNITS)
       : false;
     if (!respot && p.zoneId === goal.zoneId && m.index >= m.waypoints.length && m.atNode >= 0) {
       // already standing in the goal zone: stay on the spot it holds
@@ -502,7 +574,7 @@ export class MovementExecutor {
       const r = this.nav.findPath({
         ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
         actorId: p.id, start: p.position, destination: this.nav.nodePosition(anchor), movementMode: goal.mode,
-        routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
+        routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: p.side === "defense" ? this.noTransitDefense : this.noTransitAttack,
         startNodes: this.startNodes(m),
         ...(goal.zoneCost ? { zoneCost: goal.zoneCost } : {}),
       });
@@ -524,7 +596,7 @@ export class MovementExecutor {
     const r = this.nav.findPath({
       ...(corridor ? { corridor: { zones: corridor, penalty: OFF_ROUTE_PENALTY } } : {}),
       actorId: p.id, start: p.position, destination: this.nav.nodePosition(spot), movementMode: goal.mode,
-      routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: this.noTransit,
+      routePreference: goal.preference ?? "FASTEST", blockers: this.blockers, noTransitZones: p.side === "defense" ? this.noTransitDefense : this.noTransitAttack,
       startNodes: this.startNodes(m),
       ...(goal.zoneCost ? { zoneCost: goal.zoneCost } : {}), ...(goal.zoneEntryMs ? { zoneEntryMs: goal.zoneEntryMs } : {}),
       ...(goal.hazards && goal.hazards.length > 0 ? { hazards: goal.hazards } : {}),
@@ -701,8 +773,10 @@ export class MovementExecutor {
       if (w.fixedMs !== undefined) {
         // an authored link with its own travel time: a teleporter holds the body then moves it,
         // a zipline / rope carries it along the link
+        if (m.linkElapsedMs === 0 && hooks?.onTraverse) hooks.onTraverse(p, w.via ?? "link", "enter", { ...prev.position });
         m.linkElapsedMs += budget;
         const done = m.linkElapsedMs >= w.fixedMs;
+        if (done && hooks?.onTraverse) hooks.onTraverse(p, w.via ?? "link", "exit", { ...w.position });
         if (w.via !== "teleporter" || done) {
           const f = Math.min(1, m.linkElapsedMs / w.fixedMs);
           const before = { ...p.position };
@@ -714,12 +788,20 @@ export class MovementExecutor {
         m.linkElapsedMs = 0;
       } else {
         if (d > 1e-6) p.facing = this.facingFor(p, m, dx, dy);
-        const stepLen = Math.min(d, speed * budget);
+        let stepLen = Math.min(d, speed * budget);
         // yield to a body just ahead (light separation; never for long)
         let ahead: "queue" | "standing" | null = null;
         if (m.pushTicks > 0) m.pushTicks--;
         else if (stepLen > 0) {
           ahead = this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen, others);
+          // following: close up to the gap instead of standing the whole tick — a follower that
+          // only moved when a full step fitted ran at half its leader's speed (it is stepped first,
+          // sees the gap one step short, waits; the leader moves; it moves; ...)
+          if (ahead === "queue" && this.followCloseUp) {
+            for (const k of FOLLOW_STEP_SHARES) {
+              if (this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen * k, others) === null) { stepLen *= k; ahead = null; break; }
+            }
+          }
           // behind a mover going the same way (or queued at a boundary): simply follow — unless the
           // line has not moved at all for MAX_QUEUE_TICKS (then pass it, as past a standing body)
           if (ahead === "queue") {
@@ -794,16 +876,20 @@ export class MovementExecutor {
    */
   private bodyAhead(p: SimPlayer, ux: number, uy: number, stepLen: number, others: readonly SimPlayer[]): "queue" | "standing" | null {
     const nx = p.position.x + ux * stepLen, ny = p.position.y + uy * stepLen;
+    // a teammate going the same way is followed at this player's own spacing; everything else at a body gap
+    const follow = YIELD_DISTANCE * (this.movers.get(p.id)?.spacing ?? 1);
     let found: "queue" | "standing" | null = null;
     for (const q of others) {
       if (q.id === p.id || !q.alive) continue;
       if (Math.abs(q.position.z - p.position.z) > 120) continue;
       const ox = q.position.x - nx, oy = q.position.y - ny;
-      if (ox * ox + oy * oy >= YIELD_DISTANCE * YIELD_DISTANCE) continue;
+      const d2 = ox * ox + oy * oy;
+      if (d2 >= follow * follow) continue;
       if ((q.position.x - p.position.x) * ux + (q.position.y - p.position.y) * uy <= 0) continue; // not ahead
       const mq = this.movers.get(q.id);
       const qMoving = !!mq && mq.index < mq.waypoints.length;
-      if (!qMoving) { found = found ?? "standing"; continue; }
+      const near = d2 < YIELD_DISTANCE * YIELD_DISTANCE;
+      if (!qMoving) { if (near) found = found ?? "standing"; continue; }
       // Which way q WANTS to go — toward its next waypoint — not whether it advanced last tick:
       // two movers that meet head-on are both stopped, and judged by "advanced" each took the
       // other for the back of a queue and neither ever moved again.
@@ -811,7 +897,15 @@ export class MovementExecutor {
       const qx = wq.x - q.position.x, qy = wq.y - q.position.y;
       const ql = Math.hypot(qx, qy);
       const headOn = ql > 1e-6 ? (qx * ux + qy * uy) / ql < -0.3 : mq!.advanced && mq!.dirX * ux + mq!.dirY * uy < -0.3;
-      if (headOn) { if (q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
+      if (headOn) { if (near && q.id < p.id) found = found ?? "standing"; continue; } // lower id goes first
+      // beyond a body gap, spacing is kept only behind a teammate going the same way (within ~45°)
+      if (!near && (q.teamId !== p.teamId || ql < 1e-6 || (qx * ux + qy * uy) / ql < SAME_WAY_COS)) continue;
+      // two bodies crossing each other's way each have the other ahead: neither is the back of a
+      // queue — judged as queues, both waited MAX_QUEUE_TICKS. As head-on, the lower id goes first.
+      if (this.crossingByRank && ql > 1e-6 && ((p.position.x - q.position.x) * qx + (p.position.y - q.position.y) * qy) / ql > 0) {
+        if (q.id < p.id) found = found ?? "standing";
+        continue;
+      }
       return "queue";
     }
     return found;

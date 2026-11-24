@@ -2,6 +2,8 @@
 // names and payload shapes in one typed module is what the "IPC contract" unit
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
+// [manager] in-match management + match prep (src/shared/manager.ts)
+import type { ManagerResultView, ManagerStateView, MatchPlan, OpponentReportView, PrematchRequest, Shouts, TalkReaction, TeamTalk, AttackStrategy, DefenseStrategy } from './manager.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
 import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot, SaveSlotInfo } from './career.ts';
 
@@ -44,6 +46,13 @@ export const IPC = {
   bannerList: 'pv:asset:banner-list',
   /** renderer → main (invoke): read one file of a banner pack; null when absent. */
   bannerFile: 'pv:asset:banner-file',
+  // [manager]
+  /** renderer → main (invoke): build the pre-match opponent report (scripts/prematch.mts). */
+  prematchReport: 'pv:prematch:report',
+  /** renderer → main (invoke): manifest.json of the user's own fetched media (playercards); null when absent. */
+  mediaManifest: 'pv:asset:media-manifest',
+  /** renderer → main (invoke): one file of that media (path relative to its folder); null when absent. */
+  mediaFile: 'pv:asset:media-file',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -66,6 +75,9 @@ export interface SessionStartRequest {
   options?: MatchOptions;
   /** [series] Play the NEXT MAP of the live series round by round (teams / map / seed come from the series). */
   seriesGame?: boolean;
+  /** [manager] Our pre-match plan, and the film our report was read from (seeds the opponent model). */
+  plan?: MatchPlan;
+  scouting?: { logs: unknown[]; uptake?: number };
 }
 
 // ── Pre-match options a team / organiser chooses (match-runner MatchConfig subset).
@@ -75,6 +87,11 @@ export interface MatchOptions {
   opponentMemory?: boolean;
   /** Minimum throw rates (/s of holding a post-plant posture), keyed by game-data team / player id. */
   minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> };
+  /** [manager] FLAGS, default off (not validated against the real-roster gate): state of mind feeds the sim,
+   *  the AI manager uses shouts / talks / attribute-driven timeouts, timeouts limited per half. */
+  moodEffects?: boolean;
+  aiManager?: boolean;
+  timeoutsPerHalf?: number;
 }
 
 // ── Round decisions: WHY a round went the way it did. Mirrors match-runner
@@ -112,14 +129,25 @@ export interface SessionState {
   timeoutsRemaining: Record<TeamSlot, number>;
   timeoutActive: Record<TeamSlot, boolean>;
   finished: boolean;
+  /** [manager] The manager layer (state of mind, shouts, alerts, half-time); absent on plain sessions. */
+  manager?: ManagerStateView;
 }
 export interface TimeoutLogEntry { round: number; team: TeamSlot; by: 'human' | 'ai'; order: TeamOrder | null }
 export interface SessionResultSummary {
   winner: TeamSlot; score: Record<TeamSlot, number>; wentToOvertime: boolean;
   timeoutLog: TimeoutLogEntry[];
+  /** [manager] Decisions with what followed them, final minds, tilt per round. */
+  manager?: ManagerResultView;
 }
 /** A command to the live session and its reply (reply shape depends on cmd). */
-export interface SessionCommand { cmd: 'state' | 'callTimeout' | 'setOrders' | 'playNextRound' | 'result'; team?: TeamSlot; order?: TeamOrder }
+export interface SessionCommand {
+  cmd: 'state' | 'callTimeout' | 'setOrders' | 'playNextRound' | 'result' | 'setShouts' | 'setStrategy' | 'teamTalk';
+  team?: TeamSlot; order?: TeamOrder;
+  // [manager]
+  shouts?: Partial<Shouts>;
+  strategy?: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null;
+  talk?: TeamTalk;
+}
 export interface SessionReply {
   ok: boolean;
   error?: string;
@@ -127,6 +155,8 @@ export interface SessionReply {
   /** Present for playNextRound: the raw round (RawRound shape for mergeMatch). */
   round?: Record<string, unknown>;
   result?: SessionResultSummary;
+  /** [manager] teamTalk: each player's mood change. */
+  talk?: TalkReaction[];
 }
 
 /** A folder of the user's own banner media: one file per build-up stage (1 = first step … 5, optional 6). */
@@ -286,6 +316,11 @@ export interface PvBridge {
   seriesStart(req: SeriesStartRequest): Promise<SeriesView>;
   seriesCmd(cmd: SeriesCommand): Promise<SeriesReply>;
   seriesStop(): Promise<void>;
+  // [manager]
+  sessionSetShouts(team: TeamSlot, shouts: Partial<Shouts>): Promise<SessionState>;
+  sessionSetStrategy(team: TeamSlot, strategy: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null): Promise<SessionState>;
+  sessionTeamTalk(team: TeamSlot, talk: TeamTalk): Promise<{ state: SessionState; reactions: TalkReaction[] }>;
+  prematchReport(req: PrematchRequest): Promise<OpponentReportView>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
   // [career]
@@ -298,6 +333,9 @@ export interface PvBridge {
   /** User-supplied loading banners (never shipped, never in git): pack name → stage (1..6) → file name. */
   listBanners(): Promise<LocalBannerPack[]>;
   loadBannerFile(pack: string, file: string): Promise<Uint8Array | null>;
+  /** User-fetched Kingdom Archives media (scripts/fetch-*.mjs; never shipped, never in git). */
+  mediaManifest(kind: 'playercards'): Promise<unknown | null>;
+  mediaFile(kind: 'playercards', file: string): Promise<Uint8Array | null>;
   readonly platform: string;
   readonly isElectron: true;
 }

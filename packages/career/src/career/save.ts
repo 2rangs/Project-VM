@@ -25,7 +25,7 @@ export function serializeCareer(state: CareerState, savedAt?: string): string {
 export function deserializeCareer(text: string): CareerState {
   const parsed = JSON.parse(text) as { format?: unknown; career?: CareerState };
   if (parsed.format !== CAREER_SAVE_FORMAT || !parsed.career) throw new Error("not a PROJECT V career save");
-  if (parsed.career.version !== 1) throw new Error(`unsupported career save version ${String(parsed.career.version)}`);
+  if (parsed.career.version !== 2) throw new Error(`unsupported career save version ${String(parsed.career.version)} (saves from before the international circuit cannot be loaded)`);
   return parsed.career;
 }
 

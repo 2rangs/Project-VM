@@ -130,3 +130,19 @@ Tactical view: alive-count matchup strip (us vs them, two opposing bars) at the 
 click on an ally row) highlight a player with a pulsing ring on the map, Esc clears; site zone labels are larger and
 brighter than the rest (`zone.plantable`/`zoneType`); economy numbers in the roster are larger; a key-hint line sits
 in the map corner. Pure presentation — no engine data involved. Verified: typecheck, 54 matchday tests, main e2e.
+
+## Final handoff (wrap-up)
+**Done, default-on (no sim/engine code touched):** Match Day redesign (map-centred tactical view, CCTV cams, per-player
+economy, UI-1…UI-6 display items), readability round (matchup strip, 1–5 highlight, site labels), and the load screen
+with Kingdom Archives player cards + nickname + account level (`MatchLoadScreen.tsx`, `matchday/media.ts`, IPC
+`pv:asset:media-manifest` / `pv:asset:media-file`). 70 cards (~19 MB) are committed in `apps/desktop/assets/playercards/`
+at the user's decision, subject to release review; `scripts/fetch-playercards.mjs` re-fetches them. Without cards the
+load screen falls back to the plain card; e2e runs with `PV_MEDIA_ASSETS_DIR` pointing at an empty folder. Voices dropped.
+**Flags:** none needed — everything is presentation-only. Level is a deterministic placeholder (`18 + hash % 322`).
+**Measured:** tsc clean, electron-vite build ok, 54 matchday tests, 48 unit tests pass (on merged tree with 65180b9).
+Not run (lock saturated): engine tests, `test:e2e`, `:series`, `:career`, `:club`, and the visual load-screen capture —
+the integrator runs the combined gate.
+**Unfinished / next:** visually check the load screen (1920×1080 and 1280×720, ko/en) via `scratchpad/pw/load-runs.sh`;
+UI-1/UI-2 go live once `RoundRecord` carries `sight`/`engagementTrace`; UI-4 comms feed not built; agent/weapon 3D
+models belong to the modelling session; career shell should fold `screens/home/`.
+**Risks:** player-card licensing (release review); real account level not wired; load layout unverified by screenshot.

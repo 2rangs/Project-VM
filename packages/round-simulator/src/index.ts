@@ -39,3 +39,5 @@ export {
 } from "./situational.js";
 export { FloorItems, PICKUP_REACH_UNITS } from "./floor-items.js";
 export type { FloorWeapon, OrbPoint, FloorItemsOptions } from "./floor-items.js";
+export { plantSpotsOf, choosePlantSpot, plantSpotAt } from "./plant-spot.js";
+export type { PlantSpotKind, PlantChoice, PlantPreferences, PlantCandidate, SitePlantSpots, PlantSituation, PlantDecision } from "./plant-spot.js";

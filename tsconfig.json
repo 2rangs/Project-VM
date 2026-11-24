@@ -3,7 +3,7 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "//": "Root typecheck covers the PV-core packages under their shared strict config. Sibling-branch packages keep their own (looser) tsconfigs and are typechecked via `pnpm -r typecheck` (docs/INTEGRATION_PLAN.md F4).",
+  "//": "Root typecheck covers the PV-core packages under their shared strict config. Sibling-branch packages keep their own (looser) tsconfigs and are typechecked via `pnpm -r typecheck` (docs/archive/INTEGRATION_PLAN.md F4).",
   "include": [
     "packages/shared-types/src/**/*.ts",
     "packages/simulation-core/src/**/*.ts",

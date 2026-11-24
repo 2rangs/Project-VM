@@ -45,6 +45,13 @@ export function isMasked(listener: Vector3, cue: { position: Vector3; levelDb: n
  *     radius(h) = footstepRadius · √(h / h₀),   level(h) = L_step + 10·log10(h / h₀)   (h ≥ h₀)
  * h₀ is manual-approx (params.hearing.landing.silentBelowUnits) until checked in game.
  */
+/** Sound of entering / leaving an authored link at one end (params.hearing.traversal). */
+export function traversalSound(via: string, params: PerceptionParams): { radiusUnits: number; levelDb: number } {
+  const t = params.hearing.traversal;
+  const radiusUnits = via === "teleporter" ? t.teleporterRadiusUnits : via === "zipline" ? t.ziplineRadiusUnits : t.ropeRadiusUnits;
+  return { radiusUnits, levelDb: t.levelDb };
+}
+
 export function landingSound(heightUnits: number, params: PerceptionParams): { radiusUnits: number; levelDb: number } | null {
   const h0 = params.hearing.landing.silentBelowUnits;
   if (heightUnits < h0) return null;
@@ -72,6 +79,7 @@ const LOUDNESS: Record<SoundKind, number> = {
   spikePlant: 0.75,
   spikeDefuse: 0.75,
   landing: 0.8,
+  traversal: 0.9,
   abilityCast: 0.7,
   reload: 0.5,
   other: 0.5,
@@ -189,7 +197,7 @@ export function hearSounds(
 
   for (const src of sources) {
     const srcZone = spatial.nearestZone(src.position);
-    if (src.kind === "footstep" || src.kind === "landing") {
+    if (src.kind === "footstep" || src.kind === "landing" || src.kind === "traversal") {
       if (observerTeamId !== undefined && src.teamId === observerTeamId) continue; // own team's steps
       const dx = src.position.x - observerPos.x, dy = src.position.y - observerPos.y, dz = src.position.z - observerPos.z;
       const d = Math.sqrt(dx * dx + dy * dy + dz * dz);

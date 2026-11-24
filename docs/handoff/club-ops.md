@@ -1,44 +1,59 @@
-# Handoff: club operations (contracts, finance, transfers, training)
+# Handoff: club operations (contracts, finance, transfers, training, board, staff, morale)
 
-Branch `claude/happy-newton-649a94`, based on main bcc3458. Commits: a1ab580 (packages/career), 0923f06 (desktop + docs), plus this note. Not pushed or merged. Design and formulas: `docs/CLUB_OPERATIONS.md`.
+Branch `claude/happy-newton-649a94`. Merged origin/main 65180b9. Not pushed. Design, formulas and constants: `docs/CLUB_OPERATIONS.md` (§1–7 base layer, §9–12 depth). Constants: `packages/career/src/club/constants.ts` (`CLUB_MODEL`, `DEPTH_MODEL`, `CLUB_FLAGS`).
 
-## Done and verified
-- `packages/career/src/club/` (pure TS, exported from `@pv/career`):
-  - `constants.ts`: every constant.
-  - `market.ts`: ability index, wages, value, reputation.
-  - `finance.ts`: budgets, monthly ledger, prize money, sponsorship and fanbase, board checks, reinvestment and owner-support bounds.
-  - `transfers.ts`: offers, the selling club's and the player's utilities, counters, loans, free agency, renewals, releases, AI market rounds in windows.
-  - `training.ts`: weekly team and individual focus, fatigue, focus factors for development, map practice → `practiceAdjustedRecords` for mastery continuity C.
-  - `ops.ts`: `initClub`, `clubOnDay`, `clubOnMonth`, `clubSeasonEnd`, plus the split `clubBeforeSeasonEnd` / `clubAfterSeasonAdvance`.
-  - `hooks.ts`: my own `CareerHooks` interface and a local driver.
-- `season.ts`: `developPlayer(..., focus?)` and `advanceSeason(world, { focus })`. Byte-identical without focus (tested). `model.ts`: optional `World.club`.
-- Desktop: Finance, Transfers and Training screens, a contract panel on the player detail, ko/en strings.
-  - The store starts the club layer with NRG as the user's club, and the season button goes through `clubSeasonEnd`.
-  - `+1 day / week / month` buttons run the local driver.
-- Verified:
-  - `packages/career` vitest 37/37 (club.test.ts: 3 seeded seasons with economy bands and determinism, counterfactual transfer decisions, expiry/renewal, loans, the release rule, focus → development direction, practice → continuity) and tsc clean.
-  - `apps/desktop`: tsc clean, `test:unit` 55/55, `npm run test:e2e:club` passes (release a player, sign a free agent, he is in the wage list, set a training focus).
+## Done, default ON (no effect on the default sim)
+- **Base club layer** (earlier rounds, integrated into career mode by the integrator): contracts, finance and ledger, transfers, loans, free agency, AI market, training focus → development, map practice → mastery.
+- **Contracts depth** (`club/people.ts`, `club/transfers.ts`):
+  - Agents: hardness h → agent fee (3–10 % of wage·years, buyer pays) and the player's acceptance margin (`acceptMargin + 0.15·h`).
+  - Bonuses: signing, loyalty, per-win, per-title. They are valued in the player's utility as an effective wage and booked when due (signing at signing, win after each won series, title at a regional win, loyalty at a full-term expiry).
+  - Release clause and sell-on terms; the sell-on pays out on the next sale.
+  - Renewal feelings (morale, playing-time share vs. role, ambition vs. club level) with a flat refusal below −0.45.
+  - Free-agent expectations fall 6 % a month unsigned (floor 60 %).
+- **Board** (`club/board.ts`):
+  - Objectives from stature (strength rank in the region) and budget; an international target for top-3 targets.
+  - Confidence moves with results against expectation, monthly finances and the season review.
+  - Warning below 35 %, sack below 15 % (a flag plus an inbox item).
+  - Requests (transfer, wage, staff budget; facilities), one of each kind per season.
+  - Facilities feed the coach-factor input of development; neutral at 0.5, so worlds without facilities develop exactly as before.
+- **Staff market** (`club/staff-market.ts`):
+  - New **physio** role (physiotherapy → weekly fatigue recovery ×(0.75 + 0.5·p)) and head-coach **motivation** (→ morale target).
+  - Demand = market wage · (1 + 0.3·(quality − club reputation)).
+  - Hire replaces the holder of the post (with severance); dismissal pays severance.
+  - A better scout narrows the estimate bands (tested).
+- **Morale** tracked weekly for the manager's squad, plus a ±0.03 swing for the five after each series. It drives renewals and the UI.
+- **Desktop:**
+  - New Board and Staff screens (nav `board`, `staff`).
+  - A bonuses & clauses section and an agent line in the offer form.
+  - A morale column in Training.
+  - The club e2e step covers Board and Staff.
+  - ko/en strings for all of it.
 
-## Half-done / not verified
-- **Not wired to career-shell's real hook API.** I wrote against my own `CareerHooks` (club/hooks.ts) because the shell's API wasn't published when I started. The shell's API is committed on `claude/festive-brattain-042f51` (c784fe1: `registerCareerHook`, in-place mutation, `ctx.ext` / `ctx.post` / `ctx.rng`). The adapter has not been written.
-- **Full `test:e2e` not green.** It fails before the club step, at the nav-debug block (pre-existing per the regens handover). With that block removed, it fails at the Review `scoreboard` wait. Not investigated; no Match Day files changed here.
+## Behind a flag (default OFF)
+- `CLUB_FLAGS.moraleInMatch` (`setClubFlags({ moraleInMatch: true })`): morale moves the career match roster. Ability span ×(1 + 0.1·d); consistency ± 0.2·d → discipline and round-form σ; clutch ± 0.2·d → decisionMaking and pressure form. All of it goes through match-runner's existing roster → profile path; no match-runner or round-simulator file changed. Off by default because it was not gated and the measurement showed no effect. At neutral morale, and with the flag off, the roster is byte-identical (tested).
 
-## Connecting to career-shell (next work, in order)
-1. **Merge `season.ts`:** both branches added an options object to `advanceSeason` (shell: `AdvanceSeasonOptions { mapsPlayed }`; here: `AdvanceOptions { focus }`). Merge them into one type with both fields, and pass `focus` to `developPlayer`.
-2. **Write `club/career-hook.ts`** that calls `registerCareerHook({ id: "club", ... })` and uses the existing `*Mut` functions (they already mutate in place):
-   - `onCareerStart(world, ctx)`: `Object.assign(world, initClub(world, { userTeamId: ctx.career.<user team>, date: ctx.date }))`, or move `ClubState` into `ctx.ext(() => …)` and have the modules read it from there instead of `world.club`.
-   - `onDay(world, date)` → `clubOnDayMut(world, date)`; `onMonth(world, date)` → `clubOnMonthMut(world, date)`.
-   - `onSeasonEnd(world, season, ctx)` → `clubBeforeSeasonEndMut(world, { standings })`, with standings from the shell's league table. The shell calls `advanceSeason` itself (career.ts:337), so it must also pass `focus: seasonFocus(world)` there, or the hook stores the focus in `ctx.ext` for the shell to read.
-   - `onSeasonStart(world)` → `clubAfterSeasonAdvanceMut(world)`.
-   - Inbox: replace `pushMessage` / `postInbox` with `ctx.post({ category, key, params, from: "board", text: { en: {title, body}, ko: {...} } })`. The bilingual title/body already exist in messages.ts.
-   - Incoming bids can use `options: [{id: "accept"}, {id: "reject"}]` and `onAnswer` → `answerIncomingMut`.
-   - Randomness: club code only uses seeded `streamFor(world.seed, label)` (deterministic); `ctx.rng` is optional.
-3. **Desktop:** drop `ClubClock` (the +day/week/month buttons in FinanceScreen.tsx) and `store.advanceDays` in favour of the shell's Continue. Remove `DEFAULT_USER_TEAM` and use the start menu's club. Re-add my 3 route lines in `App.tsx` and the `soon` removal in `nav.ts` on top of the shell's rewritten versions. Import the hook module once from the shell's `career/session.ts`.
-4. **Season loop:** keep `advanceSeason`'s squad step from auto-signing and releasing for the user's club.
-5. Re-run `npm run test:e2e:club` (through heavy-run.sh) after the merge, and fix or skip the two pre-existing `test:e2e` failures.
+## Measured
+Morale counterfactual (`packages/career/test/morale-match.test.ts`, opt-in `PV_MORALE_MATCH=1`, real engine, same five, opponent and seeds). Rounds won by the five:
 
-## Known problems and limits
-- **AI wages:** an AI club with five expensive starters can sit over its wage budget until contracts expire. The owner-support floor bounds its losses.
-- **Match effects:** fatigue only affects training efficiency, not matches. Match Day / Series do not read the world's rosters or `practiceAdjustedRecords` yet.
-- **Missing features:** no agents, bonuses, sell-on clauses or import rules (AI clubs shop in their own region only). No board objectives beyond money. No staff market screen.
-- **Desktop test setup:** in this worktree, `apps/desktop/node_modules` is an untracked symlink to remaining-work-final-push's node_modules. It is not committed.
+| run | high | neutral | low | rounds played |
+|---|---|---|---|---|
+| decision terms only, N = 16 | 142 | 145 | 151 | 340 |
+| with the level term, N = 30 | 281 | 279 | 281 | 628 |
+
+No measurable effect. I did not run the real-roster 160-match gate: nothing on the default path changed (the default game has no career rosters).
+
+## Gate status (this branch, after the merge)
+- `packages/career`: tsc clean; vitest 68 passed, 1 skipped (the opt-in engine test).
+- `apps/desktop`: tsc clean, `test:unit` 62/62, build OK.
+- **Not run in this round:** `test:e2e:club` and `test:e2e:career`. The lock was full and the integrator asked for no further heavy runs; it will run the combined gate. The club e2e step now also clicks Board and Staff.
+
+## Unfinished, with the exact next step
+1. **Morale in the match.** Measure the engine's response to roster ability: one match pair with every ability attribute at the floor vs. as rated, same seed. That probe was cancelled at wrap-up. Then size `DEPTH_MODEL.moraleAbility` from that response, re-run the opt-in test at N ≥ 30, and turn the flag on only after the real-roster gate.
+2. **The sack:** career mode does not end the career or offer a new job. `club.board.sacked` is the hook point.
+3. **AI clubs** have no board, morale or bonuses (neutral by design).
+4. **Merge with `claude/loving-meninsky-767c08`** (scouting knowledge). Its branch replaces `estimateAbility(w, teamScout(w, X), p)` with `estimateForTeam(w, X, p)` in `club/market.ts`, `club/transfers.ts` and `career/career.ts`. This branch added one more such call, in `playerUtility` (default release clause); switch it too. The interface is agreed in the shared notes (`scouting-interface.md`).
+
+## Known risks
+- **Generation:** adding `physio` to `STAFF_ROLES` and `motivation` to the head coach changes world generation (staff count, staff RNG draws). Same-seed worlds differ from earlier builds; saved careers load (missing physio is treated as neutral, and the next season fills it).
+- **Career play without the flag:** physio quality changes training fatigue → readiness in career matches. This was already true for fatigue; the default sim is untouched.
+- **Overwritten note:** I overwrote the generated-players session's `scouting-interface.md` once by mistake. They restored it (their version first).
