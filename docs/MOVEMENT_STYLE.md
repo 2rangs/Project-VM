@@ -31,7 +31,7 @@ per round, so a player moves differently from round to round but identically on 
 | `routeTempMs` | 700·(1.2 − gameSense) | route choice: softmax temperature |
 | `checkMs`, `checks` | 180 + 350·(1 − reaction) + 120u ms; round(1 + 2·gameSense·u′) per round | stop-and-check at a zone edge |
 | `quiet` | gameSense × (lurker 1.3, anchor 1.1, support/igl/rotator 0.9, entry 0.6) | walk vs run: lurk approach, buy-phase setup |
-| `buy.*` | buy time 2.5 + 4.5·(1 − gameSense)·(0.5 + u) s; wanders ⌊(1 − quiet)·3u + u⌋; wander radius 250–600 uu; set margin 1.5 + 3.5·gameSense·(0.5 + 0.5u) s | buy phase |
+| `buy.*` | buy time 2.5 + 4.5·(1 − gameSense)·(0.5 + u) s; wanders 1 + ⌊(1 − quiet)·2u + u⌋; wander radius 250–600 uu; set margin 1.5 + 3.5·gameSense·(0.5 + 0.5u) s | buy phase |
 
 **Route choice.** `nearOptimalRoutes` finds the best zone route and the routes found by closing each of its
 intermediate zones in turn, keeping those within `(1 + routeSlack)` of the best time. Each is scored

@@ -61,16 +61,16 @@ describe("buy phase", () => {
     expect(DEFENDER_BARRIER_SHARE).toBeLessThan(0.5);
   });
 
-  it("players move during it, and defenders end in the zone the plan gave them (or its barrier-side edge)", () => {
+  it("players move during it, and defenders end on their planned setup, not in their spawn", () => {
     const out = runMatchRound(input(5, ON));
     const bp = out.round.buyPhase!;
-    const first = bp.tracks![0]!.players, last = bp.tracks![bp.tracks!.length - 1]!.players;
-    let moved = 0;
-    for (const p of first) {
-      const q = last.find((x) => x.id === p.id)!;
-      if (Math.hypot(p.x - q.x, p.y - q.y) > 100) moved++;
+    // everyone walks during it (to its setup, idle wanders): path length per player
+    const walked = new Map<string, number>();
+    for (let i = 1; i < bp.tracks!.length; i++) for (const p of bp.tracks![i]!.players) {
+      const q = bp.tracks![i - 1]!.players.find((x) => x.id === p.id)!;
+      walked.set(p.id, (walked.get(p.id) ?? 0) + Math.hypot(p.x - q.x, p.y - q.y));
     }
-    expect(moved).toBeGreaterThanOrEqual(8);
+    expect([...walked.values()].filter((d) => d > 150).length).toBeGreaterThanOrEqual(8);
     for (const s of bp.setups.filter((x) => x.side === "defense")) expect(s.zoneId).not.toBe("defender-spawn");
   });
 

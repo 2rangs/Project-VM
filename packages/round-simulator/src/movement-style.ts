@@ -99,7 +99,7 @@ export function movementStyle(p: Pick<SimPlayer, "id" | "skills" | "traits">, sl
   const quiet = clamp(t.gameSense * ROLE_QUIET[r], 0, 1);
   // Buy phase: a decisive player buys quickly; a restless one wanders more; a careful one is set early.
   const buyMs = 2500 + 4500 * (1 - t.gameSense) * (0.5 + u());
-  const wanders = Math.floor((1 - quiet) * 3 * u() + u());
+  const wanders = 1 + Math.floor((1 - quiet) * 2 * u() + u());
   const wanderRadius = 250 + 350 * u();
   const setMarginMs = 1500 + 3500 * t.gameSense * (0.5 + 0.5 * u());
   return { lane, spacing, routeSlack, riskAversion, routeTempMs, checkMs, checks, quiet, buy: { buyMs, wanders, wanderRadius, setMarginMs } };
