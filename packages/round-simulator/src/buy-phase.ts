@@ -6,9 +6,9 @@
  * carries out its part of that plan as far as its barrier lets it:
  *  - attackers stay in their spawn: each takes a spot near the exit its first move leaves by,
  *    stacked by role (the entry at the door, the support behind it, a lurker at its own exit);
- *  - defenders move freely on their side up to the barrier and get to their setup — the zone
- *    their first order sends them to, or the furthest zone of its route their barrier allows
- *    (an anchor on site, a retake spot, an early mid presence).
+ *  - defenders move freely on their side up to the barrier and get to their setup — the zone the
+ *    plan sets each of them down in (an anchor on site, a retake spot, an early mid presence) — on
+ *    a standing spot of their own, looking where their first order points.
  * Before setting up, each player stops at its buy spot for a while and may wander idly; when it
  * leaves for its setup, how early it wants to be set and whether it walks follow from its style
  * (movement-style.ts). Where everyone stands when the barrier drops is the result: the plan's
@@ -150,19 +150,16 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
     let goal: MoveGoal;
     let face: { x: number; y: number } | null = null;
     if (side === "defense") {
+      // the setup the plan gives this defender (the zone the match set it down in — an anchor, a retake
+      // spot, the mid presence): it stands there, on its own spot, looking where its first order points.
+      // Where the order sends it on from there is the live round's business (measured: walking it all the
+      // way during the buy phase put every defender on its angle at 0:00 and cost the attack 3 pp).
       const target = cmd?.targetZone && spatial.getZone(cmd.targetZone) ? cmd.targetZone : planZone;
-      planZone = target;
-      let zone = target;
-      if (!areas.defense.has(zone)) {
-        // the order goes beyond the barrier: set up at the furthest zone of its route the barrier allows
-        const route = spatial.findPath(setupZone.get(p.id)!, target, "run")?.path ?? [];
-        zone = setupZone.get(p.id)!;
-        for (const z of route) if (areas.defense.has(z)) zone = z;
-      }
+      const zone = areas.defense.has(planZone) ? planZone : SPAWN_ZONE.defense;
+      goal = { zoneId: zone, mode: "run", spot: { kind: "stand" } };
       const watch = cmd?.aimZone && spatial.getZone(cmd.aimZone) ? cmd.aimZone : null;
-      goal = { zoneId: zone, mode: "run", spot: watch && zone !== watch ? { kind: "see", zone: watch } : { kind: "stand" } };
-      const look = spatial.getZone(watch ?? (zone === target ? zone : target));
-      if (look) face = { x: look.position.x, y: look.position.y };
+      const look = spatial.getZone(watch ?? target);
+      if (look && look.id !== zone) face = { x: look.position.x, y: look.position.y };
     } else {
       // attackers stack by role at the exit their first move leaves the spawn by
       const target = cmd?.targetZone && spatial.getZone(cmd.targetZone) ? cmd.targetZone : null;
