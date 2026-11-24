@@ -168,9 +168,9 @@ export interface MatchConfig {
   /**
    * Per-player movement style (round-simulator movement-style.ts). true = every part on; an object
    * turns it on with the listed parts off; false = none (the buy phase then has no per-player script).
-   * Default true (every part on). BUY_PHASE_ONLY_STYLE keeps the buy-phase script and switches the
-   * live-round parts off (they were off by default while pistol attack measured 0.431–0.438 with them on;
-   * the follow-step stall and the lurk walk behind that are fixed — docs/MOVEMENT_STYLE.md §4).
+   * Default BUY_PHASE_ONLY_STYLE: the buy-phase script runs (rounds identical to no buy phase), the
+   * live-round parts are off. With every part on (true / sim-batch --style), real rosters seeds 1–160:
+   * attack 0.471, pistol 0.438 (gate ≥ 0.45) — docs/handoff/movement.md.
    */
   readonly movementStyle?: boolean | { readonly lanes?: boolean; readonly spacing?: boolean; readonly routes?: boolean; readonly checks?: boolean; readonly lurk?: boolean };
   /**
@@ -667,7 +667,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? true, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? BUY_PHASE_ONLY_STYLE, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

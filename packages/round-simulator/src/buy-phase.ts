@@ -131,6 +131,7 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
   const exec: Record<Side, MovementExecutor> = { attack: null!, defense: null! };
   for (const side of ["attack", "defense"] as const) {
     const ex = new MovementExecutor(spatial, input.speeds);
+    ex.crossingByRank = true; // the buy phase's own crowd: nobody may stall off its setup spot
     // each player's setup spot is kept for it: nobody else buys, wanders or stands there, so every
     // player can end the phase exactly where the round's executor placed it
     for (const p of players) if (p.side === side) { const n = nav.locate(setupSpot.get(p.id)!); if (n !== null) ex.holdFor(p.id, n); }

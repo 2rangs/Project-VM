@@ -8,7 +8,7 @@ match gave them). Two modules fix that, each behind a small hook so the mover an
 | Module | What it does | Switch |
 | --- | --- | --- |
 | `round-simulator/src/buy-phase.ts` | Simulates the 30 s barrier phase (`ROUND_RULES.buyPhaseMs`) | `SimConfig.buyPhaseMs` (0 = off) · `MatchConfig.buyPhase` (default **on**) · `sim-batch --no-buy-phase` |
-| `round-simulator/src/movement-style.ts` | Per-player, per-round way of carrying out the same orders | `SimConfig.movementStyle` · `MatchConfig.movementStyle` (default **on**) · `sim-batch --no-style` |
+| `round-simulator/src/movement-style.ts` | Per-player, per-round way of carrying out the same orders | `SimConfig.movementStyle` · `MatchConfig.movementStyle` (default `BUY_PHASE_ONLY_STYLE`: buy-phase script only) · `sim-batch --style` / `--no-style` |
 
 The bare `RoundSimulator` / `runMatchRound` keep both off by default, so the scenario tests are unchanged; the
 match runner (and so sim-batch, the desktop and series) turns both on.
@@ -25,7 +25,7 @@ per round, so a player moves differently from round to round but identically on 
 | Field | Formula | Used by |
 | --- | --- | --- |
 | `lane` | slot lane (0, ±0.35, ±0.7) + 0.5·(u − 0.5), clamped ±0.9 | executor: lateral offset inside the corridor |
-| `spacing` | 1 + 2.5·trading·(0.75 + 0.5u) | executor: follow distance behind a teammate going the same way (× body gap; ≈ 1.5 m at 0.6) |
+| `spacing` | 1 + 1.0·trading·(0.75 + 0.5u) | executor: follow distance behind a teammate going the same way (× body gap; ≈ 1 m at 0.6). A follower whose full step would close the gap takes the longest of ¾, ½, ¼ of it that keeps the gap (standing the whole tick instead made a stack move at half speed) |
 | `routeSlack` | role slack (entry 0.03, rotator 0.04, anchor 0.05, support/igl 0.06, lurker 0.16) · (0.6 + 0.8u) | route choice: how much slower an alternative zone route may be |
 | `riskAversion` | 0.5 + gameSense | route score: weight on the team's believed threat |
 | `routeTempMs` | 700·(1.2 − gameSense) | route choice: softmax temperature |
@@ -47,7 +47,8 @@ anywhere behind their barrier, attackers from their spawn; graph run times × 1/
 stands in and that it has not checked yet, pauses `checkMs` there, while it has checks left. The pause is owed like a slow field's delay (`edgeProgressMs < 0`).
 
 **Pace.** The tactical layer decides run/walk for its orders; the style only adds the quiet lurk: a lurker with
-`quiet ≥ 0.5` walks the last 1500 uu of its approach while the round is calm.
+`quiet ≥ 0.5` walks the last 1500 uu of its own approach while the round is calm — not while it carries the spike,
+and not when its order sends it where a teammate is going too (it is joining the execute).
 
 Hooks: `MovementExecutor.setStyle(id, {lane, spacing})`, `MovementExecutor.routeChooser`, and in the round loop
 `RoundMovementStyles.checkPauseMs` (in `canEnterZone`) and `.pace` (after a move order's `setGoal`).
@@ -71,6 +72,11 @@ behind the barriers, and tick 0 reuses that decision.
   Measured and dropped (160 / 60 matches, real rosters): walking each defender all the way to its first order's
   target and onto a held angle (attack 0.43–0.46, opening duel 0.39–0.40), and a role stack at the attackers' exit —
   in the doorway, the five leave in single file.
+- **Exact arrival.** Each player's setup spot is held for it in the buy-phase executor (nobody else buys, wanders
+  or stands there), the final move is an exact `at` (no 100 uu tolerance), and every half second a player not yet
+  running there checks the run from where it stands (× 1.25 + 1 s) and leaves at once if it would be late. With the
+  live parts off, the round is then the very round without a buy phase (60/60 identical; before: 25/300 players
+  off their spot, 9/20 pistol rounds different — the integrator's "buy phase costs pistol").
 - **Script.** Everyone starts in its spawn, stands at its buy spot for `buy.buyMs`, wanders idly (walks to free
   spots within its wander radius) while that cannot make it late, then leaves for its setup so as to be set
   `buy.setMarginMs` before the barrier drops — walking there when it is quiet and has time.
@@ -88,4 +94,4 @@ behind the barriers, and tick 0 reuses that decision.
 
 ## 4. Validation
 
-See the branch's hand-over note for the 160-match numbers (real rosters, defaults).
+Numbers, flags and what is open: `docs/handoff/movement.md`. Default: buy-phase script only (`BUY_PHASE_ONLY_STYLE`); the live parts are behind `movementStyle: true` / `sim-batch --style`.

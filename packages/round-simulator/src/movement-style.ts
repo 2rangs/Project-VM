@@ -211,6 +211,8 @@ export class RoundMovementStyles {
       const st = this.styles.get(p.id);
       if (st) mover.setStyle(p.id, { ...(this.parts.lanes ? { lane: st.lane } : {}), ...(this.parts.spacing ? { spacing: st.spacing } : {}) });
     }
+    // per-player spacing comes with the crowd rules that keep it from stalling the stack
+    if (this.parts.spacing) { mover.followCloseUp = true; mover.crossingByRank = true; }
     if (!this.parts.routes) return;
     mover.routeChooser = (p, goal, mode, opts) => {
       const st = this.styles.get(p.id);

@@ -286,6 +286,16 @@ export class MovementExecutor {
   /** Is this node held for someone other than this player? */
   heldForOther(playerId: string, node: number): boolean { const h = this.held.get(node); return h !== undefined && h !== playerId; }
   private readonly held = new Map<number, string>();
+  /**
+   * Crowd rules that came with the movement style (docs/MOVEMENT_STYLE.md), off unless set — the
+   * default round keeps the gated crowd model:
+   *  - followCloseUp: a follower whose full step would close its gap takes a shorter one instead of
+   *    standing the tick (without it, stepped before its leader it moves every other tick);
+   *  - crossingByRank: two bodies crossing each other's way settle by id like head-on (without it
+   *    both queue MAX_QUEUE_TICKS).
+   */
+  followCloseUp = false;
+  crossingByRank = false;
 
   private claim(playerId: string, node: number): void {
     for (const [n, id] of this.claims) if (id === playerId) this.claims.delete(n);
@@ -779,7 +789,7 @@ export class MovementExecutor {
           // following: close up to the gap instead of standing the whole tick — a follower that
           // only moved when a full step fitted ran at half its leader's speed (it is stepped first,
           // sees the gap one step short, waits; the leader moves; it moves; ...)
-          if (ahead === "queue") {
+          if (ahead === "queue" && this.followCloseUp) {
             for (const k of FOLLOW_STEP_SHARES) {
               if (this.bodyAhead(p, dx / (d || 1), dy / (d || 1), stepLen * k, others) === null) { stepLen *= k; ahead = null; break; }
             }
@@ -884,7 +894,7 @@ export class MovementExecutor {
       if (!near && (q.teamId !== p.teamId || ql < 1e-6 || (qx * ux + qy * uy) / ql < SAME_WAY_COS)) continue;
       // two bodies crossing each other's way each have the other ahead: neither is the back of a
       // queue — judged as queues, both waited MAX_QUEUE_TICKS. As head-on, the lower id goes first.
-      if (ql > 1e-6 && ((p.position.x - q.position.x) * qx + (p.position.y - q.position.y) * qy) / ql > 0) {
+      if (this.crossingByRank && ql > 1e-6 && ((p.position.x - q.position.x) * qx + (p.position.y - q.position.y) * qy) / ql > 0) {
         if (q.id < p.id) found = found ?? "standing";
         continue;
       }
