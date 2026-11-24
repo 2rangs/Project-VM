@@ -88,7 +88,7 @@ const REACT_SKILL_MS = 500;
 const SPEECH_SLOW = 1.25;
 const SPEECH_SKILL = 0.5;
 const SPEECH_MS: Readonly<Record<InfoKind, number>> = {
-  sighting: 450, footstep: 600, gunfire: 450, utility: 550, spike: 500, damage: 400, sound: 550, lastCall: 800,
+  sighting: 450, footstep: 600, gunfire: 450, utility: 550, spike: 500, damage: 400, sound: 550, lastCall: 800, clear: 400,
 };
 /** Breath between two callouts by the same player. */
 const SPEECH_GAP_MS = 100;
@@ -128,19 +128,29 @@ const FOOTSTEP_HOLD_MS = 3000;
 const SOUND_HOLD_MS = 10_000;
 /** A player re-calls an unchanged item after this long ("still two B main"). */
 const REFRESH_MS: Readonly<Record<InfoKind, number>> = {
-  sighting: 4000, footstep: 2000, gunfire: 3000, utility: 4000, spike: 4000, damage: 2000, sound: 3000, lastCall: Infinity,
+  sighting: 4000, footstep: 2000, gunfire: 3000, utility: 4000, spike: 4000, damage: 2000, sound: 3000, lastCall: Infinity, clear: 6000,
 };
 /** The same item is never re-called sooner than this (a moving enemy is not narrated zone by zone). */
 const MIN_RECALL_MS = 1000;
+/**
+ * Silence is information (docs/research/LURKER_ROLE.md §4): a player posted alone to watch ground —
+ * the lurker, an anchor — who has seen and heard nothing there for SILENCE_MS calls it clear.
+ * The call covers the player's zone and its neighbours (what they can see and hear from there);
+ * the IGL drops every older claim of an enemy in that area. Silence needs a listener who can
+ * trust their ears: SILENCE_MS = SILENCE_BASE + SILENCE_SKILL·(1 − awareness).
+ */
+const SILENCE_ROLES: ReadonlySet<string> = new Set(["lurker", "anchor"]);
+const SILENCE_BASE_MS = 3000;
+const SILENCE_SKILL_MS = 4000;
 /** Comms priority: lethal info first. */
 const PRIORITY: Readonly<Record<InfoKind, number>> = {
-  lastCall: 5, damage: 4, sighting: 2, spike: 2, gunfire: 1.5, footstep: 1, utility: 1, sound: 0.5,
+  lastCall: 5, damage: 4, sighting: 2, spike: 2, gunfire: 1.5, footstep: 1, utility: 1, sound: 0.5, clear: 0.3,
 };
 const LETHAL_PRIORITY = 3;
 
 // ───────────────────────────── types ─────────────────────────────
 
-export type InfoKind = "sighting" | "footstep" | "gunfire" | "utility" | "spike" | "damage" | "sound" | "lastCall";
+export type InfoKind = "sighting" | "footstep" | "gunfire" | "utility" | "spike" | "damage" | "sound" | "lastCall" | "clear";
 export type CallAccuracy = "exact" | "wrongZone" | "wrongCount" | "partial";
 
 /** One piece of knowledge a player holds. Times are on the round clock (ms since round start). */
@@ -371,6 +381,10 @@ export class InformationLayer {
   private minds = new Map<string, Mind>();
   private claims = new Map<string, Claim[]>();
   private contacts = new Map<string, Contact[]>();
+  /** Areas called clear: zone → when it was last known empty (round clock). */
+  private cleared = new Map<string, number>();
+  /** When each player last sensed anything (round clock). */
+  private lastSensed = new Map<string, number>();
   private calls: PendingCall[] = [];
   private spotSince = new Map<string, number>();
   private nextId = 1;
@@ -451,6 +465,8 @@ export class InformationLayer {
     this.minds = new Map();
     this.claims = new Map();
     this.contacts = new Map();
+    this.cleared = new Map();
+    this.lastSensed = new Map();
     this.calls = [];
     this.spotSince = new Map();
     this.prevBelief = null;
@@ -612,6 +628,22 @@ export class InformationLayer {
       mind.lastHealth = p.health;
     }
 
+    // Silence: a lurker / anchor who has sensed nothing for their silence window calls the area clear.
+    for (const p of alive) {
+      const id = String(p.id);
+      if ((fresh.get(id)?.length ?? 0) > 0) { this.lastSensed.set(id, now); continue; }
+      if (!this.lastSensed.has(id)) this.lastSensed.set(id, now);
+      const role = input.roles?.get(id);
+      if (!role || !SILENCE_ROLES.has(role)) continue;
+      const prof = this.profileOf(id);
+      if (now - this.lastSensed.get(id)! < SILENCE_BASE_MS + SILENCE_SKILL_MS * (1 - prof.awareness)) continue;
+      const zone = this.zoneOf(p.position);
+      add(id, {
+        key: `clear:${zone}`, kind: "clear", soundKind: null, enemyId: null, zone, position: { ...p.position }, count: 0,
+        sensedAtMs: now, confidence: HEAR_FLOOR + (1 - HEAR_FLOOR) * prof.awareness, lethal: false, live: false,
+      });
+    }
+
     // ── 2. comms: each living player calls what is new, lethal first ──
     for (const p of alive) {
       const id = String(p.id);
@@ -759,6 +791,10 @@ export class InformationLayer {
 
   /** The IGL's own sensing, straight into the picture. */
   private ingest(it: KnowledgeItem, from: string, reportId: number | null, ground: boolean): void {
+    if (it.kind === "clear") {
+      this.clearArea(it.zone, it.sensedAtMs);
+      return;
+    }
     if (it.kind === "sighting" && it.enemyId) {
       this.addClaim(it.enemyId, { from, zone: it.zone, position: it.position, sensedAt: it.sensedAtMs, confidence: it.confidence, live: it.live, reportId, judged: ground, ground });
     } else {
@@ -768,6 +804,10 @@ export class InformationLayer {
 
   private ingestCall(c: PendingCall): void {
     const { ev, item, said } = c;
+    if (item.kind === "clear") {
+      this.clearArea(said.zone, item.sensedAtMs);
+      return;
+    }
     if ((item.kind === "sighting") && said.enemyId) {
       this.addClaim(said.enemyId, { from: ev.from, zone: said.zone, position: said.position, sensedAt: item.sensedAtMs, confidence: item.confidence, live: false, reportId: ev.id, judged: false, ground: false });
       return;
@@ -775,6 +815,17 @@ export class InformationLayer {
     const kind: SoundKind = item.kind === "sighting" ? "other" : item.soundKind ?? (ev.lastCall ? "gunfire" : "other");
     const infoKind: InfoKind = item.kind === "sighting" ? "sound" : item.kind === "lastCall" ? "gunfire" : item.kind;
     this.addContact({ kind, infoKind, zone: said.zone, position: said.position, count: said.count ?? 1, sensedAt: item.sensedAtMs, confidence: item.confidence, from: ev.from, reportId: ev.id, judged: false });
+  }
+
+  /** A clear call: the zone and its neighbours were empty at `at`. */
+  private clearArea(zone: string, at: number): void {
+    for (const z of [zone, ...this.neighbours(zone)]) this.cleared.set(z, Math.max(this.cleared.get(z) ?? -Infinity, at));
+  }
+
+  /** A claim (or contact) placed in an area since called clear is out of date. */
+  private clearedSince(zone: string, sensedAt: number): boolean {
+    const at = this.cleared.get(zone);
+    return at !== undefined && at > sensedAt;
   }
 
   private addClaim(enemyId: string, c: Claim): void {
@@ -835,7 +886,7 @@ export class InformationLayer {
     const remOf = (c: number) => view.timeRemainingMs - (now - c);
     const visibleEnemies: ObservedEnemy[] = [];
     for (const [enemyId, list] of [...this.claims].sort(([a], [b]) => (a < b ? -1 : 1))) {
-      const live = list.filter((c) => Math.pow(0.5, (now - c.sensedAt) / RECENCY_HALF_LIFE_MS) >= FORGET_BELOW);
+      const live = list.filter((c) => Math.pow(0.5, (now - c.sensedAt) / RECENCY_HALF_LIFE_MS) >= FORGET_BELOW && !this.clearedSince(c.zone, c.sensedAt));
       if (live.length === 0) continue;
       const best = live.reduce((b, c) => (claimWeight(now - c.sensedAt, c.confidence, this.sourceTrust(c.from), q) > claimWeight(now - b.sensedAt, b.confidence, this.sourceTrust(b.from), q) ? c : b), live[0]!);
       visibleEnemies.push({
@@ -847,7 +898,7 @@ export class InformationLayer {
     for (const key of [...this.contacts.keys()].sort()) {
       const list = this.contacts.get(key)!;
       const hold = list[0]!.infoKind === "footstep" ? FOOTSTEP_HOLD_MS : SOUND_HOLD_MS;
-      const current = list.filter((c) => now - c.sensedAt <= hold);
+      const current = list.filter((c) => now - c.sensedAt <= hold && !this.clearedSince(c.zone, c.sensedAt));
       if (current.length === 0) continue;
       // several callers on one spot are one spot: the freshest call, the largest count heard
       const best = current.reduce((b, c) => (c.sensedAt > b.sensedAt || (c.sensedAt === b.sensedAt && c.confidence > b.confidence) ? c : b), current[0]!);
@@ -871,15 +922,20 @@ export class InformationLayer {
 
   /** Enemies with conflicting claims keep every live claim as a weighted hypothesis. */
   private withConflicts(belief: BeliefState, q: number, now: number): BeliefState {
-    const out: EnemyPositionBelief[] = belief.enemyPositionBeliefs.map((b) => {
-      const list = (this.claims.get(String(b.enemyId)) ?? []).filter((c) => Math.pow(0.5, (now - c.sensedAt) / RECENCY_HALF_LIFE_MS) >= FORGET_BELOW);
+    const out: EnemyPositionBelief[] = [];
+    for (const b of belief.enemyPositionBeliefs) {
+      const all = this.claims.get(String(b.enemyId)) ?? [];
+      const lastAt = all.reduce((m, c) => Math.max(m, c.sensedAt), -Infinity);
+      // an area called clear since the enemy was last placed there no longer holds them
+      const hyps = this.cleared.size === 0 ? b.hypotheses : b.hypotheses.filter((h) => !this.clearedSince(this.zoneOf(h.position), lastAt));
+      if (hyps.length === 0) continue;
+      const list = all.filter((c) => Math.pow(0.5, (now - c.sensedAt) / RECENCY_HALF_LIFE_MS) >= FORGET_BELOW && !this.clearedSince(c.zone, c.sensedAt));
       const zones = new Set(list.map((c) => c.zone));
-      if (zones.size < 2) return b;
+      if (zones.size < 2) { out.push(hyps === b.hypotheses ? b : { ...b, hypotheses: hyps }); continue; }
       const ws = list.map((c) => ({ c, w: claimWeight(now - c.sensedAt, c.confidence, this.sourceTrust(c.from), q) }));
       const total = ws.reduce((s, x) => s + x.w, 0);
-      if (total <= 0) return b;
-      return { ...b, hypotheses: ws.map((x) => ({ position: { ...x.c.position }, weight: x.w / total })), staleness: b.staleness };
-    });
+      out.push(total <= 0 ? b : { ...b, hypotheses: ws.map((x) => ({ position: { ...x.c.position }, weight: x.w / total })) });
+    }
     return { ...belief, enemyPositionBeliefs: out };
   }
 }

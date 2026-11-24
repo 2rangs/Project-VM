@@ -207,3 +207,34 @@ describe("information layer — the formulas move with the attributes", () => {
     expect(play()).toBe(play());
   });
 });
+
+describe("information layer — the lurker's silence shuts down an unknown", () => {
+  // Attack: atk1 (IGL) mid, atk5 lurks B main. A defender was spotted on B site early; then the lurker
+  // hears and sees nothing on B for its silence window and calls it clear.
+  const atk = (id: string, zone: string) => ({ ...mate(id, zone), teamId: "attackers", side: "attack" }) as unknown as PlayerState;
+  const mates = [atk("atk1", "mid-courtyard"), atk("atk5", "b-main")];
+  const prof = new Map<string, InfoProfile>([
+    ["atk1", { key: "atk1", ...AVERAGE_INFO_PROFILE, callQuality: 0.9 }],
+    ["atk5", { key: "atk5", ...AVERAGE_INFO_PROFILE }],
+  ]);
+  const spotted = (now: number) => ({ atk1: obs(now, { visibleEnemies: [{ playerId: "def3", agentId: null, lastSeenPosition: AT["b-site"]!, lastSeenAtMs: now, healthBand: "unknown", observedWeaponId: null, currentlyVisible: true } as never] }) });
+  const play = (lurkerRole: string) => {
+    const layer = new InformationLayer(spatial, { zoneCentre, draw: () => 0.99 });
+    const roles = new Map([["atk1", "entry"], ["atk5", lurkerRole]]);
+    const at = (now: number, perPlayer: Record<string, ObservationState>) =>
+      layer.step({ ...input({ now, mates, perPlayer }, prof), roles });
+    at(90_000, spotted(90_000));
+    let out = at(89_500, {});
+    for (let now = 89_000; now >= 80_000; now -= 500) out = at(now, {});
+    return { out, layer };
+  };
+  it("counterfactual — the lurker's clear call removes the old sighting; a support's silence says nothing", () => {
+    const lurk = play("lurker");
+    const support = play("support");
+    expect(support.out.observation.visibleEnemies.map((e) => String(e.playerId))).toContain("def3");
+    expect(support.out.belief.enemyPositionBeliefs.some((b) => String(b.enemyId) === "def3")).toBe(true);
+    expect(lurk.out.observation.visibleEnemies.map((e) => String(e.playerId))).not.toContain("def3");
+    expect(lurk.out.belief.enemyPositionBeliefs.some((b) => String(b.enemyId) === "def3")).toBe(false);
+    expect(lurk.layer.trace().comms.some((c) => c.from === "atk5" && c.kind === "clear")).toBe(true);
+  });
+});
