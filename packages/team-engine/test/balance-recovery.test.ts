@@ -76,6 +76,20 @@ describe("retake approach: the entry the post-plant holders are not watching", (
     expect(a.travelMs).toBe(7_000);
   });
 
+  it("with point sight, the plant spot decides: a spike market cannot see makes market the way in", () => {
+    // whole-zone sight says b-site watches market; the spike's own spot is hidden from it
+    const bySpot = new TeamDecisionPolicy(new GraphStub(zones, edges, [["b-site", "market"]]), {
+      pointSight: (zone) => (zone === "market" ? 0 : zone === "ct" ? 0.5 : 0),
+    });
+    const a = bySpot.retakeApproach(z("mid"), z("b-site"), 45_000, { x: 0, y: 0, z: 0 });
+    expect(a.entry).toBe("market");
+    expect(a.exposedMs).toBe(0);
+    // the same spot seen from half of market: exposure is weighted by that share
+    const half = new TeamDecisionPolicy(new GraphStub(zones, edges, [["b-site", "market"]]), { pointSight: (zone) => (zone === "market" ? 0.5 : 0) });
+    expect(half.retakeApproach(z("mid"), z("b-site"), 45_000, { x: 0, y: 0, z: 0 })).toMatchObject({ entry: "ct", exposedMs: 0 });
+    expect(half.retakeApproach(z("mid"), z("b-site"), 20_000, { x: 0, y: 0, z: 0 })).toMatchObject({ entry: "market", exposedMs: 2_000 });
+  });
+
   it("counterfactual — the timer cannot afford the long way: the fast, watched entry, staged out of sight", () => {
     // long way 14 s + 7 s defuse + 3 s margin > 20 s; short way 7 + 7 + 3 fits.
     const a = watched.retakeApproach(z("mid"), z("b-site"), 20_000);

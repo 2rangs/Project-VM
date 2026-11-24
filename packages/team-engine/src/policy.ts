@@ -26,7 +26,15 @@ import type {
   TeamStrategy,
   Vector3,
   ZoneId,
+  PlantSpotRef,
+  PostPlantDecision,
+  PostPlantPlan,
+  PostPlantPlans,
+  RetakeDecision,
+  RetakePlan,
+  RetakePlans,
 } from "@pv/shared-types";
+import { planForSpot } from "@pv/shared-types";
 import { buildTeamBelief, enemyPressureOnZone } from "@pv/decision-engine";
 import { generateActions, type GenerationResult } from "@pv/action-generator";
 import { synthContextFromView } from "./view.js";
@@ -69,6 +77,14 @@ export interface TeamPolicyOptions {
    * derived from the map by @pv/spatial-engine. Omitted → the built-in Ascent tables below.
    */
   readonly tactics?: MapTactics;
+  /**
+   * Share (0..1) of a zone's standing points with line of sight to a point — how much of the zone
+   * the planted spike (and its defuser) can be watched from. With it, a retake reads the exact
+   * plant spot (retakeApproach); without it, whole-zone line of sight onto the plant zone.
+   */
+  readonly pointSight?: (zoneId: string, point: Vector3) => number;
+  /** Which plant spot a planted spike lies on (site letter, spot id and kind) — what the post-plant and retake plans are keyed by. */
+  readonly plantSpotAt?: (point: Vector3) => PlantSpotRef | null;
 }
 
 /** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
@@ -197,6 +213,10 @@ export interface PlanSummary {
   readonly shownSite?: string | null;
   /** DEFENSE: every change of the pre-plant rotation — how many players were sent to which site. */
   readonly rotations?: ReadonlyArray<{ readonly atMs: number; readonly site: string | null; readonly count: number }>;
+  /** ATTACK: the post-plant plan it played (planted rounds). */
+  readonly postPlant?: PostPlantDecision;
+  /** DEFENSE: the retake plan it played (planted rounds). */
+  readonly retake?: RetakeDecision;
 }
 
 /** The team's standing plan for one round (mutable: revised in place as information arrives). */
@@ -444,6 +464,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     return p ? {
       opening: p.opening, strategy: p.strategy, objective: p.objective, feint: p.feint?.site ?? null, revisions: p.revisions.map((r) => ({ ...r })),
       showers: p.showers?.length ?? 0, shownSite: p.shownSite, rotations: p.rotations.map((r) => ({ ...r })),
+      ...(this.postPlant && this.postPlant.contextId === p.contextId ? { postPlant: this.postPlant.decision } : {}),
+      ...(this.retake && this.retake.contextId === p.contextId ? { retake: this.retake.decision } : {}),
     } : null;
   }
 
@@ -504,6 +526,46 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   /** Minimum throw rate (per second of holding) per sim player id — the team / player floor. */
   setThrowFloors(floors: ReadonlyMap<string, number> | null): void {
     this.throwFloors = floors ?? undefined;
+  }
+
+  /**
+   * The manager's post-plant (attack) and retake (defence) plans per site and plant spot
+   * (shared-types plant-plans.ts). Null / absent: every choice is the IGL's.
+   */
+  setSpotPlans(plans: { readonly postPlant?: PostPlantPlans | null; readonly retake?: RetakePlans | null } | null): void {
+    this.postPlantPlans = plans?.postPlant ?? null;
+    this.retakePlans = plans?.retake ?? null;
+  }
+  private postPlantPlans: PostPlantPlans | null = null;
+  private flankWatcher: { contextId: string; id: string } | null = null;
+  private retakePlans: RetakePlans | null = null;
+  /** This round's post-plant / retake decision (keyed by the plan's context so a summary never shows last round's). */
+  private postPlant: { contextId: string; key: string; plan: Partial<PostPlantPlan>; decision: PostPlantDecision } | null = null;
+  private retake: { contextId: string; key: string; plan: Partial<RetakePlan>; decision: RetakeDecision; assigned: Map<string, ZoneId | null> } | null = null;
+
+  /**
+   * Ground charges the attack keeps for after the plant (PostPlantPlan.utility, the "*" plan of
+   * the site it is going for — the spot is not known yet): "savePostPlant" all of them, "spend"
+   * none, otherwise ("auto") the team's last one.
+   */
+  private groundReserve(view: PolicyView, objective: ZoneId | null): number {
+    if (view.side !== "attack") return 0;
+    const letter = objective ? this.options.tactics?.sites.find((x) => x.zone === String(objective))?.site ?? siteLetter(this.spatial, objective) : null;
+    const u = letter ? planForSpot<PostPlantPlan>(this.postPlantPlans, { site: letter, id: null, kind: "other" })?.utility : undefined;
+    return u === "savePostPlant" ? Infinity : u === "spend" ? 0 : 1;
+  }
+
+  /** The plant spot a spike position is on (null without the map's spot list). */
+  private spotOf(pos: Vector3, plantZone: ZoneId): PlantSpotRef | null {
+    const s = this.options.plantSpotAt?.(pos) ?? null;
+    if (s) return s;
+    const letter = this.options.tactics?.sites.find((x) => x.zone === String(plantZone))?.site ?? siteLetter(this.spatial, plantZone);
+    return letter ? { site: letter, id: null, kind: "other" } : null;
+  }
+
+  /** The site's tactics entry for a plant zone (the attack's ways in). */
+  private siteTacticsOf(plantZone: ZoneId): { mainEntry: string | null; entries: readonly string[] } | null {
+    return this.options.tactics?.sites.find((x) => x.zone === String(plantZone)) ?? null;
   }
 
   /** Pin the ordered entry/lurker roles onto the assignment (if those players are present). */
@@ -607,23 +669,103 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const pos = view.spike.position;
     if (!pos) return out;
     const plantZone = this.spatial.nearestZone({ x: pos.x, y: pos.y });
+    const pp = this.postPlantDecision(view, pos, plantZone);
     // Where a thrower over-peeks to: one zone out of the site, toward the retake.
     const pushOut = this.spatial.findPath(plantZone, SAVE_FALLBACK_ZONE as ZoneId, "run")?.path[1];
+    const near = (pz: ZoneId) => pz === plantZone || (this.spatial.shortestTravelTimeMs(pz, plantZone, "run") ?? Infinity) <= 3000
+      || (pp.offZone !== null && pz === pp.offZone) || (pp.flank !== null && pz === pp.flank.zone);
+    const holders = view.teammates.filter((p) => p.alive && near(this.spatial.nearestZone({ x: p.position.x, y: p.position.y })));
+    // The flank watcher (not a guard of the spike): the holder most suited to sit alone on an angle
+    // that may never be peeked — argmax decisionMaking · (1 − aggression) (PLANT_POSTPLANT.md P6),
+    // ties to the one nearer the flank post. Chosen once per round.
+    let flankId: string | null = null;
+    if (pp.flank && holders.length >= 2) {
+      const fz = pp.flank.zone as ZoneId;
+      const known = this.flankWatcher;
+      if (known && known.contextId === view.contextId && holders.some((p) => String(p.id) === known.id)) flankId = known.id;
+      else {
+        const fit = (p: (typeof holders)[number]) => { const pr = profileFor(p.id, this.profiles); return pr.decisionMaking * (1 - pr.aggression); };
+        const t = (p: (typeof holders)[number]) => this.legMs(this.spatial.nearestZone({ x: p.position.x, y: p.position.y }), fz);
+        flankId = String(holders.reduce((b, p) => (fit(p) > fit(b) || (fit(p) === fit(b) && (t(p) < t(b) || (t(p) === t(b) && String(p.id) < String(b.id)))) ? p : b)).id);
+        this.flankWatcher = { contextId: view.contextId, id: flankId };
+      }
+    }
+    const holdZone = pp.retreatedAtMs !== null || pp.hold === "offSpike" ? pp.offZone : pp.hold === "onSpike" ? String(plantZone) : null;
     return out.map((c) => {
       if (c.kind === "useAbility" || c.kind === "defuse") return c; // keep util / (n/a on attack)
-      const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
-      if (!tm) return c;
+      const tm = holders.find((p) => String(p.id) === String(c.playerId));
+      if (!tm) return c; // far — let them rotate in / lurk
       const pz = this.spatial.nearestZone({ x: tm.position.x, y: tm.position.y });
-      const near = pz === plantZone || (this.spatial.shortestTravelTimeMs(pz, plantZone, "run") ?? Infinity) <= 3000;
-      if (!near) return c; // far — let them rotate in / lurk
+      if (String(tm.id) === flankId && pp.flank) {
+        const fz = pp.flank.zone as ZoneId;
+        return pz === fz
+          ? { playerId: c.playerId, kind: "hold", aimZone: pp.flank.watches as ZoneId, executeAtMs: 0, sourceActionId: "attack-postplant-flank:hold" }
+          : { playerId: c.playerId, kind: "move", targetZone: fz, aimZone: pp.flank.watches as ZoneId, moveMode: "run", executeAtMs: 0, sourceActionId: "attack-postplant-flank:move" };
+      }
       // Throw: gives up the held post-plant angle to go hunting for the retake, with no info.
-      if (pushOut && this.throws(tm.id, rng)) {
+      if (pp.retreatedAtMs === null && pushOut && this.throws(tm.id, rng)) {
         return pz === pushOut
           ? { playerId: c.playerId, kind: "hold", executeAtMs: 0, sourceActionId: "throw:overpeek-hold" }
           : { playerId: c.playerId, kind: "move", targetZone: pushOut, moveMode: "run", executeAtMs: 0, sourceActionId: "throw:overpeek" };
       }
-      return { playerId: c.playerId, kind: "hold", aimZone: plantZone, executeAtMs: 0, sourceActionId: "attack-postplant-hold" };
+      // A guard: holds the spike (aimZone) from the zone the plan names (on the spike / off it /
+      // fallen back), or from where the post geometry puts it (auto).
+      return { playerId: c.playerId, kind: "hold", aimZone: plantZone, ...(holdZone ? { targetZone: holdZone as ZoneId } : {}), executeAtMs: 0, sourceActionId: pp.retreatedAtMs !== null ? "attack-postplant-retreat" : "attack-postplant-hold" };
     });
+  }
+
+  /**
+   * The attack's post-plant plan for the spot the spike lies on (PostPlantPlan, manager first,
+   * then the IGL's call), decided at the plant and kept for the round — except falling back,
+   * which is re-checked every decision:
+   *   hold        manager's, else "auto" (each guard's post by geometry and game sense)
+   *   offZone     of the attack's ways into the site, the one the largest share of which sees the
+   *               spike (pointSight; whole-zone sight without it); null if none sees it
+   *   flankWatch  manager's, else when the guards outnumber the ways a retake can come onto the
+   *               spike (alive − 1 ≥ entries of the plant zone other than the attack's): a spare gun
+   *   flank       the attack's main entry, watching the zone a defender comes round through (the
+   *               step before it on defender spawn → main entry, if that route avoids the site)
+   *   utility     manager's, else keep the team's last ground charge for after the plant
+   *   outnumbered manager's; "auto" falls back when the known defenders outnumber the attack and
+   *               its Lanchester chance in a straight fight is below the retake threshold
+   *               (retakeMinWinChance: the defence's own give-up line, mirrored)
+   */
+  private postPlantDecision(view: PolicyView, pos: Vector3, plantZone: ZoneId): PostPlantDecision {
+    const ctx = view.contextId;
+    const spot = this.spotOf(pos, plantZone);
+    const key = `${spot?.id ?? ""}|${Math.round(pos.x)},${Math.round(pos.y)}`;
+    let st = this.postPlant;
+    if (!st || st.contextId !== ctx || st.key !== key) {
+      const plan = planForSpot<PostPlantPlan>(this.postPlantPlans, spot) ?? {};
+      const tac = this.siteTacticsOf(plantZone);
+      const share = (z: string) => this.options.pointSight ? this.options.pointSight(z, pos) : (this.spatial.hasLineOfSight(z as ZoneId, plantZone) ? 1 : 0);
+      let offZone: string | null = null, bestShare = 0;
+      for (const e of tac?.entries ?? []) { const v = share(e); if (v > bestShare) { bestShare = v; offZone = e; } }
+      const alive = view.teammates.filter((p) => p.alive).length;
+      const retakeWays = this.entriesOf(plantZone).filter((z) => !(tac?.entries ?? []).includes(String(z)) && String(z) !== ATTACK_FALLBACK_ZONE).length;
+      const flankWatch = plan.flankWatch !== undefined ? plan.flankWatch === true : alive - 1 >= Math.max(1, retakeWays);
+      let flank: PostPlantDecision["flank"] = null;
+      if (flankWatch && tac?.mainEntry) {
+        const route = this.spatial.findPath(SAVE_FALLBACK_ZONE as ZoneId, tac.mainEntry as ZoneId, "run")?.path;
+        if (route && route.length >= 2 && !route.includes(plantZone)) flank = { zone: tac.mainEntry, watches: String(route[route.length - 2]) };
+      }
+      const decision: PostPlantDecision = {
+        spot, hold: plan.hold ?? "auto", offZone, flankWatch: flankWatch && flank !== null, flank,
+        utility: plan.utility && plan.utility !== "auto" ? plan.utility : "keepLast", outnumbered: plan.outnumbered ?? "auto", retreatedAtMs: null,
+        byManager: Object.keys(plan),
+      };
+      st = this.postPlant = { contextId: ctx, key, plan, decision };
+    }
+    // falling back, once
+    if (st.decision.retreatedAtMs === null && st.decision.offZone && st.decision.outnumbered !== "hold") {
+      const alive = view.teammates.filter((p) => p.alive).length;
+      const enemies = view.knownEnemyAliveCount;
+      if (enemies != null && enemies > alive && alive > 0) {
+        const fall = st.decision.outnumbered === "retreat" || lanchesterWinChance(alive, enemies) < this.tuning.retakeMinWinChance;
+        if (fall) st.decision = { ...st.decision, retreatedAtMs: view.timeRemainingMs };
+      }
+    }
+    return st.decision;
   }
 
   /**
@@ -995,13 +1137,13 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /** Travel time of a route, and how much of it is spent in zones for which `seen` holds. */
-  private routeCost(route: readonly ZoneId[], seen: (z: ZoneId) => boolean): { travelMs: number; exposedMs: number } {
+  private routeCost(route: readonly ZoneId[], seen: (z: ZoneId) => boolean | number): { travelMs: number; exposedMs: number } {
     let travelMs = 0;
     let exposedMs = 0;
     for (let i = 0; i + 1 < route.length; i++) {
       const leg = this.legMs(route[i]!, route[i + 1]!);
       travelMs += leg;
-      if (seen(route[i]!)) exposedMs += leg;
+      exposedMs += leg * Number(seen(route[i]!));
     }
     return { travelMs, exposedMs };
   }
@@ -1425,6 +1567,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const plantZone = this.spatial.nearestZone({ x: pos.x, y: pos.y });
 
     const defenders = view.teammates.filter((p) => p.alive);
+    const rt = this.retakeDecisionFor(view, pos, plantZone, defenders);
     let best: (typeof defenders)[number] | null = null;
     let bestMs = Infinity;
     for (const d of defenders) {
@@ -1440,7 +1583,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     // (the saver would re-peek 1v3 and die) — only an even-or-better man count reopens it.
     const attackersAlive = view.knownEnemyAliveCount;
     if (this.saveCommitted && attackersAlive != null && attackersAlive <= defenders.length) this.saveCommitted = false;
-    if (this.saveCommitted || !this.retakeViable(view, defenders, bestMs)) {
+    if (this.saveCommitted || !this.retakeOn(view, defenders, bestMs, rt.plan)) {
+      if (!this.saveCommitted && this.retake && this.retake.decision.savedAtMs === null) this.retake.decision = { ...this.retake.decision, savedAtMs: view.timeRemainingMs };
       this.saveCommitted = true;
       return this.postPlantSave(view, plantZone, out);
     }
@@ -1521,30 +1665,40 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * engine: the holder's first-sight edge and the crossfire on the entrant). So the approach is
    * chosen like a threat-weighted route: for each entry E of the plant zone,
    *     exposure(E) = Σ time spent in zones the plant zone can see, on  from → E → plant
+   *                   (with the map's point sight, pointSight: each zone's time weighted by the
+   *                   share of it that sees the spike itself — so the plant spot decides which
+   *                   way in is watched, and the team stacks one entry or splits by it)
    *     travel(E)   = time(from → E) + time(E → plant)
    * and the defender takes the entry with the least exposure among those that still leave a full
    * defuse plus the safety margin on the detonation timer (ties: the faster one); when no entry
    * fits the clock, the fastest. It stages at the last zone of that approach the plant cannot see.
    * Nothing here is map-specific — which entry is unwatched falls out of the map's sightlines.
    */
-  retakeApproach(from: ZoneId, plantZone: ZoneId, timerMs: number): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number } {
+  retakeApproach(from: ZoneId, plantZone: ZoneId, timerMs: number, spike?: Vector3 | null, only?: ZoneId | null): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits?: boolean } {
     if (from === plantZone) return { stage: plantZone, entry: plantZone, travelMs: 0, exposedMs: 0 };
-    const seen = (z: ZoneId) => this.spatial.hasLineOfSight(plantZone, z) || this.spatial.hasLineOfSight(z, plantZone);
+    // With the spike's exact position: a zone counts by the share of it that sees the spike (the
+    // plant spot decides which ways in are watched); else by whole-zone line of sight.
+    const ps = this.options.pointSight;
+    const seen = spike && ps
+      ? (z: ZoneId): number => (z === plantZone ? 1 : ps(String(z), spike))
+      : (z: ZoneId): number => (this.spatial.hasLineOfSight(plantZone, z) || this.spatial.hasLineOfSight(z, plantZone) ? 1 : 0);
     let best: { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits: boolean } | null = null;
     for (const entry of this.entriesOf(plantZone)) {
+      if (only && entry !== only) continue; // the team's retake plan sends it through this entry
       const route = from === entry ? [from] : this.spatial.findPath(from, entry, "run")?.path;
       if (!route || route.includes(plantZone)) continue; // through the plant is not an approach to it
       const { travelMs, exposedMs } = this.routeCost([...route, plantZone], seen);
       if (!Number.isFinite(travelMs)) continue;
       const fits = travelMs + DEFUSE_DURATION_MS + RETAKE_TIME_MARGIN_MS <= timerMs;
       let stage = from;
-      for (let i = route.length - 1; i >= 0; i--) if (!seen(route[i]!)) { stage = route[i]!; break; }
+      for (let i = route.length - 1; i >= 0; i--) if (seen(route[i]!) === 0) { stage = route[i]!; break; }
       const better = !best
         || (fits !== best.fits ? fits
           : fits ? exposedMs < best.exposedMs || (exposedMs === best.exposedMs && travelMs < best.travelMs)
           : travelMs < best.travelMs);
       if (better) best = { stage, entry, travelMs, exposedMs, fits };
     }
+    if (!best && only) return this.retakeApproach(from, plantZone, timerMs, spike); // that entry is no approach from here
     return best ?? { stage: this.retakeEntry(from, plantZone), entry: from, travelMs: this.legMs(from, plantZone), exposedMs: 0 };
   }
 
@@ -1565,7 +1719,11 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     let stage = this.retakeStages.get(key);
     if (!stage) {
       const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
-      stage = this.retakeApproach(dz, plantZone, view.spike.detonationInMs ?? Infinity).stage;
+      const a = this.retakeApproach(dz, plantZone, view.spike.detonationInMs ?? Infinity, view.spike.position, this.retake?.assigned.get(key) ?? null);
+      stage = a.stage;
+      if (this.retake && this.retake.contextId === view.contextId) {
+        this.retake.decision = { ...this.retake.decision, entries: { ...this.retake.decision.entries, [key]: String(a.entry) } };
+      }
       this.retakeStages.set(key, stage);
     }
     return stage;
@@ -1606,6 +1764,72 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    *    A team/player minimum throw rate (setThrowFloors) floors λ.
    * Deterministic (no RNG draw). The call is sticky for the round (see commitDefuser).
    */
+  /**
+   * Whether the defence plays the retake, by its plan (RetakePlan.save): "never" gives up only a
+   * defuse that can no longer finish; thresholds give up when the known attackers outnumber the
+   * defenders by more than `maxManDeficit`, or less than `minSpareMs` is left after the defuser's
+   * travel and a full defuse; "auto" is the Lanchester rule (retakeViable).
+   */
+  private retakeOn(view: PolicyView, defenders: ReadonlyArray<PolicyView["teammates"][number]>, defuserTravelMs: number, plan: Partial<RetakePlan>): boolean {
+    const save = plan.save;
+    if (save === undefined || save === "auto") return this.retakeViable(view, defenders, defuserTravelMs);
+    const timer = view.spike.detonationInMs;
+    const spare = timer == null ? Infinity : timer - defuserTravelMs - DEFUSE_DURATION_MS;
+    if (spare < 0) return false;
+    if (save === "never") return true;
+    const deficit = (view.knownEnemyAliveCount ?? 0) - defenders.length;
+    if (save.maxManDeficit !== undefined && deficit > save.maxManDeficit) return false;
+    if (save.minSpareMs !== undefined && spare < save.minSpareMs) return false;
+    return true;
+  }
+
+  /**
+   * The defence's retake plan for the spot the spike lies on (RetakePlan; manager first, then the
+   * IGL's call), decided at the plant for the defenders alive then:
+   *   entry     the manager's entry → every retaker through it (where it is an approach from them)
+   *   approach  "stack": every retaker through the one entry with the least summed cost;
+   *             "split": the two cheapest entries, each retaker to the one it is relatively
+   *             nearer (sorted by cost difference, half and half); "auto": each its own
+   *             least-watched approach that fits the clock (retakeApproach).
+   *   cost(d, E) = ordered as retakeApproach orders approaches: fits the clock, then time exposed
+   *             to the spike's sight, then travel time.
+   */
+  private retakeDecisionFor(view: PolicyView, pos: Vector3, plantZone: ZoneId, defenders: ReadonlyArray<PolicyView["teammates"][number]>): { plan: Partial<RetakePlan> } {
+    const ctx = view.contextId;
+    const spot = this.spotOf(pos, plantZone);
+    const key = `${spot?.id ?? ""}|${Math.round(pos.x)},${Math.round(pos.y)}`;
+    if (this.retake && this.retake.contextId === ctx && this.retake.key === key) return { plan: this.retake.plan };
+    const plan = planForSpot<RetakePlan>(this.retakePlans, spot) ?? {};
+    const assigned = new Map<string, ZoneId | null>();
+    const entries = this.entriesOf(plantZone);
+    const timer = view.spike.detonationInMs ?? Infinity;
+    const cost = (d: (typeof defenders)[number], e: ZoneId): number => {
+      const dz = this.spatial.nearestZone({ x: d.position.x, y: d.position.y });
+      const a = this.retakeApproach(dz, plantZone, timer, pos, e);
+      if (a.entry !== e && dz !== plantZone) return Infinity; // not an approach from here
+      return (a.fits === false ? 1e12 : 0) + a.exposedMs * 1e5 + a.travelMs;
+    };
+    const forced = plan.entry && entries.some((e) => String(e) === plan.entry) ? (plan.entry as ZoneId) : null;
+    if (forced) for (const d of defenders) assigned.set(String(d.id), forced);
+    else if ((plan.approach === "stack" || plan.approach === "split") && defenders.length > 0) {
+      const table = defenders.map((d) => entries.map((e) => cost(d, e)));
+      const total = entries.map((_, j) => table.reduce((a, row) => a + row[j]!, 0));
+      const ranked = entries.map((_, j) => j).filter((j) => Number.isFinite(total[j]!)).sort((a, b) => total[a]! - total[b]!);
+      if (ranked.length > 0 && plan.approach === "stack") for (const d of defenders) assigned.set(String(d.id), entries[ranked[0]!]!);
+      if (ranked.length > 0 && plan.approach === "split") {
+        const [j1, j2 = ranked[0]!] = ranked;
+        const order = defenders.map((d, i) => ({ d, diff: table[i]![j1!]! - table[i]![j2]! })).sort((a, b) => a.diff - b.diff || (String(a.d.id) < String(b.d.id) ? -1 : 1));
+        order.forEach((o, i) => assigned.set(String(o.d.id), entries[i < Math.ceil(order.length / 2) ? j1! : j2]!));
+      }
+    }
+    this.retake = {
+      contextId: ctx, key, plan, assigned,
+      decision: { spot, approach: plan.approach ?? "auto", entries: {}, save: plan.save ?? "auto", savedAtMs: null, byManager: Object.keys(plan) },
+    };
+    this.retakeStages.clear(); // staging follows the plan
+    return { plan };
+  }
+
   private retakeViable(view: PolicyView, defenders: ReadonlyArray<PolicyView["teammates"][number]>, defuserTravelMs: number): boolean {
     const timer = view.spike.detonationInMs;
     if (timer != null && defuserTravelMs + DEFUSE_DURATION_MS > timer) return false;
@@ -1727,7 +1951,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     if (saveOrders) {
       commands = saveOrders;
     } else {
-      commands = planUtility(view, strategy, commands, this.spatial, this.options.abilityEffect);
+      commands = planUtility(view, strategy, commands, this.spatial, this.options.abilityEffect, { groundReserve: this.groundReserve(view, plan.objective) });
       this.commitSlowPlan(view, plan, rng);
       commands = this.commitPlanMovement(view, plan, commands, roleOf);
       commands = this.commitSpikeCarrier(view, strategy, commands, plan.objective, plan.executeGo && !plan.uncommitted);

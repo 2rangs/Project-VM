@@ -85,3 +85,9 @@ export { buildScoutingReport, opponentPriorFromLogs, siteEvidence, teamGameLog, 
 export type { ScoutingReport, ScoutingRequest, ScoutingQuality, ScoutedMap, ScoutedPlayer, SiteEvidence, TeamGameLog, TeamRoundLog, PlayerGameLine, WeightedLog } from "./scouting.js";
 export { gamePlanPrior, applyTraitDelta } from "./team-inputs.js";
 export type { TeamMatchInputs, GamePlan, SeriesGameContext } from "./team-inputs.js";
+// Plant spots and post-plant / retake plans (tactics screen API; shared-types plant-plans.ts, ENGINE_TRUTH §12)
+export { plantSpotsOf, choosePlantSpot, plantSpotAt } from "@pv/round-simulator";
+export type { PlantRecord, PlantCandidate, SitePlantSpots } from "@pv/round-simulator";
+export { planForSpot } from "@pv/shared-types";
+export type { PlantSpotKind, PlantChoice, PlantPreferences, PostPlantPlan, RetakePlan, PostPlantPlans, RetakePlans, SpotPlans, PlantSpotRef, PostPlantDecision, RetakeDecision } from "@pv/shared-types";
+export { plantSpotRefOf, pointSightOf } from "./setup.js";

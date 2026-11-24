@@ -14,12 +14,12 @@ import { dirname, resolve } from "node:path";
 import { createEngine, deriveMapTactics, type MapTactics, type MapTacticsOverrides, type SpatialEngine } from "@pv/spatial-engine";
 import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
-import type { Side, DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
+import { plantSpotAt, plantSpotsOf, type Side, type DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
 import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
 import { buildBeliefState } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
 import { spikeBlastRadiusUnits, weaponPrice } from "@pv/game-rules";
-import type { DecisionPolicy, PlayerProfile, PlayerState, PolicyView, RandomSource, SpatialQuery } from "@pv/shared-types";
+import type { DecisionPolicy, PlantSpotRef, PlayerProfile, PlayerState, PolicyView, PostPlantPlans, RandomSource, RetakePlans, SpatialQuery } from "@pv/shared-types";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
@@ -88,6 +88,39 @@ export function makeSpatialQuery(spatial: SpatialEngine): SpatialQuery {
 }
 
 /**
+ * Share of a zone's roadmap nodes with measured line of sight to a point (the planted spike), cached
+ * per zone and point. 0 when the point is off the roadmap or the zone has no nodes.
+ */
+export function pointSightOf(spatial: SpatialEngine): (zoneId: string, point: { x: number; y: number; z: number }) => number {
+  const nav = spatial.nav!;
+  const cache = new Map<string, number>();
+  return (zoneId, point) => {
+    const key = `${zoneId}|${Math.round(point.x)},${Math.round(point.y)},${Math.round(point.z)}`;
+    let v = cache.get(key);
+    if (v === undefined) {
+      const target = nav.locate(point);
+      const nodes = nav.zoneNodes(zoneId);
+      v = target === null || nodes.length === 0 ? 0 : nodes.filter((n) => nav.nodesVisible(n, target)).length / nodes.length;
+      cache.set(key, v);
+    }
+    return v;
+  };
+}
+
+/** Which plant spot (site letter, candidate id and kind) a planted spike lies on (round-simulator plantSpotsOf). */
+export function plantSpotRefOf(spatial: SpatialEngine): (point: { x: number; y: number; z: number }) => PlantSpotRef | null {
+  const sites = plantSpotsOf(spatial);
+  return (point) => {
+    const zone = spatial.nav?.zoneAt(point) ?? null;
+    let site = zone ? sites.get(zone) : undefined;
+    if (!site) site = [...sites.values()].find((s) => plantSpotAt(s, point) !== null);
+    if (!site) return null;
+    const c = plantSpotAt(site, point);
+    return { site: site.site, id: c?.id ?? null, kind: c?.kind ?? "other" };
+  };
+}
+
+/**
  * Wrap PV-3's TeamDecisionPolicy for the round-simulator. Backfills the teammate fields the
  * sim's perception subset omits and fills the belief PV-3 owns, then delegates.
  */
@@ -102,6 +135,7 @@ export class WrappedTeamPolicy implements DecisionPolicy {
       // whether a run is inside an enemy's hearing.
       footstepRadiusUnits: spikeBlastRadiusUnits(),
       ...(spatial ? { zonePosition: (id: string) => spatial.getZone(id)?.position } : {}),
+      ...(spatial?.nav?.hasVisibility ? { ...(process.env.PV_OLD_RETAKE ? {} : { pointSight: pointSightOf(spatial) }), plantSpotAt: plantSpotRefOf(spatial) } : {}),
     });
   }
   /** Set/clear the coach order for upcoming decisions (interactive-session timeouts). */
@@ -129,6 +163,10 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   }
   setThrowFloors(floors: ReadonlyMap<string, number> | null): void {
     this.inner.setThrowFloors(floors);
+  }
+  /** The team's post-plant (attack) and retake (defence) plans per site and plant spot (TeamDecisionPolicy.setSpotPlans). */
+  setSpotPlans(plans: { readonly postPlant?: PostPlantPlans | null; readonly retake?: RetakePlans | null } | null): void {
+    this.inner.setSpotPlans(plans);
   }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({

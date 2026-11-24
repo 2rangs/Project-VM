@@ -48,7 +48,7 @@ import type {
   TrackFrame,
   NavTraceEvent,
 } from "./types.js";
-import { AVERAGE_TRAITS, BODY_OVERLAP_UNITS, LEGACY_STOP_MS, DEFAULT_CONFIG, type AbilityCue, type RoundStats, type ShotCue } from "./types.js";
+import { AVERAGE_TRAITS, BODY_OVERLAP_UNITS, LEGACY_STOP_MS, DEFAULT_CONFIG, type AbilityCue, type PlantRecord, type RoundStats, type ShotCue } from "./types.js";
 import {
   BODY_HALF_WIDTH, abilityCastCueConfidence, angleAdvantageDelays, clutchReactionMs, crossfirePenaltyMs, infoWeight as infoFreshness,
   patchExposureMs, slowFieldDelayMs, smokeExitDelayMs, soundCueConfidence,
@@ -61,6 +61,7 @@ import { MovementExecutor, type MoverHooks, type NavEvent, type SpotIntent } fro
 import { offsetDeg, rotateToward, turnRateRadPerMs, type GazeSource } from "./gaze.js";
 import { CHECKED_SPOT_DEG, choosePeek, jiggleExposureMs, lateralSpeed, type PeekKind } from "./peek.js";
 import { FloorItems } from "./floor-items.js";
+import { choosePlantSpot, plantSpotAt, plantSpotsOf, type PlantDecision } from "./plant-spot.js";
 
 export interface RoundSimulatorDeps {
   readonly spatial: SpatialEngine;
@@ -106,6 +107,20 @@ const LEGACY_COMBAT_PARAMS = { ...COMBAT_PARAMS, accuracy: { ...COMBAT_PARAMS.ac
 
 /** How far from the corner a peeking player is when first contact happens (world units; ≈3 m). */
 const PEEK_CORNER_DISTANCE = 300;
+
+/** A post-plant guard's post (guardPostFor). */
+interface GuardPost {
+  readonly entry: string;
+  readonly zoneId: string;
+  readonly position: { x: number; y: number; z: number };
+  /** The first point of the retake route through `entry` the post sees. */
+  readonly show: { x: number; y: number; z: number };
+  /** The zone the team's plan named for it (null: chosen between the site and the attack's entries). */
+  readonly within: string | null;
+}
+
+/** A guard this close (uu) to its post stands on it (the mover's "at" tolerance). */
+const GUARD_POST_TOLERANCE_UNITS = 100;
 
 /**
  * How near the planted spike a defender must be to defuse it (uu, ≈1.5 m from body centre to the
@@ -298,6 +313,10 @@ export class RoundSimulator {
     this.mover = new MovementExecutor(this.spatial, { runUnitsPerSec: RUN_UNITS_PER_SEC, walkUnitsPerSec: WALK_UNITS_PER_SEC });
     this.mover.reset(state.players);
     this.spikeRunner = null;
+    this.plantPlans.clear();
+    this.guardPosts.clear();
+    this.guardPostZone.clear();
+    this.plantRecord = null;
     this.publishZones(state);
     const navEvents: NavTraceEvent[] = [];
     // pair key → elapsedMs from which the pair may fight again. Without the gaze model a pair fights
@@ -396,15 +415,19 @@ export class RoundSimulator {
           }, hooks);
         } else if (cmd?.kind === "plant" && !this.isMoving(p) && state.spike.carrierId === p.id && this.spatial.isPlantableZone(p.zoneId) && !this.onPlantArea(p)) {
           // Told to plant inside the site but not on its plant area: step onto it first.
-          this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: { kind: "plant" }, hazards }, hooks);
+          this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: this.plantIntent(p, p.zoneId, state), hazards }, hooks);
         } else if (cmd?.kind === "defuse" && !this.isMoving(p) && (state.spike.phase === "planted" || state.spike.phase === "defusing") && state.spike.position && state.spike.zoneId && !this.inDefuseReach(p, state.spike.position)) {
           // Told to defuse but not over the spike: walk to it.
           this.mover.setGoal(p, { zoneId: state.spike.zoneId, mode: "run", spot: { kind: "at", position: state.spike.position }, hazards }, hooks);
         } else if (cmd && cmd.kind === "hold" && !this.isMoving(p)) {
           // A holder told what to watch stands where it can see it: if its spot does not, it shifts
-          // to one of its zone that does (a few steps; the zone does not change).
-          const watch = this.watchIntent(p, cmd.aimZone, p.zoneId, state);
-          if (watch && !this.mover.seesFromSpot(p, watch) && this.mover.hasSpotThatSees(p.id, p.zoneId, watch)) {
+          // to one of its zone that does (a few steps; the zone does not change). A post-plant
+          // guard takes its post for the plant spot instead (guardPostFor).
+          const post = this.guardPostFor(p, cmd, state);
+          const watch = post ? null : this.watchIntent(p, cmd.aimZone, p.zoneId, state);
+          if (post && Math.hypot(p.position.x - post.position.x, p.position.y - post.position.y) > GUARD_POST_TOLERANCE_UNITS) {
+            this.mover.setGoal(p, { zoneId: post.zoneId, mode: "run", spot: { kind: "at", position: post.position }, hazards }, hooks);
+          } else if (watch && !this.mover.seesFromSpot(p, watch) && this.mover.hasSpotThatSees(p.id, p.zoneId, watch)) {
             this.mover.setGoal(p, { zoneId: p.zoneId, mode: "run", spot: watch, hazards }, hooks);
           }
         }
@@ -477,7 +500,12 @@ export class RoundSimulator {
           const tz = this.spatial.getZone(cmd.targetZone);
           if (tz) {
             // Where it lands: the floor of the target zone nearest the thrower (landingPoint).
-            const landing = this.landingPoint(p, tz.id, cmd.aimZone);
+            // A post-plant attacker's fire / slow field into the spike's zone goes onto the spike
+            // itself (a lineup on the defuse; no throw arc is modelled).
+            const sk = state.spike;
+            const onSpike = p.side === "attack" && (sk.phase === "planted" || sk.phase === "defusing") && sk.zoneId === tz.id && sk.position
+              && (spec.effectTypes.includes("molly") || spec.effectTypes.includes("slow"));
+            const landing = onSpike ? { ...sk.position! } : this.landingPoint(p, tz.id, cmd.aimZone);
             const inReach = spec.rangeUnits != null ? dist3(p.position, landing) <= spec.rangeUnits : this.withinThrowReach(p.zoneId, tz.id);
             if (!inReach) {
               trace({ playerId: p.id, phase: "ability", abilityId, targetZone: cmd.targetZone, result: "outOfRange" }, `ability:${p.id}:${abilityId}:outOfRange`);
@@ -693,6 +721,7 @@ export class RoundSimulator {
         : undefined,
       commandTrace: this.cfg.traceCommands ? commandTrace : undefined,
       engagementTrace: this.cfg.traceCommands ? engagementTrace : undefined,
+      ...(this.plantRecord ? { plant: this.plantRecord } : {}),
       cueTrace: this.cfg.traceCommands ? cues : undefined,
       abilityCueTrace: this.cfg.traceCommands ? abilityCues : undefined,
       ...(collect
@@ -1226,7 +1255,7 @@ export class RoundSimulator {
    */
   private spotIntent(p: SimPlayer, cmd: ActionCommand, state: SimState): { spot?: SpotIntent } {
     const s = state.spike, targetZone = cmd.targetZone!;
-    if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: { kind: "plant" } };
+    if (s.carrierId === p.id && (s.phase === "carried" || s.phase === "planting") && this.spatial.isPlantableZone(targetZone)) return { spot: this.plantIntent(p, targetZone, state) };
     if (p.side === "defense" && (s.phase === "planted" || s.phase === "defusing") && s.zoneId === targetZone && s.position) {
       // One defender goes to the spike; the others cover it: each takes, of the spots that see the
       // spike, the one the rest of the map sees least — nearest its own way in.
@@ -1251,6 +1280,126 @@ export class RoundSimulator {
     if (p.side === "attack") return planted && s.zoneId === aimZone && s.position ? { kind: "see", point: s.position } : null;
     return !planted && aimZone !== standZone ? { kind: "see", zone: aimZone } : null;
   }
+
+  /**
+   * Where the carrier plants on a site (plant-spot.ts): decided once per round and site, the first
+   * time the carrier is sent there, from its game sense, the clock, where its teammates stand and
+   * what the attack believes about the retake — or the manager's preference (cfg.plantPreference).
+   * Without plant candidates (no sight table): the mover's own plant-area spot.
+   */
+  private plantIntent(p: SimPlayer, zoneId: string, state: SimState): SpotIntent {
+    // decided when the carrier is first sent to the site, and once more when it walks onto it
+    // (teammates and the clock have moved on since)
+    const key = p.zoneId === zoneId ? `${zoneId}|on` : zoneId;
+    let plan = this.plantPlans.get(key);
+    if (plan === undefined) {
+      const site = plantSpotsOf(this.spatial).get(zoneId);
+      const nav = this.spatial.nav;
+      plan = site && nav ? choosePlantSpot(this.spatial, site, {
+        from: p.position,
+        gameSense: (p.traits ?? AVERAGE_TRAITS).gameSense,
+        slackMs: state.timeRemainingMs - this.cfg.plantDurationMs,
+        teammateNodes: state.players.filter((q) => q.alive && q.side === p.side && q.id !== p.id).map((q) => nav.locate(q.position)),
+        threat: new Map((this.beliefNow.attack?.threatZones ?? []).map((t) => [t.zoneId, t.threatLevel])),
+        enemiesAlive: state.players.filter((q) => q.alive && q.side !== p.side).length,
+      }, this.cfg.plantPreference?.[site.site]) : null;
+      this.plantPlans.set(key, plan);
+    }
+    return plan && !process.env.PV_OLD_PLANT ? { kind: "plant", node: plan.candidate.node } : { kind: "plant" };
+  }
+  /**
+   * A post-plant guard's post, chosen once per round from where the spike lies (plant-spot.ts):
+   *  entry  the way in R it covers, among every zone joined to the spike's zone. Guards split them
+   *         in proportion to how likely the retake comes through each — w_R = t_min / t_R +
+   *         believed threat in R (t_R: run time defender spawn → R → spike zone) — each new guard
+   *         taking the entry with the least guards per unit weight (count_R / w_R; ties to the
+   *         heavier).
+   *  spot   among roadmap nodes of the spike's zone and of the attack's own entries to the site
+   *         (on the spike or off it; only the zone the order names when the team's post-plant plan
+   *         sets one — PostPlantPlan.hold) that see the spike and see some point of the retake's route
+   *         R → spike (the roadmap path), the least
+   *           cost(n) = g · ( Σ_{R'≠R} sight(n, R') / max + k(n) / len ) / 2 + reach(n) / t_R
+   *         k(n)/len how far along the route the retaker first shows to n (earlier is better: the
+   *         guard sees it before it is on the spike), the sum how many other ways in see the guard,
+   *         g the guard's game sense, reach the straight-line run time to n (it has until the
+   *         retake arrives).
+   *  show   the first route point n sees — where the retake through R has to show itself, and
+   *         where the guard puts its crosshair (faceStationary).
+   * Null (the guard keeps the pre-existing rule: a spot that sees the spike) without a roadmap or
+   * sight table, for an order that is not a guard's, or when no node qualifies.
+   */
+  private guardPostFor(p: SimPlayer, cmd: ActionCommand, state: SimState): GuardPost | null {
+    const sp = state.spike;
+    if (p.side !== "attack" || !(sp.phase === "planted" || sp.phase === "defusing") || !sp.zoneId || !sp.position || cmd.aimZone !== sp.zoneId) return null;
+    // the team's post-plant plan may name the zone to hold from (on the spike / off it); a new
+    // zone is a new post
+    const within = cmd.targetZone ?? null;
+    const known = this.guardPosts.get(p.id);
+    if (known !== undefined && (known === null ? this.guardPostZone.get(p.id) === within : known.within === within)) return known;
+    this.guardPostZone.set(p.id, within);
+    if (known) this.guardPosts.delete(p.id);
+    const nav = this.spatial.nav;
+    const site = plantSpotsOf(this.spatial).get(sp.zoneId);
+    const spikeNode = nav && nav.hasVisibility ? nav.locate(sp.position) : null;
+    if (!nav || !site || spikeNode === null) { this.guardPosts.set(p.id, null); return null; }
+    const spike = sp.position;
+    const entries = this.spatial.zones.map((z) => z.id).filter((z) => z !== sp.zoneId && z !== "attacker-spawn" && this.adjacent(z, sp.zoneId!));
+    const tR = entries.map((r) => {
+      const a = r === "defender-spawn" ? 0 : this.spatial.shortestTravelTimeMs("defender-spawn", r, "run");
+      const b = this.spatial.shortestTravelTimeMs(r, sp.zoneId!, "run");
+      return a == null || b == null ? Infinity : a + b + 1;
+    });
+    const tmin = Math.min(...tR);
+    const threat = new Map((this.beliefNow.attack?.threatZones ?? []).map((t) => [t.zoneId, t.threatLevel]));
+    const w = entries.map((r, i) => (Number.isFinite(tR[i]!) ? tmin / tR[i]! : 0) + (threat.get(r) ?? 0));
+    const count = entries.map((r) => [...this.guardPosts.values()].filter((g) => g?.entry === r).length);
+    const order = entries.map((_, i) => i).filter((i) => w[i]! > 0)
+      .sort((a, b) => count[a]! / w[a]! - count[b]! / w[b]! || w[b]! - w[a]!);
+    const g = (p.traits ?? AVERAGE_TRAITS).gameSense;
+    const pool = (within ? [within] : [...new Set([sp.zoneId, ...site.attackEntries])]).flatMap((z) => [...nav.zoneNodes(z)]).filter((n) => nav.nodesVisible(n, spikeNode));
+    for (const i of order) {
+      const r = entries[i]!;
+      const anchor = nav.anchorNode(r);
+      if (anchor === undefined) continue;
+      const route = nav.findPath({ actorId: `route:${r}`, start: nav.nodePosition(anchor), destination: spike, movementMode: "run", routePreference: "FASTEST" });
+      if (route.status !== "SUCCESS") continue;
+      const steps = route.waypoints.filter((wp) => wp.node >= 0).map((wp) => wp.node);
+      if (steps.length === 0) continue;
+      const others = (n: number): number => entries.reduce((a, q) => (q === r ? a : a + nav.sightInto(n, q)), 0);
+      let maxO = 1;
+      const cands: Array<{ n: number; k: number; o: number }> = [];
+      for (const n of pool) {
+        const k = steps.findIndex((m) => nav.nodesVisible(n, m));
+        if (k < 0) continue;
+        const o = others(n);
+        maxO = Math.max(maxO, o);
+        cands.push({ n, k, o });
+      }
+      if (cands.length === 0) continue;
+      const budget = Math.max(1000, tR[i]!);
+      let best = cands[0]!, bestC = Infinity;
+      for (const c of cands) {
+        const q = nav.nodePosition(c.n);
+        const cost = g * (c.o / maxO + c.k / steps.length) / 2 + Math.hypot(q.x - p.position.x, q.y - p.position.y) / 0.675 / budget;
+        if (cost < bestC || (cost === bestC && c.n < best.n)) { bestC = cost; best = c; }
+      }
+      const position = nav.nodePosition(best.n);
+      const post: GuardPost = { entry: r, zoneId: nav.zoneAt(position) ?? sp.zoneId, position, show: nav.nodePosition(steps[best.k]!), within };
+      this.guardPosts.set(p.id, post);
+      return post;
+    }
+    this.guardPosts.set(p.id, null);
+    return null;
+  }
+  /** Post-plant guard posts this round (null: none found for that guard). */
+  private readonly guardPosts = new Map<string, GuardPost | null>();
+  /** The zone each guard's post was chosen within (null: on the spike or off it, by cost). */
+  private readonly guardPostZone = new Map<string, string | null>();
+
+  /** Plant decision per site zone this round (null: no candidates there). */
+  private readonly plantPlans = new Map<string, PlantDecision | null>();
+  /** Where the spike went down this round (RoundResult.plant). */
+  private plantRecord: PlantRecord | null = null;
 
   /**
    * The defender who goes to the planted spike: the living defender nearest to it when the question
@@ -1297,6 +1446,13 @@ export class RoundSimulator {
     // spike left every retaker arriving from outside the cone: the retaker saw first in 85% of
     // post-plant duels (2026-11-23 measurement, ENGINE_TRUTH.md §4).
     const spike = this.spikeWatched;
+    const post = spike && p.side === "attack" && cmd?.aimZone === spike.zoneId ? this.guardPosts.get(p.id) : null;
+    if (this.cfg.gaze && post && Math.hypot(p.position.x - post.position.x, p.position.y - post.position.y) <= GUARD_POST_TOLERANCE_UNITS) {
+      // gaze model, on its post: crosshair where the retake it covers first shows (the legacy
+      // model keeps its calibrated rule below: its pre-aim flag is not an angle)
+      const ex = post.show.x - p.position.x, ey = post.show.y - p.position.y;
+      if (ex !== 0 || ey !== 0) { p.facing = { x: ex, y: ey }; return; }
+    }
     if (spike && p.side === "attack" && cmd?.aimZone === spike.zoneId && this.cfg.gaze) {
       const entry = this.guardEntryFor(p, spike.zoneId);
       const at = entry ? this.peekPoint(p, entry, "defender-spawn") : spike.position;
@@ -1849,7 +2005,15 @@ export class RoundSimulator {
           s.zoneId = carrier.zoneId;
           s.position = { ...carrier.position };
           s.detonateAtElapsedMs = state.elapsedMs + this.cfg.spikeTimerMs;
-          events.push({ kind: "planted", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId });
+          const site = plantSpotsOf(this.spatial).get(carrier.zoneId);
+          const spot = plantSpotAt(site, s.position);
+          const plan = this.plantPlans.get(`${carrier.zoneId}|on`) ?? this.plantPlans.get(carrier.zoneId);
+          this.plantRecord = {
+            zoneId: carrier.zoneId, site: site?.site ?? null, position: { ...s.position }, atMs: state.elapsedMs,
+            spotId: spot?.id ?? null, spotKind: spot?.kind ?? "other",
+            intendedSpotId: plan?.candidate.id ?? null, by: plan?.by ?? null,
+          };
+          events.push({ kind: "planted", tick: state.tick, elapsedMs: state.elapsedMs, actor: carrier.id, zoneId: carrier.zoneId, detail: `spot=${spot?.id ?? "other"}` });
         }
       } else if (s.phase === "planting") {
         s.phase = "carried"; s.plantProgressMs = 0; // interrupted

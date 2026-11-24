@@ -1,3 +1,4 @@
+import type { PlantPreferences, PlantSpotKind } from "./plant-spot.js";
 // PROJECT V — round-simulator local types.
 //
 // Ties spatial + perception + combat + ability engines into one deterministic round
@@ -452,6 +453,24 @@ export interface RoundResult {
   readonly engagementTrace?: readonly EngagementRecord[];
   /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
   readonly stats?: RoundStats;
+  /** Where the spike went down (rounds with a plant only). */
+  readonly plant?: PlantRecord;
+}
+
+/** Where and how the spike was planted (plant-spot.ts). */
+export interface PlantRecord {
+  readonly zoneId: string;
+  /** Site letter, null when the zone is not a derived site. */
+  readonly site: string | null;
+  readonly position: Vector3;
+  /** When the plant completed (ms into the round). */
+  readonly atMs: number;
+  /** The candidate spot the spike lies on (within 150 uu), null for an off-list spot. */
+  readonly spotId: string | null;
+  readonly spotKind: PlantSpotKind | "other";
+  /** The spot the carrier set out for, and who chose it. */
+  readonly intendedSpotId: string | null;
+  readonly by: "auto" | "manager" | null;
 }
 
 export interface SimConfig {
@@ -501,6 +520,11 @@ export interface SimConfig {
    * `orbs` (from the map's objects data) are taken once per round. OFF (undefined) by default.
    */
   readonly floorItems?: { readonly orbs?: readonly { readonly id: string; readonly position: Vector3 }[] };
+  /**
+   * The attacking team's plant preference per site letter (plant-spot.ts PlantChoice: auto, a spot
+   * kind, or a spot id). Absent / "auto": the carrier chooses by game sense and situation.
+   */
+  readonly plantPreference?: PlantPreferences;
   /** Sampling interval for recordPerception, in ticks. Defaults to decisionIntervalTicks. */
   readonly perceptionIntervalTicks?: number;
   /** HP lost per tick while a body is inside a molly / area-denial patch (manual-approx). */
