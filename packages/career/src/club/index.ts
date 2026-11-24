@@ -26,7 +26,7 @@ export {
   type InitClubOptions, type SeasonEndContext,
 } from "./ops.ts";
 export { clubCareerHook, drainClubOutbox, syncClubInbox, careerStandings } from "./career-hook.ts";
-export { DEPTH_MODEL } from "./constants.ts";
+export { DEPTH_MODEL, CLUB_FLAGS, setClubFlags } from "./constants.ts";
 export {
   agentOf, agentFee, requiredMargin, bonusOdds, effectiveWage, clauseTerm, freeAgentTimeFactor, moraleOf, moraleTarget, moraleWeek,
   playShare, playTimeGap, recentShare, clubSeriesResultMut, type Agent, type SeriesResult,

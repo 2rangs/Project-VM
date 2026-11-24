@@ -93,5 +93,25 @@ export async function clubStep(page, OUT, { years = null, practiceMap = false } 
   assert.ok((await page.getByTestId(`team-focus-${focus}`).getAttribute('class'))?.includes('on'), `${focus} focus selected`);
   if (practiceMap) await page.selectOption('[data-testid="practice-map"]', { index: 1 });
   await page.screenshot({ path: path.join(OUT, 'desktop-training.png') });
+  assert.ok(await page.locator('[data-testid^="morale-"]').count() > 0, 'morale is shown per player');
+
+  // Board: confidence and objectives are shown; a request gets an answer (granted or refused by the formula).
+  await page.getByTestId('nav-board').click();
+  await page.waitForSelector('[data-testid="board-screen"]', { timeout: 10000 });
+  assert.ok(Number(await page.getByTestId('board-confidence').getAttribute('data-value')) > 0, 'board confidence shown');
+  assert.equal(await page.getByTestId('board-objectives').count(), 1, 'season objectives shown');
+  await page.getByTestId('board-request-transferBudget').click();
+  await page.waitForSelector('[data-testid="board-answer"]', { timeout: 5000 });
+  assert.ok(await page.getByTestId('board-request-transferBudget').isDisabled(), 'one request of a kind per season');
+  await page.screenshot({ path: path.join(OUT, 'desktop-board.png') });
+
+  // Staff market: the physio market lists candidates with attributes and demands.
+  await page.getByTestId('nav-staff').click();
+  await page.waitForSelector('[data-testid="staff-screen"]', { timeout: 10000 });
+  await page.getByTestId('staff-role-physio').click();
+  await page.waitForSelector('[data-testid="staff-screen"] [data-testid="dt-row"]', { timeout: 5000 });
+  await page.locator('[data-testid="staff-screen"] [data-testid="dt-row"]').nth(1).click();
+  await page.waitForSelector('[data-testid="staff-market-detail"]', { timeout: 5000 });
+  await page.screenshot({ path: path.join(OUT, 'desktop-staff.png') });
   return handle;
 }

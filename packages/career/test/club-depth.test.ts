@@ -5,7 +5,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { rosterProfiles, rosterConsistency } from "../../match-runner/src/teams.ts";
 import { worldFromGameData } from "../src/game-data.ts";
 import {
-  CLUB_MODEL, DEPTH_MODEL, advanceSeason, agentFee, agentOf, askingPrice, boardOf, boardOnSeries, boardRequest, boardSeasonReview,
+  CLUB_MODEL, DEPTH_MODEL, CLUB_FLAGS, setClubFlags, advanceSeason, agentFee, agentOf, askingPrice, boardOf, boardOnSeries, boardRequest, boardSeasonReview,
   clubAnswer, clubSeriesResultMut, effectiveWage, estimateAbility, facilitiesOf, hireStaff, initClub, makeOffer, matchRoster, moraleOf,
   moraleTarget, moraleWeek, newCareer, physioFactor, playerAnswer, playerUtility, requiredMargin, setTrainingPlan, staffDemand,
   staffMarket, teamScout, teamStrength, trainingWeek, type World, type WorldPlayer, type RatedAttr,
@@ -148,7 +148,22 @@ describe("morale", () => {
     expect(w.club!.playTime!.players[five[0]!]).toBe(2);
   });
 
-  it("reaches the match inputs (decision profile and form) — and neutral morale changes nothing", () => {
+  it("is off in the match by default: any morale leaves the match roster unchanged", () => {
+    const base = worldFromGameData(SEED);
+    const career = newCareer(structuredClone(base), { seed: SEED, manager: { name: "T", nationality: "kr" }, userTeamId: user });
+    const five = career.world.teams[user]!.roster.slice(0, 5);
+    const before = matchRoster(career, five);
+    career.world.club!.morale = Object.fromEntries(five.map((id) => [id, 1]));
+    expect(CLUB_FLAGS.moraleInMatch).toBe(false);
+    expect(matchRoster(career, five)).toEqual(before);
+  });
+
+  it("with the flag on, reaches the match inputs (decision profile and form) — and neutral morale changes nothing", () => {
+    setClubFlags({ moraleInMatch: true });
+    try { moraleInMatchChecks(); } finally { setClubFlags({ moraleInMatch: false }); }
+  });
+
+  function moraleInMatchChecks(): void {
     const base = worldFromGameData(SEED);
     const career = newCareer(structuredClone(base), { seed: SEED, manager: { name: "T", nationality: "kr" }, userTeamId: user });
     const five = career.world.teams[user]!.roster.slice(0, 5);
@@ -166,9 +181,11 @@ describe("morale", () => {
       expect(pH[i]!.decisionMaking).toBeGreaterThan(pL[i]!.decisionMaking);
     }
     expect(rosterConsistency(user, 5, high)[0]!).toBeGreaterThan(rosterConsistency(user, 5, low)[0]!);
-    // Mechanical skills are untouched by morale.
-    expect((high[0]!.attributes!.aim as RatedAttr).value).toBe((neutral[0]!.attributes!.aim as RatedAttr).value);
-  });
+    // Mechanical skills move only by the level effect: up with high morale, down with low.
+    const aim = (r: typeof high) => (r[0]!.attributes!.aim as RatedAttr).value;
+    expect(aim(high)).toBeGreaterThanOrEqual(aim(neutral));
+    expect(aim(low)).toBeLessThan(aim(neutral));
+  }
 });
 
 describe("board", () => {

@@ -4,13 +4,14 @@
 import { describe, it, expect } from "vitest";
 import { runMatch } from "@pv/match-runner";
 import { worldFromGameData } from "../src/game-data.ts";
-import { matchRoster, newCareer, teamStrength } from "../src/index.ts";
+import { matchRoster, newCareer, setClubFlags, teamStrength } from "../src/index.ts";
 
 const RUN = process.env.PV_MORALE_MATCH === "1";
-const N = Number(process.env.PV_MORALE_N ?? 16);
+const N = Number(process.env.PV_MORALE_N ?? 30);
 
 describe.skipIf(!RUN)("morale in the engine (paired, real matches)", () => {
   it("high morale wins more rounds than low morale with everything else equal", () => {
+    setClubFlags({ moraleInMatch: true });
     const base = worldFromGameData(31);
     const ids = Object.keys(base.teams).filter((id) => base.teams[id]!.roster.length >= 5).sort((a, b) => teamStrength(base, b) - teamStrength(base, a));
     const a = ids[Math.floor(ids.length / 2)]!, b = ids[Math.floor(ids.length / 2) + 1]!;

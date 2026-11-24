@@ -200,6 +200,16 @@ export const CLUB_MODEL = {
 export type ClubModel = typeof CLUB_MODEL;
 
 /**
+ * Runtime switches for club features that change what the match engine is fed. Each defaults to
+ * OFF until it has passed the real-roster gate (docs/handoff/club-ops.md).
+ *   moraleInMatch   morale moves the career roster's attributes on match day (career/readiness.ts).
+ *                   Off: morale is tracked and drives renewals and the UI, but match rosters are as before.
+ */
+export const CLUB_FLAGS: { moraleInMatch: boolean } = { moraleInMatch: false };
+
+export function setClubFlags(f: Partial<typeof CLUB_FLAGS>): void { Object.assign(CLUB_FLAGS, f); }
+
+/**
  * Club-management depth (docs/CLUB_OPERATIONS.md §9–12): agents and contract clauses, morale,
  * the board, the staff market. Design values, like CLUB_MODEL.
  */
@@ -267,6 +277,12 @@ export const DEPTH_MODEL = {
    */
   moraleConsistency: 0.2,
   moraleClutch: 0.2,
+  /**
+   * And a level effect on the ability attributes, applied with readiness:
+   *   x' = min_k + R · (1 + moraleAbility · d) · (x − min_k)      (capped at the real maximum)
+   * so a confident player plays a little above his rating and a low one below (±5 % of the span at m = 1 / 0).
+   */
+  moraleAbility: 0.1,
 
   // --- board --------------------------------------------------------------------------------------
   confidenceStart: 0.6,
