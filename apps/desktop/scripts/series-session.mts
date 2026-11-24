@@ -21,7 +21,10 @@ import {
   createSeriesSession, runMatch, teamGameLog, DEFAULT_MAP_POOL, SIMULATED_GEOMETRY,
   type MatchSession, type SeriesGameContext, type SeriesGameResult, type SeriesSession, type TeamGameLog,
 } from '../../../packages/match-runner/src/index.ts';
-import type { TeamOrder } from '../../../packages/match-runner/src/orders.ts';
+import type { StrategyOrder, TeamOrder } from '../../../packages/match-runner/src/orders.ts';
+// [manager] every map is played with the manager layer; the session commands gain shouts / strategy / talk
+import type { ManagedSession, Shouts, TeamTalk } from '../../../packages/match-runner/src/index.ts';
+import { managerResultView, managerView, type SeatMap } from './manager-view.mts';
 import type { RosterPlayer } from '../../../packages/match-runner/src/teams.ts';
 import { getTeamMapRecords } from '../../../packages/game-data/src/index.ts';
 import { withPractice } from '../../../packages/career/src/club/training.ts';
@@ -68,12 +71,14 @@ const series: SeriesSession = createSeriesSession(
     seed,
     match: { recordPerception: true, recordTracks: true }, // positions + navigation trace for the live view
   },
-  { aiTeams: ['B'] },
+  { aiTeams: ['B'], managed: true }, // [manager]
 );
 const prep = series.preparation();
 
 // --- the open map (round-by-round) ---
-let open: { context: SeriesGameContext; session: MatchSession } | null = null;
+let open: { context: SeriesGameContext; session: MatchSession; managed: ManagedSession | null } | null = null;
+/** [manager] Our seat ⇄ the engine slot we occupy on this map. */
+const seats = (ctx: SeriesGameContext): SeatMap => ({ seatOf: (s) => (ctx.slots.A === s ? 'A' : 'B'), slotOf: (seat) => ctx.slots[seat] });
 let closed: { context: SeriesGameContext; state: unknown; result: unknown } | null = null;
 /** Maps finished so far, in order. */
 const gamesSoFar: SeriesGameResult[] = [];
@@ -99,14 +104,18 @@ function compactRound(ctx: SeriesGameContext, r: ReturnType<MatchSession['playNe
     nav: r.navTrace ?? null,
   };
 }
-function uiState(ctx: SeriesGameContext, s: ReturnType<MatchSession['state']>) {
+function uiState(ctx: SeriesGameContext, s: ReturnType<MatchSession['state']>, managed: ManagedSession | null = null) {
   return {
     roundNumber: s.roundNumber, score: byUi(ctx, s.score), attacker: uiOf(ctx, s.attacker), economy: byUi(ctx, s.economy),
     timeoutsRemaining: byUi(ctx, s.timeoutsRemaining), timeoutActive: byUi(ctx, s.timeoutActive), finished: s.finished,
+    ...(managed ? { manager: managerView(managed.state().manager, seats(ctx)) } : {}),
   };
 }
-function uiResult(ctx: SeriesGameContext, r: ReturnType<MatchSession['result']>) {
-  return { winner: uiOf(ctx, r.winner), score: byUi(ctx, r.score), wentToOvertime: r.wentToOvertime, timeoutLog: r.timeoutLog.map((e) => ({ ...e, team: uiOf(ctx, e.team) })) };
+function uiResult(ctx: SeriesGameContext, r: ReturnType<MatchSession['result']>, managed: ManagedSession | null = null) {
+  return {
+    winner: uiOf(ctx, r.winner), score: byUi(ctx, r.score), wentToOvertime: r.wentToOvertime, timeoutLog: r.timeoutLog.map((e) => ({ ...e, team: uiOf(ctx, e.team) })),
+    ...(managed ? { manager: managerResultView(managed.result(), seats(ctx)) } : {}),
+  };
 }
 /** A whole game as the RawMatch run-match.mts prints (our team = A). */
 function rawMatch(g: SeriesGameResult) {
@@ -119,8 +128,8 @@ function rawMatch(g: SeriesGameResult) {
 /** If the open map has just ended, record it in the series and keep its last state for the UI. */
 function settle(): void {
   if (!open || !open.session.isFinished()) return;
-  const { context, session } = open;
-  closed = { context, state: uiState(context, session.state()), result: uiResult(context, session.result()) };
+  const { context, session, managed } = open;
+  closed = { context, state: uiState(context, session.state(), managed), result: uiResult(context, session.result(), managed) };
   gamesSoFar.push(series.finishGame());
   open = null;
 }
@@ -196,7 +205,7 @@ const rl = createInterface({ input: process.stdin });
 rl.on('line', (line) => {
   const text = line.trim();
   if (!text) return;
-  let msg: { id?: number; cmd?: string; team?: Team; order?: TeamOrder; choice?: string };
+  let msg: { id?: number; cmd?: string; team?: Team; order?: TeamOrder; choice?: string; shouts?: Partial<Shouts>; strategy?: { attack?: StrategyOrder; defense?: StrategyOrder; rounds?: number } | null; talk?: TeamTalk };
   try { msg = JSON.parse(text); } catch (e) { reply({ ok: false, error: `bad json: ${(e as Error).message}` }); return; }
   const id = msg.id;
   try {
@@ -218,11 +227,11 @@ rl.on('line', (line) => {
         if (open) throw new Error('a map is already in progress');
         const g = series.startGame();
         open = g; closed = null;
-        reply({ id, ok: true, state: uiState(g.context, g.session.state()) });
+        reply({ id, ok: true, state: uiState(g.context, g.session.state(), g.managed) });
         break;
       }
       case 'state': {
-        if (open) reply({ id, ok: true, state: uiState(open.context, open.session.state()) });
+        if (open) reply({ id, ok: true, state: uiState(open.context, open.session.state(), open.managed) });
         else if (closed) reply({ id, ok: true, state: closed.state });
         else throw new Error('no map in progress');
         break;
@@ -231,20 +240,30 @@ rl.on('line', (line) => {
         if (!open) throw new Error('no map in progress');
         const slot = open.context.slots[msg.team ?? 'A'];
         if (msg.cmd === 'callTimeout') open.session.callTimeout(slot); else open.session.setOrders(slot, msg.order ?? {});
-        reply({ id, ok: true, state: uiState(open.context, open.session.state()) });
+        reply({ id, ok: true, state: uiState(open.context, open.session.state(), open.managed) });
+        break;
+      }
+      case 'setShouts': case 'setStrategy': case 'teamTalk': { // [manager]
+        if (!open?.managed) throw new Error('no managed map in progress');
+        const slot = open.context.slots[msg.team ?? 'A'];
+        let talk: unknown;
+        if (msg.cmd === 'setShouts') open.managed.setShouts(slot, msg.shouts ?? {});
+        else if (msg.cmd === 'setStrategy') open.managed.setStrategy(slot, msg.strategy ?? null);
+        else talk = open.managed.teamTalk(slot, msg.talk!);
+        reply({ id, ok: true, ...(talk ? { talk } : {}), state: uiState(open.context, open.session.state(), open.managed) });
         break;
       }
       case 'playNextRound': {
         if (!open) throw new Error('no map in progress');
         const ctx = open.context;
         const round = compactRound(ctx, open.session.playNextRound());
-        const state = uiState(ctx, open.session.state());
+        const state = uiState(ctx, open.session.state(), open.managed);
         settle();
         reply({ id, ok: true, round, state });
         break;
       }
       case 'result': {
-        if (open) reply({ id, ok: true, result: uiResult(open.context, open.session.result()) });
+        if (open) reply({ id, ok: true, result: uiResult(open.context, open.session.result(), open.managed) });
         else if (closed) reply({ id, ok: true, result: closed.result });
         else throw new Error('no map in progress');
         break;

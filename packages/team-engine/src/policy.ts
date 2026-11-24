@@ -318,6 +318,12 @@ export interface TeamRoundTrace {
   readonly decision: PolicyDecision;
 }
 
+/** [manager] The side a strategy belongs to (a defense call cannot open an attack round and vice versa). */
+const DEFENSE_STRATEGIES: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>(["defaultHold", "aggroPush", "stackA", "stackB", "stackC", "retake"]);
+function strategySide(s: TeamStrategy): "attack" | "defense" {
+  return DEFENSE_STRATEGIES.has(s) ? "defense" : "attack";
+}
+
 /**
  * A coach/IGL order the policy follows for the round(s) it is set. A forced `strategy` overrides
  * the IGL's own selection; `tempo` nudges aggression; `roles` pins the entry/lurker. Set via
@@ -458,7 +464,11 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       p.lastSeenClockMs = view.timeRemainingMs;
       return p;
     }
-    const opening = selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters());
+    // [manager] A coach's forced strategy for this side is the round's opening call, so the plan's
+    // objective (the site the attack goes to, the site the defense stacks) follows the order —
+    // before, the order only relabelled a plan bound to the IGL's own call. No order → unchanged.
+    const forced = this.order?.strategy;
+    const opening = forced && strategySide(forced) === view.side ? forced : selectStrategy(view, this.spatial, rng, this.opponentRead, this.siteLetters());
     this.plan = {
       contextId: view.contextId, side: view.side, opening, strategy: opening,
       objective: null, feint: null, executeGo: false, uncommitted: false, slowSide: null, savedFrom: null, chasers: new Set<string>(),

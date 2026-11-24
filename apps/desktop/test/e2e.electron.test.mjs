@@ -184,8 +184,28 @@ async function main() {
   // verify the order reaches the match (timeout log) in the post-match Review.
   await page.getByTestId('tab-match').click();
   await page.getByTestId('mode-interactive').click();
+  // [manager] Pre-match: build the opponent report, take its suggested plan; engine-pending options stay disabled.
+  await page.getByTestId('prematch-toggle').click();
+  await page.getByTestId('pre-build').click();
+  await page.waitForSelector('[data-testid="pre-report"]', { timeout: 120000 });
+  assert.ok(await page.locator('[data-testid="pre-headline"]').count() >= 4, 'the report reads sites, pistol and eco habits');
+  await page.getByTestId('pre-use-suggested').click();
+  assert.ok(await page.getByTestId('pre-plant-A').isDisabled(), 'plant-spot choice waits for engine support');
+  await page.selectOption('[data-testid="pre-tempo"]', 'fast');
+  await page.getByTestId('prematch-toggle').click();
   await page.getByTestId('start-interactive').click();
   await page.waitForSelector('[data-testid="session-bar"]', { timeout: 60000 });
+  // [manager] In-match controls: the drawer shows our five, a standing shout and a strategy for the next rounds.
+  await page.getByTestId('mgr-toggle').click();
+  await page.waitForSelector('[data-testid="mgr-panel"]', { timeout: 10000 });
+  assert.equal(await page.locator('[data-testid^="mgr-player-"]').count(), 5, 'the drawer lists our five with their state of mind');
+  assert.equal(await page.getByTestId('mgr-tempo-fast').getAttribute('aria-checked'), 'true', 'the plan\'s tempo is the standing shout');
+  await page.getByTestId('mgr-risk-more').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="mgr-risk-more"]')?.getAttribute('aria-checked') === 'true', null, { timeout: 30000 });
+  await page.selectOption('[data-testid="mgr-strat-defense"]', 'stackB');
+  await page.getByTestId('mgr-strat-apply').click();
+  await page.waitForSelector('[data-testid="mgr-strat-active"]', { timeout: 30000 });
+  await page.getByTestId('mgr-toggle').click();
   await page.getByTestId('next-round').click();            // play round 1
   await page.waitForTimeout(1500);
   await page.getByTestId('call-timeout').click();          // tactical timeout
@@ -205,6 +225,9 @@ async function main() {
   assert.ok(/R2/.test(tolog), 'timeout log records the pre-round-2 order');
   // rounds streamed through the session carry their decisions too
   assert.equal(await page.locator('[data-testid^="dec-pick-"]').count(), 2, 'both played rounds have decision notes');
+  // [manager] the post-match summary lists our decisions with what followed them
+  await page.waitForSelector('[data-testid="post-match-summary"]', { timeout: 10000 });
+  assert.ok(await page.locator('[data-testid="post-decisions-A"] [data-testid="post-decision-row"]').count() >= 3, 'shouts, strategy and timeout are in the decision summary');
   await page.screenshot({ path: path.join(OUT, 'desktop-review-interactive.png') });
   await page.getByTestId('session-stop').click().catch(() => {});
 

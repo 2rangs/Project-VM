@@ -2,6 +2,8 @@
 // names and payload shapes in one typed module is what the "IPC contract" unit
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
+// [manager] in-match management + match prep (src/shared/manager.ts)
+import type { ManagerResultView, ManagerStateView, MatchPlan, OpponentReportView, PrematchRequest, Shouts, TalkReaction, TeamTalk, AttackStrategy, DefenseStrategy } from './manager.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
 import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot, SaveSlotInfo } from './career.ts';
 
@@ -44,6 +46,9 @@ export const IPC = {
   bannerList: 'pv:asset:banner-list',
   /** renderer → main (invoke): read one file of a banner pack; null when absent. */
   bannerFile: 'pv:asset:banner-file',
+  // [manager]
+  /** renderer → main (invoke): build the pre-match opponent report (scripts/prematch.mts). */
+  prematchReport: 'pv:prematch:report',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -66,6 +71,9 @@ export interface SessionStartRequest {
   options?: MatchOptions;
   /** [series] Play the NEXT MAP of the live series round by round (teams / map / seed come from the series). */
   seriesGame?: boolean;
+  /** [manager] Our pre-match plan, and the film our report was read from (seeds the opponent model). */
+  plan?: MatchPlan;
+  scouting?: { logs: unknown[]; uptake?: number };
 }
 
 // ── Pre-match options a team / organiser chooses (match-runner MatchConfig subset).
@@ -112,14 +120,25 @@ export interface SessionState {
   timeoutsRemaining: Record<TeamSlot, number>;
   timeoutActive: Record<TeamSlot, boolean>;
   finished: boolean;
+  /** [manager] The manager layer (state of mind, shouts, alerts, half-time); absent on plain sessions. */
+  manager?: ManagerStateView;
 }
 export interface TimeoutLogEntry { round: number; team: TeamSlot; by: 'human' | 'ai'; order: TeamOrder | null }
 export interface SessionResultSummary {
   winner: TeamSlot; score: Record<TeamSlot, number>; wentToOvertime: boolean;
   timeoutLog: TimeoutLogEntry[];
+  /** [manager] Decisions with what followed them, final minds, tilt per round. */
+  manager?: ManagerResultView;
 }
 /** A command to the live session and its reply (reply shape depends on cmd). */
-export interface SessionCommand { cmd: 'state' | 'callTimeout' | 'setOrders' | 'playNextRound' | 'result'; team?: TeamSlot; order?: TeamOrder }
+export interface SessionCommand {
+  cmd: 'state' | 'callTimeout' | 'setOrders' | 'playNextRound' | 'result' | 'setShouts' | 'setStrategy' | 'teamTalk';
+  team?: TeamSlot; order?: TeamOrder;
+  // [manager]
+  shouts?: Partial<Shouts>;
+  strategy?: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null;
+  talk?: TeamTalk;
+}
 export interface SessionReply {
   ok: boolean;
   error?: string;
@@ -127,6 +146,8 @@ export interface SessionReply {
   /** Present for playNextRound: the raw round (RawRound shape for mergeMatch). */
   round?: Record<string, unknown>;
   result?: SessionResultSummary;
+  /** [manager] teamTalk: each player's mood change. */
+  talk?: TalkReaction[];
 }
 
 /** A folder of the user's own banner media: one file per build-up stage (1 = first step … 5, optional 6). */
@@ -286,6 +307,11 @@ export interface PvBridge {
   seriesStart(req: SeriesStartRequest): Promise<SeriesView>;
   seriesCmd(cmd: SeriesCommand): Promise<SeriesReply>;
   seriesStop(): Promise<void>;
+  // [manager]
+  sessionSetShouts(team: TeamSlot, shouts: Partial<Shouts>): Promise<SessionState>;
+  sessionSetStrategy(team: TeamSlot, strategy: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null): Promise<SessionState>;
+  sessionTeamTalk(team: TeamSlot, talk: TeamTalk): Promise<{ state: SessionState; reactions: TalkReaction[] }>;
+  prematchReport(req: PrematchRequest): Promise<OpponentReportView>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
   // [career]

@@ -19,7 +19,7 @@
  * All fields are optional; an omitted / neutral field leaves the match byte-identical.
  */
 import type { TacticalTraits } from "@pv/round-simulator";
-import type { OpponentPrior, SiteKey } from "@pv/team-engine";
+import type { OpponentPrior, PolicyTuning, SiteKey } from "@pv/team-engine";
 
 export interface TeamMatchInputs {
   /** Multiplies the team's throw hazard λ₀ (1 = unchanged). */
@@ -34,6 +34,20 @@ export interface TeamMatchInputs {
   readonly opponentPrior?: OpponentPrior;
   /** A conviction that in-match evidence has to outweigh (the team's own game plan). Does not fade. */
   readonly standingPrior?: OpponentPrior;
+}
+
+/**
+ * [manager] Per-ROUND values a manager layer sets between rounds (MatchEngine.setRoundInputs):
+ * the team's current state of mind (tilt / confidence, manager.ts) and its risk shout. They
+ * compose with the match-long TeamMatchInputs — scales multiply, deltas add — and feed the same
+ * formulas. All neutral → the round is played exactly as without them.
+ */
+export interface RoundTeamInputs {
+  readonly throwRateScale?: number;
+  readonly formSigmaScale?: number;
+  readonly traitDelta?: Partial<TacticalTraits>;
+  /** Overrides of the team's decision thresholds (retake / save / hero chance) for this round. */
+  readonly tuning?: Partial<PolicyTuning>;
 }
 
 /**

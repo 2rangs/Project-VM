@@ -20,6 +20,7 @@ import {
 // [series]
 import { SeriesHost } from './series-host.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
+import type { OpponentReportView, PrematchRequest } from '../shared/manager.ts'; // [manager]
 // [career]
 import { registerCareerIpc } from './career-host.ts';
 
@@ -59,6 +60,8 @@ function repoRoot(): string { return process.env.PV_REPO_ROOT ?? path.resolve(ap
 function matchScript(): string { return process.env.PV_MATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'run-match.mts'); }
 function sessionScript(): string { return process.env.PV_SESSION_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'match-session.mts'); }
 // [series]
+// [manager]
+function prematchScript(): string { return process.env.PV_PREMATCH_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'prematch.mts'); }
 function seriesScript(): string { return process.env.PV_SERIES_SCRIPT ?? path.join(app.getAppPath(), 'scripts', 'series-session.mts'); }
 const seriesHost = new SeriesHost(seriesScript, repoRoot);
 // [career] background simulation of AI fixtures + save slots
@@ -223,6 +226,21 @@ ipcMain.handle(IPC.sessionStop, async (): Promise<void> => {
 ipcMain.handle(IPC.seriesStart, async (_e, req: SeriesStartRequest): Promise<SeriesView> => seriesHost.start(req));
 ipcMain.handle(IPC.seriesCmd, async (_e, cmd: SeriesCommand): Promise<SeriesReply> => seriesHost.send({ ...cmd }) as Promise<SeriesReply>);
 ipcMain.handle(IPC.seriesStop, async (): Promise<void> => { seriesHost.dispose(); });
+
+// [manager] Pre-match opponent report: a one-shot tsx subprocess (simulates the opponent's film).
+ipcMain.handle(IPC.prematchReport, (_e, req: PrematchRequest): Promise<OpponentReportView> => new Promise((resolve, reject) => {
+  const child = spawn('npx', ['tsx', prematchScript(), JSON.stringify(req)], { cwd: repoRoot(), env: process.env });
+  let out = ''; let err = '';
+  const timer = setTimeout(() => { try { child.kill(); } catch { /* */ } reject(new Error('pre-match report timed out')); }, 180000);
+  child.stdout.on('data', (d) => { out += String(d); });
+  child.stderr.on('data', (d) => { err += String(d); });
+  child.on('error', (e) => { clearTimeout(timer); reject(e); });
+  child.on('close', (code) => {
+    clearTimeout(timer);
+    if (code !== 0) return reject(new Error(`pre-match report failed (${code}): ${err.slice(-200)}`));
+    try { resolve(JSON.parse(out) as OpponentReportView); } catch (e) { reject(new Error(`pre-match report parse failed: ${(e as Error).message}`)); }
+  });
+}));
 
 /** [series] One map of the live series in one go: the host returns the same RawMatch as run-match.mts. */
 async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {

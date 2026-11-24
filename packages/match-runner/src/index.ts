@@ -85,3 +85,15 @@ export { buildScoutingReport, opponentPriorFromLogs, siteEvidence, teamGameLog, 
 export type { ScoutingReport, ScoutingRequest, ScoutingQuality, ScoutedMap, ScoutedPlayer, SiteEvidence, TeamGameLog, TeamRoundLog, PlayerGameLine, WeightedLog } from "./scouting.js";
 export { gamePlanPrior, applyTraitDelta } from "./team-inputs.js";
 export type { TeamMatchInputs, GamePlan, SeriesGameContext } from "./team-inputs.js";
+// --- In-match management + match prep (docs/MATCH_MANAGEMENT.md) ---
+export { createManagedSession } from "./managed-session.js";
+export type { ManagedSession, ManagedSessionOptions, ManagedSessionState, ManagedSessionResult, ManagerState, ManagerDecision, DecisionOutcome, DecisionKind } from "./managed-session.js";
+export {
+  MORALE_MODEL, TIMEOUT_MODEL, RISK_MODEL, AVERAGE_MANAGER, NEUTRAL_SHOUTS, TEAM_TALKS, BROKEN_ECONOMY_PER_PLAYER,
+  moodAfterRound, moodAfterTimeout, talkEffect, talkSituation, mindRoundInputs, shoutStrategy, aiManagerDecision, aiTeamTalk,
+  alertsAfterRound, teamPersonalities, summarizeMind, withMood,
+} from "./manager.js";
+export type { ManagerProfile, Shouts, TempoShout, RiskShout, DefenseShout, TeamTalk, TalkSituation, Personality, PlayerMind, TeamMind, Alert, AlertKind } from "./manager.js";
+export { buildOpponentReport, scoutingFilm, planTeamInputs, planShouts, planPending } from "./prep.js";
+export type { MatchPlan, OpponentReport, PendingPlanOptions, PlantSpotKind, Rate } from "./prep.js";
+export type { RoundTeamInputs } from "./team-inputs.js";
