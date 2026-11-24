@@ -75,6 +75,11 @@ export interface TeamPolicyOptions {
 export const DEFAULT_FOOTSTEP_RADIUS_UNITS = 5000;
 /** Run speed (world units / s) used to turn the footstep radius into a travel time when zone positions are unknown. */
 const RUN_UNITS_PER_SEC = 675;
+/**
+ * Route cost of a zone of attacker ground for a defender moving before the plant, in units of the
+ * SAFEST route weight (7 s each): a way round is taken unless it is more than ~20 s longer per zone avoided.
+ */
+const ENEMY_GROUND_COST = 3;
 /** A fake's show is made by this many players ("few"): enough to be heard as a group, not the team. */
 const FEINT_SHOW_SIZE = 2;
 /** DEFENSE: footsteps count as evidence for this long after they were last heard. */
@@ -1112,6 +1117,29 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
+   * DEFENSE, before the plant: a defender changing position (a stack, a rotation, going back to its
+   * post) goes round the ground the attack holds first (MapTactics.attackerGround) where the map
+   * allows. The shortest way between two sites runs through the attackers' lobbies on several maps
+   * (Split: A Site > A Main > A Lobby > Sewer > B; Icebox: through Mid Blue); a defender taking it
+   * walks alone into five attackers in the first ten seconds. The zone it stands in and the zone it
+   * is sent to are never priced, so a deliberate push still goes where it is told.
+   */
+  private defenseRoutesOnOwnGround(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
+    const ground = this.options.tactics?.attackerGround;
+    if (view.side !== "defense" || !ground || ground.length === 0) return commands.slice();
+    const phase = view.spike.phase;
+    if (phase !== "carried" && phase !== "dropped") return commands.slice();
+    return commands.map((c) => {
+      if (c.kind !== "move" || !c.targetZone || (c.routePreference && c.routePreference !== "FASTEST")) return c;
+      const me = view.teammates.find((p) => String(p.id) === String(c.playerId));
+      const own = me ? String(this.spatial.nearestZone({ x: me.position.x, y: me.position.y })) : "";
+      const zoneCosts: Record<string, number> = {};
+      for (const z of ground) if (z !== String(c.targetZone) && z !== own) zoneCosts[z] = ENEMY_GROUND_COST;
+      return Object.keys(zoneCosts).length ? { ...c, routePreference: "SAFEST" as const, zoneCosts } : c;
+    });
+  }
+
+  /**
    * DEFENSE pre-plant hold (opening-duel fix): the combat engine grants a stationary defender a
    * pre-aim first-contact edge (preAim = seesEnemy && !enemySeesSelf && !moving). The stochastic
    * draw had defenders move/save off their anchors ~28% of decisions, trading away that edge and
@@ -1338,7 +1366,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       if (siteZone && rot.ids.includes(id)) {
         // Held site: nobody is watching its entries, so the fastest approach (a zero budget makes
         // retakeApproach pick by time). Fallen site: the least-exposed one, as for a retake.
-        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity).stage;
+        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity, new Set(this.options.tactics?.attackerGround ?? [])).stage;
         const target = pz === siteZone || (held && pz === stage) ? siteZone : stage;
         const aim = target === siteZone ? this.aimOf(siteZone) ?? siteZone : siteZone;
         return target === pz
@@ -1526,12 +1554,46 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * fits the clock, the fastest. It stages at the last zone of that approach the plant cannot see.
    * Nothing here is map-specific — which entry is unwatched falls out of the map's sightlines.
    */
-  retakeApproach(from: ZoneId, plantZone: ZoneId, timerMs: number): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number } {
+  retakeApproach(from: ZoneId, plantZone: ZoneId, timerMs: number, avoid?: ReadonlySet<string>): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number } {
     if (from === plantZone) return { stage: plantZone, entry: plantZone, travelMs: 0, exposedMs: 0 };
+    // Before the plant (`avoid` = the ground the attack holds first): an approach that comes in
+    // through that ground is taken only when the site has no other way in.
+    if (avoid && avoid.size > 0) {
+      const clean = this.approachAmong(from, plantZone, timerMs, (entry) => (avoid.has(String(entry)) && entry !== from ? null : this.routeAround(from, entry, avoid)));
+      if (clean) return clean;
+    }
+    return this.approachAmong(from, plantZone, timerMs, (entry) => (from === entry ? [from] : this.spatial.findPath(from, entry, "run")?.path ?? null))
+      ?? { stage: this.retakeEntry(from, plantZone), entry: from, travelMs: this.legMs(from, plantZone), exposedMs: 0 };
+  }
+
+  /** The fastest zone route from `from` to `to` that enters none of `avoid` (the two ends excepted), or null. */
+  private routeAround(from: ZoneId, to: ZoneId, avoid: ReadonlySet<string>): ZoneId[] | null {
+    if (from === to) return [from];
+    const dist = new Map<string, number>([[String(to), 0]]);
+    const next = new Map<string, ZoneId>();
+    const open: ZoneId[] = [to];
+    // backwards from the goal over "zones with a direct edge onto this one" — all the query gives
+    while (open.length > 0) {
+      open.sort((p, q) => dist.get(String(p))! - dist.get(String(q))!);
+      const v = open.shift()!;
+      if (v === from) break;
+      for (const u of this.entriesOf(v)) {
+        if (u !== from && avoid.has(String(u))) continue;
+        const d = dist.get(String(v))! + this.legMs(u, v);
+        if (d < (dist.get(String(u)) ?? Infinity)) { dist.set(String(u), d); next.set(String(u), v); if (!open.includes(u)) open.push(u); }
+      }
+    }
+    if (!next.has(String(from))) return null;
+    const route: ZoneId[] = [from];
+    while (route[route.length - 1] !== to) route.push(next.get(String(route[route.length - 1]))!);
+    return route;
+  }
+
+  private approachAmong(from: ZoneId, plantZone: ZoneId, timerMs: number, routeTo: (entry: ZoneId) => readonly ZoneId[] | null): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number } | null {
     const seen = (z: ZoneId) => this.spatial.hasLineOfSight(plantZone, z) || this.spatial.hasLineOfSight(z, plantZone);
     let best: { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits: boolean } | null = null;
     for (const entry of this.entriesOf(plantZone)) {
-      const route = from === entry ? [from] : this.spatial.findPath(from, entry, "run")?.path;
+      const route = routeTo(entry);
       if (!route || route.includes(plantZone)) continue; // through the plant is not an approach to it
       const { travelMs, exposedMs } = this.routeCost([...route, plantZone], seen);
       if (!Number.isFinite(travelMs)) continue;
@@ -1544,7 +1606,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
           : travelMs < best.travelMs);
       if (better) best = { stage, entry, travelMs, exposedMs, fits };
     }
-    return best ?? { stage: this.retakeEntry(from, plantZone), entry: from, travelMs: this.legMs(from, plantZone), exposedMs: 0 };
+    return best;
   }
 
   /**
@@ -1739,6 +1801,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
 
     // Route intent: every move order says how it wants to get there (route-intent.ts).
     commands = annotateRoutes(view, strategy, roleOf, commands);
+    commands = this.defenseRoutesOnOwnGround(view, commands);
 
     const decision: PolicyDecision = { strategy, roles, commands };
     const trace: TeamRoundTrace = {

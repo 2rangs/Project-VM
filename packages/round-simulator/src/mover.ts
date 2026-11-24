@@ -398,7 +398,9 @@ export class MovementExecutor {
       if (c > 0) hazardCosts.set(z.id, c * w);
     }
     const blockedZones = this.blockers.ids().map((id) => this.zoneOfBlocker.get(id)).filter((z): z is string => !!z);
-    const r = this.spatial.findPath(p.zoneId, goal.zoneId, pref === "STEALTH" ? "walk" : goal.mode, { hazardCosts, blockedZones });
+    // a team walks through its own spawn (the zone graph lets nobody else through one)
+    const ownSpawn = p.side === "defense" ? "defender-spawn" : "attacker-spawn";
+    const r = this.spatial.findPath(p.zoneId, goal.zoneId, pref === "STEALTH" ? "walk" : goal.mode, { hazardCosts, blockedZones, passableZones: [ownSpawn] });
     return r ? r.path : null;
   }
 
