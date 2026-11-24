@@ -926,6 +926,7 @@ export const en: Record<string, string> = {
   'load.banner.forge': 'Forge',
   'load.banner.signal': 'Signal',
   'load.match.attacking': 'Attacking',
+  'load.match.level': 'Account level',
   'load.match.defending': 'Defending',
   'load.banner.localHint': 'Your own banners: put files you have prepared in apps/desktop/assets/banners/<name>/1.webm … 5.webm (png, webp, gif, mp4 also work) and they appear here.',
   'load.banner.localFound': 'Found {n} of your own banners (assets/banners).',

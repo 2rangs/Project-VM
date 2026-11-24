@@ -32,6 +32,7 @@ async function main() {
       // optional local assets (real map mesh, banners) are never present in CI: keep runs independent of them
       PV_MAP_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_BANNER_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
+      PV_MEDIA_ASSETS_DIR: path.join(appDir, 'test/fixtures/no-local-assets'),
       PV_REPO_ROOT: path.resolve(appDir, '..', '..'),
       PV_MATCH_SCRIPT: path.join(appDir, 'scripts', 'run-match.mts'),
       PV_SESSION_SCRIPT: path.join(appDir, 'scripts', 'match-session.mts'),

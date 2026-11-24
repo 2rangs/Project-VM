@@ -49,6 +49,10 @@ export const IPC = {
   // [manager]
   /** renderer → main (invoke): build the pre-match opponent report (scripts/prematch.mts). */
   prematchReport: 'pv:prematch:report',
+  /** renderer → main (invoke): manifest.json of the user's own fetched media (playercards); null when absent. */
+  mediaManifest: 'pv:asset:media-manifest',
+  /** renderer → main (invoke): one file of that media (path relative to its folder); null when absent. */
+  mediaFile: 'pv:asset:media-file',
 } as const;
 
 // ── Interactive match session (tactical timeouts; @pv/match-runner MatchSession) ──
@@ -329,6 +333,9 @@ export interface PvBridge {
   /** User-supplied loading banners (never shipped, never in git): pack name → stage (1..6) → file name. */
   listBanners(): Promise<LocalBannerPack[]>;
   loadBannerFile(pack: string, file: string): Promise<Uint8Array | null>;
+  /** User-fetched Kingdom Archives media (scripts/fetch-*.mjs; never shipped, never in git). */
+  mediaManifest(kind: 'playercards'): Promise<unknown | null>;
+  mediaFile(kind: 'playercards', file: string): Promise<Uint8Array | null>;
   readonly platform: string;
   readonly isElectron: true;
 }
