@@ -456,6 +456,11 @@ export interface RoundResult {
   /** Report-only movement / crowd measurements, present only when config.collectStats is true. */
   readonly stats?: RoundStats;
   /**
+   * Each side policy's information trace (per-player knowledge, comms events, minimap spots, trust),
+   * present when config.traceCommands or config.recordPerception is on and the policy provides one.
+   */
+  readonly information?: Readonly<Record<Side, unknown>>;
+  /**
    * The buy phase that preceded the round (config.buyPhaseMs > 0): where each player set up, and —
    * with recordTracks — a frame per tick at negative elapsedMs (−durationMs … −tickMs).
    */

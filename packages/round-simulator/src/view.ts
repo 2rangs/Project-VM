@@ -122,9 +122,10 @@ function toAbilityInventory(p: SimPlayer): AbilityInventory {
   };
 }
 
-function toTeammate(p: SimPlayer, transit?: TeammateTransit): PolicyTeammate {
+function toTeammate(p: SimPlayer, transit?: TeammateTransit, blindRemainingMs = 0): PolicyTeammate {
   return {
     ...(transit ? { transit } : {}),
+    ...(blindRemainingMs > 0 ? { blindRemainingMs } : {}),
     id: p.id, teamId: p.teamId, side: p.side, agentId: p.agentId,
     position: p.position, facing: p.facing, health: p.health, armor: p.armor, alive: p.alive,
     weapon: p.weaponId ? { weaponId: p.weaponId } : null,
@@ -324,7 +325,8 @@ export function buildPolicyView(
   });
   const teamId = side === "attack" ? "attackers" : "defenders";
   const team = result.teams.get(teamId);
-  const teammates = state.players.filter((p) => p.side === side).map((p) => toTeammate(p, opts.transitOf?.(p)));
+  const blindOf = (p: SimPlayer): number => (opts.abilityEngine && opts.elapsedMs !== undefined ? opts.abilityEngine.blindRemainingMs(p.id, opts.elapsedMs) : 0);
+  const teammates = state.players.filter((p) => p.side === side).map((p) => toTeammate(p, opts.transitOf?.(p), blindOf(p)));
   const knownEffects = visibleEffectsFor(side, state, spatial, opts);
   const visibleEffects: VisibleEffect[] = knownEffects.map(({ origin: _origin, ...e }) => e);
   // What the team knows utility has changed on the map: one entry per known effect, at the

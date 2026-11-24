@@ -38,7 +38,7 @@ import type {
   RetakePlans,
 } from "@pv/shared-types";
 import { planForSpot } from "@pv/shared-types";
-import { buildTeamBelief, enemyPressureOnZone } from "@pv/decision-engine";
+import { buildTeamBelief, enemyPressureOnZone, InformationLayer, type CommsLedger, type InfoProfile, type InformationTrace } from "@pv/decision-engine";
 import { generateActions, type GenerationResult } from "@pv/action-generator";
 import { synthContextFromView } from "./view.js";
 import { assignRoles, enemySiteBias, isEco, isPartialBuy, profileFor, reconsider, selectStrategy } from "./igl.js";
@@ -112,6 +112,15 @@ export interface TeamPolicyOptions {
    * Needs `tactics` with a mid area.
    */
   readonly midControl?: boolean;
+  /**
+   * The information layer (decision-engine information.ts): the team decides on what its players
+   * CALLED (and the minimap showed), not on the pooled observation. Default OFF (the pooled picture,
+   * the calibrated engine) until the layer passes the real-roster gate; true turns it on. See
+   * docs/INFORMATION_LAYER.md and docs/handoff/information-layer.md.
+   */
+  readonly information?: boolean;
+  /** Test hook: replace the information layer's deterministic draws (salt → u in [0,1)). */
+  readonly informationDraw?: (salt: string) => number;
 }
 
 /** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
@@ -387,6 +396,9 @@ export interface TeamRoundTrace {
     readonly hitBelief?: HitBelief | null;
     /** The team's own estimate of mid control at this decision (mid-control.ts), when tracked. */
     readonly midControl?: MidControlState | null;
+    /** Information layer: who held the call, and how many calls were current when it was made. */
+    readonly igl?: string;
+    readonly reportsHeard?: number;
   };
   readonly roles: readonly RoleAssignment[];
   readonly players: ReadonlyArray<{
@@ -442,11 +454,46 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   private readonly routeCache = new Map<string, { route: readonly ZoneId[]; waypoint: ZoneId }>();
   /** Zones the defense watches from its sites (see siteWatched). */
   private watchedCache: ReadonlySet<string> | null = null;
+  /** Per-player knowledge → comms → IGL fusion (null when the option is off). */
+  private readonly info: InformationLayer | null;
+  private infoProfiles: ReadonlyMap<string, InfoProfile> | undefined;
+  /** Roles of the last decision (the trust prior reads them). */
+  private lastRoles = new Map<string, string>();
   constructor(
     private readonly spatial: SpatialQuery,
     private readonly options: TeamPolicyOptions = {},
   ) {
     this.profiles = options.profiles;
+    const zonePosition = options.zonePosition;
+    this.info = options.information !== true ? null : new InformationLayer(spatial, {
+      ...(zonePosition ? { zoneCentre: (z: string) => zonePosition(z) } : {}),
+      ...(options.informationDraw ? { draw: options.informationDraw } : {}),
+    });
+  }
+
+  /**
+   * Per-player information attributes (communication, awareness, composure, call quality), keyed by
+   * this round's sim ids, and the match's call track-record ledger (shared by both side policies).
+   */
+  setInfoProfiles(profiles: ReadonlyMap<string, InfoProfile> | null, ledger?: CommsLedger): void {
+    this.infoProfiles = profiles ?? undefined;
+    if (ledger) this.info?.setLedger(ledger);
+  }
+
+  /** The round's information trace: each player's knowledge, every call, minimap spots, trust. */
+  informationTrace(): InformationTrace | null {
+    return this.info ? this.info.trace() : null;
+  }
+
+  /**
+   * The view the team decides on: the pooled observation/belief replaced by the IGL's fused picture.
+   * Without per-player observations (a scenario-built view) there is nothing to fuse and the view
+   * is used as it is.
+   */
+  private informed(view: PolicyView): { view: PolicyView; iglId: string | null } {
+    if (!this.info || !view.perPlayerObservation || Object.keys(view.perPlayerObservation).length === 0) return { view, iglId: null };
+    const out = this.info.step({ view, ...(this.infoProfiles ? { profiles: this.infoProfiles } : {}), roles: this.lastRoles });
+    return { view: { ...view, observation: out.observation, belief: out.belief }, iglId: out.iglId };
   }
 
   /** Set (or clear) the active coach order. Persists across decisions until changed. */
@@ -2394,7 +2441,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     return this.decideWithTrace(view, rng).decision;
   }
 
-  decideWithTrace(view: PolicyView, rng: RandomSource): { decision: PolicyDecision; trace: TeamRoundTrace } {
+  decideWithTrace(rawView: PolicyView, rng: RandomSource): { decision: PolicyDecision; trace: TeamRoundTrace } {
+    const { view, iglId } = this.informed(rawView);
     const generation = this.candidates(view);
     // The plan persists across decisions: the opening call is made ONCE per round (not re-drawn
     // every 500ms) and then only changes when new information justifies it (reconsider).
@@ -2415,6 +2463,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const reconChanged = ordered ? ordered !== opening : plan.strategy !== opening;
     const roles = this.applyRoleOrder(assignRoles(view, strategy, this.profiles, rng));
     const roleOf = new Map(roles.map((r) => [String(r.playerId), r.role]));
+    this.lastRoles = new Map(roleOf);
 
     const alive = view.teammates.filter((p) => p.alive);
     const choices: Array<{ choice: PlayerChoice; entry: TeamworkEntry }> = [];
@@ -2474,6 +2523,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         opponentRead: this.opponentRead ?? null,
         hitBelief: plan.belief,
         midControl: plan.mid ? midControlState(plan.mid.c) : null,
+        ...(this.info && iglId !== null ? { igl: iglId, reportsHeard: view.observation.teammateReports.length } : {}),
       },
       roles,
       players: choices.map(({ choice }, i) => ({

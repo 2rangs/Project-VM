@@ -199,6 +199,8 @@ export interface PolicyTeammate {
    * the entry comes out of the smoke).
    */
   readonly transit?: TeammateTransit;
+  /** How long this teammate stays blinded by a flash (ms; absent / 0 = not blind). Own team only. */
+  readonly blindRemainingMs?: number;
 }
 
 export interface TeammateTransit {
@@ -279,6 +281,11 @@ export interface PolicyView {
 
 export interface DecisionPolicy {
   decide(view: PolicyView, rng: RandomSource): PolicyDecision;
+  /**
+   * Optional: the round's information trace (who knew what, who called what, when) for replay and
+   * debugging. Read once at round end; opaque to the simulator.
+   */
+  informationTrace?(): unknown;
 }
 
 export interface PlayerProfile {

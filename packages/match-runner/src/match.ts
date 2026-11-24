@@ -56,7 +56,8 @@ import {
   type PlayerContext,
   type TeamDecisionTraits,
 } from "./economy.js";
-import { applyRoundForm, rosterConsistency, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
+import { applyRoundForm, rosterConsistency, rosterInfoProfiles, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
+import { CommsLedger, type InfoProfile } from "@pv/decision-engine";
 import { resolveMidPlan, type PlayerProfile, type ResolvedMidSidePlan } from "@pv/shared-types";
 import { MidControlTracker, OpponentModel, decideMidCall, defenderStartsFor, type MidControlRecord, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { MAP_IDS, isMapId } from "@pv/spatial-engine";
@@ -215,6 +216,12 @@ export interface MatchConfig {
   readonly midControl?: boolean;
   /** Pre-match engine options: override any of the calibrated formula constants. */
   readonly tuning?: MatchTuning;
+  /**
+   * Information layer (docs/INFORMATION_LAYER.md): each player knows what they sensed, the team
+   * knows what was called, the IGL decides on the fused picture. Default false — the pooled
+   * picture, as calibrated. Experimental: at 12/15 on the real-roster gate (elimination 0.672).
+   */
+  readonly informationLayer?: boolean;
   /**
    * Minimum throw rates (throws per second of holding a post-plant posture). A player's floor is
    * the larger of their team's and their own entry; nobody throws less often than their floor,
@@ -438,6 +445,10 @@ export class MatchEngine {
   private readonly skillsBySlot: Record<TeamSlot, ReturnType<typeof rosterSkills>>;
   private readonly traitsBySlot: Record<TeamSlot, TacticalTraits[]>;
   private readonly profilesBySlot: Record<TeamSlot, RosterProfile[]>;
+  /** Per-player information attributes (comms / awareness / composure / call quality). */
+  private readonly infoBySlot: Record<TeamSlot, ReturnType<typeof rosterInfoProfiles>>;
+  /** Every player's call track record this match (both side policies read and write it). */
+  private readonly commsLedger = new CommsLedger();
   private readonly consistencyBySlot: Record<TeamSlot, number[]>;
   /** What each team has learned about the other so far this match. */
   private readonly opponentModels: Record<TeamSlot, OpponentModel>;
@@ -473,11 +484,12 @@ export class MatchEngine {
     this.skillsBySlot = { A: rosterSkills(config.teamA.id, 5, ro.A), B: rosterSkills(config.teamB.id, 5, ro.B) };
     this.traitsBySlot = { A: rosterTraits(config.teamA.id, 5, ro.A), B: rosterTraits(config.teamB.id, 5, ro.B) };
     this.profilesBySlot = { A: rosterProfiles(config.teamA.id, 5, ro.A), B: rosterProfiles(config.teamB.id, 5, ro.B) };
+    this.infoBySlot = { A: rosterInfoProfiles(config.teamA.id, 5, ro.A), B: rosterInfoProfiles(config.teamB.id, 5, ro.B) };
     this.consistencyBySlot = { A: rosterConsistency(config.teamA.id, 5, ro.A), B: rosterConsistency(config.teamB.id, 5, ro.B) };
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true);
     this.playerIdsBySlot = { A: rosterPlayerIds(config.teamA.id, 5, ro.A), B: rosterPlayerIds(config.teamB.id, 5, ro.B) };
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};
@@ -650,6 +662,11 @@ export class MatchEngine {
     }));
   }
 
+  /** Information attributes keyed by this round's sim ids; the ledger key is the real player (slot-qualified when unknown). */
+  private infoMap(slot: TeamSlot, prefix: "atk" | "def"): ReadonlyMap<string, InfoProfile> {
+    return new Map(this.infoBySlot[slot].map((pr, i) => [`${prefix}${i + 1}`, { ...pr, key: pr.key ?? `${slot}:${i + 1}` }]));
+  }
+
   private teamRef(slot: TeamSlot): TeamRef { return slot === "A" ? this.config.teamA : this.config.teamB; }
 
   /** Round the engine will play next (1-based). */
@@ -721,6 +738,8 @@ export class MatchEngine {
     // Real-roster decision profiles, re-keyed to this round's side-named sim ids (atk1.. / def1..).
     this.policies.attack.setProfiles(this.profileMap(attacker, "atk"));
     this.policies.defense.setProfiles(this.profileMap(defender, "def"));
+    this.policies.attack.setInfoProfiles(this.infoMap(attacker, "atk"), this.commsLedger);
+    this.policies.defense.setInfoProfiles(this.infoMap(defender, "def"), this.commsLedger);
     const readBefore: Record<TeamSlot, OpponentRead | null> = { A: null, B: null };
     const useMemory = config.opponentMemory ?? true;
     readBefore[attacker] = useMemory ? this.opponentModels[attacker].read() : null;

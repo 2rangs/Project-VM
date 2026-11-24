@@ -16,7 +16,7 @@ import { buildCatalog, type WeaponSpec } from "@pv/combat-engine";
 import type { AbilityCatalog } from "@pv/ability-engine";
 import { plantSpotAt, plantSpotsOf, type Side, type DecisionPolicy as SimDecisionPolicy } from "@pv/round-simulator";
 import { TeamDecisionPolicy, type OpponentRead, type PlanSummary, type PolicyOrder, type PolicyTuning } from "@pv/team-engine";
-import { buildBeliefState } from "@pv/decision-engine";
+import { buildBeliefState, type CommsLedger, type InfoProfile, type InformationTrace } from "@pv/decision-engine";
 import { spatialQueryFromEngine } from "@pv/integration-adapters";
 import { spikeBlastRadiusUnits, weaponPrice } from "@pv/game-rules";
 import type { DecisionPolicy, MidControlState, PlantSpotRef, PlayerProfile, PlayerState, PolicyView, PostPlantPlans, RandomSource, ResolvedMidSidePlan, RetakePlans, SpatialQuery } from "@pv/shared-types";
@@ -138,8 +138,9 @@ export function plantSpotRefOf(spatial: SpatialEngine): (point: { x: number; y: 
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false, midControl = false) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false, midControl = false, information = false) {
     this.inner = new TeamDecisionPolicy(sq, {
+      ...(information ? { information: true } : {}),
       ...(tactics ? { tactics } : {}),
       midControl,
       ...(abilityEffect ? { abilityEffect } : {}),
@@ -190,6 +191,14 @@ export class WrappedTeamPolicy implements DecisionPolicy {
   setSpotPlans(plans: { readonly postPlant?: PostPlantPlans | null; readonly retake?: RetakePlans | null } | null): void {
     this.inner.setSpotPlans(plans);
   }
+  /** Per-player information attributes + the match's call ledger (TeamDecisionPolicy.setInfoProfiles). */
+  setInfoProfiles(profiles: ReadonlyMap<string, InfoProfile> | null, ledger?: CommsLedger): void {
+    this.inner.setInfoProfiles(profiles, ledger);
+  }
+  /** The round's information trace (per-player knowledge, comms, minimap, trust). */
+  informationTrace(): InformationTrace | null {
+    return this.inner.informationTrace();
+  }
   private normalize(view: PolicyView): PolicyView {
     const teammates = view.teammates.map((p): PlayerState => ({
       ...p,
@@ -224,8 +233,9 @@ export function makeSimPolicies(
   tactics?: MapTactics,
   plantTactics = false,
   midControl = false,
+  information = false,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

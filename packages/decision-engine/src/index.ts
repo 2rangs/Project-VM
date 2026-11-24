@@ -21,3 +21,28 @@ export {
   decidingTeamPlayers,
   aliveDecidingPlayers,
 } from "./context.js";
+export {
+  InformationLayer,
+  CommsLedger,
+  AVERAGE_INFO_PROFILE,
+  reporterTrust,
+  callLoad,
+  callReactionMs,
+  speechMs,
+  callErrorChance,
+  iglProcessingMs,
+  minimapGlanceMs,
+  claimWeight,
+  hashDraw,
+} from "./information.js";
+export type {
+  InfoProfile,
+  InfoKind,
+  CallAccuracy,
+  KnowledgeItem,
+  CommsEvent,
+  InformationTrace,
+  InformationLayerOptions,
+  InformationInput,
+  InformationOutput,
+} from "./information.js";
