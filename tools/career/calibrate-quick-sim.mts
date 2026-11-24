@@ -9,18 +9,26 @@
 // 3. Validates at SERIES level: for each engine series the quick model's P(A wins the series) is
 //    estimated from 300 quickSeries runs on the same pair; reports the Brier score of the quick
 //    model, of the constant 0.5, the log-loss, and a calibration table by predicted probability.
+// 4. Scans the per-map form noise σ (QUICK_SIM.mapNoiseSd) and the round slope on the same cached
+//    engine series and reports the log-loss for each; the committed constants are the minimum.
 //
-//   npx tsx tools/career/calibrate-quick-sim.mts [series=60] [seed=2026]
-// Heavy (≈ 3 s per series): run through /Users/yi-rang/ProjectV-assets/tools/heavy-run.sh.
+//   npx tsx tools/career/calibrate-quick-sim.mts [series=120] [seed=2026] [--refit]
+// The engine series are cached in tools/career/calibration-data.json (committed): without --refit a
+// run only re-fits and re-validates against the cached engine results (seconds). --refit replays the
+// engine (≈ 3.5 s per series; heavy: run through /Users/yi-rang/ProjectV-assets/tools/heavy-run.sh).
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { runSeries } from '../../packages/match-runner/src/index.ts';
 import { worldFromGameData, mapRecordsFromGameData } from '../../packages/career/src/game-data.ts';
 import {
   lineupStrength, mapShare, matchRoster, mulberry32, newCareer, quickSeries, regionTeams, REGIONS, seriesRequest, setMapRecords,
-  lineupFor, type Fixture,
+  lineupFor, quickSeriesWith, QUICK_SIM, type Fixture,
 } from '../../packages/career/src/index.ts';
 
-const N = Number(process.argv[2] ?? 60);
+const N = Number(process.argv[2] ?? 120);
 const seed = Number(process.argv[3] ?? 2026);
+const REFIT = process.argv.includes('--refit');
+const CACHE = new URL('./calibration-data.json', import.meta.url);
 setMapRecords(mapRecordsFromGameData());
 const w = worldFromGameData(seed);
 const c = newCareer(w, { seed, manager: { name: 'cal', nationality: 'kr' }, userTeamId: regionTeams(w, 'pacific')[0]! });
@@ -28,28 +36,42 @@ const rng = mulberry32(seed);
 const teams = REGIONS.flatMap((r) => regionTeams(c.world, r).slice(0, 12));
 
 interface Row { d: number; m: number; won: number; lost: number }
-const rows: Row[] = [];
-const series: Array<{ a: string; b: string; winA: number; req: ReturnType<typeof seriesRequest> }> = [];
-const t0 = Date.now();
-for (let i = 0; i < N; i++) {
-  const a = teams[Math.floor(rng() * teams.length)]!;
-  let b = a; while (b === a) b = teams[Math.floor(rng() * teams.length)]!;
-  const fx = { id: `cal-${i}`, season: 2026, stage: 'stage1', phase: 'group', round: 1, date: '2026-03-06', format: 'bo3', home: a, away: b } as Fixture;
-  const req = seriesRequest(c, fx);
-  const res = runSeries({
-    teamA: { id: a, name: a, scouting: false, roster: matchRoster(c, lineupFor(c, a)) as never },
-    teamB: { id: b, name: b, scouting: false, roster: matchRoster(c, lineupFor(c, b)) as never },
-    format: 'bo3', seed: seed * 1000 + i,
-  });
-  const dA = lineupStrength(c, req.home.lineup) - lineupStrength(c, req.away.lineup);
-  for (const g of res.games) {
-    const ma = mapShare(a, g.map); const mb = mapShare(b, g.map);
-    rows.push({ d: dA, m: ma !== null && mb !== null ? ma - mb : 0, won: g.score.A, lost: g.score.B });
+interface Played { a: string; b: string; winA: number; req: ReturnType<typeof seriesRequest>; games: Array<{ map: string; A: number; B: number }> }
+let played: Played[];
+const cachePath = fileURLToPath(CACHE);
+if (!REFIT && existsSync(cachePath)) {
+  const cached = JSON.parse(readFileSync(cachePath, 'utf8')) as { seed: number; played: Played[] };
+  if (cached.seed !== seed) throw new Error(`cache is for seed ${cached.seed}`);
+  played = cached.played;
+  process.stderr.write(`using ${played.length} cached engine series\n`);
+} else {
+  played = [];
+  const t0 = Date.now();
+  for (let i = 0; i < N; i++) {
+    const a = teams[Math.floor(rng() * teams.length)]!;
+    let b = a; while (b === a) b = teams[Math.floor(rng() * teams.length)]!;
+    const fx = { id: `cal-${i}`, season: 2026, stage: 'stage1', phase: 'group', round: 1, date: '2026-03-06', format: 'bo3', home: a, away: b } as Fixture;
+    const req = seriesRequest(c, fx);
+    const res = runSeries({
+      teamA: { id: a, name: a, scouting: false, roster: matchRoster(c, lineupFor(c, a)) as never },
+      teamB: { id: b, name: b, scouting: false, roster: matchRoster(c, lineupFor(c, b)) as never },
+      format: 'bo3', seed: seed * 1000 + i,
+    });
+    played.push({ a, b, winA: res.winner === 'A' ? 1 : 0, req, games: res.games.map((g) => ({ map: g.map, A: g.score.A, B: g.score.B })) });
+    process.stderr.write(`${i + 1}/${N} ${res.score.A}-${res.score.B}\n`);
   }
-  series.push({ a, b, winA: res.winner === 'A' ? 1 : 0, req });
-  process.stderr.write(`${i + 1}/${N} d=${dA.toFixed(3)} ${res.score.A}-${res.score.B}\n`);
+  writeFileSync(cachePath, JSON.stringify({ seed, engineSecondsPerSeries: Number(((Date.now() - t0) / 1000 / N).toFixed(2)), played }));
 }
-const secPerSeries = (Date.now() - t0) / 1000 / N;
+const secPerSeries = Number((JSON.parse(readFileSync(cachePath, 'utf8')) as { engineSecondsPerSeries: number }).engineSecondsPerSeries);
+const rows: Row[] = [];
+const series = played;
+for (const p of played) {
+  const dA = lineupStrength(c, p.req.home.lineup) - lineupStrength(c, p.req.away.lineup);
+  for (const g of p.games) {
+    const ma = mapShare(p.a, g.map); const mb = mapShare(p.b, g.map);
+    rows.push({ d: dA, m: ma !== null && mb !== null ? ma - mb : 0, won: g.A, lost: g.B });
+  }
+}
 
 // Newton–Raphson MLE for (k, mq, b) over rounds.
 let th = [0, 0, 0];
@@ -87,24 +109,39 @@ const cov = (() => {
   return [Math.sqrt(c00), Math.sqrt(c11)];
 })();
 
-// Series-level validation of the quick model with the constants currently in quick-sim.ts.
-let brierQ = 0; let brier5 = 0; let ll = 0;
-const bins = [0, 0.3, 0.45, 0.55, 0.7, 1.0001].map((lo, i, a) => ({ lo, hi: a[i + 1] ?? 1.0001, n: 0, pred: 0, obs: 0 })).slice(0, 5);
-for (const s of series) {
-  let wins = 0;
-  for (let k = 0; k < 300; k++) if (quickSeries({ ...s.req, seed: s.req.seed + k * 7919 }, c).winner === s.a) wins += 1;
-  const p = Math.min(0.995, Math.max(0.005, wins / 300));
-  brierQ += (p - s.winA) ** 2; brier5 += (0.5 - s.winA) ** 2; ll += -(s.winA ? Math.log(p) : Math.log(1 - p));
-  const bin = bins.find((b) => p >= b.lo && p < b.hi)!;
-  bin.n += 1; bin.pred += p; bin.obs += s.winA;
+// Series-level validation of the quick model: P(A wins the series) from REPS quickSeries runs.
+const REPS = 200;
+function validate(tuning: { roundSlope?: number; mapNoiseSd?: number }, withBins = false) {
+  let brierQ = 0; let ll = 0;
+  const bins = [0, 0.3, 0.45, 0.55, 0.7].map((lo, i, a) => ({ lo, hi: a[i + 1] ?? 1.0001, n: 0, pred: 0, obs: 0 }));
+  for (const s of series) {
+    let wins = 0;
+    for (let k = 0; k < REPS; k++) if (quickSeriesWith({ ...s.req, seed: s.req.seed + k * 7919 }, c, tuning).winner === s.a) wins += 1;
+    const p = Math.min(0.99, Math.max(0.01, wins / REPS));
+    brierQ += (p - s.winA) ** 2; ll += -(s.winA ? Math.log(p) : Math.log(1 - p));
+    if (withBins) { const bin = bins.find((b) => p >= b.lo && p < b.hi)!; bin.n += 1; bin.pred += p; bin.obs += s.winA; }
+  }
+  return { brier: brierQ / series.length, logLoss: ll / series.length, bins };
 }
+const scan: Array<{ roundSlope: number; mapNoiseSd: number; logLoss: number; brier: number }> = [];
+for (const roundSlope of [Math.round(th[0]! * 10) / 10, QUICK_SIM.roundSlope, 6.5]) {
+  for (const mapNoiseSd of [0, 0.15, 0.3, 0.45, 0.6]) {
+    const v = validate({ roundSlope, mapNoiseSd });
+    scan.push({ roundSlope, mapNoiseSd, logLoss: Number(v.logLoss.toFixed(4)), brier: Number(v.brier.toFixed(4)) });
+  }
+}
+const best = [...scan].sort((a, b) => a.logLoss - b.logLoss)[0]!;
+const cur = validate({}, true);
+const brier5 = series.reduce((s, x) => s + (0.5 - x.winA) ** 2, 0) / series.length;
 const sd = Math.sqrt(rows.reduce((s, r) => s + r.d * r.d, 0) / rows.length);
 console.log(JSON.stringify({
-  series: N, maps: rows.length, secondsPerEngineSeries: Number(secPerSeries.toFixed(2)),
+  series: played.length, maps: rows.length, secondsPerEngineSeries: secPerSeries,
   fit: { roundSlope: Number(th[0]!.toFixed(2)), roundSlopeSE: Number(cov[0]!.toFixed(2)), mapSlope: Number(th[1]!.toFixed(2)), mapSlopeSE: Number(cov[1]!.toFixed(2)), intercept: Number(th[2]!.toFixed(3)), sdAbilityDiff: Number(sd.toFixed(4)) },
+  committed: { roundSlope: QUICK_SIM.roundSlope, mapSlope: QUICK_SIM.mapSlope, mapNoiseSd: QUICK_SIM.mapNoiseSd },
   seriesValidation: {
-    brierQuick: Number((brierQ / N).toFixed(4)), brierConstantHalf: Number((brier5 / N).toFixed(4)), logLoss: Number((ll / N).toFixed(4)),
-    meanPredicted: Number((series.length ? bins.reduce((s, b) => s + b.pred, 0) / N : 0).toFixed(3)), meanObserved: Number((series.reduce((s, x) => s + x.winA, 0) / N).toFixed(3)),
-    calibration: bins.filter((b) => b.n).map((b) => ({ predicted: `${b.lo}–${Math.min(1, b.hi)}`, n: b.n, meanPredicted: Number((b.pred / b.n).toFixed(3)), observed: Number((b.obs / b.n).toFixed(3)) })),
+    brierQuick: Number(cur.brier.toFixed(4)), brierConstantHalf: Number(brier5.toFixed(4)), logLoss: Number(cur.logLoss.toFixed(4)),
+    meanPredicted: Number((cur.bins.reduce((s, b) => s + b.pred, 0) / played.length).toFixed(3)), meanObserved: Number((series.reduce((s, x) => s + x.winA, 0) / played.length).toFixed(3)),
+    calibration: cur.bins.filter((b) => b.n).map((b) => ({ predicted: `${b.lo}–${Math.min(1, b.hi)}`, n: b.n, meanPredicted: Number((b.pred / b.n).toFixed(3)), observed: Number((b.obs / b.n).toFixed(3)) })),
   },
+  scan, best,
 }, null, 2));
