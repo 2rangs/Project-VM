@@ -17,10 +17,10 @@ One engine, but every team decision is built from each player's information one 
 Before: `buildPolicyView` pooled every player's sight and hearing into one `ObservationState`, and the IGL decided on it. The moment
 anyone sensed something, the whole team knew it, exactly and at once.
 
-Now `TeamDecisionPolicy` passes the view through `InformationLayer.step` first and replaces `view.observation` and `view.belief`
+Now With the layer on, `TeamDecisionPolicy` passes the view through `InformationLayer.step` first and replaces `view.observation` and `view.belief`
 with the IGL's fused picture. Everything downstream works unchanged: strategy, reconsider, hit belief, rotations, slow-plan
 commit, pace, and utility. Only what reaches it is different. A view with no per-player observations (a scenario-built view)
-passes through unchanged. `TeamPolicyOptions.information: false` restores the pooled engine for counterfactuals.
+passes through unchanged. The layer is off by default; `TeamPolicyOptions.information: true` (or `MatchConfig.informationLayer`) turns it on.
 
 The pipeline runs once per decision (every 500 ms):
 
@@ -147,4 +147,12 @@ trace (`TeamRoundTrace.evidence`) also records the IGL and the number of current
 
 ## 7. Validation
 
-See the commit message / hand-over note for the 160-match numbers (seeds 1–160 and 161–320, real rosters).
+**The layer is OFF by default** (`MatchConfig.informationLayer`, `sim-batch --information`, `TeamPolicyOptions.information`).
+
+Layer ON, seeds 1–160, real rosters:
+- original 8: 7/8. Elimination is 0.672 against a pass mark of 0.674.
+- attack win rate: 0.536.
+- judged metrics: 12/15. Main is 13/15; semi vs full worsened from 0.349 to 0.397.
+- seeds 161–320: not run.
+
+Full table, diagnosis and next step: [`docs/handoff/information-layer.md`](handoff/information-layer.md).
