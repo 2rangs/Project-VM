@@ -35,7 +35,10 @@ function initState(c: Combatant, opponent: Combatant, seed: number, p: CombatPar
     health: c.health,
     armor: c.armor,
     ammo: c.ammo ?? c.weapon.magazineSize,
-    nextFireAt: readyDelayMs(c, p, cal, distanceMeters, opponent.posture.lateralSpeedMps ?? 0),
+    // The line of sight between them turns at (own lateral + opponent lateral) / distance for BOTH
+    // fighters: a strafing peeker's crosshair drifts off a still holder as much as the holder's
+    // crosshair drifts off it.
+    nextFireAt: readyDelayMs(c, p, cal, distanceMeters, (c.posture.lateralSpeedMps ?? 0) + (opponent.posture.lateralSpeedMps ?? 0)),
     shotsFired: 0,
     shotsHit: 0,
     rng: mulberry32(deriveSeed(seed, c.id)),

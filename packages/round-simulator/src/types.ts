@@ -323,6 +323,10 @@ export interface EngagementRecord {
   readonly aimOffsetDeg?: { readonly attacker: number; readonly defender: number };
   /** When each side could first fire (ms after contact; combat-engine readyDelayMs). */
   readonly readyMs?: { readonly attacker: number; readonly defender: number };
+  /** Gaze model: the peek in this contact (who peeked, how), whether it ended as a disengage, and the spike phase. */
+  readonly peek?: { readonly side: "attack" | "defense"; readonly kind: string; readonly rePeek: boolean };
+  readonly disengaged?: boolean;
+  readonly spikePhase?: string;
   /** What each side was looking at (gaze source) at first contact. */
   readonly gaze?: { readonly attacker: string; readonly defender: string };
   /**
@@ -454,6 +458,11 @@ export interface SimConfig {
   readonly decisionIntervalTicks: number;
   readonly plantDurationMs: number;
   readonly defuseDurationMs: number;
+  /**
+   * Half-defuse checkpoint (ms; game-rules spike.ts defuseHalfwayMs = 3500): a defuse let go after it
+   * resumes from it. 0 / absent = progress always resets (the pre-A3 engine).
+   */
+  readonly defuseHalfwayMs?: number;
   readonly spikeTimerMs: number;
   /**
    * A mover told what to watch on arrival (the order's `aimZone`) takes a covered spot that sees

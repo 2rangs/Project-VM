@@ -90,10 +90,10 @@ export interface EngagePosture {
    */
   readonly aimOffsetDeg?: number;
   /**
-   * This combatant's speed (m/s) ACROSS the opponent's line of sight at contact. The opponent's
-   * crosshair has to follow it: during the opponent's perception time the target moves
-   * lateral · perception / distance radians off where it was seen (gaze model only). A wide swing
-   * strafes at run speed, a slice walks, a holder is 0.
+   * This combatant's speed (m/s) ACROSS the opponent's line of sight at contact. The line of sight
+   * then turns at (sum of both fighters' lateral speeds) / distance, and BOTH crosshairs have to
+   * follow it: during each one's perception time the other moves that many radians off where it
+   * was seen (gaze model only). A wide swing strafes at run speed, a slice walks, a holder is 0.
    */
   readonly lateralSpeedMps?: number;
   /**

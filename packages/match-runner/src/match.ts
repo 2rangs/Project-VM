@@ -24,6 +24,7 @@ import {
   type MatchRoundTeam,
   type NavTraceEvent,
   type RoundStats,
+  type EngagementRecord,
 } from "@pv/round-simulator";
 import { lossBonusTierFor, type TeamEconomyState } from "@pv/economy-engine";
 import {
@@ -106,6 +107,10 @@ export interface MatchTuning extends Partial<PolicyTuning> {
    * Default 1. Larger = moving into a held angle costs more; Infinity = a mover never settles.
    */
   readonly movingStopScale?: number;
+  /** Simulator peeker's-advantage constant (ms; round-simulator SimConfig.peekerAdvantageMs). Default 180. */
+  readonly peekerAdvantageMs?: number;
+  /** Half-defuse checkpoint (ms; SimConfig.defuseHalfwayMs). Default off. */
+  readonly defuseHalfwayMs?: number;
 }
 
 export interface MatchConfig {
@@ -143,6 +148,8 @@ export interface MatchConfig {
    * RoundStats) for the validator. Passive: outcomes are identical with and without it. Default false.
    */
   readonly collectStats?: boolean;
+  /** Keep every duel's engagement record (RoundRecord.engagements; round-simulator traceCommands). Diagnostics; passive. */
+  readonly traceEngagements?: boolean;
   /** Gaze model (round-simulator SimConfig.gaze; docs/ENGINE_TRUTH.md §8). Default off. */
   readonly gaze?: boolean;
   /** Sound detail: landings off drops, gunfire masking (SimConfig.soundDetail; ENGINE_TRUTH §9). Default off. */
@@ -225,6 +232,8 @@ export interface RoundRecord {
   readonly navTrace?: readonly NavTraceEvent[];
   /** Report-only movement / crowd measurements of the round; present only when `collectStats` is on. */
   readonly stats?: RoundStats;
+  /** Every duel of the round (round-simulator EngagementRecord); present only with `traceEngagements`. */
+  readonly engagements?: readonly EngagementRecord[];
 }
 
 /**
@@ -377,7 +386,7 @@ export class MatchEngine {
   private readonly consistencyBySlot: Record<TeamSlot, number[]>;
   /** What each team has learned about the other so far this match. */
   private readonly opponentModels: Record<TeamSlot, OpponentModel>;
-  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number; combatCalibration?: { stopTimeScale?: number } };
+  private readonly simTuning: { crossfirePenaltyMs?: number; infoWindowMs?: number; damageCarryover?: number; peekerAdvantageMs?: number; defuseHalfwayMs?: number; combatCalibration?: { stopTimeScale?: number } };
   private readonly formSigmaMax: number | undefined;
   /** Per roster index: the player's minimum throw rate (max of team and player entries). */
   private readonly throwFloorsBySlot: Record<TeamSlot, number[]>;
@@ -413,13 +422,15 @@ export class MatchEngine {
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
     this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics);
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
-    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, ...policyTuning } = config.tuning ?? {};
+    const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};
     this.policies.attack.setTuning(policyTuning);
     this.policies.defense.setTuning(policyTuning);
     this.simTuning = {
       ...(crossfireMsPerBit !== undefined ? { crossfirePenaltyMs: crossfireMsPerBit } : {}),
       ...(infoHalfLifeMs !== undefined ? { infoWindowMs: infoHalfLifeMs } : {}),
       ...(damageCarryover !== undefined ? { damageCarryover } : {}),
+      ...(peekerAdvantageMs !== undefined ? { peekerAdvantageMs } : {}),
+      ...(defuseHalfwayMs !== undefined ? { defuseHalfwayMs } : {}),
       ...(movingStopScale !== undefined ? { combatCalibration: { stopTimeScale: movingStopScale } } : {}),
     };
     this.formSigmaMax = formSigmaMax;
@@ -629,7 +640,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);
@@ -730,6 +741,7 @@ export class MatchEngine {
       }),
       ...(result.navTrace ? { navTrace: result.navTrace } : {}),
       ...(result.stats ? { stats: result.stats } : {}),
+      ...(config.traceEngagements && result.engagementTrace ? { engagements: result.engagementTrace } : {}),
     };
     this.rounds.push(record);
     this.options.onRound?.(record, { ...score });

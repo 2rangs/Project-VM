@@ -1650,6 +1650,9 @@ export class RoundSimulator {
               ? { smokeExit: { attacker: (atkP === a ? aFrom : bFrom) !== null, defender: (defP === a ? aFrom : bFrom) !== null, watched: aWatched || bWatched } }
               : {}),
             winnerSide,
+            ...(peek ? { peek: { side: peek.peeker.side, kind: peek.kind, rePeek: peek.rePeek } } : {}),
+            ...(r.disengagedAtMs !== undefined ? { disengaged: true } : {}),
+            spikePhase: state.spike.phase,
           });
         }
       }
@@ -1793,6 +1796,15 @@ export class RoundSimulator {
     };
   }
 
+  /**
+   * Progress kept when a defuse is let go (game rule, game-rules spike.ts defuseHalfwayMs): past
+   * the half-defuse checkpoint the defuse resumes from it; before it, from 0. Off (0) = always 0.
+   */
+  private defuseCheckpoint(progressMs: number): number {
+    const half = this.cfg.defuseHalfwayMs ?? 0;
+    return half > 0 && progressMs >= half ? half : 0;
+  }
+
   private stepSpike(state: SimState, commands: Map<string, ActionCommand>, dtMs: number, events: SimEvent[], trace: Tracer): void {
     const s = state.spike;
     // Trace plant/defuse command evaluation with the reason it did/didn't take (deduped per
@@ -1847,9 +1859,10 @@ export class RoundSimulator {
       const spikeAt = s.position;
       const defuser = spikeAt && state.players.find((p) => p.alive && p.side === "defense" && this.inDefuseReach(p, spikeAt) && !this.steppingOut.has(p.id) && !this.mover.isMoving(p) && readyCommand(commands.get(p.id), state.elapsedMs)?.kind === "defuse");
       if (defuser) {
-        if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = 0; s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
+        // a fresh defuse starts from the half-defuse checkpoint if one was reached (else 0)
+        if (s.phase === "planted") { s.phase = "defusing"; s.defuseProgressMs = this.defuseCheckpoint(s.defuseProgressMs); s.defuserId = defuser.id; events.push({ kind: "defuseStart", tick: state.tick, elapsedMs: state.elapsedMs, actor: defuser.id, zoneId: s.zoneId ?? undefined }); }
         if (s.defuserId && !state.players.find((p) => p.id === s.defuserId)?.alive) {
-          s.phase = "planted"; s.defuseProgressMs = 0; s.defuserId = null;
+          s.phase = "planted"; s.defuseProgressMs = this.defuseCheckpoint(s.defuseProgressMs); s.defuserId = null;
           events.push({ kind: "defuseInterrupted", tick: state.tick, elapsedMs: state.elapsedMs });
           return;
         }
@@ -1861,7 +1874,7 @@ export class RoundSimulator {
       } else if (s.phase === "defusing") {
         // defuser left or died
         const prev = s.defuserId;
-        s.phase = "planted"; s.defuseProgressMs = 0; s.defuserId = null;
+        s.phase = "planted"; s.defuseProgressMs = this.defuseCheckpoint(s.defuseProgressMs); s.defuserId = null;
         if (prev) events.push({ kind: "defuseInterrupted", tick: state.tick, elapsedMs: state.elapsedMs, actor: prev });
       }
     }

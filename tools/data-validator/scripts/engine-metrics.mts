@@ -77,6 +77,7 @@ export class EngineMetrics {
     let roundsReachedSite = 0;
     const routeCounts = new Map<string, number>();
     const leadRouteCounts = new Map<string, number>();
+    const peeks: Record<string, number> = {};
     const crowd = { queueTicks: 0, queuePushes: 0, yieldTicks: 0, yieldPushes: 0, stackWaits: 0, stackWaitTicks: 0, stackTimeouts: 0 };
 
     for (const { record: r, attackStrength, defenseStrength } of R) {
@@ -138,6 +139,7 @@ export class EngineMetrics {
         if (s.overlapTicks > 0) overlapRounds++;
         if (Number.isFinite(s.minPairDistance)) minPair.push(s.minPairDistance);
         for (const k of Object.keys(crowd) as Array<keyof typeof crowd>) crowd[k] += s.crowd[k];
+        for (const [k, v] of Object.entries(s.peeks ?? {})) peeks[k] = (peeks[k] ?? 0) + v;
         const arr = s.siteArrivals;
         if (arr.length > 0) {
           roundsReachedSite++;
@@ -211,6 +213,7 @@ export class EngineMetrics {
           leadRouteEntropyBits: r3(entropyBits(leadRouteCounts)),
           topLeadRoutes: topShare(leadRouteCounts),
         },
+        peeksPerRound: Object.fromEntries(Object.entries(peeks).map(([k, v]) => [k, r3(v / statRounds)])),
         crowdPerRound: Object.fromEntries(Object.entries(crowd).map(([k, v]) => [k, r3(v / statRounds)])),
       },
     };
@@ -250,6 +253,7 @@ export function renderEngineMetrics(m: EngineMetricsReport): string {
     L.push(`| Site arrival consecutive gap (s) | ${d(mv.siteArrival.consecutiveGapS)} |`);
     L.push(`| Routes to site: distinct · entropy (bits) | ${mv.pathDiversity.distinctRoutesToSite} · ${f(mv.pathDiversity.routeEntropyBits)} |`);
     L.push(`| Lead routes: distinct · entropy (bits) | ${mv.pathDiversity.distinctLeadRoutes} · ${f(mv.pathDiversity.leadRouteEntropyBits)} |`);
+    for (const [k, v] of Object.entries(mv.peeksPerRound ?? {})) L.push(`| Peeks per round — ${k} | ${f(v)} |`);
     for (const [k, v] of Object.entries(mv.crowdPerRound)) L.push(`| Crowd per round — ${k} | ${f(v)} |`);
   }
   L.push("", "Reason mix: " + Object.entries(m.reasonMix).map(([k, v]) => `${k} ${v}`).join(" · "), "");
