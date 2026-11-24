@@ -533,6 +533,8 @@ export const ko: Record<string, string> = {
 
   // ── live match screen (screens/matchday) — added by the matchday UI/UX work; keep as one block ──
   'mdx.exit': '로비',
+  'mdx.keys': '1–5 선수 강조 · Esc 해제 · Space 재생 · ←/→ 이벤트 · M 모드',
+  'mdx.matchup.hint': '생존 인원 — 우리 대 상대',
   'mdx.exit.hint': '경기 화면을 닫고 매니저 화면으로 (세션은 유지)',
   'mdx.mode.label': '보기 모드',
   'mdx.mode.tactical': '전술 맵',

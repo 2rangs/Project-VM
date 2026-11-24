@@ -141,6 +141,24 @@ function TeamHead({ name, sub, right, tone }: { name: string; sub: ReactNode; ri
   );
 }
 
+/** Our-vs-theirs at a glance: players alive as two opposing bars, so the balance reads without counting dots. */
+export function MatchupStrip({ t, frame }: { t: TFn; frame: Frame | null }) {
+  if (!frame) return null;
+  const me = frame.team, foe = other(me);
+  const a = frame.situation.alive[me], b = frame.situation.alive[foe];
+  const tone = a > b ? 'up' : a < b ? 'down' : 'even';
+  return (
+    <div className={`mdx-matchup ${tone}`} data-testid="matchup-strip" title={t('mdx.matchup.hint')}>
+      <b className="ally">{a}</b>
+      <span className="mdx-mu-bar" aria-hidden>
+        <i className="ally" style={{ width: `${(a / 5) * 50}%` }} />
+        <i className="enemy" style={{ width: `${(b / 5) * 50}%` }} />
+      </span>
+      <b className="enemy">{b}</b>
+    </div>
+  );
+}
+
 function buyLine(t: TFn, round: RoundTimeline | null, team: TeamSlot): ReactNode {
   const buy = round?.summary?.buys[team];
   if (!buy) return '—';

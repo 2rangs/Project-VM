@@ -314,6 +314,10 @@ capped at 30 fps; the 2D map (PixiJS) keeps its own canvas and pace.
   CPU-side timings only — GPU time is not measured. Under software GL (the e2e flags) the tactical
   map runs at ≈12 fps; the real mesh is not usable there.
 
+#### Readability aids (tactical view)
+Matchup strip (players alive, us vs them), keys **1–5** / roster click to highlight one player with a pulsing ring
+(**Esc** clears), site labels emphasised, key hints in the map corner.
+
 #### Economy, plans, gaze, sound and duels (UI-1 … UI-6)
 Each item reads what the engine records and says so when it falls back (`시야: 근사치`, "no duel records"):
 
