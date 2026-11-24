@@ -199,8 +199,8 @@
   ],
   "objectsNotLocated": [
     {
-      "name": "Ultimate orbs",
-      "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+      "name": "Ultimate orbs — exact positions",
+      "reason": "zone-level only (A Main / B Main = B Garage, from game knowledge, unverified); no orb object exists in the static scene, so the point given is the zone anchor."
     }
   ],
   "mechanics": [
@@ -210,6 +210,30 @@
       "represented": true,
       "provenance": "measured-on-mesh (ascender objects, cells); manual-approx (travel time)",
       "how": "seven roadmap links kind=rope between measured cells (traversals in this file): two pairs in the vent pit, B Tower, a pair in A Sewer. The 'on rope' state is NOT modelled"
+    }
+  ],
+  "ultOrbs": [
+    {
+      "id": "orb-a-main",
+      "zone": "a-main",
+      "position": {
+        "x": 6268,
+        "y": -4490,
+        "z": 200
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
+    },
+    {
+      "id": "orb-b-garage",
+      "zone": "b-garage",
+      "position": {
+        "x": -2182,
+        "y": -3840,
+        "z": 300
+      },
+      "verified": false,
+      "provenance": "manual-approx (game knowledge: which callout holds the orb; NOT measured — orbs are spawned actors absent from the static scene, and the two public wikis refused automated reads on 2026-11-24). position = the zone's roadmap anchor, not the orb's exact spot"
     }
   ]
 }
