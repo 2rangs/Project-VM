@@ -11,9 +11,13 @@ Branch `claude/pv2-pistol`. Scope: `packages/combat-engine`, `packages/round-sim
 >    공격수"를 정확히 메우고, movementStyle의 전멸 이득이 weaponModes의 전멸 손실을 상쇄한다 —
 >    P0-1(피스톨)과 P0-4(movementStyle ON)를 **하나의 원리적 조합으로 동시 해결.** 상수로 안 덮음.
 > 4. 단, 이 조합은 161–320에서 **비핵심 에코 셀**(semi-eco, full-eco·eco-full=소표본)을 악화시킨다 —
->    세션 B(에코) 영역과 겹치므로 **기본값 플립은 통합 단계에서 B와 조율해 결정**하도록 남긴다.
->    두 플래그는 이미 존재하므로(`movementStyle:true` + `weaponModes:true`) 조합을 쓰는 데 코드 변경은
->    불필요하다. 기본값을 바꾸는 한 줄 패치는 §4에 적어 둔다. 이 브랜치는 **기본값 미변경(둘 다 OFF)**.
+>    세션 B(에코) 영역과 겹치므로 후속 과제로 기록(§4).
+>
+> **2026-11-25 오케스트레이터 결정으로 이 브랜치는 기본값을 플립했다:** `weaponModes` 기본 ON
+> (`!== false`), `movementStyle` 기본 ON (`?? true`). 두 구간 8/8 ≥ main이라 규칙 충족. opt-out:
+> sim-batch `--no-weapon-modes` / `--no-style`, 또는 `MatchConfig.weaponModes:false` /
+> `movementStyle:false`(또는 `BUY_PHASE_ONLY_STYLE`). 최종 판정은 B·C·D와 합친 통합 트리 재게이트.
+> 전체 테스트/타입체크 통과(§7).
 
 ---
 
@@ -107,15 +111,21 @@ movementStyle이 올린 전멸(0.689/0.684)이 weaponModes가 깎던 전멸(단�
 (둘 다 Ascent 소표본 "don't tune"). weaponModes가 에코에 샷건 run-and-gun을 주는 알려진 부작용 →
 **세션 B(에코) 영역**. 1–160 에코 셀은 오히려 전부 통과(15/15).
 
-### 기본값 플립 한 줄 패치 (통합 시, B 조율 후)
+### 기본값 플립 (적용됨, 2026-11-25)
 ```ts
 // packages/match-runner/src/match.ts
-this.weapons = loadWeapons({ modes: config.weaponModes !== false });   // 487행: 기본 ON
-// ...round config:
-movementStyle: config.movementStyle ?? true,                           // 831행: BUY_PHASE_ONLY_STYLE → true
+this.weapons = loadWeapons({ modes: config.weaponModes !== false });   // 기본 ON
+movementStyle: config.movementStyle ?? true,                           // BUY_PHASE_ONLY_STYLE → true
 ```
-그리고 sim-batch에 `--no-weapon-modes`(상대 세션 ee4adbb와 동일) 추가, 시그니처/일부 골든 테스트 갱신.
-**이 브랜치는 플립하지 않음** — 기본값 미변경, 두 플래그 OFF 유지. 조합은 `--style --weapon-modes`로 즉시 사용 가능.
+sim-batch: `--no-weapon-modes` 추가, `--style`/`--weapon-modes`는 이제 no-op(기본값), `--no-style` opt-out 유지.
+
+## 7. 테스트 (기본값 플립 후, 통과)
+루트 vitest 307(+4 todo) · match-runner 135 · round-simulator 165(1 skip) · combat 36 · economy 38 ·
+perception 32 · career 106(1 skip) · data-validator pytest 65 · 루트+데스크톱 typecheck 통과 ·
+데스크톱 test:engine 10(번들=소스 바이트 동일 확인) / test:unit 78 / test:matchday 58. e2e 미실행(통합 게이트).
+
+### 기본값(플래그 없이) 1–160 재확인
+(default_1 결과 채움 — style+weaponModes와 동일해야 함)
 
 ## 5. 남은 것 / 다음 한 걸음
 1. **통합 단계(오케스트레이터 + 세션 B): style+weaponModes 기본 ON 결정.** §4 한 줄 패치 적용 → 두 구간
