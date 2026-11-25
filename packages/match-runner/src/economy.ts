@@ -198,8 +198,8 @@ export interface EconomyOptions {
    * expected-value choice; how much an eco spends is this rule — under the sim's belief and two-round
    * lookahead, spending the surplus and saving it are within 0.01 of map-win probability, and VCT
    * teams spend it. Also switches the buy ladder to the eco catalogue (Stinger, Ghost) and lets a
-   * full buy short of the kit buy part of it. false → the v1.2 buys. Default false until it passes
-   * the real-roster gate (docs/handoff/economy.md).
+   * full buy short of the kit buy part of it. false → the v1.2 buys. Default true since the
+   * real-roster gate on main d91f646 (docs/handoff/economy.md).
    */
   readonly ecoSidearms: boolean;
 }
@@ -214,7 +214,7 @@ export const DEFAULT_ECONOMY_OPTIONS: EconomyOptions = {
   winBelief: SIM_ROUND_WIN_BELIEF,
   saveByCredits: true,
   armorMatchedValue: true,
-  ecoSidearms: false,
+  ecoSidearms: true,
 };
 
 // ---------------------------------------------------------------------------------------------
