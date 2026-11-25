@@ -67,6 +67,21 @@ bands, then re-gate both flags as a pair. Treat the pointSight-exposure floor an
 hold strength as the two knobs; the pistol cell @ 1–160 is the tightest constraint.
 
 ## 3. P0-3 — gaze recalibration (post-plant guard 38°): measured, still OFF
+### Gaze gate (160 matches, this tree)
+| config | range | judged8 | attack | elim | defuse | opening | pistol | full-full |
+|---|---|---|---|---|---|---|---|---|
+| `--gaze` | 1–160 | 3/8 | **0.337✗** | 0.533✗ | 0.373✗ | 0.468 | 0.312✗ | 0.349✗ |
+| `--gaze --plant-tactics` | 1–160 | **5/8** | **0.514** ✅ | 0.637✗ | 0.223✗ | 0.521✗ | 0.466 | 0.506 |
+
+**New this session:** gaze ON *alone* is catastrophic (attack 0.337 — the post-plant guard has no post
+and is lost). But gaze **with plant-tactics** now reaches **attack 0.514 — inside the 0.47–0.55 target
+the handoff set** (ENGINE_TRUTH §12.4 had 0.412 @ 60 matches; the plant-spot/retake changes since have
+lifted it). So the "gaze attack too low" problem is **resolved on this tree**. The remaining gate
+blockers moved to: **elimination 0.637** (the same post-plant-hold overshoot as §2), **defuse 0.223**
+(the retaker's pre-aimed swing wins too much — the 38° guard below), and **opening 0.521** (the pre-plant
+attack entry now over-wins). gaze stays OFF, but it is much closer than the docs say.
+
+
 ### Measured (`duel-breakdown --gaze --plant-tactics`, 12 matches)
 Post-plant attacker (guard) duel win 0.457 (gaze-off ≈ 0.576). Aim offset: **guard 38°, retaker 26°**.
 - `D-swing` (retaker pre-aims the guard): n=186, atkWin 0.403, **guard 42° / retaker 12°**.
@@ -91,11 +106,14 @@ the lane mouth made it **worse** (post-plant offset 38° → 52°, atkWin 0.457 
 fights from up-lane, not the deep corner. Reverted.
 
 ### Next step (one)
-Needs off-angle hold data: put the guard not on the entry but on the **points where the retake is
-exposed** (MAP-1 `holdSpots`, off-angles) so the pre-aim matches the swing corner, and add belief-
-staleness dispersion to the *pre-plant* holder (its 2–6° offset is unrealistically perfect). Then
-recalibrate with plantTactics on (§2 next step). gaze stays OFF until post-plant attack reaches
-0.47–0.55.
+gaze+plantTactics already clears the attack-win target (0.514); the three failing metrics are the
+tractable work. In priority order: (a) **elimination** — the shared post-plant-hold overshoot (§2),
+fix once for both flags; (b) **defuse 0.223** — the retaker's pre-aimed swing beats the 38°-off guard,
+so fixing the guard's post-plant aim (put it on the retake's **exposed** points / off-angles, MAP-1
+`holdSpots`, not the lane mouth — the naive "aim deeper" tried here backfired) cuts the retaker's edge;
+(c) **opening 0.521** — add belief-staleness dispersion to the *pre-plant* holder (its 2–6° offset is
+unrealistically perfect, which over-helps the attacker's entry). Do (a)/(b) with gaze on and re-gate
+gaze and plantTactics together. gaze stays OFF until the 8 metrics hold on both ranges.
 
 ## 4. Changes committed
 - `tools/data-validator/scripts/{duel-breakdown,postplant-duels}.mts`: added `--plant-tactics` so the
