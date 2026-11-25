@@ -48,11 +48,24 @@ Reports: `docs/research/SIM_WEAPON_MODES_GATE_2026-11-25_{1-160,161-320}.json`. 
 
 Engine-truth's finding holds: with run-and-gun on, pistol at 161–320 passes. The gate still fails on 1–160 by one
 metric, defuse share 0.203 against ≤ 0.200 (n 3,254 rounds; the share's standard error is ≈ 0.007, so this is
-about half an SE over). Engine-truth-2 alone reports 1–160 8/8 at attack 0.542, but its report files are not on
-disk, so whether `weaponModes` raised defuse or this is seed noise is not measured. Next step: a same-seed
-flag-off run of 1–160 on `weapon-modes-gate` (`sim-batch --matches 160 --seed-start 1`) to compare defuse
-directly; if `weaponModes` moves defuse up, look at post-plant fights with shotguns/Classic burst (retakers
-running in close are the ones the run-and-gun helps).
+about half an SE over). **Same-seed baseline (flag off, same branch, seeds 1–160;
+`docs/research/SIM_WEAPON_MODES_OFF_BASELINE_2026-11-25_1-160.json`):**
+
+| | flag off | flag on |
+|---|---|---|
+| Original 8 | 8/8 | 7/8 |
+| Defuse (≤ 0.200) | **0.198** | **0.203** |
+| Attack | 0.531 | 0.529 |
+| Pistol | 0.481 | 0.487 |
+| Post-plant attack win / detonation | 0.701 / 0.117 | 0.695 / 0.125 |
+| Judged cells | 13/15 (semi vs eco 0.986, eco vs full 0.137) | 13/15 (defuse, eco vs full 0.123) |
+
+`weaponModes` moves defuse +0.005; the standard error of a difference between two runs of ~3,250 rounds is
+≈ 0.010, so the move is noise. Defuse sits at the bound on this tree with or without the flag (0.198 / 0.203),
+and the flag-on run trades the semi-vs-eco miss for the defuse miss (same 13/15). On 161–320 the flag is what
+lifts pistol into the band (0.397 → 0.453) and makes it 8/8. Next step: the integrator's call — the gate's
+strict reading (8/8 on both ranges) is not met on 1–160 by 0.003 of defuse; a measured effect of the flag on
+that metric is not there. Defuse at the bound is engine-truth's (post-plant/retake).
 
 ## Gate — `ecoSidearms` ON (2026-11-25, main d91f646, real rosters, 160 matches) → default on
 
