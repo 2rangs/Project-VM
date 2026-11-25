@@ -121,6 +121,8 @@ const GRID = 300; // spatial-hash cell (uu)
 const NO_TRANSIT_MS = 120_000;
 /** A point further than this from every node (XY) is not on the roadmap. */
 const LOCATE_RADIUS = 450;
+/** Entries kept in the locate memo before it is cleared (each is a short string → node). */
+const LOCATE_MEMO_MAX = 50_000;
 /** Height band within which a node counts as "this floor" for a 3D lookup (uu). */
 const FLOOR_BAND = 160;
 
@@ -148,8 +150,7 @@ export class NavBlockers {
   addZone(id: string, zoneId: string): void {
     this.remove(id);
     const nodes = this.nav.zoneNodes(zoneId);
-    const set = new Set(nodes);
-    const edges = this.nav.edgesTouching(set);
+    const edges = this.nav.zoneEdges(zoneId);
     this.byId.set(id, { nodes: [...nodes], edges });
     for (const n of nodes) this.nodeCount.set(n, (this.nodeCount.get(n) ?? 0) + 1);
     for (const e of edges) this.edgeCount.set(e, (this.edgeCount.get(e) ?? 0) + 1);
@@ -195,10 +196,19 @@ export class Navigator {
   private readonly byZone = new Map<string, number[]>();
   private readonly speeds: { run: number; walk: number }; // uu per ms
   private readonly hasLinks: boolean;
-  private readonly pairCache = new Map<string, number>();
+  /** zoneTravelMs results by (start anchor, goal anchor, mode, no-transit) — a numeric key, see pairKey. */
+  private readonly pairCache = new Map<number, number>();
   private visBits: Uint8Array | null = null;
   private visRange = 0;
   private seenCache: Map<number, Int32Array> | null = null;
+  /**
+   * Memo of `locate` / `locateInZone`: both are pure functions of (position, zone, radius) over the
+   * immutable roadmap, and the simulation asks them the same question many times a tick (every
+   * observer–target pair of perception locates both bodies). Value = node, or -1 for null.
+   * Cleared wholesale when it grows past LOCATE_MEMO_MAX (positions change as players move).
+   */
+  private readonly locateMemo = new Map<string, number>();
+  private readonly zoneEdgeCache = new Map<string, number[]>();
 
   constructor(data: NavData, movement: { unitsPerMeter: number; runSpeedMetersPerSec: number; walkSpeedMetersPerSec: number }) {
     this.mapId = data.mapId;
@@ -302,6 +312,22 @@ export class Navigator {
    * nearest node of any zone.
    */
   locateInZone(p: Vec2 | Vec3, zoneId: string | null | undefined, maxDist = 700): number | null {
+    const key = zoneId ? `z${zoneId}|${maxDist}|${p.x}|${p.y}|${(p as Vec3).z}` : null;
+    if (key !== null) {
+      const hit = this.locateMemo.get(key);
+      if (hit !== undefined) return hit < 0 ? null : hit;
+    }
+    const n = this.locateInZoneUncached(p, zoneId, maxDist);
+    if (key !== null) this.remember(key, n);
+    return n;
+  }
+
+  private remember(key: string, n: number | null): void {
+    if (this.locateMemo.size >= LOCATE_MEMO_MAX) this.locateMemo.clear();
+    this.locateMemo.set(key, n === null ? -1 : n);
+  }
+
+  private locateInZoneUncached(p: Vec2 | Vec3, zoneId: string | null | undefined, maxDist: number): number | null {
     if (zoneId) {
       const hasZ = typeof (p as Vec3).z === "number";
       let best = -1, bestScore = Infinity;
@@ -359,6 +385,15 @@ export class Navigator {
    * the position is not on the roadmap at all.
    */
   locate(p: Vec2 | Vec3, maxDist = LOCATE_RADIUS): number | null {
+    const key = `l${maxDist}|${p.x}|${p.y}|${(p as Vec3).z}`;
+    const hit = this.locateMemo.get(key);
+    if (hit !== undefined) return hit < 0 ? null : hit;
+    const n = this.locateUncached(p, maxDist);
+    this.remember(key, n);
+    return n;
+  }
+
+  private locateUncached(p: Vec2 | Vec3, maxDist: number): number | null {
     const hasZ = typeof (p as Vec3).z === "number";
     const r = Math.ceil(maxDist / GRID);
     const cx = Math.floor(p.x / GRID), cy = Math.floor(p.y / GRID);
@@ -436,6 +471,16 @@ export class Navigator {
       }
     }
     return { nodes: nodes.sort((p, q) => p - q), edges: [...edges].sort((p, q) => p - q) };
+  }
+
+  /** Walk edges with an end in a zone (edgesTouching of its nodes), cached per zone — the roadmap is immutable. */
+  zoneEdges(zoneId: string): number[] {
+    let e = this.zoneEdgeCache.get(zoneId);
+    if (!e) {
+      e = this.edgesTouching(new Set(this.zoneNodes(zoneId)));
+      this.zoneEdgeCache.set(zoneId, e);
+    }
+    return e.slice();
   }
 
   edgesTouching(nodes: ReadonlySet<number>): number[] {
@@ -586,7 +631,8 @@ export class Navigator {
     if (s === undefined || g === undefined) return null;
     if (s === g) return 0;
     const forbid = noTransitZones && noTransitZones.size > 0 ? noTransitZones : null;
-    const key = `${s}|${g}|${mode}|${forbid ? 1 : 0}`;
+    // numeric key (no string built per call — this is asked hundreds of thousands of times a match)
+    const key = ((s * this.nodeCount + g) * 2 + (mode === "walk" ? 1 : 0)) * 2 + (forbid ? 1 : 0);
     const hit = this.pairCache.get(key);
     if (hit !== undefined) return hit < 0 ? null : hit;
     const startZone = this.zoneIdx[s]!, goalZone = this.zoneIdx[g]!;

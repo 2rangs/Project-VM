@@ -142,9 +142,19 @@ export function runBuyPhase(input: BuyPhaseInput): BuyPhaseResult {
   }
   const hooksOf = (side: Side): MoverHooks => ({ canEnterZone: (_p, to) => areas[side].has(to) });
 
+  // The run time from a standing point to a setup spot. Asked every half second for every player not
+  // yet on its way (the leave check below), mostly from the same spot, so it is memoised on exactly
+  // what decides it: the side's blockers (their version), the start and the destination.
+  const runMemo = new Map<string, number>();
   const runMs = (side: Side, p: SimPlayer, to: { x: number; y: number; z: number }): number => {
-    const r = nav.findPath({ actorId: p.id, start: p.position, destination: to, movementMode: "run", routePreference: "FASTEST", blockers: exec[side].blockers });
-    return r.status === "SUCCESS" ? r.estimatedTravelMs : 0;
+    const blockers = exec[side].blockers;
+    const key = `${side}|${blockers.version}|${p.position.x}|${p.position.y}|${p.position.z}|${to.x}|${to.y}|${to.z}`;
+    const hit = runMemo.get(key);
+    if (hit !== undefined) return hit;
+    const r = nav.findPath({ actorId: p.id, start: p.position, destination: to, movementMode: "run", routePreference: "FASTEST", blockers });
+    const ms = r.status === "SUCCESS" ? r.estimatedTravelMs : 0;
+    runMemo.set(key, ms);
+    return ms;
   };
 
   // ---- each player's script ----

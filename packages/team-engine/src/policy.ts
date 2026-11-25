@@ -456,6 +456,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   private readonly throwers = new Set<string>();
   /** Post-plant: the staging zone of each defender's retake approach (assigned once per plant). */
   private readonly retakeStages = new Map<string, ZoneId>();
+  /** retakeApproach answers without a spike position (pure in the static map), by arguments. */
+  private readonly approachMemo = new Map<string, { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits?: boolean }>();
   /** Zones with a direct edge onto a zone (its entries), cached per zone. */
   private readonly entryCache = new Map<string, readonly ZoneId[]>();
   /** Attack routes by "from>to" (the map graph is static), see planRoute. */
@@ -2178,6 +2180,24 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     opts: { readonly avoid?: ReadonlySet<string>; readonly spike?: Vector3 | null; readonly only?: ZoneId | null } = {},
   ): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits?: boolean } {
     if (from === plantZone) return { stage: plantZone, entry: plantZone, travelMs: 0, exposedMs: 0 };
+    // Without the spike's exact position the answer depends only on the static map and the
+    // arguments, and the rotation asks it for every rotator on every decision: memoise it.
+    if (!opts.spike) {
+      const key = `${String(from)}|${String(plantZone)}|${timerMs}|${opts.only ?? ""}|${opts.avoid ? [...opts.avoid].sort().join(",") : ""}`;
+      const hit = this.approachMemo.get(key);
+      if (hit) return { ...hit };
+      const a = this.retakeApproachUncached(from, plantZone, timerMs, opts);
+      if (this.approachMemo.size >= 5000) this.approachMemo.clear();
+      this.approachMemo.set(key, a);
+      return { ...a };
+    }
+    return this.retakeApproachUncached(from, plantZone, timerMs, opts);
+  }
+
+  private retakeApproachUncached(
+    from: ZoneId, plantZone: ZoneId, timerMs: number,
+    opts: { readonly avoid?: ReadonlySet<string>; readonly spike?: Vector3 | null; readonly only?: ZoneId | null } = {},
+  ): { stage: ZoneId; entry: ZoneId; travelMs: number; exposedMs: number; fits?: boolean } {
     const { avoid, spike, only } = opts;
     // Before the plant (`avoid` = the ground the attack holds first): an approach that comes in
     // through that ground is taken only when the site has no other way in.

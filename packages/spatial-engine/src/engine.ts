@@ -23,6 +23,9 @@ export function positionKey(x: number, y: number): string {
   return `${x},${y}`;
 }
 
+/** Entries kept in the nearestZone memo before it is cleared. */
+const NEAREST_MEMO_MAX = 20_000;
+
 export interface SpatialEngineOptions {
   /** Transform supplied separately (e.g. from coordinate-system.json). Falls back to data.transform. */
   transform?: CoordinateTransform;
@@ -45,6 +48,10 @@ export class SpatialEngine {
   /** Geometric navigation on the map's roadmap; null when the map has no nav data loaded. */
   readonly nav: Navigator | null;
   private positionZones: ReadonlyMap<string, string> | null = null;
+  /** nearestZone answers by exact position, valid until the position hints change. */
+  private readonly nearestMemo = new Map<string, Zone>();
+  /** audibleZones results by (origin, threshold); the sound graph is immutable. */
+  private readonly audibleMemo = new Map<string, AudibleZone[]>();
   private readonly noTransitZones: ReadonlySet<string>;
   private readonly data: TacticalMapData;
   private readonly graph: ZoneGraph;
@@ -130,9 +137,22 @@ export class SpatialEngine {
    */
   setPositionZones(hints: ReadonlyMap<string, string> | null): void {
     this.positionZones = hints;
+    this.nearestMemo.clear(); // answers may differ under the new hints
   }
 
   nearestZone(position: Vec2 | Vec3): Zone {
+    // Memoised per exact position until the hints change (setPositionZones, once a tick): within a
+    // tick the same bodies' positions are looked up for every listener, observer and decision.
+    const key = `${position.x},${position.y},${(position as Vec3).z}`;
+    const hit = this.nearestMemo.get(key);
+    if (hit) return hit;
+    if (this.nearestMemo.size >= NEAREST_MEMO_MAX) this.nearestMemo.clear();
+    const z = this.nearestZoneUncached(position);
+    this.nearestMemo.set(key, z);
+    return z;
+  }
+
+  private nearestZoneUncached(position: Vec2 | Vec3): Zone {
     const hinted = this.positionZones?.get(positionKey(position.x, position.y));
     if (hinted) {
       const z = this.zoneById.get(hinted);
@@ -293,6 +313,19 @@ export class SpatialEngine {
    */
   audibleZones(originZoneId: string, threshold = 0.1): AudibleZone[] {
     if (!this.zoneById.has(originZoneId)) throw new Error(`unknown zone: ${originZoneId}`);
+    // The sound graph never changes after construction, so the answer per (origin, threshold) is
+    // fixed; it is asked for every shot, cast and sound source of every tick. A fresh array is
+    // returned each time (callers own their copy).
+    const key = `${originZoneId}|${threshold}`;
+    let hit = this.audibleMemo.get(key);
+    if (!hit) {
+      hit = this.audibleZonesUncached(originZoneId, threshold);
+      this.audibleMemo.set(key, hit);
+    }
+    return hit.map((a) => ({ ...a }));
+  }
+
+  private audibleZonesUncached(originZoneId: string, threshold: number): AudibleZone[] {
     const best = new Map<string, number>([[originZoneId, 1]]);
     const queue: string[] = [originZoneId];
     while (queue.length > 0) {

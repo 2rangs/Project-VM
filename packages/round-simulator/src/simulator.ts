@@ -448,11 +448,17 @@ export class RoundSimulator {
       this.beliefNow = prevBelief;
       const sp = state.spike;
       this.spikeWatched = (sp.phase === "planted" || sp.phase === "defusing") && sp.zoneId && sp.position ? { zoneId: sp.zoneId, position: sp.position } : null;
+      // The hooks depend on this tick's world and on (target zone, intent) only: build each set once a
+      // tick instead of once per player (each hooks object is a handful of closures).
+      const hooksThisTick = new Map<string, MoverHooks>();
       for (const p of state.players) {
         if (!p.alive) continue;
         const cmd = readyCommand(commands.get(p.id), state.elapsedMs);
         const targetZone = cmd?.kind === "move" ? cmd.targetZone : undefined;
-        const hooks = this.moverHooks(moveWorld, trace, targetZone, navEvents, cmd?.kind === "move" ? cmd.sourceActionId : undefined);
+        const intent = cmd?.kind === "move" ? cmd.sourceActionId : undefined;
+        const hooksKey = `${targetZone ?? ""}\u0000${intent ?? ""}`;
+        let hooks = hooksThisTick.get(hooksKey);
+        if (!hooks) { hooks = this.moverHooks(moveWorld, trace, targetZone, navEvents, intent); hooksThisTick.set(hooksKey, hooks); }
         if (cmd?.kind === "move" && cmd.targetZone) {
           this.mover.setGoal(p, {
             zoneId: cmd.targetZone, mode: cmd.moveMode ?? "run",

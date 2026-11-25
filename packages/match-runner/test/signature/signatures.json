@@ -1,0 +1,32 @@
+{
+  "ascent-seed1": {
+    "rounds": 13,
+    "score": "11-2",
+    "sha256": "5c89fab360c97c469cb4a87110414b2df2b4c207bd43b6118a83c010ec001154"
+  },
+  "ascent-seed161": {
+    "rounds": 13,
+    "score": "3-10",
+    "sha256": "611c17a0908d65a05fbb7427b6a3a872e046668884c971dce1a870812521146e"
+  },
+  "ascent-abilities": {
+    "rounds": 13,
+    "score": "7-6",
+    "sha256": "c85d0bb7217d7af0e0a7be5781f72f5037c788c7cac47ee1d9582d4db666b9c3"
+  },
+  "ascent-tracks-stats": {
+    "rounds": 13,
+    "score": "7-6",
+    "sha256": "1499909c23c312ab6af507bb87da3d21bac6b7a2048bf8a8d4ac35cef4f2ce11"
+  },
+  "haven-own": {
+    "rounds": 13,
+    "score": "4-9",
+    "sha256": "935d7c1ae515e3002a5e9069153715593d084142ead438b66f13012663aa9573"
+  },
+  "bind-own": {
+    "rounds": 13,
+    "score": "11-2",
+    "sha256": "663b4444ee74077786c4058a935f121929c3490f6e7e3d8974ed47c5c516d738"
+  }
+}

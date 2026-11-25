@@ -196,7 +196,8 @@ export function hearSounds(
   const out: SoundObservation[] = [];
 
   for (const src of sources) {
-    const srcZone = spatial.nearestZone(src.position);
+    // The source's zone is looked up only for a sound that is actually heard (most footsteps are
+    // out of range or the listener's own team's); nearestZone has no side effect on the answer.
     if (src.kind === "footstep" || src.kind === "landing" || src.kind === "traversal") {
       if (observerTeamId !== undefined && src.teamId === observerTeamId) continue; // own team's steps
       const dx = src.position.x - observerPos.x, dy = src.position.y - observerPos.y, dz = src.position.z - observerPos.z;
@@ -204,6 +205,7 @@ export function hearSounds(
       const radius = src.radiusUnits ?? params.hearing.footstepRadiusUnits;
       if (d > radius) continue;
       if (isMasked(observerPos, { position: src.position, levelDb: src.levelDb ?? params.hearing.masking.footstepDb }, maskers, params)) continue;
+      const srcZone = spatial.nearestZone(src.position);
       out.push({
         kind: src.kind,
         approxPosition: { x: srcZone.position.x, y: srcZone.position.y, z: srcZone.position.z },
@@ -213,6 +215,7 @@ export function hearSounds(
       continue;
     }
     // strength of the source signal as it reaches the observer's zone
+    const srcZone = spatial.nearestZone(src.position);
     let reachStrength: number;
     if (srcZone.id === observerZone) {
       reachStrength = 1;
