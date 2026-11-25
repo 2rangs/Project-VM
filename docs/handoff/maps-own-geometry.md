@@ -25,38 +25,51 @@ The "not validated" Haven B reachability and Pearl B Club zoneAnchors fixes (`b0
 
 ## 3. Map own-geometry (P1-6)
 
-### 3.1 Diagnosis — the post-plant overshoot is a retake-distance problem
+### 3.1 Per-map measurement (sim-batch --geometry own, 60 matches, seeds 1..60)
 
-The seven problem maps win 0.78–0.90 of rounds after the plant because, when the spike goes down, the nearest living defender is far away and the retake is either not fought (it saves) or arrives too late. I measured the structural driver directly from the derived tactics: the time for the **nearest defender that is not already standing on the planted site** to reach that site (the retake a surviving off-site defender has to run). Defenders start on the sites (2-2-1 with a mid/central defender where one is derived), so this is the retake clock after the site's own defenders die.
+Ascent is the default-geometry gate row (seeds 1..160); the rest are each map on its own geometry. `retake s` = time for the nearest defender **not** standing on a site to reach that site (worst site), from the derived `defenderStarts` — the clock a surviving off-site defender runs after the site's own defenders die. Targets (HANDOFF/§7.6 convention): attack 0.42–0.58, elimination ~0.60–0.75, detonation ≤ ~0.15.
 
-| Map | mid/central defender | worst-site retake run | §7.6 in-range? |
+| Map | attack | elim | **det** | defuse | time | opening | plant | postPlantAtk | retake s | mid/central def |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Ascent** (default geom) | 0.508 | 0.681 | **0.078** | 0.185 | 0.056 | 0.449 | 0.636 | 0.708 | 9.6 | mid-courtyard |
+| Abyss | 0.653 | 0.575 | 0.253 | 0.137 | 0.034 | 0.508 | 0.691 | 0.801 | 10.3 | mid-top |
+| Bind | 0.501 | 0.619 | 0.257 | 0.051 | 0.073 | 0.278 | 0.487 | **0.896** | 15.7 | none (no mid) |
+| Breeze | 0.573 | 0.702 | 0.156 | 0.125 | 0.017 | 0.502 | 0.688 | 0.818 | 10.4 | mid-top |
+| Fracture | 0.640 | 0.518 | **0.354** | 0.105 | 0.022 | 0.454 | 0.693 | 0.848 | 15.1 | none (no mid) |
+| Haven | 0.670 | 0.451 | 0.318 | 0.207 | 0.024 | 0.467 | **0.852** | 0.757 | 10.1 | none (3-site) |
+| Icebox | 0.501 | 0.501 | 0.239 | 0.240 | 0.020 | 0.512 | 0.700 | 0.657 | 10.2 | mid-pallet |
+| Lotus | 0.671 | 0.463 | 0.309 | 0.198 | 0.030 | 0.419 | **0.853** | 0.768 | 10.6 | none (3-site) |
+| Pearl | 0.525 | 0.582 | 0.200 | 0.186 | 0.032 | 0.384 | 0.674 | 0.724 | 18.9 | none (no mid) |
+| Split | 0.669 | 0.480 | **0.396** | 0.104 | 0.020 | 0.411 | 0.735 | 0.858 | 15.2 | mid-top (A-biased) |
+| Sunset | 0.456 | 0.603 | 0.199 | 0.097 | 0.100 | 0.345 | 0.517 | 0.812 | 12.0 | mid-courtyard |
+
+### 3.2 Diagnosis
+
+The HANDOFF P1-6 clue ("7 maps at 0.78–0.90 post-plant, nearest defender 57–81 m") predates the derived per-map tactics now on main; the current picture is both milder and more heterogeneous:
+
+- **The one universal miss is detonation: 0.16–0.40 on every non-Ascent map vs Ascent's 0.078.** Too many planted rounds end in a detonation — the defense does not win the planted round back. Attack win rate itself is in band on six maps; the round-end *mix* is what is wrong (more detonations, fewer eliminations).
+- **Retake distance is a real but partial driver.** The two maps with no mid zone *and* a long rotation — Bind (15.7 s → postPlant 0.896, defuse 0.051) and Fracture (15.1 s → 0.848) — have the highest post-plant attack win: a surviving defender is too far to retake, so it saves and the spike runs down. But it is not the whole story: Pearl has the longest rotation (18.9 s) yet a near-normal postPlant 0.724, and Breeze rotates only 10.4 s yet sits at 0.818. There is a **~0.80 post-plant floor across maps regardless of distance** (vs Ascent 0.708), which is the retake *execution* being tuned to Ascent's geometry and positions (duels resolved one at a time, retake step-out), **not** map data — that belongs to the Ascent-behaviour-logic session (C) and is flagged to the orchestrator.
+- **A second, separate miss is plant rate on the three-site maps** — Haven 0.852, Lotus 0.853 (vs Ascent 0.636): the defense loses the pre-plant fight too often because five defenders cover three sites (2-2-1 with no mid rotator), so each site is thin. Their post-plant is only moderate (0.757 / 0.768); the detonations come from the sheer number of plants.
+- Attack-sided maps (attack > 0.58): Abyss, Fracture, Haven, Lotus, Split.
+
+### 3.3 Fix — central-rotator defender placement (map data: authored `defenderStarts`)
+
+Within this session's scope (map data / per-map placement, not the Ascent behaviour logic), the tractable lever is the no-mid maps' retake distance. Bind and Fracture derive a 3-2 / 2-3 split across the two sites with **no central defender**, so the nearest off-site defender is 15–16 s away. I authored a `defenderStarts` override that moves one defender to the most central reachable zone (Bind → `b-teleporter`, the fast A↔B teleport link, ≤ 9 s to either site; Fracture → `b-link`, ≤ 9.8 s), i.e. a 2-2-1 with a rotator, mirroring what Ascent/Breeze/etc. get for free from a derived mid anchor. Pearl is left alone (no mid, but its post-plant is already normal). The three-site maps and the mid-but-biased maps (Split, Sunset) are **not** changed here — their miss is pre-plant plant-rate or retake logic, not a missing rotator.
+
+| Map | change | before (postPlant / det / attack) | after (postPlant / det / attack) |
 |---|---|---|---|
-| Ascent (baseline) | mid-courtyard | **9.6 s** | baseline |
-| Abyss | mid-top | 10.3 s | nearly |
-| Breeze | mid-top | 10.4 s | yes |
-| Icebox | mid-pallet (A-biased 5.1 / 10.2) | 10.2 s | no |
-| Haven | — (3-site, no mid defender) | 10.1 s | no |
-| Lotus | — (3-site, no mid defender) | 10.6 s | no |
-| Sunset | mid-courtyard | 12.0 s | no |
-| Split | mid-top (A-biased 10.0 / 15.2) | 15.2 s | no |
-| Fracture | — (no mid zone) | 15.1 s | no |
-| Bind | — (no mid zone) | 15.7 s | no |
-| Pearl | — (no mid zone) | **18.9 s** | no |
+| Bind | +rotator `b-teleporter` | 0.896 / 0.257 / 0.501 | <!-- FIX --> |
+| Fracture | +rotator `b-link` | 0.848 / 0.354 / 0.640 | <!-- FIX --> |
 
-Reading: **every map whose derived setup has no balanced central defender (bind, fracture, pearl: no mid zone; haven, lotus: three sites) rotates 15–19 s to the far site** — 1.5–2× Ascent. Split and Sunset have a mid defender but its zone is biased to one site, so the far site is still a long retake. Ascent, Abyss, Breeze, Icebox sit at ~10 s and are the ones at or near the target band. The "nearest defender 57–81 m at plant vs Ascent 27 m" clue in HANDOFF §5 P1-6 is the same fact in metres.
-
-### 3.2 Per-map measurement (sim-batch --geometry own, 60 matches, seeds 1..60)
-
-<!-- FILLED AFTER BASELINE LOOP -->
-
-### 3.3 Fix — central-rotator defender placement (map data, authored `defenderStarts`)
-
-<!-- FILLED AFTER EXPERIMENT -->
+<!-- FIX-VERDICT -->
 
 ## 4. `geometry: "own"` as default — recommendation
 
-<!-- decided at integration -->
+**Not yet.** Only Breeze was ever in range and even it detonates at 0.156 on this measurement; every other map misses detonation (0.20–0.40) and several miss attack-side balance. Own geometry should stay opt-in until the retake-execution logic is made map-aware (session C) and the three-site pre-plant defense is strengthened. Keeping it opt-in costs nothing — the shipped product draws and plays Ascent only. Decision is the orchestrator's at integration.
 
 ## 5. Remaining work
 
-- <!-- TBD -->
+- **Retake execution is Ascent-tuned (LOGIC, session C / orchestrator):** a ~0.80 post-plant floor on every non-Ascent map regardless of retake distance. Needs the retake to be map-aware (simultaneous step-out / duel resolution, post-plant positions chosen by what sees the spike). This is the dominant lever and is out of this session's map-data scope.
+- **Three-site pre-plant defense (Haven, Lotus):** plant rate ~0.85. Five defenders over three sites leaves each thin; a derived rotator for 3-site maps (or authored 2-1-1-1 with a rotator) is a placement idea worth testing, but 3-site retake logic is also Ascent-tuned.
+- **Per-map robustness:** 60 matches on one roadmap is weak evidence (HANDOFF §7.6 caveat); re-measure at 160 before trusting a third decimal.
+- **Haven/Pearl:** desktop data copies (`apps/desktop/src/data/sim/`) not refreshed and `MAPS_DATA.md` not updated for `zoneAnchors` (carried over from the nav-engine note; does not affect the sim).

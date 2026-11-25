@@ -1,0 +1,7 @@
+{
+  "mapId": "fracture",
+  "schemaVersion": "1.0.0",
+  "note": "Authored defender placement for Fracture own-geometry (session D, P1-6). Fracture has no mid zone, so the derived setup stacks 2A/3B and the nearest off-site defender is ~15 s from a site at the plant (vs Ascent ~10 s), leaving the retake unfought. One defender starts at b-link, the most central reachable zone (<=9.8 s to either site), as a rotator/retaker. Everything else stays derived.",
+  "provenance": "manual-approx (central zone chosen by minimising the max roadmap travel to both sites; not validated against pro VOD)",
+  "defenderStarts": ["a-site", "a-site", "b-site", "b-site", "b-link"]
+}
