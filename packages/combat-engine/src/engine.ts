@@ -10,7 +10,7 @@ import type {
 import { DEFAULT_PARAMS, type CombatCalibration, type CombatParams } from "./params.js";
 import { mulberry32, deriveSeed, type Rng } from "./rng.js";
 import { applyDamage, damageForRange } from "./damage.js";
-import { headshotChance, hitChance, pelletLandChance, readyDelayMs } from "./skills.js";
+import { headshotChance, hitChance, keepsMovingAgainst, pelletLandChance, readyDelayMs } from "./skills.js";
 
 interface FighterState {
   readonly c: Combatant;
@@ -69,9 +69,12 @@ function rollLocation(rng: Rng, hsChance: number): HitLocation {
 export function resolveDuel(duel: Duel, seed: number, opts: ResolveOptions = {}): DuelResult {
   const p = opts.params ?? DEFAULT_PARAMS;
   const cal = opts.calibration ?? {};
+  // A run-and-gun shooter that would rather stay a moving target fights on the move.
+  const a = keepsMovingAgainst(duel.a, duel.b) ? { ...duel.a, posture: { ...duel.a.posture, keepsMoving: true } } : duel.a;
+  const b = keepsMovingAgainst(duel.b, duel.a) ? { ...duel.b, posture: { ...duel.b.posture, keepsMoving: true } } : duel.b;
   const states: Record<PlayerId, FighterState> = {
-    [duel.a.id]: initState(duel.a, duel.b, seed, p, cal, duel.distanceMeters),
-    [duel.b.id]: initState(duel.b, duel.a, seed, p, cal, duel.distanceMeters),
+    [duel.a.id]: initState(a, b, seed, p, cal, duel.distanceMeters),
+    [duel.b.id]: initState(b, a, seed, p, cal, duel.distanceMeters),
   };
   const order: [FighterState, FighterState] = [states[duel.a.id], states[duel.b.id]];
   const opponentOf = (s: FighterState): FighterState => (s === order[0] ? order[1] : order[0]);

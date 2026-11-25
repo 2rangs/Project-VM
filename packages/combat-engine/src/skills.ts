@@ -57,8 +57,18 @@ export function readyDelayMs(c: Combatant, p: CombatParams, cal: CombatCalibrati
  */
 export function stoppedAtMs(c: Combatant, p: CombatParams, cal: CombatCalibration = {}): number {
   if (!c.posture.moving) return 0;
+  if (c.posture.keepsMoving) return Number.POSITIVE_INFINITY;
   const base = c.posture.pace === "walk" ? p.accuracy.stopMs.walk : p.accuracy.stopMs.run;
   return c.posture.seesEnemyAtMs + base * lerp(1.4, 0.6, c.skills.movement) * (cal.stopTimeScale ?? 1);
+}
+
+/**
+ * Does a moving shooter fight on the move? Only with a run-and-gun weapon (`movingAccuracy`), when it
+ * keeps at least as much of its own accuracy moving as the opponent keeps against a moving target.
+ */
+export function keepsMovingAgainst(c: Combatant, opponent: Combatant): boolean {
+  const kept = c.weapon.movingAccuracy;
+  return c.posture.moving && kept !== undefined && kept >= lerp(0.7, 1, opponent.skills.tracking);
 }
 
 /** Is this combatant still moving at time `atMs` of the duel? Without a time: as it was at contact. */

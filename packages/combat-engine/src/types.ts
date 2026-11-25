@@ -115,6 +115,12 @@ export interface EngagePosture {
    */
   readonly aimOffsetDeg?: number;
   /**
+   * Fights on the move instead of stopping (run-and-gun): set by resolveDuel for a moving shooter whose
+   * weapon keeps at least as much of its accuracy moving (`movingAccuracy`) as the opponent keeps
+   * against a moving target (lerp(0.7, 1, tracking)). It stays a moving target the whole duel.
+   */
+  readonly keepsMoving?: boolean;
+  /**
    * This combatant's speed (m/s) ACROSS the opponent's line of sight at contact. The line of sight
    * then turns at (sum of both fighters' lateral speeds) / distance, and BOTH crosshairs have to
    * follow it: during each one's perception time the other moves that many radians off where it
