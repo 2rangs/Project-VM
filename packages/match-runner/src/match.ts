@@ -183,11 +183,20 @@ export interface MatchConfig {
    */
   readonly movementStyle?: boolean | { readonly lanes?: boolean; readonly spacing?: boolean; readonly routes?: boolean; readonly checks?: boolean; readonly lurk?: boolean };
   /**
-   * Floor items in the round (round-simulator floor-items.ts): dropped guns picked up mid-round, and
-   * ultimate orbs at the map's `<map>.objects.json` `ultOrbs` points (none yet on any map → no orbs).
+   * Floor items in the round (round-simulator floor-items.ts): dropped guns picked up mid-round.
    * Default true; false → guns are picked up only after the round, as before.
+   * NOTE: ultimate-orb pickup is a SEPARATE opt-in — see `ultOrbs` below. Guns stay on here even
+   * when orbs are off.
    */
   readonly floorItems?: boolean;
+  /**
+   * Ultimate-orb pickup during the round: an orb at the map's `<map>.objects.json` `ultOrbs` point
+   * is taken by the first player who reaches it, crediting one ultimate point (floor-items.ts, then
+   * economy.ts `orbPoint`). Default FALSE — the orb positions are zone-level and `verified:false`
+   * (docs/research/ULT_ORBS.md), and the point feeds buy decisions (`ultHold`) even with abilities
+   * off, so it is held behind this flag until the positions are confirmed. Needs `floorItems` on.
+   */
+  readonly ultOrbs?: boolean;
   /**
    * Weapon modes from the catalogue: the Classic's close burst (altFire) and run-and-gun accuracy
    * (movingAccuracy on Classic, shotguns, Frenzy, Stinger). Default false until it passes the
@@ -828,7 +837,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), ...(config.plantTactics ? { plantTactics: true, ...(config.teamInputs?.[attacker]?.plantPreference ? { plantPreference: config.teamInputs[attacker]!.plantPreference! } : {}) } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? BUY_PHASE_ONLY_STYLE, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: config.ultOrbs ? { orbs: this.orbs } : {} } : {}), ...(config.plantTactics ? { plantTactics: true, ...(config.teamInputs?.[attacker]?.plantPreference ? { plantPreference: config.teamInputs[attacker]!.plantPreference! } : {}) } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? BUY_PHASE_ONLY_STYLE, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

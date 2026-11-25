@@ -215,12 +215,25 @@ describe("floor items", () => {
     expect(loadWeapons().Bucky!.pellets).toBe(15); // a shotgun keeps its pellets
   });
 
-  it("orb points come from the map's objects file: two on Ascent (zone-level, unverified), none where maps data has none", () => {
+  it("orb points come from the map's objects file (zone-level, unverified): two on Ascent, four on Fracture, empty for an unknown map", () => {
     const ascent = loadUltOrbs("ascent");
     expect(ascent).toHaveLength(2);
     for (const o of ascent) for (const v of [o.position.x, o.position.y, o.position.z]) expect(Number.isFinite(v)).toBe(true);
-    expect(loadUltOrbs("abyss")).toEqual([]); // not filled: the callouts are not known with confidence
+    expect(loadUltOrbs("abyss")).toHaveLength(2); // filled from ULT_ORBS.md §1 (wiki markers + guides)
+    expect(loadUltOrbs("fracture")).toHaveLength(4); // the only four-orb map
     expect(loadUltOrbs("no-such-map")).toEqual([]);
+  });
+
+  it("ultimate-orb pickup is off by default and opt-in via MatchConfig.ultOrbs (guns stay picked up either way)", () => {
+    const teams = simulatableTeamRefs();
+    const cfg = (extra: Partial<MatchConfig>): MatchConfig => ({ teamA: teams[0]!, teamB: teams[1]!, map: "Ascent", seed: 1, ...extra });
+    const orbEvents = (r: MatchResult) => r.rounds.reduce((n, x) => n + x.events.filter((e) => (e.kind as string) === "orbPickup").length, 0);
+    const gunEvents = (r: MatchResult) => r.rounds.reduce((n, x) => n + x.events.filter((e) => (e.kind as string) === "weaponPickup").length, 0);
+    const def = runMatch(cfg({}));
+    const on = runMatch(cfg({ ultOrbs: true }));
+    expect(orbEvents(def)).toBe(0); // default: no orb pickups, even though Ascent has orb points
+    expect(orbEvents(on)).toBeGreaterThan(0); // opt-in: orbs are taken
+    expect(gunEvents(def)).toBeGreaterThan(0); // guns are still picked up with orbs off
   });
 });
 

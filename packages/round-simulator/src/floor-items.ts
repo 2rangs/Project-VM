@@ -9,8 +9,9 @@
  *
  * Orbs. Points from `<map>.objects.json` `ultOrbs` (maps data). An orb is taken once per round, by
  * the first living player who reaches it while the moment allows (as for guns); the round emits
- * `orbPickup` with the player as `actor` — match-runner credits one ultimate point per event. With
- * no orb points (every map today), nothing happens.
+ * `orbPickup` with the player as `actor` — match-runner credits one ultimate point per event. Orbs
+ * are only present when the caller opts in (match-runner `MatchConfig.ultOrbs`, default off); with
+ * no orb points, nothing happens.
  *
  * The simulator calls `step` once per tick after the fights and the spike pickup (one hook). Nothing
  * here moves players: a pickup happens where routes already take them.
