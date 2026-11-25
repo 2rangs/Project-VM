@@ -72,3 +72,79 @@ None added to the engine. Suite-only options: `--no-lock` (off by default — th
   elsewhere pass `--lock`/`PV_HEAVY_RUN` or `--no-lock`. A full suite holds the queue for a long time
   (each batch re-queues, so others can interleave between batches).
 - `reports/` is git-ignored: suite runs live only on the machine that made them.
+
+## Performance (HANDOFF P2-12) — branch `sim-perf`
+
+Faster simulation with **byte-identical output**. Every change is a cache or a lookup deferred until
+it is needed; no decision logic was rewritten. Nothing is behind a flag — there is nothing to switch:
+same seed and options give exactly the same match as before.
+
+### Guard: match signatures
+`packages/match-runner/test/signature.test.ts` hashes the full `runMatch` output (stable JSON,
+SHA-256) of six cases and compares with `test/signature/signatures.json`, recorded **before** any
+perf change (commit `d6602f0`):
+
+| Case | What it covers |
+|---|---|
+| `ascent-seed1`, `ascent-seed161` | the default game (real rosters), calibration and unseen seeds |
+| `ascent-abilities` | agent abilities on |
+| `ascent-tracks-stats` | `recordTracks` + `collectStats` (replay frames, sight events, movement stats) |
+| `haven-own`, `bind-own` | other maps on their own geometry (three sites; a geometry-derived roadmap) |
+
+Each is capped at 13 rounds (crosses the half). All six pass after every commit below. Separately,
+three full-length matches (Ascent seed 77; Ascent with abilities seed 300; Split on its own geometry
+seed 9) were hashed before and after: identical.
+**If you change behaviour on purpose**, the test fails by design — re-record with
+`npx tsx packages/match-runner/test/signature/capture.mts` and say so in the commit.
+
+### What changed (one commit each)
+| Commit | Where | Change |
+|---|---|---|
+| `7eb1d7e` | spatial-engine `navigation.ts` | memoise `Navigator.locate` / `locateInZone` (pure over the immutable roadmap; perception located both bodies for every observer–target pair every tick); numeric `zoneTravelMs` cache key (no string per call — ~200 k calls a match) |
+| `c4df420` | round-simulator `buy-phase.ts` | memoise the buy phase's run-time estimate (the leave check re-ran a blocked A* every half second for every standing player — ~7 000 searches a match) on blocker version, start, destination |
+| `3e74e93` | spatial-engine `engine.ts`, `navigation.ts`; perception `oracle.ts` | cache `audibleZones` per (origin, threshold) (returns a fresh copy); per-zone blocker edges; `hearableSounds` collected the world's sound sources once **per observer** (O(players²) a tick) — now once per world snapshot |
+| `e52e521` | spatial-engine `engine.ts` | memoise `nearestZone` per exact position, cleared whenever `setPositionZones` changes the hints (once a tick) |
+| `cacf752` | team-engine `policy.ts` | memoise `retakeApproach` when no spike position is involved (pure in the static map; the defense rotation asked it for every rotator on every decision) |
+| `a4c77c0` | perception `hearing.ts` | look up a sound source's zone only when the sound is heard |
+| `f9e3895` | round-simulator `simulator.ts` | build mover hooks once per tick per (target zone, intent) instead of per player (each set is a handful of closures; under tsx every closure also pays esbuild's `__name` wrapper) |
+
+`routeCache` (team-engine `planRoute`): left as it is. It is keyed by (from, to) on a zone graph that
+never changes for the life of the policy object (the spatial query is a constructor argument), so it
+cannot go stale; its size is bounded by zones².
+
+Tried and dropped: reusable A* scratch buffers with generation stamps (no measurable gain — the
+search is already ~30 µs on 800–1 300 nodes).
+
+### Measured (unit-level, no batch)
+Workload: the six signature cases, best of 3, interleaved base (`d6602f0`) / final (`f9e3895`)
+three times, process CPU time (user + sys — robust to other sessions' load):
+
+| | CPU | Wall |
+|---|---|---|
+| base | 8.10 – 8.97 s | 7.44 – 8.60 s |
+| final | 5.00 – 5.51 s | 4.30 – 5.00 s |
+| change | **≈ −38 % CPU** | **≈ 1.7× faster** |
+
+Where the time goes now (profile of the same workload): team decisions ~24 % (action generation
+~7 %, world-state freeze ~2 %), perception ~22 % (pairwise sight ~9 %), buy phase ~8 %, mover path
+planning ~7 %, A* search ~10 % overall.
+
+### Next steps (not done)
+1. **tsx keepNames**: every closure created at run time pays esbuild's `__name` (`Object.defineProperty`).
+   It was ~8 % before the hooks change and is still visible in hot loops; a bundled build without
+   keepNames (or creating fewer closures in per-tick code) would remove it. Desktop runs matches
+   through `npx tsx`, so it pays this today.
+2. **Perception runs three times per decision tick** (engagements + one view per side), each over
+   every observer × target. Sharing the sight pass is the biggest remaining win, but the
+   perception engine keeps per-call memory/comms state, so it needs a careful design — not a cache.
+3. Action generation (`generateActions` + `createWorldState`'s deep freeze) per decision.
+4. nav/vis JSON re-parsed per match (HANDOFF P2-11) — not touched here.
+
+### Risks
+- Memo sizes are bounded (locate 50 k, nearestZone 20 k entries, retake approaches 5 k), cleared
+  wholesale when full. Memory is a few MB at most.
+- The `nearestZone` memo relies on the hints map not being mutated after `setPositionZones` (the
+  round simulator builds a new map each time). A caller that mutates the map in place would get
+  stale answers — call `setPositionZones` again instead.
+- `hearableSounds`' per-world cache relies on each perceive call building a fresh world object (as
+  `smokedPairs` already did).
