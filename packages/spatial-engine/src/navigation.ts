@@ -150,8 +150,7 @@ export class NavBlockers {
   addZone(id: string, zoneId: string): void {
     this.remove(id);
     const nodes = this.nav.zoneNodes(zoneId);
-    const set = new Set(nodes);
-    const edges = this.nav.edgesTouching(set);
+    const edges = this.nav.zoneEdges(zoneId);
     this.byId.set(id, { nodes: [...nodes], edges });
     for (const n of nodes) this.nodeCount.set(n, (this.nodeCount.get(n) ?? 0) + 1);
     for (const e of edges) this.edgeCount.set(e, (this.edgeCount.get(e) ?? 0) + 1);
@@ -209,6 +208,7 @@ export class Navigator {
    * Cleared wholesale when it grows past LOCATE_MEMO_MAX (positions change as players move).
    */
   private readonly locateMemo = new Map<string, number>();
+  private readonly zoneEdgeCache = new Map<string, number[]>();
 
   constructor(data: NavData, movement: { unitsPerMeter: number; runSpeedMetersPerSec: number; walkSpeedMetersPerSec: number }) {
     this.mapId = data.mapId;
@@ -471,6 +471,16 @@ export class Navigator {
       }
     }
     return { nodes: nodes.sort((p, q) => p - q), edges: [...edges].sort((p, q) => p - q) };
+  }
+
+  /** Walk edges with an end in a zone (edgesTouching of its nodes), cached per zone — the roadmap is immutable. */
+  zoneEdges(zoneId: string): number[] {
+    let e = this.zoneEdgeCache.get(zoneId);
+    if (!e) {
+      e = this.edgesTouching(new Set(this.zoneNodes(zoneId)));
+      this.zoneEdgeCache.set(zoneId, e);
+    }
+    return e.slice();
   }
 
   edgesTouching(nodes: ReadonlySet<number>): number[] {

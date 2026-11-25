@@ -63,6 +63,7 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
   private readonly params: PerceptionParams;
   private readonly isSmoke: (a: AbilityState) => boolean;
   private readonly smokeCache = new WeakMap<object, ReadonlyArray<readonly [string, string]>>();
+  private readonly soundCache = new WeakMap<object, ReturnType<typeof collectSoundSources>>();
   private readonly volumeCache = new WeakMap<object, readonly SightOccluder[]>();
   private readonly smokeVolumes: boolean;
   private readonly defaultSmokeRadius: number;
@@ -112,7 +113,13 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
   }
 
   hearableSounds(observer: PlayerState, world: WorldState): readonly SoundObservation[] {
-    const sources = collectSoundSources(world, this.params);
+    // The sources are a property of the world snapshot, not of the listener: collect them once per
+    // world and hear them from each observer (was once per observer — O(players²) per tick).
+    let sources = this.soundCache.get(world);
+    if (!sources) {
+      sources = collectSoundSources(world, this.params);
+      this.soundCache.set(world, sources);
+    }
     return hearSounds(observer.position, sources, this.spatial, this.params, world.timeRemainingMs, observer.teamId, world.maskers);
   }
 }

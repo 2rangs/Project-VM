@@ -45,6 +45,8 @@ export class SpatialEngine {
   /** Geometric navigation on the map's roadmap; null when the map has no nav data loaded. */
   readonly nav: Navigator | null;
   private positionZones: ReadonlyMap<string, string> | null = null;
+  /** audibleZones results by (origin, threshold); the sound graph is immutable. */
+  private readonly audibleMemo = new Map<string, AudibleZone[]>();
   private readonly noTransitZones: ReadonlySet<string>;
   private readonly data: TacticalMapData;
   private readonly graph: ZoneGraph;
@@ -293,6 +295,19 @@ export class SpatialEngine {
    */
   audibleZones(originZoneId: string, threshold = 0.1): AudibleZone[] {
     if (!this.zoneById.has(originZoneId)) throw new Error(`unknown zone: ${originZoneId}`);
+    // The sound graph never changes after construction, so the answer per (origin, threshold) is
+    // fixed; it is asked for every shot, cast and sound source of every tick. A fresh array is
+    // returned each time (callers own their copy).
+    const key = `${originZoneId}|${threshold}`;
+    let hit = this.audibleMemo.get(key);
+    if (!hit) {
+      hit = this.audibleZonesUncached(originZoneId, threshold);
+      this.audibleMemo.set(key, hit);
+    }
+    return hit.map((a) => ({ ...a }));
+  }
+
+  private audibleZonesUncached(originZoneId: string, threshold: number): AudibleZone[] {
     const best = new Map<string, number>([[originZoneId, 1]]);
     const queue: string[] = [originZoneId];
     while (queue.length > 0) {
