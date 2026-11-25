@@ -58,7 +58,7 @@ import {
   type TeamDecisionTraits,
 } from "./economy.js";
 import { applyRoundForm, rosterConsistency, rosterInfoProfiles, rosterPlayerIds, rosterProfiles, rosterSkills, rosterTraits, type RosterPlayer, type RosterProfile } from "./teams.js";
-import { CommsLedger, type InfoProfile } from "@pv/decision-engine";
+import { CommsLedger, type InfoProfile, type InformationTrace } from "@pv/decision-engine";
 import { resolveMidPlan, type PlayerProfile, type ResolvedMidSidePlan } from "@pv/shared-types";
 import { MidControlTracker, OpponentModel, decideMidCall, defenderStartsFor, type MidControlRecord, type OpponentRead, type PlanSummary, type PolicyTuning, type RoundObservation, type SiteKey } from "@pv/team-engine";
 import { MAP_IDS, isMapId } from "@pv/spatial-engine";
@@ -285,6 +285,12 @@ export interface RoundRecord {
   readonly navTrace?: readonly NavTraceEvent[];
   /** Report-only movement / crowd measurements of the round; present only when `collectStats` is on. */
   readonly stats?: RoundStats;
+  /**
+   * Information layer (MatchConfig.informationLayer only): per team, each player's knowledge, every
+   * callout (said vs known, timings, accuracy), minimap spots, trust and where the IGL placed each
+   * enemy — what Match Day shows as "who called what".
+   */
+  readonly information?: Readonly<Record<TeamSlot, InformationTrace | null>>;
   /** Every duel of the round (round-simulator EngagementRecord); present only with `traceEngagements`. */
   readonly engagements?: readonly EngagementRecord[];
   /** Where the spike went down: position, site, candidate spot and its kind, who chose it (planted rounds only). */
@@ -836,6 +842,9 @@ export class MatchEngine {
     const result = out.round;
 
     const plans = { [attacker]: this.policies.attack.planSummary(), [defender]: this.policies.defense.planSummary() } as Record<TeamSlot, PlanSummary | null>;
+    const information = config.informationLayer === true
+      ? ({ [attacker]: this.policies.attack.informationTrace(), [defender]: this.policies.defense.informationTrace() } as Record<TeamSlot, InformationTrace | null>)
+      : null;
     const midTruth = config.midControl === true ? this.midRecord(result.stats, out.events) : null;
     // --- Each team folds what it OBSERVED this round into its model of the other ---
     const seen = observedTendencies(out.events);
@@ -930,6 +939,7 @@ export class MatchEngine {
       }),
       ...(result.navTrace ? { navTrace: result.navTrace } : {}),
       ...(result.stats ? { stats: result.stats } : {}),
+      ...(information ? { information } : {}),
       ...(config.traceEngagements && result.engagementTrace ? { engagements: result.engagementTrace } : {}),
       ...(result.plant ? { plant: result.plant } : {}),
       ...(midTruth ? { mid: midTruth } : {}),

@@ -329,6 +329,11 @@ interface StandingPlan {
   evidence: Record<string, SiteEvidence>;
   /** DEFENSE: first site where two or more bodies showed. */
   shownSite: string | null;
+  /**
+   * DEFENSE (information layer only): zones of enemies the IGL has placed off the likeliest hit
+   * site — a lurker on the flank. Each pins one defender, and rotators go around them.
+   */
+  flank?: ZoneId[];
   /** Mid play of the round (null: no mid on the map, or mid control off). */
   mid: MidRound | null;
   decidedAtMs: number;
@@ -467,6 +472,8 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   /** Per-player knowledge → comms → IGL fusion (null when the option is off). */
   private readonly info: InformationLayer | null;
   private infoProfiles: ReadonlyMap<string, InfoProfile> | undefined;
+  /** Whether this decision's picture came through the information layer (off by default). */
+  private infoStepped = false;
   /** Roles of the last decision (the trust prior reads them). */
   private lastRoles = new Map<string, string>();
   constructor(
@@ -501,7 +508,9 @@ export class TeamDecisionPolicy implements DecisionPolicy {
    * is used as it is.
    */
   private informed(view: PolicyView): { view: PolicyView; iglId: string | null } {
+    this.infoStepped = false;
     if (!this.info || !view.perPlayerObservation || Object.keys(view.perPlayerObservation).length === 0) return { view, iglId: null };
+    this.infoStepped = true;
     const out = this.info.step({ view, ...(this.infoProfiles ? { profiles: this.infoProfiles } : {}), roles: this.lastRoles });
     return { view: { ...view, observation: out.observation, belief: out.belief }, iglId: out.iglId };
   }
@@ -1804,6 +1813,24 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
+   * Information layer: zones of the enemies the IGL has placed OFF the likeliest hit site (seen in
+   * the last SEEN_WINDOW_MS, on another site's side or in mid) — lurkers on the flank. Sorted by
+   * how recently they were seen (freshest first), one entry per zone.
+   */
+  private flankZones(view: PolicyView, site: string, sites: ReadonlyMap<string, ZoneId>): ZoneId[] {
+    const t = view.observation.timestampMs;
+    const spawn = String(ATTACK_FALLBACK_ZONE);
+    const found = view.observation.visibleEnemies
+      .filter((e) => e.currentlyVisible || Math.abs(e.lastSeenAtMs - t) <= SEEN_WINDOW_MS)
+      .map((e) => ({ z: this.spatial.nearestZone({ x: e.lastSeenPosition.x, y: e.lastSeenPosition.y }), at: e.lastSeenAtMs }))
+      .filter(({ z }) => String(z) !== spawn && this.sideOf(z, sites) !== site)
+      .sort((a, b) => Math.abs(a.at - t) - Math.abs(b.at - t) || (String(a.z) < String(b.z) ? -1 : 1));
+    const out: ZoneId[] = [];
+    for (const f of found) if (!out.includes(f.z)) out.push(f.z);
+    return out;
+  }
+
+  /**
    * What the defense has observed per site, in the recent window — the evidence the belief is
    * updated on (hit-belief.ts). Footsteps are instantaneous, so the count of distinct runners is
    * remembered for NOISE_WINDOW_MS (the most heard at once in that window): a run that stops, or
@@ -1834,11 +1861,14 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       if (!side) continue;
       (seen.get(side) ?? seen.set(side, new Set()).get(side)!).add(String(e.playerId));
     }
+    // information layer: rotators leaving — enemies placed on a site's side, then off it
+    const departures = this.info && this.infoStepped ? this.info.departures((z) => this.sideOf(z as ZoneId, sites)) : null;
     const out: Record<string, SiteEvidence> = {};
     for (const site of sites.keys()) {
       const runners = plan.heard.reduce((m, h) => (h.site === site ? Math.max(m, h.count) : m), 0);
       const seenCount = seen.get(site)?.size ?? 0;
-      out[site] = { runners, seen: seenCount, contact: seenCount > 0 || contact.has(site), utility: utility.has(site) };
+      const d = departures?.[site];
+      out[site] = { runners, seen: seenCount, contact: seenCount > 0 || contact.has(site), utility: utility.has(site), ...(d ? { departures: d } : {}) };
       if (!plan.shownSite && Math.max(runners, seenCount) >= 2) plan.shownSite = site;
     }
     return out;
@@ -1909,10 +1939,22 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const site = belief.likeliest!;
     const siteZone = sites.get(site)!;
     const pHit = belief.hit[site] ?? 0;
-    const available = alive
+    let available = alive
       .filter((p) => this.sideOf(plan.home.get(String(p.id)) ?? zoneOf(p), sites) !== site)
       .map((p) => ({ p, id: String(p.id), ms: this.legMs(zoneOf(p), siteZone) }))
       .filter((a) => Number.isFinite(a.ms));
+    // Information layer: a lurker the team has spotted off the hit site pins a defender — the
+    // available player closest to it stays (the flank is not left open), and the rest rotate.
+    const flank = this.info && this.infoStepped ? this.flankZones(view, site, sites) : [];
+    plan.flank = flank;
+    const pinned: string[] = [];
+    for (const z of flank) {
+      const free = available.filter((a) => !pinned.includes(a.id));
+      if (free.length === 0) break;
+      const by = (a: (typeof free)[number]) => this.legMs(zoneOf(a.p), z);
+      pinned.push(free.reduce((b, a) => (by(a) < by(b) || (by(a) === by(b) && a.id < b.id) ? a : b), free[0]!).id);
+    }
+    if (pinned.length > 0) available = available.filter((a) => !pinned.includes(a.id));
     let want = rotationCount(pHit, available.length);
     const now = view.timeRemainingMs;
     const current = plan.rotation;
@@ -1936,11 +1978,12 @@ export class TeamDecisionPolicy implements DecisionPolicy {
         .map((k) => { const o = evidence[k] ?? NO_EVIDENCE; return o.contact ? `contact on ${k}` : Math.max(o.runners, o.seen) > 0 ? `${Math.max(o.runners, o.seen)} on ${k}` : `no contact on ${k}`; }).join(", ");
       const odds = `P(hit ${site}) ${pHit.toFixed(2)}, fake ${belief.fake.toFixed(2)}`;
       const call = want === 0 ? "hold" : want >= available.length ? `stack ${site} ×${want}` : `support ${site} ×${want}`;
+      const lurk = pinned.length > 0 ? ` — lurker spotted at ${flank.slice(0, pinned.length).join(", ")}: ${pinned.join(", ")} stays` : "";
       const stackCall = (site === "A" ? "stackA" : site === "B" ? "stackB" : site === "C" ? "stackC" : plan.strategy) as TeamStrategy;
       const next = want > 0 ? stackCall : plan.opening;
       plan.revisions.push({
         atMs: now, from: plan.strategy, to: call,
-        reason: `${what}${e.contact ? " with contact" : ""}${elsewhere ? `, ${elsewhere}` : ""} — ${odds} — ${want === 0 ? "stand down, hold" : `rotate ${want}`}`,
+        reason: `${what}${e.contact ? " with contact" : ""}${elsewhere ? `, ${elsewhere}` : ""} — ${odds} — ${want === 0 ? "stand down, hold" : `rotate ${want}`}${lurk}`,
       });
       plan.rotations.push({ atMs: now, site: want > 0 ? site : null, count: want });
       plan.strategy = next;
@@ -1982,12 +2025,24 @@ export class TeamDecisionPolicy implements DecisionPolicy {
       if (siteZone && rot.ids.includes(id)) {
         // Held site: nobody is watching its entries, so the fastest approach (a zero budget makes
         // retakeApproach pick by time). Fallen site: the least-exposed one, as for a retake.
-        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity, { avoid: this.enemyGround(plan) }).stage;
+        const flank = new Set((plan.flank ?? []).map(String));
+        const avoid = flank.size > 0 ? new Set([...this.enemyGround(plan), ...flank]) : this.enemyGround(plan);
+        const stage = this.retakeApproach(pz, siteZone, held ? 0 : Infinity, { avoid }).stage;
         const target = pz === siteZone || (held && pz === stage) ? siteZone : stage;
         const aim = target === siteZone ? this.aimOf(siteZone) ?? siteZone : siteZone;
-        return target === pz
-          ? { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: "rotate:hold" }
-          : { playerId: p.id, kind: "move", targetZone: target, aimZone: aim, moveMode: this.paceFor(view, p, urgent ? "fast" : "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:move" };
+        if (target === pz) return { playerId: p.id, kind: "hold", aimZone: aim, executeAtMs: 0, sourceActionId: "rotate:hold" };
+        // A spotted lurker on the way: go around it (next zone of the route that avoids it), or,
+        // with no way around, check the flank — walk through it, gun up, instead of running.
+        const path = flank.size > 0 ? this.spatial.findPath(pz, target, "run")?.path ?? [] : [];
+        const crosses = path.slice(1).some((z) => flank.has(String(z)));
+        if (crosses) {
+          const around = this.routeAround(pz, target, flank);
+          if (around && around.length > 1) {
+            return { playerId: p.id, kind: "move", targetZone: around[1]!, aimZone: aim, moveMode: this.paceFor(view, p, urgent ? "fast" : "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:around" };
+          }
+          return { playerId: p.id, kind: "move", targetZone: target, aimZone: path.find((z) => flank.has(String(z))) ?? aim, moveMode: "walk", executeAtMs: 0, sourceActionId: "rotate:check" };
+        }
+        return { playerId: p.id, kind: "move", targetZone: target, aimZone: aim, moveMode: this.paceFor(view, p, urgent ? "fast" : "quiet", Infinity), executeAtMs: 0, sourceActionId: "rotate:move" };
       }
       const home = plan.home.get(id);
       if (!home || home === pz) return c;

@@ -33,6 +33,7 @@ export {
   iglProcessingMs,
   minimapGlanceMs,
   claimWeight,
+  hearConfidence,
   hashDraw,
 } from "./information.js";
 export type {
@@ -45,4 +46,5 @@ export type {
   InformationLayerOptions,
   InformationInput,
   InformationOutput,
+  SiteDepartures,
 } from "./information.js";

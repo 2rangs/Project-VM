@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { TeamDecisionPolicy, viewFromTeamContext, type TeamPolicyOptions } from "@pv/team-engine";
+import { TeamDecisionPolicy, viewFromTeamContext, updateHitBelief, NO_EVIDENCE, type TeamPolicyOptions } from "@pv/team-engine";
 import { AVERAGE_INFO_PROFILE, type InfoProfile } from "@pv/decision-engine";
 import { loadDecisionContext } from "@pv/world-state";
 import { SeededRng } from "@pv/simulation-core";
@@ -22,13 +22,14 @@ const loadView = (s: string): PolicyView =>
   viewFromTeamContext(loadDecisionContext(JSON.parse(readFileSync(join(here, "fixtures", "scenarios", `scenario_${s}.json`), "utf8"))));
 const AT: Record<string, Vector3> = {
   "a-site": { x: 780, y: 360, z: 0 }, "b-main": { x: 280, y: 615, z: 0 }, "b-site": { x: 230, y: 360, z: 0 },
-  "mid-courtyard": { x: 500, y: 505, z: 0 }, "b-lobby": { x: 350, y: 820, z: 0 },
+  "mid-courtyard": { x: 500, y: 505, z: 0 }, "b-lobby": { x: 350, y: 820, z: 0 }, "a-lobby": { x: 650, y: 820, z: 0 },
+  "a-main": { x: 720, y: 615, z: 0 }, "mid-top": { x: 500, y: 250, z: 0 }, "defender-spawn": { x: 500, y: 120, z: 0 },
 };
 const zonePosition = (id: string) => AT[id];
 
 const POSTS = ["a-site", "a-site", "b-site", "b-site", "mid-courtyard"];
 /** Defense pre-plant holding 2-2-1; the listener (default the B anchor, index 2) hears `n` runners at `zone` while `hearing`. */
-function holding(now: number, n: number, hearing: boolean, zone = "b-main", listener = 2): PolicyView {
+function holding(now: number, n: number, hearing: boolean, zone = "b-main", listener = 2, lurkerAt?: string): PolicyView {
   const base = loadView("03");
   const teammates = base.teammates.map((p, i) => ({ ...p, alive: true, position: AT[POSTS[i]!]! }));
   const empty = (t: number): ObservationState => ({ ...base.observation, timestampMs: t, visibleEnemies: [], audibleEvents: [], teammateReports: [] });
@@ -36,12 +37,15 @@ function holding(now: number, n: number, hearing: boolean, zone = "b-main", list
   const perPlayer: Record<string, ObservationState> = Object.fromEntries(teammates.map((p) => [String(p.id), empty(now)]));
   const sounds = hearing ? Array.from({ length: n }, () => ({ kind: "footstep" as const, approxPosition: AT[zone]!, heardAtMs: now, confidence: 0.8 })) : [];
   perPlayer[anchor] = { ...empty(now), audibleEvents: sounds };
+  // an attacker lurking at `lurkerAt`, in sight of the A anchor (index 0, the IGL)
+  const lurker = lurkerAt ? [{ playerId: "atk5" as never, agentId: null, lastSeenPosition: AT[lurkerAt]!, lastSeenAtMs: now, healthBand: "unknown" as const, observedWeaponId: null, currentlyVisible: true }] : [];
+  if (lurkerAt) perPlayer[String(teammates[0]!.id)] = { ...empty(now), visibleEnemies: lurker };
   return {
     ...base, roundNumber: 5, knownEnemyAliveCount: 5, timeRemainingMs: now,
     economy: { ...base.economy, credits: 4500 }, teammates,
     spike: { phase: "carried", position: null, holderId: null, detonationInMs: null },
     belief: { ...base.belief, enemyPositionBeliefs: [] },
-    observation: { ...empty(now), audibleEvents: sounds }, // the pooled picture: everyone "knows" at once
+    observation: { ...empty(now), audibleEvents: sounds, visibleEnemies: lurker }, // the pooled picture: everyone "knows" at once
     perPlayerObservation: perPlayer,
   };
 }
@@ -68,7 +72,7 @@ function holdSeed(options: TeamPolicyOptions): number {
  * Play decisions every 500 ms from 80 000: the anchor hears `n` runners for `hearMs`, then silence.
  * Returns the clock (ms remaining) of the first decision that sent anyone to rotate, or null.
  */
-function firstRotation(n: number, opts: { anchor?: Partial<InfoProfile>; igl?: Partial<InfoProfile>; options?: TeamPolicyOptions; hearMs?: number; until?: number; zone?: string; listener?: number } = {}) {
+function firstRotation(n: number, opts: { anchor?: Partial<InfoProfile>; igl?: Partial<InfoProfile>; options?: TeamPolicyOptions; hearMs?: number; until?: number; zone?: string; listener?: number; lurkerAt?: string } = {}) {
   const options: TeamPolicyOptions = { zonePosition, information: true, ...opts.options };
   const seed = holdSeed(options);
   const policy = new TeamDecisionPolicy(spatial, options);
@@ -78,12 +82,12 @@ function firstRotation(n: number, opts: { anchor?: Partial<InfoProfile>; igl?: P
   policy.decideWithTrace(first, r);
   const hearUntil = 80_000 - (opts.hearMs ?? 0);
   for (let now = 80_000; now >= (opts.until ?? 75_000); now -= 500) {
-    const view = holding(now, n, now >= hearUntil, opts.zone, opts.listener);
+    const view = holding(now, n, now >= hearUntil, opts.zone, opts.listener, opts.lurkerAt);
     const { decision } = policy.decideWithTrace(view, r);
     const sent = decision.commands.filter((c) => c.sourceActionId?.startsWith("rotate:"));
-    if (sent.length > 0) return { atMs: now, sent: sent.length, policy };
+    if (sent.length > 0) return { atMs: now, sent: sent.length, policy, commands: decision.commands, view };
   }
-  return { atMs: null, sent: 0, policy };
+  return { atMs: null, sent: 0, policy, commands: [] as const, view: null };
 }
 
 describe("the IGL decides on what was called (information layer in the team policy)", () => {
@@ -135,5 +139,52 @@ describe("the IGL decides on what was called (information layer in the team poli
     const s = slow.policy.informationTrace()!.comms.find((c) => c.kind === "footstep")!;
     expect(s.iglAtMs! - s.deliveredAtMs).toBeGreaterThan(q.iglAtMs! - q.deliveredAtMs);
     expect(slow.atMs!).toBeLessThanOrEqual(quick.atMs!);
+  });
+
+  it("a spotted lurker pins a defender: the one closest to it stays, and the call says why (layer on only)", () => {
+    // five runners heard on B; one attacker seen in mid courtyard by the A anchor
+    const plain = firstRotation(5);
+    const lurk = firstRotation(5, { lurkerAt: "mid-courtyard" });
+    const pooled = firstRotation(5, { lurkerAt: "mid-courtyard", options: { information: false } });
+    expect(plain.sent).toBeGreaterThan(0);
+    expect(lurk.sent).toBe(plain.sent - 1); // one fewer goes: the flank is not left open
+    expect(pooled.sent).toBe(firstRotation(5, { options: { information: false } }).sent); // flag off: unchanged
+    const reason = lurk.policy.planSummary()!.revisions.at(-1)!.reason;
+    expect(reason).toMatch(/lurker spotted at mid-courtyard/);
+    // the pinned player is the mid defender (the post closest to the lurker), not one of the rotators
+    const rotating = new Set(lurk.commands.filter((c) => c.sourceActionId?.startsWith("rotate:")).map((c) => String(c.playerId)));
+    const pinned = /: (\S+) stays/.exec(reason)![1]!;
+    expect(rotating.has(pinned)).toBe(false);
+    expect(POSTS[lurk.view!.teammates.findIndex((p) => String(p.id) === pinned)]).toBe("mid-courtyard");
+  });
+
+  it("a rotator whose way runs through the lurker goes around it, or walks through checking it", () => {
+    // the lurker behind the sites (defender spawn): the fastest way from A to B runs through it
+    const lurk = firstRotation(5, { lurkerAt: "defender-spawn" });
+    const moves = lurk.commands.filter((c) => c.sourceActionId === "rotate:around" || c.sourceActionId === "rotate:check");
+    const plainMoves = firstRotation(5).commands.filter((c) => c.sourceActionId === "rotate:around" || c.sourceActionId === "rotate:check");
+    expect(plainMoves).toHaveLength(0);
+    expect(moves.length).toBeGreaterThan(0);
+    for (const c of moves) {
+      if (c.sourceActionId === "rotate:around") expect(String(c.targetZone)).not.toBe("defender-spawn");
+      else expect(c.moveMode).toBe("walk");
+    }
+  });
+});
+
+describe("rotators leaving are evidence for the other site (hit-belief)", () => {
+  const base = { sites: ["A", "B"], enemiesAlive: 5, fakeRate: 0.2 } as const;
+  const loudA = { ...NO_EVIDENCE, runners: 3, contact: true };
+  it("bodies on A that then leave A read as a show on A — and a hit on B", () => {
+    const stay = updateHitBelief({ ...base, evidence: { A: { ...loudA, departures: { placed: 3, left: 0 } }, B: NO_EVIDENCE } });
+    const leave = updateHitBelief({ ...base, evidence: { A: { ...loudA, departures: { placed: 3, left: 2 } }, B: NO_EVIDENCE } });
+    expect(leave.show.A!).toBeGreaterThan(stay.show.A!);
+    expect(leave.hit.A!).toBeLessThan(stay.hit.A!);
+    expect(leave.hit.B!).toBeGreaterThan(stay.hit.B!);
+  });
+  it("no departures field (layer off) is the old likelihood exactly", () => {
+    const old = updateHitBelief({ ...base, evidence: { A: loudA, B: NO_EVIDENCE } });
+    const none = updateHitBelief({ ...base, evidence: { A: { ...loudA, departures: { placed: 0, left: 0 } }, B: NO_EVIDENCE } });
+    expect(none).toEqual(old);
   });
 });

@@ -20,13 +20,18 @@
  *     n  distinct enemy bodies evidenced there = max(runners heard, enemies seen), 0..N alive
  *     c  contact: an enemy seen or shots / tracers from there
  *     u  utility: an ability cue there (only counted when utility is in play this match)
+ *     k/m departures (information layer only): of the m enemies placed on the site's side in the
+ *        window, k were then placed off it — rotators leaving
  *
  * Likelihood of a site's evidence under its role (independent factors):
  *     n ~ Binomial(N, p_role)      p: hit 0.80 · show 0.35 · quiet 0.03
  *     c ~ Bernoulli(q_role)        q: hit 0.85 · show 0.15 · quiet 0.03
  *     u ~ Bernoulli(v_role)        v: hit 0.70 · show 0.50 · quiet 0.03
+ *     k ~ Binomial(m, r_role)      r: hit 0.10 · show 0.60 · quiet 0.30   (only when m > 0)
  * In words: a real hit brings most of the team, with utility, and it makes contact; a fake uses
  * few players, may throw utility, and avoids the fight; a quiet site has at most a stray lurker.
+ * The players of a hit stay; a show's players leave to join the hit, so bodies seen LEAVING a site
+ * are evidence of a show there — and, through the hit(t)+show(s) states, of a hit on the other site.
  *
  * Prior (before this round's evidence):
  *     P(none)            ∝ w₀ = 1                         nothing under way is as likely as something
@@ -52,6 +57,8 @@ export const PRESENCE_RATE = { hit: 0.8, show: 0.35, quiet: 0.03 } as const;
 export const CONTACT_RATE = { hit: 0.85, show: 0.15, quiet: 0.03 } as const;
 /** Probability of a utility cue at a site, by role (when utility is in play). */
 export const UTILITY_RATE = { hit: 0.7, show: 0.5, quiet: 0.03 } as const;
+/** Probability that an enemy placed at a site is later seen leaving it, by the site's role. */
+export const LEAVE_RATE = { hit: 0.1, show: 0.6, quiet: 0.3 } as const;
 /** Prior weight of "nothing is under way" against the summed weight (1) of all hit/show states. */
 export const NONE_PRIOR_WEIGHT = 1;
 /** Base rate of fakes used when the opponent model has no data (the attack's own call mix is ~0.2). */
@@ -68,6 +75,8 @@ export interface SiteEvidence {
   readonly contact: boolean;
   /** An ability cue on the site's side. */
   readonly utility: boolean;
+  /** Information layer: enemies placed on the site's side in the window, and how many then left it. */
+  readonly departures?: { readonly placed: number; readonly left: number };
 }
 
 export const NO_EVIDENCE: SiteEvidence = { runners: 0, seen: 0, contact: false, utility: false };
@@ -116,6 +125,8 @@ export function siteLikelihood(e: SiteEvidence, role: SiteRole, enemiesAlive: nu
   let l = binomial(N, Math.min(n, N), PRESENCE_RATE[role]);
   l *= e.contact ? CONTACT_RATE[role] : 1 - CONTACT_RATE[role];
   if (utilityInPlay) l *= e.utility ? UTILITY_RATE[role] : 1 - UTILITY_RATE[role];
+  const d = e.departures;
+  if (d && d.placed > 0) l *= binomial(d.placed, Math.min(d.left, d.placed), LEAVE_RATE[role]);
   return l;
 }
 
