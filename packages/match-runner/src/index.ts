@@ -101,5 +101,6 @@ export {
 } from "./manager.js";
 export type { ManagerProfile, Shouts, TempoShout, RiskShout, DefenseShout, TeamTalk, TalkSituation, Personality, PlayerMind, TeamMind, Alert, AlertKind } from "./manager.js";
 export { buildOpponentReport, scoutingFilm, planTeamInputs, planShouts, planPending } from "./prep.js";
-export type { MatchPlan, OpponentReport, PendingPlanOptions, Rate } from "./prep.js";
+export type { MatchPlan, OpponentReport, Rate, TacticsPlan, TacticsField } from "./prep.js";
+export { planTactics, TACTICS_FLAGS } from "./prep.js";
 export type { RoundTeamInputs } from "./team-inputs.js";

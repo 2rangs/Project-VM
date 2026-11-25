@@ -5,7 +5,7 @@ import { IPC } from '../src/shared/ipc.ts';
 import type { SessionState } from '../src/shared/ipc.ts';
 import type { DecisionView, ManagerStateView, OpponentReportView } from '../src/shared/manager.ts';
 import {
-  alertKey, alertLine, decisionRows, moodBar, moodLabel, ourAlerts, pendingChoices, personalityTags, planForEngine,
+  alertKey, alertLine, decisionRows, moodBar, moodLabel, ourAlerts, personalityTags, planForEngine,
   reaction, reportHeadlines, siteLean, sparkPath, talkPending,
 } from '../src/renderer/matchday/manager.ts';
 import { ko } from '../src/renderer/i18n/ko.ts';
@@ -95,12 +95,11 @@ test('report headlines lean only on evidence that is there, and flag thin sample
   for (const l of lines) { assert.ok(ko[l.key], `ko missing ${l.key}`); assert.ok(en[l.key], `en missing ${l.key}`); }
 });
 
-test('plan: only what differs from the IGL is sent; engine-pending options are carried and listed', () => {
+test('plan: only what differs from the IGL is sent; tactics travel with it', () => {
   assert.equal(planForEngine({ tempo: 'normal', risk: 'normal', defense: 'normal', useScouting: false }), undefined);
   assert.deepEqual(planForEngine({ tempo: 'fast', attackLean: { site: 'B', strength: 0 }, defenseLean: { site: 'A', strength: 5 } }), { defenseLean: { site: 'A', strength: 5 }, tempo: 'fast' });
-  const plan = { pending: { plantPreference: { A: 'safe' as const, B: 'auto' as const }, midControl: 'auto' as const } };
-  assert.deepEqual(pendingChoices(plan), ['plantPreference']);
-  assert.deepEqual(planForEngine(plan), { pending: plan.pending });
+  const plan = { plantPreference: { A: 'safe' as const }, midPlans: { '*': { attack: { stance: 'contest' as const } } } };
+  assert.deepEqual(planForEngine(plan), plan);
 });
 
 test('every manager / pre-match key exists in both languages', () => {

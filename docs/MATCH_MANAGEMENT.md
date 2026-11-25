@@ -158,12 +158,20 @@ k_i = 침착함 = (clutch + consistency) / 2           평점 능력치 (평점 
 | 피스톨 공격 / 수비 | 1·13라운드 전략 지시 |
 | 피스톨 패배 후 | 2·14라운드 경제 지시(세이브 / 포스) — 피스톨을 졌을 때만 |
 
-**엔진 지원 대기 옵션:** 설치 위치·설치 후 운영·리테이크(engine-truth 세션, 공유 노트 `plant-plans-api.md`의 모양 그대로:
-`plantPreference {A,B: auto|default|safe|open|cover|near}`, `postPlantPlans`, `retakePlans`)와 미드 장악(maps-data, 모양 미공개).
-`MatchPlan.pending`에 담겨 전달되지만 **적용되지 않는다**. 세션 상태 `pendingPlanOptions`가 그 목록을 돌려주고, 화면은 비활성 상태로 보여 준다.
-해당 브랜치가 합쳐지면 `prep.ts` `planTeamInputs`에서 `TeamMatchInputs`로 복사하는 것이 연결의 전부다.
+**전술(2026-11-25):** `MatchPlan`이 엔진의 전술 필드를 그대로 가진다 — `plantPreference`(사이트별 자동·위치 종류·지정 위치 id),
+`postPlantPlans` / `retakePlans`(사이트 → `"*"`·위치 종류·위치 id → 계획, 가장 구체적인 키가 항목별로 이김),
+`midPlans`(맵 id 또는 `"*"` → 공격·수비별 운영·인원·누가). `planTeamInputs`가 `TeamMatchInputs`로 그대로 복사한다.
+**경기에 반영되는 것은 엔진 플래그가 켜졌을 때뿐이다** — 설치·설치 후·리테이크는 `MatchConfig.plantTactics`, 미드는 `MatchConfig.midControl`, 둘 다 기본 꺼짐.
+꺼져 있으면 설정에 기록만 되고, 두 플래그가 꺼진 경기는 전술이 없는 경기와 바이트 단위로 같다(`packages/match-runner/test/tactics-plan.test.ts`).
+세션 상태 `pendingPlanOptions`는 "설정했지만 플래그가 꺼져 반영되지 않는" 항목 목록이다.
 
 ## 5. 데스크톱
+
+- **전술 계획 화면** (`screens/tactics/TacticsPlanner.tsx`): 사이트 탭마다 설치 위치(종류, 또는 미니맵에서 엔진의 실제 설치 지점 클릭),
+  그 위치의 설치 후 운영(스파이크 곁·사이트 밖, 측면 감시, 장판 스킬 아끼기, 열세 시 후퇴), 사이트·위치별 리테이크(진입로, 모아서·나눠서, 포기 기준);
+  미드 탭에서 맵·진영별 운영·인원·선수 또는 역할. 각 구역 위에 엔진 옵션 상태를 표시한다 — 꺼져 있으면
+  "엔진 옵션 꺼짐 — 기록만 되고 경기에는 반영되지 않습니다". 경기일 계획 패널, 전술 화면(팀별 저장: 커리어 세이브 `career.ext.tactics`,
+  커리어 밖은 이 컴퓨터), 커리어 시리즈에 연결. 경기 옵션에 `plantTactics` / `midControl` 체크박스(기본 꺼짐).
 
 - **경기일 설정(상호작용 모드)**: "상대 분석 · 경기 계획" → 리포트 작성(분석관 수준) → 제안 계획 적용·수정 → 경기 시작 시 계획과 필름을 세션에 전달.
 - **라이브 화면**: 오른쪽 위 "감독 지시" 버튼 → 패널: 알림, 이번 반 남은 타임아웃과 호출 버튼(기존 지시 창), 지시 3종, 다음 라운드 전략, 선수 상태(★ 핵심 선수, 틸트·흔들림·안정·자신감, 성격 태그).

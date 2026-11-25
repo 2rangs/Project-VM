@@ -194,7 +194,18 @@ async function main() {
   await page.waitForSelector('[data-testid="pre-report"]', { timeout: 120000 });
   assert.ok(await page.locator('[data-testid="pre-headline"]').count() >= 4, 'the report reads sites, pistol and eco habits');
   await page.getByTestId('pre-use-suggested').click();
-  assert.ok(await page.getByTestId('pre-plant-A').isDisabled(), 'plant-spot choice waits for engine support');
+  // [tactics] The tactics planner: engine options off → every section says "recorded, not played".
+  await page.waitForSelector('[data-testid="tactics-planner"]', { timeout: 60000 });
+  assert.equal(await page.getByTestId('tp-flag-plantTactics').getAttribute('data-state'), 'off', 'plant tactics are labelled as recorded only');
+  await page.locator('[data-testid^="tp-spot-a-site/plant/"]').first().click();     // pick a spot on the minimap
+  assert.match(await page.getByTestId('tp-plant-A').inputValue(), /^spot:a-site\/plant\//, 'the picked spot is the plant choice');
+  await page.selectOption('[data-testid="tp-post-hold-A"]', 'offSpike');
+  await page.selectOption('[data-testid="tp-retake-approach-A"]', 'split');
+  await page.getByTestId('tp-tab-mid').click();
+  await page.selectOption('[data-testid="tp-mid-stance-attack"]', 'contest');
+  assert.equal(await page.getByTestId('tp-flag-midControl').getAttribute('data-state'), 'off', 'mid plans are labelled as recorded only');
+  await page.getByTestId('tp-tab-A').click();
+  await page.screenshot({ path: path.join(OUT, 'desktop-tactics.png') });
   await page.selectOption('[data-testid="pre-tempo"]', 'fast');
   await page.screenshot({ path: path.join(OUT, 'desktop-prematch.png') });
   await page.getByTestId('prematch-toggle').click();

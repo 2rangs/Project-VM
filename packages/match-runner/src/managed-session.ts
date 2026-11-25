@@ -129,14 +129,10 @@ function withPlanInputs(config: MatchConfig, options: ManagedSessionOptions): Ma
     if (!plan) continue;
     const scout = options.scouting?.[slot];
     const add = planTeamInputs(plan, scout?.logs ?? [], config.map, scout?.uptake ?? 1);
-    if (!add.standingPrior && !add.opponentPrior) continue;
+    if (Object.keys(add).length === 0) continue;
     any = true;
-    const base = merged[slot] ?? {};
-    merged[slot] = {
-      ...base,
-      ...(add.standingPrior ? { standingPrior: add.standingPrior } : {}),
-      ...(add.opponentPrior ? { opponentPrior: add.opponentPrior } : {}),
-    };
+    // The plan's priors and tactics (plant / post-plant / retake / mid) over whatever the config had.
+    merged[slot] = { ...(merged[slot] ?? {}), ...add };
   }
   return any ? { ...config, teamInputs: merged } : config;
 }
@@ -197,7 +193,8 @@ export function createManagedSession(config0: MatchConfig, options: ManagedSessi
       halfTime: halfTime ? { pending: { ...halfTime.pending }, situation: { ...halfTime.situation } } : null,
       strategy: { A: strategy.A ? { ...strategy.A } : null, B: strategy.B ? { ...strategy.B } : null },
       plans: { ...plans },
-      pendingPlanOptions: { A: planPending(plans.A ?? undefined), B: planPending(plans.B ?? undefined) },
+      // Tactics chosen whose engine flag is off: recorded on the config, not played.
+      pendingPlanOptions: { A: planPending(plans.A ?? undefined, config), B: planPending(plans.B ?? undefined, config) },
     },
   });
 

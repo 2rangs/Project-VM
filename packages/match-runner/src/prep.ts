@@ -18,6 +18,8 @@
  */
 import { listSimulatableTeams } from "@pv/game-data";
 import type { OpponentPrior, SiteKey } from "@pv/team-engine";
+import type { MidPlans, PostPlantPlans, RetakePlans } from "@pv/shared-types";
+import type { PlantPreferences } from "@pv/round-simulator";
 import { runMatch, type TeamRef } from "./match.js";
 import type { EconomyCall } from "./economy.js";
 import type { AttackStrategyOrder, DefenseStrategyOrder } from "./orders.js";
@@ -29,29 +31,23 @@ import { DEFAULT_MAP_POOL } from "./veto.js";
 
 // ── plan ─────────────────────────────────────────────────────────────────────────────────────
 
-/** Plant spot kinds (engine-truth plant-plans API, shared notes `plant-plans-api.md`). */
-export type PlantSpotKind = "auto" | "default" | "safe" | "open" | "cover" | "near";
 /**
- * Options other sessions are adding to the engine. Shapes mirror theirs so wiring is a copy into
- * TeamMatchInputs once the fields exist there. Not applied today.
+ * The tactics a plan can carry (engine-truth plant-plans.ts, maps-data mid-plans.ts). They go into
+ * TeamMatchInputs unchanged, and PLAY only with their engine flag on: plant preference, post-plant
+ * and retake plans need `MatchConfig.plantTactics`; mid plans need `MatchConfig.midControl`. With the
+ * flag off they are recorded on the config and nothing else (test: "tactics with flags off").
  */
-export interface PendingPlanOptions {
-  readonly plantPreference?: Readonly<Partial<Record<"A" | "B" | "C", PlantSpotKind>>>;
-  readonly postPlantPlans?: Readonly<Partial<Record<"A" | "B" | "C", {
-    readonly hold?: "auto" | "onSpike" | "offSpike";
-    readonly flankWatch?: "auto" | boolean;
-    readonly utility?: "auto" | "savePostPlant" | "spend";
-    readonly outnumbered?: "auto" | "hold" | "retreat";
-  }>>>;
-  readonly retakePlans?: Readonly<Partial<Record<"A" | "B" | "C", {
-    readonly approach?: "auto" | "stack" | "split";
-    readonly save?: "auto" | "never";
-  }>>>;
-  /** Mid control (maps-data session) — shape not published yet; a free-form choice until then. */
-  readonly midControl?: "auto" | "contest" | "concede";
+export interface TacticsPlan {
+  readonly plantPreference?: PlantPreferences;
+  readonly postPlantPlans?: PostPlantPlans;
+  readonly retakePlans?: RetakePlans;
+  readonly midPlans?: MidPlans;
 }
+/** The engine flag each tactics field needs to take effect. */
+export const TACTICS_FLAGS = { plantPreference: "plantTactics", postPlantPlans: "plantTactics", retakePlans: "plantTactics", midPlans: "midControl" } as const;
+export type TacticsField = keyof typeof TACTICS_FLAGS;
 
-export interface MatchPlan {
+export interface MatchPlan extends TacticsPlan {
   /** Standing attack lean (0–10 strength = standing pseudo-observations; 0 / null = none). */
   readonly attackLean?: { readonly site: SiteKey; readonly strength: number } | null;
   /** Standing defensive lean: expect their attack on this site. */
@@ -65,7 +61,6 @@ export interface MatchPlan {
   readonly afterPistolLoss?: Extract<EconomyCall, "save" | "force">;
   /** Seed the opponent model with the report's prior (needs report logs). */
   readonly useScouting?: boolean;
-  readonly pending?: PendingPlanOptions;
 }
 
 /** The standing shouts a plan starts the match with. */
@@ -84,19 +79,31 @@ export function planTeamInputs(plan: MatchPlan | undefined, scoutLogs: readonly 
   const prior: OpponentPrior | undefined = plan.useScouting && scoutLogs.length
     ? opponentPriorFromLogs(scoutLogs.map((log) => ({ log, weight: uptake })), map)
     : undefined;
-  return { ...(standing ? { standingPrior: standing } : {}), ...(prior ? { opponentPrior: prior } : {}) };
+  return {
+    ...(standing ? { standingPrior: standing } : {}),
+    ...(prior ? { opponentPrior: prior } : {}),
+    // Tactics are copied as they are; they act only with their engine flag (TACTICS_FLAGS).
+    ...(plan.plantPreference && Object.keys(plan.plantPreference).length ? { plantPreference: plan.plantPreference } : {}),
+    ...(plan.postPlantPlans && Object.keys(plan.postPlantPlans).length ? { postPlantPlans: plan.postPlantPlans } : {}),
+    ...(plan.retakePlans && Object.keys(plan.retakePlans).length ? { retakePlans: plan.retakePlans } : {}),
+    ...(plan.midPlans && Object.keys(plan.midPlans).length ? { midPlans: plan.midPlans } : {}),
+  };
 }
 
-/** Plan options chosen but not applied by the engine yet (for the UI and the post-match summary). */
-export function planPending(plan: MatchPlan | undefined): string[] {
-  const p = plan?.pending;
-  if (!p) return [];
-  const out: string[] = [];
-  if (p.plantPreference && Object.values(p.plantPreference).some((v) => v && v !== "auto")) out.push("plantPreference");
-  if (p.postPlantPlans && Object.keys(p.postPlantPlans).length) out.push("postPlantPlans");
-  if (p.retakePlans && Object.keys(p.retakePlans).length) out.push("retakePlans");
-  if (p.midControl && p.midControl !== "auto") out.push("midControl");
+/** The tactics fields a plan sets (anything other than "auto" / empty). */
+export function planTactics(plan: TacticsPlan | undefined): TacticsField[] {
+  if (!plan) return [];
+  const out: TacticsField[] = [];
+  if (plan.plantPreference && Object.values(plan.plantPreference).some((v) => v && v !== "auto")) out.push("plantPreference");
+  if (plan.postPlantPlans && Object.values(plan.postPlantPlans).some((site) => Object.keys(site).length)) out.push("postPlantPlans");
+  if (plan.retakePlans && Object.values(plan.retakePlans).some((site) => Object.keys(site).length)) out.push("retakePlans");
+  if (plan.midPlans && Object.values(plan.midPlans).some((m) => m.attack || m.defense)) out.push("midPlans");
   return out;
+}
+
+/** Tactics the plan sets whose engine flag is off: recorded, not played (for the UI and the summary). */
+export function planPending(plan: TacticsPlan | undefined, flags: { readonly plantTactics?: boolean; readonly midControl?: boolean } = {}): TacticsField[] {
+  return planTactics(plan).filter((f) => !flags[TACTICS_FLAGS[f]]);
 }
 
 // ── film ─────────────────────────────────────────────────────────────────────────────────────

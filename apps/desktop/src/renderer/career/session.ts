@@ -184,6 +184,14 @@ export function updateCareerWorld(fn: (w: World) => World): void {
   void writeSlot();
 }
 
+/** [tactics] Replace a hook-style slot of the career's saved state (`career.ext[key]`), then autosave. */
+export function setCareerExt(key: string, value: unknown): void {
+  if (!snap.career) return;
+  snap.career.ext = { ...snap.career.ext, [key]: value };
+  notify();
+  void writeSlot();
+}
+
 /** The manager's starting five for the next match. */
 export function chooseLineup(ids: string[]): void {
   if (!snap.career) return;

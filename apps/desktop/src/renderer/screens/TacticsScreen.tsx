@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { DetailPanel } from '../App.tsx';
-import { tactics } from '../data.ts';
+import { tactics, teams } from '../data.ts';
+// [tactics] the team's pre-match tactics plan (saved per team: career save, or this browser)
+import { TacticsPlanner } from './tactics/TacticsPlanner.tsx';
+import { useTeamTactics } from '../tactics/store.ts';
+import { recordedOnly } from '../tactics/plan.ts';
+import { useCareer } from '../career/session.ts';
+import type { MatchPlan } from '../../shared/manager.ts';
 import { SourceTag, Disclaimer } from '../ui.tsx';
 import { useT, type TFn } from '../i18n/index.tsx';
 
@@ -36,12 +42,50 @@ function TacticDetail({ tac, t }: { tac: Tactic; t: TFn }) {
   );
 }
 
+/** [tactics] Our team's tactics plan: per site plant / post-plant / retake, mid per map and side. */
+function TeamTacticsPlan() {
+  const t = useT();
+  const cs = useCareer();
+  const store = useTeamTactics();
+  const allTeams = useMemo(() => teams().sort((a, b) => a.name.localeCompare(b.name)), []);
+  const career = cs.career;
+  const [sandboxTeam, setSandboxTeam] = useState(allTeams.find((x) => x.name === 'NRG')?.teamId ?? allTeams[0]?.teamId ?? '');
+  const teamId = career ? career.userTeamId : sandboxTeam;
+  const roster = career
+    ? (career.world.teams[teamId]?.roster ?? []).map((id) => ({ id, name: career.world.players[id]?.handle ?? id }))
+    : [];
+  const plan: MatchPlan = store.planOf(teamId);
+  const flags = store.store.flags;
+  const recorded = recordedOnly(plan, flags);
+  return (
+    <section className="tac-plan" data-testid="team-tactics">
+      <div className="tac-plan-head">
+        <h3 style={{ margin: 0 }}>{t('tp.screen.title')}</h3>
+        {career ? <b>{career.world.teams[teamId]?.name ?? teamId}</b> : (
+          <select value={sandboxTeam} onChange={(e) => setSandboxTeam(e.target.value)} data-testid="tp-team">
+            {allTeams.map((x) => <option key={x.teamId} value={x.teamId}>{x.name}</option>)}
+          </select>
+        )}
+        <span className="muted small" data-testid="tp-saved-where">{t(store.inCareer ? 'tp.saved.career' : 'tp.saved.local')}</span>
+      </div>
+      <div className="tac-plan-flags">
+        <label><input type="checkbox" checked={!!flags.plantTactics} onChange={(e) => store.setFlags({ plantTactics: e.target.checked })} data-testid="tp-flag-toggle-plant" /> {t('md.opts.plantTactics')}</label>
+        <label><input type="checkbox" checked={!!flags.midControl} onChange={(e) => store.setFlags({ midControl: e.target.checked })} data-testid="tp-flag-toggle-mid" /> {t('md.opts.midControl')}</label>
+        <span className="muted small">{t('tp.flags.hint')}</span>
+      </div>
+      {recorded.length > 0 && <div className="warn small" data-testid="tp-recorded-only">{t('tp.recordedOnly', { parts: recorded.map((f) => t(`tp.part.${f}`)).join(', ') })}</div>}
+      <TacticsPlanner plan={plan} onPlan={(p) => store.savePlan(teamId, p)} flags={flags} mapId="Ascent" roster={roster} />
+    </section>
+  );
+}
+
 export function TacticsScreen({ setDetail }: { setDetail: (d: DetailPanel) => void }) {
   const t = useT();
   const [side, setSide] = useState<'attack' | 'defense'>('attack');
   const list = (side === 'attack' ? tactics.attack : tactics.defense) as Tactic[];
   return (
     <div className="pad tactics">
+      <TeamTacticsPlan />
       <h2>{t('tac.title')} · {tactics.map} <span className="muted small">{t('tac.sub')}</span></h2>
       <Disclaimer text={tactics.caveats[0]} kind="info" />
       <div className="sidetoggle">

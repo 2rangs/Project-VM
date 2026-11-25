@@ -15,7 +15,7 @@ export interface MatchSessionCfg {
   teamA?: { id: string; name: string }; teamB?: { id: string; name: string };
   map?: string; seed?: number; aiTeams?: ('A' | 'B')[];
   /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
-  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> }; moodEffects?: boolean; aiManager?: boolean; timeoutsPerHalf?: number };
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> }; moodEffects?: boolean; aiManager?: boolean; timeoutsPerHalf?: number; plantTactics?: boolean; midControl?: boolean };
   /** [manager] Our pre-match plan, and the opponent film our report was read from. */
   plan?: MatchPlan;
   scouting?: { logs: TeamGameLog[]; uptake?: number };
@@ -57,6 +57,9 @@ export function createMatchSessionHost(cfg: MatchSessionCfg): CommandHost {
       recordTracks: true, // player positions + the navigation trace (see run-match.ts)
       ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
       ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
+      // [tactics] engine flags, default off: the plan's plant / post-plant / retake (plantTactics) and mid (midControl) play only with them
+      ...(cfg.options?.plantTactics ? { plantTactics: true } : {}),
+      ...(cfg.options?.midControl ? { midControl: true } : {}),
     },
     {
       aiTeams: cfg.aiTeams ?? ['B'],

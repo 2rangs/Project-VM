@@ -28,6 +28,7 @@ import { PrematchPanel } from './matchday/PrematchPanel.tsx';
 import { PostMatchSummary } from './matchday/PostMatchSummary.tsx';
 import { EMPTY_PLAN, alertKey, ourAlerts, planForEngine, talkPending } from '../matchday/manager.ts';
 import type { MatchPlan, OpponentReportView } from '../../shared/manager.ts';
+import { useTeamTactics } from '../tactics/store.ts'; // [tactics]
 
 /**
  * [series] Optional: this Match Day plays the NEXT MAP of a live series (teams, map and seed come
@@ -79,6 +80,10 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   const [pausedFor, setPausedFor] = useState('');
   const [opponentMemory, setOpponentMemory] = useState(true);
   const [mgrExperimental, setMgrExperimental] = useState(false); // [manager] flags, default off
+  // [tactics] engine flags (default off) and the team's saved tactics
+  const teamTactics = useTeamTactics();
+  const [plantTactics, setPlantTactics] = useState(false);
+  const [midControl, setMidControl] = useState(false);
   const [minThrow, setMinThrow] = useState<{ A: number; B: number }>({ A: 0, B: 0 });
   const sess = useMatchSession();
 
@@ -92,7 +97,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   // [series] teams / seed are fixed by the series, and a map is played once.
   const busyControls = running || sess.busy || (!!series && (match !== null || (sess.state?.finished ?? false)));
   const lockSetup = !!series;
-  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0 || mgrExperimental;
+  const optsChanged = !opponentMemory || minThrow.A > 0 || minThrow.B > 0 || mgrExperimental || plantTactics || midControl;
   // Only non-default choices are sent, so a default match is the engine's own default config.
   const matchOptions = (): MatchOptions | undefined => {
     const teams: Record<string, number> = {};
@@ -101,6 +106,8 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
     const o: MatchOptions = {
       ...(opponentMemory ? {} : { opponentMemory: false }),
       ...(mgrExperimental ? { moodEffects: true, aiManager: true, timeoutsPerHalf: 1 } : {}),
+      ...(plantTactics ? { plantTactics: true } : {}),
+      ...(midControl ? { midControl: true } : {}),
       ...(Object.keys(teams).length > 0 ? { minThrowRates: { teams } } : {}),
     };
     return Object.keys(o).length > 0 ? o : undefined;
@@ -287,8 +294,19 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
               <b>{t('md.opts.mgr')}</b>
               <span className="muted small">{t('md.opts.mgr.hint')}</span>
             </label>
+            {/* [tactics] engine flags: without them the plan's tactics are recorded, not played */}
+            <label className="md-opt">
+              <input type="checkbox" checked={plantTactics} onChange={(e) => setPlantTactics(e.target.checked)} disabled={busyControls || sess.active} data-testid="opt-plant-tactics" />
+              <b>{t('md.opts.plantTactics')}</b>
+              <span className="muted small">{t('md.opts.plantTactics.hint')}</span>
+            </label>
+            <label className="md-opt">
+              <input type="checkbox" checked={midControl} onChange={(e) => setMidControl(e.target.checked)} disabled={busyControls || sess.active} data-testid="opt-mid-control" />
+              <b>{t('md.opts.midControl')}</b>
+              <span className="muted small">{t('md.opts.midControl.hint')}</span>
+            </label>
             <div className="md-optfoot">
-              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); setMgrExperimental(false); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
+              <button className="ord-cancel" onClick={() => { setOpponentMemory(true); setMinThrow({ A: 0, B: 0 }); setMgrExperimental(false); setPlantTactics(false); setMidControl(false); }} disabled={!optsChanged || busyControls || sess.active} data-testid="opt-reset">{t('md.opts.reset')}</button>
               {sess.active && <span className="muted small">{t('md.opts.locked')}</span>}
             </div>
           </div>
@@ -302,7 +320,9 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
             </button>
             {prepOpen && (
               <PrematchPanel us={refOf(teamA)} them={refOf(teamB)} seed={seed} disabled={busyControls || sess.active}
-                plan={plan} onPlan={setPlan} report={report} onReport={setReport} />
+                plan={plan} onPlan={setPlan} report={report} onReport={setReport}
+                flags={{ plantTactics, midControl }} roster={[]}
+                saved={teamTactics.planOf(refOf(teamA).id)} onSave={(tp) => teamTactics.savePlan(refOf(teamA).id, tp)} />
             )}
           </div>
         )}

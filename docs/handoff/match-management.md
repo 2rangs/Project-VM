@@ -36,13 +36,35 @@ Desktop: Match options → **감독 실험 기능 / Manager experimental** (defa
   typecheck + build clean. e2e: the gate run was cancelled at the integrator's request (combined gate on the merged tree);
   `test:e2e` and `test:e2e:series` now include report / plan / manager-drawer / decision-summary steps that have NOT run yet.
 
+## Tactics screen (2026-11-25, branch `tactics-screen` from main 85eadc8)
+- **Done, default ON (no effect on the sim):** `TacticsPlanner` — per site the plant spot (auto / default / safe / open / cover /
+  near, or a spot picked on the minimap from the engine's `plantSpotsOf`), the post-plant plan for that spot (hold on / off the
+  spike, flank watcher, ground utility kept for the spike, fall back when outnumbered), the retake plan per site and spot
+  (entry, stack / split, save threshold: auto / never / custom man deficit + spare seconds); mid per map ("*" or the map) and
+  side (contest / give up / auto, how many, which players or roles). Used in the Match Day plan panel, the Tactics screen
+  (saved per team: career save `career.ext.tactics`, or `localStorage` outside a career) and career series.
+- **Played only with engine flags, default OFF:** `plantTactics` (plant / post-plant / retake) and `midControl` (mid). Desktop:
+  Match options checkboxes, and the Tactics screen's two checkboxes (stored with the team's plans, applied to career series).
+  Every section is labelled "engine option off — recorded but not played" while its flag is off.
+- **Proof the default is unchanged:** `packages/match-runner/test/tactics-plan.test.ts` — with both flags off, a match with every
+  tactic set for both teams plays byte-identically (every event, kill, economy) to one without. With `plantTactics` on, > 70% of
+  the planned team's plants are the manager's spot kind, recorded `by: "manager"` (the carrier still overrides under clock pressure).
+- **Engine:** `MatchPlan` extends `TacticsPlan` (the placeholder `pending` field is gone); `planTeamInputs` copies the four fields;
+  `planPending(plan, flags)` lists those whose flag is off; `SeriesConfig.match` accepts `plantTactics` / `midControl`.
+- **Desktop plumbing:** engine op `tactics.map` (src/engine/tactics-map.ts) + IPC `pv:tactics:map`; `MatchOptions.plantTactics/midControl`
+  reach run-match, the match session and series (`SeriesStartRequest.plan/plantTactics/midControl`); `career/session.ts setCareerExt`.
+- **Tests:** match-runner 138, root 307 / 4 todo, desktop unit 87 (tactics-plan 9 incl. a type check against the engine types),
+  matchday 58, engine contract 10; typecheck + build clean. e2e: see the report (run once through heavy-run).
+- **Limits:** plant spots are Ascent's (every map runs on Ascent's geometry); "who goes mid" by player is offered only in a career
+  (Match Day has no roster list, so roles there); the minimap image shows only once the live view's assets are loaded (dots otherwise).
+
 ## Unfinished — exact next steps
 1. Run `test:e2e` and `test:e2e:series` on the merged tree (new steps: `prematch-toggle`, `pre-build`, `mgr-toggle`, `mgr-risk-more`,
    `mgr-strat-apply`, `post-match-summary`). If `pre-build` times out, the report subprocess is `scripts/prematch.mts` (2 simulated games).
 2. Measure the flags: 160 managed matches (both AI) with `moodEffects`+`aiManager` on vs off, judged on the real-roster gate
    (8/8, attack 0.47–0.55); only then consider default-on.
-3. Wire engine-truth plant / post-plant / retake and maps-data mid control: `prep.ts planTeamInputs` copies `MatchPlan.pending.*`
-   into `TeamMatchInputs` once those fields exist; enable the disabled selects in `PrematchPanel.tsx`.
+3. (Done 2026-11-25: tactics screen.) Next for it: once `plantTactics` / `midControl` pass the gate, flip their defaults and
+   drop the "recorded, not played" labels; add a per-player "who" list to Match Day (needs a roster in the desktop data).
 4. Desktop packaging (desktop-decisions): move `scripts/manager-view.mts`, `scripts/prematch.mts` and the new session
    commands (`setShouts`, `setStrategy`, `teamTalk`; state/result carry `manager`) into the bundled engine host.
 

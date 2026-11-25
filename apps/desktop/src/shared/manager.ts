@@ -51,22 +51,56 @@ export interface ManagerResultView {
   tiltByRound: Record<Seat, number[]>;
 }
 
-// ── pre-match plan (mirrors match-runner MatchPlan) ──
-export type PlantSpotKind = 'auto' | 'default' | 'safe' | 'open' | 'cover' | 'near';
-export interface PendingPlanOptions {
-  plantPreference?: Partial<Record<'A' | 'B', PlantSpotKind>>;
-  postPlantPlans?: Partial<Record<'A' | 'B', { hold?: 'auto' | 'onSpike' | 'offSpike'; outnumbered?: 'auto' | 'hold' | 'retreat' }>>;
-  retakePlans?: Partial<Record<'A' | 'B', { approach?: 'auto' | 'stack' | 'split' }>>;
-  midControl?: 'auto' | 'contest' | 'concede';
+// ── tactics (mirror @pv/shared-types plant-plans.ts / mid-plans.ts; see test/tactics-plan.test.ts) ──
+// They PLAY only with the engine flags plantTactics (plant / post-plant / retake) and midControl
+// (mid), both off by default; without them they are recorded on the match and nothing else.
+export type PlantSpotKind = 'default' | 'safe' | 'open' | 'cover' | 'near';
+export type PlantChoice = 'auto' | PlantSpotKind | { spotId: string };
+export interface PostPlantPlan {
+  hold?: 'auto' | 'onSpike' | 'offSpike';
+  flankWatch?: 'auto' | boolean;
+  utility?: 'auto' | 'savePostPlant' | 'spend';
+  outnumbered?: 'auto' | 'hold' | 'retreat';
 }
-export interface MatchPlan {
+export interface RetakePlan {
+  entry?: string;
+  approach?: 'auto' | 'stack' | 'split';
+  save?: 'auto' | 'never' | { maxManDeficit?: number; minSpareMs?: number };
+}
+/** Site letter → spot key ("*", a spot kind or a spot id) → plan. */
+export type SpotPlans<T> = Record<string, Record<string, T>>;
+export type MidStance = 'auto' | 'contest' | 'giveUp';
+export type MidWho = 'auto' | { readonly roles: readonly string[] } | { readonly players: readonly string[] };
+export interface MidSidePlan { stance?: MidStance; count?: 'auto' | number; who?: MidWho }
+export interface MidPlan { attack?: MidSidePlan; defense?: MidSidePlan }
+export interface TacticsPlan {
+  plantPreference?: Record<string, PlantChoice>;
+  postPlantPlans?: SpotPlans<PostPlantPlan>;
+  retakePlans?: SpotPlans<RetakePlan>;
+  /** Map id (or "*" for every map) → plan. */
+  midPlans?: Record<string, MidPlan>;
+}
+export type TacticsField = 'plantPreference' | 'postPlantPlans' | 'retakePlans' | 'midPlans';
+/** The engine flags (MatchOptions / SeriesStartRequest) the tactics need to be played. */
+export interface TacticsFlags { plantTactics?: boolean; midControl?: boolean }
+
+/** The map facts the tactics screen shows (engine op `tactics.map`). Positions are world units. */
+export interface TacticsMapView {
+  map: string; geometry: string; hasMid: boolean;
+  sites: Array<{
+    site: string; zone: string; retakeEntries: string[]; attackEntries: string[];
+    candidates: Array<{ id: string; kind: PlantSpotKind; zone: string; x: number; y: number; exposure: number; guardSight: number }>;
+  }>;
+}
+
+// ── pre-match plan (mirrors match-runner MatchPlan) ──
+export interface MatchPlan extends TacticsPlan {
   attackLean?: { site: 'A' | 'B'; strength: number } | null;
   defenseLean?: { site: 'A' | 'B'; strength: number } | null;
   tempo?: TempoShout; risk?: RiskShout; defense?: DefenseShout;
   pistol?: { attack?: AttackStrategy; defense?: DefenseStrategy };
   afterPistolLoss?: 'save' | 'force';
   useScouting?: boolean;
-  pending?: PendingPlanOptions;
 }
 
 // ── pre-match opponent report (mirrors match-runner OpponentReport) ──

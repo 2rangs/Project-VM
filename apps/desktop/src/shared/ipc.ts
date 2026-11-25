@@ -3,7 +3,7 @@
 // test pins, so main and renderer can never drift.
 import type { Replay } from '@pv/replay-engine';
 // [manager] in-match management + match prep (src/shared/manager.ts)
-import type { ManagerResultView, ManagerStateView, MatchPlan, OpponentReportView, PrematchRequest, Shouts, TalkReaction, TeamTalk, AttackStrategy, DefenseStrategy } from './manager.ts';
+import type { ManagerResultView, ManagerStateView, MatchPlan, OpponentReportView, PrematchRequest, Shouts, TalkReaction, TeamTalk, AttackStrategy, DefenseStrategy, TacticsMapView } from './manager.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from './series.ts';
 import type { CareerSimOutcome, CareerSimProgress, CareerSimRequest, SaveSlot, SaveSlotInfo } from './career.ts';
 
@@ -49,6 +49,9 @@ export const IPC = {
   // [manager]
   /** renderer → main (invoke): build the pre-match opponent report (scripts/prematch.mts). */
   prematchReport: 'pv:prematch:report',
+  // [tactics]
+  /** renderer → main (invoke): the map's plant spots, retake entries and mid (engine op tactics.map). */
+  tacticsMap: 'pv:tactics:map',
   /** renderer → main (invoke): manifest.json of the user's own fetched media (playercards); null when absent. */
   mediaManifest: 'pv:asset:media-manifest',
   /** renderer → main (invoke): one file of that media (path relative to its folder); null when absent. */
@@ -92,6 +95,9 @@ export interface MatchOptions {
   moodEffects?: boolean;
   aiManager?: boolean;
   timeoutsPerHalf?: number;
+  /** [tactics] ENGINE FLAGS, default off: the plan's plant / post-plant / retake (plantTactics) and mid (midControl) are played only with them. */
+  plantTactics?: boolean;
+  midControl?: boolean;
 }
 
 // ── Round decisions: WHY a round went the way it did. Mirrors match-runner
@@ -321,6 +327,8 @@ export interface PvBridge {
   sessionSetStrategy(team: TeamSlot, strategy: { attack?: AttackStrategy; defense?: DefenseStrategy; rounds?: number } | null): Promise<SessionState>;
   sessionTeamTalk(team: TeamSlot, talk: TeamTalk): Promise<{ state: SessionState; reactions: TalkReaction[] }>;
   prematchReport(req: PrematchRequest): Promise<OpponentReportView>;
+  // [tactics]
+  tacticsMap(mapId: string): Promise<TacticsMapView>;
   /** Optional real map mesh for the 3D team cams (never shipped in git); null → blockout. */
   loadMapMesh(mapId: string): Promise<Uint8Array | null>;
   // [career]

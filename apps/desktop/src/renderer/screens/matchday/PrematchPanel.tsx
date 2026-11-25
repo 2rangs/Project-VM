@@ -5,13 +5,14 @@
 // rounds. Plant-spot, post-plant, retake and mid-control choices are placeholders until the
 // engine-truth / maps-data sessions land their options (shapes kept identical to theirs).
 import { useState } from 'react';
-import type { MatchPlan, OpponentReportView, PlantSpotKind } from '../../../shared/manager.ts';
+import type { MatchPlan, OpponentReportView, TacticsFlags, TacticsPlan } from '../../../shared/manager.ts';
+import { TacticsPlanner } from '../tactics/TacticsPlanner.tsx';
+import { setParts, tacticsOnly } from '../../tactics/plan.ts';
 import { bridge } from '../../platform.ts';
 import { useT } from '../../i18n/index.tsx';
 import { EMPTY_PLAN, pct, rateText, reportHeadlines } from '../../matchday/manager.ts';
 import './manager.css';
 
-const PLANT_KINDS: PlantSpotKind[] = ['auto', 'default', 'safe', 'open', 'cover', 'near'];
 
 export interface PrematchPanelProps {
   us: { id: string; name: string };
@@ -22,6 +23,13 @@ export interface PrematchPanelProps {
   onPlan: (p: MatchPlan) => void;
   report: OpponentReportView | null;
   onReport: (r: OpponentReportView | null) => void;
+  /** [tactics] engine flags (Match options) — which tactics are played or only recorded. */
+  flags: TacticsFlags;
+  /** [tactics] our players for "who goes mid" (empty outside a career). */
+  roster: Array<{ id: string; name: string }>;
+  /** [tactics] the team's saved tactics, and saving the current ones as the team's. */
+  saved: TacticsPlan;
+  onSave: (t: TacticsPlan) => void;
 }
 
 export function PrematchPanel(p: PrematchPanelProps) {
@@ -88,7 +96,7 @@ export function PrematchPanel(p: PrematchPanelProps) {
                 </tbody></table>
               </div>
             </div>
-            <button className="ord-cancel" onClick={() => p.onPlan({ ...EMPTY_PLAN, ...r.suggestedPlan, pending: p.plan.pending })} disabled={p.disabled} data-testid="pre-use-suggested">{t('pre.plan.useSuggested')}</button>
+            <button className="ord-cancel" onClick={() => p.onPlan({ ...EMPTY_PLAN, ...r.suggestedPlan, ...tacticsOnly(p.plan) })} disabled={p.disabled} data-testid="pre-use-suggested">{t('pre.plan.useSuggested')}</button>
           </div>
         )}
       </section>
@@ -137,21 +145,14 @@ export function PrematchPanel(p: PrematchPanelProps) {
           </label>
         </div>
 
-        <div className="pre-pending" data-testid="prematch-pending">
-          <div className="mgr-kicker">{t('pre.pending.title')} <span className="pre-thin">{t('pre.pending.tag')}</span></div>
-          <div className="pre-planrows">
-            {(['A', 'B'] as const).map((site) => (
-              <label key={site}>{t('pre.pending.plant', { site })}
-                <select value={p.plan.pending?.plantPreference?.[site] ?? 'auto'} disabled data-testid={`pre-plant-${site}`}>
-                  {PLANT_KINDS.map((k) => <option key={k} value={k}>{t(`pre.plant.${k}`)}</option>)}
-                </select>
-              </label>
-            ))}
-            <label>{t('pre.pending.postPlant')}<select value="auto" disabled data-testid="pre-postplant"><option value="auto">{t('pre.auto')}</option></select></label>
-            <label>{t('pre.pending.retake')}<select value="auto" disabled data-testid="pre-retake"><option value="auto">{t('pre.auto')}</option></select></label>
-            <label>{t('pre.pending.mid')}<select value="auto" disabled data-testid="pre-mid"><option value="auto">{t('pre.auto')}</option></select></label>
+        {/* [tactics] plant / post-plant / retake per site, mid per map and side (screens/tactics/TacticsPlanner.tsx) */}
+        <div className="pre-tactics" data-testid="prematch-tactics">
+          <div className="pre-head">
+            <b>{t('tp.title')}</b>
+            <button className="ord-cancel" onClick={() => p.onPlan({ ...p.plan, ...tacticsOnly(p.saved) })} disabled={p.disabled || setParts(p.saved).length === 0} data-testid="pre-tactics-load">{t('tp.loadSaved')}</button>
+            <button className="ord-cancel" onClick={() => p.onSave(tacticsOnly(p.plan))} disabled={p.disabled} data-testid="pre-tactics-save">{t('tp.saveAsTeam')}</button>
           </div>
-          <div className="muted small">{t('pre.pending.hint')}</div>
+          <TacticsPlanner plan={p.plan} onPlan={p.onPlan} flags={p.flags} mapId="Ascent" roster={p.roster} disabled={p.disabled} />
         </div>
       </section>
     </div>

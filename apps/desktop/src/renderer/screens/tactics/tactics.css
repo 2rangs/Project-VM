@@ -1,0 +1,31 @@
+/* Tactics planner (screens/tactics/TacticsPlanner.tsx). */
+.tp { display: flex; flex-direction: column; gap: 8px; }
+.tp-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tp-tabs button { background: #121922; color: #9aa7b4; border: 1px solid #2b3440; border-radius: 7px; padding: 5px 12px; cursor: pointer; }
+.tp-tabs button.on { color: var(--fg, #e6edf3); border-color: var(--accent, #58a6ff); background: #1f6feb22; }
+.tp-flag { font-size: 12px; border-radius: 7px; padding: 5px 10px; }
+.tp-flag.off { color: #f0b429; background: #f0b42912; border: 1px dashed #f0b42999; font-weight: 600; }
+.tp-flag.on { color: #7ee787; background: #7ee78712; border: 1px solid #7ee78766; }
+/* Map and controls side by side only when both fit (the plan panel column is narrow): each needs ≥ 280px. */
+.tp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; align-items: start; }
+.tp-map { margin: 0; max-width: 360px; }
+.tp-map svg { width: 100%; aspect-ratio: 1; background: #0b1017; border: 1px solid #263040; border-radius: 8px; display: block; }
+.tp-spot { cursor: pointer; }
+.tp-spot circle { fill: #8b98a9; stroke: #0b0e13; stroke-width: 0.002; opacity: .9; }
+.tp-spot.k-safe circle { fill: #7ee787; } .tp-spot.k-cover circle { fill: #79c0ff; } .tp-spot.k-near circle { fill: #f0b429; } .tp-spot.k-open circle { fill: #ff7b72; }
+.tp-spot.on circle { stroke: #fff; stroke-width: 0.004; opacity: 1; }
+.tp-controls { display: flex; flex-direction: column; gap: 6px; min-width: 280px; }
+.tp-kicker { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted, #8b98a9); margin-top: 6px; }
+.tp-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 10px; }
+.tp-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.tp-field input[type=number] { width: 80px; }
+.tp-midgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.tp-midside { display: flex; flex-direction: column; gap: 6px; }
+.tp-who { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; }
+.tp-who > .muted { flex-basis: 100%; margin-top: 4px; }
+.tp-check { display: inline-flex; align-items: center; gap: 4px; }
+.tp-reset { margin-left: 8px; padding: 1px 8px; font-size: 11px; }
+.tp-geo { margin-top: 4px; }
+.tac-plan { border: 1px solid var(--line, #263040); border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; background: var(--panel2, #0d1218); }
+.tac-plan-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.tac-plan-flags { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; }

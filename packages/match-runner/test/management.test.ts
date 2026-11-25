@@ -209,9 +209,12 @@ describe("managed session: levers reach the match", () => {
     expect(r1.decisions.plans.A?.opening).toBe("bExecute");
     const r2 = s.playNextRound();
     if (r1.winner === "B") expect(r2.buys.A.tier).toBe("eco");
-    // Pending engine options are carried and reported, not applied.
-    const p = createManagedSession(base, { aiTeams: ["B"], plans: { A: { pending: { plantPreference: { A: "safe" }, midControl: "contest" } } } });
-    expect(p.state().manager.pendingPlanOptions.A).toEqual(["plantPreference", "midControl"]);
+    // Tactics whose engine flag is off are carried and listed as recorded-not-played.
+    const tactics = { plantPreference: { A: "safe" as const }, midPlans: { "*": { attack: { stance: "contest" as const } } } };
+    const p = createManagedSession(base, { aiTeams: ["B"], plans: { A: tactics } });
+    expect(p.state().manager.pendingPlanOptions.A).toEqual(["plantPreference", "midPlans"]);
+    const on = createManagedSession({ ...base, plantTactics: true }, { aiTeams: ["B"], plans: { A: tactics } });
+    expect(on.state().manager.pendingPlanOptions.A).toEqual(["midPlans"]);
   }, LONG);
 
   it("deterministic: same seed, plans and actions → the same match; the AI manager differs by attributes", () => {

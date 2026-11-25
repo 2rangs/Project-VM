@@ -40,6 +40,7 @@ const bridge: PvBridge = {
   sessionSetStrategy: async (team, strategy) => (await cmd({ cmd: 'setStrategy', team, strategy })).state!,
   sessionTeamTalk: async (team, talk) => { const r = await cmd({ cmd: 'teamTalk', team, talk }); return { state: r.state!, reactions: r.talk ?? [] }; },
   prematchReport: (req: PrematchRequest) => ipcRenderer.invoke(IPC.prematchReport, req),
+  tacticsMap: (mapId: string) => ipcRenderer.invoke(IPC.tacticsMap, mapId), // [tactics]
   loadMapMesh: (mapId: string) => ipcRenderer.invoke(IPC.mapMesh, mapId),
   // [career]
   async careerSimulate(reqs: CareerSimRequest[], onProgress: (p: CareerSimProgress) => void): Promise<CareerSimOutcome[]> {

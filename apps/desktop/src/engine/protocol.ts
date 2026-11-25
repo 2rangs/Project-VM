@@ -13,7 +13,9 @@ export type EngineOp =
   /** One background career series (CareerSimRequest) → {outcome}. */
   | 'career.series'
   /** [manager] Pre-match opponent report (PrematchRequest) → {report, filmGames}. */
-  | 'prematch.report';
+  | 'prematch.report'
+  /** [tactics] The map's plant spots, retake entries and mid ({mapId}) → TacticsMapView. Plays nothing. */
+  | 'tactics.map';
 
 export interface EngineRequest { id: number; op: EngineOp; payload?: unknown }
 
