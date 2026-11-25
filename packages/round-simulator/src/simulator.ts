@@ -701,11 +701,7 @@ export class RoundSimulator {
           p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
           if (p.health <= 0) {
             p.alive = false;
-            if (state.spike.carrierId === p.id && state.spike.phase === "carried") {
-              state.spike.carrierId = null;
-              state.spike.zoneId = p.zoneId;
-              state.spike.position = { ...p.position };
-            }
+            this.dropSpike(state, p);
             push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: undefined, target: p.id, zoneId: p.zoneId, detail: "molly" });
           }
         }
@@ -1415,6 +1411,22 @@ export class RoundSimulator {
   }
 
   /**
+   * A dead carrier drops the spike where it fell — also when it died mid-plant: the plant is lost
+   * (progress back to 0) and the spike lies there to be picked up. (A carrier killed while
+   * "planting" used to stay the carrier, so nobody could pick the spike up and an attack 4v1 up ran
+   * out the clock — docs/handoff/engine-truth.md, close-out.)
+   */
+  private dropSpike(state: SimState, dead: SimPlayer): void {
+    const s = state.spike;
+    if (s.carrierId !== dead.id || (s.phase !== "carried" && s.phase !== "planting")) return;
+    s.phase = "carried";
+    s.plantProgressMs = 0;
+    s.carrierId = null;
+    s.zoneId = dead.zoneId;
+    s.position = { ...dead.position };
+  }
+
+  /**
    * Where the carrier plants on a site (plant-spot.ts): decided once per round and site, the first
    * time the carrier is sent there, from its game sense, the clock, where its teammates stand and
    * what the attack believes about the retake — or the manager's preference (cfg.plantPreference).
@@ -1455,8 +1467,9 @@ export class RoundSimulator {
    *           cost(n) = g · ( Σ_{R'≠R} sight(n, R') / max + k(n) / len ) / 2 + reach(n) / t_R
    *         k(n)/len how far along the route the retaker first shows to n (earlier is better: the
    *         guard sees it before it is on the spike), the sum how many other ways in see the guard,
-   *         g the guard's game sense, reach the straight-line run time to n (it has until the
-   *         retake arrives).
+   *         g the guard's game sense, reach the straight-line run time to n over the time until
+   *         the retake can arrive (t_R, or sooner: run time from the nearest zone the attack
+   *         believes defenders are in).
    *  show   the first route point n sees — where the retake through R has to show itself, and
    *         where the guard puts its crosshair (faceStationary).
    * Null (the guard keeps the pre-existing rule: a spot that sees the spike) without a roadmap or
@@ -1490,6 +1503,14 @@ export class RoundSimulator {
     const order = entries.map((_, i) => i).filter((i) => w[i]! > 0)
       .sort((a, b) => count[a]! / w[a]! - count[b]! / w[b]! || w[b]! - w[a]!);
     const g = (p.traits ?? AVERAGE_TRAITS).gameSense;
+    // how soon the retake can arrive, as the attack believes: from the nearest zone it believes
+    // defenders are in (run time to the spike's zone); without a read, from defender spawn (t_R)
+    let retakeEta = Infinity;
+    for (const t of this.beliefNow.attack?.threatZones ?? []) {
+      if (!(t.threatLevel > 0)) continue;
+      const d = t.zoneId === sp.zoneId ? 0 : this.spatial.shortestTravelTimeMs(t.zoneId, sp.zoneId, "run");
+      if (d != null) retakeEta = Math.min(retakeEta, d);
+    }
     const pool = (within ? [within] : [...new Set([sp.zoneId, ...site.attackEntries])]).flatMap((z) => [...nav.zoneNodes(z)]).filter((n) => nav.nodesVisible(n, spikeNode));
     for (const i of order) {
       const r = entries[i]!;
@@ -1510,7 +1531,7 @@ export class RoundSimulator {
         cands.push({ n, k, o });
       }
       if (cands.length === 0) continue;
-      const budget = Math.max(1000, tR[i]!);
+      const budget = Math.max(1000, Math.min(tR[i]!, retakeEta));
       let best = cands[0]!, bestC = Infinity;
       for (const c of cands) {
         const q = nav.nodePosition(c.n);
@@ -1518,13 +1539,51 @@ export class RoundSimulator {
         if (cost < bestC || (cost === bestC && c.n < best.n)) { bestC = cost; best = c; }
       }
       const position = nav.nodePosition(best.n);
-      const post: GuardPost = { entry: r, zoneId: nav.zoneAt(position) ?? sp.zoneId, position, show: nav.nodePosition(steps[best.k]!), within };
+      const show = this.cfg.gaze ? this.guardAim(best.n, entries, w, i, spike, nav.nodePosition(steps[best.k]!)) : nav.nodePosition(steps[best.k]!);
+      const post: GuardPost = { entry: r, zoneId: nav.zoneAt(position) ?? sp.zoneId, position, show, within };
       this.guardPosts.set(p.id, post);
       return post;
     }
     this.guardPosts.set(p.id, null);
     return null;
   }
+  /**
+   * Gaze model: where a guard on node n puts its crosshair. Every way in R whose route to the spike
+   * n can see gives a first-show point s_R (where that retake first appears to n); the guard aims at
+   * the s_R that minimises the expected angle to the retaker, Σ_R w'_R · angle(s, s_R), with w'_R the
+   * retake weight of R (w_R) doubled for the entry this guard covers — it favours its own entry but
+   * does not turn its back on the others. Returns the covered entry's point when no other is seen.
+   */
+  private guardAim(n: number, entries: readonly string[], w: readonly number[], own: number, spike: { x: number; y: number; z: number }, ownShow: { x: number; y: number; z: number }): { x: number; y: number; z: number } {
+    const nav = this.spatial.nav!;
+    const at = nav.nodePosition(n);
+    const shows: Array<{ pt: { x: number; y: number; z: number }; w: number }> = [{ pt: ownShow, w: 2 * w[own]! }];
+    for (let j = 0; j < entries.length; j++) {
+      if (j === own || !(w[j]! > 0)) continue;
+      const anchor = nav.anchorNode(entries[j]!);
+      if (anchor === undefined) continue;
+      const key = `${entries[j]}>${Math.round(spike.x)},${Math.round(spike.y)}`;
+      let steps = this.routeSteps.get(key);
+      if (!steps) {
+        const route = nav.findPath({ actorId: `route:${entries[j]}`, start: nav.nodePosition(anchor), destination: spike, movementMode: "run", routePreference: "FASTEST" });
+        steps = route.status === "SUCCESS" ? route.waypoints.filter((wp) => wp.node >= 0).map((wp) => wp.node) : [];
+        this.routeSteps.set(key, steps);
+      }
+      const k = steps.find((m) => nav.nodesVisible(n, m));
+      if (k !== undefined) shows.push({ pt: nav.nodePosition(k), w: w[j]! });
+    }
+    if (shows.length === 1) return ownShow;
+    const ang = (q: { x: number; y: number }) => Math.atan2(q.y - at.y, q.x - at.x);
+    const diff = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+    let best = shows[0]!, bestC = Infinity;
+    for (const c of shows) {
+      const cost = shows.reduce((acc, o) => acc + o.w * diff(ang(c.pt), ang(o.pt)), 0);
+      if (cost < bestC) { bestC = cost; best = c; }
+    }
+    return best.pt;
+  }
+  private readonly routeSteps = new Map<string, number[]>();
+
   /** Post-plant guard posts this round (null: none found for that guard). */
   private readonly guardPosts = new Map<string, GuardPost | null>();
   /** The zone each guard's post was chosen within (null: on the spike or off it, by cost). */
@@ -1927,11 +1986,7 @@ export class RoundSimulator {
           const loser = state.players.find((p) => p.id === r.loser)!;
           loser.alive = false;
           loser.health = 0;
-          if (state.spike.carrierId === loser.id && state.spike.phase === "carried") {
-            state.spike.carrierId = null;
-            state.spike.zoneId = loser.zoneId;
-            state.spike.position = { ...loser.position };
-          }
+          this.dropSpike(state, loser);
           events.push({ kind: "kill", tick: state.tick, elapsedMs: state.elapsedMs, actor: r.winner, target: r.loser, zoneId: loser.zoneId });
         }
         if (engTrace) {
