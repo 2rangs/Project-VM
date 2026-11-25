@@ -56,12 +56,12 @@ The HANDOFF P1-6 clue ("7 maps at 0.78–0.90 post-plant, nearest defender 57–
 
 Within this session's scope (map data / per-map placement, not the Ascent behaviour logic), the tractable lever is the no-mid maps' retake distance. Bind and Fracture derive a 3-2 / 2-3 split across the two sites with **no central defender**, so the nearest off-site defender is 15–16 s away. I authored a `defenderStarts` override that moves one defender to the most central reachable zone (Bind → `b-teleporter`, the fast A↔B teleport link, ≤ 9 s to either site; Fracture → `b-link`, ≤ 9.8 s), i.e. a 2-2-1 with a rotator, mirroring what Ascent/Breeze/etc. get for free from a derived mid anchor. Pearl is left alone (no mid, but its post-plant is already normal). The three-site maps and the mid-but-biased maps (Split, Sunset) are **not** changed here — their miss is pre-plant plant-rate or retake logic, not a missing rotator.
 
-| Map | change | before (postPlant / det / attack) | after (postPlant / det / attack) |
-|---|---|---|---|
-| Bind | +rotator `b-teleporter` | 0.896 / 0.257 / 0.501 | <!-- FIX --> |
-| Fracture | +rotator `b-link` | 0.848 / 0.354 / 0.640 | <!-- FIX --> |
+| Map | change | before: postPlant / det / elim / attack | after: postPlant / det / elim / attack | kept? |
+|---|---|---|---|---|
+| Bind | +rotator `b-teleporter` | 0.896 / 0.257 / 0.619 / 0.501 | 0.845 / **0.174** / 0.711 / 0.419 | **yes** |
+| Fracture | +rotator `b-link` | 0.848 / 0.354 / 0.518 / 0.640 | 0.865 / 0.371 / 0.480 / 0.625 | no (reverted) |
 
-<!-- FIX-VERDICT -->
+**Verdict.** The rotator works on **Bind**: detonation 0.257 → 0.174 (toward the ≤0.15 target), elimination 0.619 → 0.711 (into band), post-plant 0.896 → 0.845, and plant rate 0.487 → 0.389 — the central defender both contests entries and retakes faster. The cost is attack 0.501 → 0.419 (at the band edge; the `b-teleporter` choke makes the defense strong, opening-duel 0.278 → 0.160), so a milder central zone could rebalance if 0.419 is judged too low — but detonation, the headline miss, clearly improves, so the override is **kept**. On **Fracture** the same idea did nothing (detonation 0.354 → 0.371): Fracture's two attacker spawns make it a pincer-defense problem, not a retake-distance one, so the `b-link` rotator was **reverted**. Net: one validated map-data fix (Bind), and confirmation that the rest of the overshoot is not a placement problem.
 
 ## 4. `geometry: "own"` as default — recommendation
 
