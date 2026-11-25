@@ -1,35 +1,83 @@
 # Handoff — information layer (per-player knowledge, comms, IGL fusion)
 
-Branch `claude/amazing-mayer-2f95d0`. Design and formulas: [`docs/INFORMATION_LAYER.md`](../INFORMATION_LAYER.md).
+Design and formulas: [`docs/INFORMATION_LAYER.md`](../INFORMATION_LAYER.md). The first package is on main. Package 2 is on branch
+`info-layer-2`.
 
 ## Status in one line
 
-Built and unit-tested, but **default OFF**. It has not passed the real-roster gate (12/15, elimination 0.672), so the
-default game is the calibrated pooled engine, unchanged.
+Built and unit-tested, but **default OFF** (`MatchConfig.informationLayer`). The first package scored 12/15 on the real-roster
+gate (elimination 0.672). Package 2 changes the defence's information and has **not been gated yet**. With the flag off, a match
+is byte-identical to main (signature test).
 
 ## What is done
 
+**Package 1 (on main)**
 - `packages/decision-engine/src/information.ts`: the `InformationLayer`, which covers:
   - per-player knowledge (sightings, sounds, damage, silence);
   - comms with delay, accuracy, load, priority, one voice per player, and a last call on death;
   - minimap spots and recon reveals;
-  - IGL fusion weighted by recency × confidence × trust^callQuality, with a Beta trust posterior per player per match (`CommsLedger`);
-  - lurker and anchor "clear" calls (LURKER_ROLE.md L7);
+  - IGL fusion with a Beta trust posterior per player per match (`CommsLedger`);
+  - lurker and anchor "clear" calls (LURKER_ROLE L7 silence);
   - a trace.
-- `packages/team-engine/src/policy.ts`: `TeamDecisionPolicy` decides on the fused observation and belief when the layer is on.
-- `packages/match-runner/src/teams.ts`: `rosterInfoProfiles` (proxies: communication ← trading, awareness ← impact, composure ← clutch, callQuality ← mean(impact, clutch)). `match.ts` binds the profiles each round and keeps one ledger per match.
-- `packages/round-simulator/src/view.ts`: teammates carry `blindRemainingMs`.
-- `packages/round-simulator/src/simulator.ts`: `RoundResult.information` holds both sides' traces. It appears only when the layer is on and tracing or perception is on.
-- Tests:
-  - `packages/decision-engine/test/information.test.ts` (13): unreported info never reaches the team; the IGL's own senses are instant; a burst drops calls; wrong count and wrong zone; the last call; trust; the lurker clear counterfactual.
-  - `packages/team-engine/test/information-layer.test.ts` (5): counterfactuals showing that pooled vs called, late vs sharp caller, wrong count, wrong zone and slow vs quick IGL each change when the defense rotates or where it goes.
+- `packages/team-engine/src/policy.ts`: decides on the fused observation and belief when the layer is on.
+- `packages/match-runner/src/teams.ts`: `rosterInfoProfiles` (attribute proxies).
+- `packages/match-runner/src/match.ts`: binds the profiles each round and keeps one ledger per match.
+
+**Package 2 (`info-layer-2`)**
+1. **Double damping fixed.** Investigation result: it was a modelling error, not a design choice.
+   - The perception engine's hearing confidence is pure signal strength (`1 − d/R`, `perception-engine/src/hearing.ts`), the
+     read the pooled engine was calibrated on.
+   - The layer then cut it twice: by `(0.6 + 0.4·awareness)` at sensing, and by `trust^callQuality` at fusion. Trust's prior is
+     itself built from communication and awareness, so awareness counted twice. A caller's unreliability was also counted twice:
+     once played out in the calls (wrong zone or count, partial) and again as a discount on every correct call.
+   - An average defender's call reached the IGL at ≈ 0.70 of the pooled confidence, and that weakens every sound-driven
+     defence read (`igl.ts`, `utility.ts`, `belief.ts`).
+   - Fix:
+     - `hearConfidence = min(1, cue·(1 + 0.4·(awareness − 0.6)))`, centred on the league average;
+     - trust now only **ranks** claims, choosing which caller places a spot and how a conflict splits the belief. It no longer
+       scales the confidence passed on.
+   - The ≈ 1.4 s comms delay is a modelled effect and stays.
+2. **Rotators leaving → evidence for the other site** (LURKER_ROLE L7 rotator count).
+   - The layer keeps a per-enemy placement history and exposes `InformationLayer.departures(siteOf)`: per site, enemies placed
+     there in the last 16.6 s, and how many were then placed off it.
+   - `hit-belief.ts` takes these as optional `SiteEvidence.departures` with `k ~ Binomial(m, r_role)`, r = hit 0.10 · show 0.60 ·
+     quiet 0.30, so a site being left reads as a show there and a hit on the other site.
+   - Without the field, the likelihood is exactly the old one (tested).
+3. **A spotted lurker slows the rotation** (LURKER_ROLE L6, defence side).
+   - An enemy the IGL has placed off the likeliest hit site pins the available defender closest to it, and the call says so.
+   - Rotators avoid its zone in the retake approach. When the way still runs through it, they go around (`rotate:around`), or walk
+     through checking it (`rotate:check`).
+4. **Round trace for Match Day.** `RoundRecord.information = { A, B }` (match-runner) carries each team's `InformationTrace` on
+   every round when the flag is on:
+   - per-player knowledge;
+   - every callout (said vs known, timings, accuracy, dropped, last call);
+   - minimap spots, trust, and `placements`.
+
+   That is the data for the trace; there is no Match Day UI for it yet.
+
+**Tests (package 2)**
+- `packages/match-runner/test/information-layer.test.ts`:
+  - **flag-off signature:** sha256 of the round records for sen vs lev, seeds 5 and 11, 8 rounds, equal to origin/main 85eadc8;
+    `false` is the default.
+  - **single-round replay, flag on vs off:** off has no trace. On has both teams' knowledge and comms, plays a different round,
+    and is deterministic.
+- `packages/decision-engine/test/information.test.ts` (+5):
+  - hearing centred on the average;
+  - an average caller's call reaches the IGL at the pooled 0.8, not ≈ 0.7;
+  - a less-trusted caller's uncontested call is passed on as heard;
+  - departures counted from the placement history; nothing that never reached the IGL counts.
+- `packages/team-engine/test/information-layer.test.ts` (+4):
+  - **lurker pin:** a lurker in mid means one fewer rotates and the mid defender stays; with the flag off, nothing changes;
+  - **lurker on the way:** a lurker behind the sites makes the rotator go around it;
+  - **departures in `hit-belief`:** leaving raises show(A) and hit(B); an empty departures field equals the old likelihood.
 
 ## Default-on
 
-Nothing sim-facing. With the flag off, the engine follows exactly the pre-layer code path:
-- the layer is not constructed;
-- `blindRemainingMs` is only read by the layer;
-- the trace key is omitted.
+Nothing sim-facing. With the flag off, the layer is not constructed, and every package-2 path is gated on it:
+- `departures` and the lurker pin are read only when the layer stepped this decision;
+- the trace keys are omitted.
+
+The signature test proves it.
 
 ## Behind a flag (default off)
 
@@ -41,7 +89,8 @@ Nothing sim-facing. With the flag off, the engine follows exactly the pre-layer 
 
 ## Measured
 
-Seeds 1–160, real rosters, Ascent, layer ON, compared with main economy v1.2 (`SIM_ECONOMY_V12_2026-11-24.json`):
+Package 1 only (before the damping fix), seeds 1–160, real rosters, Ascent, layer ON, compared with main economy v1.2
+(`SIM_ECONOMY_V12_2026-11-24.json`):
 
 | Metric | Real | Main v1.2 | Layer on |
 |---|---|---|---|
@@ -56,38 +105,42 @@ Seeds 1–160, real rosters, Ascent, layer ON, compared with main economy v1.2 (
 | Semi vs full | 0.319 | 0.349 ✓ | **0.397 ✗** |
 | Semi vs eco | 0.928 | 0.995 ✗ | 0.990 ✗ (fails on main too) |
 
-Summary:
-- original 8: **7/8**;
-- judged: **12/15** (main 13/15);
-- seeds 161–320 not run.
+Summary: original 8 at 7/8; judged 12/15 (main 13/15).
 
-Reading: the defense is about 2 points weaker, and attackers on a semi buy beat full defenses more often. That fits defenders
-learning of a hit later than they did in the pooled engine, where every sound was known team-wide at once.
+Package 2 has not been measured: no sim batches were allowed in this package.
 
 ## Unfinished: exact next step
 
-1. **Diagnose delay vs confidence.** I queued a zero-delay diagnostic and cancelled it at wrap-up, so it has no result. Two
-   candidates, both in `information.ts`:
-   - **Delay.** At average attributes a footstep call takes about 1.4 s longer to reach the IGL: reaction ≈ 400 ms, speech ≈ 570 ms,
-     IGL take-in ≈ 390 ms.
-   - **Confidence damping.** A heard sound's confidence is multiplied by `(0.6 + 0.4·awareness)` at sensing and then by
-     `trust^callQuality` at fusion. That is ≈ 0.70 × the pooled value, and it feeds the sound evidence in `igl.ts`, `utility.ts` and
-     `belief.ts`.
+1. **Gate package 2** when the lock is free:
+   ```bash
+   sim-batch --matches 160 --information --compare docs/research/SIM_ECONOMY_V12_2026-11-24.json
+   ```
+   Run it through heavy-run, then repeat with `--seed-start 161`.
 
-   To run the test: temporarily set `callReactionMs`, `speechMs`, `iglProcessingMs` and `minimapGlanceMs` to 0 and run
-   `sim-batch --matches 160 --information` through heavy-run. Rerun `pnpm install --frozen-lockfile` first, because the
-   packages depend on each other as `file:` copies.
-   - If balance recovers, the delays are the cause.
-   - If it does not, look at the confidence damping. Likely fix: trust should rank conflicting claims rather than scale
-     absolute confidence, so normalise `trust^q` by the prior.
-2. Get 8/8 with attack in 0.47–0.55 on seeds 1–160, confirm on 161–320, then consider flipping the default.
-3. Still open from LURKER_ROLE.md: rotator-count evidence (L7 rest), lurker as defender route risk (L6), defence lurk
-   hypothesis (L11).
+   What to expect:
+   - the damping fix and the departures evidence strengthen the defence's read;
+   - the lurker pin weakens rotations, but only when a lurker is spotted.
+
+   The defence was about 2 points weak, so the net should move elimination up and semi vs full down.
+2. **If the defence is still weak**, the next lever is the comms delay. In the pooled engine a call is heard by every teammate at
+   once, but IGL take-in (≈ 390 ms) currently gates the whole rotation. Consider letting a rotator who heard the call start on it
+   without the IGL's take-in. That is a design change; record it in INFORMATION_LAYER.md.
+3. With 8/8 and attack in 0.47–0.55 on both seed ranges, consider flipping the default.
+4. **Still open:**
+   - a defence "lurk" hypothesis and pair rotation (L11);
+   - the lurker choosing a lane to cut off a rotator (L6, attack side);
+   - a Match Day view of `RoundRecord.information`.
 
 ## Known risks
 
 - **Proxy attributes.** `communication` and `mapAwareness` are unrated in the dataset, so the proxies stand in for them. `clutch` has no spread in real data, so composure is a flat 0.6 for real players.
 - **Calibration.** The engine's other tunables were calibrated against the pooled picture. Turning the layer on shifts balance even when every formula is sensible.
+- **Signature constants.** The hashes in `packages/match-runner/test/information-layer.test.ts` are main's round records at
+  85eadc8. A later main change to the default engine will rightly change them. Recompute them from the new main with the flag off
+  (`sha256(JSON.stringify(runMatch(cfg).rounds))`); never recompute them from a branch with the flag on.
+- **Flank rule is coarse.** Any enemy seen off the likeliest site in the last 8 s counts as a lurker, including a show on the other site. Each one pins a defender, so a 3-player show can hold three back.
 - **Packaging.** `decision-engine` is consumed as a `file:` copy. After adding or changing files there, rerun `pnpm install --frozen-lockfile`, or the round-simulator and match-runner builds see the stale copy.
-- **Pre-existing failure.** `packages/round-simulator/test/perf.test.ts` fails under machine load. It uses ScriptedPolicy, which this work does not touch, and it fails on main too.
-- **Tests not run with the flag on.** Desktop `test:e2e` was not run on this branch (wrap-up; the integrator runs the combined gate). The flag is off by default, so desktop behaviour is unchanged.
+- **Flaky checks.**
+  - `packages/round-simulator/test/perf.test.ts` fails under machine load (ScriptedPolicy; fails on main too).
+  - Desktop `test:engine` once reported 1 failure before a fresh build; it passed 10/10 on two reruns after the build.
+- **Not run.** Desktop `test:e2e` was not run (integrator's combined gate).

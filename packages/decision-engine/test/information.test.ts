@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  InformationLayer, CommsLedger, AVERAGE_INFO_PROFILE, callErrorChance, callReactionMs, claimWeight, reporterTrust,
+  InformationLayer, CommsLedger, AVERAGE_INFO_PROFILE, callErrorChance, callReactionMs, claimWeight, hearConfidence, reporterTrust,
   type InfoProfile, type InformationInput,
 } from "@pv/decision-engine";
 import type { BeliefState, ObservationState, PlayerState, SoundObservation, Vector3 } from "@pv/shared-types";
@@ -236,5 +236,68 @@ describe("information layer — the lurker's silence shuts down an unknown", () 
     expect(lurk.out.observation.visibleEnemies.map((e) => String(e.playerId))).not.toContain("def3");
     expect(lurk.out.belief.enemyPositionBeliefs.some((b) => String(b.enemyId) === "def3")).toBe(false);
     expect(lurk.layer.trace().comms.some((c) => c.from === "atk5" && c.kind === "clear")).toBe(true);
+  });
+});
+
+describe("information layer — a heard sound is not discounted twice", () => {
+  const mates = [mate("def1", "a-site"), mate("def2", "b-site"), mate("def3", "mid-courtyard")];
+  /** def2 hears runners on B main for one decision; the IGL's picture after the call is taken in. */
+  const heardBy = (over: Partial<InfoProfile>) => {
+    const layer = new InformationLayer(spatial, { zoneCentre, draw: () => 0.99 }); // exact calls
+    const prof = profiles({ def2: over });
+    let out = layer.step(input({ now: 80_000, mates, perPlayer: { def2: obs(80_000, { audibleEvents: steps("b-main", 2, 80_000) }) } }, prof));
+    for (let now = 79_500; now >= 78_000 && footstepsIn(out.observation, "b-main") === 0; now -= 500) out = layer.step(input({ now, mates, perPlayer: {} }, prof));
+    return out.observation.audibleEvents.filter((e) => e.kind === "footstep");
+  };
+
+  it("hearing is centred on the league average: an average listener reads the cue as the engine gives it", () => {
+    expect(hearConfidence(0.8, AVERAGE_INFO_PROFILE.awareness)).toBeCloseTo(0.8, 10);
+    expect(hearConfidence(0.8, 0.2)).toBeLessThan(0.8);
+    expect(hearConfidence(0.8, 1)).toBeGreaterThan(0.8);
+    expect(hearConfidence(1, 1)).toBe(1);
+  });
+
+  it("an average caller's call reaches the IGL at the confidence the pooled engine had (0.8), not ~0.7", () => {
+    const heard = heardBy({});
+    expect(heard).toHaveLength(2);
+    for (const e of heard) expect(e.confidence).toBeCloseTo(0.8, 10);
+  });
+
+  it("an uncontested call from a caller the IGL trusts less is still passed on as heard — trust only ranks callers", () => {
+    const shaky = heardBy({ communication: 0 }); // lower trust prior, same ears
+    expect(reporterTrust({ ...AVERAGE_INFO_PROFILE, communication: 0 }, undefined, { confirmed: 0, refuted: 0 })).toBeLessThan(reporterTrust(AVERAGE_INFO_PROFILE, undefined, { confirmed: 0, refuted: 0 }));
+    for (const e of shaky) expect(e.confidence).toBeCloseTo(0.8, 10);
+    // awareness still matters: a dull listener is less sure of what they heard
+    for (const e of heardBy({ awareness: 0.2 })) expect(e.confidence).toBeLessThan(0.8);
+  });
+});
+
+describe("information layer — rotators leaving", () => {
+  const siteOf = (z: string) => (z.startsWith("a-") ? "A" : z.startsWith("b-") ? "B" : null);
+  const seen = (enemy: string, zone: string, now: number) => ({
+    visibleEnemies: [{ playerId: enemy as never, agentId: null, lastSeenPosition: AT[zone]!, lastSeenAtMs: now, healthBand: "unknown" as const, observedWeaponId: null, currentlyVisible: true }],
+  });
+
+  it("an enemy placed on B and then placed in mid has left B; one still on B has not", () => {
+    const layer = new InformationLayer(spatial, { zoneCentre });
+    const mates = [mate("def1", "a-site"), mate("def2", "b-site"), mate("def3", "mid-courtyard")];
+    const prof = profiles();
+    // the minimap puts atk1 and atk2 on B main (def2 sees them)
+    const both = (now: number) => ({ def2: obs(now, { visibleEnemies: [...seen("atk1", "b-main", now).visibleEnemies, ...seen("atk2", "b-main", now).visibleEnemies] }) });
+    layer.step(input({ now: 80_000, mates, perPlayer: both(80_000) }, prof));
+    for (let now = 79_500; now >= 78_000; now -= 500) layer.step(input({ now, mates, perPlayer: both(now) }, prof));
+    expect(layer.departures(siteOf).B).toEqual({ placed: 2, left: 0 });
+    // atk1 turns up in mid (def3 sees it): a rotator leaving B
+    for (let now = 77_500; now >= 75_000; now -= 500) layer.step(input({ now, mates, perPlayer: { def3: obs(now, seen("atk1", "mid-courtyard", now)) } }, prof));
+    expect(layer.departures(siteOf).B).toEqual({ placed: 2, left: 1 });
+    const where = layer.trace().placements!["atk1"]!.map((w) => w.zone);
+    expect(where).toEqual(["b-main", "mid-courtyard"]);
+  });
+
+  it("what never reached the IGL is no departure: a sighting nobody passed on does not count", () => {
+    const layer = new InformationLayer(spatial, { zoneCentre });
+    const mates = [mate("def1", "a-site"), mate("def2", "b-site"), mate("def3", "mid-courtyard")];
+    layer.step(input({ now: 80_000, mates, perPlayer: {} }, profiles()));
+    expect(layer.departures(siteOf)).toEqual({});
   });
 });

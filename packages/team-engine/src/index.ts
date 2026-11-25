@@ -6,7 +6,7 @@
 export { TeamDecisionPolicy, lanchesterWinChance, throwChance, DEFAULT_POLICY_TUNING, DEFAULT_FOOTSTEP_RADIUS_UNITS } from "./policy.js";
 export { chooseMoveMode, withinEarshot } from "./movement.js";
 export type { MoveIntent, MoveModeInput } from "./movement.js";
-export { updateHitBelief, rotationCount, siteLikelihood, PRESENCE_RATE, CONTACT_RATE, UTILITY_RATE, BASE_FAKE_RATE, NO_EVIDENCE } from "./hit-belief.js";
+export { updateHitBelief, rotationCount, siteLikelihood, PRESENCE_RATE, CONTACT_RATE, UTILITY_RATE, LEAVE_RATE, BASE_FAKE_RATE, NO_EVIDENCE } from "./hit-belief.js";
 export type { HitBelief, HitBeliefInput, SiteEvidence, SiteRole } from "./hit-belief.js";
 export type { TeamPolicyOptions, TeamRoundTrace, PolicyOrder, PolicyTuning, PlanSummary } from "./policy.js";
 export {

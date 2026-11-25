@@ -69,8 +69,13 @@ export const AVERAGE_INFO_PROFILE: Omit<InfoProfile, "key"> = {
 const SIGHT_RANGE_DOUBT = 0.4;
 /** Visual range the doubt is scaled to (perception maxViewDistanceUnits). */
 const VIEW_RANGE_UNITS = 4500;
-/** Heard confidence: c = cue·(HEAR_FLOOR + (1 − HEAR_FLOOR)·awareness). */
-const HEAR_FLOOR = 0.6;
+/**
+ * Heard confidence: c = min(1, cue·(1 + HEAR_SKILL·(awareness − LEAGUE_AWARENESS))).
+ * The cue is the perception engine's signal strength (1 − d/R), which the pooled engine was
+ * calibrated on as an average listener's read; awareness moves it around that average.
+ */
+const HEAR_SKILL = 0.4;
+const LEAGUE_AWARENESS = 0.6;
 /** Damage taken localises the shooter: c = DAMAGE_FLOOR + (1 − DAMAGE_FLOOR)·awareness. */
 const DAMAGE_FLOOR = 0.7;
 /** A sighting this close (units) is lethal information — called before anything else. */
@@ -121,6 +126,12 @@ const SOUND_CONFIRM_WINDOW_MS = 3000;
 
 /** Recency: weight halves every HALF_LIFE (perception memory half-life). */
 const RECENCY_HALF_LIFE_MS = 5000;
+/**
+ * Departures: an enemy the team placed on a site's side and then placed off it within this window
+ * left that site (a rotator leaving — LURKER_ROLE.md L7 "rotator count"). The forgetting horizon of
+ * a claim (recency ≥ FORGET_BELOW ≈ 16.6 s at the 5 s half-life) is the longest a placement is kept.
+ */
+const DEPARTURE_WINDOW_MS = Math.round(RECENCY_HALF_LIFE_MS * Math.log2(10));
 /** A claim is dropped from the team picture below this recency (perception forget threshold). */
 const FORGET_BELOW = 0.1;
 /** A footstep call is "current" this long; other sounds stay in the picture for the cue window. */
@@ -204,6 +215,14 @@ export interface InformationTrace {
   readonly minimap: ReadonlyArray<{ readonly enemyId: string; readonly zone: string; readonly spottedAtMs: number; readonly noticedAtMs: number }>;
   /** Trust in each reporter at the end of the round (0..1). */
   readonly trust: Readonly<Record<string, number>>;
+  /** Where the IGL placed each enemy, in order (a new entry each time the zone changes). */
+  readonly placements?: Readonly<Record<string, ReadonlyArray<{ readonly zone: string; readonly atMs: number; readonly from: string }>>>;
+}
+
+/** Per site: how many enemies the team placed on its side in the window, and how many of those then left it. */
+export interface SiteDepartures {
+  readonly placed: number;
+  readonly left: number;
 }
 
 /** Track record of each player's calls this match (shared by both side policies). */
@@ -257,7 +276,16 @@ export function minimapGlanceMs(igl: Omit<InfoProfile, "key">, load: number): nu
   return (GLANCE_BASE_MS + GLANCE_SKILL_MS * (1 - igl.awareness)) * (1 + load);
 }
 
-/** Claim weight: recency × confidence × trust^q. */
+/** How sure a listener is of a heard cue (signal strength `cue` from the perception engine). */
+export function hearConfidence(cue: number, awareness: number): number {
+  return Math.max(0, Math.min(1, cue * (1 + HEAR_SKILL * (awareness - LEAGUE_AWARENESS))));
+}
+
+/**
+ * Claim weight: recency × confidence × trust^q. It RANKS claims (which caller the IGL goes with,
+ * how a conflict splits the belief); it never scales the confidence passed on, because a caller's
+ * unreliability is already played out in the calls themselves (wrong zone / count, partial).
+ */
 export function claimWeight(ageMs: number, confidence: number, trust: number, callQuality: number): number {
   return Math.pow(0.5, Math.max(0, ageMs) / RECENCY_HALF_LIFE_MS) * confidence * Math.pow(trust, callQuality);
 }
@@ -380,6 +408,8 @@ export class InformationLayer {
   private started = false;
   private minds = new Map<string, Mind>();
   private claims = new Map<string, Claim[]>();
+  /** Per enemy, where the team's picture placed it, in time order (a new entry when the zone changes). */
+  private placements = new Map<string, Array<{ zone: string; atMs: number; from: string }>>();
   private contacts = new Map<string, Contact[]>();
   /** Areas called clear: zone → when it was last known empty (round clock). */
   private cleared = new Map<string, number>();
@@ -418,6 +448,7 @@ export class InformationLayer {
       comms: this.calls.map((c) => c.ev),
       minimap: this.minimapLog.slice(),
       trust,
+      placements: Object.fromEntries([...this.placements].map(([k, v]) => [k, v.map((w) => ({ ...w }))])),
     };
   }
 
@@ -466,6 +497,7 @@ export class InformationLayer {
     this.clock = 0;
     this.minds = new Map();
     this.claims = new Map();
+    this.placements = new Map();
     this.contacts = new Map();
     this.cleared = new Map();
     this.clears = [];
@@ -568,7 +600,7 @@ export class InformationLayer {
           add(id, {
             key, kind, soundKind: s0.kind, enemyId: null, zone: key.slice(key.indexOf(":") + 1), position: { ...s0.approxPosition },
             count: kind === "footstep" ? list.length : 1, sensedAtMs: clockOf(Math.max(...list.map((s) => s.heardAtMs))),
-            confidence: Math.min(1, s0.confidence * (HEAR_FLOOR + (1 - HEAR_FLOOR) * prof.awareness)), lethal: false, live: false,
+            confidence: Math.min(1, hearConfidence(s0.confidence, prof.awareness)), lethal: false, live: false,
           });
         }
       }
@@ -595,7 +627,7 @@ export class InformationLayer {
       const prof = this.profileOf(id);
       add(id, {
         key, kind, soundKind: s.kind, enemyId: null, zone, position: { ...s.approxPosition }, count: 1, sensedAtMs: sensedAt,
-        confidence: Math.min(1, s.confidence * (HEAR_FLOOR + (1 - HEAR_FLOOR) * prof.awareness)), lethal: false, live: false,
+        confidence: Math.min(1, hearConfidence(s.confidence, prof.awareness)), lethal: false, live: false,
       });
     }
 
@@ -643,7 +675,7 @@ export class InformationLayer {
       const zone = this.zoneOf(p.position);
       add(id, {
         key: `clear:${zone}`, kind: "clear", soundKind: null, enemyId: null, zone, position: { ...p.position }, count: 0,
-        sensedAtMs: now, confidence: HEAR_FLOOR + (1 - HEAR_FLOOR) * prof.awareness, lethal: false, live: false,
+        sensedAtMs: now, confidence: hearConfidence(1, prof.awareness), lethal: false, live: false,
       });
     }
 
@@ -841,6 +873,33 @@ export class InformationLayer {
       list[i] = c;
     } else list.push(c);
     this.claims.set(enemyId, list);
+    const where = this.placements.get(enemyId) ?? [];
+    const last = where[where.length - 1];
+    if (!last || (last.zone !== c.zone && c.sensedAt >= last.atMs)) where.push({ zone: c.zone, atMs: c.sensedAt, from: c.from });
+    this.placements.set(enemyId, where);
+  }
+
+  /**
+   * Rotators leaving: per site (`siteOf` maps a zone to its site, null off-site), of the enemies the
+   * team placed on that site's side in the last DEPARTURE_WINDOW_MS, how many it has since placed
+   * off it. Built only from what reached the IGL — a wrong call can fake a departure, an unseen one
+   * is not counted.
+   */
+  departures(siteOf: (zone: string) => string | null): Readonly<Record<string, SiteDepartures>> {
+    const out: Record<string, { placed: number; left: number }> = {};
+    const since = this.clock - DEPARTURE_WINDOW_MS;
+    for (const where of this.placements.values()) {
+      const recent = where.filter((w) => w.atMs >= since);
+      if (recent.length === 0) continue;
+      const latest = recent[recent.length - 1]!;
+      const nowAt = siteOf(latest.zone);
+      for (const site of new Set(recent.map((w) => siteOf(w.zone)).filter((x): x is string => x !== null))) {
+        const e = out[site] ?? (out[site] = { placed: 0, left: 0 });
+        e.placed++;
+        if (nowAt !== site) e.left++;
+      }
+    }
+    return out;
   }
 
   private addContact(c: Contact): void {
@@ -913,10 +972,12 @@ export class InformationLayer {
       const hold = list[0]!.infoKind === "footstep" ? FOOTSTEP_HOLD_MS : SOUND_HOLD_MS;
       const current = list.filter((c) => now - c.sensedAt <= hold && !this.clearedSince(c.zone, c.sensedAt));
       if (current.length === 0) continue;
-      // several callers on one spot are one spot: the freshest call, the largest count heard
-      const best = current.reduce((b, c) => (c.sensedAt > b.sensedAt || (c.sensedAt === b.sensedAt && c.confidence > b.confidence) ? c : b), current[0]!);
+      // several callers on one spot are one spot: the heaviest claim (recency × confidence ×
+      // trust^q) places it, the largest count heard sizes it; its confidence is passed on as heard
+      const weight = (c: Contact) => claimWeight(now - c.sensedAt, c.confidence, this.sourceTrust(c.from), q);
+      const best = current.reduce((b, c) => (weight(c) > weight(b) ? c : b), current[0]!);
       const count = best.infoKind === "footstep" ? Math.max(...current.map((c) => c.count)) : 1;
-      const confidence = Math.min(1, best.confidence * Math.pow(this.sourceTrust(best.from), q));
+      const confidence = best.confidence;
       for (let k = 0; k < count; k++) audibleEvents.push({ kind: best.kind, approxPosition: { ...best.position }, heardAtMs: remOf(best.sensedAt), confidence });
     }
     const teammateReports: TeamReport[] = this.calls

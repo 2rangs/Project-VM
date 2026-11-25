@@ -56,7 +56,7 @@ the attributes and the situation.
 | Sensed | Confidence | Notes |
 |---|---|---|
 | Enemy in sight | `1 − 0.4·(d/4500)²·(1 − awareness)` | lethal if `d ≤ 1500` units or the player took damage this step |
-| Sound (footsteps, landing, spike, reload…) | `cue·(0.6 + 0.4·awareness)` | one item per (kind, zone); footsteps carry the count of distinct sources |
+| Sound (footsteps, landing, spike, reload…) | `hearConfidence = min(1, cue·(1 + 0.4·(awareness − 0.6)))` | the cue is the perception engine's signal strength (`1 − d/R`), the read the pooled engine was calibrated on; awareness moves it around the league average (0.6). One item per (kind, zone); footsteps carry the count of distinct sources |
 | Shot / ability cue (team-level in the view) | same as sound | handed to the closest living teammate by run time, the one who heard it best |
 | Damage taken | `0.7 + 0.3·awareness` | localised to the nearest gunfire cue; lethal |
 | Silence (lurker / anchor only) | `0.6 + 0.4·awareness` | nothing sensed for `3000 + 4000·(1 − awareness)` ms → "clear" over the player's zone and its neighbours |
@@ -91,10 +91,11 @@ counts and silence never appear on the minimap. They come only by voice.
 | Quantity | Formula |
 |---|---|
 | taking in a delivered call | `(150 + 600·(1 − callQuality))·(1 + L_IGL·(1 − composure_IGL))` ms after delivery |
-| claim weight | `w = 0.5^(age/5000) · confidence · trust^callQuality`. The minimap and the IGL's own senses have trust 1. A sharp IGL discounts shaky sources; a weak one takes every call at face value |
+| claim weight | `w = 0.5^(age/5000) · confidence · trust^callQuality`. The minimap and the IGL's own senses have trust 1. It RANKS claims (which caller places an enemy or a sound, how a conflict splits the belief); it never scales the confidence passed on. A sharp IGL goes with its reliable callers when they disagree; a weak one goes with whoever is freshest |
 | conflict | per enemy, the team picture uses the heaviest claim. The belief keeps every live claim as a weighted hypothesis, and the existing diffusion (`buildBeliefState`: staleness → spread over travel time) runs on top |
 | forgetting | a claim is dropped below recency 0.1 (≈ 16.6 s). Footstep contacts are current for 3 s, other sounds for 10 s |
-| several callers, one spot | the freshest call; footsteps take the largest count any caller gave |
+| several callers, one spot | the heaviest claim places it; footsteps take the largest count any caller gave; its confidence is the caller's heard confidence |
+| departures | per site, of the enemies the IGL placed on its side in the last 16.6 s (`DEPARTURE_WINDOW_MS`, the forgetting horizon), how many it has since placed off it (`InformationLayer.departures`, from the placement history) |
 | clear | claims and contacts placed in a cleared area before the clear call are dropped, and so are belief hypotheses there |
 
 **Trust** in a reporter is a Beta posterior:
@@ -127,8 +128,18 @@ counts and silence never appear on the minimap. They come only by voice.
   they arrive only once called. A silent anchor clears their site of stale claims.
 - Info roles get a small trust prior (+0.05): they are posted to watch that ground.
 
-Not done yet (LURKER_ROLE L7 rest, L6, L11): a "rotator count" evidence type (runners leaving a site as evidence for the other
-site), the lurker as an input to defender route risk, and a defence "lurk" hypothesis.
+- **Rotators leaving** (LURKER_ROLE L7 rotator count): `hit-belief.ts` takes the layer's departures as evidence per site,
+  `k ~ Binomial(m, r_role)` with r = hit 0.10 · show 0.60 · quiet 0.30. A hit's players stay, a show's leave to join the hit, so bodies
+  seen leaving a site raise show(s) and, through the hit(t)+show(s) states, the hit on the other site. Only what reached the IGL
+  counts: a wrong call can fake a departure, an unseen one is not counted.
+- **A spotted lurker slows the rotation** (LURKER_ROLE L6): an enemy the IGL has placed off the likeliest hit site (another site's
+  side or mid, seen in the last 8 s) pins one defender. The available player closest to it stays (`decideDefenseRotation`), and
+  the call records "lurker spotted at Z: P stays". Rotators take the retake approach that avoids its zone. When the way still runs
+  through it, they go around it (`rotate:around`, the next zone of the route that avoids it), or, with no way around, walk through
+  it checking it, aimed at it (`rotate:check`).
+
+Not done yet (LURKER_ROLE L11 and L6 attack side): a defence "lurk" hypothesis in hit-belief (single runners on a far lane,
+silence), pair rotation, and the lurker choosing a lane to cut a rotator off.
 
 ## 6. Replay / debug
 
@@ -141,7 +152,12 @@ site), the lurker as an input to defender route risk, and a defence "lurk" hypot
 - `minimap`: spots and reveals with the time the IGL noticed them;
 - `trust`: each reporter's trust at the round's end.
 
-`RoundResult.information = { attack, defense }` carries both traces when `traceCommands` or `recordPerception` is on. The team
+- `placements[enemyId]`: where the IGL placed each enemy, in order (zone, time, source) — what departures are read from.
+
+`RoundRecord.information = { A, B }` (match-runner) carries both teams' traces on every round when
+`MatchConfig.informationLayer` is on. That is the data for Match Day's "who called what"; there is no Match Day view of it yet.
+`RoundResult.information = { attack, defense }` (round-simulator) carries them when `traceCommands` or `recordPerception` is on
+and a side runs the layer. The team
 trace (`TeamRoundTrace.evidence`) also records the IGL and the number of current calls behind each decision. Match Day can show
 "who called what" from `comms`.
 
@@ -154,5 +170,8 @@ Layer ON, seeds 1–160, real rosters:
 - attack win rate: 0.536.
 - judged metrics: 12/15. Main is 13/15; semi vs full worsened from 0.349 to 0.397.
 - seeds 161–320: not run.
+
+These numbers predate the second package (double-damping fix, departures, lurker pin), which has not been gated yet.
+With the flag off the match is byte-identical to main: `packages/match-runner/test/information-layer.test.ts` checks the hashes.
 
 Full table, diagnosis and next step: [`docs/handoff/information-layer.md`](handoff/information-layer.md).
