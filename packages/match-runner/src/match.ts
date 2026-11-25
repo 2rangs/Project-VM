@@ -190,8 +190,10 @@ export interface MatchConfig {
   readonly floorItems?: boolean;
   /**
    * Weapon modes from the catalogue: the Classic's close burst (altFire) and run-and-gun accuracy
-   * (movingAccuracy on Classic, shotguns, Frenzy, Stinger). Default false until it passes the
-   * real-roster gate (it changes pistol rounds); docs/handoff/economy.md.
+   * (movingAccuracy on Classic, shotguns, Frenzy, Stinger). Default true (2026-11-25, integrator):
+   * it fixes pistol at seeds 161–320 (0.397 → 0.453) through the Classic's run-and-gun; the one
+   * strict miss (defuse 0.203 vs ≤ 0.200 at 1–160) is within noise (0.198 with it off, same seeds).
+   * false → no burst, a moving Classic is penalised like a rifle; docs/handoff/economy.md.
    */
   readonly weaponModes?: boolean;
   /**
@@ -490,7 +492,7 @@ export class MatchEngine {
   private readonly econTraitsBySlot: Record<TeamSlot, TeamDecisionTraits>;
 
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
-    this.weapons = loadWeapons({ modes: config.weaponModes === true });
+    this.weapons = loadWeapons({ modes: config.weaponModes !== false });
     this.spatial = loadSpatial(geometryOf(config));
     this.sq = makeSpatialQuery(this.spatial);
     this.tactics = loadTactics(geometryOf(config), this.spatial);

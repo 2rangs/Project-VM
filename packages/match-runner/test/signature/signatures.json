@@ -7,26 +7,26 @@
   "ascent-seed161": {
     "rounds": 13,
     "score": "3-10",
-    "sha256": "376b8e2ce29747b57d6bee4d3e4746d71811a9d20e40cb20bdbcd96da39a48c3"
+    "sha256": "71a059d2c1901e0963cbf87f31975aedd4cf0c5987ccbd4bef0cf7bf0dd81ca8"
   },
   "ascent-abilities": {
     "rounds": 13,
     "score": "7-6",
-    "sha256": "c85d0bb7217d7af0e0a7be5781f72f5037c788c7cac47ee1d9582d4db666b9c3"
+    "sha256": "01aade07d51dc8e92649af36c94d37d738e39821a7073403bab0f7091a711138"
   },
   "ascent-tracks-stats": {
     "rounds": 13,
-    "score": "7-6",
-    "sha256": "1499909c23c312ab6af507bb87da3d21bac6b7a2048bf8a8d4ac35cef4f2ce11"
+    "score": "8-5",
+    "sha256": "42fb2a4703622ce1b206a39d89a694f493de5303cffb10ebce24c6f42e5bdfb0"
   },
   "haven-own": {
     "rounds": 13,
-    "score": "4-9",
-    "sha256": "935d7c1ae515e3002a5e9069153715593d084142ead438b66f13012663aa9573"
+    "score": "6-7",
+    "sha256": "48b3c7fa53ebc3efad45c27c491086a27bd286be89c245200e9a1887a7a3d02b"
   },
   "bind-own": {
     "rounds": 13,
     "score": "11-2",
-    "sha256": "663b4444ee74077786c4058a935f121929c3490f6e7e3d8974ed47c5c516d738"
+    "sha256": "0afdb4ee3b9f71eb2615c6b640dcc47b07f24d346e4d02e37187605f001845f4"
   }
 }

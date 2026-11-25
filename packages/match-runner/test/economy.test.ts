@@ -208,7 +208,7 @@ describe("floor items", () => {
     expect(floor.get("def2")).toBe("Classic");
   });
 
-  it("weapon modes (Classic burst, run-and-gun accuracy) are off unless MatchConfig.weaponModes", () => {
+  it("loadWeapons adds weapon modes (Classic burst, run-and-gun accuracy) only when asked; the match asks unless MatchConfig.weaponModes is false", () => {
     expect(loadWeapons().Classic!.altFire).toBeUndefined();
     expect(loadWeapons().Classic!.movingAccuracy).toBeUndefined();
     expect(loadWeapons({ modes: true }).Classic!.altFire?.useWithinMeters).toBe(3);

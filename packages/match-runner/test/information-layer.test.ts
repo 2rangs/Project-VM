@@ -1,7 +1,7 @@
 /**
  * The information layer (MatchConfig.informationLayer) at match level:
  *  - OFF (the default) is the calibrated engine, byte for byte: the round records hash to the same
- *    values as origin/main 85eadc8, from before the layer's second package;
+ *    values the layer-off engine gives (re-recorded 2026-11-25 for the spike-drop fix and weaponModes default on);
  *  - ON, a round carries each team's information trace (per-player knowledge, every callout, minimap
  *    spots, trust, where the IGL placed each enemy) for Match Day, and the IGL decides on it.
  */
@@ -12,10 +12,10 @@ import { runMatch, type MatchConfig } from "../src/index.js";
 const base: MatchConfig = { teamA: { id: "sen", name: "Sentinels" }, teamB: { id: "lev", name: "LEV" }, map: "Ascent", seed: 5, maxRounds: 8 };
 const hash = (c: MatchConfig): string => createHash("sha256").update(JSON.stringify(runMatch(c).rounds)).digest("hex");
 
-/** sha256 of JSON.stringify(rounds) on origin/main 85eadc8 (sen vs lev, Ascent, 8 rounds). */
+/** sha256 of JSON.stringify(rounds) with the layer off (sen vs lev, Ascent, 8 rounds), after the spike-drop fix and weaponModes default on. */
 const MAIN_SIGNATURE: Readonly<Record<number, string>> = {
-  5: "6372d50d4706fb5b865b13e8b698fe27e4520db52afa61c44529d851bcf62ad3",
-  11: "abbf53622b6e4f42efafb4191d744012d5b0d5dd3fbd04e689e7668e0c7cb3c0",
+  5: "1a72e1c5a0c7b4871e0a59fc0cfec5d5d9f5742ddc5a4c59702ed2fc3b92fc10",
+  11: "af333b256bf9710029ce38eed3dbf746057f145175c9efadbd0658426d2eac61",
 };
 
 describe("information layer at match level", () => {
