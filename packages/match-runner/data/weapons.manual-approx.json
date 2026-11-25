@@ -1,5 +1,5 @@
 {
-  "_comment": "PROJECT V combat-engine test weapons. These are MANUAL-APPROX, hand-authored approximations of publicly-documented VALORANT weapon rules (damage/fire-rate/magazine), NOT a copy of valorant-api's dataset. Per PV-1 docs/LICENSE_AUDIT.md, valorant-api-derived catalog VALUES are not committed (license unclear); schema + synthetic/approx fixtures are. For exact, versioned values regenerate locally with scripts/fetch-real-weapons.mjs (output is gitignored) or PV-1's tools/catalog-builder (release-13.10). Times in ms, ranges in meters. 2026-11-24: sidearms, shotguns, Stinger, Bulldog/Guardian and Marshal/Outlaw added (eco/force catalogue); pellets/spreadDeg/movingAccuracy/altFire are combat-engine's optional fields. spreadDeg is an effective cone: every pellet lands out to ~3 m (Shorty, Classic burst), ~4 m (Judge), ~5 m (Bucky) \u2014 the public one-shot ranges.",
+  "_comment": "PROJECT V combat-engine test weapons. These are MANUAL-APPROX, hand-authored approximations of publicly-documented VALORANT weapon rules (damage/fire-rate/magazine), NOT a copy of valorant-api's dataset. Per PV-1 docs/LICENSE_AUDIT.md, valorant-api-derived catalog VALUES are not committed (license unclear); schema + synthetic/approx fixtures are. For exact, versioned values regenerate locally with scripts/fetch-real-weapons.mjs (output is gitignored) or PV-1's tools/catalog-builder (release-13.10). Times in ms, ranges in meters. 2026-11-24: sidearms, shotguns, Stinger, Bulldog/Guardian and Marshal/Outlaw added (eco/force catalogue); pellets/spreadDeg/movingAccuracy/altFire are combat-engine's optional fields. spreadDeg is an effective cone: every pellet lands out to ~3 m (Shorty, Classic burst), ~4 m (Judge), ~5 m (Bucky) \u2014 the public one-shot ranges. movingAccuracy (2026-11-25): hit-chance kept while moving; shotguns 0.95 (a pellet cone barely widens on the move), Classic/Frenzy 0.75, Stinger 0.65 \u2014 with it a moving shooter fights on the move when that beats the opponent's moving-target penalty (combat-engine keepsMovingAgainst).",
   "provenance": {
     "sourceNote": "public VALORANT weapon rules (approximate)",
     "evidenceType": "derived",
@@ -168,7 +168,7 @@
         }
       ],
       "tracerVisible": true,
-      "movingAccuracy": 0.8,
+      "movingAccuracy": 0.75,
       "altFire": {
         "useWithinMeters": 3,
         "pellets": 3,
@@ -211,7 +211,7 @@
       "tracerVisible": true,
       "pellets": 15,
       "spreadDeg": 11,
-      "movingAccuracy": 0.85
+      "movingAccuracy": 0.95
     },
     {
       "id": "frenzy",
@@ -295,7 +295,7 @@
         }
       ],
       "tracerVisible": true,
-      "movingAccuracy": 0.7
+      "movingAccuracy": 0.65
     },
     {
       "id": "bucky",
@@ -331,7 +331,7 @@
       "tracerVisible": true,
       "pellets": 15,
       "spreadDeg": 7,
-      "movingAccuracy": 0.85
+      "movingAccuracy": 0.95
     },
     {
       "id": "judge",
@@ -367,7 +367,7 @@
       "tracerVisible": true,
       "pellets": 12,
       "spreadDeg": 8.5,
-      "movingAccuracy": 0.85
+      "movingAccuracy": 0.95
     },
     {
       "id": "bulldog",

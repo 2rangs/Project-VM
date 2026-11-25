@@ -113,8 +113,8 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
   it("ultimate readiness changes buy timing: a team on 3000 each saves without ults and buys with five ready", () => {
     const noUlt = buy(eco(five(3_000), [], 1), { abilities: true });
     const ults = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1), { abilities: true });
-    expect(noUlt.plan).toBe("eco");
-    expect(ults.plan).not.toBe("eco");
+    expect(noUlt.tier).toBe("eco"); // a save: the sidearms eco (ecoSidearms default on)
+    expect(ults.tier).not.toBe("eco");
     expect(ults.cost).toBeGreaterThan(noUlt.cost);
     // With abilities off an ultimate does nothing in the sim, so it does not move the buy.
     const off = buy(eco(five(3_000), AGENTS.map(() => ({ ultPoints: 9 })), 1));
@@ -125,7 +125,7 @@ describe("buy decisions — counterfactuals (direction and size)", () => {
     const at = (discipline: number) => buy(eco(five(2_000), [], 1), { ownTraits: { discipline, gameSense: 0.6 } });
     const ev = (b: ReturnType<typeof buy>, plan: string) => b.evaluation.find((e) => e.plan === plan && !e.ultHold)!.value;
     // The gap between buying now and saving grows as discipline falls.
-    expect(ev(at(0.2), "max") - ev(at(0.2), "eco")).toBeGreaterThan(ev(at(1.0), "max") - ev(at(1.0), "eco"));
+    expect(ev(at(0.2), "max") - ev(at(0.2), "sidearms")).toBeGreaterThan(ev(at(1.0), "max") - ev(at(1.0), "sidearms"));
   });
 });
 
@@ -145,12 +145,12 @@ describe("round 2 after a pistol win (armor-matched gun worth)", () => {
       const opp = eco([2_000, 2_000, 2_000, 2_100, 2_200], [], 1);
       return decideTeamBuy({ roundNumber: 2, score: [1, 0], own, opp, ownPlayers: CTX, oppPlayers: CTX, pistol: false, wonLastRound: true, options: { armorMatchedValue } });
     };
-    const credits = [3_400, 3_600, 3_800, 4_000];
+    const credits = [3_400, 3_600, 3_800]; // a pistol winner's credits (at 4000 a rifle + heavy is affordable and is bought)
     const rifleCount = (on: boolean) => credits.reduce((n, c) => n + rifles(at(c, on)), 0);
-    // Shop prices: rifles at 3400–3800 (15 of 20). Armor-matched: no rifles — SMG + heavy + kit at
-    // 3400–3600, SMG + light with the rest banked at 3800–4000.
-    expect(rifleCount(false)).toBeGreaterThanOrEqual(15);
+    // Shop prices: rifles with light shields (15 of 15). Armor-matched: SMG + heavy + kit at every level.
+    expect(rifleCount(false)).toBe(15);
     expect(rifleCount(true)).toBe(0);
+    expect(credits.every((c) => at(c, true).plan === "smg")).toBe(true);
     const smg = at(3_400, true);
     expect(smg.plan).toBe("smg");
     expect(smg.players.every((p) => p.weapon === "Spectre" && p.armor === 50)).toBe(true);
@@ -172,7 +172,7 @@ describe("eco: spend what next round does not need (sidearms)", () => {
     expect(b.players.filter((p) => p.armor === 25).length).toBeGreaterThanOrEqual(4);
     expect(b.loadoutValue).toBeGreaterThan(3_000);
     expect(b.loadoutValue).toBeLessThan(5_000);
-    // The old eco buys nothing.
+    // The old eco (ecoSidearms false) buys nothing.
     const old = ecoBuy(3_000, 2, "attack", false);
     expect(old.tier).toBe("eco");
     expect(old.players.every((p) => p.weapon === "Classic")).toBe(true);

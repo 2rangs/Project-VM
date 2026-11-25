@@ -3,7 +3,7 @@
  * movingAccuracy. Weapons without them resolve exactly as before (determinism.test.ts).
  */
 import { describe, expect, it } from "vitest";
-import { AVERAGE_SKILLS, OPEN_POSTURE, monteCarloDuel, pelletLandChance, type Combatant, type WeaponSpec } from "../src/index.js";
+import { AVERAGE_SKILLS, OPEN_POSTURE, keepsMovingAgainst, monteCarloDuel, pelletLandChance, type Combatant, type WeaponSpec } from "../src/index.js";
 
 const RIFLE: WeaponSpec = { id: "vandal", name: "Vandal", category: "Rifles", cost: 2900, fireRate: 9.75, magazineSize: 25, reloadTimeMs: 2500, equipTimeMs: 1000, runSpeedMultiplier: 0.95, provenance: "test", damageBands: [{ maxRangeMeters: 50, head: 160, body: 40, leg: 34 }] };
 const SHOTGUN: WeaponSpec = { id: "bucky", name: "Bucky", category: "Shotguns", cost: 850, fireRate: 1.1, magazineSize: 5, reloadTimeMs: 2500, equipTimeMs: 1000, runSpeedMultiplier: 1, provenance: "test", pellets: 15, spreadDeg: 7, damageBands: [{ maxRangeMeters: 8, head: 44, body: 22, leg: 19 }, { maxRangeMeters: 12, head: 34, body: 17, leg: 14 }, { maxRangeMeters: 50, head: 18, body: 9, leg: 8 }] };
@@ -33,12 +33,15 @@ describe("alt-fire and moving accuracy", () => {
     expect(winRate(fighter("a", burst, 0), fighter("b", RIFLE), 2)).not.toBeCloseTo(winRate(fighter("a", PISTOL, 0), fighter("b", RIFLE), 2), 3);
   });
 
-  it("a run-and-gun weapon keeps more of its accuracy on the move", () => {
-    const runGun: WeaponSpec = { ...PISTOL, movingAccuracy: 0.85 };
-    const moving = (w: WeaponSpec) => winRate(fighter("a", w, 25, true), fighter("b", PISTOL, 25), 8);
-    // Direction only: with engine-truth's two-sided tracking (both fighters track a strafing line) the
-    // gain shrank from > 0.05 to ~0.016 (0.543 vs 0.527). weaponModes is off by default; recalibrate
-    // movingAccuracy against the tracking model before turning it on (docs/handoff/economy.md).
-    expect(moving(runGun)).toBeGreaterThan(moving(PISTOL));
+  it("a run-and-gun weapon fights on the move when that beats the opponent's moving-target penalty", () => {
+    // Average tracking keeps lerp(0.7, 1, 0.6) = 0.88 against a moving target: a shotgun that keeps
+    // 0.95 of its accuracy on the move stays a moving target instead of stopping; a pistol at 0.75 stops.
+    const runShotgun: WeaponSpec = { ...SHOTGUN, movingAccuracy: 0.95 };
+    const movingAt = (w: WeaponSpec) => winRate(fighter("a", w, 25, true), fighter("b", RIFLE), 5);
+    expect(keepsMovingAgainst(fighter("a", runShotgun, 25, true), fighter("b", RIFLE))).toBe(true);
+    expect(keepsMovingAgainst(fighter("a", { ...PISTOL, movingAccuracy: 0.75 }, 25, true), fighter("b", RIFLE))).toBe(false);
+    expect(keepsMovingAgainst(fighter("a", runShotgun, 25, false), fighter("b", RIFLE))).toBe(false); // standing: nothing to keep
+    // Size (manual-approx catalogue, 2026-11-25): Bucky moving vs a standing Vandal at 5 m 0.58 → 0.79.
+    expect(movingAt(runShotgun) - movingAt(SHOTGUN)).toBeGreaterThan(0.1);
   });
 });
