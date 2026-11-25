@@ -80,9 +80,72 @@ bash tools/career/refit-quick-sim.sh [series=1100] [seed=2026] [shards=nproc]
 - It always replays the engine (no stale-cache reuse), so after sessions A–D's engine changes land the
   integrator re-runs the single command to re-fit on the final engine.
 
-<!-- FILL AFTER REFIT: measured per-series time, best-fit params ± bootstrap SE, reliability table
-     (shipped vs refit), whether the 90–100% bin is now flat, whether shipped constants were updated,
-     whether the 120-series quick-calibration.test.ts still passes. -->
+### Result (1,100 Bo3s, seed 2026, current engine `889ebef`)
+2,583 maps. ~10–14 s per engine Bo3 per core here (4 cores ⇒ ≈ 50 min generation + ≈ 7 min fit).
+The large cache is `tools/career/calibration-data.large.json` (454 KB, gitignored). Full numbers:
+`tools/career/quick-sim-refit.json`.
+
+**Best model `both` (per-map noise σ + per-series noise τ), by AIC:**
+
+| model | logLik | AIC | note |
+|---|---|---|---|
+| rounds only | −8433.7 | 16873 | no noise |
+| + per-map σ | −8106.7 | 16221 | |
+| + per-series τ | −8237.1 | 16482 | |
+| **both** | **−8097.7** | **16205** | best |
+| both + cap | −8097.7 | 16207 | cap → ∞ (260): the ability term is **linear**, no saturation |
+
+**Fitted constants (± bootstrap SE, 24 resamples):**
+
+| | refit (1,100) | shipped (120-fit) | SE | series for target precision |
+|---|---|---|---|---|
+| `roundSlope` k | **9.68** | 8.2 | ±0.34 (3.5 %) | 530 (met) |
+| `mapSlope` μ | **0.13** | 0.28 | ±0.11 | 1311 (**not** met — still ≈ 0, drop candidate) |
+| `mapNoiseSd` σ | **0.43** | 0.39 | ±0.02 | 170 (met) |
+| `seriesNoiseSd` τ | **0.22** | 0.32 | ±0.02 | 181 (met) |
+
+- The **per-map noise is now estimated from data: σ = 0.43 ± 0.02** (it was a 0.3 guess originally,
+  0.39 on 120). It is well pinned. τ fell to 0.22 and the round slope rose to 9.68. The noise terms
+  gain +336 log-lik over rounds-only; held out (50/50 split) they beat rounds-only by +0.31/series.
+- `mapSlope` is still indistinguishable from 0 (±0.11; needs ≈ 1,311 series). The map-pool term can
+  probably be dropped; keep it only if a future, larger set separates it from 0.
+
+**Calibration curve — "the favourite wins the series" (reps 200, in sample):**
+
+| favourite-win bin | shipped pred→obs (n) | refit pred→obs (n) |
+|---|---|---|
+| 0.5–0.6 | 0.549 → 0.538 (290) | 0.548 → 0.580 (224) |
+| 0.6–0.7 | 0.646 → 0.724 (294) | 0.643 → 0.676 (238) |
+| 0.7–0.8 | 0.743 → 0.793 (222) | 0.750 → 0.769 (238) |
+| 0.8–0.9 | 0.847 → 0.867 (181) | 0.849 → 0.822 (185) |
+| **0.9–1.0** | 0.944 → 0.965 (113) | **0.950 → 0.926 (215)** |
+| ECE / mean pred vs obs | 0.040 / 0.704 vs 0.737 | **0.027 / 0.741 vs 0.750** |
+
+- **The P2-9 over-confidence is resolved.** The old "predicted 0.94, observed 0.80 (n=20)" was a
+  stale small-sample artifact (the 120-series cache predated the engine changes). On 1,100 fresh
+  current-engine series the top bin is **flat** (refit 0.95 → 0.926), and the quick sim is, if
+  anything, mildly *under*-confident on favourites rather than over-confident. The refit tightens it
+  (ECE 0.040 → 0.027, mean predicted-vs-observed gap 3.3 pp → 0.9 pp).
+
+### Shipped constants were NOT changed (by design) — recommendation for the integrator
+The engine will change again under sessions A–D, and this bundle was asked to make the refit
+**re-runnable in one line so the integrator re-runs it after integration**. So the measurement is
+delivered but the constants are left for the integrator to apply on the FINAL engine, not this
+intermediate one. Applying them would also break the stale-engine 120-series unit test
+(`quick-calibration.test.ts` checks the shipped constants against the committed old-engine cache) and
+would ripple into the deterministic career tests — churn that the integrator's own re-run supersedes.
+
+**To apply after the final engine (one procedure):**
+1. `bash tools/career/refit-quick-sim.sh` → read `bestParams` and the `calibration` block of
+   `tools/career/quick-sim-refit.json`.
+2. Set `QUICK_SIM.roundSlope / mapSlope / mapNoiseSd / seriesNoiseSd` in
+   `packages/career/src/career/quick-sim.ts` to `bestParams` (consider dropping `mapSlope` if its SE
+   still spans 0).
+3. Refresh the committed small cache so the unit test matches the final engine: regenerate the first
+   120 (or more) of the large set into `tools/career/calibration-data.json`, then
+   `node_modules/.bin/tsx tools/career/fit-quick-sim.mts > tools/career/quick-sim-fit.json`, and
+   update `docs/CAREER_MODE.md` §4 numbers.
+4. Re-run `node_modules/.bin/vitest run --root packages/career` and the career E2E.
 
 ---
 

@@ -27,6 +27,11 @@ import { UNRATED_ABILITY } from "../scouting.ts";
 import { deriveSeed, mulberry32, normal, streamFor } from "../rng.ts";
 import type { CareerState, MapResult, SeriesOutcome, SeriesRequest, SeriesSimulator } from "./types.ts";
 
+// A ~1,100-series refit on the current engine (P2-9, docs/handoff/career-quicksim-morale.md) found
+// roundSlope 9.68 ± 0.34, mapSlope 0.13 ± 0.11 (≈ 0, drop candidate), mapNoiseSd 0.43 ± 0.02,
+// seriesNoiseSd 0.22 ± 0.02, and the sim well-calibrated (the old 90–100% over-confidence was a stale
+// small-sample artifact). Those constants were left for the integrator to apply on the FINAL engine
+// (re-run `bash tools/career/refit-quick-sim.sh`), not this intermediate one; see the handoff.
 export const QUICK_SIM = {
   /**
    * Round-win slope per unit of lineup-ability difference: the maximum-likelihood fit on 120 engine
