@@ -403,6 +403,16 @@
 - 남은 것: 90–100% 구간 과신(예측 0.94, 실측 0.80, n=20). 최신 엔진으로 약 1,100시리즈 재적합 필요(엔진 약 70분). 감독 리그는 `league`(엔진) 기본 유지.
 - 검증: 엔진 변경 없음. career 106/1 skip, 데스크톱 typecheck·unit 78, 세션 측 커리어 e2e 통과.
 
+### 28차 main 머지 (2026-11-25) — 2차 작업 묶음: 피스톨 해결, 이동 스타일·무기 운용 기본 ON
+- 방식: HANDOFF §5의 남은 일을 세션 5개(A 피스톨·이동, B 공격 마무리·에코, C 설치 전술·시선, D 맵 자기 지형·오브, E 커리어 빠른 시뮬·사기)에 나눠 맡기고, 오케스트레이터가 통합 게이트 한 번으로 합침.
+- 합친 브랜치: `claude/pv2-closing` @ `dc9ac0e`, `claude/pv2-plant-gaze` @ `b37a9ed`, `claude/pv2-maps` @ `ab61c9b`, `claude/pv2-career` @ `c2b0c05`, `claude/pv2-pistol` @ `1f33dbb`.
+- 기본값 변경: `movementStyle`·`weaponModes` 기본 ON(A). 단독으로는 각각 실패(무기 운용: 1–160 전멸 0.670, 이동 스타일: 1–160 피스톨 0.438), 함께 켜면 두 구간 8/8. 피스톨 원인은 버그가 아니라 "움직이는 공격수 vs 멈춘 수비수"(교전 61%) — 클래식 이동 사격이 회복. 공격 마무리(B): 설치 중 사망 시 스파이크 드랍, 인원 우위 시간 초과 정체 78/82→0. 사기 통합(E): `developmentMorale`이 추적 사기 우선. Bind 중앙 로테이터 수비 배치(D, Bind 자기 지형 폭발 0.257→0.174).
+- 플래그 뒤(측정 후 OFF): `ecoDefenseStack`(음성), `ultOrbs`(11개 맵 위치 완비, 미검증 — 바이 결정을 바꿈), `plantTactics`(1–160 7/8, 161–320 4/8), `gaze`(단독 공격 0.337, 설치 전술과 함께 0.514·5/8), `geometry: "own"`(폭발 0.16–0.40).
+- 직접 푼 충돌: `sim-batch.mts` 설정 줄 2회(`--eco-stack`·`--ult-orbs`·`--no-weapon-modes` 합침), `match.ts` 라운드 설정(오브는 `ultOrbs`일 때만 + `movementStyle ?? true`).
+- 검증(실제 로스터, Ascent, 이 통합 세션): 시드 1–160 기존 8개 **8/8**, **15/15**, 공격 0.515, 피스톨 0.487, 전멸 0.704, 해체 0.192, 폭발 0.087, 시간 초과 0.017. 시드 161–320 **8/8**(main 7/8), 13/15, 피스톨 **0.484**(main 0.397), 실패 셀 세미 대 에코 0.990·에코 대 풀 0.091.
+- 테스트: 루트 307/4 todo, round-simulator 166, match-runner 136, spatial 442, combat 36, perception 32, economy 38, ability 21, replay 15, game-data 7, career 107, pytest 65, 데스크톱 typecheck·build·unit 78·matchday 58·engine 10. 성능 테스트는 부하에 따라 49–69초로 흔들림(단독 재실행 통과). e2e는 이번 통합에서 미실행.
+- 후속(HANDOFF §5 P0): 에코 수비 서브존 배치, `plantTactics`+`gaze` 묶음 재보정, 맵 인식 리테이크. 빠른 시뮬 재적합은 이 엔진으로 커리어 세션이 진행.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.
