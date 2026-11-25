@@ -171,3 +171,32 @@ our league's AI series at depth `league`, 1–5 series) 4–17 s, the season pla
   close / app close, so the next occurrence leaves a line (`PV_E2E_VERBOSE=1`).
 - Player-facing speed at the default depth: a week of Continue ≈ 5 engine series ≈ 15–25 s with the
   progress box; a season ≈ 8 minutes. Slower than quick, by design.
+
+---
+
+## Update 5: the quick sim calibrated properly (no engine runs)
+
+Branch `quicksim-fit` (from origin/main 85eadc8). Details, tables and the reliability chart:
+`docs/CAREER_MODE.md` §4.
+- **Method:** maximum likelihood on the committed engine series (`tools/career/calibration-data.json`, 120
+  Bo3s / 286 maps) with the exact first-to-13 map-score likelihood and noise integrated out
+  (`packages/career/src/career/quick-fit.ts`; `tools/career/fit-quick-sim.mts`, 2 minutes, offline).
+  New in the quick sim: a per-SERIES noise term next to the per-map one.
+- **Shipped constants:** `roundSlope` 8.2, `mapSlope` 0.28, `mapNoiseSd` 0.39, `seriesNoiseSd` 0.32
+  (before: 7.9 / 0.4 / 0.3 guessed / none). Standard errors: k ± 1.25, μ ± 0.29 (not distinguishable
+  from 0), σ ± 0.044, τ ± 0.063. Leaving noise out costs 43 log-likelihood units.
+- **Checks:** 5-fold held-out series Brier 0.201 (coin 0.25), ECE 0.078 (noise floor ≈ 0.06–0.07);
+  shipped constants on all series: Brier 0.197, mean predicted favourite win 0.716 vs observed 0.742.
+  `test/quick-calibration.test.ts`: likelihood normalised, fitter recovers known constants, shipped
+  constants within 3 log-lik of the optimum, ECE < 0.10, mean error < 0.05, Brier < 0.215,
+  held-out half beats rounds-only by > 0.15 per series.
+- **Not settled:** the 90–100% bin (predicted 0.94, observed 0.80, n = 20; held out 0.77, n = 17).
+  A saturating ability term did not explain it. The engine series predate the latest engine
+  changes (ecoSidearms etc.).
+- **More data needed:** τ ±0.05 → ≈ 190 series (+70); ability slope ±5% → ≈ 1,100 (+980, ≈ 70 min
+  of engine time); the map-pool slope ±0.1 → ≈ 975 (it may be ≈ 0: drop it). Not run (the lock belongs
+  to the engine gates). Refit: `calibrate-quick-sim.mts --refit` on the final engine, then
+  `fit-quick-sim.mts`.
+- **Default depth:** recommendation, not a flip — keep `league` as the default for the manager's own
+  league until a ≈ 1,100-series refit on the shipped engine passes the same bounds and the top bin is
+  flat. `quick` stays right for other regions and the international events.

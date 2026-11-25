@@ -126,29 +126,100 @@ each series (the match-day `LoadingScreen` in a box on Home). Engine cost per se
 (international) to 5.1 s (own league), ≈ 4 s on average with other jobs on the machine
 (`tools/career/season-timing.mts`).
 
-**The quick estimate** (`quick-sim.ts`): rounds from the two fives' ability *today* (readiness
-applied) and the teams' map pools:
-`P(round) = sigmoid(roundSlope · (s_home − s_away) + mapSlope · (share_home − share_away) + σ · z)`,
-with the real map win shares since 2025 (shrunk), ban/pick of maps, and one form draw `z ~ N(0,1)`
-per map. Constants and how well they are known (`tools/career/calibrate-quick-sim.mts`: 120 Bo3
-series played by the engine between random teams of the four regions with their career fives,
-286 maps; the engine results are committed in `tools/career/calibration-data.json`, so a re-fit
-takes seconds without `--refit`):
+**The quick estimate** (`quick-sim.ts`): rounds from the two fives' ability *today* (readiness applied)
+and the teams' map pools,
+`P(round) = sigmoid(k · (s_home − s_away) + μ · (share_home − share_away) + τ · u + σ · z)`,
+`u ~ N(0,1)` once per series, `z ~ N(0,1)` per map, real map win shares since 2025 (shrunk), ban/pick
+of maps, first to 13 with a 2-round lead.
 
-- `roundSlope` = **7.9** (fit 7.76 ± 0.63; the ability-difference sd is 0.046, so 1 sd ≈ 0.36 logit);
-- `mapSlope` = 0.4 (fit 0.28 ± 0.21 — the map-pool effect is weak and barely significant);
-- the engine's round-win intercept is −0.017 (no attack-side bias to correct).
+**Calibration** (`tools/career/fit-quick-sim.mts`, `packages/career/src/career/quick-fit.ts`; no engine
+runs — it reads the committed engine series `tools/career/calibration-data.json`: **120 Bo3s, 286
+maps**, played by `runSeries` between random teams of the four regions with their career fives, seed
+2026). The likelihood of an observed map score under `p` is exact (negative binomial; overtime = the
+12–12 tie, then split pairs), and `u` and `z` are integrated out on a grid. Four nested models:
 
-**Not settled — the reason the default keeps the engine for your league.** With these constants and
-no per-map noise the series-level check was overconfident: the series the quick model gave under 30%
-were won 28% of the time (predicted 13%, n = 54), and the Brier score of the quick model was 0.197
-against 0.25 for always saying 50% — better than chance, not calibrated. Engine rounds are not
-independent (round form, tactics, mastery), so series are more upset-prone than the independent-
-rounds model says. The per-map noise term σ (`mapNoiseSd`, currently **0.3, an unfitted
-provisional**) is there to fix that; the scan over σ and the round slope against the cached engine
-series (`calibrate-quick-sim.mts` without `--refit`) was queued but not run before the wrap-up, so
-σ is not verified. Until it is, results of other regions and of the international events (the
-quick path at the default depth) are somewhat too predictable; the manager's league is engine-played.
+| model | k | μ | σ (map) | τ (series) | log-lik | AIC | 5-fold CV log-lik / series | held-out series Brier | held-out ECE |
+|---|---|---|---|---|---|---|---|---|---|
+| rounds only | 6.80 | 0.29 | – | – | −929.4 | 1864.9 | −7.806 | 0.204 | 0.121 |
+| + per-map noise | 7.89 | 0.32 | 0.49 | – | −890.2 | 1788.4 | −7.469 | 0.197 | 0.091 |
+| + per-series noise | 8.07 | 0.22 | – | 0.40 | −898.0 | 1804.0 | −7.543 | 0.200 | 0.070 |
+| **both (shipped)** | **8.24** | **0.28** | **0.385** | **0.323** | **−886.7** | **1783.5** | **−7.451** | **0.201** | **0.078** |
+| both + cap on the ability term | 8.24 | 0.28 | 0.385 | 0.323 | −886.7 (cap → ∞) | 1785.5 | −7.451 | – | – |
+
+(a coin has Brier 0.25.) Noise is what the rounds-only model lacks: engine rounds are not
+independent, so maps and whole series are more one-sided or closer than the lineups say — leaving
+the noise out costs 43 log-likelihood units and makes the slope look flatter (6.8). Both noise terms
+are supported (the series term adds 3.5 units over per-map noise alone: p ≈ 0.01); a cap that makes
+the favourite's win rate saturate is not (the fit runs off to ∞). The intercept (the attack-first
+side) is −0.03, negligible, and not used. **Shipped:** `roundSlope` 8.2, `mapSlope` 0.28,
+`mapNoiseSd` 0.39, `seriesNoiseSd` 0.32, `abilityCap` 0.
+
+Uncertainty (40 bootstrap resamples of the 120 series): k 8.24 ± 1.25, **μ 0.28 ± 0.29** (the map-pool
+effect is not distinguishable from zero), σ 0.385 ± 0.044, τ 0.323 ± 0.063.
+
+Reliability of the quick sim as shipped, through the SHIPPED code (`quickSeriesWith`, 200 draws per
+series, the favourite = the side the model gives more than 50%):
+
+```
+Shipped constants, all 120 series (favourite's predicted vs observed series win rate; bar = 0.5 … 1.0)
+  0.5–0.6  n=30  predicted 0.55 ###                            |
+                   observed  0.70 ############                   |
+  0.6–0.7  n=31  predicted 0.65 #########                      |
+                   observed  0.68 ###########                    |
+  0.7–0.8  n=24  predicted 0.74 ###############                |
+                   observed  0.79 ##################             |
+  0.8–0.9  n=15  predicted 0.84 ####################           |
+                   observed  0.80 ##################             |
+  0.9–1.0  n=20  predicted 0.94 ##########################     |
+                   observed  0.80 ##################             |
+
+Held out (5-fold cross-validation, constants refitted without the fold)
+  0.5–0.6  n=30  predicted 0.55 ###                            |
+                   observed  0.63 ########                       |
+  0.6–0.7  n=33  predicted 0.65 #########                      |
+                   observed  0.73 ##############                 |
+  0.7–0.8  n=22  predicted 0.75 ###############                |
+                   observed  0.73 ##############                 |
+  0.8–0.9  n=18  predicted 0.84 #####################          |
+                   observed  0.89 #######################        |
+  0.9–1.0  n=17  predicted 0.95 ###########################    |
+                   observed  0.77 ################               |
+```
+
+Shipped constants on all 120 series: Brier 0.197, log-loss 0.583 (the guessed constants of the
+previous version: 0.199 / 0.628), mean predicted favourite win rate 0.716 against 0.742 observed,
+expected calibration error 0.081 (held out: 0.078; the noise floor of the ECE with 120 series is
+about 0.06–0.07, so this is at the floor, not below it). `test/quick-calibration.test.ts` asserts:
+the likelihood is a distribution; the fitter recovers known constants from the simulator's own output;
+the shipped constants are within 3 log-likelihood units of the optimum on the engine series (and ≥ 20
+units better than rounds only); ECE < 0.10, |mean predicted − observed| < 0.05, Brier < 0.215; the
+map round share matches the engine's within 0.04; a model fitted on half the series beats rounds only
+by > 0.15 log-likelihood per held-out series.
+
+**What is still wrong.** The top bin: series the model gives the favourite 90–100% were won 80% of
+the time in-sample (77% held out; n = 20 and 17, i.e. about 2.5 standard errors from the prediction).
+The two bins below it are fine. A saturating ability term did not explain it, so either it is chance
+at this sample size or the engine has an upset mechanism the quick model does not (e.g. a floor on a
+team's chance to lose a map). Also, the engine series date from before the latest engine changes (e.g.
+`ecoSidearms` on by default): the constants describe that engine.
+
+**Is 120 series enough?** For the noise terms almost: σ is pinned to ±0.05 already; τ needs about
+190 series (**+70**, ≈ 5 minutes of engine time). The ability slope needs ≈ 1,100 series for ±5%
+(+980, ≈ 70 minutes) and the map-pool slope ≈ 975 for ±0.1 — and it may simply be ≈ 0 (then drop the
+term). The top bin needs ≈ 100 more favourites in the 90%+ range to say whether the overconfidence is
+real: also ≈ 300–400 more series overall. These were NOT run (the lock belongs to the engine gates);
+`tools/career/calibrate-quick-sim.mts --refit` (≈ 4 s per series) writes a new
+`calibration-data.json`, then `fit-quick-sim.mts` refits in two minutes. Refit on the engine that
+ships, ≈ 1,100 series, before relying on the quick estimate where it matters.
+
+**Recommendation on the default depth (not a flip).** Keep `league` (engine for the manager's own
+league) as the default for now. The quick estimate is now at the noise floor of calibration on
+aggregate, but (1) the engine changed since the data were played, (2) the top-bin overconfidence is
+unresolved, so it would make the manager's own league slightly too predictable for strong favourites,
+and (3) the manager's league decides their qualification and standing, where a visible bias costs
+trust; the price of keeping the engine is ≈ 8 minutes of waiting per season. `quick` is already the
+right choice for the other regions and the international events. Make it the default for the own
+league only after the 1,100-series refit passes the same bounds (and the top bin is flat).
 
 **Form** per player, updated per map played:
 `perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. Form is an output (it feeds the head coach's report); the engine reads fatigue and sharpness through readiness (§4a), not form.

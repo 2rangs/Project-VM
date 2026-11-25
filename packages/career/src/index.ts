@@ -27,6 +27,7 @@ export * from "./career/circuit.ts";
 export { circuitProgress, upsetNews, UPSET_GAP } from "./career/progress.ts";
 export * from "./career/career.ts";
 export * from "./career/quick-sim.ts";
+export * from "./career/quick-fit.ts";
 export * from "./career/save.ts";
 export * from "./career/readiness.ts";
 // One inbox (career/inbox.ts), one date helper (career/calendar.ts) and one teamStrength
