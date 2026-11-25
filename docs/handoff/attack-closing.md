@@ -127,12 +127,47 @@ miss as inside the prior interval [0.007, 0.195] with a non-buy (close-out) caus
   flip criterion and holds, so the fix ships on; the integrator can weigh the `semi`-vs-`eco` cell at
   the integration gate (e.g. pair it with an eco-defence clutch/hold pass).
 
-## 5. Remaining / next step
+## 5. Eco-defence stack — attempted, measured negative, left behind a flag (default OFF)
 
-1. **Eco-defence is too weak** (`semi` vs `eco` 0.98 vs 0.928; eco-defence wins ~1–2% vs VCT ~7%). This
-   is the real remaining eco-cell gap now that the close-out artifact is gone. Owner: defence policy /
-   eco (session with `policy.ts` defence holds + economy). Levers: 1–2 shotgun defenders clutching a
-   man-disadvantaged retake, entry-trade timing — not the attack side.
+Follow-up to the `semi` vs `eco` overshoot above: can realistic eco-defence behaviour win back the
+~7% VCT steal the freeze used to supply? Implemented `MatchConfig.ecoDefenseStack` /
+`TeamPolicyOptions.ecoDefenseStack` (`sim-batch --eco-stack`): on an **eco defence, pre-contact**,
+group a stack onto the likely site (cross-round attack read, else alternate by round), pulling up to
+two defenders off the other side but leaving one back for info, so the cheap guns meet the entry in a
+close crossfire instead of losing five spread 1v1s. Reuses the rotation machinery
+(`decideEcoStack` → `commitDefenseRotation`) and the combat engine's own extra-gun (crossfire) term.
+
+**It does not work, and the flag stays OFF.** Measured why first (fix bundles): eco defences win only
+when they get an early multi-kill crossfire, and that is rare because they are spread and lose close
+1v1s (eco-defence opening-duel win 0.21 / 0.27). But stacking at zone granularity does not reproduce
+the VCT steal:
+
+| seeds 1–160 (real rosters, Ascent) | close-out fix (flag off) | **+ eco-stack (flag on)** |
+|---|---|---|
+| semi vs eco (0.928 ±.05) | 0.991 ❌ | 0.986 ❌ (barely moves) |
+| eco vs semi (0.072) | 0.060 ✅ | 0.058 ✅ (unchanged) |
+| full vs semi (0.681 ±.05) | 0.716 ✅ | **0.738 ❌** (economy cascade) |
+| eco vs full (0.040 small-sample) | 0.147 ❌ | 0.115 ❌ |
+| eco-defence round win | 0.026 | 0.033 |
+| eco-defence opening-duel | 0.207 | 0.216 |
+| judged total | 13/15 | **12/15** |
+
+Original 8 stay 8/8, but the target cell (`semi` vs `eco`) does not come into tolerance and `full` vs
+`semi` regresses, so there is no case to default it on. **Why it fails:** the combat crossfire term
+only fires for a *stationary* supporting defender with line of sight to the entry at the moment of the
+duel; pulling defenders across the map at zone granularity gets them caught in transit (they lose the
+very duel they were sent to win) or staged on the site without sight of the entry the attack actually
+uses, and it trades away the pre-aim hold they already had. Moving them fast to set up first makes it
+worse (loud footsteps read by the attack; opening-duel 0.17). Code kept behind the flag (inert when
+off; byte-identical to §2) as the starting point for a proper attempt.
+
+## 6. Remaining / next step
+
+1. **Eco-defence is too weak** (`semi` vs `eco` 0.98 vs 0.928; eco-defence wins ~2–3% vs VCT ~7%). The
+   real fix is not an attack-side or a zone-level reposition (see §5): it needs sub-zone close-range
+   positioning (two or three cheap guns on one choke with mutual sight, set during the buy phase, held
+   stationary) or an eco-specific combat read — a larger modelling change owned by the defence/eco
+   area. Do **not** reach for it with a constant nerf of the attack.
 2. Pistol 161–320 (0.416) is unchanged territory (HANDOFF §5 P0-1).
 3. The close-out behaviour is now entirely emergent from the spike model + the execute/recover policy;
    if a future change adds an explicit man-advantage "hunt vs re-plant" policy branch, gate it against
@@ -140,10 +175,16 @@ miss as inside the prior interval [0.007, 0.195] with a non-buy (close-out) caus
 
 ## Notes / ownership
 
-- One-line change in two spots of `round-simulator/src/simulator.ts` (the spike-drop condition). This
-  is round-simulator (engine truth), touched minimally for the P0-2 close-out I own (pre-plant finish +
-  plant decision). No team-engine policy, economy-engine or shared contract changed. No overlap with
-  session C's post-plant/gaze (this is strictly *pre*-plant: the carrier dies before the spike is down).
-- Determinism preserved (no RNG added; behaviour changes only in rounds where a carrier dies mid-plant,
-  deterministically per seed). Tests: round-simulator 166 pass / 1 skip; match-runner 135; team-engine
-  175; typecheck clean.
+- **Close-out fix (§2, default on):** one-line change in two spots of `round-simulator/src/simulator.ts`
+  (the spike-drop condition). Round-simulator (engine truth), touched minimally for the P0-2 close-out I
+  own (pre-plant finish + plant decision). No overlap with session C's post-plant/gaze — this is strictly
+  *pre*-plant (the carrier dies before the spike is down).
+- **Eco-defence stack (§5, flag default OFF):** `TeamPolicyOptions.ecoDefenseStack` + `decideEcoStack` in
+  `team-engine/src/policy.ts`, threaded through `match-runner` `setup.ts` / `match.ts`
+  (`MatchConfig.ecoDefenseStack`) and `sim-batch --eco-stack`. It is a pre-plant **defence** behaviour
+  (eco rounds only) and touches no post-plant/retake path, so it does not overlap session C. Inert when
+  off (gated on the flag; the shared rotation `urgent` term was left unchanged). Kept as a documented
+  negative result, not shipped.
+- Determinism preserved (no RNG added; the close-out fix changes behaviour only in rounds where a carrier
+  dies mid-plant, deterministically per seed). Tests: round-simulator 166 pass / 1 skip; match-runner
+  135; team-engine 175; typecheck clean.

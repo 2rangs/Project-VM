@@ -223,6 +223,12 @@ export interface MatchConfig {
    */
   readonly informationLayer?: boolean;
   /**
+   * Eco-defence stack (docs/handoff/attack-closing.md): on a save/eco defence, group a close
+   * crossfire onto the likely site before contact instead of holding five spread 1v1s. Eco rounds
+   * only. Default false until gated.
+   */
+  readonly ecoDefenseStack?: boolean;
+  /**
    * Minimum throw rates (throws per second of holding a post-plant posture). A player's floor is
    * the larger of their team's and their own entry; nobody throws less often than their floor,
    * however disciplined their ratings. Keys are game-data team ids / player ids.
@@ -499,7 +505,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true, config.ecoDefenseStack === true);
     this.playerIdsBySlot = { A: rosterPlayerIds(config.teamA.id, 5, ro.A), B: rosterPlayerIds(config.teamB.id, 5, ro.B) };
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};

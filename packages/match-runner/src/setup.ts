@@ -158,10 +158,11 @@ export function plantSpotRefOf(spatial: SpatialEngine): (point: { x: number; y: 
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false, midControl = false, information = false) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false, midControl = false, information = false, ecoDefenseStack = false) {
     this.inner = new TeamDecisionPolicy(sq, {
       ...(information ? { information: true } : {}),
       ...(tactics ? { tactics } : {}),
+      ...(ecoDefenseStack ? { ecoDefenseStack: true } : {}),
       midControl,
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
@@ -254,8 +255,9 @@ export function makeSimPolicies(
   plantTactics = false,
   midControl = false,
   information = false,
+  ecoDefenseStack = false,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information, ecoDefenseStack), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information, ecoDefenseStack) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */
