@@ -1,6 +1,10 @@
 // Pure helpers between the career state and the screens (no React): labels, the manager's
 // series as a career fixture and back, inbox text. Unit-tested in test/career-mode.test.ts.
 import type { SeriesView } from '../../shared/series.ts';
+import { readStore, setParts } from '../tactics/plan.ts'; // [tactics]
+import type { TacticsPlan } from '../../shared/manager.ts';
+/** Where the career save keeps the tactics (tactics/store.ts CAREER_EXT_KEY). */
+const CAREER_TACTICS_KEY = 'tactics';
 import type { SimRosterPlayer } from '../../shared/career.ts';
 import {
   isUserFixture, lineupFor, matchRoster, teamStaffInputs, seriesRequest,
@@ -49,6 +53,19 @@ export function seriesSetup(c: CareerState, f: Fixture) {
     analyst: teamStaffInputs(c.world, c.userTeamId).analyst,
     rosters: { A: rosterOf(c, c.userTeamId), B: rosterOf(c, opp) },
     practice: { A: practiceOf(c, c.userTeamId), B: practiceOf(c, opp) },
+    // [tactics] our saved tactics and the engine flags chosen for them (career.ext.tactics)
+    ...careerTactics(c),
+  };
+}
+
+/** [tactics] The user team's saved tactics plan and engine flags, for the series start. */
+function careerTactics(c: CareerState): { plan?: TacticsPlan; plantTactics?: boolean; midControl?: boolean } {
+  const store = readStore(c.ext[CAREER_TACTICS_KEY]);
+  const plan = store.plans[c.userTeamId];
+  return {
+    ...(plan && setParts(plan).length ? { plan } : {}),
+    ...(store.flags.plantTactics ? { plantTactics: true } : {}),
+    ...(store.flags.midControl ? { midControl: true } : {}),
   };
 }
 

@@ -8,7 +8,7 @@ import { compactBuy, compactEconomy, engagementOf, sightOf } from './compact-rou
 export interface RunMatchCfg {
   teamA?: { id: string; name: string }; teamB?: { id: string; name: string }; map?: string; seed?: number; recordPerception?: boolean;
   /** Pre-match options chosen in the Match Day setup (see src/shared/ipc.ts MatchOptions). */
-  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> } };
+  options?: { opponentMemory?: boolean; minThrowRates?: { teams?: Record<string, number>; players?: Record<string, number> }; plantTactics?: boolean; midControl?: boolean };
 }
 export interface RoundProgress { round: number; score: { A: number; B: number } }
 
@@ -25,6 +25,9 @@ export function runMatchCompact(cfg: RunMatchCfg, onRound?: (p: RoundProgress) =
     recordTracks: true,
     ...(cfg.options?.opponentMemory !== undefined ? { opponentMemory: cfg.options.opponentMemory } : {}),
     ...(cfg.options?.minThrowRates ? { minThrowRates: cfg.options.minThrowRates } : {}),
+    // [tactics] engine flags, default off (MatchConfig.plantTactics / midControl)
+    ...(cfg.options?.plantTactics ? { plantTactics: true } : {}),
+    ...(cfg.options?.midControl ? { midControl: true } : {}),
   }, {
     // one progress report per round; the caller turns it into the loading screen's counter
     onRound: (r, score) => { onRound?.({ round: r.roundNumber, score: { A: score.A, B: score.B } }); },

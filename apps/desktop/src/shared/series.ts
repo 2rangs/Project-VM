@@ -2,6 +2,8 @@
 // The view is a plain-JSON projection of @pv/match-runner's SeriesSession (prepareSeries +
 // VetoProcess state), always from OUR team's seat: series team "A" is the team the user manages
 // and it starts the map selection; "B" is the AI opponent.
+import type { MatchPlan } from './manager.ts';
+
 export type SeriesTeam = 'A' | 'B';
 export type SeriesFormat = 'bo1' | 'bo3' | 'bo5';
 export type StartSide = 'attack' | 'defense';
@@ -22,6 +24,11 @@ export interface SeriesStartRequest {
   rosters?: { A?: Array<{ playerId: string; attributes: unknown; hasRatings: boolean }>; B?: Array<{ playerId: string; attributes: unknown; hasRatings: boolean }> };
   /** [career] Training map practice per team (map → playerId → game-equivalents) → map mastery. */
   practice?: { A?: Record<string, Record<string, number>>; B?: Record<string, Record<string, number>> };
+  /** [tactics] Our team's plan (incl. plant / post-plant / retake / mid tactics), used on every map. */
+  plan?: MatchPlan;
+  /** [tactics] Engine flags, default off — without them the plan's tactics are recorded, not played. */
+  plantTactics?: boolean;
+  midControl?: boolean;
 }
 
 export interface MasteryComponentView { value: number; uncertainty: number }

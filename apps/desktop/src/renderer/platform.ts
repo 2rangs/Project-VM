@@ -56,6 +56,7 @@ const browserBridge: PvBridge = {
   async sessionSetStrategy() { throw new Error('interactive session requires Electron'); },
   async sessionTeamTalk() { throw new Error('interactive session requires Electron'); },
   async prematchReport() { throw new Error('the pre-match report requires Electron'); },
+  async tacticsMap() { throw new Error('the tactics map requires Electron'); }, // [tactics]
   async loadMapMesh() { return null; }, // browser fallback: the cams use the navgraph blockout
   // [career] no engine process in the browser: the career falls back to the quick estimate.
   async careerSimulate() { throw new Error('engine simulation requires Electron'); },

@@ -94,6 +94,20 @@ async function main() {
   await page.getByTestId('nav-home').click();
   await shot('home');
 
+  // ── [tactics] the team's tactics plan is saved in the career ──
+  await page.getByTestId('nav-tactics').click();
+  await page.waitForSelector('[data-testid="team-tactics"] [data-testid="tactics-planner"]', { timeout: 60000 });
+  assert.equal(await page.getByTestId('tp-flag-plantTactics').getAttribute('data-state'), 'off', 'engine option off by default');
+  await page.selectOption('[data-testid="tp-plant-A"]', 'safe');
+  await page.selectOption('[data-testid="tp-retake-approach-B"]', 'stack').catch(async () => {
+    await page.getByTestId('tp-tab-B').click();
+    await page.selectOption('[data-testid="tp-retake-approach-B"]', 'stack');
+  });
+  assert.ok(await page.getByTestId('tp-recorded-only').isVisible(), 'the screen says the plan is recorded, not played');
+  for (let i = 0; i < 40 && readSave().ext?.tactics?.plans?.[teamId]?.plantPreference?.A !== 'safe'; i++) await page.waitForTimeout(250);
+  assert.equal(readSave().ext.tactics.plans[teamId].plantPreference.A, 'safe', 'the plan is in the career save, per team');
+  await page.getByTestId('nav-home').click();
+
   // ── club: a free agent on a one-year contract, and the training plan ──
   const signed = await clubStep(page, OUT, { years: 1, practiceMap: true });
   mark('club step done');

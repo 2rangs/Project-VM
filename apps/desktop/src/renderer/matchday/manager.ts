@@ -6,6 +6,8 @@ import type {
   AlertView, DecisionView, ManagerStateView, MatchPlan, OpponentReportView, PlayerMindView, Rate, Seat, SiteEvidenceView,
 } from '../../shared/manager.ts';
 
+import { tacticsOnly } from '../tactics/plan.ts';
+
 export const OUR: Seat = 'A';
 
 // ── state of mind ───────────────────────────────────────────────────────────────────────────
@@ -132,17 +134,6 @@ export function reportHeadlines(r: OpponentReportView): Array<{ key: string; var
 // ── plan ──────────────────────────────────────────────────────────────────────────────────────
 /** A plan with nothing set (the IGL decides everything). */
 export const EMPTY_PLAN: MatchPlan = { tempo: 'normal', risk: 'normal', defense: 'normal', useScouting: false };
-/** Plan options that are chosen but wait for engine support (shown as placeholders). */
-export function pendingChoices(plan: MatchPlan): string[] {
-  const p = plan.pending;
-  if (!p) return [];
-  const out: string[] = [];
-  if (p.plantPreference && Object.values(p.plantPreference).some((v) => v && v !== 'auto')) out.push('plantPreference');
-  if (p.postPlantPlans && Object.keys(p.postPlantPlans).length) out.push('postPlantPlans');
-  if (p.retakePlans && Object.keys(p.retakePlans).length) out.push('retakePlans');
-  if (p.midControl && p.midControl !== 'auto') out.push('midControl');
-  return out;
-}
 /** Only what differs from the IGL's own play is sent to the engine. */
 export function planForEngine(plan: MatchPlan): MatchPlan | undefined {
   const out: MatchPlan = {
@@ -154,7 +145,8 @@ export function planForEngine(plan: MatchPlan): MatchPlan | undefined {
     ...(plan.pistol && (plan.pistol.attack || plan.pistol.defense) ? { pistol: plan.pistol } : {}),
     ...(plan.afterPistolLoss ? { afterPistolLoss: plan.afterPistolLoss } : {}),
     ...(plan.useScouting ? { useScouting: true } : {}),
-    ...(plan.pending && pendingChoices(plan).length ? { pending: plan.pending } : {}),
+    // [tactics] plant / post-plant / retake / mid, already kept minimal by the tactics screen
+    ...tacticsOnly(plan),
   };
   return Object.keys(out).length ? out : undefined;
 }

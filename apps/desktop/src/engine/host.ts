@@ -13,6 +13,7 @@ import { createMatchSessionHost, type CommandHost, type MatchSessionCfg } from '
 import { createSeriesHost, type SeriesCfg } from './series-session.ts';
 import { playCareerSeries } from './career-sim.ts';
 import { prematchReport, type PrematchReq } from './prematch.ts';
+import { tacticsMap, type TacticsMapReq } from './tactics-map.ts';
 import type { CareerSimRequest } from '../shared/career.ts';
 import type { EngineMessage, EngineRequest } from './protocol.ts';
 
@@ -49,6 +50,7 @@ function run(req: EngineRequest): unknown {
     case 'series.stop': series = null; return {};
     case 'career.series': return { outcome: playCareerSeries(payload as unknown as CareerSimRequest) };
     case 'prematch.report': return prematchReport(payload as unknown as PrematchReq);
+    case 'tactics.map': return tacticsMap(payload as TacticsMapReq);
     default: throw new Error(`unknown op ${String(req.op)}`);
   }
 }

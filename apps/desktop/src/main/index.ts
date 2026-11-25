@@ -18,7 +18,7 @@ import {
 // [series]
 import { SeriesHost } from './series-host.ts';
 import type { SeriesCommand, SeriesReply, SeriesStartRequest, SeriesView } from '../shared/series.ts';
-import type { OpponentReportView, PrematchRequest } from '../shared/manager.ts'; // [manager]
+import type { OpponentReportView, PrematchRequest, TacticsMapView } from '../shared/manager.ts'; // [manager]
 // [career]
 import { registerCareerIpc } from './career-host.ts';
 import { EngineWorker } from './engine-worker.ts';
@@ -197,6 +197,9 @@ ipcMain.handle(IPC.seriesStop, async (): Promise<void> => { seriesHost.dispose()
 const prematchWorker = new EngineWorker('prematch');
 ipcMain.handle(IPC.prematchReport, async (_e, req: PrematchRequest): Promise<OpponentReportView> =>
   (await prematchWorker.request<{ report: OpponentReportView }>('prematch.report', req, { timeoutMs: 180000 })).report);
+// [tactics] the map's plant spots / retake entries / mid, read by the same worker (plays nothing)
+ipcMain.handle(IPC.tacticsMap, async (_e, mapId: string): Promise<TacticsMapView> =>
+  prematchWorker.request<TacticsMapView>('tactics.map', { mapId }, { timeoutMs: 60000 }));
 
 /** [series] One map of the live series in one go: the host returns the same RawMatch as run-match.mts. */
 async function runSeriesGame(req: SimRunRequest, runId: string, sender: Electron.WebContents): Promise<SimResult> {

@@ -22,7 +22,7 @@ import {
 } from '../../../../packages/match-runner/src/index.ts';
 import type { StrategyOrder, TeamOrder } from '../../../../packages/match-runner/src/orders.ts';
 // [manager] every map is played with the manager layer; the session commands gain shouts / strategy / talk
-import type { ManagedSession, Shouts, TeamTalk } from '../../../../packages/match-runner/src/index.ts';
+import type { ManagedSession, MatchPlan, Shouts, TeamTalk } from '../../../../packages/match-runner/src/index.ts';
 import { managerResultView, managerView, type SeatMap } from './manager-view.ts';
 import type { RosterPlayer } from '../../../../packages/match-runner/src/teams.ts';
 import { getTeamMapRecords } from '../../../../packages/game-data/src/index.ts';
@@ -40,6 +40,11 @@ export interface SeriesCfg {
   rosters?: { A?: RosterPlayer[]; B?: RosterPlayer[] };
   /** [career] Training map practice per team → added to its map records (mastery continuity). */
   practice?: { A?: Record<string, Record<string, number>>; B?: Record<string, Record<string, number>> };
+  /** [tactics] Our team's plan (incl. plant / post-plant / retake / mid tactics), used on every map. */
+  plan?: MatchPlan;
+  /** [tactics] Engine flags, default off: without them the plan's tactics are recorded, not played. */
+  plantTactics?: boolean;
+  midControl?: boolean;
 }
 
 export function createSeriesHost(cfg: SeriesCfg): CommandHost {
@@ -69,9 +74,14 @@ export function createSeriesHost(cfg: SeriesCfg): CommandHost {
       teamB: { ...cfg.teamB, history: film(cfg.teamB, 2, cfg.rosters?.B), ...(cfg.rosters?.B ? { roster: cfg.rosters.B } : {}), ...practiceRecords(cfg.teamB.id, cfg.practice?.B) },
       format: cfg.format ?? 'bo3',
       seed,
-      match: { recordPerception: true, recordTracks: true }, // positions + navigation trace for the live view
+      match: {
+        recordPerception: true, recordTracks: true, // positions + navigation trace for the live view
+        // [tactics] engine flags, default off
+        ...(cfg.plantTactics ? { plantTactics: true } : {}),
+        ...(cfg.midControl ? { midControl: true } : {}),
+      },
     },
-    { aiTeams: ['B'], managed: true }, // [manager]
+    { aiTeams: ['B'], managed: true, ...(cfg.plan ? { plans: { A: cfg.plan } } : {}) }, // [manager] [tactics] our plan on every map
   );
   const prep = series.preparation();
 
