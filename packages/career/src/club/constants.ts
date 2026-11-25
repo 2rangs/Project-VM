@@ -256,13 +256,13 @@ export const DEPTH_MODEL = {
 
   // --- morale -------------------------------------------------------------------------------------
   /**
-   * Morale m ∈ [0,1], neutral 0.5. Weekly: m ← m + moraleRate · (T − m),
-   *   T = 0.5 + wResults · (r5 − 0.5) + wTime · (share − expected) + wPay · clamp(ln(salary/market), −0.5, 0.5) + wCoach · (motivation − 0.5)
+   * Morale m ∈ [0,1] (development.ts moraleOf: tracked for the manager's squad, derived elsewhere).
+   * Tracked, weekly: m ← m + moraleRate · (T − m),
+   *   T = derived(form, role vs ambition, temperament) + wResults · (r5 − 0.5) + wPay · clamp(ln(salary/market), −0.5, 0.5) + wCoach · (motivation − 0.5)
    * r5 = the club's share of its last five series won. After a series the five who played move by ±moraleSeries.
    */
   moraleRate: 0.3,
   wResults: 0.3,
-  wTime: 0.25,
   wPay: 0.2,
   wCoach: 0.2,
   moraleSeries: 0.03,

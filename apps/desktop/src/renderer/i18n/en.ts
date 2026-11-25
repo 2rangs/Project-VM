@@ -1497,4 +1497,6 @@ export const en: Record<string, string> = {
   "career.enum.sign": "recommend signing",
   "career.enum.monitor": "keep monitoring",
   "career.enum.pass": "not for us",
+  "dev.moraleTracked": "· tracked weekly",
+  "dev.moraleDerived": "· estimated from form and role",
 };

@@ -84,7 +84,9 @@ export const clubCareerHook: CareerHook = {
     if (!state.world.club) return;
     // The career is leaving `date`; the club's day step takes the day that begins (club.date ends
     // up equal to the career date after the step).
-    clubOnDayMut(state.world, addDays(date, 1));
+    // The career's form (0.5 par) feeds the weekly morale target of the manager's squad.
+    const form = Object.fromEntries(Object.entries(state.stats).map(([id, l]) => [id, l.form]));
+    clubOnDayMut(state.world, addDays(date, 1), form);
     after(state);
   },
   onMonth(_w, date, ctx) {

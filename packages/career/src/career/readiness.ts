@@ -22,7 +22,7 @@
 import type { AttrSlot, World, WorldPlayer } from "../model.ts";
 import { ABILITY_KEYS } from "../model.ts";
 import { CLUB_FLAGS, CLUB_MODEL, DEPTH_MODEL } from "../club/constants.ts";
-import { moraleOf } from "../club/people.ts";
+import { moraleOf } from "../development.ts";
 import { daysBetween, type IsoDate } from "./calendar.ts";
 import type { CareerState } from "./types.ts";
 
@@ -68,7 +68,7 @@ export function matchAttributes(state: CareerState, p: WorldPlayer): Record<stri
   const R = readiness(state, p.playerId);
   const min = state.world.calibration.min;
   // Morale reaches the match only with CLUB_FLAGS.moraleInMatch (default off, not yet gated).
-  const d = CLUB_FLAGS.moraleInMatch ? moraleOf(state.world.club, p.playerId) - 0.5 : 0;
+  const d = CLUB_FLAGS.moraleInMatch ? moraleOf(state.world, p, state.stats[p.playerId]?.form ?? 0.5) - 0.5 : 0;
   const out: Record<string, AttrSlot> = {};
   for (const [k, slot] of Object.entries(p.attributes)) {
     if (slot.value === null) { out[k] = slot; continue; }

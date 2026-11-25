@@ -133,7 +133,7 @@ export function playerUtility(w: World, p: WorldPlayer, kind: OfferKind, toTeamI
   const defaultClause = M.buyoutValueMult * valueFrom(w, est.ca, est.pa, p.age, terms.years - 1);
   const clause = clauseTerm(ambition, terms.releaseClause, defaultClause);
   if (kind === "renewal") {
-    const morale = DEPTH_MODEL.wMorale * 2 * (moraleOf(club, p.playerId) - 0.5);
+    const morale = DEPTH_MODEL.wMorale * 2 * (moraleOf(w, p) - 0.5);
     const playTime = DEPTH_MODEL.wPlayTime * playTimeGap(club, contract, p.playerId, toTeamId);
     const amb = M.wAmbition * ambition * (sTo - abilityScale(w, p.ca ?? 0.6)) * DEPTH_MODEL.renewAmbitionShare;
     return { total: wage + amb + length + clause + morale + playTime, wage, ambition: amb, role: 0, length, ref, morale, playTime, clause, margin, effWage };

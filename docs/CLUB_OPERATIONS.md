@@ -164,9 +164,22 @@ The expected playing-time share by role is starter 0.9, rotation 0.3, academy 0.
 
 ## 10. Morale and condition in the match
 
-**Morale** `m ∈ [0,1]` (neutral 0.5) for the manager's squad.
-- Weekly: `m ← m + 0.3 · (T − m)`, where `T = 0.5 + 0.3·(r5 − 0.5) + 0.25·(share − expected) + 0.2·clamp(ln(salary/market), −0.5, 0.5) + 0.2·(coach.motivation − 0.5)` and `r5` is the club's share of its last five series won.
-- After a series, the five who played move ±0.03.
+**Morale: one model** (`development.ts` `moraleOf(world, player, form)`). Every reader uses it: development at season end, renewals, the match roster (when the flag is on), and the Scouting, Training and offer screens.
+
+- **Derived** (any player no club tracks, which means every AI club's): the generated-players formula
+  `m = clamp(0.5 + s·(0.6·(form − 0.5) + 0.5·(R − R*)), 0, 1)`, where
+  - `R` = role now (starter 1, rotation 0.35, academy 0.1, no club 0),
+  - `R* = 0.35 + 0.65·ambition`,
+  - `s = 1.2 − 0.4·temperament`.
+
+  The player is taken to sit at his equilibrium. Development for these players is exactly what it was before the unification.
+- **Tracked** (the manager's squad, `club.morale[playerId]`): the state.
+  - It starts from the derived value (no stored entry → derived).
+  - Weekly: `m ← m + 0.3·(T − m)`, with `T = clamp(derived(form, role) + 0.3·(r5 − 0.5) + 0.2·clamp(ln(salary/market), −0.5, 0.5) + 0.2·(coach.motivation − 0.5), 0, 1)`. Here `r5` is the club's share of its last five series won, and `form` is the career's per-player form (0.5 par).
+  - With average results, pay at market and an average coach, `T` is the derived value, so tracking only adds what the club does.
+  - After a series, the five who played move ±0.03.
+- **Development** reads `moraleOf` at season end, through the morale factor `Mor = 0.9 + 0.2·m` (GENERATED_PEOPLE.md §10). Each season's value is recorded in `WorldPlayer.history`.
+- **Saves:** a save without `club.morale` (or without a player's entry) reads the derived value; stored entries are kept as they are. The playing-time share is no longer a term of `T` (role vs. ambition covers it), but it still enters renewals (§9).
 
 **Into the match — behind `CLUB_FLAGS.moraleInMatch`, default OFF** (career/readiness.ts `matchAttributes`, the roster the engine and the quick sim read; `setClubFlags({ moraleInMatch: true })` turns it on):
 - Readiness (fatigue, sharpness) scales the ability attributes toward the floor, as before.

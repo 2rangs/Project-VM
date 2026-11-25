@@ -22,7 +22,7 @@ import {
   type AbilityKey, type RatedAttr, type SeasonRecord, type StaffRole, type World, type WorldPlayer, type WorldStaff, type WorldTeam,
 } from "./model.ts";
 import { REGIONS, type Region } from "./regions.ts";
-import { developmentFactors, developmentMorale } from "./development.ts";
+import { developmentFactors, moraleOf } from "./development.ts";
 import { estimateAbility, teamScout, UNRATED_ABILITY } from "./scouting.ts";
 import { clamp, normal, streamFor, weightedIndex } from "./rng.ts";
 import { DEPTH_MODEL } from "./club/constants.ts";
@@ -388,7 +388,7 @@ export function advanceSeason(world: World, opts: AdvanceSeasonOptions = {}): Wo
   const played = opts.mapsPlayed ?? {};
   const maps = new Map(Object.values(w.players).map((p) => [p.playerId, played[p.playerId] ?? seasonMaps(w, p)]));
   const mentors = w.development?.mentors ?? {};
-  const morale = new Map(Object.values(w.players).map((p) => [p.playerId, developmentMorale(w, p, opts.form?.[p.playerId] ?? 0.5)]));
+  const morale = new Map(Object.values(w.players).map((p) => [p.playerId, moraleOf(w, p, opts.form?.[p.playerId] ?? 0.5)]));
   const factors = new Map(opts.personality === false ? [] : Object.values(w.players).map((p) => [p.playerId, developmentFactors(w, p, morale.get(p.playerId)!, mentors[p.playerId])]));
   for (const p of Object.values(w.players)) developPlayer(w, p, maps.get(p.playerId)!, coachDevelopment(w, p.teamId), ending, opts.focus?.[p.playerId], factors.get(p.playerId));
   for (const p of Object.values(w.players)) {

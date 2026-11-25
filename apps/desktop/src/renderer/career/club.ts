@@ -154,7 +154,7 @@ export function trainingRows(w: World): TrainingRow[] {
   return [...t.roster, ...t.academy].map((id) => w.players[id]).filter((p): p is WorldPlayer => !!p).map((p) => {
     const e = w.club!.training.exposure[p.playerId];
     return {
-      player: p, playerId: p.playerId, handle: p.handle ?? p.playerId, role: p.role ?? '—', age: p.age, morale: moraleOf(w.club, p.playerId),
+      player: p, playerId: p.playerId, handle: p.handle ?? p.playerId, role: p.role ?? '—', age: p.age, morale: moraleOf(w, p),
       focus: plan?.individual[p.playerId] ?? 'balanced', fatigue: e?.fatigue ?? CLUB_MODEL.fatigueStart,
       shares: exposureShares(e), factors: (focus[p.playerId] as Record<string, number> | undefined) ?? null,
     };

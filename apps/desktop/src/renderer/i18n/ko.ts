@@ -1499,4 +1499,6 @@ export const ko: Record<string, string> = {
   "career.enum.sign": "영입 추천",
   "career.enum.monitor": "계속 관찰",
   "career.enum.pass": "우리와 맞지 않음",
+  "dev.moraleTracked": "· 주간 추적",
+  "dev.moraleDerived": "· 폼·역할로 추정",
 };

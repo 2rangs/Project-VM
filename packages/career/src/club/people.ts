@@ -4,10 +4,13 @@
 //   agent           hardness h ∈ [0,1] seeded per player; fee = (min + span·h) · wage · years (buyer pays);
 //                   the player needs U ≥ acceptMargin + agentMarginSpan · h
 //   effective wage  W_eff = wage + bonusValue · (signing/years + loyalty/years + perWin · E[wins] + perTitle · P(title))
-//   morale          weekly m ← m + rate · (T − m); after a series the five who played ± moraleSeries
+//   morale          the one model is development.ts moraleOf: tracked here for the manager's squad —
+//                   weekly m ← m + rate · (T − m), T = derived core + results/pay/coach; after a series
+//                   the five who played ± moraleSeries — and derived from form and role elsewhere
 //   playing time    maps played this season / the club's maps this season
 import type { World, WorldPlayer } from "../model.ts";
 import { clamp, streamFor } from "../rng.ts";
+import { developmentMorale, moraleOf } from "../development.ts";
 import { daysBetween } from "./calendar.ts";
 import { CLUB_MODEL, DEPTH_MODEL } from "./constants.ts";
 import { book } from "./finance.ts";
@@ -72,7 +75,7 @@ export function markFree(club: ClubState, playerId: string, date: string): void 
 
 // --- morale and playing time ------------------------------------------------------------------------
 
-export const moraleOf = (club: ClubState | undefined, playerId: string): number => club?.morale?.[playerId] ?? 0.5;
+export { moraleOf } from "../development.ts";
 
 /** Share of the club's maps this season the player played (null before the club has played). */
 export function playShare(club: ClubState, playerId: string, teamId: string): number | null {
@@ -99,19 +102,28 @@ function coachMotivation(w: World, teamId: string): number {
   return id ? w.staff[id]?.attributes.motivation ?? 0.5 : 0.5;
 }
 
-/** The morale a player drifts toward (T). */
-export function moraleTarget(w: World, p: WorldPlayer): number {
+/**
+ * The morale a tracked player drifts toward:
+ *   T = clamp(derived(form, role, personality) + wResults·(r5 − 0.5) + wPay·clamp(ln(salary/market), ±0.5) + wCoach·(motivation − 0.5))
+ * The derived core is development.ts developmentMorale — the same value an untracked player has —
+ * so a player with average results, pay and coach settles exactly where he would untracked.
+ */
+export function moraleTarget(w: World, p: WorldPlayer, form = 0.5): number {
   const club = w.club!;
   const teamId = p.teamId;
-  if (!teamId) return 0.5;
+  const core = developmentMorale(w, p, form);
+  if (!teamId) return core;
   const c = club.contracts[p.playerId];
   const market = marketWage(w, p, w.teams[teamId]!.region);
   const pay = c && c.kind === "player" && market > 0 ? clamp(Math.log(c.salary / market), -0.5, 0.5) : 0;
-  return clamp(0.5 + D.wResults * (recentShare(club, teamId) - 0.5) + D.wTime * playTimeGap(club, c, p.playerId, teamId) + D.wPay * pay + D.wCoach * (coachMotivation(w, teamId) - 0.5), 0, 1);
+  return clamp(core + D.wResults * (recentShare(club, teamId) - 0.5) + D.wPay * pay + D.wCoach * (coachMotivation(w, teamId) - 0.5), 0, 1);
 }
 
-/** Weekly morale step for the manager's squad (other clubs stay neutral). */
-export function moraleWeek(w: World): void {
+/**
+ * Weekly morale step for the manager's squad (the tracked players): m ← m + moraleRate · (T − m).
+ * A player not tracked yet starts from his derived value. `form`: playerId → form (0.5 par).
+ */
+export function moraleWeek(w: World, form: Readonly<Record<string, number>> = {}): void {
   const club = w.club!;
   const uid = club.userTeamId;
   if (!uid || !w.teams[uid]) return;
@@ -119,8 +131,9 @@ export function moraleWeek(w: World): void {
   for (const id of [...w.teams[uid]!.roster, ...w.teams[uid]!.academy]) {
     const p = w.players[id];
     if (!p) continue;
-    const m = moraleOf(club, id);
-    morale[id] = Math.round((m + D.moraleRate * (moraleTarget(w, p) - m)) * 10000) / 10000;
+    const f = form[id] ?? 0.5;
+    const m = moraleOf(w, p, f);
+    morale[id] = Math.round((m + D.moraleRate * (moraleTarget(w, p, f) - m)) * 10000) / 10000;
   }
 }
 
@@ -153,7 +166,7 @@ export function clubSeriesResultMut(w: World, r: SeriesResult): void {
     const won = r.winner === teamId;
     const morale = (club.morale ??= {});
     for (const id of r.lineups[side]) {
-      morale[id] = clamp(Math.round((moraleOf(club, id) + (won ? D.moraleSeries : -D.moraleSeries)) * 10000) / 10000, 0, 1);
+      morale[id] = clamp(Math.round((moraleOf(w, id) + (won ? D.moraleSeries : -D.moraleSeries)) * 10000) / 10000, 0, 1);
       const bonus = club.contracts[id]?.bonuses?.perWin ?? 0;
       if (won && bonus > 0) book(club, teamId, r.date, "bonus", -bonus, `${label(w.players[id], id)} win`);
     }
