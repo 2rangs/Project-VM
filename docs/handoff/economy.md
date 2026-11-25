@@ -1,7 +1,7 @@
 # Hand-off — match economy (per-player economy, EC-01…05)
 
 Branch `claude/epic-mahavira-18c91b`. Model and history: `docs/ECONOMY_MODEL.md` (v1, v1.1, v1.2 sections).
-Last updated 2026-11-25 (main d91f646 + 5453fc0).
+Last updated 2026-11-25 (weaponModes gate on main 889ebef + engine-truth-2).
 
 ## Default-on (gated, on main)
 
@@ -32,6 +32,27 @@ Catalogue and combat pieces the eco uses (guns appear only when the eco or a pic
 - `ActionCommand.holdClose` (shared-types + round-simulator contract; mover takes the see-spot nearest the
   watched zone); team-engine sets it for a pre-plant defender whose gun's full-damage range is ≤ 12 m
   (`weaponFullDamageRangeM`, i.e. a shotgun).
+
+## Gate — `weaponModes` ON (2026-11-25, branch `weapon-modes-gate` = main 889ebef + engine-truth-2 9257a80) → NOT flipped
+
+Reports: `docs/research/SIM_WEAPON_MODES_GATE_2026-11-25_{1-160,161-320}.json`. Real rosters, 160 matches,
+`sim-batch --weapon-modes`.
+
+| | 1–160 | 161–320 |
+|---|---|---|
+| Original 8 | **7/8** — defuse **0.203** (≤ 0.200) | **8/8** |
+| Pistol (0.50) | 0.487 ✓ | **0.453 ✓** (0.397 with the flag off on main) |
+| Attack | 0.529 | 0.507 |
+| Elimination / detonation / time | 0.691 / 0.084 / 0.022 | 0.706 / 0.083 / 0.023 |
+| Judged cells | 13/15 (defuse; eco vs full 0.123) | 14/15 (semi vs eco 0.991) |
+
+Engine-truth's finding holds: with run-and-gun on, pistol at 161–320 passes. The gate still fails on 1–160 by one
+metric, defuse share 0.203 against ≤ 0.200 (n 3,254 rounds; the share's standard error is ≈ 0.007, so this is
+about half an SE over). Engine-truth-2 alone reports 1–160 8/8 at attack 0.542, but its report files are not on
+disk, so whether `weaponModes` raised defuse or this is seed noise is not measured. Next step: a same-seed
+flag-off run of 1–160 on `weapon-modes-gate` (`sim-batch --matches 160 --seed-start 1`) to compare defuse
+directly; if `weaponModes` moves defuse up, look at post-plant fights with shotguns/Classic burst (retakers
+running in close are the ones the run-and-gun helps).
 
 ## Gate — `ecoSidearms` ON (2026-11-25, main d91f646, real rosters, 160 matches) → default on
 

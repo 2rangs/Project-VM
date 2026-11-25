@@ -7,7 +7,7 @@ const teams = simulatableTeamRefs();
 const g = new Map<string, { n: number; atk: number; ao: number }>();
 const add = (k: string, win: boolean, ao: number) => { const x = g.get(k) ?? { n: 0, atk: 0, ao: 0 }; x.n++; if (win) x.atk++; x.ao += ao; g.set(k, x); };
 for (let i = 0; i < Number(a.matches ?? 8); i++) {
-  const cfg = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: a.map ?? "Ascent", seed: Number(a["seed-start"] ?? 1) + i, traceEngagements: true, ...(a.gaze ? { gaze: true } : {}) } as MatchConfig;
+  const cfg = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: a.map ?? "Ascent", seed: Number(a["seed-start"] ?? 1) + i, traceEngagements: true, ...(a.gaze ? { gaze: true } : {}), ...(a.tactics ? { plantTactics: true } : {}) } as MatchConfig;
   for (const r of runMatch(cfg).rounds) for (const e of (r.engagements ?? []) as any[]) {
     if (e.spikePhase !== "planted" && e.spikePhase !== "defusing") continue;
     const win = e.winnerSide === "attack", ao = e.aimOffsetDeg?.attacker ?? 0;

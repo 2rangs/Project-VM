@@ -53,7 +53,7 @@ describe("post-plant and retake plans", () => {
       const rt = r.decisions.plans[def]?.retake;
       if (!rt) continue;
       expect(rt!.approach).toBe("stack");
-      expect(rt!.savedAtMs).toBeNull();
+      expect(rt!.save).toBe("never"); // gives up only a defuse that can no longer finish in time
       expect(new Set(Object.values(rt!.entries)).size).toBeLessThanOrEqual(1);
     }
     expect(planted.filter((r) => r.decisions.plans[r.attacker]?.postPlant).length).toBeGreaterThan(planted.length / 2);
