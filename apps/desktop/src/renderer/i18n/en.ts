@@ -1571,4 +1571,6 @@ export const en: Record<string, string> = {
   'md.opts.plantTactics.hint': 'Plays the plan\'s plant spot, post-plant and retake. Off, they are only recorded. Off by default until balance-validated.',
   'md.opts.midControl': 'Mid control (engine option midControl)',
   'md.opts.midControl.hint': 'Plays the plan\'s mid choices. Off, they are only recorded. Off by default until balance-validated.',
+  "dev.moraleTracked": "· tracked weekly",
+  "dev.moraleDerived": "· estimated from form and role",
 };

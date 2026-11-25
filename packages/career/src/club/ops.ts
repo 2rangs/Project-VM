@@ -108,7 +108,7 @@ export function reconcileContracts(w: World, date: string): void {
 }
 
 /** A day passes. `date` is the new current date (YYYY-MM-DD). */
-export function clubOnDayMut(w: World, date: string): void {
+export function clubOnDayMut(w: World, date: string, form?: Readonly<Record<string, number>>): void {
   const club = w.club;
   if (!club) return;
   const prev = club.date;
@@ -120,7 +120,7 @@ export function clubOnDayMut(w: World, date: string): void {
   expireOffers(w, date);
   if (dayOfWeek(date) === 1) {
     trainingWeek(w, date);
-    moraleWeek(w);
+    moraleWeek(w, form);
     if (win.open) aiMarketRound(w, date);
   }
 }

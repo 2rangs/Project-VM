@@ -1573,4 +1573,6 @@ export const ko: Record<string, string> = {
   'md.opts.plantTactics.hint': '전술 계획의 설치 위치·설치 후 운영·리테이크를 경기에 반영합니다. 끄면 기록만 됩니다. 밸런스 검증 전이라 기본 꺼짐.',
   'md.opts.midControl': '미드 장악 (엔진 실험 옵션 midControl)',
   'md.opts.midControl.hint': '전술 계획의 미드 운영을 경기에 반영합니다. 끄면 기록만 됩니다. 밸런스 검증 전이라 기본 꺼짐.',
+  "dev.moraleTracked": "· 주간 추적",
+  "dev.moraleDerived": "· 폼·역할로 추정",
 };

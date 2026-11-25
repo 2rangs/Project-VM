@@ -5,7 +5,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { rosterProfiles, rosterConsistency } from "../../match-runner/src/teams.ts";
 import { worldFromGameData } from "../src/game-data.ts";
 import {
-  CLUB_MODEL, DEPTH_MODEL, CLUB_FLAGS, setClubFlags, advanceSeason, agentFee, agentOf, askingPrice, boardOf, boardOnSeries, boardRequest, boardSeasonReview,
+  CLUB_MODEL, DEPTH_MODEL, developmentMorale, marketWage, serializeWorld, deserializeWorld, CLUB_FLAGS, setClubFlags, advanceSeason, agentFee, agentOf, askingPrice, boardOf, boardOnSeries, boardRequest, boardSeasonReview,
   clubAnswer, clubSeriesResultMut, effectiveWage, estimateAbility, facilitiesOf, hireStaff, initClub, makeOffer, matchRoster, moraleOf,
   moraleTarget, moraleWeek, newCareer, physioFactor, playerAnswer, playerUtility, requiredMargin, setTrainingPlan, staffDemand,
   staffMarket, teamScout, teamStrength, trainingWeek, type World, type WorldPlayer, type RatedAttr,
@@ -133,7 +133,8 @@ describe("morale", () => {
     w.club!.recent = { [user]: [1, 1, 1, 1, 1] };
     expect(moraleTarget(w, p)).toBeCloseTo(t0 + D.wResults * 0.5, 9);
     for (let i = 0; i < 10; i++) moraleWeek(w);
-    expect(moraleOf(w.club, id)).toBeGreaterThan(0.5);
+    // Tracked from the derived starting point, pulled up by the wins.
+    expect(moraleOf(w, id)).toBeGreaterThan(moraleOf(club, id));
   });
 
   it("a series moves the five who played and pays their win bonus", () => {
@@ -143,7 +144,7 @@ describe("morale", () => {
     const opp = Object.keys(w.teams).find((id) => id !== user)!;
     const bal = w.club!.finances[user]!.balance;
     clubSeriesResultMut(w, { date: w.club!.date, home: user, away: opp, winner: user, maps: 2, lineups: { home: five, away: w.teams[opp]!.roster.slice(0, 5) } });
-    expect(moraleOf(w.club, five[1]!)).toBeCloseTo(0.5 + D.moraleSeries, 9);
+    expect(moraleOf(w, five[1]!)).toBeCloseTo(Math.min(1, moraleOf(club, five[1]!) + D.moraleSeries), 4);
     expect(w.club!.finances[user]!.balance).toBe(bal - 5_000);
     expect(w.club!.playTime!.players[five[0]!]).toBe(2);
   });
@@ -167,9 +168,13 @@ describe("morale", () => {
     const base = worldFromGameData(SEED);
     const career = newCareer(structuredClone(base), { seed: SEED, manager: { name: "T", nationality: "kr" }, userTeamId: user });
     const five = career.world.teams[user]!.roster.slice(0, 5);
-    const neutral = matchRoster(career, five);
+    // Neutral morale (0.5) gives exactly the roster the flag-off path gives.
+    setClubFlags({ moraleInMatch: false });
+    const asRated = matchRoster(career, five);
+    setClubFlags({ moraleInMatch: true });
     career.world.club!.morale = Object.fromEntries(five.map((id) => [id, 0.5]));
-    expect(matchRoster(career, five)).toEqual(neutral);
+    const neutral = matchRoster(career, five);
+    expect(neutral).toEqual(asRated);
     career.world.club!.morale = Object.fromEntries(five.map((id) => [id, 1]));
     const high = matchRoster(career, five);
     career.world.club!.morale = Object.fromEntries(five.map((id) => [id, 0]));
@@ -273,5 +278,46 @@ describe("staff market", () => {
     };
     expect(physioFactor(club, user)).toBeGreaterThan(0);
     expect(run(0.95)).toBeLessThan(run(0.1));
+  });
+});
+
+describe("one morale model (tracked state, derived elsewhere)", () => {
+  it("an untracked player's morale is the derived value from form and role", () => {
+    const ai = Object.values(club.players).find((p) => p.teamId && p.teamId !== user)!;
+    expect(club.club!.morale?.[ai.playerId]).toBeUndefined();
+    expect(moraleOf(club, ai)).toBe(developmentMorale(club, ai));
+    expect(moraleOf(club, ai, 0.9)).toBe(developmentMorale(club, ai, 0.9));
+  });
+
+  it("with average results, pay and coach, the tracked target is the derived value", () => {
+    const w = structuredClone(club);
+    const p = w.players[w.teams[user]!.roster[0]!]!;
+    const coach = w.teams[user]!.staff.headCoach!;
+    w.staff[coach]!.attributes.motivation = 0.5;
+    w.club!.contracts[p.playerId]!.salary = marketWage(w, p, w.teams[user]!.region);
+    expect(moraleTarget(w, p, 0.6)).toBeCloseTo(developmentMorale(w, p, 0.6), 2);
+  });
+
+  it("development reads the tracked value for the manager's squad and leaves AI players as before", () => {
+    const young = club.teams[user]!.roster.map((id) => club.players[id]!).sort((a, b) => a.age - b.age)[0]!;
+    const ai = Object.values(club.players).find((p) => p.teamId && p.teamId !== user && p.age < 22 && p.hasRatings)!;
+    const run = (m: number) => { const w = structuredClone(club); w.club!.morale = { [young.playerId]: m }; return advanceSeason(w); };
+    const hi = run(1), lo = run(0);
+    expect(hi.players[young.playerId]!.ca!).toBeGreaterThan(lo.players[young.playerId]!.ca!);
+    expect(hi.players[young.playerId]!.history!.at(-1)!.morale).toBe(1);
+    expect(hi.players[ai.playerId]!.ca).toBe(lo.players[ai.playerId]!.ca);
+    // Without any tracked morale, development is what the derived model gives (the old behaviour).
+    const none = structuredClone(club); none.club!.morale = {};
+    const noClub = structuredClone(club); Reflect.deleteProperty(noClub, "club");
+    expect(advanceSeason(none).players[ai.playerId]!.ca).toBe(advanceSeason(noClub).players[ai.playerId]!.ca);
+  });
+
+  it("saves: a world without tracked morale reads the derived value; saved tracked values are kept", () => {
+    const w = structuredClone(club);
+    const id = w.teams[user]!.roster[0]!;
+    Reflect.deleteProperty(w.club!, "morale");
+    expect(moraleOf(w, id)).toBe(developmentMorale(w, w.players[id]!));
+    const loaded = deserializeWorld(serializeWorld({ ...w, club: { ...w.club!, morale: { [id]: 0.77 } } }));
+    expect(moraleOf(loaded, id)).toBe(0.77);
   });
 });

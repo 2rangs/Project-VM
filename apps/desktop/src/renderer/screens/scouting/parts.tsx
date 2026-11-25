@@ -106,7 +106,7 @@ export function OwnPlayerPanel({ p }: { p: WorldPlayer }) {
       {panel && (
         <>
           <div className="attr-grouplabel">{t('dev.title')}</div>
-          <div className="small" data-testid="own-morale">{t('dev.morale', { n: panel.morale, level: t(`dev.level.${panel.moraleLevel}`) })}</div>
+          <div className="small" data-testid="own-morale">{t('dev.morale', { n: panel.morale, level: t(`dev.level.${panel.moraleLevel}`) })} <span className="muted" data-testid="own-morale-source">{t(panel.moraleTracked ? 'dev.moraleTracked' : 'dev.moraleDerived')}</span></div>
           <div className="small muted" data-testid="own-traits">
             {(['professionalism', 'temperament', 'leadership', 'ambition'] as const).map((k) => `${t(`dev.trait.${k}`)} ${t(`dev.level.${panel.traits[k]}`)}`).join(' · ')}
           </div>

@@ -50,10 +50,20 @@ No measurable effect. I did not run the real-roster 160-match gate: nothing on t
 ## Unfinished, with the exact next step
 1. **Morale in the match.** Measure the engine's response to roster ability: one match pair with every ability attribute at the floor vs. as rated, same seed. That probe was cancelled at wrap-up. Then size `DEPTH_MODEL.moraleAbility` from that response, re-run the opt-in test at N ≥ 30, and turn the flag on only after the real-roster gate.
 2. **The sack:** career mode does not end the career or offer a new job. `club.board.sacked` is the hook point.
-3. **AI clubs** have no board, morale or bonuses (neutral by design).
+3. **AI clubs** have no board or bonuses, and their morale is not tracked: it is the derived value from form and role (one model, see below).
 4. **Merge with `claude/loving-meninsky-767c08`** (scouting knowledge). Its branch replaces `estimateAbility(w, teamScout(w, X), p)` with `estimateForTeam(w, X, p)` in `club/market.ts`, `club/transfers.ts` and `career/career.ts`. This branch added one more such call, in `playerUtility` (default release clause); switch it too. The interface is agreed in the shared notes (`scouting-interface.md`).
 
+## Morale unification (branch `morale-unify`, from origin/main 85eadc8)
+- **One model:** `development.ts` `moraleOf(world, player, form)`. The club's tracked value (`club.morale`) is the state for the manager's squad. Everyone else gets the derived value (`developmentMorale`: form, role vs. ambition, temperament), exactly as development had it.
+- **Tracked target:** `T = derived core + results + pay + coach`. With average results, pay and coach, the tracked player settles at his derived value. The playing-time term left T (role vs. ambition covers it); it still drives renewals. `DEPTH_MODEL.wTime` was removed.
+- **Readers:** development at season end (`season.ts`), renewals (`transfers.ts`), the match roster (`readiness.ts`, still behind `moraleInMatch`, off), the Training morale column, and the Scouting own-player panel, which now says whether the value is tracked or estimated.
+- **Tracked form:** the career hook passes per-player form to the weekly morale step.
+- **Default sim and AI development** are unchanged. With no tracked morale, `advanceSeason` gives the same result as before, and the same as a world without a club (tested).
+- **Saves:** no `club.morale`, or no entry for a player → derived; stored entries are kept.
+- **Gate:** career vitest 103 passed / 1 skipped, tsc clean; desktop tsc clean, `test:unit` 79/79, build OK. `test:e2e:career` passes ("signed Derialy, played 0–2 on 2026-01-10 with a chosen five; 3 engine-played AI series; season 2026 played out, contract expired, season 2027 open"); `test:e2e:club` passes ("signed carpe", Board and Staff steps included). Both ran through heavy-run.sh; the regenerated `apps/desktop/docs` screenshots were discarded.
+
 ## Known risks
+- **Flag on:** with `moraleInMatch` on, untracked players (AI clubs) now carry their derived morale into the match roster instead of a neutral 0.5. That only matters when the flag is on.
 - **Generation:** adding `physio` to `STAFF_ROLES` and `motivation` to the head coach changes world generation (staff count, staff RNG draws). Same-seed worlds differ from earlier builds; saved careers load (missing physio is treated as neutral, and the next season fills it).
 - **Career play without the flag:** physio quality changes training fatigue → readiness in career matches. This was already true for fatigue; the default sim is untouched.
 - **Overwritten note:** I overwrote the generated-players session's `scouting-interface.md` once by mistake. They restored it (their version first).

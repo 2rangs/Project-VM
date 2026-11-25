@@ -2,7 +2,7 @@
 // them (pure helpers over @pv/career; screens/scouting/* draws them). docs/GENERATED_PEOPLE.md §9–12.
 import {
   assignScoutMut, clubScouts, demoteMut, inviteToAcademyMut, knowledgeOf, latestReport, leadership, loanOutMut, loanTargets,
-  developmentMorale, personalityOf, promoteMut, reportList, setMentorMut, toScale200, viewPlayer, mentorBlocker, SEASON_MODEL,
+  moraleOf, trackedMorale, personalityOf, promoteMut, reportList, setMentorMut, toScale200, viewPlayer, mentorBlocker, SEASON_MODEL,
   type AcademyError, type AssignmentKind, type MentorError, type PlayerView, type Range, type ScoutAssignment, type ScoutReport,
   type World, type WorldPlayer, type WorldStaff,
 } from './world.ts';
@@ -80,6 +80,8 @@ export const level = (v: number): Level => (v < 0.34 ? 'low' : v < 0.67 ? 'mid' 
 export interface OwnPanel {
   morale: number;
   moraleLevel: Level;
+  /** True when the club tracks this player's morale week by week; false: derived from form and role. */
+  moraleTracked: boolean;
   traits: { professionalism: Level; temperament: Level; leadership: Level; ambition: Level };
   mentorId: string | null;
   mentorOptions: WorldPlayer[];
@@ -89,12 +91,13 @@ export interface OwnPanel {
 /** What the manager sees of an own player beyond attributes. `form` from the season stats (0.5 par). */
 export function ownPanel(w: World, p: WorldPlayer, form = 0.5): OwnPanel {
   const pers = personalityOf(w, p.playerId);
-  const m = developmentMorale(w, p, form);
+  // The one morale model (development.ts moraleOf): tracked for the manager's squad, else derived.
+  const m = moraleOf(w, p, form);
   const tid = managerTeam(w)!;
   const squad = [...(w.teams[tid]?.roster ?? []), ...(w.teams[tid]?.academy ?? [])].map((id) => w.players[id]).filter((x): x is WorldPlayer => !!x);
   const options = squad.filter((x) => mentorBlocker(w, tid, p.playerId, x.playerId) === null);
   return {
-    morale: Math.round(m * 100), moraleLevel: level(m),
+    morale: Math.round(m * 100), moraleLevel: level(m), moraleTracked: trackedMorale(w, p.playerId) !== undefined,
     traits: { professionalism: level(pers.professionalism), temperament: level(pers.temperament), leadership: level(leadership(w, p)), ambition: level((pers.ambition - 0.2) / 0.8) },
     mentorId: w.development?.mentors[p.playerId] ?? null,
     mentorOptions: options,

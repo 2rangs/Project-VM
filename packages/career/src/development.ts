@@ -9,7 +9,10 @@
 //            fit = 1 same role, sameRoleElse otherwise; mentor ≥ mentorMinAge, same club, CA ≥ mentee's)
 //   decline multiplier  (declineBase − declineSpan · professionalism)     (0.5 → 1)
 //
-//   morale m = clamp(0.5 + s · (formW · (form − 0.5) + roleW · (R − R*)), 0, 1)
+//   morale (one model, docs/CLUB_OPERATIONS.md §10): the tracked per-player value where a club tracks
+//   it (the manager's squad, club.morale, moved weekly toward a target and by results), else the
+//   derived value below (every AI club: the player is taken to sit at his equilibrium):
+//   derived m = clamp(0.5 + s · (formW · (form − 0.5) + roleW · (R − R*)), 0, 1)
 //     R  = role now: starter 1, rotation 0.35, academy 0.1, no club 0   (club layer's expectedRole scale)
 //     R* = wantBase + wantSpan · ambition                                 (what the player expects)
 //     s  = swingBase − swingSpan · temperament                           (a calm player swings less)
@@ -77,7 +80,7 @@ export function roleNow(w: World, p: WorldPlayer): number {
   return roster.indexOf(p.playerId) < 5 ? 1 : CLUB_MODEL.roleRotation;
 }
 
-/** Morale from form (0.5 = par) and role against what the player wants. */
+/** Derived morale: from form (0.5 = par) and role against what the player wants (the untracked value). */
 export function developmentMorale(w: World, p: WorldPlayer, form = 0.5): number {
   const pers = personalityOf(w, p.playerId);
   const want = DM.wantBase + DM.wantSpan * pers.ambition;
@@ -128,4 +131,21 @@ export function developmentFactors(w: World, p: WorldPlayer, morale: number, men
   const pers = personalityOf(w, p.playerId);
   const growth = (DM.persBase + DM.persSpan * pers.professionalism) * (DM.morBase + DM.morSpan * morale) * mentorFactor(w, p, mentorId);
   return { growth, decline: DM.declineBase - DM.declineSpan * pers.professionalism };
+}
+
+/** The tracked morale of a player (undefined where no club tracks it). */
+export function trackedMorale(w: Pick<World, "club">, playerId: string): number | undefined {
+  return w.club?.morale?.[playerId];
+}
+
+/**
+ * A player's morale — the one model every reader uses (development, renewals, match roster, UI):
+ * the tracked value when the club tracks it, else the derived value from form and role.
+ */
+export function moraleOf(w: World, p: WorldPlayer | string, form = 0.5): number {
+  const id = typeof p === "string" ? p : p.playerId;
+  const t = trackedMorale(w, id);
+  if (t !== undefined) return t;
+  const player = typeof p === "string" ? w.players[p] : p;
+  return player ? developmentMorale(w, player, form) : 0.5;
 }

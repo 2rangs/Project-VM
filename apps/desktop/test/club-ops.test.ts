@@ -111,6 +111,25 @@ test('club depth in a career: board objectives and requests, a staff market with
   assert.equal(h.error, null);
   assert.equal(h.world.teams[USER]!.staff.physio, free.staff.staffId);
   const rows = trainingRows(w);
-  assert.ok(rows.every((x) => x.morale === 0.5), 'morale starts neutral');
+  // One morale model: before the first weekly step a player's morale is the derived value (form, role).
+  const { moraleOf, developmentMorale } = await import('../src/renderer/career/world.ts');
+  assert.ok(rows.every((x) => x.morale === moraleOf(w, x.player) && x.morale === developmentMorale(w, x.player)), 'morale starts at the derived value');
   assert.ok(agentFee(w, rows[0]!.playerId, { fee: 0, wage: 100_000, years: 2 }) > 0);
+});
+
+test('one morale model in the UI: the scouting panel reads derived morale, then the tracked value after a weekly step', async () => {
+  const { ownPanel } = await import('../src/renderer/career/scouting.ts');
+  const { moraleWeek, moraleOf } = await import('../src/renderer/career/world.ts');
+  const w = fresh();
+  const p = w.players[w.teams[USER]!.roster[0]!]!;
+  const before = ownPanel(w, p);
+  assert.equal(before.moraleTracked, false);
+  assert.equal(before.morale, Math.round(moraleOf(w, p) * 100));
+  const after = structuredClone(w);
+  after.club!.recent = { [USER]: [1, 1, 1, 1, 1] };
+  moraleWeek(after);
+  const panel = ownPanel(after, after.players[p.playerId]!);
+  assert.equal(panel.moraleTracked, true);
+  assert.equal(panel.morale, Math.round(after.club!.morale![p.playerId]! * 100));
+  assert.ok(panel.morale >= before.morale, 'wins pull tracked morale up from the derived start');
 });
