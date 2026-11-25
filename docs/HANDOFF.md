@@ -89,7 +89,7 @@ cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). app
 8. 궁극기 오브: 28차에 11개 맵 위치 완비(미검증) — 위치 검증 후 `ultOrbs` 게이트.
 
 ### P2 — 품질·깊이
-9. 빠른 시뮬: 28차 엔진으로 ~1,100시리즈 재적합(`tools/career/refit-quick-sim.sh`) → `QUICK_SIM` 상수 적용(진행: 커리어 세션).
+9. ~~빠른 시뮬 보정~~ — 29차: 28차 엔진 1,100시리즈 재적합 적용(라운드 기울기 10.57, ECE 0.055→0.011). 엔진이 바뀌면 `bash tools/career/refit-quick-sim.sh`로 다시 적합.
 10. ~~사기 통합~~ — 28차: `developmentMorale`이 추적 사기가 있으면 `moraleOf` 사용(`career-quicksim-morale.md`).
 11. 데이터: `vct.duckdb`에 위치·이벤트·설치 좌표가 없어 설치 후 인원 우위별 승률, 첫 킬 위치별 승률, 스플릿 비율을 못 구함(GRID Open Access 또는 VOD 코딩).
 12. 군중 이동 세부, 성능(틱당 O(n²), `routeCache`).
