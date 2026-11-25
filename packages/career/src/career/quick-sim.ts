@@ -13,28 +13,34 @@
 //                 (home first), each team picking the remaining map it is relatively best on; the
 //                 decider is the best remaining for the team that did not pick last.
 //   P(round)    = sigmoid(roundSlope · (s_home − s_away) + mapSlope · (share_home − share_away) + σ · z)
-//                 z ~ N(0,1) drawn once per MAP (the day's form of the two teams on that map): rounds are
-//                 not independent in the engine, so series are more upset-prone than independent rounds
-//                 imply. σ = mapNoiseSd is fitted on engine series (docs/CAREER_MODE.md §4).
+//                 + τ · u    u ~ N(0,1) once per SERIES (the matchup is more one-sided or closer than the
+//                 lineups say, on every map), σ · z with z ~ N(0,1) per MAP. Rounds are not independent
+//                 in the engine, so series are more upset-prone than independent rounds imply; σ and
+//                 τ are fitted on engine series (quick-fit.ts, docs/CAREER_MODE.md §4).
 //   a map       = rounds until one team has 13 with a 2-round lead (overtime past 12–12)
 // Teams without a record, and every map when no records are registered, get a stable seeded lean
 // N(0, comfortSd) instead.
 import { caOf } from "../season.ts";
 import { matchAttributes } from "./readiness.ts";
+import { abilityTerm } from "./quick-fit.ts";
 import { UNRATED_ABILITY } from "../scouting.ts";
 import { deriveSeed, mulberry32, normal, streamFor } from "../rng.ts";
 import type { CareerState, MapResult, SeriesOutcome, SeriesRequest, SeriesSimulator } from "./types.ts";
 
 export const QUICK_SIM = {
   /**
-   * Round-win slope per unit of lineup-ability difference, fitted to the match engine by maximum
-   * likelihood (tools/career/calibrate-quick-sim.mts, docs/CAREER_MODE.md §4).
+   * Round-win slope per unit of lineup-ability difference: the maximum-likelihood fit on 120 engine
+   * Bo3s (tools/career/fit-quick-sim.mts, quick-fit.ts): 8.24 ± 1.25 together with the noise terms
+   * (6.8 when the noise is left out, which then mistakes noise for a flatter slope).
    */
-  roundSlope: 7.9,
-  /** Round-win logit per unit of map-share difference (fitted together; weak evidence, SE ≈ 0.24 on 0.37). */
-  mapSlope: 0.4,
-  /** Per-map form noise on the round logit (sd). Fitted on engine series: see calibrate-quick-sim.mts. */
-  mapNoiseSd: 0.3,
+  roundSlope: 8.2,
+  /** Round-win logit per unit of map-share difference (fitted together; 0.28 ± 0.29: not distinguishable from 0 on 120 series). */
+  mapSlope: 0.28,
+  /** Per-map noise on the round logit (sd) and per-series noise (sd). Fitted: tools/career/fit-quick-sim.mts. */
+  mapNoiseSd: 0.39,
+  seriesNoiseSd: 0.32,
+  /** Cap of the ability term of the round logit (0 = linear). Tested on the engine series: the fit runs off to ∞, so the data do not support a cap; kept for refits. */
+  abilityCap: 0,
   /** Games of ½-prior in a team's map share. */
   mapPrior: 6,
   /** Seeded map lean for teams without records (ability units). */
@@ -75,9 +81,9 @@ export function lineupStrength(career: CareerState, lineup: readonly string[]): 
 }
 
 /** Map term of the round logit: slope · (share_home − share_away), or the seeded leans without records. */
-export function mapEdge(career: CareerState, home: string, away: string, map: string): number {
+export function mapEdge(career: CareerState, home: string, away: string, map: string, mapSlope: number = QUICK_SIM.mapSlope): number {
   const a = mapShare(home, map); const b = mapShare(away, map);
-  if (a !== null && b !== null) return QUICK_SIM.mapSlope * (a - b);
+  if (a !== null && b !== null) return mapSlope * (a - b);
   const lean = (t: string) => QUICK_SIM.comfortSd * QUICK_SIM.roundSlope * normal(streamFor(career.seed, `comfort:${career.season.season}:${t}:${map}`));
   return lean(home) - lean(away);
 }
@@ -125,22 +131,24 @@ function killLines(career: CareerState, req: SeriesRequest, h: number, a: number
 }
 
 /** Constants a calibration run can override (defaults: QUICK_SIM). */
-export interface QuickTuning { roundSlope?: number; mapNoiseSd?: number }
+export interface QuickTuning { roundSlope?: number; mapSlope?: number; mapNoiseSd?: number; seriesNoiseSd?: number; abilityCap?: number }
 
 export function quickSeriesWith(req: SeriesRequest, career: CareerState, tuning: QuickTuning = {}): Omit<SeriesOutcome, "lineups"> {
   const slope = tuning.roundSlope ?? QUICK_SIM.roundSlope;
   const noise = tuning.mapNoiseSd ?? QUICK_SIM.mapNoiseSd;
+  const mapSlope = tuning.mapSlope ?? QUICK_SIM.mapSlope;
   const rng = mulberry32(deriveSeed(req.seed, "quick"));
+  const seriesZ = (tuning.seriesNoiseSd ?? QUICK_SIM.seriesNoiseSd) * normal(rng);
   const games = req.format === "bo5" ? 5 : req.format === "bo3" ? 3 : 1;
   const need = Math.floor(games / 2) + 1;
   const maps = pickMaps(career, req.home.teamId, req.away.teamId, games, rng);
-  const base = slope * (lineupStrength(career, req.home.lineup) - lineupStrength(career, req.away.lineup));
+  const base = abilityTerm(slope, tuning.abilityCap ?? QUICK_SIM.abilityCap, lineupStrength(career, req.home.lineup) - lineupStrength(career, req.away.lineup)) + seriesZ;
   const results: MapResult[] = [];
   const won: [number, number] = [0, 0];
   for (let g = 0; g < games && won[0] < need && won[1] < need; g++) {
     const map = maps[g]!;
     const z = normal(rng);
-    const p = sigmoid(base + mapEdge(career, req.home.teamId, req.away.teamId, map) + noise * z);
+    const p = sigmoid(base + mapEdge(career, req.home.teamId, req.away.teamId, map, mapSlope) + noise * z);
     let h = 0; let a = 0;
     while (!((h >= 13 || a >= 13) && Math.abs(h - a) >= 2) && h + a < QUICK_SIM.maxRounds) {
       if (rng() < p) h += 1; else a += 1;

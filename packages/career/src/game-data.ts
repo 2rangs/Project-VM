@@ -6,6 +6,11 @@ import { getAgentPool, getTeam, getTeamMapRecords, listPlayers, listTeams } from
 import type { RealPlayerInput } from "./calibration.ts";
 import type { World } from "./model.ts";
 import { createWorld, type RealTeamInput } from "./world.ts";
+import { newCareer } from "./career/career.ts";
+import { regionTeams } from "./career/schedule.ts";
+import { lineupStrength, mapShare, setMapRecords } from "./career/quick-sim.ts";
+import type { FitSeries } from "./career/quick-fit.ts";
+import type { CareerState, SeriesRequest } from "./career/types.ts";
 
 const RATINGS = new URL("../../../datasets/derived/ratings/player_ratings.json", import.meta.url);
 
@@ -59,4 +64,34 @@ export function mapRecordsFromGameData(): Record<string, Record<string, [number,
     if (Object.keys(row).length) out[t.teamId] = row;
   }
   return out;
+}
+
+const CALIBRATION = new URL("../../../tools/career/calibration-data.json", import.meta.url);
+
+/** One engine-played Bo3 of the calibration set: the request that was simulated and its map scores (A = home). */
+export interface CalibrationSeries {
+  readonly a: string; readonly b: string; readonly winA: number;
+  readonly req: SeriesRequest;
+  readonly games: ReadonlyArray<{ map: string; A: number; B: number }>;
+}
+
+/**
+ * The cached engine series (tools/career/calibration-data.json, played by match-runner `runSeries`
+ * between random teams of the four regions with their career fives) as likelihood data, with the
+ * career state their lineups are read from and the real map records registered for the map pools.
+ */
+export function loadCalibration(): { seed: number; played: CalibrationSeries[]; series: FitSeries[]; career: CareerState } {
+  const cached = JSON.parse(readFileSync(fileURLToPath(CALIBRATION), "utf8")) as { seed: number; played: CalibrationSeries[] };
+  setMapRecords(mapRecordsFromGameData());
+  const w = worldFromGameData(cached.seed);
+  const career = newCareer(w, { seed: cached.seed, manager: { name: "cal", nationality: "kr" }, userTeamId: regionTeams(w, "pacific")[0]! });
+  const series: FitSeries[] = cached.played.map((p) => ({
+    d: lineupStrength(career, p.req.home.lineup) - lineupStrength(career, p.req.away.lineup),
+    winA: p.winA,
+    maps: p.games.map((g) => {
+      const ma = mapShare(p.a, g.map); const mb = mapShare(p.b, g.map);
+      return { a: g.A, b: g.B, m: ma !== null && mb !== null ? ma - mb : 0 };
+    }),
+  }));
+  return { seed: cached.seed, played: cached.played, series, career };
 }
