@@ -74,96 +74,84 @@ bash tools/career/refit-quick-sim.sh [series=1100] [seed=2026] [shards=nproc]
 - Fans the generation across cores (`calibrate-quick-sim.mts --shard=i/n --gen-only`, independent
   team-draw stream per shard, globally unique match seeds), merges the shard caches into one cache
   keyed by `seed` at `tools/career/calibration-data.large.json` (**gitignored — big, do not commit**),
-  then runs the MLE fit (`fit-quick-sim.mts`) which estimates the per-map noise σ and the per-series
-  noise τ from the data.
+  then runs the MLE fit (`refit-report.mts`, analytic and bounded for thousands of series — the old
+  `fit-quick-sim.mts` cross-validation is ~100× too slow at 1,100 series) which estimates the per-map
+  noise σ and the per-series noise τ from the data.
 - Writes the summary + calibration curve to `tools/career/quick-sim-refit.json` (committed) and stdout.
-- It always replays the engine (no stale-cache reuse), so after sessions A–D's engine changes land the
-  integrator re-runs the single command to re-fit on the final engine.
+- It always replays the engine (no stale-cache reuse), so after any further engine change the integrator
+  re-runs the single command to re-fit.
 
-### Result (1,100 Bo3s, seed 2026, current engine `889ebef`)
-2,583 maps. ~10–14 s per engine Bo3 per core here (4 cores ⇒ ≈ 50 min generation + ≈ 7 min fit).
-The large cache is `tools/career/calibration-data.large.json` (454 KB, gitignored). Full numbers:
+### Result — refit on the FINAL engine (`4584275`, 28th merge: movementStyle+weaponModes default ON, close-out fix)
+Run on the final engine after merging main. 1,100 Bo3s / 2,580 maps, seed 2026, ~15 s/Bo3/core on the
+heavier engine (4 cores ⇒ ≈ 60 min generation + ≈ 7 min fit). Large cache gitignored; full numbers in
 `tools/career/quick-sim-refit.json`.
 
-**Best model `both` (per-map noise σ + per-series noise τ), by AIC:**
+An earlier identical refit on the pre-final engine (`889ebef`) gave k 9.68 / σ 0.43 / τ 0.22 and was
+already well-calibrated; the final engine's changes made favourites stronger, which raised the round
+slope further and left the OLD shipped slope under-confident — hence the apply below.
 
-| model | logLik | AIC | note |
-|---|---|---|---|
-| rounds only | −8433.7 | 16873 | no noise |
-| + per-map σ | −8106.7 | 16221 | |
-| + per-series τ | −8237.1 | 16482 | |
-| **both** | **−8097.7** | **16205** | best |
-| both + cap | −8097.7 | 16207 | cap → ∞ (260): the ability term is **linear**, no saturation |
+**Best model `both` (per-map σ + per-series τ), by AIC** (rounds −8545 / +σ −8143 / +τ −8310 / **both −8133** /
+both+cap −8132): the noise terms gain +412 log-lik over rounds-only (held-out 50/50 +0.45/series); a
+finite ability cap (≈1.9) gains only ~1 AIC over linear, within noise, so the term is kept **linear**.
 
-**Fitted constants (± bootstrap SE, 24 resamples):**
+**Fitted constants (± bootstrap SE, 24 resamples) and what was shipped:**
 
-| | refit (1,100) | shipped (120-fit) | SE | series for target precision |
+| | refit (1,100, final engine) | SE | shipped now | note |
 |---|---|---|---|---|
-| `roundSlope` k | **9.68** | 8.2 | ±0.34 (3.5 %) | 530 (met) |
-| `mapSlope` μ | **0.13** | 0.28 | ±0.11 | 1311 (**not** met — still ≈ 0, drop candidate) |
-| `mapNoiseSd` σ | **0.43** | 0.39 | ±0.02 | 170 (met) |
-| `seriesNoiseSd` τ | **0.22** | 0.32 | ±0.02 | 181 (met) |
+| `roundSlope` k | 10.57 | ±0.35 (3.3 %) | **10.57** | applied |
+| `mapSlope` μ | −0.135 | ±0.122 (spans 0) | **0.28 (kept)** | fit can't pin it (needs ≈1,650 series); μ barely moves the round prob, so calibration is identical at 0.28, but a positive μ keeps the veto picking each team's *stronger* maps — a negative μ would pick the weaker ones |
+| `mapNoiseSd` σ | 0.469 | ±0.013 | **0.47** | applied; **per-map noise now estimated from data** (was a 0.3 guess) |
+| `seriesNoiseSd` τ | 0.238 | ±0.031 | **0.24** | applied |
 
-- The **per-map noise is now estimated from data: σ = 0.43 ± 0.02** (it was a 0.3 guess originally,
-  0.39 on 120). It is well pinned. τ fell to 0.22 and the round slope rose to 9.68. The noise terms
-  gain +336 log-lik over rounds-only; held out (50/50 split) they beat rounds-only by +0.31/series.
-- `mapSlope` is still indistinguishable from 0 (±0.11; needs ≈ 1,311 series). The map-pool term can
-  probably be dropped; keep it only if a future, larger set separates it from 0.
+**Calibration curve — "the favourite wins the series" (reps 200, final-engine 1,100 series), old shipped vs applied:**
 
-**Calibration curve — "the favourite wins the series" (reps 200, in sample):**
-
-| favourite-win bin | shipped pred→obs (n) | refit pred→obs (n) |
+| favourite-win bin | BEFORE k=8.2 pred→obs (n) | AFTER applied pred→obs (n) |
 |---|---|---|
-| 0.5–0.6 | 0.549 → 0.538 (290) | 0.548 → 0.580 (224) |
-| 0.6–0.7 | 0.646 → 0.724 (294) | 0.643 → 0.676 (238) |
-| 0.7–0.8 | 0.743 → 0.793 (222) | 0.750 → 0.769 (238) |
-| 0.8–0.9 | 0.847 → 0.867 (181) | 0.849 → 0.822 (185) |
-| **0.9–1.0** | 0.944 → 0.965 (113) | **0.950 → 0.926 (215)** |
-| ECE / mean pred vs obs | 0.040 / 0.704 vs 0.737 | **0.027 / 0.741 vs 0.750** |
+| 0.5–0.6 | 0.548 → 0.566 (288) | 0.551 → 0.555 (229) |
+| 0.6–0.7 | 0.647 → 0.707 (304) | 0.647 → 0.674 (224) |
+| 0.7–0.8 | 0.745 → 0.830 (218) | 0.749 → 0.759 (220) |
+| 0.8–0.9 | 0.848 → 0.921 (177) | 0.844 → 0.855 (193) |
+| **0.9–1.0** | 0.945 → 0.991 (113) | **0.951 → 0.957 (234)** |
+| **Brier** | 0.166 | **0.163** |
+| **ECE** | 0.055 | **0.011** |
+| mean pred vs obs | 0.703 vs 0.758 (−5.5 pp) | 0.747 vs 0.758 (−1.1 pp) |
 
-- **The P2-9 over-confidence is resolved.** The old "predicted 0.94, observed 0.80 (n=20)" was a
-  stale small-sample artifact (the 120-series cache predated the engine changes). On 1,100 fresh
-  current-engine series the top bin is **flat** (refit 0.95 → 0.926), and the quick sim is, if
-  anything, mildly *under*-confident on favourites rather than over-confident. The refit tightens it
-  (ECE 0.040 → 0.027, mean predicted-vs-observed gap 3.3 pp → 0.9 pp).
+- **The P2-9 miscalibration is resolved.** On the final engine the OLD shipped slope is *under*-confident
+  (favourites win more than it predicts — the engine changes strengthened favourites), the opposite of
+  the original stale-120 "over-confidence" (0.94 predicted vs 0.80 observed, which was a small-sample
+  artifact). Either way the applied refit flattens every bin: **ECE 0.055 → 0.011**, Brier 0.166 → 0.163,
+  the 90–100% bin from 4.6 pp off to ~0.6 pp (flat).
 
-### Shipped constants were NOT changed (by design) — recommendation for the integrator
-The engine will change again under sessions A–D, and this bundle was asked to make the refit
-**re-runnable in one line so the integrator re-runs it after integration**. So the measurement is
-delivered but the constants are left for the integrator to apply on the FINAL engine, not this
-intermediate one. Applying them would also break the stale-engine 120-series unit test
-(`quick-calibration.test.ts` checks the shipped constants against the committed old-engine cache) and
-would ripple into the deterministic career tests — churn that the integrator's own re-run supersedes.
-
-**To apply after the final engine (one procedure):**
-1. `bash tools/career/refit-quick-sim.sh` → read `bestParams` and the `calibration` block of
-   `tools/career/quick-sim-refit.json`.
-2. Set `QUICK_SIM.roundSlope / mapSlope / mapNoiseSd / seriesNoiseSd` in
-   `packages/career/src/career/quick-sim.ts` to `bestParams` (consider dropping `mapSlope` if its SE
-   still spans 0).
-3. Refresh the committed small cache so the unit test matches the final engine: regenerate the first
-   120 (or more) of the large set into `tools/career/calibration-data.json`, then
-   `node_modules/.bin/tsx tools/career/fit-quick-sim.mts > tools/career/quick-sim-fit.json`, and
-   update `docs/CAREER_MODE.md` §4 numbers.
-4. Re-run `node_modules/.bin/vitest run --root packages/career` and the career E2E.
+### Constants applied + committed cache refreshed
+- `QUICK_SIM` in `packages/career/src/career/quick-sim.ts` now ships k=10.57, σ=0.47, τ=0.24 (μ kept
+  at 0.28, cap 0); the JSDoc records the fit and SEs.
+- The committed `tools/career/calibration-data.json` (the 120-series set the unit test validates
+  against) was refreshed to 120 **final-engine** series — a stride-9 sample across all four shards of
+  the large set, record-having home teams first so the map-pool term is live. `quick-sim-fit.json`
+  regenerated on it. On that cache the shipped constants are 1.56 log-lik from its optimum (< 3), ECE
+  0.071, mean pred-vs-obs 0.005 — `quick-calibration.test.ts` passes.
+- **Re-running later:** `bash tools/career/refit-quick-sim.sh`, copy `bestParams` into `QUICK_SIM`
+  (keep μ positive or drop it to 0), refresh the committed 120-series cache from the large set the same
+  way, `node_modules/.bin/tsx tools/career/fit-quick-sim.mts > tools/career/quick-sim-fit.json`, update
+  `docs/CAREER_MODE.md` §4, and re-run the career vitest + E2E.
 
 ---
 
-## Gate status
-- **Engine unchanged by construction.** The whole diff vs main is `packages/career/src/{development,game-data,career/quick-sim}.ts`,
-  `packages/career/test/club-depth.test.ts`, `tools/career/*`, `docs/` and `.gitignore`. No file under
-  `packages/match-runner`, `round-simulator`, `team-engine`, `decision-engine`, `spatial-engine`,
-  `combat`, `perception`, `economy-engine` or `packages/game-data/src` was touched, so the integrator's
-  `runMatch` hash and sim-batch seeds 1–160 are identical to main. (game-data.ts here is the career
-  package's Node world-builder, not the engine dataset; quick-sim.ts changed only in a comment — the
-  shipped constants are unchanged.)
-- `packages/career` vitest: **107 passed, 1 skipped** (`PV_MORALE_MATCH` opt-in). `tsc --noEmit` clean.
+## Gate status (final engine `4584275`, merged into `claude/pv2-career`)
+- **Engine untouched by this bundle.** Every change is in `packages/career` + `tools/career` + `docs`
+  + `.gitignore`; no file under `packages/match-runner`, `round-simulator`, `team-engine`,
+  `decision-engine`, `spatial-engine`, `combat`, `perception`, `economy-engine` or
+  `packages/game-data/src` was modified beyond the merge of main, so `runMatch` hash and sim-batch seeds
+  1–160 match main. (`packages/career/src/game-data.ts` is the career package's Node world-builder, not
+  the engine dataset.) The quick-sim constants are a career-only change and do not reach `runMatch`.
+- `packages/career` vitest: **107 passed, 1 skipped** (`PV_MORALE_MATCH` opt-in) with the applied
+  constants and refreshed cache. `tsc --noEmit` clean.
 - `apps/desktop` `tsc` clean, `npm run build` OK.
-- **Desktop career E2E PASS** (`test:e2e:career`, xvfb + swiftshader, this container): "CAREER E2E OK —
-  signed BlackWiz, played 1–2 with a chosen five; 5 engine-played AI series; season 2026 played out,
-  contract expired, season 2027 open." Exercises the career+club flow and a full season advance (so the
-  unified morale path), start→new career→signing→match day→engine series→background engine sim→season
-  end→reload. Regenerated `apps/desktop/docs/*.png` discarded per the career-shell handoff.
+- **Desktop career E2E PASS** on the final engine (`test:e2e:career`, xvfb + swiftshader, this
+  container): "CAREER E2E OK — signed Secret, played 0–2 with a chosen five; 5 engine-played AI series;
+  season 2026 played out, contract expired, season 2027 open." Exercises the career+club flow and a full
+  season advance (the unified morale path) through the engine. Regenerated `apps/desktop/docs/*.png`
+  discarded per the career-shell handoff.
 
 ## Re-run commands
 - Quick-sim refit (after the final engine, one line): `bash tools/career/refit-quick-sim.sh`

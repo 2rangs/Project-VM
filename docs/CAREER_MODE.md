@@ -221,6 +221,45 @@ trust; the price of keeping the engine is ≈ 8 minutes of waiting per season. `
 right choice for the other regions and the international events. Make it the default for the own
 league only after the 1,100-series refit passes the same bounds (and the top bin is flat).
 
+### 4.1 Update — 1,100-series refit on the final engine (P2-9, 28th merge `4584275`)
+
+The ≈ 1,100-series refit was run on the final engine (movementStyle + weaponModes default ON, the
+attack close-out fix). Harness: `bash tools/career/refit-quick-sim.sh` (shards the generation across
+cores, merges, then `tools/career/refit-report.mts` does the analytic MLE — the 5×5 CV in
+`fit-quick-sim.mts` is ~100× too slow at 1,100 series). Large cache gitignored; summary in
+`tools/career/quick-sim-refit.json`; details in `docs/handoff/career-quicksim-morale.md`.
+
+Fit (1,100 Bo3s / 2,580 maps, `both` model is best by AIC; ability term still linear — a finite cap
+gains ~1 AIC, within noise): **k 10.57 ± 0.35, μ −0.135 ± 0.122 (spans 0), σ 0.469 ± 0.013,
+τ 0.238 ± 0.031.** The per-map noise σ and per-series noise τ are now pinned from the data; the
+map-pool slope μ still cannot be separated from 0 (needs ≈ 1,650 series).
+
+**Shipped (applied):** `roundSlope` 10.57, `mapSlope` 0.28 (kept — μ barely moves the round
+probability so calibration is identical, but a positive μ keeps the veto picking each team's stronger
+maps; a negative fitted μ would pick the weaker ones), `mapNoiseSd` 0.47, `seriesNoiseSd` 0.24,
+`abilityCap` 0. The round slope rose from 8.2 because the engine's changes made favourites stronger:
+the old slope became *under*-confident on the final engine (the opposite of the earlier stale-120
+*over*-confidence, which was a small-sample artifact — the top bin is not a real engine upset
+mechanism).
+
+Calibration on 1,100 final-engine series (favourite's predicted → observed series win rate), old
+shipped vs applied:
+
+| favourite-win bin | BEFORE k=8.2 | AFTER applied |
+|---|---|---|
+| 0.5–0.6 | 0.548 → 0.566 | 0.551 → 0.555 |
+| 0.6–0.7 | 0.647 → 0.707 | 0.647 → 0.674 |
+| 0.7–0.8 | 0.745 → 0.830 | 0.749 → 0.759 |
+| 0.8–0.9 | 0.848 → 0.921 | 0.844 → 0.855 |
+| 0.9–1.0 | 0.945 → 0.991 | 0.951 → 0.957 |
+| Brier / ECE | 0.166 / 0.055 | **0.163 / 0.011** |
+
+So the P2-9 concern is resolved: ECE 0.055 → 0.011 and the 90–100% bin is flat (0.951 → 0.957). The
+committed `tools/career/calibration-data.json` was refreshed to 120 final-engine series (stride-9 across
+the four shards, record-having home teams first), so `test/quick-calibration.test.ts` validates the
+applied constants against current-engine data. The top-bin overconfidence worry in §4 above is
+superseded by this update; the default-depth recommendation can now be revisited (the top bin is flat).
+
 **Form** per player, updated per map played:
 `perf = ½·roundShare + ½·k/(k+d)` (round share alone when K/D is unknown), `form ← form + 0.25·(perf − form)`, 0.5 = par. Form is an output (it feeds the head coach's report); the engine reads fatigue and sharpness through readiness (§4a), not form.
 

@@ -7,7 +7,7 @@
 #    (each an independent team-draw stream, globally unique match seeds), into shard caches.
 # 2. Merges the shards into ONE large cache keyed by `seed` at $PV_LARGE_CACHE
 #    (tools/career/calibration-data.large.json by default — gitignored, DO NOT COMMIT; it is big).
-# 3. Runs the maximum-likelihood fit (fit-quick-sim.mts) on that cache, estimating the per-map and
+# 3. Runs the maximum-likelihood fit (refit-report.mts) on that cache, estimating the per-map and
 #    per-series noise from the data, and writes the summary + calibration curve to
 #    tools/career/quick-sim-refit.json (committed) and to stdout.
 #

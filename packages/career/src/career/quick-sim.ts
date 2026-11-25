@@ -27,24 +27,29 @@ import { UNRATED_ABILITY } from "../scouting.ts";
 import { deriveSeed, mulberry32, normal, streamFor } from "../rng.ts";
 import type { CareerState, MapResult, SeriesOutcome, SeriesRequest, SeriesSimulator } from "./types.ts";
 
-// A ~1,100-series refit on the current engine (P2-9, docs/handoff/career-quicksim-morale.md) found
-// roundSlope 9.68 ± 0.34, mapSlope 0.13 ± 0.11 (≈ 0, drop candidate), mapNoiseSd 0.43 ± 0.02,
-// seriesNoiseSd 0.22 ± 0.02, and the sim well-calibrated (the old 90–100% over-confidence was a stale
-// small-sample artifact). Those constants were left for the integrator to apply on the FINAL engine
-// (re-run `bash tools/career/refit-quick-sim.sh`), not this intermediate one; see the handoff.
+// These are the maximum-likelihood fit on 1,100 engine Bo3s / 2,580 maps played by the CURRENT engine
+// (P2-9, docs/handoff/career-quicksim-morale.md; refit with `bash tools/career/refit-quick-sim.sh`,
+// summary in tools/career/quick-sim-refit.json). The committed calibration-data.json is 120 of those
+// series. Re-run the refit and re-apply these after any further engine change.
 export const QUICK_SIM = {
   /**
-   * Round-win slope per unit of lineup-ability difference: the maximum-likelihood fit on 120 engine
-   * Bo3s (tools/career/fit-quick-sim.mts, quick-fit.ts): 8.24 ± 1.25 together with the noise terms
-   * (6.8 when the noise is left out, which then mistakes noise for a flatter slope).
+   * Round-win slope per unit of lineup-ability difference. 1,100-series fit: 10.57 ± 0.35 (with the
+   * noise terms; ~9.1 with the noise left out, which then mistakes noise for a flatter slope). The
+   * engine's movementStyle/weaponModes/close-out changes made favourites stronger, so this rose from
+   * the earlier 8.2 and the old shipped slope became under-confident (ECE 0.055 → 0.014).
    */
-  roundSlope: 8.2,
-  /** Round-win logit per unit of map-share difference (fitted together; 0.28 ± 0.29: not distinguishable from 0 on 120 series). */
+  roundSlope: 10.57,
+  /**
+   * Round-win logit per unit of map-share difference. The 1,100-series fit cannot pin it (−0.135 ±
+   * 0.122, spans 0 — needs ≈ 1,650 series), so it is left at its prior positive value: it barely
+   * moves the round probability (calibration is the same at 0.28 as at the fitted point) but a
+   * positive slope keeps the veto picking each team's stronger maps rather than its weaker ones.
+   */
   mapSlope: 0.28,
-  /** Per-map noise on the round logit (sd) and per-series noise (sd). Fitted: tools/career/fit-quick-sim.mts. */
-  mapNoiseSd: 0.39,
-  seriesNoiseSd: 0.32,
-  /** Cap of the ability term of the round logit (0 = linear). Tested on the engine series: the fit runs off to ∞, so the data do not support a cap; kept for refits. */
+  /** Per-map noise on the round logit (sd) and per-series noise (sd), estimated from the data. 1,100-series fit: σ 0.469 ± 0.013, τ 0.238 ± 0.031 (both well pinned). */
+  mapNoiseSd: 0.47,
+  seriesNoiseSd: 0.24,
+  /** Cap of the ability term of the round logit (0 = linear). 1,100-series fit: a finite cap (≈ 1.9) gains only ~1 AIC over linear, within noise, so the ability term is kept linear. */
   abilityCap: 0,
   /** Games of ½-prior in a team's map share. */
   mapPrior: 6,
