@@ -72,14 +72,16 @@ hold strength as the two knobs; the pistol cell @ 1–160 is the tightest constr
 |---|---|---|---|---|---|---|---|---|
 | `--gaze` | 1–160 | 3/8 | **0.337✗** | 0.533✗ | 0.373✗ | 0.468 | 0.312✗ | 0.349✗ |
 | `--gaze --plant-tactics` | 1–160 | **5/8** | **0.514** ✅ | 0.637✗ | 0.223✗ | 0.521✗ | 0.466 | 0.506 |
+| `--gaze --plant-tactics` | 161–320 | **5/8** | **0.514** ✅ | 0.628✗ | 0.229✗ | 0.518✗ | 0.494 | 0.516 |
 
 **New this session:** gaze ON *alone* is catastrophic (attack 0.337 — the post-plant guard has no post
 and is lost). But gaze **with plant-tactics** now reaches **attack 0.514 — inside the 0.47–0.55 target
 the handoff set** (ENGINE_TRUTH §12.4 had 0.412 @ 60 matches; the plant-spot/retake changes since have
 lifted it). So the "gaze attack too low" problem is **resolved on this tree**. The remaining gate
-blockers moved to: **elimination 0.637** (the same post-plant-hold overshoot as §2), **defuse 0.223**
-(the retaker's pre-aimed swing wins too much — the 38° guard below), and **opening 0.521** (the pre-plant
-attack entry now over-wins). gaze stays OFF, but it is much closer than the docs say.
+blockers moved to: **elimination 0.63** (the same post-plant-hold overshoot as §2), **defuse 0.22**
+(the retaker's pre-aimed swing wins too much — the 38° guard below), and **opening 0.52** (the pre-plant
+attack entry now over-wins). Both ranges behave the same, and gaze+plantTactics even repairs the
+pre-existing 161–320 pistol cell (0.397 → 0.494). gaze stays OFF, but it is much closer than the docs say.
 
 
 ### Measured (`duel-breakdown --gaze --plant-tactics`, 12 matches)
