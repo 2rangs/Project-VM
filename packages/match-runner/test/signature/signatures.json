@@ -1,13 +1,13 @@
 {
   "ascent-seed1": {
     "rounds": 13,
-    "score": "11-2",
-    "sha256": "5c89fab360c97c469cb4a87110414b2df2b4c207bd43b6118a83c010ec001154"
+    "score": "10-3",
+    "sha256": "83bbb9a6e6f7493d685bb8d9cf2ff69a8bd2e188daf3a3be21605940af47d0cf"
   },
   "ascent-seed161": {
     "rounds": 13,
     "score": "3-10",
-    "sha256": "611c17a0908d65a05fbb7427b6a3a872e046668884c971dce1a870812521146e"
+    "sha256": "376b8e2ce29747b57d6bee4d3e4746d71811a9d20e40cb20bdbcd96da39a48c3"
   },
   "ascent-abilities": {
     "rounds": 13,
