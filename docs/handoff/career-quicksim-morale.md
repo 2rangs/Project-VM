@@ -150,17 +150,37 @@ would ripple into the deterministic career tests — churn that the integrator's
 ---
 
 ## Gate status
-- **Engine unchanged by construction**: no file under `packages/match-runner`, `round-simulator`,
-  `team-engine`, `decision-engine`, `spatial-engine`, `combat`, `perception`, `economy-engine` or
-  `packages/game-data/src` was touched (diff is `packages/career` + `tools/career` + docs + gitignore).
-  The integrator's `runMatch` hash and sim-batch seeds 1–160 are therefore identical to main.
-- `packages/career` vitest + `tsc`: green (see above).
-- Desktop career E2E: <!-- FILL: attempted / result -->
+- **Engine unchanged by construction.** The whole diff vs main is `packages/career/src/{development,game-data,career/quick-sim}.ts`,
+  `packages/career/test/club-depth.test.ts`, `tools/career/*`, `docs/` and `.gitignore`. No file under
+  `packages/match-runner`, `round-simulator`, `team-engine`, `decision-engine`, `spatial-engine`,
+  `combat`, `perception`, `economy-engine` or `packages/game-data/src` was touched, so the integrator's
+  `runMatch` hash and sim-batch seeds 1–160 are identical to main. (game-data.ts here is the career
+  package's Node world-builder, not the engine dataset; quick-sim.ts changed only in a comment — the
+  shipped constants are unchanged.)
+- `packages/career` vitest: **107 passed, 1 skipped** (`PV_MORALE_MATCH` opt-in). `tsc --noEmit` clean.
+- `apps/desktop` `tsc` clean, `npm run build` OK.
+- **Desktop career E2E PASS** (`test:e2e:career`, xvfb + swiftshader, this container): "CAREER E2E OK —
+  signed BlackWiz, played 1–2 with a chosen five; 5 engine-played AI series; season 2026 played out,
+  contract expired, season 2027 open." Exercises the career+club flow and a full season advance (so the
+  unified morale path), start→new career→signing→match day→engine series→background engine sim→season
+  end→reload. Regenerated `apps/desktop/docs/*.png` discarded per the career-shell handoff.
 
 ## Re-run commands
-- Quick-sim refit (after the final engine): `bash tools/career/refit-quick-sim.sh`
+- Quick-sim refit (after the final engine, one line): `bash tools/career/refit-quick-sim.sh`
 - Fit only, on the committed 120-series cache (seconds, no engine): `node_modules/.bin/tsx tools/career/fit-quick-sim.mts`
 - Career tests: `node_modules/.bin/vitest run --root packages/career`
+- Desktop career E2E: `cd apps/desktop && npm run build && xvfb-run -a env PLAYWRIGHT_REQUIRE_BASE=/opt/node-tools/ node test/e2e.career.test.mjs`
+  (then discard `apps/desktop/docs/*.png`).
 
 ## Left to do
-<!-- FILL AFTER REFIT -->
+1. **Apply the refit constants on the FINAL engine** (procedure above). The current shipped constants
+   are left in place on purpose because sessions A–D still change the engine; the integrator's one-line
+   re-run supersedes an intermediate flip.
+2. **Consider dropping `mapSlope`** (the map-pool term): at 1,100 series its SE still spans 0 (0.13 ±
+   0.11; ≈ 1,311 series to separate from 0). If the final-engine refit agrees, drop it.
+3. **Morale depth left for club-ops**, unchanged by this bundle: `CLUB_FLAGS.moraleInMatch` is still
+   default off and ungated (size `DEPTH_MODEL.moraleAbility` from the engine's ability response first —
+   `docs/handoff/club-ops.md` step 1). The unification does not turn it on.
+4. AI clubs still do not track morale, so their players always develop under the model (`modelMorale`),
+   never a tracked value — by design (AI clubs are neutral). If AI-club morale is ever wanted, give them
+   a `club.morale` map and `moraleWeek` will populate it and development will pick it up automatically.
