@@ -6,15 +6,15 @@
 .tp-flag { font-size: 12px; border-radius: 7px; padding: 5px 10px; }
 .tp-flag.off { color: #f0b429; background: #f0b42912; border: 1px dashed #f0b42999; font-weight: 600; }
 .tp-flag.on { color: #7ee787; background: #7ee78712; border: 1px solid #7ee78766; }
-.tp-grid { display: grid; grid-template-columns: minmax(220px, 320px) 1fr; gap: 14px; align-items: start; }
-@media (max-width: 900px) { .tp-grid { grid-template-columns: 1fr; } }
-.tp-map { margin: 0; }
+/* Map and controls side by side only when both fit (the plan panel column is narrow): each needs ≥ 280px. */
+.tp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; align-items: start; }
+.tp-map { margin: 0; max-width: 360px; }
 .tp-map svg { width: 100%; aspect-ratio: 1; background: #0b1017; border: 1px solid #263040; border-radius: 8px; display: block; }
 .tp-spot { cursor: pointer; }
 .tp-spot circle { fill: #8b98a9; stroke: #0b0e13; stroke-width: 0.002; opacity: .9; }
 .tp-spot.k-safe circle { fill: #7ee787; } .tp-spot.k-cover circle { fill: #79c0ff; } .tp-spot.k-near circle { fill: #f0b429; } .tp-spot.k-open circle { fill: #ff7b72; }
 .tp-spot.on circle { stroke: #fff; stroke-width: 0.004; opacity: 1; }
-.tp-controls { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tp-controls { display: flex; flex-direction: column; gap: 6px; min-width: 280px; }
 .tp-kicker { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted, #8b98a9); margin-top: 6px; }
 .tp-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px 10px; }
 .tp-field { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
