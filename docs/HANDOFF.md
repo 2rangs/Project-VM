@@ -66,7 +66,6 @@ cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). app
 | `MatchConfig.gaze` (`--gaze`) | 시선 상태, Fitts 조준 시간, 피크 기법, 양방향 추적 | 공격 0.39–0.41 | `engine-truth.md` §7–11 |
 | `MatchConfig.soundDetail` (`--sound`) | 착지음·총성 마스킹·로프·짚라인·텔레포터 소리 | 보정 안 됨 | `engine-truth.md` |
 | `MatchConfig.movementStyle` (`--style`, 기본 `BUY_PHASE_ONLY_STYLE`) | 라운드 중 레인·간격·경로 선택·멈춰서 확인·럴커 걷기 | 켜면 피스톨 0.436(1.5–2%p 낮음) | `movement.md`, `MOVEMENT_STYLE.md` |
-| `EconomyOptions.ecoSidearms` (`--economy '{"ecoSidearms":true}'`) | 에코가 다음 구매 예비분을 넘는 돈을 고스트·셰리프·샷건·경량 실드에 씀 | 게이트 미실행 | `economy.md` |
 | `MatchConfig.weaponModes` (`--weapon-modes`) | 클래식 점사, 이동 사격 정확도 | 양방향 추적과 겹쳐 효과 축소(0.016) — 재보정 필요 | `economy.md` |
 | `MatchConfig.enableAbilities` (`--abilities`) | 스킬 | 4/8, 공격 0.474 | `ability-realism.md` |
 | `CLUB_FLAGS.moraleInMatch` | 사기가 커리어 경기 로스터에 반영 | 측정상 효과 없음 | `club-ops.md` |
@@ -76,7 +75,7 @@ cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). app
 
 ### P0 — 엔진 정합성
 1. **피스톨(시드 161–320, 0.397)** 원인 찾기. 장비 동일 조건에서 공격 0.447.
-2. **에코 라운드**: `ecoSidearms`를 게이트에 올리기(에코 대 세미 0.021 → VCT 0.072). 무기 목록 확장분은 이미 들어 있음.
+2. **에코 라운드**: `ecoSidearms` 기본 ON(26차, 에코 대 세미 0.060). 남은 것: 공격 마무리 — 풀바이 공격이 4 대 1–2에서 시간을 다 씀(5.7%), 에코 대 풀 셀 0.099.
 3. **시선 모델 재보정**: 설치 후 공격 경계가 리테이크 진입 방향에서 약 38° 벗어나 있음 → `plantTactics`의 위치별 경계와 함께 맞춘 뒤 `gaze` 기본 ON 검토.
 4. **라운드 중 움직임 스타일**을 피스톨 손실 없이 켜기(따라가기 정체는 고침, 남은 1.5–2%p).
 
