@@ -69,7 +69,8 @@ export function loadTactics(mapId: string, spatial: SpatialEngine): MapTactics {
 /**
  * A map's ultimate-orb points from `<map>.objects.json` `ultOrbs` (maps data). Accepts entries with
  * `position: {x, y, z}` or `x, y, z` (game uu) and an optional `id`. Empty when the file or the points
- * are missing — every map today: orbs are spawned actors the scene export does not contain.
+ * are missing. Positions are zone-level (the zone's roadmap anchor) and `verified:false`
+ * (docs/research/ULT_ORBS.md); pickup is opt-in via `MatchConfig.ultOrbs` (default off).
  */
 export function loadUltOrbs(mapId: string): { id: string; position: { x: number; y: number; z: number } }[] {
   const raw = readDataFile<{ ultOrbs?: unknown[] }>(resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.objects.json`));

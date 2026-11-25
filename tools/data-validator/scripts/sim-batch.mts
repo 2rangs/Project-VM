@@ -16,6 +16,8 @@
 //   --mid-control      turn mid control on (MatchConfig.midControl; default off): the "on" arm of its measurement
 //   --geometry own     simulate on the named map's own geometry (zone graph, roadmap, sight table);
 //                      default: every map is simulated on Ascent's geometry (MatchConfig.geometry)
+//   --ult-orbs         ultimate-orb pickup on (MatchConfig.ultOrbs; default off): orbs from the map's
+//                      objects.json credit one ult point each (positions zone-level, verified:false)
 //   --max-rounds R     safety cap on rounds per match passed to runMatch (default: engine default 60)
 //   --out FILE         SimRun bundle path (default reports/sim-batch-run.json)
 //   --report PREFIX    report path prefix for sim:validate (default reports/sim-batch)
@@ -201,7 +203,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["plant-tactics"] === true ? { plantTactics: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["weapon-modes"] === true ? { weaponModes: true } : {}), ...(args["information"] === true ? { informationLayer: true } : {}), ...(args["eco-stack"] === true ? { ecoDefenseStack: true } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["plant-tactics"] === true ? { plantTactics: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(args["ult-orbs"] === true ? { ultOrbs: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["weapon-modes"] === true ? { weaponModes: true } : {}), ...(args["information"] === true ? { informationLayer: true } : {}), ...(args["eco-stack"] === true ? { ecoDefenseStack: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };
