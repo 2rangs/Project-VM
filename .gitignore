@@ -22,3 +22,7 @@ coverage/
 
 # Generated simulation reports (sim:batch / sim:validate)
 reports/
+
+# Quick-sim refit: the large regenerated engine series cache is big; keep it out of git (P2-9).
+tools/career/calibration-data.large.json
+tools/career/calibration-data.large.*.json

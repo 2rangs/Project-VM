@@ -14,7 +14,7 @@ const add = (k: string, atkWin: boolean | null, dis: boolean, gap: number) => {
   g.n++; if (atkWin) g.atk++; if (dis) g.dis++; g.gap += gap; g.ao += cur?.aimOffsetDeg?.attacker ?? 0; g.do += cur?.aimOffsetDeg?.defender ?? 0; groups.set(k, g);
 };
 for (let i = 0; i < matches; i++) {
-  const cfg: MatchConfig = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: "Ascent", seed: seed0 + i, traceEngagements: true, ...(a.gaze ? { gaze: true } : {}), ...(a.tuning ? { tuning: JSON.parse(a.tuning) } : {}) } as MatchConfig;
+  const cfg: MatchConfig = { teamA: teams[(2 * i) % teams.length]!, teamB: teams[(2 * i + 1) % teams.length]!, map: "Ascent", seed: seed0 + i, traceEngagements: true, ...(a.gaze ? { gaze: true } : {}), ...(a["plant-tactics"] ? { plantTactics: true } : {}), ...(a.tuning ? { tuning: JSON.parse(a.tuning) } : {}) } as MatchConfig;
   for (const r of runMatch(cfg).rounds) {
     for (const e of (r.engagements ?? []) as any[]) {
       cur = e;

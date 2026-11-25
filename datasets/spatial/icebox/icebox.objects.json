@@ -20,7 +20,7 @@
   "traversals": 5,
   "doors": 0,
   "breakables": 9,
-  "ultOrbs": 0,
+  "ultOrbs": 2,
   "notLocated": 2
  },
  "drops": [
@@ -734,11 +734,38 @@
    "provenance": "measured-on-mesh (object bounding box: centre in x,y, its base in z); manual-approx (that it breaks: the object's name)"
   }
  ],
- "ultOrbs": [],
+ "ultOrbs": [
+  {
+   "id": "orb-a-pipes",
+   "zone": "a-pipes",
+   "position": {
+    "x": -6175,
+    "y": 425,
+    "z": 100
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Icebox",
+   "confidence": "M",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence M (ULT_ORBS.md). A orb at A Pipes, A Nest/Belt nearby."
+  },
+  {
+   "id": "orb-b-green",
+   "zone": "b-green",
+   "position": {
+    "x": -425,
+    "y": -675,
+    "z": 100
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Icebox",
+   "confidence": "M",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence M (ULT_ORBS.md). B orb at B Green (ALT zone b-garage: older sources say outside B Garage)."
+  }
+ ],
  "notLocated": [
   {
-   "name": "Ultimate orbs",
-   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+   "name": "Ultimate orbs — exact positions",
+   "reason": "zone-level only (A Pipes / B Green, from docs/research/ULT_ORBS.md §1 — VALORANT wiki Map: markers + guides, unverified); no orb object exists in the static scene, so each point given is the zone's roadmap anchor, not the orb's exact spot."
   },
   {
    "name": "Mid Boiler rope",

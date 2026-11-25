@@ -1,6 +1,19 @@
 // Development drivers beyond age, playing time, coach and training (docs/GENERATED_PEOPLE.md §10):
-// personality (hidden, fixed per player), morale (from form and role against ambition) and
-// mentors (the manager pairs a young player with an experienced one).
+// personality (hidden, fixed per player), morale and mentors (the manager pairs a young player with
+// an experienced one).
+//
+// MORALE IS ONE MODEL (docs/handoff/career-quicksim-morale.md). There is a single morale value per
+// player, 0..1, neutral 0.5:
+//   • the club tracks it week by week for the manager's squad (club/people.ts: moraleOf / moraleWeek
+//     drifting to moraleTarget from results, playing time, pay and the coach, plus the ±moraleSeries
+//     swing after each series). That tracked value is canonical — it is what the UI shows, what
+//     renewals read, and (with CLUB_FLAGS.moraleInMatch, default off) what reaches the match roster.
+//   • for everyone the club does not track (AI clubs, free agents, and any world with no club at all)
+//     there is no stored value, so `developmentMorale` falls back to a MODEL of the same quantity
+//     from the season's form and the player's role against their ambition.
+// `developmentMorale` is the one getter season development reads: it returns the tracked value when
+// the club has one for the player, otherwise the model. So career development uses the very morale
+// the club tracked and showed, not a second, disconnected season-end number.
 //
 //   growth multiplier   D = Pers · Mor · Ment
 //     Pers = persBase + persSpan · professionalism                        (0.5 → 1)
@@ -17,6 +30,7 @@
 //   leadership(t) = leadership₀ · (leadBase + leadSpan · clamp((t − leadStartAge)/(leadFullAge − leadStartAge), 0, 1))
 //     — grows late: the attribute group that peaks last.
 import { ambitionOf } from "./club/market.ts";
+import { moraleOf } from "./club/people.ts";
 import { CLUB_MODEL } from "./club/constants.ts";
 import type { World, WorldPlayer } from "./model.ts";
 import { clamp, streamFor } from "./rng.ts";
@@ -77,12 +91,28 @@ export function roleNow(w: World, p: WorldPlayer): number {
   return roster.indexOf(p.playerId) < 5 ? 1 : CLUB_MODEL.roleRotation;
 }
 
-/** Morale from form (0.5 = par) and role against what the player wants. */
-export function developmentMorale(w: World, p: WorldPlayer, form = 0.5): number {
+/**
+ * The one morale a player develops under. When the club tracks this player (the manager's squad:
+ * an entry in `club.morale`), that tracked value is canonical — the same morale the club drifts
+ * week by week and the UI shows. Otherwise it is modelled from the season's form (0.5 = par) and the
+ * player's role against what their ambition wants. `isTracked` distinguishes "tracked at neutral 0.5"
+ * from "not tracked" (both would read 0.5 through `moraleOf`).
+ */
+export function isTrackedMorale(w: World, playerId: string): boolean {
+  return w.club?.morale?.[playerId] !== undefined;
+}
+
+/** Morale modelled from form and role against ambition (the club-untracked estimate). */
+export function modelMorale(w: World, p: WorldPlayer, form = 0.5): number {
   const pers = personalityOf(w, p.playerId);
   const want = DM.wantBase + DM.wantSpan * pers.ambition;
   const s = DM.swingBase - DM.swingSpan * pers.temperament;
   return clamp(0.5 + s * (DM.formW * (form - 0.5) + DM.roleW * (roleNow(w, p) - want)), 0, 1);
+}
+
+export function developmentMorale(w: World, p: WorldPlayer, form = 0.5): number {
+  if (isTrackedMorale(w, p.playerId)) return moraleOf(w.club, p.playerId);
+  return modelMorale(w, p, form);
 }
 
 export interface DevelopmentState {

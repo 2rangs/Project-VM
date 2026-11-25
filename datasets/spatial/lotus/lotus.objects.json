@@ -20,7 +20,7 @@
   "traversals": 1,
   "doors": 0,
   "breakables": 0,
-  "ultOrbs": 0,
+  "ultOrbs": 2,
   "notLocated": 3
  },
  "drops": [
@@ -195,11 +195,38 @@
  ],
  "doors": [],
  "breakables": [],
- "ultOrbs": [],
+ "ultOrbs": [
+  {
+   "id": "orb-a-main",
+   "zone": "a-main",
+   "position": {
+    "x": 5276,
+    "y": 4144,
+    "z": 300
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Lotus",
+   "confidence": "M",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence M (ULT_ORBS.md). A orb at A Main."
+  },
+  {
+   "id": "orb-c-mound",
+   "zone": "c-mound",
+   "position": {
+    "x": 3876,
+    "y": -1556,
+    "z": 150
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Lotus",
+   "confidence": "H",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence H (ULT_ORBS.md). C orb at C Mound."
+  }
+ ],
  "notLocated": [
   {
-   "name": "Ultimate orbs",
-   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+   "name": "Ultimate orbs — exact positions",
+   "reason": "zone-level only (A Main / C Mound (2 orbs; the pre-8.0 B Main orb was removed in patch 8.0), from docs/research/ULT_ORBS.md §1 — VALORANT wiki Map: markers + guides, unverified); no orb object exists in the static scene, so each point given is the zone's roadmap anchor, not the orb's exact spot."
   },
   {
    "name": "Two rotating doors (A Door, C Door)",

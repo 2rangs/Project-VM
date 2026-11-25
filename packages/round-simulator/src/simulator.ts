@@ -701,7 +701,7 @@ export class RoundSimulator {
           p.health = Math.max(0, p.health - this.cfg.mollyDamagePerTick);
           if (p.health <= 0) {
             p.alive = false;
-            if (state.spike.carrierId === p.id && state.spike.phase === "carried") {
+            if (state.spike.carrierId === p.id && (state.spike.phase === "carried" || state.spike.phase === "planting")) {
               state.spike.carrierId = null;
               state.spike.zoneId = p.zoneId;
               state.spike.position = { ...p.position };
@@ -1927,7 +1927,11 @@ export class RoundSimulator {
           const loser = state.players.find((p) => p.id === r.loser)!;
           loser.alive = false;
           loser.health = 0;
-          if (state.spike.carrierId === loser.id && state.spike.phase === "carried") {
+          // The carrier drops the spike where it falls — whether it was carrying it or was cut down
+          // mid-plant (phase "planting"). Without the planting case the dropped spike kept a dead
+          // carrierId and a null zone, so it could never be picked up: a man-advantage attack whose
+          // planter was traded froze on the site and ran the clock out (engine-truth close-out).
+          if (state.spike.carrierId === loser.id && (state.spike.phase === "carried" || state.spike.phase === "planting")) {
             state.spike.carrierId = null;
             state.spike.zoneId = loser.zoneId;
             state.spike.position = { ...loser.position };

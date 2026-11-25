@@ -16,6 +16,8 @@
 //   --mid-control      turn mid control on (MatchConfig.midControl; default off): the "on" arm of its measurement
 //   --geometry own     simulate on the named map's own geometry (zone graph, roadmap, sight table);
 //                      default: every map is simulated on Ascent's geometry (MatchConfig.geometry)
+//   --ult-orbs         ultimate-orb pickup on (MatchConfig.ultOrbs; default off): orbs from the map's
+//                      objects.json credit one ult point each (positions zone-level, verified:false)
 //   --max-rounds R     safety cap on rounds per match passed to runMatch (default: engine default 60)
 //   --out FILE         SimRun bundle path (default reports/sim-batch-run.json)
 //   --report PREFIX    report path prefix for sim:validate (default reports/sim-batch)
@@ -29,11 +31,14 @@
 //   --gaze             gaze model on (SimConfig.gaze: turn-rate gaze, peek points, Fitts aim time)
 //   --no-buy-phase     players start where the match sets them (no buy-phase movement)
 //   --plant-tactics    plant spots, post-plant and retake plans (MatchConfig.plantTactics, off by default)
-//   --style            per-player movement style on, every part (default: buy-phase script only)
+//   --style            per-player movement style on, every part (now the default; flag is a no-op)
 //   --no-style         every player moves the executor's one way (no per-player movement style)
 //   --style-off LIST   switch parts of the movement style off: lanes,spacing,routes,checks,lurk
+//   --weapon-modes     catalogue run-and-gun + Classic burst on (now the default; flag is a no-op)
+//   --no-weapon-modes  the six v1.2 guns duel as before (no run-and-gun, no alt-fire)
 //   --abilities        agent abilities on (default off — as the desktop game plays today)
 //   --information      information layer on (MatchConfig.informationLayer; default off)
+//   --eco-stack        eco-defence pre-contact stack on (MatchConfig.ecoDefenseStack; default off)
 //   --teams-only       print the paired teams' first-five combat skills as JSON and exit (the
 //                      roster check in tests/test_sim_batch_runner.py uses it)
 //   --mirror           both teams league-average players (every attribute and trait at the
@@ -200,7 +205,7 @@ async function main(): Promise<void> {
   const t0 = Date.now();
   for (let i = 0; i < matches; i++) {
     const [teamA, teamB] = pairFor(i);
-    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["plant-tactics"] === true ? { plantTactics: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["weapon-modes"] === true ? { weaponModes: true } : {}), ...(args["information"] === true ? { informationLayer: true } : {}) };
+    const config: MatchConfig = { teamA, teamB, map, seed: seedStart + i, collectStats: true, ...(args["gaze"] === true ? { gaze: true } : {}), ...(args["mid-control"] === true ? { midControl: true } : {}), ...(args["plant-tactics"] === true ? { plantTactics: true } : {}), ...(args["sound"] === true ? { soundDetail: true } : {}), ...(args["no-buy-phase"] === true ? { buyPhase: false } : {}), ...(args["style"] === true ? { movementStyle: true } : args["no-style"] === true ? { movementStyle: false } : args["style-off"] ? { movementStyle: Object.fromEntries(String(args["style-off"]).split(",").map((k) => [k.trim(), false])) } : {}), ...(tuning ? { tuning } : {}), ...(maxRounds ? { maxRounds } : {}), ...(enableAbilities ? { enableAbilities: true } : {}), ...(args["ult-orbs"] === true ? { ultOrbs: true } : {}), ...(ownGeometry ? { geometry: "own" as const } : {}), ...(economy ? { economy } : {}), ...(args["no-weapon-modes"] === true ? { weaponModes: false } : args["weapon-modes"] === true ? { weaponModes: true } : {}), ...(args["information"] === true ? { informationLayer: true } : {}), ...(args["eco-stack"] === true ? { ecoDefenseStack: true } : {}) };
     const m = runMatch(config);
     if (m.wentToOvertime) otMatches++;
     const strength = { A: strengthOf(teamA), B: strengthOf(teamB) };

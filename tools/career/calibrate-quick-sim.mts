@@ -28,11 +28,23 @@ import {
 const N = Number(process.argv[2] ?? 120);
 const seed = Number(process.argv[3] ?? 2026);
 const REFIT = process.argv.includes('--refit');
-const CACHE = new URL('./calibration-data.json', import.meta.url);
+// Sharding for a parallel refit (tools/career/refit-quick-sim.sh): --shard=i/n generates only the
+// series whose global index ≡ i (mod n), with an independent team-draw stream per shard but globally
+// unique match seeds (seed·1000 + i), and --gen-only writes the shard cache and stops before the fit.
+// The shells merge the shard caches into one file keyed by `seed`, then run fit-quick-sim.mts.
+const shardArg = process.argv.find((a) => a.startsWith('--shard='));
+const [shardIdx, shardCount] = shardArg ? shardArg.split('=')[1]!.split('/').map(Number) as [number, number] : [0, 1];
+const GEN_ONLY = process.argv.includes('--gen-only');
+// Cache path: PV_CALIBRATION_DATA (absolute or repo-root-relative) overrides the committed small set,
+// so a large regenerated set never clobbers it (tools/career/refit-quick-sim.sh).
+const { resolve: resolvePath } = await import('node:path');
+const CACHE = process.env.PV_CALIBRATION_DATA
+  ? new URL(`file://${resolvePath(process.env.PV_CALIBRATION_DATA)}`)
+  : new URL('./calibration-data.json', import.meta.url);
 setMapRecords(mapRecordsFromGameData());
 const w = worldFromGameData(seed);
 const c = newCareer(w, { seed, manager: { name: 'cal', nationality: 'kr' }, userTeamId: regionTeams(w, 'pacific')[0]! });
-const rng = mulberry32(seed);
+const rng = mulberry32(seed + shardIdx * 1_000_003);
 const teams = REGIONS.flatMap((r) => regionTeams(c.world, r).slice(0, 12));
 
 interface Row { d: number; m: number; won: number; lost: number }
@@ -47,7 +59,8 @@ if (!REFIT && existsSync(cachePath)) {
 } else {
   played = [];
   const t0 = Date.now();
-  for (let i = 0; i < N; i++) {
+  let done = 0;
+  for (let i = shardIdx; i < N; i += shardCount) {
     const a = teams[Math.floor(rng() * teams.length)]!;
     let b = a; while (b === a) b = teams[Math.floor(rng() * teams.length)]!;
     const fx = { id: `cal-${i}`, season: 2026, stage: 'stage1', phase: 'group', round: 1, date: '2026-03-06', format: 'bo3', home: a, away: b } as Fixture;
@@ -58,9 +71,11 @@ if (!REFIT && existsSync(cachePath)) {
       format: 'bo3', seed: seed * 1000 + i,
     });
     played.push({ a, b, winA: res.winner === 'A' ? 1 : 0, req, games: res.games.map((g) => ({ map: g.map, A: g.score.A, B: g.score.B })) });
-    process.stderr.write(`${i + 1}/${N} ${res.score.A}-${res.score.B}\n`);
+    done += 1;
+    process.stderr.write(`shard ${shardIdx}/${shardCount}: ${done} (series ${i}) ${res.score.A}-${res.score.B}\n`);
   }
-  writeFileSync(cachePath, JSON.stringify({ seed, engineSecondsPerSeries: Number(((Date.now() - t0) / 1000 / N).toFixed(2)), played }));
+  writeFileSync(cachePath, JSON.stringify({ seed, engineSecondsPerSeries: Number(((Date.now() - t0) / 1000 / Math.max(1, played.length)).toFixed(2)), played }));
+  if (GEN_ONLY) { process.stderr.write(`shard ${shardIdx}/${shardCount}: wrote ${played.length} series to ${cachePath}\n`); process.exit(0); }
 }
 const secPerSeries = Number((JSON.parse(readFileSync(cachePath, 'utf8')) as { engineSecondsPerSeries: number }).engineSecondsPerSeries);
 const rows: Row[] = [];

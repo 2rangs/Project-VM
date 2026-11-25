@@ -20,7 +20,7 @@
   "traversals": 3,
   "doors": 0,
   "breakables": 0,
-  "ultOrbs": 0,
+  "ultOrbs": 4,
   "notLocated": 2
  },
  "drops": [
@@ -226,11 +226,64 @@
  ],
  "doors": [],
  "breakables": [],
- "ultOrbs": [],
+ "ultOrbs": [
+  {
+   "id": "orb-a-dish",
+   "zone": "a-dish",
+   "position": {
+    "x": 11271,
+    "y": 1383,
+    "z": 543
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Fracture",
+   "confidence": "M",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence M (ULT_ORBS.md). NE orb at A Dish."
+  },
+  {
+   "id": "orb-a-hall",
+   "zone": "a-hall",
+   "position": {
+    "x": 5071,
+    "y": 2033,
+    "z": 600
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Fracture",
+   "confidence": "H",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence H (ULT_ORBS.md). SE orb at A Hall."
+  },
+  {
+   "id": "orb-b-arcade",
+   "zone": "b-arcade",
+   "position": {
+    "x": 10171,
+    "y": -4167,
+    "z": 500
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Fracture",
+   "confidence": "H",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence H (ULT_ORBS.md). NW orb at B Arcade."
+  },
+  {
+   "id": "orb-b-main",
+   "zone": "b-main",
+   "position": {
+    "x": 5971,
+    "y": -5367,
+    "z": 425
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Fracture",
+   "confidence": "L",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence L (ULT_ORBS.md). SW orb: wiki B Main, guides say B Tree (ALT zone b-tree). Unresolved — wiki marker could not be converted reliably (grid orientation); chose wiki B Main."
+  }
+ ],
  "notLocated": [
   {
-   "name": "Ultimate orbs",
-   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+   "name": "Ultimate orbs — exact positions",
+   "reason": "zone-level only (A Dish / A Hall / B Arcade / B Main (4 orbs), from docs/research/ULT_ORBS.md §1 — VALORANT wiki Map: markers + guides, unverified); no orb object exists in the static scene, so each point given is the zone's roadmap anchor, not the orb's exact spot."
   },
   {
    "name": "Second attacker zipline",

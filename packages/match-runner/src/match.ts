@@ -177,21 +177,35 @@ export interface MatchConfig {
   /**
    * Per-player movement style (round-simulator movement-style.ts). true = every part on; an object
    * turns it on with the listed parts off; false = none (the buy phase then has no per-player script).
-   * Default BUY_PHASE_ONLY_STYLE: the buy-phase script runs (rounds identical to no buy phase), the
-   * live-round parts are off. With every part on (true / sim-batch --style), real rosters seeds 1–160:
-   * attack 0.471, pistol 0.438 (gate ≥ 0.45) — docs/handoff/movement.md.
+   * Default true (2026-11-25, PV-2 2차): every live part on. Alone it costs pistol (0.469 → 0.438),
+   * but paired with the default `weaponModes` run-and-gun the moving attacker keeps its accuracy and
+   * pistol passes both real-roster seed ranges (1–160 0.463, 161–320 0.397 → 0.456, each core 8/8);
+   * docs/handoff/pistol-movement.md §4. `BUY_PHASE_ONLY_STYLE` (live parts off) or false to opt out.
    */
   readonly movementStyle?: boolean | { readonly lanes?: boolean; readonly spacing?: boolean; readonly routes?: boolean; readonly checks?: boolean; readonly lurk?: boolean };
   /**
-   * Floor items in the round (round-simulator floor-items.ts): dropped guns picked up mid-round, and
-   * ultimate orbs at the map's `<map>.objects.json` `ultOrbs` points (none yet on any map → no orbs).
+   * Floor items in the round (round-simulator floor-items.ts): dropped guns picked up mid-round.
    * Default true; false → guns are picked up only after the round, as before.
+   * NOTE: ultimate-orb pickup is a SEPARATE opt-in — see `ultOrbs` below. Guns stay on here even
+   * when orbs are off.
    */
   readonly floorItems?: boolean;
   /**
+   * Ultimate-orb pickup during the round: an orb at the map's `<map>.objects.json` `ultOrbs` point
+   * is taken by the first player who reaches it, crediting one ultimate point (floor-items.ts, then
+   * economy.ts `orbPoint`). Default FALSE — the orb positions are zone-level and `verified:false`
+   * (docs/research/ULT_ORBS.md), and the point feeds buy decisions (`ultHold`) even with abilities
+   * off, so it is held behind this flag until the positions are confirmed. Needs `floorItems` on.
+   */
+  readonly ultOrbs?: boolean;
+  /**
    * Weapon modes from the catalogue: the Classic's close burst (altFire) and run-and-gun accuracy
-   * (movingAccuracy on Classic, shotguns, Frenzy, Stinger). Default false until it passes the
-   * real-roster gate (it changes pistol rounds); docs/handoff/economy.md.
+   * (movingAccuracy on Classic, shotguns, Frenzy, Stinger). Default true (2026-11-25, PV-2 2차):
+   * the Classic's run-and-gun restores the moving attacker's accuracy, which is what lets the
+   * default `movementStyle` run without a pistol loss — together they pass both real-roster seed
+   * ranges core 8/8 (pistol 161–320 0.397 → 0.456). Alone it drops elimination at 1–160 (0.681 →
+   * 0.670); the eco shotgun run-and-gun also shifts 161–320 eco cells (follow-up, session B).
+   * docs/handoff/pistol-movement.md §2,§4. false to opt out (sim-batch --no-weapon-modes).
    */
   readonly weaponModes?: boolean;
   /**
@@ -222,6 +236,12 @@ export interface MatchConfig {
    * picture, as calibrated. Experimental: at 12/15 on the real-roster gate (elimination 0.672).
    */
   readonly informationLayer?: boolean;
+  /**
+   * Eco-defence stack (docs/handoff/attack-closing.md): on a save/eco defence, group a close
+   * crossfire onto the likely site before contact instead of holding five spread 1v1s. Eco rounds
+   * only. Default false until gated.
+   */
+  readonly ecoDefenseStack?: boolean;
   /**
    * Minimum throw rates (throws per second of holding a post-plant posture). A player's floor is
    * the larger of their team's and their own entry; nobody throws less often than their floor,
@@ -484,7 +504,7 @@ export class MatchEngine {
   private readonly econTraitsBySlot: Record<TeamSlot, TeamDecisionTraits>;
 
   constructor(private readonly config: MatchConfig, private readonly options: RunMatchOptions = {}) {
-    this.weapons = loadWeapons({ modes: config.weaponModes === true });
+    this.weapons = loadWeapons({ modes: config.weaponModes !== false });
     this.spatial = loadSpatial(geometryOf(config));
     this.sq = makeSpatialQuery(this.spatial);
     this.tactics = loadTactics(geometryOf(config), this.spatial);
@@ -499,7 +519,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true, config.ecoDefenseStack === true);
     this.playerIdsBySlot = { A: rosterPlayerIds(config.teamA.id, 5, ro.A), B: rosterPlayerIds(config.teamB.id, 5, ro.B) };
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};
@@ -828,7 +848,7 @@ export class MatchEngine {
       mapId: config.map,
       matchId: this.matchId,
       roundId: `r${roundNumber}`,
-      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: { orbs: this.orbs } } : {}), ...(config.plantTactics ? { plantTactics: true, ...(config.teamInputs?.[attacker]?.plantPreference ? { plantPreference: config.teamInputs[attacker]!.plantPreference! } : {}) } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? BUY_PHASE_ONLY_STYLE, ...this.simTuning },
+      config: { recordPerception: config.recordPerception ?? false, recordTracks: config.recordTracks ?? false, ...(config.collectStats ? { collectStats: true } : {}), ...(config.traceEngagements ? { traceCommands: true } : {}), ...(config.gaze ? { gaze: true } : {}), ...(config.soundDetail ? { soundDetail: true } : {}), ...(config.floorItems !== false ? { floorItems: config.ultOrbs ? { orbs: this.orbs } : {} } : {}), ...(config.plantTactics ? { plantTactics: true, ...(config.teamInputs?.[attacker]?.plantPreference ? { plantPreference: config.teamInputs[attacker]!.plantPreference! } : {}) } : {}), buyPhaseMs: config.buyPhase === false ? 0 : ROUND_RULES.buyPhaseMs.value, movementStyle: config.movementStyle ?? true, ...this.simTuning },
     });
     // Clear orders so they do not leak into the next round (the session re-sets them each round).
     this.policies.attack.setOrder(null);

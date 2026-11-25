@@ -69,7 +69,8 @@ export function loadTactics(mapId: string, spatial: SpatialEngine): MapTactics {
 /**
  * A map's ultimate-orb points from `<map>.objects.json` `ultOrbs` (maps data). Accepts entries with
  * `position: {x, y, z}` or `x, y, z` (game uu) and an optional `id`. Empty when the file or the points
- * are missing — every map today: orbs are spawned actors the scene export does not contain.
+ * are missing. Positions are zone-level (the zone's roadmap anchor) and `verified:false`
+ * (docs/research/ULT_ORBS.md); pickup is opt-in via `MatchConfig.ultOrbs` (default off).
  */
 export function loadUltOrbs(mapId: string): { id: string; position: { x: number; y: number; z: number } }[] {
   const raw = readDataFile<{ ultOrbs?: unknown[] }>(resolve(repoRoot, "datasets/spatial", mapId, `${mapId}.objects.json`));
@@ -158,10 +159,11 @@ export function plantSpotRefOf(spatial: SpatialEngine): (point: { x: number; y: 
  */
 export class WrappedTeamPolicy implements DecisionPolicy {
   private readonly inner: TeamDecisionPolicy;
-  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false, midControl = false, information = false) {
+  constructor(private readonly sq: SpatialQuery, abilityEffect?: (abilityId: string) => string | undefined, spatial?: SpatialEngine, tactics?: MapTactics, plantTactics = false, midControl = false, information = false, ecoDefenseStack = false) {
     this.inner = new TeamDecisionPolicy(sq, {
       ...(information ? { information: true } : {}),
       ...(tactics ? { tactics } : {}),
+      ...(ecoDefenseStack ? { ecoDefenseStack: true } : {}),
       midControl,
       ...(abilityEffect ? { abilityEffect } : {}),
       weaponPrice: shopPrice,
@@ -254,8 +256,9 @@ export function makeSimPolicies(
   plantTactics = false,
   midControl = false,
   information = false,
+  ecoDefenseStack = false,
 ): Readonly<Record<Side, WrappedTeamPolicy>> {
-  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information) };
+  return { attack: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information, ecoDefenseStack), defense: new WrappedTeamPolicy(sq, abilityEffect, spatial, tactics, plantTactics, midControl, information, ecoDefenseStack) };
 }
 
 /** Cast the wrapped policies to the round-simulator's DecisionPolicy record (R2-B brand bridge). */

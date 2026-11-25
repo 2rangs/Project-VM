@@ -1,0 +1,7 @@
+{
+  "mapId": "bind",
+  "schemaVersion": "1.0.0",
+  "note": "Authored defender placement for Bind own-geometry (session D, P1-6). Bind has no mid zone, so the derived setup stacks 3A/2B on the two sites and the nearest off-site defender is 14-16 s from a site at the plant (vs Ascent ~10 s), leaving the retake unfought. One defender starts at b-teleporter — the teleporter link is Bind's fast A<->B route and that zone reaches either site in <=9 s — as a rotator/retaker. Everything else stays derived.",
+  "provenance": "manual-approx (central zone chosen by minimising the max roadmap travel to both sites; not validated against pro VOD)",
+  "defenderStarts": ["a-site", "a-site", "b-site", "b-site", "b-teleporter"]
+}

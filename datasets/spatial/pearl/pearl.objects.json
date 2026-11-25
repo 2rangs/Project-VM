@@ -20,7 +20,7 @@
   "traversals": 0,
   "doors": 0,
   "breakables": 0,
-  "ultOrbs": 0,
+  "ultOrbs": 2,
   "notLocated": 1
  },
  "drops": [
@@ -65,11 +65,38 @@
  "traversals": [],
  "doors": [],
  "breakables": [],
- "ultOrbs": [],
+ "ultOrbs": [
+  {
+   "id": "orb-a-main",
+   "zone": "a-main",
+   "position": {
+    "x": 6425,
+    "y": 4074,
+    "z": 300
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Pearl",
+   "confidence": "H",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence H (ULT_ORBS.md). A orb at A Main."
+  },
+  {
+   "id": "orb-b-ramp",
+   "zone": "b-ramp",
+   "position": {
+    "x": 1825,
+    "y": -3876,
+    "z": 500
+   },
+   "verified": false,
+   "source": "https://wiki.playvalorant.com/en-us/Map:Pearl",
+   "confidence": "M",
+   "provenance": "zone-level, verified:false. Zone from docs/research/ULT_ORBS.md §1 (VALORANT wiki Map: page marker + nearest-callout reasoning). position = the zone's roadmap anchor, not the orb's exact spot; orbs are spawned actors absent from the static scene, so no in-scene object was measured. Confidence M (ULT_ORBS.md). B orb at B Ramp, between B Main and B Club."
+  }
+ ],
  "notLocated": [
   {
-   "name": "Ultimate orbs",
-   "reason": "no object of the static scene is an orb: object names were searched for Orb / Ult / Ultimate / Pickup and nothing matched (orbs are spawned actors, not level art). Positions are not guessed."
+   "name": "Ultimate orbs — exact positions",
+   "reason": "zone-level only (A Main / B Ramp, from docs/research/ULT_ORBS.md §1 — VALORANT wiki Map: markers + guides, unverified); no orb object exists in the static scene, so each point given is the zone's roadmap anchor, not the orb's exact spot."
   }
  ],
  "generatedBy": "tools/map-mesh/pipeline/objects_map.py"

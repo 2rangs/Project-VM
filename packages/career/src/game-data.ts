@@ -1,6 +1,7 @@
 // Node-only: the starting world from @pv/game-data (real players, teams, rosters, agent pools)
 // plus each player's seasons from the derived ratings dataset (for the age estimate).
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getAgentPool, getTeam, getTeamMapRecords, listPlayers, listTeams } from "@pv/game-data";
 import type { RealPlayerInput } from "./calibration.ts";
@@ -66,7 +67,11 @@ export function mapRecordsFromGameData(): Record<string, Record<string, [number,
   return out;
 }
 
-const CALIBRATION = new URL("../../../tools/career/calibration-data.json", import.meta.url);
+// The committed small calibration set, or a larger regenerated one when PV_CALIBRATION_DATA points
+// at it (an absolute path or one relative to the repo root; tools/career/refit-quick-sim.sh sets it).
+const CALIBRATION = process.env.PV_CALIBRATION_DATA
+  ? new URL(`file://${resolve(process.env.PV_CALIBRATION_DATA)}`)
+  : new URL("../../../tools/career/calibration-data.json", import.meta.url);
 
 /** One engine-played Bo3 of the calibration set: the request that was simulated and its map scores (A = home). */
 export interface CalibrationSeries {
