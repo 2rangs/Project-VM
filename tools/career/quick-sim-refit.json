@@ -1,407 +1,201 @@
 {
   "series": 1100,
-  "maps": 2583,
-  "committedBefore": {
-    "k": 7.9,
-    "mu": 0.4,
-    "b": 0,
-    "sigma": 0.3,
-    "tau": 0,
-    "cap": 0,
-    "heldOutNote": "in-sample (constants were not fitted on a held-out split)"
+  "maps": 2580,
+  "reps": 200,
+  "best": "both",
+  "bestParams": {
+    "k": 10.569,
+    "mu": -0.135,
+    "b": 0.025,
+    "sigma": 0.469,
+    "tau": 0.238,
+    "cap": 0
   },
-  "baseline": {
-    "brier": 0.174,
-    "logLoss": 0.524,
-    "ece": 0.039,
-    "meanPredictedFavourite": 0.761,
-    "meanObservedFavourite": 0.737,
-    "reliability": [
-      {
-        "bin": "0.5–0.6",
-        "n": 189,
-        "predicted": 0.548,
-        "observed": 0.476
-      },
-      {
-        "bin": "0.6–0.7",
-        "n": 222,
-        "predicted": 0.644,
-        "observed": 0.662
-      },
-      {
-        "bin": "0.7–0.8",
-        "n": 226,
-        "predicted": 0.751,
-        "observed": 0.77
-      },
-      {
-        "bin": "0.8–0.9",
-        "n": 194,
-        "predicted": 0.846,
-        "observed": 0.794
-      },
-      {
-        "bin": "0.9–1.0",
-        "n": 269,
-        "predicted": 0.954,
-        "observed": 0.914
-      }
-    ]
-  },
-  "shipped": {
-    "params": {
-      "k": 8.2,
-      "mu": 0.28,
-      "b": 0,
-      "sigma": 0.39,
-      "tau": 0.32,
-      "cap": 0
-    },
-    "logLik": -8117.617,
-    "brier": 0.176,
-    "logLoss": 0.525,
-    "ece": 0.04,
-    "meanPredictedFavourite": 0.704,
-    "meanObservedFavourite": 0.737,
-    "reliability": [
-      {
-        "bin": "0.5–0.6",
-        "n": 290,
-        "predicted": 0.549,
-        "observed": 0.538
-      },
-      {
-        "bin": "0.6–0.7",
-        "n": 294,
-        "predicted": 0.646,
-        "observed": 0.724
-      },
-      {
-        "bin": "0.7–0.8",
-        "n": 222,
-        "predicted": 0.743,
-        "observed": 0.793
-      },
-      {
-        "bin": "0.8–0.9",
-        "n": 181,
-        "predicted": 0.847,
-        "observed": 0.867
-      },
-      {
-        "bin": "0.9–1.0",
-        "n": 113,
-        "predicted": 0.944,
-        "observed": 0.965
-      }
-    ]
-  },
-  "coinBrier": 0.25,
+  "logLikAtBest": -8133.302,
   "models": {
     "rounds": {
       "params": {
-        "k": 8.355,
-        "mu": 0.167,
-        "b": 0.011,
+        "k": 9.097,
+        "mu": -0.085,
+        "b": 0.019,
         "sigma": 0,
         "tau": 0,
         "cap": 0
       },
       "nParams": 3,
-      "logLik": -8433.691,
-      "aic": 16873.381,
-      "cvLogLikPerSeries": -7.672,
-      "heldOutSeries": {
-        "brier": 0.177,
-        "logLoss": 0.552,
-        "ece": 0.064,
-        "meanPredictedFavourite": 0.804,
-        "meanObservedFavourite": 0.74,
-        "reliability": [
-          {
-            "bin": "0.5–0.6",
-            "n": 141,
-            "predicted": 0.548,
-            "observed": 0.525
-          },
-          {
-            "bin": "0.6–0.7",
-            "n": 183,
-            "predicted": 0.647,
-            "observed": 0.568
-          },
-          {
-            "bin": "0.7–0.8",
-            "n": 157,
-            "predicted": 0.746,
-            "observed": 0.72
-          },
-          {
-            "bin": "0.8–0.9",
-            "n": 220,
-            "predicted": 0.85,
-            "observed": 0.795
-          },
-          {
-            "bin": "0.9–1.0",
-            "n": 399,
-            "predicted": 0.964,
-            "observed": 0.872
-          }
-        ]
-      }
+      "logLik": -8545.348,
+      "aic": 17096.695
     },
     "map-noise": {
       "params": {
-        "k": 9.498,
-        "mu": 0.165,
-        "b": 0.011,
-        "sigma": 0.484,
+        "k": 10.419,
+        "mu": -0.125,
+        "b": 0.025,
+        "sigma": 0.525,
         "tau": 0,
         "cap": 0
       },
       "nParams": 4,
-      "logLik": -8106.687,
-      "aic": 16221.375,
-      "cvLogLikPerSeries": -7.373,
-      "heldOutSeries": {
-        "brier": 0.174,
-        "logLoss": 0.522,
-        "ece": 0.024,
-        "meanPredictedFavourite": 0.75,
-        "meanObservedFavourite": 0.736,
-        "reliability": [
-          {
-            "bin": "0.5–0.6",
-            "n": 218,
-            "predicted": 0.55,
-            "observed": 0.514
-          },
-          {
-            "bin": "0.6–0.7",
-            "n": 217,
-            "predicted": 0.642,
-            "observed": 0.659
-          },
-          {
-            "bin": "0.7–0.8",
-            "n": 226,
-            "predicted": 0.747,
-            "observed": 0.757
-          },
-          {
-            "bin": "0.8–0.9",
-            "n": 202,
-            "predicted": 0.846,
-            "observed": 0.807
-          },
-          {
-            "bin": "0.9–1.0",
-            "n": 237,
-            "predicted": 0.953,
-            "observed": 0.932
-          }
-        ]
-      }
+      "logLik": -8142.815,
+      "aic": 16293.63
     },
     "series-noise": {
       "params": {
-        "k": 9.4,
-        "mu": 0.064,
-        "b": 0.013,
+        "k": 10.122,
+        "mu": -0.115,
+        "b": 0.023,
         "sigma": 0,
-        "tau": 0.338,
+        "tau": 0.364,
         "cap": 0
       },
       "nParams": 4,
-      "logLik": -8237.066,
-      "aic": 16482.132,
-      "cvLogLikPerSeries": -7.493,
-      "heldOutSeries": {
-        "brier": 0.173,
-        "logLoss": 0.521,
-        "ece": 0.032,
-        "meanPredictedFavourite": 0.743,
-        "meanObservedFavourite": 0.744,
-        "reliability": [
-          {
-            "bin": "0.5–0.6",
-            "n": 228,
-            "predicted": 0.55,
-            "observed": 0.535
-          },
-          {
-            "bin": "0.6–0.7",
-            "n": 231,
-            "predicted": 0.645,
-            "observed": 0.693
-          },
-          {
-            "bin": "0.7–0.8",
-            "n": 227,
-            "predicted": 0.747,
-            "observed": 0.775
-          },
-          {
-            "bin": "0.8–0.9",
-            "n": 184,
-            "predicted": 0.844,
-            "observed": 0.799
-          },
-          {
-            "bin": "0.9–1.0",
-            "n": 230,
-            "predicted": 0.95,
-            "observed": 0.926
-          }
-        ]
-      }
+      "logLik": -8310.446,
+      "aic": 16628.891
     },
     "both": {
       "params": {
-        "k": 9.684,
-        "mu": 0.129,
-        "b": 0.012,
-        "sigma": 0.43,
-        "tau": 0.222,
+        "k": 10.569,
+        "mu": -0.135,
+        "b": 0.025,
+        "sigma": 0.469,
+        "tau": 0.238,
         "cap": 0
       },
       "nParams": 5,
-      "logLik": -8097.678,
-      "aic": 16205.355,
-      "cvLogLikPerSeries": -7.368,
-      "heldOutSeries": {
-        "brier": 0.174,
-        "logLoss": 0.521,
-        "ece": 0.027,
-        "meanPredictedFavourite": 0.741,
-        "meanObservedFavourite": 0.745,
-        "reliability": [
-          {
-            "bin": "0.5–0.6",
-            "n": 232,
-            "predicted": 0.55,
-            "observed": 0.543
-          },
-          {
-            "bin": "0.6–0.7",
-            "n": 234,
-            "predicted": 0.646,
-            "observed": 0.697
-          },
-          {
-            "bin": "0.7–0.8",
-            "n": 238,
-            "predicted": 0.751,
-            "observed": 0.773
-          },
-          {
-            "bin": "0.8–0.9",
-            "n": 179,
-            "predicted": 0.849,
-            "observed": 0.816
-          },
-          {
-            "bin": "0.9–1.0",
-            "n": 217,
-            "predicted": 0.949,
-            "observed": 0.926
-          }
-        ]
-      }
+      "logLik": -8133.302,
+      "aic": 16276.604
     },
     "both+cap": {
       "params": {
-        "k": 9.683,
-        "mu": 0.129,
-        "b": 0.012,
-        "sigma": 0.43,
-        "tau": 0.222,
-        "cap": 260.278
+        "k": 11.315,
+        "mu": -0.135,
+        "b": 0.025,
+        "sigma": 0.468,
+        "tau": 0.24,
+        "cap": 1.906
       },
       "nParams": 6,
-      "logLik": -8097.678,
-      "aic": 16207.355,
-      "cvLogLikPerSeries": -7.368,
-      "heldOutSeries": {
-        "brier": 0.174,
-        "logLoss": 0.521,
-        "ece": 0.027,
-        "meanPredictedFavourite": 0.741,
-        "meanObservedFavourite": 0.745,
-        "reliability": [
-          {
-            "bin": "0.5–0.6",
-            "n": 232,
-            "predicted": 0.55,
-            "observed": 0.543
-          },
-          {
-            "bin": "0.6–0.7",
-            "n": 234,
-            "predicted": 0.646,
-            "observed": 0.697
-          },
-          {
-            "bin": "0.7–0.8",
-            "n": 238,
-            "predicted": 0.751,
-            "observed": 0.773
-          },
-          {
-            "bin": "0.8–0.9",
-            "n": 179,
-            "predicted": 0.849,
-            "observed": 0.816
-          },
-          {
-            "bin": "0.9–1.0",
-            "n": 217,
-            "predicted": 0.95,
-            "observed": 0.926
-          }
-        ]
-      }
-    }
-  },
-  "best": "both",
-  "bestParams": {
-    "k": 9.684,
-    "mu": 0.129,
-    "b": 0.012,
-    "sigma": 0.43,
-    "tau": 0.222,
-    "cap": 0
-  },
-  "bootstrap": {
-    "resamples": 40,
-    "se": {
-      "k": 0.333,
-      "mu": 0.111,
-      "sigma": 0.02,
-      "tau": 0.022,
-      "cap": 0
-    },
-    "seriesNeededForTarget": {
-      "k": 521,
-      "mu": 1361,
-      "sigma": 176,
-      "tau": 222
-    },
-    "targets": {
-      "k": 0.484,
-      "mu": 0.1,
-      "sigma": 0.05,
-      "tau": 0.05
+      "logLik": -8131.824,
+      "aic": 16275.649
     }
   },
   "committedNow": {
-    "k": 8.2,
-    "mu": 0.28,
-    "sigma": 0.39,
-    "tau": 0.32,
-    "cap": 0
+    "roundSlope": 8.2,
+    "mapSlope": 0.28,
+    "mapNoiseSd": 0.39,
+    "seriesNoiseSd": 0.32,
+    "abilityCap": 0
   },
-  "logLikAtBest": -8097.678
+  "shippedLogLik": -8170.326,
+  "shippedGapToBest": 37.024,
+  "noiseGainOverRoundsOnly": 412.046,
+  "bootstrap": {
+    "resamples": 24,
+    "se": {
+      "k": 0.346,
+      "mu": 0.122,
+      "sigma": 0.013,
+      "tau": 0.031
+    },
+    "targets": {
+      "k": 0.528,
+      "mu": 0.1,
+      "sigma": 0.05,
+      "tau": 0.05
+    },
+    "seriesNeededForTarget": {
+      "k": 471,
+      "mu": 1646,
+      "sigma": 74,
+      "tau": 425
+    }
+  },
+  "heldOut": {
+    "trainSeries": 550,
+    "testSeries": 550,
+    "bothLogLikPerSeries": -7.588,
+    "roundsOnlyLogLikPerSeries": -8.04,
+    "gain": 0.452
+  },
+  "coinBrier": 0.25,
+  "calibration": {
+    "shipped": {
+      "brier": 0.166,
+      "logLoss": 0.499,
+      "ece": 0.055,
+      "meanPredictedFavourite": 0.704,
+      "meanObservedFavourite": 0.758,
+      "reliability": [
+        {
+          "bin": "0.5–0.6",
+          "n": 290,
+          "predicted": 0.549,
+          "observed": 0.552
+        },
+        {
+          "bin": "0.6–0.7",
+          "n": 294,
+          "predicted": 0.646,
+          "observed": 0.728
+        },
+        {
+          "bin": "0.7–0.8",
+          "n": 222,
+          "predicted": 0.743,
+          "observed": 0.806
+        },
+        {
+          "bin": "0.8–0.9",
+          "n": 181,
+          "predicted": 0.847,
+          "observed": 0.934
+        },
+        {
+          "bin": "0.9–1.0",
+          "n": 113,
+          "predicted": 0.944,
+          "observed": 0.991
+        }
+      ]
+    },
+    "refit": {
+      "brier": 0.162,
+      "logLoss": 0.488,
+      "ece": 0.017,
+      "meanPredictedFavourite": 0.745,
+      "meanObservedFavourite": 0.762,
+      "reliability": [
+        {
+          "bin": "0.5–0.6",
+          "n": 234,
+          "predicted": 0.553,
+          "observed": 0.577
+        },
+        {
+          "bin": "0.6–0.7",
+          "n": 223,
+          "predicted": 0.646,
+          "observed": 0.673
+        },
+        {
+          "bin": "0.7–0.8",
+          "n": 218,
+          "predicted": 0.747,
+          "observed": 0.748
+        },
+        {
+          "bin": "0.8–0.9",
+          "n": 198,
+          "predicted": 0.844,
+          "observed": 0.864
+        },
+        {
+          "bin": "0.9–1.0",
+          "n": 227,
+          "predicted": 0.952,
+          "observed": 0.965
+        }
+      ]
+    }
+  }
 }
