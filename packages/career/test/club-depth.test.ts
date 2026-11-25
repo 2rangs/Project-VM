@@ -6,7 +6,8 @@ import { rosterProfiles, rosterConsistency } from "../../match-runner/src/teams.
 import { worldFromGameData } from "../src/game-data.ts";
 import {
   CLUB_MODEL, DEPTH_MODEL, CLUB_FLAGS, setClubFlags, advanceSeason, agentFee, agentOf, askingPrice, boardOf, boardOnSeries, boardRequest, boardSeasonReview,
-  clubAnswer, clubSeriesResultMut, effectiveWage, estimateAbility, facilitiesOf, hireStaff, initClub, makeOffer, matchRoster, moraleOf,
+  clubAnswer, clubSeriesResultMut, developmentFactors, developmentMorale, effectiveWage, estimateAbility, facilitiesOf, hireStaff, initClub, isTrackedMorale,
+  makeOffer, matchRoster, modelMorale, moraleOf,
   moraleTarget, moraleWeek, newCareer, physioFactor, playerAnswer, playerUtility, requiredMargin, setTrainingPlan, staffDemand,
   staffMarket, teamScout, teamStrength, trainingWeek, type World, type WorldPlayer, type RatedAttr,
 } from "../src/index.ts";
@@ -186,6 +187,29 @@ describe("morale", () => {
     expect(aim(high)).toBeGreaterThanOrEqual(aim(neutral));
     expect(aim(low)).toBeLessThan(aim(neutral));
   }
+
+  it("is one model: development reads the club's tracked morale when there is one, else the model", () => {
+    const w = structuredClone(club);
+    const id = w.teams[user]!.roster[0]!;
+    const p = w.players[id]!;
+    // Untracked (no club entry yet): developmentMorale is the form/role model.
+    expect(isTrackedMorale(w, id)).toBe(false);
+    expect(developmentMorale(w, p, 0.8)).toBeCloseTo(modelMorale(w, p, 0.8), 12);
+    // Tracked: the stored value is canonical and overrides the season form.
+    (w.club!.morale ??= {})[id] = 0.9;
+    expect(isTrackedMorale(w, id)).toBe(true);
+    expect(developmentMorale(w, p, 0.1)).toBe(0.9);
+    expect(developmentMorale(w, p, 0.9)).toBe(0.9);
+    // and it drives growth: high tracked morale develops faster than low.
+    const hi = developmentFactors(w, p, developmentMorale(w, p)).growth;
+    w.club!.morale[id] = 0.1;
+    const lo = developmentFactors(w, p, developmentMorale(w, p)).growth;
+    expect(hi).toBeGreaterThan(lo);
+    // An AI club's player is never tracked, so it keeps the model.
+    const aiId = Object.values(w.teams).find((t) => t.teamId !== user && t.roster.length > 0)!.roster[0]!;
+    expect(isTrackedMorale(w, aiId)).toBe(false);
+    expect(developmentMorale(w, w.players[aiId]!, 0.5)).toBeCloseTo(modelMorale(w, w.players[aiId]!, 0.5), 12);
+  });
 });
 
 describe("board", () => {
