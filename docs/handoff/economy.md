@@ -1,7 +1,7 @@
 # Hand-off — match economy (per-player economy, EC-01…05)
 
 Branch `claude/epic-mahavira-18c91b`. Model and history: `docs/ECONOMY_MODEL.md` (v1, v1.1, v1.2 sections).
-Last updated 2026-11-24.
+Last updated 2026-11-25 (main d91f646 + 5453fc0).
 
 ## Default-on (gated, on main)
 
@@ -21,7 +21,7 @@ The eco-round package (2026-11-24). With both flags off the game is **bit-identi
 | Flag | What it turns on |
 |---|---|
 | `EconomyOptions.ecoSidearms` (`MatchConfig.economy`, sim-batch `--economy '{"ecoSidearms":true}'`) | The `sidearms` eco replaces the zero-spend `eco` and `light` plans: each player spends what is above their reserve (4,000 − next loss bonus: their share of a VCT full buy, 20,000) on Sheriff/Ghost + light shield, star first, team loadout capped under 5,000; on defence one player takes a Bucky/Shorty. Also: the eco ladder (Stinger, Ghost) for every plan, and a full buy short of the kit buys part of it. |
-| `MatchConfig.weaponModes` (sim-batch `--weapon-modes`) | Catalogue `altFire` (Classic 3-round burst within 3 m) and `movingAccuracy` (Classic 0.8, shotguns 0.85, Frenzy 0.75, Stinger 0.7). Changes pistol rounds. |
+| `MatchConfig.weaponModes` (sim-batch `--weapon-modes`) | Catalogue `altFire` (Classic 3-round burst within 3 m) and run-and-gun: `movingAccuracy` (shotguns 0.95, Classic/Frenzy 0.75, Stinger 0.65); a moving shooter keeps moving through the duel when its gun keeps at least what the opponent keeps against a moving target, lerp(0.7, 1, tracking) (combat-engine `keepsMovingAgainst`, `EngagePosture.keepsMoving`). Under engine-truth's two-sided tracking only the shotguns qualify at average tracking: Bucky moving vs a standing Vandal at 5 m 0.58 → 0.79, Judge 4 m 0.73 → 0.87. Changes pistol rounds (Classic burst). Not gated. |
 
 Always present but inert unless something buys the guns (only the flagged eco does):
 - Catalogue (`packages/match-runner/data/weapons.manual-approx.json`, manual-approx): Shorty, Frenzy, Ghost,
@@ -32,6 +32,30 @@ Always present but inert unless something buys the guns (only the flagged eco do
 - `ActionCommand.holdClose` (shared-types + round-simulator contract; mover takes the see-spot nearest the
   watched zone); team-engine sets it for a pre-plant defender whose gun's full-damage range is ≤ 12 m
   (`weaponFullDamageRangeM`, i.e. a shotgun).
+
+## Gate — `ecoSidearms` ON (2026-11-25, main d91f646, real rosters, 160 matches)
+
+Reports: `docs/research/SIM_ECONOMY_ECO_GATE_2026-11-25_{1-160,161-320}.json`.
+
+| | flag off (integrator, d91f646) | **ON, 1–160** | **ON, 161–320** |
+|---|---|---|---|
+| Original 8 | 8/8 | **8/8** | 7/8 (pistol 0.397 — before any buy) |
+| Judged cells | 13/15 | **13/15** | **14/15** |
+| Attack | — | 0.508 | 0.483 |
+| Elimination (≥ 0.674) | — | 0.681 | 0.682 |
+| Eco vs semi (VCT Ascent 0.072) | 0.021 ✗ | 0.060 ✓ | 0.079 ✓ |
+| Semi vs eco (0.928) | ✗ | 0.958 ✓ | 0.931 ✓ |
+| Semi vs semi (0.50 ± 0.05) | 0.550 ✗ | 0.503 ✓ | 0.469 ✓ |
+| Eco vs full (VCT Ascent 0.040, Wilson 0.007–0.195) | — | **0.099 ✗** | 0.077 ✓ |
+| Full vs eco (0.960) | — | **0.905 ✗** | 0.934 ✓ |
+| Eco loadout mean / median (VCT 2,736 / 2,700) | ~480 / 0 | 3,125 / 3,450 | 3,129 / 3,700 |
+
+The one failing cell on 1–160 (eco vs full, both directions) is inside the Ascent prior's interval (it rests on
+about 25 rounds) and matches VCT international all maps: ecos win **0.115** against full buys and carry 3,812
+against them (vs semi: 0.086, 2,612). What raises it in the sim is not the buy: eco-defence rounds against a full
+buy end by time 5.7% of the time (0% flag off), mostly with the attack 4 alive against 1–2 defenders that fail to
+plant — attack close-out, engine-truth's area. Tried and dropped: a Lanchester firepower ratio in the attack's save
+(no change; elimination 0.666 on 40 matches); disabling the shotgun close holds (rounds identical — no effect).
 
 ## Measured (eco package ON, 40 matches, seeds 1001–1040, small batches — not a gate)
 
