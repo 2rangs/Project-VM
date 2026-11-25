@@ -125,7 +125,9 @@ perception 32 · career 106(1 skip) · data-validator pytest 65 · 루트+데스
 데스크톱 test:engine 10(번들=소스 바이트 동일 확인) / test:unit 78 / test:matchday 58. e2e 미실행(통합 게이트).
 
 ### 기본값(플래그 없이) 1–160 재확인
-(default_1 결과 채움 — style+weaponModes와 동일해야 함)
+플래그 없이 `sim-batch --matches 160 --seed-start 1` = **15/15, 기존 8개 8/8** (전멸 0.689, 폭발 0.080,
+해체 0.185, 시간초과 0.047, 공격 0.488, 오프닝 0.443, 피스톨 **0.463✅**, 풀v풀 0.462). `--style
+--weapon-modes` 실행과 지표 완전 일치 → 기본값 배선 정상. (161–320은 통합 트리에서 오케스트레이터가 실행.)
 
 ## 5. 남은 것 / 다음 한 걸음
 1. **통합 단계(오케스트레이터 + 세션 B): style+weaponModes 기본 ON 결정.** §4 한 줄 패치 적용 → 두 구간
