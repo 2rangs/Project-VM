@@ -54,7 +54,7 @@ echo ">> merging shards -> $LARGE" >&2
   process.stderr.write(`merged ${played.length} series\n`);
 ' "$LARGE" "$SEED" "$TMPDIR_SH"/shard-*.json
 
-echo ">> fitting on $LARGE" >&2
-PV_CALIBRATION_DATA="$LARGE" "$TSX" "$ROOT/tools/career/fit-quick-sim.mts" --bootstrap=40 >"$SUMMARY"
+echo ">> fitting on $LARGE (refit-report.mts: analytic MLE, bounded for thousands of series)" >&2
+PV_CALIBRATION_DATA="$LARGE" "$TSX" "$ROOT/tools/career/refit-report.mts" --bootstrap=24 --reps=200 >"$SUMMARY"
 echo ">> summary written to $SUMMARY" >&2
 cat "$SUMMARY"
