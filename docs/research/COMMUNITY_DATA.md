@@ -119,7 +119,7 @@ source** and needs the `.vrf`/GRID path.
 
 Per the user's directive, any ranked-tier value would be restricted to **Immortal+**. None is included this
 pass: the one structured ranked aggregator reachable in theory (MetaSRC) is robots-disallowed for AI
-clients and Cloudflare-blocked, so all 36 values are **pro/VCT**-scope, not ranked.
+clients and Cloudflare-blocked, so all 40 values are **pro/VCT**-scope, not ranked.
 
 ## 8. Status of follow-up targets (2nd pass worked these)
 
