@@ -121,6 +121,13 @@ export interface TeamPolicyOptions {
   readonly information?: boolean;
   /** Test hook: replace the information layer's deterministic draws (salt → u in [0,1)). */
   readonly informationDraw?: (salt: string) => number;
+  /**
+   * Eco-defence close hold (docs/handoff/eco-defense.md): on a save/eco round the whole defence
+   * holds its angles up close (ActionCommand.holdClose), so its pistols fight the entry at the
+   * mouth — where a Sheriff/Ghost is competitive — instead of losing a spread 1v1 to a rifle at
+   * range. Eco rounds only; a full buy is untouched. Default OFF until gated.
+   */
+  readonly ecoDefenseStack?: boolean;
 }
 
 /** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
@@ -1746,13 +1753,21 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   /**
    * Before the plant, a defender with a close-range gun (a shotgun on an eco) who holds or takes a
    * position facing a way in holds it up close (holdClose): its fights start inside the gun's range.
+   * On an eco round the WHOLE defence holds close (docs/handoff/eco-defense.md): a save buy's pistols
+   * lose a spread 1v1 to a rifle at range, but at the entry's mouth — where the attacker steps round
+   * the corner into a pre-aimed close shot — a Sheriff or Ghost is competitive, which is how an eco
+   * defence steals the opening. It is a close hold, not a stack: the angles stay spread, so it does
+   * not feed a grouped execute.
    */
   private closeGunHolds(view: PolicyView, commands: readonly ActionCommand[]): ActionCommand[] {
     const range = this.options.weaponFullDamageRangeM;
-    if (!range || view.side !== "defense") return commands.slice();
+    if (view.side !== "defense") return commands.slice();
     if (view.spike.phase !== "carried" && view.spike.phase !== "dropped") return commands.slice();
+    const ecoRound = this.options.ecoDefenseStack === true && isEco(view);
     return commands.map((c) => {
       if ((c.kind !== "hold" && c.kind !== "move") || !c.aimZone) return c;
+      if (ecoRound) return { ...c, holdClose: true };
+      if (!range) return c;
       const tm = view.teammates.find((p) => String(p.id) === String(c.playerId) && p.alive);
       const r = range(String(tm?.weapon?.weaponId ?? ""));
       return r !== undefined && r <= CLOSE_GUN_MAX_RANGE_M ? { ...c, holdClose: true } : c;
