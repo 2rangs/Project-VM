@@ -416,6 +416,14 @@ test('prefs: stored view preferences are validated field by field', () => {
   assert.equal(parsePrefs('{"detail":"full"}').detail, 'full');
 });
 
+test('prefs: highlight detail defaults to the lightest level on a low graphics preset', async () => {
+  const { suggestDetailForQuality } = await import('../../src/renderer/matchday/prefs.ts');
+  assert.equal(suggestDetailForQuality('low'), 'key', 'low-end machine starts on key highlights');
+  assert.equal(suggestDetailForQuality('medium'), DEFAULT_PREFS.detail);
+  assert.equal(suggestDetailForQuality('high'), DEFAULT_PREFS.detail);
+  assert.equal(suggestDetailForQuality(null), DEFAULT_PREFS.detail, 'no preset → normal default');
+});
+
 test('view model: a player fires only around the kills they are part of', () => {
   const kill = at(r3, 10900); // atk4 kills def2
   assert.deepEqual(firingAt(r3.kills, 'atk4', at(r3, 5000)), { kick: 0, flash: false });

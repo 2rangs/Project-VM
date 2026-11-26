@@ -86,9 +86,28 @@
 
 ---
 
+## 4b. 2차 추가 작업 (WP 데이터 적합 · 스윙 기반 하이라이트 · F 연동)
+
+오케스트레이터 추가 지시로 같은 브랜치에서 진행. **엔진 불변**(전부 프레젠테이션/오프라인).
+
+### WP 로지스틱 데이터 적합 (진행 중 — 계수는 아직 손튜닝 기본값)
+- `winprob.ts`를 리팩터해서 특징 추출(`wpStateAt`/`wpFeatures`/`wpLogit`)을 **런타임과 피터가 공유하는 단일 소스**로 만들었다. 계수는 `winprob-coef.ts`(`WP_COEF`)에서 읽는다.
+- **피터** `apps/desktop/scripts/fit-winprob.mts`: 실제 로스터·Ascent로 엔진 경기를 생성(desktop과 같은 `runMatchCompact → mergeMatch → buildTimeline` 파이프라인)해 비종단 상태 스냅샷을 모으고, IRLS 로지스틱으로 적합한다. 시드 1–160 학습 / 161–320 검증. Brier·ECE·신뢰도 곡선과 커뮤니티 대조를 리포트하고 `winprob-coef.{json,ts}` + `winprob-fit-report.json`을 쓴다.
+  - 실행: `npx tsx apps/desktop/scripts/fit-winprob.mts --train 160 --val 160 --step 1500 --community <J의 vct_community_stats.json 경로>`
+  - 비용: 실제 로스터 320경기 ≈ 20분(이 머신). 큰 디스크 캐시 없음(스냅샷 인메모리); 산출물만 작게 커밋.
+- **현 상태(마감으로 미완):** 3차 마감(08:30 UTC) 전에 320경기 적합을 안전하게 검증·반영할 수 없어 **전체 적합은 보류**했다. 브랜치의 계수는 **손튜닝 기본값 그대로**(main과 동일 거동, 게이트 통과). 피터는 커밋됨(재현 가능).
+- **8경기 스모크 적합 결과(참고, 비공식):** 엔진 first‑blood→라운드 승률 **0.725** vs 커뮤니티(세션 J) **0.703–0.714**(Berlin 2021 0.7139, Copenhagen 2022 0.703, n=1349) — **근접**. 모델 예측 0.697. post‑plant 공격 승률 엔진 0.872 vs 커뮤니티 best‑team 0.748(best‑team은 단일 최강팀이라 집계보다 높음; 전체 적합에서 재확인 필요). 전체 160/160 적합의 Brier·ECE·신뢰도 표는 다음 세션에서 `winprob-fit-report.json`으로 확정.
+
+### 하이라이트 '핵심' = WP 스윙 기반 (#2, 완료)
+- `highlights.ts`의 `key` 선정이 이제 **승률을 가장 크게 흔든 순간**(`swingMoments` 상위 N)을 우선한다 + 설치/해체(목표 비트) + 첫/마지막 교전. 아무것도 안 바꾼 트레이드는 건너뛰고 라운드를 뒤집은 킬은 남긴다. 여전히 `extended`의 부분집합(테스트로 보장). 테스트 추가(spectate 17개).
+
+### F(저사양 렌더) 연동 (완료, 충돌 0)
+- F가 보장한 계약: localStorage `pv-graphics-quality` = `'low'|'medium'|'high'`. **F 파일 import 없이** 그 키만 읽는다.
+- `prefs.ts`: `loadPrefs`가 **저장된 detail이 없을 때만** `suggestDetailForQuality(quality)`로 기본값 보정 — `'low'`면 `'key'`, 아니면 평소 기본값(`'extended'`). 사용자가 고른 detail은 항상 존중. `usePlayback.ts`는 F도 같은 tick을 고쳐 **머지 충돌이 나지만 의미는 직교**(F=프레임레이트/가시성, G=윈도우 스킵) — 머지 담당이 tick 안 순서만 맞추면 됨(hidden 체크 → 윈도우 스킵 → fps 상한 → 클럭 전진).
+
 ## 5. 다음 한 걸음(이 브랜치 범위 밖)
 
 - **F 연동 확정:** "저" 프리셋 ↔ `detail='key'` 자동 연동(F 회신 후 prefs.ts에 작은 헬퍼 export).
-- **WP 보정:** 현재 로지스틱 가중치는 손으로 맞춘 **추정**이다(엔진 적합 아님). 원하면 `tools/`에서 라운드 상태→실제 결과로 로지스틱을 적합해 `winprob.ts`의 `W` 상수를 교체(엔진 결과에 고정되므로 품질은 "라이브 중" 값에만 영향). `research/UPGRADE_BACKLOG.md` #3·#4와 연결.
-- **하이라이트 ↔ 스윙 연동:** `key` 윈도우 선정에 WP 스윙(가장 승률을 흔든 순간)을 기준으로 넣으면 더 똑똑한 하이라이트가 된다(지금은 이벤트 종류 기준).
+- **WP 전체 적합 반영(바로 다음):** 피터(`scripts/fit-winprob.mts`)는 준비·커밋됨. 320경기(≈20분)를 돌려 `winprob-coef.{json,ts}` + `winprob-fit-report.json`을 생성하고, spectate/matchday 테스트(정성 방향 유지)와 Brier/ECE를 확인한 뒤 반영. 프레젠테이션 전용이라 시뮬 기본 결과에 영향 없음.
+- ~~하이라이트 ↔ 스윙 연동~~ — 완료(§4b, `key`가 WP 스윙 기반).
 - **커리어 화면 WP:** 지금은 매치 관전에만. 커리어 결과/리뷰 화면에도 스윙 요약을 붙일 수 있다.
