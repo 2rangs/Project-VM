@@ -237,10 +237,9 @@ export interface MatchConfig {
    */
   readonly informationLayer?: boolean;
   /**
-   * Eco-defence close hold (docs/handoff/eco-defense.md): on a save/eco defence the whole defence
-   * holds its angles up close (ActionCommand.holdClose), so its pistols fight the entry at the mouth
-   * — where a Sheriff/Ghost is competitive — instead of losing a spread 1v1 to a rifle at range.
-   * Pre-plant, eco rounds only; a full buy is untouched. Default false until gated.
+   * Eco-defence stack (docs/handoff/attack-closing.md): on a save/eco defence, group a close
+   * crossfire onto the likely site before contact instead of holding five spread 1v1s. Eco rounds
+   * only. Default false until gated.
    */
   readonly ecoDefenseStack?: boolean;
   /**
