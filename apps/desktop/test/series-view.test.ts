@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { IPC } from '../src/shared/ipc.ts';
 import type { MasteryView, SeriesMapView, SeriesView, VetoActionView } from '../src/shared/series.ts';
-import { certaintyLevel, mapCards, recommendationReason, stepInfo, theirMasteryEstimate, usesBorrowedGeometry, vetoLogLine } from '../src/renderer/series/view.ts';
+import { certaintyLevel, latestAction, mapCards, recommendationReason, stepInfo, theirMasteryEstimate, usesBorrowedGeometry, vetoBriefing, vetoLogLine } from '../src/renderer/series/view.ts';
 import { ko } from '../src/renderer/i18n/ko.ts';
 import { en } from '../src/renderer/i18n/en.ts';
 
@@ -138,4 +138,25 @@ test('veto log lines and every reason key exist in both languages', () => {
 test('the geometry note shows whenever the pool has a map other than the simulated one', () => {
   assert.equal(usesBorrowedGeometry(view()), true);
   assert.equal(usesBorrowedGeometry(view({ pool: ['Ascent'] })), false);
+});
+
+test('veto briefing: format, our best map and the biggest edge / risk', () => {
+  const b = vetoBriefing(view());
+  assert.equal(b.games, 3);
+  assert.deepEqual(b.ourBest, { map: 'Lotus', score: 90 });
+  assert.deepEqual(b.edge, { map: 'Lotus', gap: 70 }, 'our biggest edge over them');
+  assert.deepEqual(b.risk, { map: 'Abyss', gap: 20 }, 'their biggest edge over us');
+  // With no scouting at all, edge/risk are null but ourBest still resolves.
+  const blind = vetoBriefing(view({ maps: view().maps.map((m) => ({ ...m, scouting: null })) }));
+  assert.equal(blind.edge, null);
+  assert.equal(blind.risk, null);
+  assert.ok(blind.ourBest && blind.ourBest.map === 'Lotus');
+});
+
+test('latest veto action is the highest step', () => {
+  assert.equal(latestAction(view()), null);
+  const acts = [act(0, 'ban', 'A', 'Summit'), act(1, 'ban', 'B', 'Split'), act(2, 'pick', 'A', 'Lotus')];
+  assert.equal(latestAction(view({}, { actions: acts }))!.map, 'Lotus');
+  // order independence
+  assert.equal(latestAction(view({}, { actions: [...acts].reverse() }))!.map, 'Lotus');
 });

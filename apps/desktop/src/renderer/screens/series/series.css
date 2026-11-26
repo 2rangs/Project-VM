@@ -101,3 +101,23 @@
 /* banner on Match Day while it plays a map of the series */
 .ser-mdbanner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; border: 1px solid var(--accent); background: #1f6feb14; border-radius: 9px; margin-bottom: 8px; }
 .ser-mdbanner b { flex: 1 1 260px; }
+
+/* ── veto briefing + draft ceremony (presentation) ──────────────────────────────────────────── */
+.ser-brief { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 8px; font-size: 12px; }
+.ser-brief-fmt { font-weight: 700; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #0b131b; }
+.ser-brief-item { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-variant-numeric: tabular-nums; }
+.ser-brief-item.best { border-color: #5a6f8a; }
+.ser-brief-item.edge { border-color: #7ee78766; color: #7ee787; }
+.ser-brief-item.risk { border-color: #ff465566; color: #ff8a93; }
+
+/* the just-happened move is emphasised; a ban strikes through, a pick stamps in */
+@keyframes ser-ban-in { 0% { opacity: 1; filter: grayscale(0); } 100% { opacity: .42; filter: grayscale(1); } }
+@keyframes ser-pick-in { 0% { transform: scale(1.04); box-shadow: 0 0 0 3px #7ee78788; } 100% { transform: scale(1); box-shadow: 0 0 0 1px #7ee78755; } }
+@keyframes ser-log-in { 0% { opacity: 0; transform: translateX(-6px); } 100% { opacity: 1; transform: none; } }
+.ser-card.latest.st-banned { animation: ser-ban-in .5s ease-out both; }
+.ser-card.latest.st-picked, .ser-card.latest.st-decider { animation: ser-pick-in .45s ease-out both; }
+.ser-logrow.latest { animation: ser-log-in .4s ease-out both; font-weight: 700; }
+.ser-logrow.latest .ser-logn { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .ser-card.latest.st-banned, .ser-card.latest.st-picked, .ser-card.latest.st-decider, .ser-logrow.latest { animation: none; }
+}
