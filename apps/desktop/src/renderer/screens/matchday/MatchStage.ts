@@ -64,6 +64,9 @@ class ViewNode {
   readonly floor = new Graphics();
   readonly road = new Graphics();
   roadSig = '';
+  /** Static zone backdrop drawn when no map image is installed — cached per camera, not per frame. */
+  readonly schematic = new Graphics();
+  schematicSig = '';
   readonly under = new Graphics();
   readonly over = new Graphics();
   readonly labels = new Container();
@@ -71,7 +74,7 @@ class ViewNode {
   private used = new Set<string>();
 
   constructor(readonly resolution: number) {
-    this.root.addChild(this.clip, this.mapDim, this.litMask, this.mapLit, this.floor, this.road, this.under, this.over, this.labels);
+    this.root.addChild(this.clip, this.mapDim, this.litMask, this.mapLit, this.schematic, this.floor, this.road, this.under, this.over, this.labels);
     this.floor.alpha = 0.3;
     this.floor.visible = false;
     this.root.mask = this.clip;
@@ -260,7 +263,7 @@ export class MatchStage {
     // and the zone graph. The zone graph's links are straight lines between zone centres — they
     // are adjacency, not routes; the routes are the roadmap underneath.
     this.drawRoad(node, cam, opts.showGraph && !view.followId);
-    if (!hasMap) for (const z of nav.zones) { const p = this.toScreen(cam, z.position); under.circle(p.x, p.y, this.px(cam, 420)).fill({ color: C.line, alpha: 0.55 }); }
+    this.drawSchematic(node, cam, !hasMap);
 
     const units = frame?.units ?? [];
     const scope: readonly FrameUnit[] = follow ? [follow] : units;
@@ -450,6 +453,24 @@ export class MatchStage {
   }
 
   /** The static navigation layer of one view; rebuilt only when the camera (or the roadmap) changes. */
+  /**
+   * The zone backdrop shown when no map image is installed. The zones never move, so for the fixed
+   * full-map camera this is drawn once and cached as a texture — on a played round it was re-filling
+   * ~30 circles every frame (a large share of the 2D cost on weak graphics).
+   */
+  private drawSchematic(node: ViewNode, cam: Camera, on: boolean): void {
+    const sig = on ? `${cam.cx.toFixed(1)},${cam.cy.toFixed(1)},${cam.cu.toFixed(5)},${cam.cv.toFixed(5)},${cam.scale.toFixed(3)},${cam.rot.toFixed(4)}` : '';
+    if (sig === node.schematicSig) return;
+    node.schematicSig = sig;
+    const g = node.schematic;
+    if (g.isCachedAsTexture) g.cacheAsTexture(false);
+    g.clear();
+    g.visible = on;
+    if (!on) return;
+    for (const z of this.nav.zones) { const p = this.toScreen(cam, z.position); g.circle(p.x, p.y, this.px(cam, 420)).fill({ color: C.line, alpha: 0.55 }); }
+    g.cacheAsTexture(true);
+  }
+
   private drawRoad(node: ViewNode, cam: Camera, on: boolean): void {
     const sig = on ? `${cam.cx.toFixed(1)},${cam.cy.toFixed(1)},${cam.cu.toFixed(5)},${cam.cv.toFixed(5)},${cam.scale.toFixed(3)},${cam.rot.toFixed(4)},${this.roadmap ? 1 : 0}` : '';
     if (sig === node.roadSig) return;

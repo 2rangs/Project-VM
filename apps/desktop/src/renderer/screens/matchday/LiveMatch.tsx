@@ -225,6 +225,11 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const stageRef = useRef<MatchStage | null>(null);
   const viewEls = useRef(new Map<string, HTMLElement>());
   const setViewEl = useCallback((key: string) => (el: HTMLElement | null) => { if (el) viewEls.current.set(key, el); else viewEls.current.delete(key); }, []);
+  // View rectangles are measured only when the layout can have changed (window resize, or a React
+  // re-render that bumps `version`) — never every frame. getBoundingClientRect forces a layout
+  // sync, so calling it per frame while a round plays was pure overhead on weak hardware.
+  const layoutNonce = useRef(0);
+  const layoutCache = useRef<{ specs: ViewSpec[] | null; nonce: number; rects: Array<{ s: ViewSpec; rect: { x: number; y: number; w: number; h: number } }> }>({ specs: null, nonce: -1, rects: [] });
 
   const specs: ViewSpec[] = useMemo(() => (
     mode === 'tactical'
@@ -253,7 +258,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       const ok = await stage.setMap(preparedMinimapUrl());
       if (alive) setMapOk(ok);
     });
-    const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
+    const ro = new ResizeObserver(() => { layoutNonce.current++; stage.resize(host.clientWidth, host.clientHeight); });
     ro.observe(host);
     return () => { alive = false; ro.disconnect(); stage.destroy(); stageRef.current = null; };
     // The stage is created once per screen; the transform does not change within a match.
@@ -299,19 +304,27 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       const stage = stageRef.current; const host = hostRef.current;
       if (!stage?.isReady || !host) return;
       const L = liveRef.current;
-      const base = host.getBoundingClientRect();
-      // 1. cheap: where every view is. Together with the playhead and the React render counter this
-      //    is the whole input of a frame, so a paused screen skips the (expensive) frame below.
-      const rects: Array<{ s: ViewSpec; rect: { x: number; y: number; w: number; h: number } }> = [];
-      let sig = `${tMs}|${L.version}|${mapOk}`;
-      for (const s of L.specs) {
-        const el = viewEls.current.get(s.key);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.width < 8 || r.height < 8) continue;
-        rects.push({ s, rect: { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height } });
-        sig += `|${s.key}:${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
+      // 1. where every view is. The rectangles only move on a window resize (nonce) or a React
+      //    re-render (version), so they are measured then and cached — not on every played frame.
+      //    The whole input of a frame is the playhead, the render counter and the layout nonce; a
+      //    paused screen skips the (expensive) frame below.
+      const lc = layoutCache.current;
+      // Recompute only when the view set changes (mode/focus → a new `specs` array), on a window
+      // resize (nonce), or while nothing has measured yet (elements still sizing on first mount).
+      if (lc.specs !== L.specs || lc.nonce !== layoutNonce.current || lc.rects.length === 0) {
+        const base = host.getBoundingClientRect();
+        const next: typeof lc.rects = [];
+        for (const s of L.specs) {
+          const el = viewEls.current.get(s.key);
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 8 || r.height < 8) continue;
+          next.push({ s, rect: { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height } });
+        }
+        lc.rects = next; lc.specs = L.specs; lc.nonce = layoutNonce.current;
       }
+      const rects = lc.rects;
+      const sig = `${tMs}|${L.version}|${mapOk}|${layoutNonce.current}`;
       if (sig === lastSig && lastDone) return; // paused and nothing moved: keep the last picture
       // 2. the frame (team knowledge at this instant), computed once for both stages
       const frameNow = L.replay && L.tl.rounds.length > 0 ? computeFrame(L.replay, L.tl, nav, L.viewTeam, tMs) : null;

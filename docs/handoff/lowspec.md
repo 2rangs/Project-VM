@@ -60,17 +60,34 @@
 - **저 품질(저사양 대상)은 3D 컨텍스트를 아예 만들지 않아 이 누적이 통째로 사라진다** — 즉 누수에 가장 취약한 하드웨어가 그 경로를 안 탄다.
 - (후속 후보) 경기마다 `CamStage3D`를 새로 만들지 않고 화면 간 **재사용**하면 고 품질의 컨텍스트 재생성도 없앨 수 있다. 범위·위험 때문에 이번엔 미적용.
 
-## 5. 회귀
+## 5. 2차 작업 — 2D 경기 화면 프로파일링·최적화
 
-| 게이트 | 결과 |
-|---|---|
-| typecheck | 통과 |
-| build | 통과 |
-| test:unit | 78 통과 |
-| test:matchday | 58 통과 |
-| test:engine | 10 통과 |
+`test/perf.profile2d.mjs`로 전술 2D 프레임의 V8 CPU 프로파일을 떴다(저 품질, 4× 스로틀). 프레임당 자기 시간 상위는 **PixiJS 지오메트리 재생성**(`buildLine`·`triangulate`·`packAttributes`·`build`·`break`)과 `drawView`, 그리고 `getBoundingClientRect`였다. 즉 매 프레임 벡터 그래픽을 통째로 다시 테셀레이션하고, 레이아웃을 강제 동기화하고 있었다.
 
-## 6. 기본값·되돌리기
+적용한 개선(경기 내용·시각 결과 불변, 순수 표현 최적화):
+
+| 개선 | 내용 | 효과 |
+|---|---|---|
+| **정적 지도 배경 캐시 텍스처** | 맵 이미지가 없을 때 그리던 구역 배경 원들을 매 프레임 `under`에 다시 칠하던 것을, 카메라가 고정인 전체 맵 뷰에서는 **한 번만 그려 `cacheAsTexture`**로 캐시(`MatchStage.drawSchematic`). 프레임당 ~30개 원 테셀레이션 제거 | 프로파일 상위에서 `drawView`·`packAttributes`·`build` 탈락 |
+| **뷰 사각형 캐시(레이아웃 thrash 제거)** | 재생 루프가 매 프레임 호출하던 `getBoundingClientRect`를, 레이아웃이 실제로 바뀔 때(모드·포커스 변경 → `specs` 교체, 창 리사이즈 → nonce)만 측정하도록 캐시 | 실HW(60–144fps)에서 레이아웃 호출 6–14× 감소. 스로틀 환경(FPS≈렌더율)에선 체감 적음 |
+| 바뀐 것만 다시 그리기 | 2D는 입력(플레이헤드·버전·레이아웃)이 같으면 프레임 생략(기존), 정적 레이어(road·floor·schematic)는 카메라 sig 동일 시 생략. 유휴 시 0 렌더 | 유지·확장 |
+| 텍스트/라벨 재생성 | `label()`이 이미 `text`/`fontSize`/`fill` 변경 시에만 재설정(재래스터화 회피) — 추가 변경 불필요 확인 | 기존 양호 |
+
+- **왜 FPS 숫자는 크게 안 변하나:** 이 컨테이너의 소프트웨어 래스터(swiftshader)가 FPS 상한(~15–20)을 쥐고 있어, 렌더러 스레드 JS를 줄여도 벽시계 FPS는 거의 그대로다(전술 2D 11–12fps). 개선은 **렌더러 스레드 CPU**와 **실 GPU(내장 그래픽) 래스터 부하**에서 나오며, 프로파일의 테셀레이션 자기 시간 감소로 확인된다. 레이아웃 캐시는 실HW의 고FPS에서 비로소 크게 유효(스로틀로 FPS가 React 렌더율까지 떨어진 측정 환경에선 차이가 작음).
+- 회귀: typecheck·build·test:unit(78)·test:matchday(58)·test:engine(10)·e2e 통과(실제 2D 화면 렌더 확인).
+
+## 6. 아직 안 잰 항목 측정
+
+| 항목 | 값 | 비고 |
+|---|---|---|
+| 앱 시작(실행→시작 메뉴) | ~0.71–0.79 s | Electron 부팅(~0.7s)이 지배적. three.js 지연 분리로 실HW·실디스크에선 더 유리하나 컨테이너 NVMe에선 미미 |
+| 커리어 메뉴 전환(시작→새 커리어) | ~0.06–0.22 s | 병목 아님. 지연 로딩으로 메인 스레드 경합 감소 |
+| **설치 크기(리눅스 패키징, `electron-builder --linux dir`)** | **총 295 MB** | 구성: Electron 런타임 **263 MB(89%)** + app.asar 26.5 MB(= 번들 out/ 7.6 MB + 플레이어카드 아트 20 MB) + 엔진데이터 5.6 MB |
+
+- 설치 크기는 Electron 런타임이 지배적이라 JS 최적화로는 사실상 불변(그리고 부풀리지도 않음 — asar에 node_modules 미포함 확인). 앱 번들(out/) 7.6 MB. **저사양에 실효적인 지표는 초기 로드 JS(6.05→4.98 MB)와 저 품질 three.js 미로드**다.
+- app.asar의 20 MB는 플레이어카드 아트로, 소유자 결정으로 커밋된 의도적 콘텐츠(출시 전 재검토 대상, HANDOFF §6)라 이번 범위에서 제거하지 않음.
+
+## 7. 기본값·되돌리기
 - 저장 키 `pv-graphics-quality`(localStorage). 없으면 첫 실행에 `detectQuality()`로 자동 설정.
 - 품질 강제: 설정 메뉴 또는 `localStorage.setItem('pv-graphics-quality','low'|'medium'|'high')`.
-- 측정 재현: `cd apps/desktop && npm run build && LABEL=x QUALITY=low THROTTLE=4 xvfb-run -a node test/perf.lowspec.mjs`.
+- 측정 재현: `cd apps/desktop && npm run build && LABEL=x QUALITY=low THROTTLE=4 xvfb-run -a node test/perf.lowspec.mjs`(FPS·메모리), `node test/perf.profile2d.mjs`(2D 프로파일), `node test/perf.leak.mjs`(누수).
