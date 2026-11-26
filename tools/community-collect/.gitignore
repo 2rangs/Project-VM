@@ -1,0 +1,4 @@
+# Raw response cache — do NOT commit (task rule: 원문 캐시는 gitignore, 커밋 금지)
+cache/
+__pycache__/
+*.pyc

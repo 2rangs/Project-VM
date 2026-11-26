@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-v/datasets/community/vct_community_stats.schema.json",
+  "title": "PROJECT V — community-sourced VCT statistics",
+  "description": "VCT-like aggregate statistics collected from public, legal community/overseas sources (session J). Each item is one measured value with full provenance. These are NOT engine judgement baselines (those live in datasets/derived/priors from the real VCT Reference DB); they are candidate corroboration/fill values that the orchestrator may promote. See docs/research/COMMUNITY_DATA.md.",
+  "type": "object",
+  "required": ["schemaVersion", "generatedAt", "items"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "generatedAt": { "type": "string", "description": "ISO8601 build time" },
+    "collector": { "type": "string", "description": "session / tool that produced this file" },
+    "notes": { "type": "string" },
+    "blockedSources": {
+      "type": "array",
+      "description": "Hosts/sources that were attempted but could not be used (blocked, paywalled, robots-disallowed, or vlr-derived). Recorded, never bypassed.",
+      "items": {
+        "type": "object",
+        "required": ["source", "reason"],
+        "properties": {
+          "source": { "type": "string" },
+          "host": { "type": "string" },
+          "reason": { "type": "string" },
+          "evidence": { "type": "string" },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/statItem" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "statItem": {
+      "type": "object",
+      "required": [
+        "id", "metric", "metric_category", "scope", "value",
+        "source_url", "source_type", "license", "retrieved_at", "confidence"
+      ],
+      "properties": {
+        "id": { "type": "string", "description": "stable unique slug" },
+        "metric": { "type": "string", "description": "human-readable metric name" },
+        "metric_category": {
+          "type": "string",
+          "description": "which of the user's 8 target groups this fills",
+          "enum": [
+            "plant_manadv_retake",
+            "site_plant_timing_detonation",
+            "firstkill_trade",
+            "pistol_eco_force",
+            "round_timing_execute",
+            "side_map_patch",
+            "clutch_multikill_kast_adr",
+            "ability_ult_timing",
+            "match_result",
+            "map_pick_ban",
+            "agent_comp_pick",
+            "other"
+          ]
+        },
+        "map": { "type": ["string", "null"], "description": "map name, or null for map-agnostic" },
+        "side": { "type": ["string", "null"], "enum": ["attack", "defense", "both", null] },
+        "scope": {
+          "type": "string",
+          "description": "population the value describes, e.g. 'VCT international 2023', 'VCT Pacific 2024', 'ranked Immortal+ patch 14.x'"
+        },
+        "patch_or_period": { "type": ["string", "null"] },
+        "value": { "type": ["number", "string"], "description": "the measured value; percentages as 0..1 fractions where numeric" },
+        "value_unit": {
+          "type": "string",
+          "enum": ["fraction", "percent", "seconds", "count", "ratio", "text"],
+          "default": "fraction"
+        },
+        "n": { "type": ["number", "null"], "description": "sample size (rounds/maps/matches), if stated" },
+        "source_name": { "type": "string" },
+        "source_url": { "type": "string" },
+        "source_type": {
+          "type": "string",
+          "enum": [
+            "riot_official", "liquipedia", "analysis_article", "academic_dataset",
+            "public_dataset_github", "public_dataset_kaggle", "aggregator_site",
+            "community_post", "other"
+          ]
+        },
+        "license": { "type": "string", "description": "e.g. CC-BY-SA, MIT, 'editorial (cite, no redistribution)', 'UNVERIFIED'" },
+        "retrieved_at": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "med", "low"] },
+        "useful_for_session_H": {
+          "type": "boolean",
+          "default": false,
+          "description": "true if this value helps session H (claude/pv3-stats: box-score, KAST/ADR/clutch distributions)"
+        },
+        "engine_prior_ref": {
+          "type": ["string", "null"],
+          "description": "related file/metric in datasets/derived/priors or docs/VALIDATION_BASELINES.md, if any"
+        },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
