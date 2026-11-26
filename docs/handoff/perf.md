@@ -157,9 +157,9 @@ Run on the final main (this container, xvfb + swiftshader; the engine is byte-id
 |---|---|
 | `test:e2e:series` | **PASS** — "SERIES E2E OK" |
 | `test:e2e:club` | **PASS** — "E2E CLUB OK — signed rion" |
-| `test:e2e` (electron) | started at the wrap-up; see the branch run / integration gate |
+| `test:e2e` (electron) | **PASS** — "E2E OK" |
 
-No failures to diagnose. (`test:e2e:career` was exercised green in the pv2 bundles.) Regenerated
+All three pass; no failures to diagnose. (`test:e2e:career` was exercised green in the pv2 bundles.) Regenerated
 `apps/desktop/docs/*.png` are discarded per the career-shell handoff.
 
 ---
@@ -180,4 +180,4 @@ No failures to diagnose. (`test:e2e:career` was exercised green in the pv2 bundl
    `Math.hypot` and Map churn; the pathfinding heuristic recomputes `dist(i, goal)` per node. A
    per-pass locate memo could also help the mover's and simulator's own `locate` calls (same idea,
    wider scope) — byte-identical, not yet done.
-3. `test:e2e` (electron) to completion on the final tree (was started at the wrap-up).
+3. (done) all three desktop e2e suites pass on the final tree.
