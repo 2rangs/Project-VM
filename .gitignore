@@ -26,3 +26,7 @@ reports/
 # Quick-sim refit: the large regenerated engine series cache is big; keep it out of git (P2-9).
 tools/career/calibration-data.large.json
 tools/career/calibration-data.large.*.json
+
+# scratch diagnostic scripts (session-local, not committed)
+packages/*/scripts/_*.mts
+tools/*/scripts/_*.mts
