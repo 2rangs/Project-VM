@@ -55,9 +55,10 @@ function Pips({ alive, team }: { alive: number; team: 'ally' | 'enemy' }) {
 
 export function TopHud({
   t, mode, onMode, onExit, onReview, teams, viewTeam, score, frame, round, nextRound, pov, onPov, povLocked,
-  belief, onBelief, hasPerception, sourceLabel, mapName, seed,
+  belief, onBelief, hasPerception, sourceLabel, mapName, seed, cams3d = true,
 }: {
   t: TFn; mode: ViewMode; onMode: (m: ViewMode) => void; onExit: () => void; onReview: (() => void) | null;
+  cams3d?: boolean;
   teams: MatchSummary['teams']; viewTeam: TeamSlot; score: Record<TeamSlot, number>;
   frame: Frame | null; round: RoundTimeline | null; nextRound: { roundNumber: number; attacker: TeamSlot } | null;
   pov: TeamSlot; onPov: (p: TeamSlot) => void; povLocked: boolean;
@@ -79,10 +80,12 @@ export function TopHud({
         <button className="mdx-crumb" onClick={onExit} data-testid="md-exit" title={t('mdx.exit.hint')}>
           <Icon name="back" size={12} /><span>{t('mdx.exit')}</span><i>//</i><b>{t('mdx.crumb.match')}</b>
         </button>
-        <div className="mdx-seg" role="tablist" aria-label={t('mdx.mode.label')} data-testid="view-mode">
-          <button role="tab" aria-selected={mode === 'tactical'} className={mode === 'tactical' ? 'on' : ''} onClick={() => onMode('tactical')} data-testid="view-mode-tactical">{t('mdx.mode.tactical')}</button>
-          <button role="tab" aria-selected={mode === 'cams'} className={mode === 'cams' ? 'on' : ''} onClick={() => onMode('cams')} data-testid="view-mode-cams">{t('mdx.mode.cams')}</button>
-        </div>
+        {cams3d && (
+          <div className="mdx-seg" role="tablist" aria-label={t('mdx.mode.label')} data-testid="view-mode">
+            <button role="tab" aria-selected={mode === 'tactical'} className={mode === 'tactical' ? 'on' : ''} onClick={() => onMode('tactical')} data-testid="view-mode-tactical">{t('mdx.mode.tactical')}</button>
+            <button role="tab" aria-selected={mode === 'cams'} className={mode === 'cams' ? 'on' : ''} onClick={() => onMode('cams')} data-testid="view-mode-cams">{t('mdx.mode.cams')}</button>
+          </div>
+        )}
       </div>
 
       <div className="mdx-score" data-testid="scoreboard">

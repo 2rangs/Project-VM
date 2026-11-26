@@ -23,22 +23,27 @@ export interface Playback {
   subscribe(fn: (tMs: number) => void): () => void;
 }
 
-export function usePlayback(tl: MatchTimeline, tempo: Tempo, onRoundEnd?: (round: RoundTimeline) => void): Playback {
+export function usePlayback(tl: MatchTimeline, tempo: Tempo, fpsCap: number = MAX_FPS, onRoundEnd?: (round: RoundTimeline) => void): Playback {
   const tRef = useRef(tl.startMs);
   const playingRef = useRef(false);
   const [tMs, setTMs] = useState(tl.startMs);
   const [playing, setPlaying] = useState(false);
   const subs = useRef(new Set<(t: number) => void>());
-  const live = useRef({ tl, tempo, onRoundEnd });
-  live.current = { tl, tempo, onRoundEnd };
+  const live = useRef({ tl, tempo, fpsCap, onRoundEnd });
+  live.current = { tl, tempo, fpsCap, onRoundEnd };
 
   const setPlay = useCallback((v: boolean) => { playingRef.current = v; setPlaying(v); }, []);
 
   useEffect(() => {
     let raf = 0; let last = performance.now(); let lastEmit = 0;
+    // Background / minimised: stop the render loop entirely. The clock does not advance and no
+    // subscriber is called, so a match left on screen behind another window costs nothing.
+    const isHidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
     const tick = (now: number) => {
-      // Follow the display's refresh, but never draw more than MAX_FPS (a 240 Hz panel draws 144).
-      if (now - last < 1000 / MAX_FPS - 0.5) { raf = requestAnimationFrame(tick); return; }
+      if (isHidden()) { last = now; raf = requestAnimationFrame(tick); return; }
+      // Follow the display's refresh, but never draw more than the quality's cap (default MAX_FPS).
+      const cap = Math.max(1, live.current.fpsCap || MAX_FPS);
+      if (now - last < 1000 / cap - 0.5) { raf = requestAnimationFrame(tick); return; }
       const dt = Math.min(100, now - last); last = now;
       const { tl: cur, tempo: tp, onRoundEnd: done } = live.current;
       if (playingRef.current && cur.rounds.length > 0) {
