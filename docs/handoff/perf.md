@@ -153,7 +153,14 @@ These change results or defaults, so they are flagged for the orchestrator, not 
 The 28th merge did not run the desktop `test:e2e` / `test:e2e:series` / `test:e2e:club` suites.
 Run on the final main (this container, xvfb + swiftshader; the engine is byte-identical to main, §1):
 
-<!-- FILL: results per suite; diagnoses for any failure -->
+| suite | result |
+|---|---|
+| `test:e2e:series` | **PASS** — "SERIES E2E OK" |
+| `test:e2e:club` | **PASS** — "E2E CLUB OK — signed rion" |
+| `test:e2e` (electron) | started at the wrap-up; see the branch run / integration gate |
+
+No failures to diagnose. (`test:e2e:career` was exercised green in the pv2 bundles.) Regenerated
+`apps/desktop/docs/*.png` are discarded per the career-shell handoff.
 
 ---
 
@@ -165,4 +172,12 @@ Run on the final main (this container, xvfb + swiftshader; the engine is byte-id
 - Desktop e2e: `cd apps/desktop && npm run build && xvfb-run -a env PLAYWRIGHT_REQUIRE_BASE=/opt/node-tools/ node test/e2e.<name>.test.mjs`
 
 ## Left to do
-<!-- FILL -->
+1. **Decide on the report-only career speedups** (§2): quick-depth default for the own league (needs a
+   product call — it changes engine→formula results for the player's own matches), and gzipping the
+   save (storage-layer change in the desktop/worker save path). Both are measured and recommended, not
+   applied, because they change defaults/output or touch the save I/O.
+2. Further byte-identical engine-tick wins beyond the perception-locate memo: the profile still shows
+   `Math.hypot` and Map churn; the pathfinding heuristic recomputes `dist(i, goal)` per node. A
+   per-pass locate memo could also help the mover's and simulator's own `locate` calls (same idea,
+   wider scope) — byte-identical, not yet done.
+3. `test:e2e` (electron) to completion on the final tree (was started at the wrap-up).
