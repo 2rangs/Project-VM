@@ -121,13 +121,6 @@ export interface TeamPolicyOptions {
   readonly information?: boolean;
   /** Test hook: replace the information layer's deterministic draws (salt → u in [0,1)). */
   readonly informationDraw?: (salt: string) => number;
-  /**
-   * Eco-defence stack (docs/handoff/attack-closing.md): on a save/eco defence, group a stack onto
-   * the site the attack is likeliest to hit BEFORE contact, so the cheap guns meet the entry in a
-   * close crossfire (the only way an eco defence steals a round) instead of losing five spread
-   * 1v1s. Eco rounds only; a full buy holds its spread angles. Default OFF until gated.
-   */
-  readonly ecoDefenseStack?: boolean;
 }
 
 /** Footstep audio range when none is injected (mirrors game-rules SPIKE_RULES.blastRadiusM = 50 m, a manual approximation). */
@@ -145,8 +138,6 @@ const FEINT_SHOW_SIZE = 2;
 const NOISE_WINDOW_MS = 4000;
 /** DEFENSE: a sighting counts as evidence for this long. */
 const SEEN_WINDOW_MS = 8000;
-/** ECO DEFENCE: how many defenders a pre-contact eco stack pulls off the other side onto the read site (leaving ≥1 back for info). */
-const ECO_STACK_PULL = 2;
 
 /** Strategies that commit to a site execute (where entry utility is worth firing). */
 const ATTACK_EXECUTE: ReadonlySet<TeamStrategy> = new Set<TeamStrategy>([
@@ -1960,66 +1951,6 @@ export class TeamDecisionPolicy implements DecisionPolicy {
   }
 
   /**
-   * ECO DEFENCE pre-stack (eco rounds only, pre-contact): a save-buy defence cannot win five spread
-   * 1v1s against rifles — its one edge is a close crossfire where two or three cheap guns meet the
-   * entry at once (the combat model's extra-gun penalty on the entering attacker), which is how the
-   * ~7% eco steal happens in VCT. Before any contact it commits a stack onto the site the attack is
-   * likeliest to hit (the cross-round read, else a deterministic guess by round), pulling defenders
-   * off the other side but leaving one back for information. The existing rotation machinery
-   * (commitDefenseRotation) then moves and holds them. The moment real evidence arrives,
-   * decideDefenseRotation (run first) owns the call and this leaves the committed rotation alone.
-   * Deterministic (no RNG). Full buys are untouched — their spread angles win their duels.
-   */
-  private decideEcoStack(view: PolicyView, plan: StandingPlan): void {
-    if (!this.options.ecoDefenseStack || view.side !== "defense" || !isEco(view)) return;
-    const phase = view.spike.phase;
-    if (phase !== "carried" && phase !== "dropped") return;
-    // Pre-contact only: once the belief rotation has committed a site, or anyone has seen an enemy,
-    // the normal read owns the rotation.
-    if (plan.rotation.site !== null || view.observation.visibleEnemies.length > 0) return;
-    const sites = this.siteZones();
-    if (sites.size === 0) return;
-    const zoneOf = (p: PolicyView["teammates"][number]) => this.spatial.nearestZone({ x: p.position.x, y: p.position.y });
-    for (const p of view.teammates) if (!plan.home.has(String(p.id))) plan.home.set(String(p.id), zoneOf(p));
-    const alive = view.teammates.filter((p) => p.alive);
-    if (alive.length < 3) return; // too few left to both stack and keep a lurker
-    const site = this.ecoStackSite(view, sites);
-    const siteZone = sites.get(site)!;
-    // Defenders whose home is NOT this site's side — the ones a stack pulls over, nearest first.
-    const offSide = alive
-      .map((p) => ({ id: String(p.id), home: plan.home.get(String(p.id)) ?? zoneOf(p) }))
-      .filter((a) => this.sideOf(a.home, sites) !== site)
-      .map((a) => ({ id: a.id, ms: this.legMs(a.home, siteZone) }))
-      .filter((a) => Number.isFinite(a.ms))
-      .sort((a, b) => a.ms - b.ms || (a.id < b.id ? -1 : 1));
-    // Leave at least one back on the off side for information; pull up to ECO_STACK_PULL.
-    const want = Math.min(ECO_STACK_PULL, Math.max(0, offSide.length - 1));
-    if (want === 0) return;
-    const chosen = offSide.slice(0, want).map((a) => a.id);
-    const now = view.timeRemainingMs;
-    plan.strategy = (site === "A" ? "stackA" : site === "B" ? "stackB" : site === "C" ? "stackC" : plan.strategy) as TeamStrategy;
-    plan.rotation = { site, ids: chosen, changedAtMs: now };
-    for (const id of chosen) plan.rotated.add(id);
-    plan.rotations.push({ atMs: now, site, count: chosen.length });
-    plan.revisions.push({ atMs: now, from: plan.opening, to: `eco stack ${site} ×${chosen.length + (alive.length - offSide.length)}`, reason: `eco defence — group a close crossfire on ${site} before contact (save buy cannot win spread 1v1s)` });
-    plan.decidedAtMs = now;
-  }
-
-  /** The site an eco defence stacks before contact: the opponent's attack tendency, else alternating by round so it is not always A. */
-  private ecoStackSite(view: PolicyView, sites: ReadonlyMap<string, ZoneId>): string {
-    const keys = [...sites.keys()];
-    const read = this.opponentRead;
-    if (read) {
-      let best: string | null = null, bestP = -1;
-      const prob = read.attackSite.probability as Readonly<Record<string, number>>;
-      for (const k of keys) { const p = prob[k] ?? 0; if (p > bestP) { bestP = p; best = k; } }
-      // Only trust the read when it actually leans (a flat prior is no information).
-      if (best !== null && bestP > (1 / keys.length) + 0.05) return best;
-    }
-    return keys[view.roundNumber % keys.length]!;
-  }
-
-  /**
    * The orders of the current rotation (decideDefenseRotation): rotators to the site, stood-down
    * rotators home. A rotator comes in by one of the site's entries (retakeApproach): the fastest
    * while the site is still held — it closes to that approach's staging zone and steps onto the
@@ -2537,7 +2468,7 @@ export class TeamDecisionPolicy implements DecisionPolicy {
     const ordered = this.order?.strategy;
     // The defense reads the noise and sets its rotation before the call is announced (a coach's
     // forced call is not second-guessed).
-    if (!ordered) { this.decideDefenseRotation(view, plan); this.decideEcoStack(view, plan); }
+    if (!ordered) this.decideDefenseRotation(view, plan);
     // A round called lost is saved, unless the coach has ordered a strategy for it.
     const saveOrders = ordered ? null : this.commitAttackSave(view, plan);
     const strategy = ordered ?? plan.strategy;

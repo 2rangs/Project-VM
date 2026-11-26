@@ -237,9 +237,12 @@ export interface MatchConfig {
    */
   readonly informationLayer?: boolean;
   /**
-   * Eco-defence stack (docs/handoff/attack-closing.md): on a save/eco defence, group a close
-   * crossfire onto the likely site before contact instead of holding five spread 1v1s. Eco rounds
-   * only. Default false until gated.
+   * Eco-defence stack (docs/handoff/eco-defense.md): on a save/eco defence, start an extra defender
+   * grouped on the likely site (the cross-round attack read, else alternating by round) during the
+   * buy phase, so two or three cheap guns meet the entry in a close stationary crossfire — the way
+   * an eco defence steals a round — instead of losing five spread 1v1s. Changes only the eco
+   * defence's *start* positions (pre-plant); the live round plays its own hold/rotation. Eco rounds
+   * only, a full buy is untouched. Default false until gated.
    */
   readonly ecoDefenseStack?: boolean;
   /**
@@ -427,6 +430,37 @@ function siteOf(zoneId: string | undefined): SiteKey | null {
 }
 
 /**
+ * Eco-defence buy-phase stack (docs/handoff/eco-defense.md): move ONE extra defender onto the site
+ * the attack is likeliest to hit, so a save buy starts grouped there (two or three cheap guns on the
+ * entry — a close stationary crossfire, which the combat model rewards) instead of five spread angles
+ * that each lose to a rifle. The site is the cross-round attack read when it leans, else it alternates
+ * by round so it is not always A. One defender is kept off the stack (mid / the other site) for
+ * information. Only the eco defence's start zones change; the live round plays its own hold/rotation.
+ */
+function ecoStackStarts(base: readonly string[], read: OpponentRead | null, roundNumber: number): readonly string[] {
+  const letters = [...new Set(base.map(siteOf).filter((l): l is SiteKey => l !== null))];
+  if (letters.length < 2) return base;
+  let stack: SiteKey | null = null;
+  if (read) {
+    let bestP = -1;
+    for (const l of letters) { const p = read.attackSite.probability[l] ?? 0; if (p > bestP) { bestP = p; stack = l; } }
+    if (!(stack !== null && bestP > 1 / letters.length + 0.05)) stack = null; // a flat prior is no information
+  }
+  if (stack === null) stack = letters[roundNumber % letters.length]!;
+  const stackZone = base.find((z) => siteOf(z) === stack);
+  if (!stackZone) return base;
+  // Pull one defender off a different site (not mid / spawn, which stays back for information).
+  const out = base.slice();
+  const already = out.filter((z) => z === stackZone).length;
+  if (already >= 3) return out; // do not over-commit beyond a three-stack
+  for (let i = out.length - 1; i >= 0; i--) {
+    const l = siteOf(out[i]!);
+    if (l !== null && l !== stack) { out[i] = stackZone; break; }
+  }
+  return out;
+}
+
+/**
  * What BOTH teams could observe of a finished round — nothing here is hidden state: the plant is
  * public, and a kill happens in front of the two players involved (the kill event's zone is where
  * the victim stood).
@@ -519,7 +553,7 @@ export class MatchEngine {
     this.abilitiesOn = config.enableAbilities ?? false;
     this.abilities = this.abilitiesOn ? loadAbilityCatalog() : NO_ABILITIES;
     const abilityEffect = this.abilitiesOn ? (id: string): string | undefined => this.abilities[id]?.effectType : undefined;
-    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true, config.ecoDefenseStack === true);
+    this.policies = makeSimPolicies(this.sq, abilityEffect, this.spatial, this.tactics, config.plantTactics === true, config.midControl === true, config.informationLayer === true);
     this.playerIdsBySlot = { A: rosterPlayerIds(config.teamA.id, 5, ro.A), B: rosterPlayerIds(config.teamB.id, 5, ro.B) };
     this.matchId = `${config.teamA.id}-vs-${config.teamB.id}`;
     const { crossfireMsPerBit, infoHalfLifeMs, formSigmaMax, damageCarryover, movingStopScale, peekerAdvantageMs, defuseHalfwayMs, ...policyTuning } = config.tuning ?? {};
@@ -829,7 +863,10 @@ export class MatchEngine {
     this.policies.attack.setMidPlan(midPlans.attack);
     this.policies.defense.setMidPlan(midPlans.defense);
     const defenseEco = !pistol && buys[defender].tier === "eco";
-    const defSpawns = this.defenderStarts(defender, midPlans.defense, defenseEco);
+    const baseStarts = this.defenderStarts(defender, midPlans.defense, defenseEco);
+    const defSpawns = this.config.ecoDefenseStack === true && defenseEco
+      ? ecoStackStarts(baseStarts, readBefore[defender], roundNumber)
+      : baseStarts;
     const defenders: MatchRoundTeam = {
       teamId: this.teamRef(defender).id,
       economy: toEconomyState(preBuy[defender], "defense", buys[defender]),
