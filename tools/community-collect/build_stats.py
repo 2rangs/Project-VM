@@ -31,6 +31,7 @@ RIOT_DD23 = "https://playvalorant.com/en-us/news/dev/valorant-data-drop-vct-2023
 UPCOMER_B1 = "https://upcomer.com/answering-valorant-masters-berlin-questions-part-1"
 UPCOMER_B2 = "https://upcomer.com/answering-valorant-masters-3-berlin-questions-part-2"
 TS_CH25 = "https://www.thespike.gg/valorant/news/valorant-champions-2025-map-analysis-trends-and-insights/6917"
+COYOTE_FB = "https://note.com/coyote59/n/nb2cebc617103?hl=en"
 
 
 def item(**kw):
@@ -124,6 +125,32 @@ ITEMS += [
         retrieved_at="2026-11-26", confidence="med", useful_for_session_H=True,
         engine_prior_ref="combat_opening_duel.json (opening-duel win rate exists; entry->ROUND win is a VCT Reference gap, VALIDATION_BASELINES §6)",
         notes="FILLS A GAP: VCT Reference has no entry->round-win link (per VALIDATION_BASELINES §6 'Combat data NOT available'). No published denominator; one event, 2021 meta. Treat as a prior, not a baseline. Harness already computes this from sim logs as a 'no real baseline' report metric — this gives it a comparison point.",
+    ),
+    item(
+        id="firstblood-round-win-copenhagen2022",
+        metric="Round win rate given the team got first blood (= first-5v4 win rate)",
+        metric_category="firstkill_trade",
+        scope="VCT 2022 Stage 2 Masters Copenhagen (international, all teams, Day 1-12)",
+        patch_or_period="2022", value=0.703, n=1349,
+        source_name="note.com/coyote — A Discussion on First Bloods in VALORANT (data: THESPIKE.GG, manual)",
+        source_url=COYOTE_FB, source_type="analysis_article",
+        license="editorial (cite); data manually aggregated from thespike.gg",
+        retrieved_at="2026-11-26", confidence="med", useful_for_session_H=True,
+        engine_prior_ref="combat_opening_duel.json; VALIDATION_BASELINES §6 entry->round-win gap",
+        notes="949 won / 400 lost after first blood of 1349 rounds -> 70.3%. CORROBORATES the Berlin 2021 figure (0.714) from an INDEPENDENT source/event (thespike, not rib.gg): two events agree ~0.70-0.71. Source is thespike.gg, NOT vlr. Manual collection ('may be errors'). Same number also gives the 5v4 man-advantage (next item).",
+    ),
+    item(
+        id="manadv-5v4-postfirstblood-copenhagen2022",
+        metric="5v4 round win rate (advantage team, immediately after first blood)",
+        metric_category="plant_manadv_retake", side=None,
+        scope="VCT 2022 Stage 2 Masters Copenhagen (international, all teams)",
+        patch_or_period="2022", value=0.703, n=1349,
+        source_name="note.com/coyote — First Bloods in VALORANT (data: THESPIKE.GG, manual)",
+        source_url=COYOTE_FB, source_type="analysis_article",
+        license="editorial (cite); data manually aggregated from thespike.gg",
+        retrieved_at="2026-11-26", confidence="med",
+        engine_prior_ref="no VCT Reference baseline (needs per-round alive transitions) — VALIDATION_BASELINES §6 'Man-advantage win rates ... needs per-round alive transitions'",
+        notes="FILLS THE #1 GAP (man-advantage win rate). This is specifically the FIRST 5v4 (the round's opening kill), so it is a lower-bound proxy for a general 5v4 (later 5v4s with spike/time context differ). 4v5 complement = 29.7%. VCT Reference cannot produce this (no alive-count sequence). Treat as a prior, not a judged baseline.",
     ),
     item(
         id="utility-kill-share-berlin2021", metric="Share of kills that came from utility (ability damage)",
@@ -382,6 +409,22 @@ def build() -> dict:
              "host": "ieee-dataport.org", "status": "auth",
              "reason": "Login/subscription required to download; not freely accessible. Strong round-level lead for a future authorized pull.",
              "evidence": "dataset page behind login"},
+            {"source": "LIACS bachelor thesis — Nieland, 'Applying ML to a Limited Esports Dataset' (2025)",
+             "host": "theses.liacs.nl", "status": "excluded-vlr-derived",
+             "reason": "VLR-DERIVED -> NOT USED. The thesis states its data was scraped from vlr.gg (VLR gave the author scraping permission, but that permission is to them, not to this project; task policy forbids vlr-derived data). PDF read locally with pdftotext to confirm provenance.",
+             "evidence": "thesis §3.1.1: 'the decision was made to scrape data from https://www.vlr.gg'."},
+            {"source": "GitHub bernielaird/vctstats (VCT Win Probability, README §5.3)",
+             "host": "github.com", "status": "excluded-vlr-derived",
+             "reason": "VLR-DERIVED -> NOT USED for data values. Per README §5.3 it processes VLR 2D-Replay data. Its MODELLING approach is a study reference (Handoff), but its numbers rest on vlr scraping.",
+             "evidence": "README §5.3 'VLR 2D Replay 처리'; project scrapes vlr."},
+            {"source": "TechRxiv — Predictive Analysis of Valorant (1301 rounds, 2024 Pacific+EMEA)",
+             "host": "techrxiv.org", "status": "403",
+             "reason": "Direct PDF URL returns 403 to this client; could not read provenance or the raw economy-state win rates. Built on the IEEE DataPort dataset. Candidate for a future read via the article landing page.",
+             "evidence": "GET .../file/.../*.pdf -> 403"},
+            {"source": "CalState ScholarWorks — 'Win-Loss Probability and Round Differential in Professional Valorant'",
+             "host": "scholarworks.calstate.edu", "status": "403",
+             "reason": "403 to this client; could not read provenance or man-advantage/round-differential numbers.",
+             "evidence": "GET -> 403"},
         ],
         "items": ITEMS,
     }
