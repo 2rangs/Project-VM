@@ -35,6 +35,8 @@ import { REGIONS } from "../regions.ts";
 import type { CareerState, CompetitionId, Fixture, Manager, SeasonSummary, SeriesOutcome, SeriesRequest, SimDepth, SimScope, StageId } from "./types.ts";
 import { estimateForTeam } from "../knowledge.ts";
 import { scoutingCareerHook } from "../knowledge-hook.ts";
+import { mediaCareerHook } from "../media-hook.ts";
+import type { DifficultyId } from "../difficulty.ts";
 
 export const CAREER_MODE = {
   /** Form update rate per map (see PlayerSeasonLine.form). */
@@ -84,7 +86,7 @@ function hookCtx(state: CareerState, hook: CareerHook): HookContext {
 }
 
 /** Built-in hooks first (core bookkeeping, then the club layer), then the registered ones. */
-const BUILT_IN = (): CareerHook[] => [coreHook, clubCareerHook, scoutingCareerHook];
+const BUILT_IN = (): CareerHook[] => [coreHook, clubCareerHook, scoutingCareerHook, mediaCareerHook];
 const allHooks = (rt: CareerRuntime | undefined): CareerHook[] => {
   const builtIn = BUILT_IN();
   const ids = new Set(builtIn.map((h) => h.id));
@@ -101,6 +103,8 @@ export interface NewCareerOptions {
   readonly seed: number;
   readonly manager: Manager;
   readonly userTeamId: string;
+  /** Difficulty preset (default "normal"; difficulty.ts). */
+  readonly difficulty?: DifficultyId;
 }
 
 export function newCareer(world: World, opts: NewCareerOptions, rt?: CareerRuntime): CareerState {
@@ -109,6 +113,7 @@ export function newCareer(world: World, opts: NewCareerOptions, rt?: CareerRunti
   const seed = opts.seed >>> 0;
   const state: CareerState = {
     version: 2, seed, manager: { ...opts.manager }, userTeamId: team.teamId, region: team.region,
+    ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
     date: careerStartDate(world.season), world, ...buildLeagues(world, team.region, team.teamId, world.season, seed),
     stats: {}, inbox: [], nextInboxId: 0, history: [], objective: null, ext: {},
   };

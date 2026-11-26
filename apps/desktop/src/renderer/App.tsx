@@ -34,6 +34,8 @@ import { StartMenu } from './screens/career/StartMenu.tsx';
 import { NewCareer } from './screens/career/NewCareer.tsx';
 import { HomeScreen, ContinueButton } from './screens/career/HomeScreen.tsx';
 import { InboxScreen } from './screens/career/InboxScreen.tsx';
+import { MediaScreen } from './screens/career/MediaScreen.tsx'; // [media] #7
+import { Tutorial, tutorialSeen } from './help/Tutorial.tsx'; // [tutorial] #9
 import { ScheduleScreen } from './screens/career/ScheduleScreen.tsx';
 import { StandingsScreen } from './screens/career/StandingsScreen.tsx';
 import { CareerMatch } from './screens/career/CareerMatch.tsx';
@@ -55,11 +57,12 @@ export default function App() {
   const [route, setRoute] = useState('match-day');
   const [replay, setReplay] = useState<Replay | null>(null);
   const [detail, setDetail] = useState<DetailPanel>(null);
+  const [tutorial, setTutorial] = useState(false); // [tutorial] #9: first-career guided tour
   const t = useT();
 
   // A career that opens (new or loaded) lands on Home.
   const careerKey = cs.career ? `${cs.slot}:${cs.career.seed}:${cs.career.userTeamId}` : null;
-  useEffect(() => { if (careerKey) { setRoute('home'); setDetail(null); } }, [careerKey]);
+  useEffect(() => { if (careerKey) { setRoute('home'); setDetail(null); if (!tutorialSeen()) setTutorial(true); } }, [careerKey]);
 
   const ctx = { setDetail, replay, setReplay };
   const go = (r: string) => { setDetail(null); setRoute(r); };
@@ -120,8 +123,9 @@ export default function App() {
         </nav>
 
         <main className="maincontent" data-testid={`screen-${route}`}>
-          {route === 'home' && c && <HomeScreen go={go} openMatch={() => go('career-match')} />}
+          {route === 'home' && c && <HomeScreen go={go} openMatch={() => go('career-match')} onTutorial={() => setTutorial(true)} />}
           {route === 'inbox' && c && <InboxScreen />}
+          {route === 'media' && c && <MediaScreen />}
           {route === 'schedule' && c && <ScheduleScreen />}
           {route === 'standings' && c && <StandingsScreen />}
           {route === 'career-match' && c && <CareerMatch ctx={ctx} onDone={() => go('home')} />}
@@ -153,6 +157,8 @@ export default function App() {
           ) : <div className="detail-empty muted">{t('common.selectItem')}</div>}
         </aside>
       </div>
+
+      {inCareer && tutorial && <Tutorial onClose={() => setTutorial(false)} goto={go} />}
     </div>
   );
 }

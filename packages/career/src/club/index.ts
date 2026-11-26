@@ -29,7 +29,7 @@ export { clubCareerHook, drainClubOutbox, syncClubInbox, careerStandings } from 
 export { DEPTH_MODEL, CLUB_FLAGS, setClubFlags } from "./constants.ts";
 export {
   agentOf, agentFee, requiredMargin, bonusOdds, effectiveWage, clauseTerm, freeAgentTimeFactor, moraleOf, moraleTarget, moraleWeek,
-  playShare, playTimeGap, recentShare, clubSeriesResultMut, type Agent, type SeriesResult,
+  adjustMoraleMut, playShare, playTimeGap, recentShare, clubSeriesResultMut, type Agent, type SeriesResult,
 } from "./people.ts";
 export { boardOf, emptyBoard, facilitiesOf, setObjectives, boardOnSeries, boardOnMonth, boardSeasonReview, boardRequest, boardRequestMut, type RequestAnswer } from "./board.ts";
 export { physioFactor, staffDemand, staffMarket, hireStaff, hireStaffMut, fireStaff, type StaffRow, type StaffError } from "./staff-market.ts";

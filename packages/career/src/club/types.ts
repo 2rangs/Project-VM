@@ -251,4 +251,6 @@ export interface ClubState {
   board?: BoardState;
   /** Training facilities per club 0..1 (absent = 0.5). */
   facilities?: Record<string, number>;
+  /** Difficulty knobs resolved at creation (absent = neutral/normal; difficulty.ts). */
+  difficulty?: { readonly finance: number; readonly boardTolerance: number; readonly aiStrength: number };
 }

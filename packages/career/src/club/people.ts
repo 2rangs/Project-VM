@@ -74,6 +74,18 @@ export function markFree(club: ClubState, playerId: string, date: string): void 
 
 export const moraleOf = (club: ClubState | undefined, playerId: string): number => club?.morale?.[playerId] ?? 0.5;
 
+/**
+ * Move one player's tracked morale by `delta` (clamped to [0,1]). The media layer (press
+ * conferences, 1:1 interactions, promises) uses this so its swings go through the same morale
+ * store the renewals, the UI and the (flagged) match roster read. Returns the new value.
+ */
+export function adjustMoraleMut(club: ClubState, playerId: string, delta: number): number {
+  const morale = (club.morale ??= {});
+  const next = clamp(Math.round((moraleOf(club, playerId) + delta) * 10000) / 10000, 0, 1);
+  morale[playerId] = next;
+  return next;
+}
+
 /** Share of the club's maps this season the player played (null before the club has played). */
 export function playShare(club: ClubState, playerId: string, teamId: string): number | null {
   const team = club.playTime?.teams[teamId] ?? 0;

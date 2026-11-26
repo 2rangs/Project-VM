@@ -83,6 +83,8 @@ async function main() {
   // ── new career (the manager's club comes from the start menu) ──
   const { teamId, teamName } = await startCareer(page);
   mark('career started');
+  // The first-career tutorial overlay appears once; skip it so the rest of the flow is unblocked.
+  if (await page.getByTestId('tutorial').count()) { await page.getByTestId('tutorial-skip').click(); await page.waitForTimeout(100); }
   assert.match(await page.getByTestId('home-date').innerText(), /^2026-01-05$/);
   assert.ok(fs.existsSync(path.join(SAVES, 'slot1.json')), 'the new career is saved to slot 1');
   assert.equal(readSave().world.club.userTeamId, teamId, 'the club layer runs for the manager\'s club');

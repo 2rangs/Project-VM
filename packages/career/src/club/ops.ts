@@ -32,6 +32,8 @@ export interface InitClubOptions {
   readonly userTeamId: string | null;
   /** Starting date (default: the season's first day). */
   readonly date?: string;
+  /** Difficulty knobs (absent = neutral; difficulty.ts). */
+  readonly difficulty?: { readonly finance: number; readonly boardTolerance: number; readonly aiStrength: number };
 }
 
 /** Start the club layer on a world: contracts, finances, budgets. */
@@ -42,6 +44,7 @@ export function initClub(world: World, opts: InitClubOptions): World {
     version: 1, date, userTeamId: opts.userTeamId, contracts: {}, finances: {}, offers: [], loans: [], transfers: [],
     shortlist: [], training: emptyTraining(), outbox: [], aiBuys: {}, nextId: 1,
     morale: {}, playTime: { players: {}, teams: {} }, recent: {}, freeSince: {}, board: emptyBoard(), facilities: {},
+    ...(opts.difficulty ? { difficulty: opts.difficulty } : {}),
   };
   for (const p of Object.values(w.players)) if (p.status === "free") club.freeSince![p.playerId] = date;
   w.club = club;
@@ -58,10 +61,17 @@ export function initClub(world: World, opts: InitClubOptions): World {
       if (s) club.contracts[s.staffId] = staffContract(w, s, t.teamId, 1 + (Number.parseInt(s.staffId.slice(-2), 36) % 3), date);
     }
   }
+  // Difficulty: a more patient board starts with more confidence in the bank.
+  if (club.difficulty && club.difficulty.boardTolerance !== 1 && club.board) {
+    const t = club.difficulty.boardTolerance;
+    club.board.confidence = Math.round(clampUnit(0.5 + (club.board.confidence - 0.5) * (0.5 + 0.5 * t) + (t - 1) * 0.1) * 10000) / 10000;
+  }
   initFinances(w, date);
   setObjectives(w, date);
   return w;
 }
+
+const clampUnit = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
  * Make contracts match the squads: drop contracts of retired players and of players the season

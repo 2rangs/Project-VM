@@ -6,31 +6,66 @@ import { useT } from '../../i18n/index.tsx';
 import { updateWorld, useWorld } from '../../career/store.ts';
 import { useCareer } from '../../career/session.ts';
 import {
-  assign, knowledgePct, lastReportRow, managerTeam, ownPanel, playerView, range200, rangeText, reportRows, scoutRows, shortlistPlayers,
-  type AssignmentKind, type ReportRow,
+  assign, coverageRows, knowledgePct, lastReportRow, managerTeam, ownPanel, playerView, range200, rangeText, reportConfidencePct, reportRows, scoutRows, shortlistPlayers,
+  type AssignmentKind, type CoverageRow, type ReportRow,
 } from '../../career/scouting.ts';
 import { REGIONS, type WorldPlayer } from '../../career/world.ts';
 import { GenTag, squadRow, type SquadRow } from '../SquadScreen.tsx';
 
 type Open = (p: SquadRow) => void;
 
+function confClass(c: number): string { return c >= 70 ? 'rec-sign' : c >= 40 ? 'rec-monitor' : 'rec-pass'; }
+
 export function ReportTable({ onOpen }: { onOpen: Open }) {
   const t = useT();
   const w = useWorld();
+  const date = useCareer().career?.date ?? w.club?.date;
   const rows = reportRows(w);
   const cols: Column<ReportRow>[] = [
-    { key: 'date', header: t('col.date'), render: (r) => r.report.date, sortValue: (r) => r.report.date, width: '12%' },
-    { key: 'handle', header: t('col.handle'), render: (r) => <><b>{r.player.handle}</b>{r.player.generated && <GenTag />}</>, sortValue: (r) => r.player.handle ?? '', width: '17%' },
-    { key: 'country', header: '', render: (r) => <Flag cc={r.player.country} />, width: '6%' },
+    { key: 'date', header: t('col.date'), render: (r) => r.report.date, sortValue: (r) => r.report.date, width: '11%' },
+    { key: 'handle', header: t('col.handle'), render: (r) => <><b>{r.player.handle}</b>{r.player.generated && <GenTag />}</>, sortValue: (r) => r.player.handle ?? '', width: '16%' },
+    { key: 'country', header: '', render: (r) => <Flag cc={r.player.country} />, width: '5%' },
     { key: 'age', header: t('col.age'), render: (r) => r.player.age, sortValue: (r) => r.player.age, width: '6%' },
-    { key: 'role', header: t('col.role'), render: (r) => r.player.role ?? '—', sortValue: (r) => r.player.role ?? '', width: '10%' },
-    { key: 'ca', header: t('col.ca'), render: (r) => rangeText(r.ca), sortValue: (r) => r.ca.est, width: '10%' },
-    { key: 'pa', header: t('col.pa'), render: (r) => rangeText(r.pa), sortValue: (r) => r.pa.est, width: '10%' },
-    { key: 'know', header: t('col.knowledge'), render: (r) => `${Math.round(r.report.knowledge * 100)}%`, sortValue: (r) => r.report.knowledge, width: '9%' },
+    { key: 'role', header: t('col.role'), render: (r) => r.player.role ?? '—', sortValue: (r) => r.player.role ?? '', width: '9%' },
+    { key: 'ca', header: t('col.ca'), render: (r) => rangeText(r.ca), sortValue: (r) => r.ca.est, width: '9%' },
+    { key: 'pa', header: t('col.pa'), render: (r) => rangeText(r.pa), sortValue: (r) => r.pa.est, width: '9%' },
+    { key: 'know', header: t('col.knowledge'), render: (r) => `${Math.round(r.report.knowledge * 100)}%`, sortValue: (r) => r.report.knowledge, width: '8%' },
+    // Report confidence: knowledge at write time × how fresh the report still is (decays with age).
+    { key: 'conf', header: t('col.confidence'), render: (r) => { const c = reportConfidencePct(r.report, date); return <span className={`rec ${confClass(c)}`} title={t('scout.confidenceTitle')}>{c}%</span>; }, sortValue: (r) => reportConfidencePct(r.report, date), width: '9%' },
     { key: 'rec', header: t('col.rec'), render: (r) => <span className={`rec rec-${r.report.recommendation}`}>{t(`scout.rec.${r.report.recommendation}`)}</span>, sortValue: (r) => ({ sign: 0, monitor: 1, pass: 2 })[r.report.recommendation] },
   ];
   if (rows.length === 0) return <p className="small muted" data-testid="reports-empty">{t('scout.noReports')}</p>;
   return <div data-testid="report-table"><DataTable rows={rows} columns={cols} filterKey={(r) => `${r.player.handle} ${r.player.role} ${r.player.country}`} initialSort={{ key: 'date', dir: 'desc' }} rowId={(r) => r.player.playerId} onRowClick={(r) => onOpen(squadRow(w, r.player))} /></div>;
+}
+
+/** Per-region scouting coverage: how many players we know and how well, and whether a scout is there. */
+export function CoveragePanel() {
+  const t = useT();
+  const w = useWorld();
+  const date = useCareer().career?.date;
+  const rows: CoverageRow[] = coverageRows(w, date);
+  if (rows.length === 0) return <p className="small muted" data-testid="coverage-empty">{t('scout.noScouts')}</p>;
+  return (
+    <table className="assign-table" data-testid="coverage-panel">
+      <thead><tr>
+        <th>{t('career.region.title')}</th><th>{t('scout.coverage.players')}</th><th>{t('scout.coverage.known')}</th><th>{t('col.knowledge')}</th><th>{t('scout.coverage.scouted')}</th>
+      </tr></thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.region} data-testid={`coverage-row-${r.region}`}>
+            <td><b>{t(`career.region.${r.region}`)}</b></td>
+            <td className="small">{r.players}</td>
+            <td className="small">{r.known}</td>
+            <td style={{ minWidth: 90 }}>
+              <span className="small">{r.knowledge}%</span>
+              <div className="wage-bar" style={{ marginTop: 2 }}><div className={`wage-fill ${r.knowledge >= 50 ? 'good' : r.knowledge <= 20 ? 'over' : ''}`} style={{ width: `${r.knowledge}%` }} /></div>
+            </td>
+            <td className="small">{r.scouted ? <span className="rec rec-sign">{t('scout.coverage.yes')}</span> : <span className="muted">{t('scout.coverage.no')}</span>}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 const KINDS: AssignmentKind[] = ['region', 'league', 'youth', 'player'];
