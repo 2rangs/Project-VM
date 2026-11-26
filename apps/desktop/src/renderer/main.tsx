@@ -2,8 +2,9 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { LangProvider } from './i18n/index.tsx';
+import { GraphicsProvider } from './settings/graphics.tsx';
 import './styles.css';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode><LangProvider><App /></LangProvider></StrictMode>,
+  <StrictMode><LangProvider><GraphicsProvider><App /></GraphicsProvider></LangProvider></StrictMode>,
 );

@@ -9,42 +9,20 @@
 // (assets/maps/<map>.glb is optional and never in git) the state is 'absent' and the cams use the
 // navgraph blockout; a mesh that cannot be parsed is 'failed' and the blockout is used with a note.
 import { useSyncExternalStore } from 'react';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import { Assets } from 'pixi.js';
 import { valorantApiMinimap } from '@pv/replay-viewer';
 import { bridge } from '../../platform.ts';
 
 export type MeshState = 'idle' | 'loading' | 'ready' | 'absent' | 'failed';
 
-interface Store { mesh: MeshState; root: THREE.Object3D | null; triangles: number; minimapUrl: string | null; minimapOk: boolean | null }
+// `root` is a three.js Object3D, kept as `object` here so this module (on the 2D / loading path)
+// never pulls in three.js; the 3D stage casts it back. See mesh3d.ts for the lazy parse.
+interface Store { mesh: MeshState; root: object | null; triangles: number; minimapUrl: string | null; minimapOk: boolean | null }
 const store: Store = { mesh: 'idle', root: null, triangles: 0, minimapUrl: null, minimapOk: null };
 const listeners = new Set<() => void>();
 let snapshot = { mesh: store.mesh, minimapOk: store.minimapOk };
 const emit = () => { snapshot = { mesh: store.mesh, minimapOk: store.minimapOk }; for (const l of listeners) l(); };
 let pending: Promise<void> | null = null;
-
-/** Parse a GLB that is already in scene coordinates and make it ready to render and ray-cast. */
-async function prepareMesh(bytes: Uint8Array): Promise<{ root: THREE.Object3D; triangles: number }> {
-  const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-  const gltf = await new GLTFLoader().parseAsync(buf, '');
-  const root = gltf.scene;
-  let triangles = 0;
-  root.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (!m.isMesh) return;
-    const src = m.material as THREE.MeshStandardMaterial;
-    m.material = new THREE.MeshStandardMaterial({ color: src?.color ?? new THREE.Color(0x8a8f96), roughness: 0.95, metalness: 0, side: THREE.DoubleSide, vertexColors: !!m.geometry.getAttribute('color') });
-    m.geometry.computeVertexNormals();
-    (m.geometry as THREE.BufferGeometry & { boundsTree?: MeshBVH }).boundsTree = new MeshBVH(m.geometry);
-    m.raycast = acceleratedRaycast;
-    m.matrixAutoUpdate = false; m.updateMatrix();
-    triangles += (m.geometry.index ? m.geometry.index.count : m.geometry.getAttribute('position').count) / 3;
-  });
-  root.updateMatrixWorld(true);
-  return { root, triangles };
-}
 
 async function loadMesh(mapId: string): Promise<void> {
   if (store.mesh === 'ready' || store.mesh === 'absent') return;
@@ -52,7 +30,8 @@ async function loadMesh(mapId: string): Promise<void> {
   try {
     const bytes = await bridge.loadMapMesh(mapId);
     if (!bytes) { store.mesh = 'absent'; emit(); return; }
-    const { root, triangles } = await prepareMesh(bytes);
+    const { prepareMeshBytes } = await import('./mesh3d.ts'); // lazy: three.js loads only when a mesh exists
+    const { root, triangles } = await prepareMeshBytes(bytes);
     store.root = root; store.triangles = triangles; store.mesh = 'ready';
     console.info(`[assets] map mesh ready: ${Math.round(triangles).toLocaleString()} triangles`);
   } catch (e) {
@@ -77,12 +56,14 @@ async function loadMinimap(): Promise<void> {
  * Start (or join) the preparation of everything the live view needs. Never rejects; resolves once
  * both parts have settled or after `maxWaitMs`, so a loading screen that awaits it cannot hang.
  */
-export function preloadMatchAssets(mapId = 'ascent', maxWaitMs = 20000): Promise<void> {
-  if (!pending) pending = Promise.all([loadMesh(mapId), loadMinimap()]).then(() => undefined, () => undefined).finally(() => { pending = null; });
+export function preloadMatchAssets(mapId = 'ascent', maxWaitMs = 20000, want3d = true): Promise<void> {
+  // On low graphics the team cams are off, so the map mesh (three.js + GLB parse + BVH build) is
+  // never read — only the minimap the tactical 2D map needs is prepared.
+  if (!pending) pending = Promise.all([want3d ? loadMesh(mapId) : Promise.resolve(), loadMinimap()]).then(() => undefined, () => undefined).finally(() => { pending = null; });
   return Promise.race([pending, new Promise<void>((res) => setTimeout(res, maxWaitMs))]);
 }
 
-export const preparedMesh = (): THREE.Object3D | null => store.root;
+export const preparedMesh = (): object | null => store.root;
 export const preparedMinimapUrl = (): string | null => store.minimapUrl;
 
 /** Asset state for React (mesh + minimap), updated as the preload settles. */

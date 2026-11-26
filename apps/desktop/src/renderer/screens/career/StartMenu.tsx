@@ -7,10 +7,12 @@ import { useLang } from '../../i18n/index.tsx';
 import type { SaveSlot, SaveSlotInfo } from '../../../shared/career.ts';
 import { loadCareer, setSimDepth, useCareer } from '../../career/session.ts';
 import { LoadingScreen } from '../../loading/Loading.tsx';
+import { QUALITIES, useGraphics } from '../../settings/graphics.tsx';
 
 export function StartMenu({ onNewCareer, onQuickMatch }: { onNewCareer: () => void; onQuickMatch: () => void }) {
   const { t, lang, setLang } = useLang();
   const cs = useCareer();
+  const gfx = useGraphics();
   const [slots, setSlots] = useState<SaveSlotInfo[] | null>(null);
   const [panel, setPanel] = useState<'main' | 'load' | 'settings'>('main');
   const refresh = () => { bridge.saveList().then(setSlots).catch(() => setSlots([])); };
@@ -76,6 +78,15 @@ export function StartMenu({ onNewCareer, onQuickMatch }: { onNewCareer: () => vo
               <button className={lang === 'ko' ? 'on' : ''} onClick={() => setLang('ko')} data-testid="lang-ko">{t('about.langKo')}</button>
               <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')} data-testid="lang-en">{t('about.langEn')}</button>
             </div>
+          </div>
+          <div className="start-setting">
+            <b>{t('start.gfx')}</b>
+            <div className="md-modetoggle">
+              {QUALITIES.map((q) => (
+                <button key={q} className={gfx.quality === q ? 'on' : ''} onClick={() => gfx.setQuality(q)} data-testid={`gfx-${q}`}>{t(`start.gfx.${q}`)}</button>
+              ))}
+            </div>
+            <span className="small muted">{t('start.gfx.hint')}</span>
           </div>
           <div className="start-setting">
             <b>{t('start.sim')}</b>

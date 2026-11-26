@@ -125,14 +125,16 @@ export class MatchStage {
     if (Number.isFinite(u0)) this.zoneBox = { u0, v0, u1, v1 };
   }
 
-  async init(mount: HTMLElement): Promise<void> {
+  async init(mount: HTMLElement, opts?: { dprMax?: number; antialias?: boolean }): Promise<void> {
     await this.app.init({
       width: Math.max(1, mount.clientWidth), height: Math.max(1, mount.clientHeight),
-      backgroundAlpha: 0, antialias: true, autoDensity: true,
+      backgroundAlpha: 0, antialias: opts?.antialias ?? true, autoDensity: true,
       // No free-running ticker: the playback loop updates the scene and then draws it (render()),
       // so every displayed frame holds that frame's positions — no doubled or skipped frames.
       autoStart: false,
-      resolution: Math.min(2, globalThis.devicePixelRatio || 1),
+      // Cap the pixel ratio to the graphics quality (low pins it at 1): a HiDPI office laptop then
+      // rasterises the map at 1×, not 4× the pixels, which is most of the 2D cost on weak graphics.
+      resolution: Math.min(opts?.dprMax ?? 2, globalThis.devicePixelRatio || 1),
     });
     if (this.destroyed) { try { this.app.destroy(true); } catch { /* noop */ } return; }
     mount.appendChild(this.app.canvas);

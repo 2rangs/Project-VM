@@ -31,8 +31,10 @@ import { loadPrefs, savePrefs, type MatchPrefs } from '../../matchday/prefs.ts';
 import { rosterHandles } from '../../matchday/roster.ts';
 import { usePlayback } from '../../matchday/usePlayback.ts';
 import { MatchStage, type StageView } from './MatchStage.ts';
-import { CamStage3D, type CamView } from './CamStage3D.ts';
-import { buildBlockout } from '../../matchday/world3d.ts';
+import type { CamStage3D } from './CamStage3D.ts';
+import type { CamView } from './cams3d-loader.ts';
+import { createCamStage3D, type PlantZone } from './cams3d-loader.ts';
+import { useGraphics } from '../../settings/graphics.tsx';
 import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
 import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, MatchupStrip, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
@@ -40,7 +42,7 @@ import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
-const blockout = buildBlockout(nav, (navgraph as unknown as { plantZones?: Array<{ zoneId: string; polygon: Array<{ x: number; y: number }> }> }).plantZones ?? []);
+const PLANT_ZONES: PlantZone[] = (navgraph as unknown as { plantZones?: PlantZone[] }).plantZones ?? [];
 /** The engine's navigation roadmap (the floor players walk on) — drawn by the developer overlay. */
 const roadmap = buildRoadmap(roadmapData as unknown as RoadmapData);
 const EMPTY: MatchTimeline = { rounds: [], startMs: 0, endMs: 0, hasTracks: false };
@@ -83,6 +85,7 @@ interface ViewSpec { key: string; slot: number | null; detail: 'full' | 'compact
 
 export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay, onAutoPlay, onExit, onReview, managerOverlay }: LiveMatchProps) {
   const t = useT();
+  const { config: gfx } = useGraphics();
   const [prefs, setPrefs] = useState<MatchPrefs>(loadPrefs);
   const [pov, setPov] = useState<TeamSlot>(OUR_TEAM);
   const [focus, setFocus] = useState<string | null>(null);
@@ -93,10 +96,11 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const update = useCallback((patch: Partial<MatchPrefs>) => setPrefs((p) => { const n = { ...p, ...patch }; savePrefs(n); return n; }), []);
 
   const tl = useMemo(() => (replay ? buildTimeline(replay, match, nav) : EMPTY), [replay, match]);
-  const playback = usePlayback(tl, prefs.tempo);
+  const playback = usePlayback(tl, prefs.tempo, gfx.fpsCap);
   const { seek } = playback;
 
-  const mode = prefs.mode;
+  // Low graphics drops the 3D team cams entirely: the view is pinned to the tactical 2D map.
+  const mode = gfx.cams3d ? prefs.mode : 'tactical';
   // The monitors are always OUR players; the debug POV only applies to the tactical map.
   const viewTeam: TeamSlot = mode === 'cams' ? OUR_TEAM : pov;
   const hasPerception = !!replay?.perception?.length;
@@ -208,13 +212,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
       else if (e.code === 'ArrowLeft') jumpEvent(-1);
       else if (e.code === 'ArrowRight') jumpEvent(1);
-      else if (e.code === 'KeyM') update({ mode: mode === 'tactical' ? 'cams' : 'tactical' });
+      else if (e.code === 'KeyM' && gfx.cams3d) update({ mode: mode === 'tactical' ? 'cams' : 'tactical' });
       else if (e.code === 'Escape') { if (focus) setFocus(null); else setSelSlot(null); }
       else if (/^Digit[1-5]$/.test(e.code) && !e.ctrlKey && !e.metaKey && !e.altKey) { const n = Number(e.code.slice(5)); setSelSlot((c) => (c === n ? null : n)); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay, jumpEvent, update, mode, focus]);
+  }, [togglePlay, jumpEvent, update, mode, focus, gfx.cams3d]);
 
   // ── stage ────────────────────────────────────────────────────────────────────────────────
   const hostRef = useRef<HTMLDivElement>(null);
@@ -244,8 +248,8 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     stage.setRoadmap(roadmap);
     stageRef.current = stage;
     let alive = true;
-    void stage.init(host).then(async () => {
-      await preloadMatchAssets(); // normally already settled: the loading screen waited for it
+    void stage.init(host, { dprMax: gfx.dprMax, antialias: !gfx.minAnim }).then(async () => {
+      await preloadMatchAssets('ascent', 20000, gfx.cams3d); // normally already settled: the loading screen waited for it
       const ok = await stage.setMap(preparedMinimapUrl());
       if (alive) setMapOk(ok);
     });
@@ -256,31 +260,38 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // three.js stage for the cams: created with the screen (not on the first switch to the cams) and
-  // given the map mesh the loading screen already prepared, so opening the cams starts no load.
+  // three.js stage for the cams. The whole 3D stack (three.js, models, blockout) is lazily imported
+  // and the stage is built only when the graphics quality offers the cams — on low it never loads.
+  // Given the map mesh the loading screen already prepared, opening the cams starts no load.
   const host3dRef = useRef<HTMLDivElement>(null);
   const camStageRef = useRef<CamStage3D | null>(null);
+  const [cam3dReady, setCam3dReady] = useState(false);
   const assets = useMatchAssets();
   const [mapMesh, setMapMesh] = useState<'blockout' | 'glb'>('blockout');
   useEffect(() => {
+    if (!gfx.cams3d) return; // low graphics: no 3D wall at all
     const host = host3dRef.current;
     if (!host) return;
-    const stage = new CamStage3D(nav, blockout);
-    stage.init(host);
-    camStageRef.current = stage;
-    (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
-    void preloadMatchAssets(); // no-op when the loading screen has done it; covers re-opening the view
-    const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
-    ro.observe(host);
-    return () => { ro.disconnect(); stage.destroy(); camStageRef.current = null; };
-  }, []);
+    let alive = true; let ro: ResizeObserver | null = null;
+    void createCamStage3D(nav, PLANT_ZONES, { dprMax: gfx.dprMax, shadows: gfx.shadows, fpsCap: gfx.fpsCap }).then((stage) => {
+      if (!alive) { stage.destroy(); return; }
+      stage.init(host);
+      camStageRef.current = stage;
+      (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
+      void preloadMatchAssets('ascent', 20000, true); // covers re-opening the view
+      ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
+      ro.observe(host);
+      setCam3dReady(true);
+    });
+    return () => { alive = false; ro?.disconnect(); camStageRef.current?.destroy(); camStageRef.current = null; setCam3dReady(false); };
+  }, [gfx.cams3d, gfx.dprMax, gfx.shadows, gfx.fpsCap]);
   useEffect(() => {
     const stage = camStageRef.current; const root = preparedMesh();
     if (!stage || assets.mesh !== 'ready' || !root) return;
-    stage.setMapScene(root);
+    stage.setMapScene(root as Parameters<typeof stage.setMapScene>[0]);
     stage.warmUp();
     setMapMesh('glb');
-  }, [assets.mesh]);
+  }, [assets.mesh, cam3dReady]);
 
   useEffect(() => {
     let lastSig = ''; let lastDone = true;
@@ -409,7 +420,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       <TopHud
         t={t} mode={mode} onMode={(m) => update({ mode: m })} onExit={onExit} onReview={onReview}
         teams={teams} viewTeam={viewTeam} score={score} frame={frame} round={round} nextRound={nextRound}
-        pov={pov} onPov={setPov} povLocked={mode === 'cams'} belief={prefs.belief} onBelief={(v) => update({ belief: v })}
+        pov={pov} onPov={setPov} povLocked={mode === 'cams'} belief={prefs.belief} onBelief={(v) => update({ belief: v })} cams3d={gfx.cams3d}
         hasPerception={hasPerception} sourceLabel={sourceLabel} mapName={replay?.meta.mapDisplayName ?? 'Ascent'} seed={match?.seed ?? replay?.meta.seed ?? null}
       />
 

@@ -22,6 +22,7 @@ import { Icon } from './matchday/Icons.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx';
 import { MatchLoadScreen } from '../loading/MatchLoadScreen.tsx';
 import { preloadMatchAssets } from './matchday/assets.ts';
+import { useGraphics } from '../settings/graphics.tsx';
 // [manager] in-match management, half-time talk, pre-match report + plan, post-match summary
 import { ManagerPanel } from './matchday/ManagerPanel.tsx';
 import { PrematchPanel } from './matchday/PrematchPanel.tsx';
@@ -45,6 +46,7 @@ export interface MatchDaySeriesGame {
 
 export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: MatchDaySeriesGame }) {
   const t = useT();
+  const { config: gfx } = useGraphics();
   const [mode, setMode] = useState<'oneshot' | 'interactive'>('oneshot');
   const [running, setRunning] = useState(false);
   const [pct, setPct] = useState(0);
@@ -128,7 +130,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   async function runMatch() {
     setRunning(true); setPct(0); setLog([]); setMatch(null); setSimStep(null); setRunError(null); setLoadPhase('work');
     // the live view's assets (3D map for the team cams, minimap) load alongside the simulation
-    const assets = preloadMatchAssets();
+    const assets = preloadMatchAssets('ascent', 20000, gfx.cams3d);
     try {
       const res = await bridge.runSimulation(
         { mapId: 'ascent', seed, rounds: 13, teamA: refOf(teamA), teamB: refOf(teamB), options: matchOptions(), ...(series ? { seriesGame: true } : {}) },
@@ -150,7 +152,7 @@ export function MatchDayScreen({ ctx, series }: { ctx: ScreenCtx; series?: Match
   async function startInteractive() {
     setTab('match'); setAutoPlay(false); setOrdersOpen(false); setSource('match-runner'); setImmersive(true);
     setSessPreparing(true); setLoadPhase('work');
-    const assets = preloadMatchAssets();
+    const assets = preloadMatchAssets('ascent', 20000, gfx.cams3d);
     try {
       const enginePlan = series ? undefined : planForEngine(plan); // [manager] a series map uses the series' own setup
       const scouting = !series && plan.useScouting && report && report.them.id === refOf(teamB).id ? { logs: report.logs } : undefined;

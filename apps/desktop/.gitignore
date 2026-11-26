@@ -9,3 +9,4 @@ real-*.json
 assets/maps/
 # user-supplied loading banners (third-party media — never commit)
 assets/banners/
+test/.perf/
