@@ -419,6 +419,15 @@
 - 보정(1,100시리즈): Brier 0.166→0.163, ECE 0.055→0.011, 90–100% 구간 예측 0.951 vs 실측 0.957. 이전 상수는 새 엔진에서 오히려 과소신(강팀이 더 강해짐). 27차의 "과신"은 120시리즈 소표본 착시.
 - 검증: 엔진 파일 변경 없음(커리어 상수만). career 107/1 skip, typecheck 통과(이 통합 세션). 세션 측 데스크톱 build·커리어 e2e 통과.
 
+### 30차 main 머지 (2026-11-26) — 3차 작업 묶음: 저사양·관전·커리어 깊이·성능, 엔진 진단
+- 사용자 원칙 추가: **FM·OOTP처럼 사양을 타면 안 됨**(HANDOFF 머리말). 세션 10개(A–J)에 분배, KST 18:00 마감 지시로 통합 게이트 한 번.
+- 합친 브랜치: `claude/pv3-perf` @ `7944cff`(지각 패스 위치 캐시 48.84→32.40 ms/round, 커리어 엔진 시리즈 −21%, 바이트 동일), `claude/pv3-lowspec` @ `2ff773f`(그래픽 품질 저/중/고·자동 감지, 3D 지연 로딩, 백그라운드 렌더 정지, 가상 스크롤, 2D 정적 레이어 캐시; 저사양 근사에서 2D 9.2→12.3fps, 초기 JS 6.05→4.98MB), `claude/pv3-spectate` @ `1e0ce8c`(하이라이트 재생 결과/핵심/확장/전체 — 프레임 ~1/6, 라이브 라운드 승률·스윙 모먼트, 밴픽 연출), `claude/pv3-career-depth` @ `aba29df`(기자회견·선수 1:1 대화→사기, 스카우트 지식 감쇠·신뢰도, 튜토리얼·난이도; 경기 효과는 `moraleInMatch` OFF 그대로), `claude/pv3-research` @ `789d50f`(COMPARABLES·UPGRADE_BACKLOG), `claude/pv3-community-data` @ `b735d2b`(커뮤니티 VCT 값 40개, vlr 파생 제외), `claude/pv3-mid-info` @ `0e0da27`·`claude/pv3-eco-defense` @ `ab114ac`(문서만), `claude/pv3-retake` @ `740e09c`(.gitignore만).
+- 직접 푼 충돌: `usePlayback.ts`(F의 fpsCap·백그라운드 정지 + G의 하이라이트 plan → 인자 `fpsCap, onRoundEnd, plan`), `LiveMatch.tsx`(`usePlayback(tl, tempo, gfx.fpsCap, undefined, plan)`).
+- 엔진 진단(기본값 변경 없음): `midControl` 두 구간 8/8 통과(비용 확인 후 ON 후보). 에코 스틸 원인 = 접촉 시점 수적 열세(서브존·스택·홀드 무효, `weaponModes`는 에코 셀을 도움 — 28차 기록 정정). 큰 맵 폭발 과다 = 공격이 세이버를 사냥하지 않음(세이브→전멸 Ascent 61% vs Split 11%·Fracture 5%), 리테이크 강제는 Ascent 게이트를 깸.
+- 미완: 세션 C(`plantTactics`+`gaze`), D 측정 문서, H(박스스코어·검증 지표)는 마감 전 세션 실패로 push 없음 → 4차 재착수.
+- 검증(실제 로스터, 이 통합 세션): 시드 1–160 **8/8·15/15**(공격 0.515, 피스톨 0.487, 전멸 0.704, 해체 0.192, 폭발 0.087, 시간 초과 0.017), 161–320 **8/8·13/15**(피스톨 0.484; 실패 셀 세미 대 에코 0.990, 에코 대 풀 0.091) — 28차와 동일.
+- 테스트: 루트 307/4 todo, round-simulator 166(perf 28.3 ms/round), match-runner 136, spatial 442, combat 36, perception 32, economy 38, ability 21, career 128, 데스크톱 typecheck·build·unit 80·matchday 76·engine 10. 시크릿·자산 검사 깨끗.
+
 ## 6. 다음 단계
 
 1. PV-4 라운드 엔진 개선분과 PV-2 시나리오 v2를 통합 브랜치에 반영.

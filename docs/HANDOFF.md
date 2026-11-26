@@ -58,7 +58,7 @@ cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). app
 - 피스톨 원인(측정): 엔진 버그 아님 — 움직이는 공격수 vs 멈춘 수비수(교전 61%). 이동 스타일 + 클래식 이동 사격이 함께 들어가며 회복.
 - 남은 실패 셀(161–320): 세미 대 에코 0.990(VCT 0.928) — 에코 수비 스틸이 ~2–3%(VCT ~7%). 구역 단위 재배치로는 안 됨(`ecoDefenseStack` 측정상 음성) → 서브존 근접 배치 모델 필요. `weaponModes`의 에코 샷건 이동 사격도 이 셀을 악화시킨다.
 - 맵 자기 지형(`geometry: "own"`, 28차 측정): 공격 승률은 6개 맵에서 범위 안, 공통 실패는 **폭발률 0.16–0.40**(Ascent 0.078). 원인은 리테이크 실행 로직이 Ascent 기준(순차 듀얼·스텝아웃). Bind는 중앙 로테이터 수비 배치로 폭발 0.257→0.174(`docs/handoff/maps-own-geometry.md`).
-- 성능 테스트(`round-simulator/test/perf.test.ts`, 1,000라운드 < 60초)는 부하에 따라 49–69초로 흔들린다 — 실패하면 단독 재실행.
+- 30차: 기본 시뮬 결과는 28차와 동일(두 구간 판정·수치 일치, 성능 개선은 바이트 동일). 성능 테스트는 28–33초로 상한(60초)에 여유.
 
 ## 4. 플래그 뒤에 있는 것 (기본 OFF — 켜기 전에 실제 로스터 게이트 필요)
 
@@ -108,20 +108,20 @@ cd apps/desktop && npm install && npm run dev      # 데스크톱(Electron). app
 - 요원·무기·오퍼레이터 3D 모델과 애니메이션은 오리지널. 생성 선수 이름은 오리지널, 실존 핸들 1,227개와 충돌 검사.
 - 원작 명칭(VALORANT, 요원·맵 이름) 사용 자체가 판매를 막을 수 있는 독립 위험 — 독자 세계관 여부를 일찍 결정할 것.
 
-## 7. 테스트 상태 (28차 통합 트리)
+## 7. 테스트 상태 (30차 통합 트리)
 
 | 묶음 | 결과 |
 |---|---|
 | 루트 vitest(코어·team-engine·decision-engine) | 307 통과, 4 todo |
-| round-simulator / match-runner | 166 통과(1 skip) / 136 통과 |
+| round-simulator / match-runner | 166 통과(1 skip, perf 28.3 ms/round) / 136 통과 |
 | spatial-engine | 442 통과, 22 skip |
 | combat / perception / economy / ability-engine | 36 / 32 / 38 / 21 통과 |
 | replay-engine / game-data | 15 / 7 통과 |
-| career | 107 통과, 1 skip |
+| career | 128 통과, 1 skip |
 | data-validator pytest | 65 통과 |
 | 데스크톱 typecheck·build | 통과 |
-| 데스크톱 test:unit / test:matchday / test:engine | 78 / 58 / 10 통과 |
-| e2e / series / career / club | 이번 통합에서 미실행(커리어 e2e는 커리어 세션이 통과 확인) |
+| 데스크톱 test:unit / test:matchday / test:engine | 80 / 76 / 10 통과 |
+| e2e / series / career / club | 세션 측 통과(E: electron·series·club, I: career·club, G: series·main) — 통합 트리 재실행은 안 함 |
 
 ## 8. 운영 메모
 - 세션 15개가 동시에 돌면 무거운 실행 대기열이 60–90분까지 늘었다. 다음 묶음은 세션 수를 줄이거나, 세션별 게이트 대신 통합 게이트 한 번으로 묶는다(이번 마감에서 그렇게 했다).
