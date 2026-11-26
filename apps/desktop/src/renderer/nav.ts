@@ -28,6 +28,7 @@ export const NAV: NavGroup[] = [
     label: 'TEAM',
     items: [
       { id: 'squad', icon: '👥' },
+      { id: 'media', icon: '🎙', career: true }, // media & player interaction → morale (screens/career/MediaScreen.tsx)
       { id: 'opponent', icon: '◎' },
     ],
   },

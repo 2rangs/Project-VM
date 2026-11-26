@@ -13,10 +13,11 @@ import {
 } from '../career/world.ts';
 import { GenTag, PlayerDetail, squadRow, type SquadRow } from './SquadScreen.tsx';
 import { LoadingScreen } from '../loading/Loading.tsx'; // [loading]
-import { AssignPanel, ClubYouthTable, ReportTable, ShortlistTable } from './scouting/tables.tsx';
+import { AssignPanel, ClubYouthTable, CoveragePanel, ReportTable, ShortlistTable } from './scouting/tables.tsx';
 import { fogged } from '../career/scouting.ts';
+import { Help } from '../help/Help.tsx';
 
-type Tab = 'prospects' | 'free' | 'staff' | 'assign' | 'reports' | 'shortlist' | 'club';
+type Tab = 'prospects' | 'free' | 'staff' | 'assign' | 'reports' | 'shortlist' | 'club' | 'coverage';
 
 const to20 = (v: number) => Math.max(1, Math.min(20, Math.round(1 + v * 19)));
 
@@ -89,7 +90,7 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
     <div className="pad scouting" data-testid="career-screen">
       {advancing && <LoadingScreen cover="window" title={t('load.season.title')} detail={t('load.season.detail', { from: w.season, to: w.season + 1 })} steps={t('load.season.steps')} testId="loading-season" />}
       {!advancing && advanceError && <LoadingScreen cover="window" title={t('load.season.failed')} error={advanceError} onRetry={advance} onDismiss={() => setAdvanceError(null)} />}
-      <h2>{t('career.title')} <span className="muted small" data-testid="career-season">{t('career.season', { season: w.season })}</span></h2>
+      <h2>{t('career.title')} <span className="muted small" data-testid="career-season">{t('career.season', { season: w.season })}</span>{fog && <Help topic="scouting" />}</h2>
       <div className="career-bar">
         <span className="small">{t('career.population', { players: pop.players, gen: pop.generated, staff: pop.staff })}</span>
         {last && <span className="small muted">{t('career.lastIntake', { season: last.season, n: last.newPlayers.length, retired: last.retiredPlayers.length, signed: last.signings.length })}</span>}
@@ -97,16 +98,17 @@ export function ScoutingScreen({ setDetail }: { setDetail: (d: DetailPanel) => v
         {!career && <button className="career-reset" onClick={() => { setDetail(null); resetWorld(); }} data-testid="career-reset">{t('career.reset')}</button>}
       </div>
       <div className="md-tabs">
-        {fog && (['reports', 'assign', 'shortlist', 'club'] as const).map((k) => (
+        {fog && (['reports', 'assign', 'coverage', 'shortlist', 'club'] as const).map((k) => (
           <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)} data-testid={`scout-tab-${k}`}>{t(`scout.tab.${k}`)}</button>
         ))}
         <button className={tab === 'prospects' ? 'on' : ''} onClick={() => setTab('prospects')} data-testid="career-tab-prospects">{t('career.tab.prospects', { season: w.season, n: prospects.length })}</button>
         <button className={tab === 'free' ? 'on' : ''} onClick={() => setTab('free')} data-testid="career-tab-free">{t('career.tab.free', { n: free.length })}</button>
         <button className={tab === 'staff' ? 'on' : ''} onClick={() => setTab('staff')} data-testid="career-tab-staff">{t('career.tab.staff', { n: staff.length })}</button>
       </div>
-      <p className="small muted">{t(fog && ['reports', 'assign', 'shortlist', 'club'].includes(tab) ? `scout.hint.${tab}` : `career.hint.${tab}`)}</p>
+      <p className="small muted">{t(fog && ['reports', 'assign', 'coverage', 'shortlist', 'club'].includes(tab) ? `scout.hint.${tab}` : `career.hint.${tab}`)}</p>
       {tab === 'reports' && fog && <ReportTable onOpen={openPlayer} />}
       {tab === 'assign' && fog && <AssignPanel />}
+      {tab === 'coverage' && fog && <CoveragePanel />}
       {tab === 'shortlist' && fog && <ShortlistTable onOpen={openPlayer} />}
       {tab === 'club' && fog && <ClubYouthTable onOpen={openPlayer} />}
       {tab === 'prospects' && (

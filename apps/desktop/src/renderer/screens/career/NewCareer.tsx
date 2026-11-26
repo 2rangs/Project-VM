@@ -8,7 +8,7 @@ import { useLang } from '../../i18n/index.tsx';
 import teamMaps from '../../../data/team_maps.json';
 import { SAVE_SLOTS, type SaveSlot, type SaveSlotInfo } from '../../../shared/career.ts';
 import { FIXTURES } from '../../career/fixtures.ts';
-import { buildDesktopWorld, leagueTeams, regionTeams, scoutedAbility, teamStrength, REGIONS, type Region, type World } from '../../career/world.ts';
+import { buildDesktopWorld, leagueTeams, regionTeams, scoutedAbility, teamStrength, REGIONS, DIFFICULTY_IDS, type Region, type World, type DifficultyId } from '../../career/world.ts';
 import { startNewCareer, useCareer } from '../../career/session.ts';
 import { Flag } from '../../ui.tsx';
 import { GenTag } from '../SquadScreen.tsx';
@@ -75,6 +75,7 @@ export function NewCareer({ onCancel }: { onCancel: () => void }) {
   const [teamId, setTeamId] = useState<string | null>(null);
   const [slots, setSlots] = useState<SaveSlotInfo[]>([]);
   const [slot, setSlot] = useState<SaveSlot>('slot1');
+  const [difficulty, setDifficulty] = useState<DifficultyId>('normal');
   useEffect(() => {
     bridge.saveList().then((s) => { setSlots(s); setSlot((s.find((x) => !x.meta) ?? s[0])?.slot ?? 'slot1'); }).catch(() => {});
   }, []);
@@ -147,6 +148,15 @@ export function NewCareer({ onCancel }: { onCancel: () => void }) {
             <div>{t('nc.summary', { name: name.trim(), nation: nationName(lang, nation), team: world.teams[teamId]!.name, region: t(`career.region.${region}`), season: world.season })}</div>
             <div className="small muted">{t('nc.summarySeed', { seed })}</div>
           </div>
+          <div className="attr-grouplabel">{t('nc.difficulty')}</div>
+          <div className="md-modetoggle nc-difficulty" data-testid="nc-difficulty">
+            {DIFFICULTY_IDS.map((d) => (
+              <button key={d} className={d === difficulty ? 'on' : ''} onClick={() => setDifficulty(d)} data-testid={`nc-difficulty-${d}`}>
+                {t(`nc.difficulty.${d}`)}
+              </button>
+            ))}
+          </div>
+          <p className="small muted" data-testid="nc-difficulty-desc">{t(`nc.difficulty.${difficulty}.desc`)}</p>
           <div className="attr-grouplabel">{t('nc.slot')}</div>
           {SAVE_SLOTS.map((s) => {
             const info = slots.find((x) => x.slot === s);
@@ -161,7 +171,7 @@ export function NewCareer({ onCancel }: { onCancel: () => void }) {
           {cs.error && <div className="err small">⚠ {cs.error}</div>}
           <div className="nc-actions">
             <button className="ord-cancel" onClick={() => setStep(2)}>{t('start.back')}</button>
-            <button className="md-run" onClick={() => void startNewCareer({ managerName: name, nationality: nation, teamId, slot, seed })} data-testid="nc-start">{t('nc.start')}</button>
+            <button className="md-run" onClick={() => void startNewCareer({ managerName: name, nationality: nation, teamId, slot, seed, difficulty })} data-testid="nc-start">{t('nc.start')}</button>
           </div>
         </div>
       )}

@@ -99,6 +99,12 @@ export function setSeasonBudgets(w: World, date: string, notify = true): void {
     f.wageBudget = roundTo(M.wageShare * f.expectedIncome, M.wageStep);
     f.transferBudget = roundTo(M.transferShare * Math.max(0, f.balance - M.transferReserveYears * annualCosts(w, id)), M.feeStep);
     f.season = {};
+    // Difficulty: scale the MANAGER's club budgets (every other club is untouched).
+    const fin = club.difficulty?.finance ?? 1;
+    if (fin !== 1 && id === club.userTeamId) {
+      f.wageBudget = roundTo(f.wageBudget * fin, M.wageStep);
+      f.transferBudget = roundTo(f.transferBudget * fin, M.feeStep);
+    }
     if (notify && id === club.userTeamId) pushMessage(club, date, MSG.budget(w.season, f.wageBudget, f.transferBudget, f.sponsorship));
   }
 }
@@ -114,11 +120,14 @@ export function initFinances(w: World, date: string): void {
     club.finances[id] = f;
   }
   setSeasonBudgets(w, date, false);
+  const fin = club.difficulty?.finance ?? 1;
   for (const id of Object.keys(w.teams).sort()) {
     const f = club.finances[id]!;
+    // Difficulty scales the MANAGER's starting cash (so hard begins with less in the bank, easy more).
+    const scale = id === club.userTeamId ? fin : 1;
     // The board accepts the payroll the club starts with: the first wage budget covers it.
-    f.wageBudget = Math.max(f.wageBudget, roundTo(wageBill(w, id).total * (1 + M.wageTolerance / 2), M.wageStep));
-    f.balance = roundTo(M.initialReserveYears * annualCosts(w, id), M.feeStep);
+    f.wageBudget = Math.max(roundTo(f.wageBudget, M.wageStep), roundTo(wageBill(w, id).total * (1 + M.wageTolerance / 2), M.wageStep));
+    f.balance = roundTo(scale * M.initialReserveYears * annualCosts(w, id), M.feeStep);
     f.transferBudget = roundTo(M.transferShare * Math.max(0, f.balance - M.transferReserveYears * annualCosts(w, id)), M.feeStep);
   }
   const uf = club.userTeamId ? club.finances[club.userTeamId] : undefined;
