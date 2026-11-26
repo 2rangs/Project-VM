@@ -4,6 +4,11 @@
 // simulation), and it is pinned to the real outcome once the round is over, so it can never
 // contradict the engine's result.
 //
+// The logistic weights (winprob-coef.ts / winprob-coef.json) are fitted offline from engine match
+// data by scripts/fit-winprob.mts — real rosters, Ascent, seeds 1–160 train / 161–320 validate.
+// The feature extraction here (wpStateAt / wpFeatures) is the SINGLE source of truth shared by the
+// fitter and the runtime, so the fitted weights describe exactly what the screen computes.
+//
 // Why this and not @pv/outcome-predictor: that package is the engine's action ranker (it scores a
 // player's candidate actions through PolicyView/SpatialQuery during the sim). What the match screen
 // needs is a state→probability read over the finished round, which the research
@@ -13,26 +18,39 @@
 //
 // Pure module: runs under `node --test`.
 import { roundMarks, situationAt, type MarkKind } from './monitor.ts';
-import { roundOver, type RoundTimeline, type TeamSlot } from './timeline.ts';
-import { ENGINE } from './timeline.ts';
+import { ENGINE, roundOver, type RoundTimeline, type TeamSlot } from './timeline.ts';
+import { WP_COEF } from './winprob-coef.ts';
 
-// Logistic weights. Hand-set to read plausibly (one extra player ≈ a strong edge; a plant is a big
-// attacker swing; a near-complete defuse hands it back), NOT fitted to engine output — see the
-// module header. Tuning these never changes a simulated result.
-const W = {
-  man: 0.82,        // per net alive-player advantage (attacker − defender)
-  equip: 0.55,      // per normalised loadout-value advantage, clamped to ±1
-  equipScale: 4000, // credits of loadout gap that saturates the equip term
-  plant: 1.15,      // post-plant attacker swing
-  defuse: 2.6,      // defender swing as a defuse completes (× progress)
-  preplantTime: 0.5, // attacker edge when time is plentiful pre-plant, decaying to a defender edge
-  spikeTime: 0.6,   // extra attacker edge as the spike timer runs down with no defuse
-} as const;
-
+/** Credits of loadout-value gap that saturates the equipment term. */
+export const EQUIP_SCALE = 4000;
 const PROB_FLOOR = 0.02;
 const PROB_CEIL = 0.98;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+const clamp = (lo: number, hi: number, x: number) => Math.min(hi, Math.max(lo, x));
 const sigmoid = (z: number) => 1 / (1 + Math.exp(-z));
+
+/** The round state the win-probability model reads, extracted once so the fitter and runtime agree. */
+export interface WpState {
+  readonly aliveAtt: number;
+  readonly aliveDef: number;
+  readonly planted: boolean;
+  readonly defusing: boolean;
+  readonly defuseProgress: number;   // 0..1 while a defuse is in progress
+  readonly spikeElapsedFrac: number; // 0..1 of the spike timer, planted & not defusing
+  readonly clockFrac: number;        // 0..1 of the round clock remaining (pre-plant time pressure)
+  readonly equipDiffNorm: number;    // clamp((eqAtt − eqDef)/EQUIP_SCALE, −1, 1)
+}
+
+/** The logistic coefficients (intercept + one per feature of wpFeatures, in order). */
+export interface WpCoef {
+  readonly b0: number;
+  readonly man: number;
+  readonly equip: number;
+  readonly plant: number;
+  readonly spikeTime: number;
+  readonly defuse: number;
+  readonly preplant: number;
+}
 
 /** Team loadout value this round from the summary buys, if the engine recorded it. */
 function loadoutValue(round: RoundTimeline, team: TeamSlot): number | null {
@@ -44,42 +62,54 @@ function loadoutValue(round: RoundTimeline, team: TeamSlot): number | null {
   return null;
 }
 
+/** Extract the win-probability state at tMs. Shared by the fitter (labels) and the live screen. */
+export function wpStateAt(round: RoundTimeline, tMs: number): WpState {
+  const s = situationAt(round, tMs);
+  const defender: TeamSlot = round.attacker === 'A' ? 'B' : 'A';
+  const planted = s.spike.phase === 'planted' || s.spike.phase === 'defusing';
+  const defusing = s.spike.phase === 'defusing';
+  const eqAtt = loadoutValue(round, round.attacker);
+  const eqDef = loadoutValue(round, defender);
+  return {
+    aliveAtt: s.alive[round.attacker],
+    aliveDef: s.alive[defender],
+    planted,
+    defusing,
+    defuseProgress: defusing ? clamp01(s.spike.progress ?? 0) : 0,
+    spikeElapsedFrac: planted && !defusing && s.spike.remainingMs != null ? 1 - clamp01(s.spike.remainingMs / ENGINE.spikeTimerMs) : 0,
+    clockFrac: clamp01(s.clockMs / ENGINE.roundTimeMs),
+    equipDiffNorm: eqAtt != null && eqDef != null ? clamp(-1, 1, (eqAtt - eqDef) / EQUIP_SCALE) : 0,
+  };
+}
+
+/** The model's feature vector (order matches WpCoef after the intercept). */
+export function wpFeatures(st: WpState): [number, number, number, number, number, number] {
+  const man = st.aliveAtt - st.aliveDef;
+  const plant = st.planted ? 1 : 0;
+  const spikeTime = st.planted && !st.defusing ? st.spikeElapsedFrac : 0;
+  const defuse = st.defusing ? st.defuseProgress : 0;
+  const preplant = st.planted ? 0 : st.clockFrac * 2 - 1;
+  return [man, st.equipDiffNorm, plant, spikeTime, defuse, preplant];
+}
+
+/** Logit z = b0 + Σ coef·feature. */
+export function wpLogit(coef: WpCoef, st: WpState): number {
+  const [man, equip, plant, spikeTime, defuse, preplant] = wpFeatures(st);
+  return coef.b0 + coef.man * man + coef.equip * equip + coef.plant * plant + coef.spikeTime * spikeTime + coef.defuse * defuse + coef.preplant * preplant;
+}
+
 /**
  * P(the attacking team wins the round) at tMs, in [PROB_FLOOR, PROB_CEIL] while the round is live,
- * and exactly 1/0 once it is over (pinned to the engine's winner).
+ * and exactly 1/0 once it is over (pinned to the engine's winner). Terminal man-count states
+ * (a side wiped) are hard overrides, not part of the fitted logistic.
  */
 export function attackerWinProb(round: RoundTimeline, tMs: number): number {
   if (roundOver(round, tMs) && round.summary) return round.summary.winner === round.attacker ? 1 : 0;
-
-  const s = situationAt(round, tMs);
-  const defender: TeamSlot = round.attacker === 'A' ? 'B' : 'A';
-  const aliveAtt = s.alive[round.attacker];
-  const aliveDef = s.alive[defender];
-  const planted = s.spike.phase === 'planted' || s.spike.phase === 'defusing';
-
-  // Terminal-ish states dominate everything else.
-  if (aliveAtt === 0 && !planted) return PROB_FLOOR;      // no one left to plant
-  if (aliveAtt === 0 && planted) return s.spike.phase === 'defusing' ? PROB_FLOOR : 0.12; // defenders free to defuse
-  if (aliveDef === 0) return planted ? PROB_CEIL : 0.9;   // attackers must still plant in time
-
-  let z = W.man * (aliveAtt - aliveDef);
-
-  const eqAtt = loadoutValue(round, round.attacker);
-  const eqDef = loadoutValue(round, defender);
-  if (eqAtt != null && eqDef != null) {
-    z += W.equip * Math.max(-1, Math.min(1, (eqAtt - eqDef) / W.equipScale));
-  }
-
-  if (planted) {
-    z += W.plant;
-    if (s.spike.phase === 'defusing') z -= W.defuse * clamp01(s.spike.progress ?? 0);
-    else if (s.spike.remainingMs != null) z += W.spikeTime * (1 - clamp01(s.spike.remainingMs / ENGINE.spikeTimerMs));
-  } else {
-    const tf = clamp01(s.clockMs / ENGINE.roundTimeMs);
-    z += W.preplantTime * (tf * 2 - 1); // +time → attacker edge, low time → defender edge
-  }
-
-  return Math.min(PROB_CEIL, Math.max(PROB_FLOOR, sigmoid(z)));
+  const st = wpStateAt(round, tMs);
+  if (st.aliveAtt === 0 && !st.planted) return PROB_FLOOR;                         // no one left to plant
+  if (st.aliveAtt === 0 && st.planted) return st.defusing ? PROB_FLOOR : 0.12;     // defenders free to defuse
+  if (st.aliveDef === 0) return st.planted ? PROB_CEIL : 0.9;                      // attackers must still plant in time
+  return Math.min(PROB_CEIL, Math.max(PROB_FLOOR, sigmoid(wpLogit(WP_COEF, st))));
 }
 
 /** P(team wins the round) at tMs. */
@@ -102,17 +132,23 @@ export const SWING_THRESHOLD = 0.08;
 const BEFORE_MS = 250;
 const AFTER_MS = 350;
 
+/** The viewer team's win-probability change across one round event (before → after). */
+export function swingAt(round: RoundTimeline, tMs: number, team: TeamSlot): { before: number; after: number; delta: number } {
+  const before = teamWinProb(round, Math.max(round.startMs, tMs - BEFORE_MS), team);
+  const after = teamWinProb(round, tMs + AFTER_MS, team);
+  return { before, after, delta: after - before };
+}
+
 /**
  * The moments that moved the viewer team's win probability most, biggest first. Each round event
  * (kill / plant / defuse / end) is evaluated just before and just after; those past the threshold
- * are returned. Used to mark the scrubber and to list "the round turned here" in the summary.
+ * are returned. Used to mark the scrubber, to list "the round turned here", and to choose which
+ * moments the 'key' highlight level shows.
  */
 export function swingMoments(round: RoundTimeline, team: TeamSlot, limit = 4): SwingMoment[] {
   const out: SwingMoment[] = [];
   for (const m of roundMarks(round)) {
-    const before = teamWinProb(round, Math.max(round.startMs, m.tMs - BEFORE_MS), team);
-    const after = teamWinProb(round, m.tMs + AFTER_MS, team);
-    const delta = after - before;
+    const { after, delta } = swingAt(round, m.tMs, team);
     if (Math.abs(delta) >= SWING_THRESHOLD) out.push({ tMs: m.tMs, kind: m.kind, delta, after });
   }
   return out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, limit);

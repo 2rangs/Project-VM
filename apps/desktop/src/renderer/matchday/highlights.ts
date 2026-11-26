@@ -10,7 +10,8 @@
 //   full      the whole round, continuously, from the buy phase (the original behaviour).
 //
 // Pure module: runs under `node --test`.
-import { roundMarks, type RoundMark } from './monitor.ts';
+import { roundMarks } from './monitor.ts';
+import { swingMoments } from './winprob.ts';
 import type { RoundTimeline } from './timeline.ts';
 
 export type HighlightLevel = 'instant' | 'key' | 'extended' | 'full';
@@ -47,19 +48,28 @@ export function mergeWindows(raw: readonly PlayWindow[], lo: number, hi: number)
   return out;
 }
 
-/** The marks that count as "decisive" for the 'key' level. */
-function keyMarks(round: RoundTimeline, marks: readonly RoundMark[]): RoundMark[] {
+/** How many of the biggest win-probability swings the 'key' level shows. */
+const KEY_SWINGS = 6;
+
+/**
+ * The moments (round-relative-free, match-ms) the 'key' level shows: the biggest WIN-PROBABILITY
+ * swings of the round (the moments that actually turned it), plus the objective beats (plant,
+ * defuse) and the opening and closing duels for context. Swing selection is what makes 'key' smart —
+ * a trade that changed nothing is skipped, the kill that flipped the round is kept. All times are
+ * existing round marks (kills/plant/defuse), so these stay a subset of the 'extended' windows.
+ */
+function keyTimes(round: RoundTimeline): number[] {
+  const marks = roundMarks(round);
   const kills = marks.filter((m) => m.kind === 'kill');
-  const picked = new Map<number, RoundMark>();
-  const add = (m: RoundMark | undefined) => { if (m) picked.set(m.tMs, m); };
-  add(kills[0]);                                   // first blood (opening duel)
-  add(marks.find((m) => m.kind === 'plant'));      // plant
-  add(marks.find((m) => m.kind === 'defuse'));     // defuse
-  // Round-deciding kills: anything in the last stretch before the round ends.
-  const decideFrom = round.endMs - 9000;
-  for (const m of kills) if (m.tMs >= decideFrom) add(m);
-  add(kills[kills.length - 1]);                    // the last kill, even on a slow round
-  return [...picked.values()].sort((a, b) => a.tMs - b.tMs);
+  const times = new Set<number>();
+  if (kills[0]) times.add(kills[0].tMs);                                // opening duel
+  if (kills[kills.length - 1]) times.add(kills[kills.length - 1].tMs);  // the finish
+  const plant = marks.find((m) => m.kind === 'plant'); if (plant) times.add(plant.tMs);
+  const defuse = marks.find((m) => m.kind === 'defuse'); if (defuse) times.add(defuse.tMs);
+  // The win-probability swings (symmetric in magnitude, so either team's view works); 'end' swings
+  // are dropped because the result window already covers the finish.
+  for (const s of swingMoments(round, round.attacker, KEY_SWINGS)) if (s.kind !== 'end') times.add(s.tMs);
+  return [...times].sort((a, b) => a - b);
 }
 
 /**
@@ -71,9 +81,10 @@ export function roundPlayWindows(round: RoundTimeline, level: HighlightLevel): P
   const hi = round.endMs;
   if (level === 'full') return [{ startMs: lo, endMs: hi }];
   if (level === 'instant') return [];
-  const marks = roundMarks(round);
-  const chosen = level === 'key' ? keyMarks(round, marks) : marks.filter((m) => m.kind !== 'end');
-  const raw: PlayWindow[] = chosen.map((m) => ({ startMs: m.tMs - LEAD_MS, endMs: m.tMs + TAIL_MS }));
+  const chosenTimes = level === 'key'
+    ? keyTimes(round)
+    : roundMarks(round).filter((m) => m.kind !== 'end').map((m) => m.tMs);
+  const raw: PlayWindow[] = chosenTimes.map((tMs) => ({ startMs: tMs - LEAD_MS, endMs: tMs + TAIL_MS }));
   // Always end on the result so the round outcome is seen.
   raw.push({ startMs: hi - RESULT_TAIL_MS, endMs: hi });
   const windows = mergeWindows(raw, lo, hi);

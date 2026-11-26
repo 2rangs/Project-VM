@@ -95,6 +95,16 @@ test('highlights: key ⊆ extended ⊆ full in coverage, all within the round', 
   for (let i = 1; i < ext.length; i++) assert.ok(ext[i].startMs > ext[i - 1].endMs);
 });
 
+test('highlights: key is win-probability-aware — it covers the biggest swing', () => {
+  const swings = swingMoments(real, real.attacker, 6);
+  assert.ok(swings.length > 0, 'the fixture round has swings');
+  const key = roundPlayWindows(real, 'key');
+  const biggest = swings[0];
+  assert.ok(windowAt(key, biggest.tMs) || windowAt(key, biggest.tMs - 1), `key covers the biggest swing at ${biggest.tMs}`);
+  // and the plant/defuse objective beats are always covered when they exist
+  for (const m of [real.plant, real.defuse]) if (m) assert.ok(windowAt(key, m.tMs) || windowAt(key, m.tMs - 1), 'objective beat covered');
+});
+
 test('highlights: every round always ends on its result', () => {
   for (const level of ['key', 'extended'] as const) {
     const ws = roundPlayWindows(real, level);
