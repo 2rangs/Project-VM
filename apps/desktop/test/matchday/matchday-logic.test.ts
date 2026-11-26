@@ -406,11 +406,14 @@ test('timeline: dense engine samples are drawn exactly as recorded — no zone-c
 test('prefs: stored view preferences are validated field by field', () => {
   assert.deepEqual(parsePrefs(null), DEFAULT_PREFS);
   assert.deepEqual(parsePrefs('not json'), DEFAULT_PREFS);
-  assert.deepEqual(parsePrefs('{"mode":"cams","tempo":4,"belief":true}'), { mode: 'cams', tempo: 4, belief: true });
-  assert.deepEqual(parsePrefs('{"mode":"3d","tempo":3,"belief":"yes"}'), DEFAULT_PREFS);
+  assert.deepEqual(parsePrefs('{"mode":"cams","tempo":4,"belief":true,"detail":"key"}'), { mode: 'cams', tempo: 4, belief: true, detail: 'key' });
+  assert.deepEqual(parsePrefs('{"mode":"3d","tempo":3,"belief":"yes","detail":"nope"}'), DEFAULT_PREFS);
   assert.equal(DEFAULT_PREFS.tempo, 1, 'real time is the default');
+  assert.equal(DEFAULT_PREFS.detail, 'extended', 'extended detail is the default');
   assert.equal(parsePrefs('{"mode":"cams","tempo":"auto"}').tempo, 1, 'a stored highlights tempo falls back to real time');
   assert.equal(parsePrefs('{"tempo":0.5}').tempo, 0.5);
+  assert.equal(parsePrefs('{"detail":"instant"}').detail, 'instant');
+  assert.equal(parsePrefs('{"detail":"full"}').detail, 'full');
 });
 
 test('view model: a player fires only around the kills they are part of', () => {
