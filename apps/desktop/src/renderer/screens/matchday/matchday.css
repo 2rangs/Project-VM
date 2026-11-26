@@ -464,3 +464,20 @@
 .mdx-keys { position: absolute; bottom: 6px; left: 8px; z-index: 3; font-size: 10px; letter-spacing: .04em; color: var(--mx-muted); pointer-events: none; }
 .mdx-row.focus { box-shadow: inset 2px 0 0 var(--mx-ink); background: rgba(255, 255, 255, .06); }
 .mdx-eco b { font-size: 14px; } .mdx-eco { font-size: 12px; } .mdx-ultpts { font-size: 12px; }
+
+/* ── live win probability (추정) + swing moments (spectator features) ───────────────────────── */
+.mdx-winprob { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 3px; width: min(320px, 60%); pointer-events: none; }
+.mdx-winprob-label { font-family: var(--mx-font); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mx-muted); }
+.mdx-winprob-bar { position: relative; display: flex; width: 100%; height: 14px; border: 1px solid var(--mx-line); background: #0b131bcc; overflow: hidden; }
+.mdx-winprob-bar i { height: 100%; transition: width .3s ease; }
+.mdx-winprob-bar i.ally { background: var(--mx-ally); } .mdx-winprob-bar i.enemy { background: var(--mx-enemy, #ff4655); }
+.mdx-winprob-bar b { position: absolute; top: 0; line-height: 14px; font-family: var(--mx-font); font-size: 10px; padding: 0 4px; color: #0b131b; font-variant-numeric: tabular-nums; }
+.mdx-winprob-bar b.ally { left: 0; } .mdx-winprob-bar b.enemy { right: 0; }
+.mdx-tick.swing { top: -3px; width: 9px; height: 9px; margin-left: -4px; background: var(--mx-ink); transform: rotate(45deg); border: 1px solid #0b131b; }
+.mdx-tick.swing.down { background: var(--mx-enemy, #ff4655); }
+.mdx-swings { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin-top: 2px; }
+.mdx-swings-head { width: 100%; text-align: center; font-family: var(--mx-font); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mx-muted); }
+.mdx-swing { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--mx-ink); font-variant-numeric: tabular-nums; }
+.mdx-swing i { font-style: normal; font-size: 10px; color: var(--mx-muted); font-variant-numeric: tabular-nums; }
+.mdx-swing b { font-family: var(--mx-font); }
+.mdx-swing.up b { color: var(--mx-ally); } .mdx-swing.down b { color: var(--mx-enemy, #ff4655); }

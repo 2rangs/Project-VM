@@ -2,8 +2,8 @@
 // them (pure helpers over @pv/career; screens/scouting/* draws them). docs/GENERATED_PEOPLE.md §9–12.
 import {
   assignScoutMut, clubScouts, demoteMut, inviteToAcademyMut, knowledgeOf, latestReport, leadership, loanOutMut, loanTargets,
-  developmentMorale, personalityOf, promoteMut, reportList, setMentorMut, toScale200, viewPlayer, mentorBlocker, SEASON_MODEL,
-  type AcademyError, type AssignmentKind, type MentorError, type PlayerView, type Range, type ScoutAssignment, type ScoutReport,
+  developmentMorale, personalityOf, promoteMut, reportList, reportConfidence, regionCoverage, setMentorMut, toScale200, viewPlayer, mentorBlocker, SEASON_MODEL,
+  type AcademyError, type AssignmentKind, type MentorError, type PlayerView, type Range, type RegionCoverage, type ScoutAssignment, type ScoutReport,
   type World, type WorldPlayer, type WorldStaff,
 } from './world.ts';
 
@@ -23,6 +23,20 @@ export function playerView(w: World, p: WorldPlayer, date?: string): PlayerView 
 
 /** Knowledge as a whole percent (own players 100). */
 export const knowledgePct = (w: World, p: WorldPlayer, date?: string): number => Math.round(100 * knowledgeOf(w, p, date));
+
+/** How much a report can still be trusted TODAY, as a percent (knowledge × freshness). */
+export const reportConfidencePct = (r: Pick<ScoutReport, 'date' | 'knowledge'>, date?: string): number =>
+  Math.round(100 * reportConfidence(r, date));
+
+export interface CoverageRow { region: string; players: number; known: number; knowledge: number; scouted: boolean }
+
+/** Per-region scouting coverage for the manager's club (percent knowledge), to decide where to send scouts. */
+export function coverageRows(w: World, date?: string): CoverageRow[] {
+  return regionCoverage(w, date).map((c: RegionCoverage) => ({
+    region: c.region, players: c.players, known: c.known,
+    knowledge: Math.round(100 * c.meanKnowledge), scouted: c.scouted,
+  }));
+}
 
 // --- assignments ------------------------------------------------------------------------------------
 

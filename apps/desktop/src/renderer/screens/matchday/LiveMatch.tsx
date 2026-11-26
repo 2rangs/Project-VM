@@ -28,19 +28,23 @@ import { computeFrame, type Frame } from '../../matchday/frame.ts';
 import { buildRoadmap, navDebugAt, type NavDebugFrame, type RoadmapData } from '../../matchday/navdebug.ts';
 import { eventJump, formatClock } from '../../matchday/monitor.ts';
 import { loadPrefs, savePrefs, type MatchPrefs } from '../../matchday/prefs.ts';
+import { roundPlayWindows } from '../../matchday/highlights.ts';
+import { swingMoments, teamWinProb } from '../../matchday/winprob.ts';
 import { rosterHandles } from '../../matchday/roster.ts';
 import { usePlayback } from '../../matchday/usePlayback.ts';
 import { MatchStage, type StageView } from './MatchStage.ts';
-import { CamStage3D, type CamView } from './CamStage3D.ts';
-import { buildBlockout } from '../../matchday/world3d.ts';
+import type { CamStage3D } from './CamStage3D.ts';
+import type { CamView } from './cams3d-loader.ts';
+import { createCamStage3D, type PlantZone } from './cams3d-loader.ts';
+import { useGraphics } from '../../settings/graphics.tsx';
 import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
-import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, MatchupStrip, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, MatchupStrip, OrderChip, RoundResult, TopHud, WinProbBar, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
 import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
 
 const nav = buildNav(navgraph as unknown as NavData);
-const blockout = buildBlockout(nav, (navgraph as unknown as { plantZones?: Array<{ zoneId: string; polygon: Array<{ x: number; y: number }> }> }).plantZones ?? []);
+const PLANT_ZONES: PlantZone[] = (navgraph as unknown as { plantZones?: PlantZone[] }).plantZones ?? [];
 /** The engine's navigation roadmap (the floor players walk on) — drawn by the developer overlay. */
 const roadmap = buildRoadmap(roadmapData as unknown as RoadmapData);
 const EMPTY: MatchTimeline = { rounds: [], startMs: 0, endMs: 0, hasTracks: false };
@@ -83,6 +87,7 @@ interface ViewSpec { key: string; slot: number | null; detail: 'full' | 'compact
 
 export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay, onAutoPlay, onExit, onReview, managerOverlay }: LiveMatchProps) {
   const t = useT();
+  const { config: gfx } = useGraphics();
   const [prefs, setPrefs] = useState<MatchPrefs>(loadPrefs);
   const [pov, setPov] = useState<TeamSlot>(OUR_TEAM);
   const [focus, setFocus] = useState<string | null>(null);
@@ -93,10 +98,16 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const update = useCallback((patch: Partial<MatchPrefs>) => setPrefs((p) => { const n = { ...p, ...patch }; savePrefs(n); return n; }), []);
 
   const tl = useMemo(() => (replay ? buildTimeline(replay, match, nav) : EMPTY), [replay, match]);
-  const playback = usePlayback(tl, prefs.tempo);
+  // Highlight plan (관전 상세도): 'full' plays the whole round; the others play only chosen windows
+  // and the playback clock skips the dead time between them. A ref so usePlayback reads the live level.
+  const detailRef = useRef(prefs.detail);
+  detailRef.current = prefs.detail;
+  const plan = useCallback((r: RoundTimeline) => (detailRef.current === 'full' ? null : roundPlayWindows(r, detailRef.current)), []);
+  const playback = usePlayback(tl, prefs.tempo, gfx.fpsCap, undefined, plan);
   const { seek } = playback;
 
-  const mode = prefs.mode;
+  // Low graphics drops the 3D team cams entirely: the view is pinned to the tactical 2D map.
+  const mode = gfx.cams3d ? prefs.mode : 'tactical';
   // The monitors are always OUR players; the debug POV only applies to the tactical map.
   const viewTeam: TeamSlot = mode === 'cams' ? OUR_TEAM : pov;
   const hasPerception = !!replay?.perception?.length;
@@ -115,6 +126,10 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const over = !!round && roundOver(round, playback.tMs);
   const atLiveEdge = !!round && round === latest && over;
   const score = useMemo(() => scoreAt(tl, playback.tMs), [tl, playback.tMs]);
+  // Live round win probability for the viewer's team (estimate; pinned to the real result once over).
+  const winProb = round ? teamWinProb(round, playback.tMs, viewTeam) : null;
+  // Moments that swung the round (for the scrubber marks and the round summary). Independent of time.
+  const swings = useMemo(() => (round ? swingMoments(round, viewTeam) : []), [round, viewTeam]);
 
   const handles = useMemo(() => ({ A: rosterHandles(teams.A.id), B: rosterHandles(teams.B.id) }), [teams.A.id, teams.B.id]);
   const attacker = round?.attacker ?? 'A';
@@ -208,19 +223,24 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
       else if (e.code === 'ArrowLeft') jumpEvent(-1);
       else if (e.code === 'ArrowRight') jumpEvent(1);
-      else if (e.code === 'KeyM') update({ mode: mode === 'tactical' ? 'cams' : 'tactical' });
+      else if (e.code === 'KeyM' && gfx.cams3d) update({ mode: mode === 'tactical' ? 'cams' : 'tactical' });
       else if (e.code === 'Escape') { if (focus) setFocus(null); else setSelSlot(null); }
       else if (/^Digit[1-5]$/.test(e.code) && !e.ctrlKey && !e.metaKey && !e.altKey) { const n = Number(e.code.slice(5)); setSelSlot((c) => (c === n ? null : n)); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePlay, jumpEvent, update, mode, focus]);
+  }, [togglePlay, jumpEvent, update, mode, focus, gfx.cams3d]);
 
   // ── stage ────────────────────────────────────────────────────────────────────────────────
   const hostRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<MatchStage | null>(null);
   const viewEls = useRef(new Map<string, HTMLElement>());
   const setViewEl = useCallback((key: string) => (el: HTMLElement | null) => { if (el) viewEls.current.set(key, el); else viewEls.current.delete(key); }, []);
+  // View rectangles are measured only when the layout can have changed (window resize, or a React
+  // re-render that bumps `version`) — never every frame. getBoundingClientRect forces a layout
+  // sync, so calling it per frame while a round plays was pure overhead on weak hardware.
+  const layoutNonce = useRef(0);
+  const layoutCache = useRef<{ specs: ViewSpec[] | null; nonce: number; rects: Array<{ s: ViewSpec; rect: { x: number; y: number; w: number; h: number } }> }>({ specs: null, nonce: -1, rects: [] });
 
   const specs: ViewSpec[] = useMemo(() => (
     mode === 'tactical'
@@ -244,43 +264,50 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
     stage.setRoadmap(roadmap);
     stageRef.current = stage;
     let alive = true;
-    void stage.init(host).then(async () => {
-      await preloadMatchAssets(); // normally already settled: the loading screen waited for it
+    void stage.init(host, { dprMax: gfx.dprMax, antialias: !gfx.minAnim }).then(async () => {
+      await preloadMatchAssets('ascent', 20000, gfx.cams3d); // normally already settled: the loading screen waited for it
       const ok = await stage.setMap(preparedMinimapUrl());
       if (alive) setMapOk(ok);
     });
-    const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
+    const ro = new ResizeObserver(() => { layoutNonce.current++; stage.resize(host.clientWidth, host.clientHeight); });
     ro.observe(host);
     return () => { alive = false; ro.disconnect(); stage.destroy(); stageRef.current = null; };
     // The stage is created once per screen; the transform does not change within a match.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // three.js stage for the cams: created with the screen (not on the first switch to the cams) and
-  // given the map mesh the loading screen already prepared, so opening the cams starts no load.
+  // three.js stage for the cams. The whole 3D stack (three.js, models, blockout) is lazily imported
+  // and the stage is built only when the graphics quality offers the cams — on low it never loads.
+  // Given the map mesh the loading screen already prepared, opening the cams starts no load.
   const host3dRef = useRef<HTMLDivElement>(null);
   const camStageRef = useRef<CamStage3D | null>(null);
+  const [cam3dReady, setCam3dReady] = useState(false);
   const assets = useMatchAssets();
   const [mapMesh, setMapMesh] = useState<'blockout' | 'glb'>('blockout');
   useEffect(() => {
+    if (!gfx.cams3d) return; // low graphics: no 3D wall at all
     const host = host3dRef.current;
     if (!host) return;
-    const stage = new CamStage3D(nav, blockout);
-    stage.init(host);
-    camStageRef.current = stage;
-    (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
-    void preloadMatchAssets(); // no-op when the loading screen has done it; covers re-opening the view
-    const ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
-    ro.observe(host);
-    return () => { ro.disconnect(); stage.destroy(); camStageRef.current = null; };
-  }, []);
+    let alive = true; let ro: ResizeObserver | null = null;
+    void createCamStage3D(nav, PLANT_ZONES, { dprMax: gfx.dprMax, shadows: gfx.shadows, fpsCap: gfx.fpsCap }).then((stage) => {
+      if (!alive) { stage.destroy(); return; }
+      stage.init(host);
+      camStageRef.current = stage;
+      (window as unknown as { __mdxPerf?: unknown }).__mdxPerf = stage.perf;
+      void preloadMatchAssets('ascent', 20000, true); // covers re-opening the view
+      ro = new ResizeObserver(() => stage.resize(host.clientWidth, host.clientHeight));
+      ro.observe(host);
+      setCam3dReady(true);
+    });
+    return () => { alive = false; ro?.disconnect(); camStageRef.current?.destroy(); camStageRef.current = null; setCam3dReady(false); };
+  }, [gfx.cams3d, gfx.dprMax, gfx.shadows, gfx.fpsCap]);
   useEffect(() => {
     const stage = camStageRef.current; const root = preparedMesh();
     if (!stage || assets.mesh !== 'ready' || !root) return;
-    stage.setMapScene(root);
+    stage.setMapScene(root as Parameters<typeof stage.setMapScene>[0]);
     stage.warmUp();
     setMapMesh('glb');
-  }, [assets.mesh]);
+  }, [assets.mesh, cam3dReady]);
 
   useEffect(() => {
     let lastSig = ''; let lastDone = true;
@@ -288,19 +315,27 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       const stage = stageRef.current; const host = hostRef.current;
       if (!stage?.isReady || !host) return;
       const L = liveRef.current;
-      const base = host.getBoundingClientRect();
-      // 1. cheap: where every view is. Together with the playhead and the React render counter this
-      //    is the whole input of a frame, so a paused screen skips the (expensive) frame below.
-      const rects: Array<{ s: ViewSpec; rect: { x: number; y: number; w: number; h: number } }> = [];
-      let sig = `${tMs}|${L.version}|${mapOk}`;
-      for (const s of L.specs) {
-        const el = viewEls.current.get(s.key);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        if (r.width < 8 || r.height < 8) continue;
-        rects.push({ s, rect: { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height } });
-        sig += `|${s.key}:${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)},${Math.round(r.height)}`;
+      // 1. where every view is. The rectangles only move on a window resize (nonce) or a React
+      //    re-render (version), so they are measured then and cached — not on every played frame.
+      //    The whole input of a frame is the playhead, the render counter and the layout nonce; a
+      //    paused screen skips the (expensive) frame below.
+      const lc = layoutCache.current;
+      // Recompute only when the view set changes (mode/focus → a new `specs` array), on a window
+      // resize (nonce), or while nothing has measured yet (elements still sizing on first mount).
+      if (lc.specs !== L.specs || lc.nonce !== layoutNonce.current || lc.rects.length === 0) {
+        const base = host.getBoundingClientRect();
+        const next: typeof lc.rects = [];
+        for (const s of L.specs) {
+          const el = viewEls.current.get(s.key);
+          if (!el) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 8 || r.height < 8) continue;
+          next.push({ s, rect: { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height } });
+        }
+        lc.rects = next; lc.specs = L.specs; lc.nonce = layoutNonce.current;
       }
+      const rects = lc.rects;
+      const sig = `${tMs}|${L.version}|${mapOk}|${layoutNonce.current}`;
       if (sig === lastSig && lastDone) return; // paused and nothing moved: keep the last picture
       // 2. the frame (team knowledge at this instant), computed once for both stages
       const frameNow = L.replay && L.tl.rounds.length > 0 ? computeFrame(L.replay, L.tl, nav, L.viewTeam, tMs) : null;
@@ -351,9 +386,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const overlays = (
     <>
       <Banners t={t} frame={frame} nameOf={nameOf} viewTeam={viewTeam} />
+      {round && !preRound && winProb != null && !over && !session?.ordersOpen && (
+        <WinProbBar t={t} prob={winProb} teamName={teams[viewTeam].name} enemyName={teams[enemyTeam].name} />
+      )}
       {round && over && !session?.ordersOpen && (
         <RoundResult t={t} round={round} viewTeam={viewTeam} score={score} teams={teams} hint={resultHint}
-          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} nameOf={nameOf} zoneName={zoneName} />
+          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} nameOf={nameOf} zoneName={zoneName}
+          swings={swings} />
       )}
       {preRound && !session!.ordersOpen && (
         <div className="mdx-result neutral" data-testid="pre-match">
@@ -409,7 +448,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
       <TopHud
         t={t} mode={mode} onMode={(m) => update({ mode: m })} onExit={onExit} onReview={onReview}
         teams={teams} viewTeam={viewTeam} score={score} frame={frame} round={round} nextRound={nextRound}
-        pov={pov} onPov={setPov} povLocked={mode === 'cams'} belief={prefs.belief} onBelief={(v) => update({ belief: v })}
+        pov={pov} onPov={setPov} povLocked={mode === 'cams'} belief={prefs.belief} onBelief={(v) => update({ belief: v })} cams3d={gfx.cams3d}
         hasPerception={hasPerception} sourceLabel={sourceLabel} mapName={replay?.meta.mapDisplayName ?? 'Ascent'} seed={match?.seed ?? replay?.meta.seed ?? null}
       />
 
@@ -516,6 +555,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         t={t} tl={tl} round={round} tMs={playback.tMs} playing={playback.playing} onToggle={togglePlay}
         tempo={prefs.tempo} onTempo={(v) => update({ tempo: v })} onSeek={(ms) => seek(ms, { play: false })}
         onRound={(r) => seek(r.buyStartMs, { play: true })} viewTeam={viewTeam}
+        detail={prefs.detail} onDetail={(v) => update({ detail: v })} swings={swings}
         session={session ? { state: session.state, busy: session.busy, ordersOpen: session.ordersOpen } : null}
         autoPlay={autoPlay} onAutoPlay={onAutoPlay} onNext={() => session?.onNext()} onTimeout={callTimeout} canAdvance={atLiveEdge || preRound}
         watchedTo={watchedTo} timeouts={roundTimeouts} onPrevEvent={() => jumpEvent(-1)} onNextEvent={() => jumpEvent(1)} onSkipEnd={skipToEnd}

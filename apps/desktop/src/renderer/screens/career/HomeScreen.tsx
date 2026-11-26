@@ -7,6 +7,7 @@ import { continueGame, useCareer } from '../../career/session.ts';
 import { CIRCUIT_MODEL, dayAgenda, eventOf, groupStandings, GROUPS, INTL_EVENTS, nextUserFixture, regionRanking, scoutedAbility, startingFive, type CareerState } from '../../career/world.ts';
 import { fixtureLabel, inboxText, opponentOf, teamName, userScore } from '../../career/view.ts';
 import { LoadingScreen } from '../../loading/Loading.tsx';
+import { Help } from '../../help/Help.tsx';
 
 export function ContinueButton({ big }: { big?: boolean }) {
   const { t } = useLang();
@@ -89,7 +90,7 @@ function CircuitCard({ c }: { c: CareerState }) {
   );
 }
 
-export function HomeScreen({ go, openMatch }: { go: (route: string) => void; openMatch: () => void }) {
+export function HomeScreen({ go, openMatch, onTutorial }: { go: (route: string) => void; openMatch: () => void; onTutorial?: () => void }) {
   const { t, lang } = useLang();
   const cs = useCareer();
   const c = cs.career!;
@@ -107,7 +108,11 @@ export function HomeScreen({ go, openMatch }: { go: (route: string) => void; ope
     <div className="pad home" data-testid="home">
       <div className="home-top">
         <div>
-          <div className="home-date" data-testid="home-date">{c.date}</div>
+          <div className="home-dateline">
+            <span className="home-date" data-testid="home-date">{c.date}</span>
+            <Help topic="home" />
+            {onTutorial && <button className="help-btn" data-testid="home-tutorial" title={t('tutorial.replay')} onClick={onTutorial}>★</button>}
+          </div>
           <div className="muted small">{t('home.season', { season: c.season.season, stage: t(`career.enum.${stage.id}`) })} · {teamName(c, c.userTeamId)} · {c.manager.name}</div>
         </div>
         <ContinueButton big />

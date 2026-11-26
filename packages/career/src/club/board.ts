@@ -34,20 +34,26 @@ export const boardOf = (club: ClubState): BoardState => (club.board ??= emptyBoa
 /** Facilities level of a club (0..1; absent = 0.5, neutral). */
 export const facilitiesOf = (club: ClubState | undefined, teamId: string): number => club?.facilities?.[teamId] ?? 0.5;
 
+/** Difficulty board patience (1 = neutral). Higher = more patient (lower warn/sack thresholds). */
+const boardTol = (club: ClubState): number => club.difficulty?.boardTolerance ?? 1;
+
 function move(w: World, date: string, delta: number, why: string): void {
   const club = w.club!;
   const b = boardOf(club);
   if (b.sacked || delta === 0) return;
+  const tol = boardTol(club);
+  const sackBelow = D.sackBelow / tol;
+  const warnBelow = D.warnBelow / tol;
   b.confidence = r4(clamp(b.confidence + delta, 0, 1));
   b.history.push({ date, value: b.confidence, why });
   if (b.history.length > 60) b.history.splice(0, b.history.length - 60);
-  if (b.confidence < D.sackBelow) {
+  if (b.confidence < sackBelow) {
     b.sacked = true;
     pushMessage(club, date, { kind: "board", route: "board", title: T("이사회가 감독을 해임했습니다", "The board has sacked you"), body: T(`이사회 신뢰도가 ${Math.round(b.confidence * 100)}%로 떨어져 감독직에서 해임되었습니다.`, `Board confidence fell to ${Math.round(b.confidence * 100)}%; you have been relieved of your duties.`) });
-  } else if (b.confidence < D.warnBelow && !b.warned) {
+  } else if (b.confidence < warnBelow && !b.warned) {
     b.warned = true;
     pushMessage(club, date, { kind: "board", route: "board", title: T("이사회 경고", "Board warning"), body: T(`이사회 신뢰도가 ${Math.round(b.confidence * 100)}%입니다. 결과와 재정이 나아지지 않으면 해임될 수 있습니다.`, `Board confidence is ${Math.round(b.confidence * 100)}%. Without better results and finances, your job is at risk.`) });
-  } else if (b.confidence >= D.warnBelow + 0.05) b.warned = false;
+  } else if (b.confidence >= warnBelow + 0.05) b.warned = false;
 }
 
 /** Season objectives for the manager's club (season start). */

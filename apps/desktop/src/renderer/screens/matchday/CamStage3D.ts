@@ -24,6 +24,17 @@ import { C, FONT } from '../../matchday/theme.ts';
 
 /** Upper bound on 3D wall renders per second: the display's own rate up to a 144 Hz panel. */
 export const CAMS_FPS = 144;
+
+/** The slice of the graphics-quality config the 3D wall reads. */
+export interface CamRenderConfig {
+  /** Ceiling on devicePixelRatio (1 keeps a HiDPI panel from rasterising 4× the pixels). */
+  dprMax: number;
+  /** Render soft shadow maps (the single most expensive 3D cost). */
+  shadows: boolean;
+  /** Render frame-rate ceiling for the wall. */
+  fpsCap: number;
+}
+const DEFAULT_CAM_CONFIG: CamRenderConfig = { dprMax: 1.5, shadows: true, fpsCap: CAMS_FPS };
 /** Outdoor sky / haze for the real map mesh (the blockout keeps the dark tactical look). */
 const SKY = 0xa9c3d6;
 
@@ -152,7 +163,7 @@ export class CamStage3D {
   private readonly fp = new FirstPersonRig(C.ally);
   readonly perf: CamPerf = { lastMs: 0, avgMs: 0, maxMs: 0, renders: 0, triangles: 0, calls: 0, map: 'blockout', views: 0 };
 
-  constructor(private readonly nav: NavModel, blockout: Blockout) {
+  constructor(private readonly nav: NavModel, blockout: Blockout, private readonly cfg: CamRenderConfig = DEFAULT_CAM_CONFIG) {
     this.scene.fog = new THREE.Fog(BG, 18, 110);
     this.sun.intensity = 1.1; this.sun.color.set(0xfff2dd);
     this.sun.position.set(40, 80, 20);
@@ -174,8 +185,8 @@ export class CamStage3D {
 
   init(mount: HTMLElement): void {
     this.host = mount;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(1.5, globalThis.devicePixelRatio || 1));
+    const renderer = new THREE.WebGLRenderer({ antialias: this.cfg.shadows, alpha: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(this.cfg.dprMax, globalThis.devicePixelRatio || 1));
     renderer.setSize(Math.max(1, mount.clientWidth), Math.max(1, mount.clientHeight));
     renderer.autoClear = false;
     renderer.info.autoReset = false; // count triangles/calls across all monitors of one wall render
@@ -183,7 +194,7 @@ export class CamStage3D {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     // The map and the sun never move: the shadow map is drawn once when the mesh loads, not per frame.
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = this.cfg.shadows;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.shadowMap.autoUpdate = false;
     mount.appendChild(renderer.domElement);
@@ -193,9 +204,28 @@ export class CamStage3D {
   resize(w: number, h: number): void { if (this.renderer && w > 0 && h > 0) { this.renderer.setSize(w, h); this.lastSig = ''; } }
 
   destroy(): void {
+    // Free GPU/CPU buffers explicitly (three.js does not walk the scene for us): geometries,
+    // textures and materials of every mesh, plus the sprite label textures, so leaving the match
+    // screen reclaims the mesh and figures instead of waiting on GC + context loss.
+    const seenMat = new Set<THREE.Material>();
+    const disposeMat = (m: THREE.Material) => {
+      if (seenMat.has(m)) return; seenMat.add(m);
+      for (const v of Object.values(m)) { if (v && (v as THREE.Texture).isTexture) (v as THREE.Texture).dispose(); }
+      m.dispose();
+    };
+    const disposeScene = (s: THREE.Object3D) => s.traverse((o) => {
+      const mesh = o as THREE.Mesh; const sprite = o as unknown as THREE.Sprite;
+      if (mesh.isMesh && mesh.geometry) mesh.geometry.dispose();
+      const mat = (mesh.isMesh || sprite.isSprite) ? mesh.material : null;
+      if (mat) (Array.isArray(mat) ? mat : [mat]).forEach(disposeMat);
+    });
+    disposeScene(this.scene);
+    disposeScene(this.fp.scene);
     this.renderer?.dispose();
     this.renderer?.domElement.remove();
     this.renderer = null;
+    this.glb = null;
+    this.host = null;
   }
 
   // ── map ────────────────────────────────────────────────────────────────────────────────
@@ -366,7 +396,7 @@ export class CamStage3D {
     const now = performance.now();
     const sig = `${frame?.tMs ?? -1}|${views.map((v) => `${v.key}:${Math.round(v.x)},${Math.round(v.y)},${Math.round(v.w)},${Math.round(v.h)}:${v.followId}`).join('|')}|${this.perf.map}`;
     if (sig === this.lastSig) return true;
-    if (now - this.lastRender < 1000 / CAMS_FPS - 1) return false;
+    if (now - this.lastRender < 1000 / Math.max(1, this.cfg.fpsCap) - 1) return false;
     this.lastRender = now; this.lastSig = sig;
 
     const hostH = host.clientHeight;

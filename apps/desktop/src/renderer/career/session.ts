@@ -11,7 +11,8 @@ import type { CareerSimProgress, CareerSimRequest, SaveSlot } from '../../shared
 import {
   answerInbox, buildDesktopWorld, drainClubOutbox, matchRoster, setLineup, syncClubInbox, type World, continueCareer, deserializeCareer, markRead, newCareer, quickSeries,
   recordResult, serializeCareer, setMapRecords, usesEngine, SIM_DEPTHS, type BatchSimulator, type CareerState, type ContinueResult, type Outcome,
-  type SeriesOutcome, type SeriesRequest, type SimDepth,
+  type SeriesOutcome, type SeriesRequest, type SimDepth, type DifficultyId,
+  mediaOf, interactMut, promiseMut, type InteractKind, type InteractResult, type InteractError, type PromiseKind, type PlayerPromise, type PromiseError,
 } from './world.ts';
 import { FIXTURES } from './fixtures.ts';
 import teamMaps from '../../data/team_maps.json';
@@ -108,6 +109,7 @@ export interface NewCareerInput {
   teamId: string;
   slot: SaveSlot;
   seed: number;
+  difficulty?: DifficultyId;
 }
 
 export async function startNewCareer(input: NewCareerInput): Promise<void> {
@@ -116,7 +118,7 @@ export async function startNewCareer(input: NewCareerInput): Promise<void> {
   await new Promise((r) => setTimeout(r, 30));
   try {
     const world = buildDesktopWorld(FIXTURES, input.seed);
-    const career = newCareer(world, { seed: input.seed, manager: { name: input.managerName.trim(), nationality: input.nationality }, userTeamId: input.teamId });
+    const career = newCareer(world, { seed: input.seed, manager: { name: input.managerName.trim(), nationality: input.nationality }, userTeamId: input.teamId, ...(input.difficulty ? { difficulty: input.difficulty } : {}) });
     snap = { ...snap, career, slot: input.slot, lastStop: null, notice: null };
     await writeSlot();
     notify({ busy: null });
@@ -211,4 +213,26 @@ export async function recordUserSeries(fixtureId: string, outcome: SeriesOutcome
   recordResult(snap.career, fixtureId, outcome);
   notify({ lastStop: null });
   await writeSlot();
+}
+
+// --- media: 1:1 player interactions and promises (backlog #7) ----------------------------------------
+
+/** Praise or criticise an own player. Returns the result (morale/chemistry change) or an error code. */
+export function talkToPlayer(playerId: string, kind: InteractKind): InteractResult | InteractError | null {
+  const c = snap.career;
+  if (!c) return null;
+  const res = interactMut(c.world, mediaOf(c), playerId, kind, c.date);
+  notify();
+  void writeSlot();
+  return res;
+}
+
+/** Promise an own player something (playing time / a win / a trophy). */
+export function promisePlayer(playerId: string, kind: PromiseKind): PlayerPromise | PromiseError | null {
+  const c = snap.career;
+  if (!c) return null;
+  const res = promiseMut(c.world, mediaOf(c), playerId, kind, c.date);
+  notify();
+  void writeSlot();
+  return res;
 }

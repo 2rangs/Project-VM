@@ -331,6 +331,54 @@ export function latestReport(w: World, playerId: string): ScoutReport | null {
   return list && list.length ? list[list.length - 1]! : null;
 }
 
+/**
+ * How much a report can still be trusted TODAY (0..1): the knowledge it was written with, faded by
+ * how long ago it was written (the same decay the player's live knowledge uses). A fresh, well-known
+ * report is near 1; an old one decays toward 0 even if it looked confident when written. This is the
+ * "report confidence" the scouting screen shows next to the knowledge the report was taken at.
+ */
+export function reportConfidence(report: Pick<ScoutReport, "date" | "knowledge">, today?: IsoDate): number {
+  const days = today ? Math.max(0, daysBetween(report.date, today)) : 0;
+  return r4(clamp(report.knowledge * Math.exp(-days / K.decayDays), 0, 1));
+}
+
+export interface RegionCoverage {
+  readonly region: Region;
+  /** Rated players of the region not on the manager's club. */
+  readonly players: number;
+  /** Of those, how many the club knows at least `reportMinKnowledge`. */
+  readonly known: number;
+  /** Mean live knowledge (with decay) over those players, 0..1. */
+  readonly meanKnowledge: number;
+  /** A scout is currently assigned to this region (region or youth). */
+  readonly scouted: boolean;
+}
+
+/**
+ * Per-region scouting coverage for the manager's club on `date`: how many players the club knows
+ * and how well, with live (decayed) knowledge. Lets the manager see where their scouting is strong
+ * and where it is fading, to decide where to send scouts. O(players) — call it on demand, not per tick.
+ */
+export function regionCoverage(w: World, date?: IsoDate): RegionCoverage[] {
+  const sc = w.scouting;
+  if (!sc) return [];
+  const assigned = new Set(sc.assignments.filter((a) => (a.kind === "region" || a.kind === "youth") && a.target).map((a) => a.target as string));
+  const by = new Map<Region, { n: number; known: number; sum: number }>();
+  for (const p of Object.values(w.players)) {
+    if (!p.hasRatings || p.teamId === sc.teamId) continue;
+    const region = p.region as Region | undefined;
+    if (!region) continue;
+    const k = knowledgeOf(w, p, date);
+    const e = by.get(region) ?? { n: 0, known: 0, sum: 0 };
+    e.n += 1; e.sum += k; if (k >= K.reportMinKnowledge) e.known += 1;
+    by.set(region, e);
+  }
+  return [...by.entries()].map(([region, e]) => ({
+    region, players: e.n, known: e.known,
+    meanKnowledge: r4(e.n ? e.sum / e.n : 0), scouted: assigned.has(region),
+  })).sort((a, b) => a.region.localeCompare(b.region));
+}
+
 /** All players' latest reports, newest first. */
 export function reportList(w: World): ScoutReport[] {
   const out = Object.values(w.scouting?.reports ?? {}).map((l) => l[l.length - 1]!).filter(Boolean);

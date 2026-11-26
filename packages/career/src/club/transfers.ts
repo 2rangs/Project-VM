@@ -434,6 +434,8 @@ export function aiMarketRound(w: World, date: string): void {
   const win = windowStatus(date);
   if (!win.open) return;
   const buys = (club.aiBuys[win.key] ??= {});
+  // Difficulty: how many signings the AI clubs are allowed per window.
+  const maxBuys = Math.max(1, Math.round(M.aiBuysPerWindow * (club.difficulty?.aiStrength ?? 1)));
   const rep = reputations(w);
   const movedThisWindow = new Set(club.transfers.filter((r) => r.date >= win.from && r.date <= win.to).map((r) => r.playerId));
   const loaned = new Set(club.loans.map((l) => l.playerId));
@@ -442,7 +444,7 @@ export function aiMarketRound(w: World, date: string): void {
   const order = [...ids.slice(k % ids.length), ...ids.slice(0, k % ids.length)];
   for (const teamId of order) {
     if (teamId === club.userTeamId) continue;
-    if ((buys[teamId] ?? 0) >= M.aiBuysPerWindow) continue;
+    if ((buys[teamId] ?? 0) >= maxBuys) continue;
     const t = w.teams[teamId]!;
     const f = club.finances[teamId]!;
     const scout = teamScout(w, teamId);

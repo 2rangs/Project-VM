@@ -325,7 +325,17 @@ export class Navigator {
    */
   sees(a: Vec3, aZone: string | null | undefined, b: Vec3, bZone: string | null | undefined): boolean | null {
     if (!this.visBits) return null;
-    const na = this.locateInZone(a, aZone), nb = this.locateInZone(b, bZone);
+    return this.seesNodes(this.locateInZone(a, aZone), this.locateInZone(b, bZone), a, b);
+  }
+
+  /**
+   * `sees` once the two bodies' roadmap nodes are already located (`locateInZone`). Pulled out so a
+   * caller running the O(n²) visibility pass can locate each body once per tick and reuse the node
+   * across every pairing — byte-identical to `sees`, just without the repeated locate. `na`/`nb` must
+   * be the `locateInZone(pos, zone)` of `a`/`b`.
+   */
+  seesNodes(na: number | null, nb: number | null, a: Vec3, b: Vec3): boolean | null {
+    if (!this.visBits) return null;
     if (na === null || nb === null) return null;
     if (na === nb) return true;
     if (Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > this.visRange) return false;

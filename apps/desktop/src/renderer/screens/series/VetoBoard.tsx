@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import type { MasteryView, SeriesTeam, SeriesView } from '../../../shared/series.ts';
 import { useT, type TFn } from '../../i18n/index.tsx';
-import { certaintyLevel, mapCards, pct, recommendationReason, score100, stepInfo, vetoLogLine, type MapCard } from '../../series/view.ts';
+import { certaintyLevel, latestAction, mapCards, pct, recommendationReason, score100, stepInfo, vetoBriefing, vetoLogLine, type MapCard } from '../../series/view.ts';
 
 interface Props {
   view: SeriesView;
@@ -58,6 +58,8 @@ export function VetoBoard({ view, busy, onChoose }: Props) {
   const step = stepInfo(view);
   const pending = view.veto.pending;
   const reason = recommendationReason(view);
+  const brief = vetoBriefing(view);
+  const latest = latestAction(view);
   const name = (team: SeriesTeam) => view.teams[team].name;
   const [selected, setSelected] = useState<string>(view.pool[0] ?? '');
   // Follow the action: when a step is ours, open the recommended map's details.
@@ -73,6 +75,14 @@ export function VetoBoard({ view, busy, onChoose }: Props) {
 
   return (
     <div className="ser-veto" data-testid="veto-board">
+      {/* briefing: the stakes before/through the draft */}
+      <div className="ser-brief" data-testid="veto-brief">
+        <span className="ser-brief-fmt">{t('ser.brief.format', { games: brief.games })}</span>
+        {brief.ourBest && <span className="ser-brief-item best">{t('ser.brief.best', { map: brief.ourBest.map, score: brief.ourBest.score })}</span>}
+        {brief.edge && <span className="ser-brief-item edge">{t('ser.brief.edge', { map: brief.edge.map, gap: brief.edge.gap })}</span>}
+        {brief.risk && <span className="ser-brief-item risk">{t('ser.brief.risk', { map: brief.risk.map, gap: brief.risk.gap })}</span>}
+      </div>
+
       {/* whose turn / what step */}
       <div className={`ser-turn ${step ? (step.ours ? 'ours' : 'theirs') : 'done'}`} data-testid="veto-turn" data-step-kind={step?.kind ?? 'done'} data-step-ours={step ? String(step.ours) : ''}>
         {step ? (
@@ -111,7 +121,7 @@ export function VetoBoard({ view, busy, onChoose }: Props) {
         {cards.map((c) => {
           const their = c.info.scouting ? c.info.scouting.estimatedMastery : null;
           return (
-            <div key={c.map} className={`ser-card st-${c.status} ${c.recommended ? 'rec' : ''} ${selected === c.map ? 'sel' : ''}`}
+            <div key={c.map} className={`ser-card st-${c.status} ${c.recommended ? 'rec' : ''} ${selected === c.map ? 'sel' : ''} ${latest && latest.map === c.map && latest.kind !== 'side' ? 'latest' : ''}`}
               onClick={() => setSelected(c.map)} data-testid={`veto-card-${c.map}`} data-status={c.status}>
               <div className="ser-cardhead">
                 <b className="ser-mapname">{c.map}</b>
@@ -174,7 +184,7 @@ export function VetoBoard({ view, busy, onChoose }: Props) {
         {view.veto.actions.map((a) => {
           const line = vetoLogLine(a);
           return (
-            <div key={a.step} className={`ser-logrow by-${a.by} ${a.team === 'A' ? 'ours' : a.team === 'B' ? 'theirs' : 'rule'}`}>
+            <div key={a.step} className={`ser-logrow by-${a.by} ${a.team === 'A' ? 'ours' : a.team === 'B' ? 'theirs' : 'rule'} ${latest && a.step === latest.step ? 'latest' : ''}`}>
               <span className="ser-logn">{a.step + 1}</span>
               <span>{t(line.key, { ...line.vars, team: line.team ? name(line.team) : '' })}</span>
               {a.by === 'ai' && <span className="ser-logai">AI</span>}

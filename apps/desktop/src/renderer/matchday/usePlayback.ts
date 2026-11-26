@@ -4,7 +4,14 @@
 // at the end of the round under the playhead — the caller decides what happens next.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { roundIndexAt, type MatchTimeline, type RoundTimeline } from './timeline.ts';
+import { advanceHighlighted, type PlayWindow } from './highlights.ts';
 import type { Tempo } from './prefs.ts';
+
+/**
+ * Given the round under the playhead, the windows to actually play (highlight plan), or null to
+ * play the whole round continuously. An empty array means "play nothing" (instant result).
+ */
+export type HighlightPlan = (round: RoundTimeline) => PlayWindow[] | null;
 
 /** Frame-rate ceiling for the live view (2D stage and 3D cams follow this loop). */
 export const MAX_FPS = 144;
@@ -23,33 +30,47 @@ export interface Playback {
   subscribe(fn: (tMs: number) => void): () => void;
 }
 
-export function usePlayback(tl: MatchTimeline, tempo: Tempo, onRoundEnd?: (round: RoundTimeline) => void): Playback {
+export function usePlayback(tl: MatchTimeline, tempo: Tempo, fpsCap: number = MAX_FPS, onRoundEnd?: (round: RoundTimeline) => void, plan?: HighlightPlan): Playback {
   const tRef = useRef(tl.startMs);
   const playingRef = useRef(false);
   const [tMs, setTMs] = useState(tl.startMs);
   const [playing, setPlaying] = useState(false);
   const subs = useRef(new Set<(t: number) => void>());
-  const live = useRef({ tl, tempo, onRoundEnd });
-  live.current = { tl, tempo, onRoundEnd };
+  const live = useRef({ tl, tempo, fpsCap, onRoundEnd, plan });
+  live.current = { tl, tempo, fpsCap, onRoundEnd, plan };
 
   const setPlay = useCallback((v: boolean) => { playingRef.current = v; setPlaying(v); }, []);
 
   useEffect(() => {
     let raf = 0; let last = performance.now(); let lastEmit = 0;
+    // Background / minimised: stop the render loop entirely. The clock does not advance and no
+    // subscriber is called, so a match left on screen behind another window costs nothing.
+    const isHidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
     const tick = (now: number) => {
-      // Follow the display's refresh, but never draw more than MAX_FPS (a 240 Hz panel draws 144).
-      if (now - last < 1000 / MAX_FPS - 0.5) { raf = requestAnimationFrame(tick); return; }
+      if (isHidden()) { last = now; raf = requestAnimationFrame(tick); return; }
+      // Follow the display's refresh, but never draw more than the quality's cap (default MAX_FPS).
+      const cap = Math.max(1, live.current.fpsCap || MAX_FPS);
+      if (now - last < 1000 / cap - 0.5) { raf = requestAnimationFrame(tick); return; }
       const dt = Math.min(100, now - last); last = now;
-      const { tl: cur, tempo: tp, onRoundEnd: done } = live.current;
+      const { tl: cur, tempo: tp, onRoundEnd: done, plan: pl } = live.current;
       if (playingRef.current && cur.rounds.length > 0) {
         const round = cur.rounds[roundIndexAt(cur, tRef.current)];
-        const next = Math.max(round.buyStartMs, tRef.current) + dt * tp;
-        if (next >= round.endMs) {
-          tRef.current = round.endMs;
-          setPlay(false);
-          setTMs(round.endMs); lastEmit = now;
-          done?.(round);
-        } else tRef.current = next;
+        const base = Math.max(round.buyStartMs, tRef.current);
+        const windows = pl ? pl(round) : null;
+        if (windows) {
+          // Highlight plan: play inside a window, skip the gaps, finish at the round end.
+          const adv = advanceHighlighted(windows, base, dt * tp, round.endMs);
+          tRef.current = adv.t;
+          if (adv.done) { setPlay(false); setTMs(adv.t); lastEmit = now; done?.(round); }
+        } else {
+          const next = base + dt * tp;
+          if (next >= round.endMs) {
+            tRef.current = round.endMs;
+            setPlay(false);
+            setTMs(round.endMs); lastEmit = now;
+            done?.(round);
+          } else tRef.current = next;
+        }
       }
       if (now - lastEmit >= 100) { lastEmit = now; setTMs(tRef.current); }
       for (const fn of subs.current) fn(tRef.current);

@@ -64,6 +64,9 @@ class ViewNode {
   readonly floor = new Graphics();
   readonly road = new Graphics();
   roadSig = '';
+  /** Static zone backdrop drawn when no map image is installed — cached per camera, not per frame. */
+  readonly schematic = new Graphics();
+  schematicSig = '';
   readonly under = new Graphics();
   readonly over = new Graphics();
   readonly labels = new Container();
@@ -71,7 +74,7 @@ class ViewNode {
   private used = new Set<string>();
 
   constructor(readonly resolution: number) {
-    this.root.addChild(this.clip, this.mapDim, this.litMask, this.mapLit, this.floor, this.road, this.under, this.over, this.labels);
+    this.root.addChild(this.clip, this.mapDim, this.litMask, this.mapLit, this.schematic, this.floor, this.road, this.under, this.over, this.labels);
     this.floor.alpha = 0.3;
     this.floor.visible = false;
     this.root.mask = this.clip;
@@ -125,14 +128,16 @@ export class MatchStage {
     if (Number.isFinite(u0)) this.zoneBox = { u0, v0, u1, v1 };
   }
 
-  async init(mount: HTMLElement): Promise<void> {
+  async init(mount: HTMLElement, opts?: { dprMax?: number; antialias?: boolean }): Promise<void> {
     await this.app.init({
       width: Math.max(1, mount.clientWidth), height: Math.max(1, mount.clientHeight),
-      backgroundAlpha: 0, antialias: true, autoDensity: true,
+      backgroundAlpha: 0, antialias: opts?.antialias ?? true, autoDensity: true,
       // No free-running ticker: the playback loop updates the scene and then draws it (render()),
       // so every displayed frame holds that frame's positions — no doubled or skipped frames.
       autoStart: false,
-      resolution: Math.min(2, globalThis.devicePixelRatio || 1),
+      // Cap the pixel ratio to the graphics quality (low pins it at 1): a HiDPI office laptop then
+      // rasterises the map at 1×, not 4× the pixels, which is most of the 2D cost on weak graphics.
+      resolution: Math.min(opts?.dprMax ?? 2, globalThis.devicePixelRatio || 1),
     });
     if (this.destroyed) { try { this.app.destroy(true); } catch { /* noop */ } return; }
     mount.appendChild(this.app.canvas);
@@ -258,7 +263,7 @@ export class MatchStage {
     // and the zone graph. The zone graph's links are straight lines between zone centres — they
     // are adjacency, not routes; the routes are the roadmap underneath.
     this.drawRoad(node, cam, opts.showGraph && !view.followId);
-    if (!hasMap) for (const z of nav.zones) { const p = this.toScreen(cam, z.position); under.circle(p.x, p.y, this.px(cam, 420)).fill({ color: C.line, alpha: 0.55 }); }
+    this.drawSchematic(node, cam, !hasMap);
 
     const units = frame?.units ?? [];
     const scope: readonly FrameUnit[] = follow ? [follow] : units;
@@ -448,6 +453,24 @@ export class MatchStage {
   }
 
   /** The static navigation layer of one view; rebuilt only when the camera (or the roadmap) changes. */
+  /**
+   * The zone backdrop shown when no map image is installed. The zones never move, so for the fixed
+   * full-map camera this is drawn once and cached as a texture — on a played round it was re-filling
+   * ~30 circles every frame (a large share of the 2D cost on weak graphics).
+   */
+  private drawSchematic(node: ViewNode, cam: Camera, on: boolean): void {
+    const sig = on ? `${cam.cx.toFixed(1)},${cam.cy.toFixed(1)},${cam.cu.toFixed(5)},${cam.cv.toFixed(5)},${cam.scale.toFixed(3)},${cam.rot.toFixed(4)}` : '';
+    if (sig === node.schematicSig) return;
+    node.schematicSig = sig;
+    const g = node.schematic;
+    if (g.isCachedAsTexture) g.cacheAsTexture(false);
+    g.clear();
+    g.visible = on;
+    if (!on) return;
+    for (const z of this.nav.zones) { const p = this.toScreen(cam, z.position); g.circle(p.x, p.y, this.px(cam, 420)).fill({ color: C.line, alpha: 0.55 }); }
+    g.cacheAsTexture(true);
+  }
+
   private drawRoad(node: ViewNode, cam: Camera, on: boolean): void {
     const sig = on ? `${cam.cx.toFixed(1)},${cam.cy.toFixed(1)},${cam.cu.toFixed(5)},${cam.cv.toFixed(5)},${cam.scale.toFixed(3)},${cam.rot.toFixed(4)},${this.roadmap ? 1 : 0}` : '';
     if (sig === node.roadSig) return;

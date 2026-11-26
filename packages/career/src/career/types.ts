@@ -2,6 +2,7 @@
 // Everything here is plain JSON so a CareerState saves and loads as-is (save.ts).
 import type { World } from "../model.ts";
 import type { Region } from "../regions.ts";
+import type { DifficultyId } from "../difficulty.ts";
 import type { IsoDate } from "./calendar.ts";
 import type { InboxItem } from "./inbox.ts";
 
@@ -165,6 +166,8 @@ export interface CareerState {
   readonly manager: Manager;
   readonly userTeamId: string;
   readonly region: Region;
+  /** Difficulty preset chosen at creation (absent = normal; see difficulty.ts). */
+  readonly difficulty?: DifficultyId;
   date: IsoDate;
   world: World;
   /** The manager's own league (their region). */

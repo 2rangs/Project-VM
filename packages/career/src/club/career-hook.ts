@@ -20,6 +20,7 @@ import { addDays } from "../career/calendar.ts";
 import { leaguesOf } from "../career/circuit.ts";
 import { stageDone, stagePlacings, STAGES } from "../career/schedule.ts";
 import type { CareerState } from "../career/types.ts";
+import { resolveDifficulty } from "../difficulty.ts";
 import { regionOrder } from "./finance.ts";
 import { clubAfterSeasonAdvanceMut, clubBeforeSeasonEndMut, clubOnDayMut, clubOnMonthMut, initClub } from "./ops.ts";
 import { answerIncomingMut } from "./transfers.ts";
@@ -75,7 +76,8 @@ export const clubCareerHook: CareerHook = {
   order: 10,
   onCareerStart(world: World, ctx) {
     const state = ctx.career;
-    const w = initClub(world, { userTeamId: state.userTeamId, date: state.date });
+    const difficulty = state.difficulty ? resolveDifficulty(state.difficulty) : undefined;
+    const w = initClub(world, { userTeamId: state.userTeamId, date: state.date, difficulty });
     state.world = w;
     after(state);
   },

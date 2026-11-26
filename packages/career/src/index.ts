@@ -3,6 +3,7 @@
 // builds the starting world from @pv/game-data under Node. See docs/GENERATED_PEOPLE.md.
 export * from "./model.ts";
 export * from "./regions.ts";
+export { DIFFICULTIES, DIFFICULTY_IDS, resolveDifficulty, type DifficultyId, type DifficultyKnobs } from "./difficulty.ts";
 export { CAREER_MODEL, maturity, closingRate, declineLoss, playTimeFactor, coachFactor, uncertaintyAfter, impliedPeak } from "./ability.ts";
 export { deriveCalibration, compositeOf, attrValue, type Calibration, type RealPlayerInput } from "./calibration.ts";
 export { generatePlayer, generateStaff, peakProfile, staffQuality, STAFF_MODEL, type PlayerGenRequest, type StaffGenRequest } from "./generate.ts";
@@ -37,3 +38,6 @@ export * from "./knowledge.ts";
 export * from "./development.ts";
 export * from "./academy.ts";
 export { scoutingCareerHook } from "./knowledge-hook.ts";
+// --- Media, press conferences, player interactions and team chemistry (backlog #7) ---
+export * from "./media.ts";
+export { mediaCareerHook } from "./media-hook.ts";
