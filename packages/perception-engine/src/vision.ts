@@ -70,6 +70,12 @@ export interface SightOptions {
    * is given.
    */
   readonly smokedPairs?: ReadonlyArray<readonly [string, string]>;
+  /**
+   * Per-pass memo of `position object → located roadmap node` so the O(n²) visibility pass locates
+   * each body once instead of once per pairing. Byte-identical to recomputing: within the cache's
+   * lifetime (one perception tick) a given position object has one zone. Only the positional path uses it.
+   */
+  readonly nodeCache?: Map<object, number | null>;
 }
 
 /**
@@ -89,7 +95,21 @@ export interface SightOptions {
 export function lineOfSight(spatial: SpatialEngine, a: SightPoint, b: SightPoint, opts: SightOptions = {}): boolean {
   const za = a.zoneId ?? spatial.nearestZone(a.position).id;
   const zb = b.zoneId ?? spatial.nearestZone(b.position).id;
-  const positional = opts.positionalSight === false ? null : spatial.nav?.sees(a.position, za, b.position, zb) ?? null;
+  const nav = spatial.nav;
+  let positional: boolean | null = null;
+  if (opts.positionalSight !== false && nav) {
+    const cache = opts.nodeCache;
+    if (cache) {
+      const nodeOf = (pos: SightPoint["position"], zone: string): number | null => {
+        let n = cache.get(pos);
+        if (n === undefined) { n = nav.locateInZone(pos, zone); cache.set(pos, n); }
+        return n;
+      };
+      positional = nav.seesNodes(nodeOf(a.position, za), nodeOf(b.position, zb), a.position, b.position);
+    } else {
+      positional = nav.sees(a.position, za, b.position, zb);
+    }
+  }
   let clear: boolean;
   if (positional !== null) clear = positional;
   else if (za === zb) clear = opts.sameZoneAlwaysVisible ?? true;
@@ -109,6 +129,8 @@ export interface VisionContext {
   readonly smokedPairs: ReadonlyArray<readonly [string, string]>;
   /** Smoke volumes in force; when given they replace the zone rule. */
   readonly occluders?: readonly SightOccluder[];
+  /** Per-pass locate memo (see SightOptions.nodeCache); set once per tick by the oracle. */
+  readonly nodeCache?: Map<object, number | null>;
 }
 
 /**
@@ -130,6 +152,7 @@ export function canSee(observer: PlayerState, target: PlayerState, ctx: VisionCo
   return lineOfSight(ctx.spatial, observer, target, {
     positionalSight: ctx.params.vision.positionalSight !== false,
     sameZoneAlwaysVisible: ctx.params.vision.sameZoneAlwaysVisible,
+    ...(ctx.nodeCache ? { nodeCache: ctx.nodeCache } : {}),
     ...(ctx.occluders ? { occluders: ctx.occluders } : { smokedPairs: ctx.smokedPairs }),
   });
 }

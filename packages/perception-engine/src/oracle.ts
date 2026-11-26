@@ -64,6 +64,8 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
   private readonly isSmoke: (a: AbilityState) => boolean;
   private readonly smokeCache = new WeakMap<object, ReadonlyArray<readonly [string, string]>>();
   private readonly volumeCache = new WeakMap<object, readonly SightOccluder[]>();
+  /** Per-world (one perception tick) memo of each body's located roadmap node; see VisionContext.nodeCache. */
+  private readonly nodeCache = new WeakMap<object, Map<object, number | null>>();
   private readonly smokeVolumes: boolean;
   private readonly defaultSmokeRadius: number;
 
@@ -102,9 +104,17 @@ export class SpatialPerceptionOracle implements VisibilityOracle {
     return pairs;
   }
 
+  /** The per-world locate memo, so the O(n²) canSee pass locates each body once (byte-identical). */
+  private nodeCacheFor(world: WorldState): Map<object, number | null> {
+    let c = this.nodeCache.get(world);
+    if (!c) { c = new Map(); this.nodeCache.set(world, c); }
+    return c;
+  }
+
   private visionContext(world: WorldState): VisionContext {
-    if (this.smokeVolumes) return { spatial: this.spatial, params: this.params, smokedPairs: [], occluders: this.occluders(world) };
-    return { spatial: this.spatial, params: this.params, smokedPairs: this.smokedPairs(world) };
+    const nodeCache = this.nodeCacheFor(world);
+    if (this.smokeVolumes) return { spatial: this.spatial, params: this.params, smokedPairs: [], occluders: this.occluders(world), nodeCache };
+    return { spatial: this.spatial, params: this.params, smokedPairs: this.smokedPairs(world), nodeCache };
   }
 
   canSee(observer: PlayerState, target: PlayerState, world: WorldState): boolean {
