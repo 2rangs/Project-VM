@@ -133,3 +133,42 @@ export function vetoLogLine(a: VetoActionView): { key: string; team: SeriesTeam 
 export function usesBorrowedGeometry(view: SeriesView): boolean {
   return view.pool.some((m) => m.toLowerCase() !== view.geometry.toLowerCase());
 }
+
+// ── veto briefing & ceremony (presentation) ─────────────────────────────────────────────────
+// Scene-setting for the draft: the format, our strongest map, our biggest edge over the opponent
+// and their biggest edge over us (COMPARABLES §B — the draft is the moment these games are loved
+// for). All derived from numbers @pv/match-runner already produced; no new model.
+
+export interface VetoBriefing {
+  /** Maps in the series (Bo3 → 3). */
+  games: number;
+  /** Our strongest map by mastery (0–100), or null when the pool is empty. */
+  ourBest: { map: string; score: number } | null;
+  /** The map where we most out-master the opponent (scouting known), 0–100 gap; null when none. */
+  edge: { map: string; gap: number } | null;
+  /** The map where the opponent most out-masters us (scouting known), 0–100 gap; null when none. */
+  risk: { map: string; gap: number } | null;
+}
+
+export function vetoBriefing(view: SeriesView): VetoBriefing {
+  let ourBest: VetoBriefing['ourBest'] = null;
+  let edge: VetoBriefing['edge'] = null;
+  let risk: VetoBriefing['risk'] = null;
+  for (const m of view.maps) {
+    const ours = score100(m.mastery.A.value);
+    if (!ourBest || ours > ourBest.score) ourBest = { map: m.map, score: ours };
+    const est = theirMasteryEstimate(m);
+    if (est === null) continue;
+    const gap = ours - score100(est);
+    if (gap > 0 && (!edge || gap > edge.gap)) edge = { map: m.map, gap };
+    if (gap < 0 && (!risk || -gap > risk.gap)) risk = { map: m.map, gap: -gap };
+  }
+  return { games: view.format.games, ourBest, edge, risk };
+}
+
+/** The most recent veto action (highest step), for emphasising the just-happened move. */
+export function latestAction(view: SeriesView): VetoActionView | null {
+  let latest: VetoActionView | null = null;
+  for (const a of view.veto.actions) if (!latest || a.step > latest.step) latest = a;
+  return latest;
+}

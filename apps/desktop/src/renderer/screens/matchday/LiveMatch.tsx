@@ -28,6 +28,8 @@ import { computeFrame, type Frame } from '../../matchday/frame.ts';
 import { buildRoadmap, navDebugAt, type NavDebugFrame, type RoadmapData } from '../../matchday/navdebug.ts';
 import { eventJump, formatClock } from '../../matchday/monitor.ts';
 import { loadPrefs, savePrefs, type MatchPrefs } from '../../matchday/prefs.ts';
+import { roundPlayWindows } from '../../matchday/highlights.ts';
+import { swingMoments, teamWinProb } from '../../matchday/winprob.ts';
 import { rosterHandles } from '../../matchday/roster.ts';
 import { usePlayback } from '../../matchday/usePlayback.ts';
 import { MatchStage, type StageView } from './MatchStage.ts';
@@ -36,7 +38,7 @@ import type { CamView } from './cams3d-loader.ts';
 import { createCamStage3D, type PlantZone } from './cams3d-loader.ts';
 import { useGraphics } from '../../settings/graphics.tsx';
 import { preloadMatchAssets, preparedMesh, preparedMinimapUrl, useMatchAssets } from './assets.ts';
-import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, MatchupStrip, OrderChip, RoundResult, TopHud, statusText } from './Hud.tsx';
+import { AgentTag, AllyPanel, Banners, BuyReasonPanel, BottomBar, EnemyPanel, IntelPanel, KillFeed, MatchupStrip, OrderChip, RoundResult, TopHud, WinProbBar, statusText } from './Hud.tsx';
 import { Icon, STATE_ICON } from './Icons.tsx';
 import { LoadingInline } from '../../loading/Loading.tsx';
 import './matchday.css';
@@ -96,7 +98,12 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const update = useCallback((patch: Partial<MatchPrefs>) => setPrefs((p) => { const n = { ...p, ...patch }; savePrefs(n); return n; }), []);
 
   const tl = useMemo(() => (replay ? buildTimeline(replay, match, nav) : EMPTY), [replay, match]);
-  const playback = usePlayback(tl, prefs.tempo, gfx.fpsCap);
+  // Highlight plan (관전 상세도): 'full' plays the whole round; the others play only chosen windows
+  // and the playback clock skips the dead time between them. A ref so usePlayback reads the live level.
+  const detailRef = useRef(prefs.detail);
+  detailRef.current = prefs.detail;
+  const plan = useCallback((r: RoundTimeline) => (detailRef.current === 'full' ? null : roundPlayWindows(r, detailRef.current)), []);
+  const playback = usePlayback(tl, prefs.tempo, gfx.fpsCap, undefined, plan);
   const { seek } = playback;
 
   // Low graphics drops the 3D team cams entirely: the view is pinned to the tactical 2D map.
@@ -119,6 +126,10 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const over = !!round && roundOver(round, playback.tMs);
   const atLiveEdge = !!round && round === latest && over;
   const score = useMemo(() => scoreAt(tl, playback.tMs), [tl, playback.tMs]);
+  // Live round win probability for the viewer's team (estimate; pinned to the real result once over).
+  const winProb = round ? teamWinProb(round, playback.tMs, viewTeam) : null;
+  // Moments that swung the round (for the scrubber marks and the round summary). Independent of time.
+  const swings = useMemo(() => (round ? swingMoments(round, viewTeam) : []), [round, viewTeam]);
 
   const handles = useMemo(() => ({ A: rosterHandles(teams.A.id), B: rosterHandles(teams.B.id) }), [teams.A.id, teams.B.id]);
   const attacker = round?.attacker ?? 'A';
@@ -375,9 +386,13 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
   const overlays = (
     <>
       <Banners t={t} frame={frame} nameOf={nameOf} viewTeam={viewTeam} />
+      {round && !preRound && winProb != null && !over && !session?.ordersOpen && (
+        <WinProbBar t={t} prob={winProb} teamName={teams[viewTeam].name} enemyName={teams[enemyTeam].name} />
+      )}
       {round && over && !session?.ordersOpen && (
         <RoundResult t={t} round={round} viewTeam={viewTeam} score={score} teams={teams} hint={resultHint}
-          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} nameOf={nameOf} zoneName={zoneName} />
+          nextLabel={nextLabel} onNext={continueNext} nextDisabled={!!session?.busy} nameOf={nameOf} zoneName={zoneName}
+          swings={swings} />
       )}
       {preRound && !session!.ordersOpen && (
         <div className="mdx-result neutral" data-testid="pre-match">
@@ -540,6 +555,7 @@ export function LiveMatch({ replay, match, teams, sourceLabel, session, autoPlay
         t={t} tl={tl} round={round} tMs={playback.tMs} playing={playback.playing} onToggle={togglePlay}
         tempo={prefs.tempo} onTempo={(v) => update({ tempo: v })} onSeek={(ms) => seek(ms, { play: false })}
         onRound={(r) => seek(r.buyStartMs, { play: true })} viewTeam={viewTeam}
+        detail={prefs.detail} onDetail={(v) => update({ detail: v })} swings={swings}
         session={session ? { state: session.state, busy: session.busy, ordersOpen: session.ordersOpen } : null}
         autoPlay={autoPlay} onAutoPlay={onAutoPlay} onNext={() => session?.onNext()} onTimeout={callTimeout} canAdvance={atLiveEdge || preRound}
         watchedTo={watchedTo} timeouts={roundTimeouts} onPrevEvent={() => jumpEvent(-1)} onNextEvent={() => jumpEvent(1)} onSkipEnd={skipToEnd}

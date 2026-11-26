@@ -10,7 +10,8 @@ import { formatClock, planOf, roundMarks } from '../../matchday/monitor.ts';
 import { duelCards } from '../../matchday/duels.ts';
 import { parseCall, type CallLabel } from '../../decisions.ts';
 import { isAlive, teamPlayers, type MatchTimeline, type RoundTimeline, type TeamSlot } from '../../matchday/timeline.ts';
-import { TEMPOS, type Tempo, type ViewMode } from '../../matchday/prefs.ts';
+import { TEMPOS, HIGHLIGHT_LEVELS, type Tempo, type ViewMode, type HighlightLevel } from '../../matchday/prefs.ts';
+import type { SwingMoment } from '../../matchday/winprob.ts';
 import { agentOfSlot } from '../../matchday/roster.ts';
 import { buyReason, dropsOf, playerEco, type PlayerEco } from '../../matchday/economy.ts';
 import { Icon, ROLE_ICON, STATE_ICON, type IconName } from './Icons.tsx';
@@ -410,9 +411,9 @@ interface PlanLike { opening?: string | null; strategy?: string | null; feint?: 
  * reason, kills, economy after the round, our own plan changes (never the opponent's), and the
  * way forward.
  */
-export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel, onNext, nextDisabled, nameOf, zoneName }: {
+export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel, onNext, nextDisabled, nameOf, zoneName, swings = [] }: {
   t: TFn; round: RoundTimeline; viewTeam: TeamSlot; score: Record<TeamSlot, number>; teams: MatchSummary['teams']; hint: string | null; nameOf: NameOf; zoneName: ZoneName;
-  nextLabel: string | null; onNext: () => void; nextDisabled: boolean;
+  nextLabel: string | null; onNext: () => void; nextDisabled: boolean; swings?: readonly SwingMoment[];
 }) {
   const sum = round.summary;
   const winner = sum?.winner;
@@ -438,6 +439,18 @@ export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel,
           </div>
         )}
       </dl>
+      {swings.length > 0 && (
+        <div className="mdx-swings" data-testid="round-swings">
+          <span className="mdx-swings-head">{t('mdx.swing.title')}</span>
+          {swings.map((s, i) => (
+            <span key={i} className={`mdx-swing ${s.delta >= 0 ? 'up' : 'down'}`}>
+              <i>{formatClock(Math.max(0, s.tMs - round.startMs))}</i>
+              {t(`mdx.swing.${s.kind}`)}
+              <b>{s.delta >= 0 ? '+' : '−'}{Math.round(Math.abs(s.delta) * 100)}%</b>
+            </span>
+          ))}
+        </div>
+      )}
       {round.summary?.engagement !== undefined && (
         <details className="mdx-duelbox"><summary>{t('mdx.duel.title')}</summary><DuelCards t={t} round={round} viewTeam={viewTeam} nameOf={nameOf} zoneName={zoneName} /></details>
       )}
@@ -447,17 +460,43 @@ export function RoundResult({ t, round, viewTeam, score, teams, hint, nextLabel,
   );
 }
 
+// ── live win probability (추정) ───────────────────────────────────────────────────────────────
+
+/**
+ * A compact split bar over the stage: the viewer team's estimated chance of winning the round now.
+ * Labelled as an estimate (추정) and pinned to the real result once the round ends, so it never
+ * contradicts the engine. Cheap: one arithmetic read per frame (src/renderer/matchday/winprob.ts).
+ */
+export function WinProbBar({ t, prob, teamName, enemyName }: { t: TFn; prob: number; teamName: string; enemyName: string }) {
+  const ours = Math.round(prob * 100);
+  return (
+    <div className="mdx-winprob" data-testid="win-prob" title={t('mdx.winprob.hint')} aria-label={t('mdx.winprob.aria', { pct: ours })}>
+      <span className="mdx-winprob-label">{t('mdx.winprob.title')}</span>
+      <div className="mdx-winprob-bar">
+        <i className="ally" style={{ width: `${ours}%` }} />
+        <i className="enemy" style={{ width: `${100 - ours}%` }} />
+        <b className="ally" title={teamName}>{ours}%</b>
+        <b className="enemy" title={enemyName}>{100 - ours}%</b>
+      </div>
+    </div>
+  );
+}
+
 // ── bottom bar ─────────────────────────────────────────────────────────────────────────────
 
 export function BottomBar({
   t, tl, round, tMs, playing, onToggle, tempo, onTempo, onSeek, onRound, viewTeam, session, autoPlay, onAutoPlay,
-  onNext, onTimeout, canAdvance, watchedTo, timeouts, onPrevEvent, onNextEvent, onSkipEnd,
+  onNext, onTimeout, canAdvance, watchedTo, timeouts, onPrevEvent, onNextEvent, onSkipEnd, detail, onDetail, swings = [],
 }: {
   /** Furthest point of this round the viewer has reached: later events stay unmarked (no spoilers). */
   watchedTo: number;
   /** Teams that called a tactical timeout before this round. */
   timeouts: readonly TeamSlot[];
   onPrevEvent: () => void; onNextEvent: () => void; onSkipEnd: () => void;
+  /** Highlight detail (관전 상세도): how much of each round is played. */
+  detail: HighlightLevel; onDetail: (v: HighlightLevel) => void;
+  /** Win-probability swing moments of the round (marked on the scrubber as they are reached). */
+  swings?: readonly SwingMoment[];
   t: TFn; tl: MatchTimeline; round: RoundTimeline | null; tMs: number; playing: boolean; onToggle: () => void;
   tempo: Tempo; onTempo: (v: Tempo) => void; onSeek: (ms: number) => void; onRound: (r: RoundTimeline) => void;
   viewTeam: TeamSlot; session: { state: SessionState; busy: boolean; ordersOpen: boolean } | null;
@@ -480,6 +519,11 @@ export function BottomBar({
         <div className="mdx-seg small" aria-label={t('mdx.tempo')}>
           {TEMPOS.map((v) => (
             <button key={v} className={tempo === v ? 'on' : ''} onClick={() => onTempo(v)} data-testid={`tempo-${v}`}>{v}×</button>
+          ))}
+        </div>
+        <div className="mdx-seg small" aria-label={t('mdx.detail')} title={t('mdx.detail.hint')}>
+          {HIGHLIGHT_LEVELS.map((v) => (
+            <button key={v} className={detail === v ? 'on' : ''} onClick={() => onDetail(v)} data-testid={`detail-${v}`} title={t(`mdx.detail.${v}.hint`)}>{t(`mdx.detail.${v}`)}</button>
           ))}
         </div>
       </div>
@@ -511,6 +555,11 @@ export function BottomBar({
             {/* events appear on the timeline as they are reached — the future stays unmarked */}
             {round && roundMarks(round).filter((m) => m.tMs <= watchedTo && m.kind !== 'end').map((m, i) => (
               <i key={i} className={`mdx-tick ${m.kind === 'kill' ? (m.team === viewTeam ? 'ally' : 'enemy') : m.kind === 'plant' ? 'spike' : 'defuse'}`} style={{ left: pct(m.tMs) }} />
+            ))}
+            {/* win-probability swings: a larger diamond above the biggest turning points, as reached */}
+            {round && swings.filter((s) => s.tMs <= watchedTo && s.kind !== 'end').map((s, i) => (
+              <i key={`sw${i}`} className={`mdx-tick swing ${s.delta >= 0 ? 'up' : 'down'}`} style={{ left: pct(s.tMs) }}
+                title={t('mdx.swing.tick', { pct: `${s.delta >= 0 ? '+' : '−'}${Math.round(Math.abs(s.delta) * 100)}` })} />
             ))}
             <input className="rv-scrub" type="range" min={round?.buyStartMs ?? 0} max={round?.endMs ?? 0} step={50} value={round ? tMs : 0}
               onChange={(e) => onSeek(Number(e.target.value))} disabled={!round} aria-label={t('mdx.scrub')} />
